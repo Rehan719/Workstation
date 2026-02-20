@@ -7,20 +7,26 @@ from .protocols.samp import SAMPMessage
 from .quantum_ai.hierarchy_manager import CapabilityHierarchyManager
 from .interface.hybrid_granularity_controller import HybridGranularityController
 from .tools.context_aware_integrator import ContextAwareToolIntegrator
+from .infrastructure.quantum_ir_compiler import QuantumIRCompiler
+from .security.sigstore_handler import SigstoreHandler
+from .collaboration.workspace_manager import WorkspaceManager
 
 class Orchestrator(BaseAgent):
     """
     C-IV Orchestrator Agent: Strategic planning, goal decomposition, and hybrid toolchain activation.
     Integrates Hierarchy Management (Article R), Hybrid Granularity (Article S), and Context-Aware Tools (Article T).
     """
-    def __init__(self, agent_id: str = "orchestrator.v10", config: Optional[Dict[str, Any]] = None):
+    def __init__(self, agent_id: str = "orchestrator.v32", config: Optional[Dict[str, Any]] = None):
         super().__init__(agent_id, config)
         self.workers: Dict[str, BaseAgent] = {}
 
-        # v31.0 Enhanced Engines
+        # v32.0 Enhanced Engines
         self.hierarchy_manager = CapabilityHierarchyManager()
         self.granularity_controller = HybridGranularityController()
         self.tool_integrator = ContextAwareToolIntegrator()
+        self.ir_compiler = QuantumIRCompiler()
+        self.sigstore = SigstoreHandler()
+        self.workspace_manager = WorkspaceManager()
 
     def register_worker(self, worker: BaseAgent):
         self.workers[worker.agent_id] = worker
@@ -28,7 +34,7 @@ class Orchestrator(BaseAgent):
 
     async def execute(self, task: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Decomposes a high-level goal into subtasks and coordinates execution with v31.0 enhancements.
+        Decomposes a high-level goal into subtasks and coordinates execution with v32.0 enhancements.
         """
         self.log(f"Starting C-IV orchestration for task: {task.get('goal', 'No goal specified')}")
 
@@ -51,6 +57,13 @@ class Orchestrator(BaseAgent):
             framework = self._select_framework(subtask)
             subtask['framework'] = framework
             self.log(f"Selected framework '{framework}' for subtask: {subtask['id']}")
+
+            # v32.0 Article U: Unified Compilation
+            if subtask.get("type") == "quantum_circuit":
+                self.log(f"Routing subtask {subtask['id']} through QuantumIRCompiler")
+                mlir = await self.ir_compiler.lower_to_mlir(subtask.get("circuit"), subtask.get("framework"))
+                optimized_mlir = await self.ir_compiler.run_optimization_pipeline(mlir)
+                subtask['mlir'] = optimized_mlir
 
             # Activate toolchain if needed
             enhanced_task = await self.tool_integrator.process_task(subtask)
