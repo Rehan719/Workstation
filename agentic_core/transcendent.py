@@ -4,10 +4,10 @@ from .memory.semantic import SemanticMemory
 
 class TranscendentLayer(BaseAgent):
     """
-    L6 Transcendent Layer: Long-term memory consolidation and cross-project learning.
-    Manages the global knowledge graph and federated insight sharing.
+    C-VI / L6 Transcendent Layer: Long-term memory consolidation and cross-project learning.
+    Enhanced with v31.0 Hierarchical Capability metrics and User Preference tracking.
     """
-    def __init__(self, agent_id: str = "transcendent.v10", config: Optional[Dict[str, Any]] = None):
+    def __init__(self, agent_id: str = "transcendent.v31", config: Optional[Dict[str, Any]] = None):
         super().__init__(agent_id, config)
         self.semantic_memory = SemanticMemory()
 

@@ -1,0 +1,45 @@
+{
+  "name": "Jules AI v31.0 Meta-Cognitive Constitution",
+  "version": "31.0",
+  "articles": [
+    {
+      "id": "ARTICLE_R_HIERARCHICAL_CAPABILITY",
+      "type": "capability",
+      "enforcement_level": "MUST",
+      "title": "Hierarchical Quantum-AI Capability Prioritization",
+      "description": "System must organize quantum-AI capabilities into three tiers (Foundation, Synergy, Application) and ensure Tier 1 stability before scaling Tiers 2 and 3.",
+      "constraints": [
+        "hierarchy_manager.py must exist",
+        "Tier 1 (Hybrid Optimization) must be stabilized before Tier 2 (QFL) execution",
+        "Tiers 1 and 2 must be stabilized before Tier 3 (Domain Applications)",
+        "Stability metrics must be tracked and logged"
+      ],
+      "severity": "critical"
+    },
+    {
+      "id": "ARTICLE_S_HYBRID_GRANULARITY",
+      "type": "interface",
+      "enforcement_level": "MUST",
+      "title": "Hybrid Granularity Control",
+      "description": "System must combine implicit interaction signals with explicit user feedback modes for granularity control.",
+      "constraints": [
+        "hybrid_granularity_controller.py must exist",
+        "Learning from explicit feedback must be implemented"
+      ],
+      "severity": "critical"
+    },
+    {
+      "id": "ARTICLE_T_CONTEXT_AWARE_TOOLS",
+      "type": "integration",
+      "enforcement_level": "MUST",
+      "title": "Context-Aware Tool Integration",
+      "description": "System must selectively activate advanced toolchains (MLIR, QIR, Sigstore) based on task context.",
+      "constraints": [
+        "context_aware_integrator.py must exist",
+        "MLIR/QIR activation for complex iterative tasks",
+        "Sigstore activation for significant artifacts"
+      ],
+      "severity": "critical"
+    }
+  ]
+}

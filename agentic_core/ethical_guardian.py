@@ -4,17 +4,24 @@ import asyncio
 
 class EthicalSentinel(BaseAgent):
     """
-    L5 Ethical Sentinel: Real-time bias detection, toxicity filtering, and value alignment.
-    Enforces constitutional principles and prevents harmful content generation.
+    C-VIII Ethical Sentinel: Real-time bias detection, toxicity filtering, and value alignment.
+    Enforces v31.0 constitutional principles including Hierarchical Capabilities,
+    Hybrid Granularity, and Context-Aware Tooling mandates.
     """
-    def __init__(self, agent_id: str = "ethical.sentinel.v10", config: Optional[Dict[str, Any]] = None):
+    def __init__(self, agent_id: str = "ethical.sentinel.v31", config: Optional[Dict[str, Any]] = None):
         super().__init__(agent_id, config)
         self.constitution = config.get("constitution", [
+            "Article R: Prioritize foundational stability (Tier 1) before scaling higher-level applications.",
+            "Article S: Adapt information density using hybrid granularity control for user cognitive load management.",
+            "Article T: Selectively activate advanced toolchains (MLIR, QIR, Sigstore) based on task context.",
             "Do not generate content that promotes violence or discrimination.",
             "Ensure balanced representation in generated summaries.",
             "Respect intellectual property and data privacy.",
             "Maintain transparency about AI generation."
         ]) if config else [
+            "Article R: Prioritize foundational stability (Tier 1) before scaling higher-level applications.",
+            "Article S: Adapt information density using hybrid granularity control for user cognitive load management.",
+            "Article T: Selectively activate advanced toolchains (MLIR, QIR, Sigstore) based on task context.",
             "Do not generate content that promotes violence or discrimination.",
             "Ensure balanced representation in generated summaries.",
             "Respect intellectual property and data privacy.",
