@@ -1,6 +1,6 @@
 {
-  "name": "Jules AI v31.0 Meta-Cognitive Constitution",
-  "version": "31.0",
+  "name": "Jules AI v34.0 Meta-Cognitive Constitution",
+  "version": "34.0",
   "articles": [
     {
       "id": "ARTICLE_R_HIERARCHICAL_CAPABILITY",
@@ -11,8 +11,7 @@
       "constraints": [
         "hierarchy_manager.py must exist",
         "Tier 1 (Hybrid Optimization) must be stabilized before Tier 2 (QFL) execution",
-        "Tiers 1 and 2 must be stabilized before Tier 3 (Domain Applications)",
-        "Stability metrics must be tracked and logged"
+        "Tiers 1 and 2 must be stabilized before Tier 3 (Domain Applications)"
       ],
       "severity": "critical"
     },
@@ -23,8 +22,7 @@
       "title": "Hybrid Granularity Control",
       "description": "System must combine implicit interaction signals with explicit user feedback modes for granularity control.",
       "constraints": [
-        "hybrid_granularity_controller.py must exist",
-        "Learning from explicit feedback must be implemented"
+        "hybrid_granularity_controller.py must exist"
       ],
       "severity": "critical"
     },
@@ -35,9 +33,55 @@
       "title": "Context-Aware Tool Integration",
       "description": "System must selectively activate advanced toolchains (MLIR, QIR, Sigstore) based on task context.",
       "constraints": [
-        "context_aware_integrator.py must exist",
-        "MLIR/QIR activation for complex iterative tasks",
-        "Sigstore activation for significant artifacts"
+        "context_aware_integrator.py must exist"
+      ],
+      "severity": "critical"
+    },
+    {
+      "id": "ARTICLE_X_AI_PEDAGOGY",
+      "type": "pedagogy",
+      "enforcement_level": "SHOULD",
+      "title": "AI-Driven Pedagogy",
+      "description": "System should implement an intelligent tutoring system that adapts to user skill levels.",
+      "constraints": [
+        "pedagogy_engine.py must exist",
+        "User skill assessment must be implemented"
+      ],
+      "severity": "recommended"
+    },
+    {
+      "id": "ARTICLE_Y_VERSIONING",
+      "type": "collaboration",
+      "enforcement_level": "SHOULD",
+      "title": "Enhanced Collaborative Versioning",
+      "description": "System should integrate Git-based workflows with cryptographic signing.",
+      "constraints": [
+        "version_control.py must exist",
+        "Commits must be signed with Sigstore"
+      ],
+      "severity": "recommended"
+    },
+    {
+      "id": "ARTICLE_Z_OBSERVATORY",
+      "type": "integration",
+      "enforcement_level": "SHOULD",
+      "title": "Advanced Free-Tool Observatory",
+      "description": "System should continuously scan for newly released free tools and evaluate them.",
+      "constraints": [
+        "observatory.py must exist",
+        "Tool evaluation must be performed"
+      ],
+      "severity": "recommended"
+    },
+    {
+      "id": "ARTICLE_S_P_STRATEGIC_PRIORITIZATION",
+      "type": "strategy",
+      "enforcement_level": "MUST",
+      "title": "Strategic Implementation Prioritization",
+      "description": "System development and execution must follow the hierarchy: Publications > Workflows > Video > Websites.",
+      "constraints": [
+        "Scientific publications must be the first-class automated output",
+        "Collaborative workflows must follow as the second priority"
       ],
       "severity": "critical"
     }

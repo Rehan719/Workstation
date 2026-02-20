@@ -1,0 +1,22 @@
+name: Video Presentation
+version: 1.0
+trigger:
+  type: content_event
+  path: content/projects/*/video_request.md
+steps:
+  - id: extract_points
+    agent: presentation.slide_maestro.v10
+    input: ${source_paper}
+    output: ${slide_content}
+  - id: video_comprehension
+    agent: presentation.video_comprehension.v1
+    input: ${video_url}
+    output: ${video_findings}
+  - id: synthesis
+    agent: writing.manuscript.architect.v4
+    input: ${slide_content} ${video_findings}
+    output: ${final_script}
+  - id: finalize
+    agent: presentation.slide_maestro.v10
+    input: ${final_script}
+    output: ${video_presentation_file}

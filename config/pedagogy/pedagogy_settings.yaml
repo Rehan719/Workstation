@@ -1,0 +1,9 @@
+assessment_criteria:
+  expert_threshold: 10
+  intermediate_threshold: 5
+
+learning_paths:
+  - topic: quantum_optimization
+    steps: ["intro", "cma-es_basics", "convergence_analysis", "advanced_vqe"]
+  - topic: collaborative_git
+    steps: ["clone", "branching", "conflict_resolution", "pr_creation"]

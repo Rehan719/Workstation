@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import time
 
-st.set_page_config(page_title="Jules AI v33.0 Command Center", layout="wide")
+st.set_page_config(page_title="Jules AI v34.0 Command Center", layout="wide")
 
-st.title("🚀 Jules AI v33.0: Hierarchical & Sequential Ecosystem")
+st.title("🚀 Jules AI v34.0: Pedagogical & Versioned Ecosystem")
 
 # Sidebar for controls
 st.sidebar.header("Meta-Cognitive Controls")
@@ -50,8 +50,9 @@ st.subheader("System Logs (Real-time)")
 st.code("""
 [INFO] Orchestrator started task decomposition for P-124
 [INFO] Sentinel scanned P-123 draft for bias: Risk Score 0.05
-[INFO] QuantumIRCompiler: Unified MLIR/QIR compilation started for Q-456
-[INFO] Sigstore: Successfully signed container for research-workload-88
+[INFO] PedagogyEngine: Adaptive learning path updated for user 'Alice'
+[INFO] VersionControl: Signed workspace snapshot 'snap-99' via Sigstore
+[INFO] Observatory: Discovered 2 new tools for evaluation
 [SUCCESS] WorkspaceManager: Synchronized state for Collaborative Project Alpha
 [SUCCESS] Transcendent Layer consolidated 450 new memory nodes
 """, language="text")
