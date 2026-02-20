@@ -5,37 +5,53 @@ import uuid
 class CRDTStore:
     """
     Local-first data layer using Conflict-free Replicated Data Types (CRDT).
-    Implements a Last-Writer-Wins (LWW) Register pattern for project state synchronization.
+    Implements a multi-value LWW-Element-Set for robust project synchronization.
     """
     def __init__(self):
-        self.state: Dict[str, Dict[str, Any]] = {}  # project_id -> {value, timestamp}
+        self.state: Dict[str, Dict[str, Any]] = {}  # project_id -> {fields: {name: {value, timestamp}}, node_id}
+        self.node_id = str(uuid.uuid4())
 
-    def update(self, project_id: str, data: Any):
+    def update_project(self, project_id: str, field_name: str, value: Any):
         """
-        Updates the local replica with a timestamp.
+        Updates a specific field in a project with local-first LWW semantics.
         """
-        self.state[project_id] = {
-            "value": data,
-            "timestamp": datetime.now(timezone.utc).timestamp(),
-            "node_id": str(uuid.uuid4())
+        if project_id not in self.state:
+            self.state[project_id] = {"fields": {}, "node_id": self.node_id}
+
+        self.state[project_id]["fields"][field_name] = {
+            "value": value,
+            "timestamp": datetime.now(timezone.utc).timestamp()
         }
 
     def merge(self, remote_state: Dict[str, Dict[str, Any]]):
         """
-        Merges a remote replica into the local state using LWW semantics.
+        Merges a remote replica into the local state using field-level LWW semantics.
         """
-        for project_id, remote_entry in remote_state.items():
+        for project_id, remote_project in remote_state.items():
             if project_id not in self.state:
-                self.state[project_id] = remote_entry
+                self.state[project_id] = remote_project
             else:
-                local_entry = self.state[project_id]
-                if remote_entry["timestamp"] > local_entry["timestamp"]:
-                    self.state[project_id] = remote_entry
-                elif remote_entry["timestamp"] == local_entry["timestamp"]:
-                    # Tie-break with node_id
-                    if remote_entry["node_id"] > local_entry["node_id"]:
-                        self.state[project_id] = remote_entry
+                local_fields = self.state[project_id]["fields"]
+                remote_fields = remote_project["fields"]
+
+                for field_name, remote_data in remote_fields.items():
+                    if field_name not in local_fields:
+                        local_fields[field_name] = remote_data
+                    else:
+                        local_data = local_fields[field_name]
+                        if remote_data["timestamp"] > local_data["timestamp"]:
+                            local_fields[field_name] = remote_data
+
+    def get_project(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves the current state of all fields for a project.
+        """
+        project = self.state.get(project_id)
+        if not project:
+            return None
+
+        return {name: data["value"] for name, data in project["fields"].items()}
 
     def get(self, project_id: str) -> Optional[Any]:
-        entry = self.state.get(project_id)
-        return entry["value"] if entry else None
+        # Legacy support
+        return self.get_project(project_id)

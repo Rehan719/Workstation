@@ -99,19 +99,29 @@ class Orchestrator(BaseAgent):
 
     def _select_framework(self, subtask: Dict[str, Any]) -> str:
         """
-        Dynamically selects between AutoGen, CrewAI, LangGraph, or PC-Agent based on task characteristics.
+        Dynamic Framework Router: Selects the optimal agentic framework based on task complexity,
+        interaction patterns, and statefulness requirements.
         """
         task_type = subtask.get("type", "").lower()
         description = subtask.get("description", "").lower()
+        goal = subtask.get("goal", "").lower()
 
-        if "conversation" in description or "brainstorm" in description:
+        # Rule-based routing logic (Article: Dynamic Hybrid Orchestration)
+        if any(keyword in description or keyword in goal for keyword in ["conversation", "brainstorm", "multi-agent chat"]):
             return "AutoGen"
-        elif "role" in description or "crew" in task_type:
+        elif any(keyword in task_type or keyword in goal for keyword in ["role-based", "crew", "organization"]):
             return "CrewAI"
-        elif "cyclical" in description or "graph" in task_type:
+        elif any(keyword in task_type or keyword in description for keyword in ["stateful", "cyclical", "graph", "non-linear"]):
             return "LangGraph"
-        else:
+        elif "gui" in description or "procedural" in description:
             return "PC-Agent"
+
+        # Enterprise-grade routing for monitored apps
+        if subtask.get("enterprise_mode"):
+            return "Microsoft Agent Framework"
+
+        # Default to the foundational hierarchical model
+        return "PC-Agent"
 
     def _aggregate(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """

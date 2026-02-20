@@ -10,17 +10,25 @@ class WAREXSimulator:
     def __init__(self):
         self.failure_modes = ["network_latency", "server_error", "js_failure", "rate_limit"]
 
-    async def simulate_web_interaction(self, url: str, failure_rate: float = 0.1) -> Dict[str, Any]:
+    async def simulate_web_interaction(self, url: str, failure_rate: float = 0.1, retries: int = 3) -> Dict[str, Any]:
         """
-        Simulates a web request that may fail according to the failure rate.
+        Simulates a web request with adaptive resilience (retry logic with backoff).
         """
-        if random.random() < failure_rate:
-            failure = random.choice(self.failure_modes)
-            return {"status": "failed", "error": failure, "url": url}
+        attempt = 0
+        while attempt < retries:
+            if random.random() < failure_rate:
+                failure = random.choice(self.failure_modes)
+                # Simulated Exponential Backoff
+                await asyncio.sleep(2 ** attempt * 0.1)
+                attempt += 1
+                if attempt == retries:
+                    return {"status": "failed", "error": failure, "url": url, "attempts": attempt}
+            else:
+                # Simulate success
+                await asyncio.sleep(random.uniform(0.1, 0.5))
+                return {"status": "success", "content": "<html>...</html>", "url": url, "attempts": attempt + 1}
 
-        # Simulate network latency
-        await asyncio.sleep(random.uniform(0.1, 0.5))
-        return {"status": "success", "content": "<html>...</html>", "url": url}
+        return {"status": "failed", "error": "unknown", "url": url}
 
     def run_reliability_benchmark(self, agent_actions: List[str]) -> Dict[str, Any]:
         """

@@ -45,18 +45,28 @@ async def test_pc_agent_hierarchy():
 
 def test_crdt_consistency():
     store = CRDTStore()
-    store.update("p1", "v1")
-    t1 = store.state["p1"]["timestamp"]
+    store.update_project("p1", "title", "v1")
+    t1 = store.state["p1"]["fields"]["title"]["timestamp"]
 
     # Remote update with later timestamp
-    remote_state = {"p1": {"value": "v2", "timestamp": t1 + 100, "node_id": "remote"}}
+    remote_state = {
+        "p1": {
+            "fields": {"title": {"value": "v2", "timestamp": t1 + 100}},
+            "node_id": "remote"
+        }
+    }
     store.merge(remote_state)
-    assert store.get("p1") == "v2"
+    assert store.get_project("p1")["title"] == "v2"
 
     # Remote update with earlier timestamp (should be ignored)
-    remote_state_old = {"p1": {"value": "v0", "timestamp": t1 - 100, "node_id": "remote"}}
+    remote_state_old = {
+        "p1": {
+            "fields": {"title": {"value": "v0", "timestamp": t1 - 100}},
+            "node_id": "remote"
+        }
+    }
     store.merge(remote_state_old)
-    assert store.get("p1") == "v2"
+    assert store.get_project("p1")["title"] == "v2"
 
 if __name__ == "__main__":
     asyncio.run(test_orchestrator_integration())
