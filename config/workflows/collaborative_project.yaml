@@ -16,6 +16,6 @@ steps:
   - id: parallel_execution
     parallel:
       - id: research
-        agent: research.literature.synthesizer.v3
+        agent: research.literature.v3
       - id: writing
         agent: writing.manuscript.architect.v4

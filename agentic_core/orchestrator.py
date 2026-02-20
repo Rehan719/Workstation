@@ -13,7 +13,7 @@ class Orchestrator(BaseAgent):
     C-IV Orchestrator Agent: Strategic planning, goal decomposition, and hybrid toolchain activation.
     Integrates Hierarchy Management (Article R), Hybrid Granularity (Article S), and Context-Aware Tools (Article T).
     """
-    def __init__(self, agent_id: str = "orchestrator.v31", config: Optional[Dict[str, Any]] = None):
+    def __init__(self, agent_id: str = "orchestrator.v10", config: Optional[Dict[str, Any]] = None):
         super().__init__(agent_id, config)
         self.workers: Dict[str, BaseAgent] = {}
 
@@ -44,16 +44,21 @@ class Orchestrator(BaseAgent):
         plan = await self._plan(task)
         self.log(f"Generated execution plan with {len(plan)} subtasks")
 
-        # 2. Execute subtasks with Context-Aware Tooling (Article T)
+        # 2. Execute subtasks with Context-Aware Tooling and Dynamic Hybrid Orchestration
         results = {}
         for subtask in plan:
+            # Dynamic Hybrid Selection
+            framework = self._select_framework(subtask)
+            subtask['framework'] = framework
+            self.log(f"Selected framework '{framework}' for subtask: {subtask['id']}")
+
             # Activate toolchain if needed
             enhanced_task = await self.tool_integrator.process_task(subtask)
             subtask.update(enhanced_task)
 
             worker_id = subtask.get("assigned_agent") or subtask.get("agent")
             if worker_id in self.workers:
-                self.log(f"Delegating subtask '{subtask['id']}' to {worker_id} (Tools: {subtask.get('tools_used', [])})")
+                self.log(f"Delegating subtask '{subtask['id']}' to {worker_id} via {framework} (Tools: {subtask.get('tools_used', [])})")
                 results[subtask["id"]] = await self.workers[worker_id].execute(subtask, context)
             else:
                 self.log(f"No worker registered for agent type: {worker_id}", level="ERROR")
@@ -91,6 +96,22 @@ class Orchestrator(BaseAgent):
                 {"id": "drafting", "assigned_agent": "writing.manuscript.architect.v4", "content": "${lit_review}"}
             ]
         return []
+
+    def _select_framework(self, subtask: Dict[str, Any]) -> str:
+        """
+        Dynamically selects between AutoGen, CrewAI, LangGraph, or PC-Agent based on task characteristics.
+        """
+        task_type = subtask.get("type", "").lower()
+        description = subtask.get("description", "").lower()
+
+        if "conversation" in description or "brainstorm" in description:
+            return "AutoGen"
+        elif "role" in description or "crew" in task_type:
+            return "CrewAI"
+        elif "cyclical" in description or "graph" in task_type:
+            return "LangGraph"
+        else:
+            return "PC-Agent"
 
     def _aggregate(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """
