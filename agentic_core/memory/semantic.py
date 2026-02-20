@@ -22,13 +22,14 @@ class SemanticMemory:
             n_results=n_results
         )
 
-    def federated_search(self, query_text: str, project_ids: List[str], n_results: int = 5) -> Dict[str, Any]:
+    def federated_search(self, query_text: str, project_ids: Optional[List[str]] = None, n_results: int = 5) -> Dict[str, Any]:
         """
         Simulates a federated search across specific project contexts.
         """
+        where = {"project_id": {"$in": project_ids}} if project_ids else None
         return self.collection.query(
             query_texts=[query_text],
-            where={"project_id": {"$in": project_ids}},
+            where=where,
             n_results=n_results
         )
 
