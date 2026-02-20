@@ -1,0 +1,33 @@
+---
+title: "Project Presentation"
+author: "Jules AI v10.0"
+format:
+  revealjs:
+    theme: league
+    transition: slide
+    scrollable: true
+    slide-number: true
+---
+
+## Introduction
+- Background information
+- Problem statement
+- High-level objectives
+
+## Methodology
+- Multi-agent orchestration
+- PC-Agent hierarchical control
+- Real-time collaboration via CRDTs
+
+## Key Results
+- Performance benchmarks
+- Qualitative assessment
+- Expert-level content synthesis
+
+## Discussion
+- Implications for scientific production
+- Limitations and future work
+
+## Conclusion
+- Summary of contributions
+- Contact information

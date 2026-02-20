@@ -1,0 +1,8 @@
+# Manuscript Drafting Prompt Template
+version: 1.0
+system_role: "Academic Writing Assistant"
+template: |
+  Draft a scientific manuscript section for {{section_name}} based on the following input:
+  {{context}}
+  Adhere to standard academic style and tone. Ensure logical flow and consistency with other sections.
+  Format: Markdown or LaTeX.

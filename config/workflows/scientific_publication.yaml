@@ -1,0 +1,21 @@
+name: Scientific Publication
+version: 10.0
+trigger:
+  type: file_change
+  path: content/projects/*/brief.md
+steps:
+  - id: lit_review
+    agent: research.literature.v3
+    input: ${specs.literature_query}
+    output: ${lit_review}
+  - id: drafting
+    agent: writing.manuscript.architect.v4
+    input: ${lit_review}
+    output: ${draft}
+  - id: quality_scan
+    agent: quality.vlm.critic.v2
+    input: ${draft}
+    output: ${quality_report}
+    gates:
+      - condition: ${quality_report.score} > 0.9
+        fail_step: refine_draft

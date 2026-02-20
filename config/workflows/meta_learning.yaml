@@ -1,0 +1,19 @@
+name: Self-Improvement Cycle
+version: 10.0
+trigger:
+  type: schedule
+  cron: "0 0 * * *"
+steps:
+  - id: analyze_performance
+    agent: meta.cognitive.v10
+    action: monitor_performance
+  - id: evolve_prompts
+    agent: meta.cognitive.v10
+    action: evolve_prompts
+    prompt_type: literature_review
+  - id: test_variants
+    agent: orchestrator.v10
+    type: experimental_run
+  - id: deploy_winners
+    agent: meta.cognitive.v10
+    action: create_pull_request

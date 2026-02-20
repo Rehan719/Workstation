@@ -1,0 +1,21 @@
+name: Collaborative Project
+version: 10.0
+trigger:
+  type: content_event
+  path: content/new/*.brief.md
+steps:
+  - id: create_project
+    agent: orchestrator.v10
+    action: create_folder
+    input: ${brief}
+    output: ${project_id}
+  - id: assign_collaborators
+    agent: orchestrator.v10
+    action: set_permissions
+    input: ${brief.collaborators}
+  - id: parallel_execution
+    parallel:
+      - id: research
+        agent: research.literature.synthesizer.v3
+      - id: writing
+        agent: writing.manuscript.architect.v4

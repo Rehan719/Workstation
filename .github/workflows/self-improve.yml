@@ -1,0 +1,23 @@
+name: Meta-Learning Self-Improvement
+on:
+  schedule:
+    - cron: "0 0 * * 0" # Weekly on Sunday
+  workflow_dispatch:
+
+jobs:
+  self-improve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Self-Improvement Cycle
+        run: |
+          # In a real setup, this would invoke Jules API or a dedicated script
+          echo "Starting Meta-Cognitive Self-Improvement cycle..."
+          # python -m agentic_core.meta_cognitive

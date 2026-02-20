@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  orchestrator:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile.orchestrator
+    container_name: jules-orchestrator
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_HOST=redis
+      - DB_HOST=postgres
+    networks:
+      - jules-network
+    depends_on:
+      - redis
+      - postgres
+      - ollama
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: jules-redis
+    networks:
+      - jules-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: jules-postgres
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    networks:
+      - jules-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jules-ollama
+    networks:
+      - jules-network
+    # network_isolated: true in production logic, here simple network
+
+networks:
+  jules-network:
+    driver: bridge

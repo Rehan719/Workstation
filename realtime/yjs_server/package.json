@@ -1,0 +1,10 @@
+{
+  "name": "yjs-collaboration-server",
+  "version": "1.0.0",
+  "description": "Real-time collaboration server for Jules AI using Y.js and WebSockets",
+  "main": "server.js",
+  "dependencies": {
+    "yjs": "^13.6.10",
+    "y-websocket": "^2.0.4"
+  }
+}

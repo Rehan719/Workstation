@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+**/*/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+
+# Project specific
+content/projects/*/drafts/
+content/projects/*/provenance/
+content/new/
+!content/new/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+volumes/
+
+# Databases
+chroma_db/
+episodic_memory.db

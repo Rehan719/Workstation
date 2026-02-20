@@ -1,0 +1,35 @@
+---
+title: "Project Analysis Dashboard"
+format:
+  dashboard:
+    orientation: columns
+    theme: flatly
+---
+
+# Page 1
+
+## Column {width=60%}
+
+### System Performance
+
+```{python}
+import plotly.express as px
+import pandas as pd
+
+df = pd.DataFrame({
+    "Agent": ["Orchestrator", "Research", "Writing", "Quality"],
+    "Latency (s)": [0.5, 2.3, 1.8, 0.9]
+})
+fig = px.bar(df, x="Agent", y="Latency (s)", title="Average Latency per Agent")
+fig.show()
+```
+
+## Column {width=40%}
+
+### Project Metadata
+- **Project ID**: P-12345
+- **Status**: In Progress
+- **Collaborators**: Alice, Bob, Charlie
+
+### Quality Score
+**95/100**

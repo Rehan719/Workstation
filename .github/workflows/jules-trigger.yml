@@ -1,0 +1,23 @@
+name: Trigger Jules on Issue
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  invoke-jules:
+    if: github.event.label.name == 'jules-automate'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke Jules
+        uses: google-labs-code/jules-action@v1
+        with:
+          prompt: |
+            Fix the issue described in #${{ github.event.issue.number }}.
+            After completing:
+            1. Publish branch
+            2. Open PR targeting main
+            3. Add labels: "automated", "ready-to-merge"
+            4. Comment: "CI-ready for auto-merge"
+          api-key: ${{ secrets.JULES_API_KEY }}
+          repo: Rehan719/Workstation
