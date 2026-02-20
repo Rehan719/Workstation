@@ -16,11 +16,11 @@ class Orchestrator(BaseAgent):
     C-IV Orchestrator Agent: Strategic planning, goal decomposition, and hybrid toolchain activation.
     Integrates Hierarchy Management (Article R), Hybrid Granularity (Article S), and Context-Aware Tools (Article T).
     """
-    def __init__(self, agent_id: str = "orchestrator.v32", config: Optional[Dict[str, Any]] = None):
+    def __init__(self, agent_id: str = "orchestrator.v33", config: Optional[Dict[str, Any]] = None):
         super().__init__(agent_id, config)
         self.workers: Dict[str, BaseAgent] = {}
 
-        # v32.0 Enhanced Engines
+        # v33.0 Enhanced Engines
         self.hierarchy_manager = CapabilityHierarchyManager()
         self.granularity_controller = HybridGranularityController()
         self.tool_integrator = ContextAwareToolIntegrator()
@@ -34,11 +34,11 @@ class Orchestrator(BaseAgent):
 
     async def execute(self, task: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Decomposes a high-level goal into subtasks and coordinates execution with v32.0 enhancements.
+        Decomposes a high-level goal into subtasks and coordinates execution with v33.0 enhancements.
         """
         self.log(f"Starting C-IV orchestration for task: {task.get('goal', 'No goal specified')}")
 
-        # v31.0 Article S: Process Granularity Signals
+        # v33.0 Article S: Process Granularity Signals
         if context and 'interaction' in context:
             await self.granularity_controller.process_interaction(context.get('user_id', 'default'), context['interaction'])
 
@@ -58,12 +58,16 @@ class Orchestrator(BaseAgent):
             subtask['framework'] = framework
             self.log(f"Selected framework '{framework}' for subtask: {subtask['id']}")
 
-            # v32.0 Article U: Unified Compilation
+            # v33.0 Article U: Hierarchical Compilation
             if subtask.get("type") == "quantum_circuit":
-                self.log(f"Routing subtask {subtask['id']} through QuantumIRCompiler")
-                mlir = await self.ir_compiler.lower_to_mlir(subtask.get("circuit"), subtask.get("framework"))
-                optimized_mlir = await self.ir_compiler.run_optimization_pipeline(mlir)
-                subtask['mlir'] = optimized_mlir
+                self.log(f"Routing subtask {subtask['id']} through Hierarchical Compiler Pipeline")
+                backend_ir = await self.ir_compiler.compile(
+                    subtask.get("circuit"),
+                    subtask.get("framework"),
+                    subtask.get("target_backend", "ibm"),
+                    context or {}
+                )
+                subtask['backend_ir'] = backend_ir
 
             # Activate toolchain if needed
             enhanced_task = await self.tool_integrator.process_task(subtask)

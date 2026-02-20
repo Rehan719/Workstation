@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import time
 
-st.set_page_config(page_title="Jules AI v32.0 Command Center", layout="wide")
+st.set_page_config(page_title="Jules AI v33.0 Command Center", layout="wide")
 
-st.title("🚀 Jules AI v32.0: Unified Collaborative Ecosystem")
+st.title("🚀 Jules AI v33.0: Hierarchical & Sequential Ecosystem")
 
 # Sidebar for controls
 st.sidebar.header("Meta-Cognitive Controls")
