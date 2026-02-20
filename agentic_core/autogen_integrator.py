@@ -9,10 +9,25 @@ class AutoGenIntegrator(BaseAgent):
     """
     def __init__(self, agent_id: str = "autogen.integrator.v10", config: Optional[Dict[str, Any]] = None):
         super().__init__(agent_id, config)
+        # Article C-I: Deep Free-Tier Quantum and Local LLM Integration
         self.llm_config = config.get("llm_config", {
-            "config_list": [{"model": "gpt-4o", "api_key": "your_key"}],
+            "config_list": [
+                {
+                    "model": "llama3.1:8b",
+                    "base_url": "http://ollama:11434/v1", # Internal Docker network
+                    "api_key": "ollama", # Dummy key
+                }
+            ],
             "cache_seed": 42,
-        }) if config else {"config_list": [{"model": "gpt-4o", "api_key": "your_key"}]}
+        }) if config else {
+            "config_list": [
+                {
+                    "model": "llama3.1:8b",
+                    "base_url": "http://ollama:11434/v1",
+                    "api_key": "ollama",
+                }
+            ]
+        }
 
     async def execute(self, task: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         self.log(f"Starting AutoGen conversation for: {task.get('goal')}")

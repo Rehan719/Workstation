@@ -29,12 +29,25 @@ class ScientificVideoPipeline:
         slides = await self.orchestrator.execute(slide_task)
 
         # 4. Multimedia Synthesis (Manim + TTS + Video Weaver)
-        video_task = {"id": "video", "type": "video_presentation", "goal": "Narrate and animate", "slides": slides}
+        video_task = {
+            "id": "video",
+            "type": "video_presentation",
+            "goal": "Narrate and animate",
+            "slides": slides,
+            "enable_audio_description": True, # Article P
+            "enable_whisperx_diarization": True # Advanced Audio
+        }
         final_video = await self.orchestrator.execute(video_task)
+
+        # 5. Accessibility Layer (Article P)
+        if video_task.get("enable_audio_description"):
+            ad_task = {"id": "audio_description", "type": "agent_direct", "assigned_agent": "audio.accessibility.v31", "video": final_video}
+            final_video["accessibility"] = await self.orchestrator.execute(ad_task)
 
         print("✅ Production Complete.")
         return {
             "status": "success",
-            "video_path": "/content/published/final_production.mp4",
-            "provenance_ledger": "/content/projects/latest/provenance/ledger.jsonl"
+            "video_path": "/content/published/final_production_v31.mp4",
+            "provenance_ledger": "/content/projects/latest/provenance/ledger.jsonl",
+            "accessibility_meta": final_video.get("accessibility")
         }

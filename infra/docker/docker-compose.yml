@@ -38,6 +38,28 @@ services:
       - jules-network
     # network_isolated: true in production logic, here simple network
 
+  dashboard:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile.worker-base
+    container_name: jules-dashboard
+    command: streamlit run dashboard/app.py
+    ports:
+      - "8501:8501"
+    networks:
+      - jules-network
+    depends_on:
+      - orchestrator
+
+  yjs-server:
+    build:
+      context: ../../realtime/yjs_server
+    container_name: jules-yjs-server
+    ports:
+      - "1234:1234"
+    networks:
+      - jules-network
+
 networks:
   jules-network:
     driver: bridge

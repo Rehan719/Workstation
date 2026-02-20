@@ -48,3 +48,11 @@ class MetaCognitiveDaemon(BaseAgent):
         while True:
             await self.execute({"action": "monitor_performance"})
             await asyncio.sleep(3600)  # Run every hour
+
+if __name__ == "__main__":
+    daemon = MetaCognitiveDaemon()
+    print("🧠 Jules AI L4 Meta-Cognitive Daemon is running...")
+    try:
+        asyncio.run(daemon.run_loop())
+    except KeyboardInterrupt:
+        print("Stopping Daemon...")

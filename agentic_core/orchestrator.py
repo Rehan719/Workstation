@@ -72,6 +72,9 @@ class Orchestrator(BaseAgent):
         Dynamic planning: selects a workflow based on task type or uses LLM reasoning.
         """
         task_type = task.get("type", "scientific_publication")
+
+        if task_type == "agent_direct":
+            return [task]
         workflow_path = f"config/workflows/{task_type}.yaml"
 
         if os.path.exists(workflow_path):
@@ -97,3 +100,18 @@ class Orchestrator(BaseAgent):
             "status": "completed",
             "components": results
         }
+
+if __name__ == "__main__":
+    # Entry point for the orchestrator service
+    orchestrator = Orchestrator()
+    print("🚀 Jules AI C-IV Orchestrator Service is running...")
+
+    async def main_loop():
+        while True:
+            # In a real system, this would listen to a message queue (RabbitMQ/Redis)
+            await asyncio.sleep(60)
+
+    try:
+        asyncio.run(main_loop())
+    except KeyboardInterrupt:
+        print("Stopping Orchestrator...")

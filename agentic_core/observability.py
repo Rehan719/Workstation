@@ -9,6 +9,12 @@ class ObservabilityManager:
     """
     def __init__(self):
         self.traces = []
+        self.anomalies = []
+
+    def report_anomaly(self, anomaly: Dict[str, Any]):
+        """Article Q: Track and report systemic anomalies."""
+        self.anomalies.append(anomaly)
+        print(f"📊 [OBSERVABILITY] Anomaly Logged. Total: {len(self.anomalies)}")
 
     def start_trace(self, agent_id: str, task_id: str, input_data: Dict[str, Any]):
         trace = {
