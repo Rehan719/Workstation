@@ -68,7 +68,8 @@ class Orchestrator(BaseAgent):
 
         # Sign final artifact if requested (Article T)
         if task.get('produces_artifact'):
-            final_output = await self.tool_integrator.process_task({**task, 'artifact_data': final_output})
+            signing_result = await self.tool_integrator.process_task({**task, 'artifact_data': final_output})
+            final_output['metadata'] = signing_result
 
         return final_output
 

@@ -20,6 +20,8 @@ services:
   redis:
     image: redis:7.2-alpine
     container_name: jules-redis
+    volumes:
+      - redis_data:/data
     networks:
       - jules-network
 
@@ -28,6 +30,8 @@ services:
     container_name: jules-postgres
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - jules-network
 
@@ -63,3 +67,7 @@ services:
 networks:
   jules-network:
     driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:
