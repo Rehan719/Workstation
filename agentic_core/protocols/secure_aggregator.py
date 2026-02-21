@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 from typing import Dict, Any, List
 
 class SecureAggregator:
@@ -8,8 +9,8 @@ class SecureAggregator:
     Uses mock encryption/decryption to simulate privacy-preserving aggregation.
     """
     def __init__(self):
-        # Mock key
-        self.key = "jules-v31-qfl-secret-key"
+        # Retrieve key from environment or use a secure default for testing
+        self.key = os.environ.get("QFL_SECRET_KEY", "default-insecure-key-replace-in-prod")
 
     def encrypt_parameters(self, params: Dict[str, float]) -> str:
         """Simulate homomorphic encryption of local parameters."""

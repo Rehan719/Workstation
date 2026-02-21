@@ -1,6 +1,6 @@
 {
-  "name": "Jules AI v36.0 Meta-Cognitive Constitution",
-  "version": "36.0",
+  "name": "Jules AI v40.0 Meta-Cognitive Constitution",
+  "version": "40.0",
   "meta_cognitive_governance_loop": {
     "phases": ["monitor", "reflect", "correct", "learn", "enforce"],
     "status": "active"
@@ -17,7 +17,9 @@
     {"id": "IP_9", "title": "Recursive Safety", "description": "Meta-Cognitive loop regulates system's own evolution."},
     {"id": "IP_10", "title": "Strategic Phasing", "description": "Publications > Workflows > Video > Websites prioritization."},
     {"id": "IP_11", "title": "Provenance Integrity", "description": "Immutable FAIR-compliant trails for all artifacts."},
-    {"id": "IP_12", "title": "User Centricity", "description": "Tangible user-facing benefits over internal optimizations."}
+    {"id": "IP_12", "title": "User Centricity", "description": "Tangible user-facing benefits over internal optimizations."},
+    {"id": "IP_13", "title": "Universal Intelligence", "description": "Seamless integration of global reasoning fabrics (DeepSeek/Qwen)."},
+    {"id": "IP_14", "title": "Epistemic Humility", "description": "Mandatory uncertainty quantification for all predictions (Conformal)."}
   ],
   "user_centric_strategic_pillars": [
     {"id": "USP_1", "title": "Deep Free-Tier Integration", "description": "Native support for Kaiwu, IBM, and AWS free backends."},

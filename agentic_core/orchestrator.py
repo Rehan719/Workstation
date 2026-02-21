@@ -13,17 +13,56 @@ from .collaboration.workspace_manager import WorkspaceManager
 from .pedagogy.pedagogy_engine import PedagogyEngine
 from .collaboration.version_control import VersionControlManager
 from .observatory.observatory import Observatory
+from .evidence.unified_evidence_graph import UnifiedEvidenceGraph
+from .causal.causal_reasoning_engine import CausalReasoningEngine
+from .confidence.conformal_predictor import ConformalPredictor
+from .collaboration.xr_workspace import XRWorkspaceManager
+from .communication.translation_engine import NeuralTranslationEngine
+from .learning.continual_learner import ContinualMetaLearner
+from .reasoning.deepseek_adapter import DeepSeekR1Adapter
+from .reasoning.qwen_adapter import Qwen25Adapter
+from agents.research.literature_synthesizer import LiteratureSynthesizer
+from agents.writing.manuscript_architect import ManuscriptArchitect
+from agents.visualization.figure_generator import FigureGenerator
+from agents.presentation.slide_maestro import SlideMaestro
+from agents.audio.tts_synthesizer import TTSSynthesizer
+from agents.video.scene_assembler import SceneAssembler
+from agents.quality.vlm_critic import VLMCritic
+from agents.quality.plagiarism_detector import PlagiarismDetector
 
 class Orchestrator(BaseAgent):
     """
-    C-IV Orchestrator Agent: Strategic planning, goal decomposition, and hybrid toolchain activation.
-    Integrates Hierarchy Management (Article R), Hybrid Granularity (Article S), and Context-Aware Tools (Article T).
+    v40.0 Orchestrator Agent: Universal collaborative intelligence.
+    Integrates Evidence Graphs (Article AU), Causal Reasoning (Article AO),
+    and Conformal Calibration (Article AV).
     """
-    def __init__(self, agent_id: str = "orchestrator.v34", config: Optional[Dict[str, Any]] = None):
+    def __init__(self, agent_id: str = "orchestrator.v40", config: Optional[Dict[str, Any]] = None):
         super().__init__(agent_id, config)
         self.workers: Dict[str, BaseAgent] = {}
 
-        # v34.0 Enhanced Engines
+        # v40.0 Intelligence Amplifiers
+        self.register_worker(DeepSeekR1Adapter())
+        self.register_worker(Qwen25Adapter())
+
+        # v40.0 Strategic Workers
+        self.register_worker(LiteratureSynthesizer())
+        self.register_worker(ManuscriptArchitect())
+        self.register_worker(FigureGenerator())
+        self.register_worker(SlideMaestro())
+        self.register_worker(TTSSynthesizer())
+        self.register_worker(SceneAssembler())
+        self.register_worker(VLMCritic())
+        self.register_worker(PlagiarismDetector())
+
+        # v40.0 Advanced Engines
+        self.ueg = UnifiedEvidenceGraph()
+        self.causal_engine = CausalReasoningEngine()
+        self.conformal_predictor = ConformalPredictor()
+        self.xr_manager = XRWorkspaceManager()
+        self.translation_engine = NeuralTranslationEngine()
+        self.continual_learner = ContinualMetaLearner()
+
+        # Legacy v34.0/v36.0 Engines
         self.hierarchy_manager = CapabilityHierarchyManager()
         self.granularity_controller = HybridGranularityController()
         self.tool_integrator = ContextAwareToolIntegrator()
@@ -62,6 +101,11 @@ class Orchestrator(BaseAgent):
         plan = await self._plan(task)
         self.log(f"Generated execution plan with {len(plan)} subtasks")
 
+        # v40.0 Causal Identification
+        if task.get("causal_inference"):
+            discovery = self.causal_engine.identify_causal_effect(task['goal'], "output", {})
+            self.log(discovery)
+
         # 2. Execute subtasks with Context-Aware Tooling and Dynamic Hybrid Orchestration
         results = {}
         for subtask in plan:
@@ -88,7 +132,20 @@ class Orchestrator(BaseAgent):
             worker_id = subtask.get("assigned_agent") or subtask.get("agent")
             if worker_id in self.workers:
                 self.log(f"Delegating subtask '{subtask['id']}' to {worker_id} via {framework} (Tools: {subtask.get('tools_used', [])})")
-                results[subtask["id"]] = await self.workers[worker_id].execute(subtask, context)
+
+                # Execution
+                result = await self.workers[worker_id].execute(subtask, context)
+
+                # v40.0 Conformal Calibration
+                if 'confidence_score' in result:
+                    result['calibration'] = self.conformal_predictor.predict_with_interval(
+                        result.get('output'), result['confidence_score']
+                    )
+
+                # v40.0 UEG Trace
+                self.ueg.add_evidence(worker_id, subtask['id'], "EXECUTES")
+
+                results[subtask["id"]] = result
             else:
                 self.log(f"No worker registered for agent type: {worker_id}", level="ERROR")
 
