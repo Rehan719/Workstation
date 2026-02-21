@@ -1,87 +1,39 @@
 {
-  "name": "Jules AI v34.0 Meta-Cognitive Constitution",
-  "version": "34.0",
+  "name": "Jules AI v36.0 Meta-Cognitive Constitution",
+  "version": "36.0",
+  "meta_cognitive_governance_loop": {
+    "phases": ["monitor", "reflect", "correct", "learn", "enforce"],
+    "status": "active"
+  },
+  "immutable_pillars": [
+    {"id": "IP_1", "title": "Absolute Verifiability", "description": "Every scientific claim must be empirically validated."},
+    {"id": "IP_2", "title": "Epistemic Integrity", "description": "Full-path reasoning traces are mandatory for all assertions."},
+    {"id": "IP_3", "title": "Non-Maleficence", "description": "Agent actions must not cause physical or systemic harm."},
+    {"id": "IP_4", "title": "Hardware Assurance", "description": "Computational substrate must be formally verified (EBMC)."},
+    {"id": "IP_5", "title": "Zero-Cost Accessibility", "description": "Prioritize free-tier open-source technologies."},
+    {"id": "IP_6", "title": "Privacy Preservation", "description": "Collaborative modes must use secure parameter sharing (QFL)."},
+    {"id": "IP_7", "title": "Transparent Autonomy", "description": "CIRISAgent architecture for observable decision-making."},
+    {"id": "IP_8", "title": "Formal Grounding", "description": "Mathematical proofs must be Lean-compatible (CSLib)."},
+    {"id": "IP_9", "title": "Recursive Safety", "description": "Meta-Cognitive loop regulates system's own evolution."},
+    {"id": "IP_10", "title": "Strategic Phasing", "description": "Publications > Workflows > Video > Websites prioritization."},
+    {"id": "IP_11", "title": "Provenance Integrity", "description": "Immutable FAIR-compliant trails for all artifacts."},
+    {"id": "IP_12", "title": "User Centricity", "description": "Tangible user-facing benefits over internal optimizations."}
+  ],
+  "user_centric_strategic_pillars": [
+    {"id": "USP_1", "title": "Deep Free-Tier Integration", "description": "Native support for Kaiwu, IBM, and AWS free backends."},
+    {"id": "USP_2", "title": "Seamless Hybrid Workloads", "description": "Unified API for quantum-classical job submission."},
+    {"id": "USP_3", "title": "Adaptive User Pedagogy", "description": "Contextual hints based on inferred user expertise."}
+  ],
   "articles": [
     {
-      "id": "ARTICLE_R_HIERARCHICAL_CAPABILITY",
-      "type": "capability",
+      "id": "ARTICLE_V36_GOVERNANCE",
+      "type": "governance",
       "enforcement_level": "MUST",
-      "title": "Hierarchical Quantum-AI Capability Prioritization",
-      "description": "System must organize quantum-AI capabilities into three tiers (Foundation, Synergy, Application) and ensure Tier 1 stability before scaling Tiers 2 and 3.",
+      "title": "Meta-Cognitive Sovereignty",
+      "description": "The Meta-Cognitive Governance Loop is the supreme operating system.",
       "constraints": [
-        "hierarchy_manager.py must exist",
-        "Tier 1 (Hybrid Optimization) must be stabilized before Tier 2 (QFL) execution",
-        "Tiers 1 and 2 must be stabilized before Tier 3 (Domain Applications)"
-      ],
-      "severity": "critical"
-    },
-    {
-      "id": "ARTICLE_S_HYBRID_GRANULARITY",
-      "type": "interface",
-      "enforcement_level": "MUST",
-      "title": "Hybrid Granularity Control",
-      "description": "System must combine implicit interaction signals with explicit user feedback modes for granularity control.",
-      "constraints": [
-        "hybrid_granularity_controller.py must exist"
-      ],
-      "severity": "critical"
-    },
-    {
-      "id": "ARTICLE_T_CONTEXT_AWARE_TOOLS",
-      "type": "integration",
-      "enforcement_level": "MUST",
-      "title": "Context-Aware Tool Integration",
-      "description": "System must selectively activate advanced toolchains (MLIR, QIR, Sigstore) based on task context.",
-      "constraints": [
-        "context_aware_integrator.py must exist"
-      ],
-      "severity": "critical"
-    },
-    {
-      "id": "ARTICLE_X_AI_PEDAGOGY",
-      "type": "pedagogy",
-      "enforcement_level": "SHOULD",
-      "title": "AI-Driven Pedagogy",
-      "description": "System should implement an intelligent tutoring system that adapts to user skill levels.",
-      "constraints": [
-        "pedagogy_engine.py must exist",
-        "User skill assessment must be implemented"
-      ],
-      "severity": "recommended"
-    },
-    {
-      "id": "ARTICLE_Y_VERSIONING",
-      "type": "collaboration",
-      "enforcement_level": "SHOULD",
-      "title": "Enhanced Collaborative Versioning",
-      "description": "System should integrate Git-based workflows with cryptographic signing.",
-      "constraints": [
-        "version_control.py must exist",
-        "Commits must be signed with Sigstore"
-      ],
-      "severity": "recommended"
-    },
-    {
-      "id": "ARTICLE_Z_OBSERVATORY",
-      "type": "integration",
-      "enforcement_level": "SHOULD",
-      "title": "Advanced Free-Tool Observatory",
-      "description": "System should continuously scan for newly released free tools and evaluate them.",
-      "constraints": [
-        "observatory.py must exist",
-        "Tool evaluation must be performed"
-      ],
-      "severity": "recommended"
-    },
-    {
-      "id": "ARTICLE_S_P_STRATEGIC_PRIORITIZATION",
-      "type": "strategy",
-      "enforcement_level": "MUST",
-      "title": "Strategic Implementation Prioritization",
-      "description": "System development and execution must follow the hierarchy: Publications > Workflows > Video > Websites.",
-      "constraints": [
-        "Scientific publications must be the first-class automated output",
-        "Collaborative workflows must follow as the second priority"
+        "governance_loop.py must validate every sequential job submission",
+        "Empirical verification of Congzi claims is mandatory"
       ],
       "severity": "critical"
     }

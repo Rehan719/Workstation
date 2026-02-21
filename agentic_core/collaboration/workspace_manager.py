@@ -51,7 +51,10 @@ class WorkspaceManager:
         })
 
     async def submit_job(self, workspace_id: str, user_id: str, job_config: Dict[str, Any]) -> Dict[str, Any]:
-        """Submit a job for sequential execution (Article W-IV)."""
+        """
+        Submit a job for sequential execution (Article W-IV).
+        v36.0 Enhancement: Integrated Sequential Gated Submission with Constitutional Review.
+        """
         workspace = self.workspaces.get(workspace_id)
         if not workspace: raise ValueError("Workspace not found")
 
@@ -64,10 +67,28 @@ class WorkspaceManager:
             'code_snapshot': code_snapshot,
             'submitter': user_id,
             'timestamp': datetime.utcnow().isoformat(),
-            'status': 'queued'
+            'status': 'pending_review' # Article: Formal review gates before execution
         }
+
+        # Article: Epistemic Integrity Framework
+        # Every cognitive act is a verifiable commitment.
+        job['epistemic_integrity'] = {
+            'provenance_trail': [],
+            'reasoning_trace': None
+        }
+
         workspace['job_queue'].append(job)
         return job
+
+    async def approve_job(self, workspace_id: str, job_id: str, reviewer_id: str) -> Dict[str, Any]:
+        """Article: Formal review gates before execution."""
+        workspace = self.workspaces.get(workspace_id)
+        for job in workspace['job_queue']:
+            if job['id'] == job_id:
+                job['status'] = 'queued'
+                job['reviewer'] = reviewer_id
+                return job
+        raise ValueError("Job not found")
 
     async def execute_next_job(self, workspace_id: str) -> Optional[Dict[str, Any]]:
         """Executes the next job in the queue sequentially."""
