@@ -1,26 +1,24 @@
-# Jules AI v47.0: The Autonomous Scientific Truth Ecosystem
+# Jules AI v52.0: Autonomous Intelligence Amplification
 
-Jules AI v47.0 is a self-governing, multi-agent platform designed for the production of verifiable scientific truth. It transcends simple content generation by integrating formal verification, Bayesian uncertainty quantification, and blockchain provenance.
+Jules AI v52.0 is a self-evolving, multi-agent platform designed for the production of unassailable scientific truth. It transcends v51.0 by integrating autonomous self-improvement loops, real-time telemetry, and compliance with global AI regulatory standards.
 
-## New v47.0 Capabilities (Articles AQ-AZ)
+## New v52.0 Capabilities (Articles AM-AZ+)
 
-- **🧪 AI-Powered Hypothesis Generator**: Proposes novel, testable hypotheses using DeepSeek-R1 for gap identification in the Unified Evidence Graph (UEG).
-- **🔍 Automated Theorem Proving**: Parallelizes claims across Vampire, E, and Isabelle/HOL for machine-checkable rigor.
-- **📊 Bayesian Deep Learning**: Principled uncertainty quantification using Pyro and TensorFlow Probability.
-- **🔗 Blockchain Provenance**: Immutable publication records anchored to IPFS and Ethereum testnets (Article AT).
+- **🧬 Autonomous Intelligence Amplification**: Self-improving loops that mutate and optimize the system's own orchestration logic based on telemetry.
+- **📡 Real-Time Signals Loop**: Ingests high-frequency telemetry (error rates, latency, throughput) to drive immediate recalibration of agent parameters.
+- **🔄 Scheduled Batch Analysis**: Periodic genetic-algorithm-driven optimization of the system's "genotype" (core configuration).
+- **⚖️ Regulatory Compliance**: Native mapping to ISO/IEC 42001, NIST AI RMF, and the EU AI Act for risk-aware autonomy.
+- **🛡️ 5-Layer Verification Framework**: Unified verification across Empirical, Formal, Truth Maintenance, Adversarial, and Reproducibility layers.
+- **🧩 Hybrid Triad Integration**: Seamless coordination of Neuro-Symbolic Reasoning, Quantum Machine Learning, and Adaptive XAI.
+
+## Legacy v51.0 & v47.0 Capabilities
+
+- **🧪 AI-Powered Hypothesis Generator**: Proposes novel, testable hypotheses using DeepSeek-R1.
+- **🔍 Automated Theorem Proving**: Parallelizes claims across Vampire, E, and Isabelle/HOL.
+- **📊 Bayesian Deep Learning**: Principled uncertainty quantification using Pyro and TFP.
+- **🔗 Blockchain Provenance**: Immutable publication records anchored to IPFS and Ethereum testnets.
 - **🎓 Personalized Research Assistant**: Adaptive user modeling and behavior-driven task recommendations.
-- **✍️ AI-Assisted Collaboration**: Intelligent co-writing with semantic conflict prediction and UEG-grounded citations.
-- **🖼️ Multi-Modal Evidence Fusion**: CLIP, DINOv2, Whisper, and Video-LLaMA integrated as first-class evidence.
 - **⚙️ Scientific Workflow Composer**: Visual programming interface for complex research pipelines.
-- **🚀 Adaptive Model Router**: Efficient, resource-aware model selection and distributed execution.
-- **🔁 Automatic Failover**: Multi-cloud resilience using a distributed broker (Ray/Celery).
-
-## Features
-
-- **Autonomous Content Generation**: Produce scientific publications, presentations, animations, and more from high-level prompts.
-- **Unified Evidence Graph (UEG)**: Queryable knowledge fabric integrating literature, reasoning, and proofs.
-- **Multi-User Collaboration**: Real-time synchronization via Y.js and intelligent conflict resolution.
-- **Universal Provenance**: Every artifact is wrapped in a ScholarlyObject with a verifiable blockchain anchor.
 
 ## Quick Start
 
@@ -37,14 +35,14 @@ Jules AI v47.0 is a self-governing, multi-agent platform designed for the produc
 
 3. **Launch the system**:
    ```bash
-   make deploy-local
+   make deploy-v52
    ```
 
 ## Project Structure
 
-- `agentic-core/`: Core intelligence (Orchestrator, UEG, MultiProver, etc.).
-- `agents/`: Specialized worker agents for scholarship and production.
-- `infra/`: Multi-cloud resilience and container orchestration.
+- `agentic_core/`: Core intelligence (Orchestrator, Evolution, Observatory, etc.).
+- `agents/`: Specialized worker agents (Scholarship, Presentation, Web, etc.).
+- `meta/`: Constitutional and regulatory artifacts.
 
 ## License
 

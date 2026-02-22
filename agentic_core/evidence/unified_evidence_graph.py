@@ -1,15 +1,41 @@
 from typing import Dict, Any, List, Optional
 import networkx as nx
 from datetime import datetime
+import copy
 
 class UnifiedEvidenceGraph:
     """
-    v47.0 Article AU/AW: Robust Unified Evidence Graph (UEG).
-    Integrates formal proofs, Bayesian uncertainty, and multi-modal embeddings.
+    v52.0 Article BA: Robust Unified Evidence Graph (UEG).
+    Integrates formal proofs, Bayesian uncertainty, multi-modal embeddings,
+    and system-wide versioning/rollback for autonomous mutations.
     """
     def __init__(self):
         self.graph = nx.DiGraph()
-        self.version = "51.0"
+        self.version = "52.0"
+        self.history: List[Dict[str, Any]] = []
+
+    def commit_version(self, description: str):
+        """Creates a snapshot of the current graph for rollback support."""
+        snapshot = {
+            "timestamp": datetime.now().isoformat(),
+            "description": description,
+            "version": self.version,
+            "graph_data": copy.deepcopy(self.graph)
+        }
+        self.history.append(snapshot)
+        if len(self.history) > 100: # Limit history size
+            self.history.pop(0)
+
+    def rollback(self, steps: int = 1):
+        """Rolls back the graph state by a specified number of steps."""
+        if len(self.history) >= steps:
+            target = self.history[-steps]
+            self.graph = target["graph_data"]
+            self.version = target["version"]
+            # Remove rolled back history
+            self.history = self.history[:-steps]
+            return True
+        return False
 
     def add_evidence(self, source_id: str, target_id: str, relation: str, metadata: Optional[Dict[str, Any]] = None):
         """Adds a directional evidence link."""
@@ -31,7 +57,6 @@ class UnifiedEvidenceGraph:
             self.graph.nodes[node_id].update(bayesian_stats)
 
     def add_causal_link(self, cause_id: str, effect_id: str, mechanism: str, strength: float):
-        """v48.0: Adds a causal relationship link to the knowledge fabric."""
         self.graph.add_edge(cause_id, effect_id,
                             relation="CAUSALLY_INFLUENCES",
                             mechanism=mechanism,
@@ -39,29 +64,23 @@ class UnifiedEvidenceGraph:
                             timestamp=datetime.now().isoformat())
 
     def link_blockchain_receipt(self, node_id: str, receipt: Dict[str, Any]):
-        """v48.0: Cross-links a graph node to its blockchain provenance record."""
         if node_id in self.graph:
             self.graph.nodes[node_id]['blockchain_anchor'] = receipt
 
     def store_symbolic_knowledge(self, rule_id: str, rule_metadata: Dict[str, Any]):
-        """v51.0 BJ-I: Stores symbolic knowledge distilled from neural models."""
         self.graph.add_node(rule_id, type="SYMBOLIC_RULE", **rule_metadata)
 
     def record_quantum_metrics(self, job_id: str, metrics: Dict[str, Any]):
-        """v51.0 BK-III: Records QML performance benchmarks and advantage scores."""
         if job_id not in self.graph:
             self.graph.add_node(job_id)
         self.graph.nodes[job_id]['quantum_metrics'] = metrics
 
     def log_xai_trace(self, decision_id: str, xai_metadata: Dict[str, Any]):
-        """v51.0 BL-V: Logs explanation generation traces for auditability."""
         if decision_id not in self.graph:
             self.graph.add_node(decision_id)
         self.graph.nodes[decision_id]['xai_trace'] = xai_metadata
 
     def get_highest_confidence_path(self, goal: str) -> List[str]:
-        """Finds the strongest evidentiary chain for a goal."""
-        # Simplified path finding
         return list(nx.topological_sort(self.graph)) if nx.is_directed_acyclic_graph(self.graph) else []
 
     def get_nodes(self) -> List[str]:

@@ -12,14 +12,16 @@ from .reasoning.neuro_symbolic.neuro_symbolic import NeuroSymbolicEngine
 from .quantum_ml.qml_integrator import QMLIntegrator
 from .explainability.xai_framework import XAIFramework
 from .verification.multi_layer_framework import MultiLayerVerificationFramework
+from .evolution.self_improvement import SelfImprovementEngine
+from .observatory.observatory import Observatory
+from .evolution.evolution_nexus import EvolutionNexus
 
 class Orchestrator(BaseAgent):
     """
-    v51.0 Orchestrator Agent: Triad of Hybrid Intelligence.
-    Integrates Neuro-Symbolic AI (BJ), Quantum ML (BK), Adaptive XAI (BL),
-    and Five-Layer Verification.
+    v52.0 Orchestrator Agent: Autonomous Intelligence Amplification.
+    Integrates Hybrid Triad (v51.0) with Autonomous Self-Improvement (v52.0).
     """
-    def __init__(self, agent_id: str = "orchestrator.v51", config: Optional[Dict[str, Any]] = None):
+    def __init__(self, agent_id: str = "orchestrator.v52", config: Optional[Dict[str, Any]] = None):
         super().__init__(agent_id, config)
         self.workers: Dict[str, BaseAgent] = {}
 
@@ -30,13 +32,18 @@ class Orchestrator(BaseAgent):
         self.bayesian_engine = BayesianEngine()
         self.blockchain_ledger = BlockchainLedger()
 
-        # v51.0 Triad Enhancements
+        # Hybrid Triad
         self.neuro_symbolic = NeuroSymbolicEngine(self.ueg)
         self.qml_integrator = QMLIntegrator()
         self.xai_hub = XAIFramework()
         self.verification_framework = MultiLayerVerificationFramework()
 
-        self.log(f"Initialized v51.0 Orchestrator: {agent_id}")
+        # v52.0 Autonomous Intelligence Amplification
+        self.observatory = Observatory()
+        self.evolution_nexus = EvolutionNexus()
+        self.self_improvement = SelfImprovementEngine(self.observatory, self.evolution_nexus)
+
+        self.log(f"Initialized v52.0 Orchestrator: {agent_id}")
 
     def register_worker(self, worker_id: str, agent: BaseAgent):
         """Registers a worker agent with the orchestrator."""
@@ -45,10 +52,10 @@ class Orchestrator(BaseAgent):
 
     async def execute(self, task: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Coordinates scientific workflows with v47.0 enhancements.
+        Coordinates scientific workflows with v52.0 enhancements.
         """
         goal = task.get("goal", "scientific_discovery")
-        self.log(f"Starting v47.0 workflow for: {goal}")
+        self.log(f"Starting v52.0 workflow for: {goal}")
 
         # 1. Hypothesis Generation (AQ)
         if task.get("discover_hypotheses"):
@@ -102,9 +109,13 @@ class Orchestrator(BaseAgent):
             final_result['verification_report'] = v_report
             self.log(f"Verification Status: {v_report['overall_status']}")
 
-        # 8. Final Result & Blockchain Anchoring (AT)
+        # 8. Blockchain Anchoring (AT)
         if task.get("anchor_to_blockchain"):
             receipt = await self.blockchain_ledger.anchor_artifact(goal, str(final_result).encode())
             final_result['blockchain_receipt'] = receipt
+
+        # 9. Autonomous Self-Improvement (v52.0)
+        if task.get("trigger_batch_analysis"):
+            await self.self_improvement.run_batch_analysis()
 
         return final_result
