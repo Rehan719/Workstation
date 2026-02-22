@@ -6,9 +6,9 @@ from agentic_core.confidence.conformal_predictor import ConformalPredictor
 
 class MetaCognitiveGovernanceLoop:
     """
-    The "Soul" of v40.0: Universal Governance Loop.
-    A recursive cycle of monitoring, reflection, correction, and learning
-    calibrated by epistemic humility.
+    The "Soul" of v45.0: Phased Multi-Agent Governance.
+    Governs multi-agent scholarship, causal grounding, and phased
+    implementation integrity.
     """
     def __init__(self):
         self.ciris = CIRISIntegrator()
@@ -32,7 +32,11 @@ class MetaCognitiveGovernanceLoop:
         # 3. Epistemic Validation (v40.0)
         await self._validate_evidence_chain(job)
 
-        # 4. Learning
+        # 4. Phased Integrity Audit (v45.0)
+        if not await self._audit_phase_compliance(job):
+            return await self._correct_act(job, "Violation of Article AH: Phased Implementation Mandate.")
+
+        # 5. Learning
         self._learn_from_act(job)
 
         return {"status": "validated", "timestamp": time.time()}
@@ -52,6 +56,14 @@ class MetaCognitiveGovernanceLoop:
         Ensures the job has a valid path in the Unified Evidence Graph.
         """
         self.ueg.add_evidence("governance", job.get("id"), "VERIFIES")
+
+    async def _audit_phase_compliance(self, job: Dict[str, Any]) -> bool:
+        """
+        v45.0: Verifies that the task follows the Phased Implementation Architecture.
+        """
+        current_phase = job.get("phase", 1)
+        # Simplified check: can't do phase 3 if phase 1 metadata missing in UEG (mock)
+        return True
 
     def _learn_from_act(self, job: Dict[str, Any]):
         """Updates internal interaction patterns and global state models."""

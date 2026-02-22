@@ -2,6 +2,7 @@ import time
 import json
 import os
 from typing import Dict, Any, List, Optional
+from ..verification.chain_of_verification import ChainOfVerification
 
 class CongziEngine:
     """
@@ -9,10 +10,11 @@ class CongziEngine:
     Claims 92% reduction in scientific hallucination.
     Includes a mandatory empirical verification harness.
     """
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, ueg: Any = None):
         self.config = config or {}
         self.verification_log_dir = "artifacts/verification/congzi/"
         os.makedirs(self.verification_log_dir, exist_ok=True)
+        self.cove = ChainOfVerification(ueg) if ueg else None
 
     async def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -33,12 +35,18 @@ class CongziEngine:
         result = "Simulated high-fidelity scientific answer grounded in physics."
         latency = time.time() - start_time
 
+        # v45.0 Article AG: Chain-of-Verification integration
+        cove_report = {}
+        if self.cove:
+            cove_report = await self.cove.verify_claim(result, context.get("sources", []) if context else [])
+
         response = {
             "answer": result,
             "reasoning_trace": {
                 "chain_of_thought": cot,
                 "machine_checkable_artifacts": ["derivations/physics_001.json"],
-                "epistemic_integrity_score": 0.98
+                "epistemic_integrity_score": 0.98,
+                "cove_validation": cove_report
             },
             "metrics": {
                 "latency": latency,

@@ -1,6 +1,6 @@
 {
-  "name": "Jules AI v40.0 Meta-Cognitive Constitution",
-  "version": "40.0",
+  "name": "Jules AI v45.0 Meta-Cognitive Constitution",
+  "version": "45.0",
   "meta_cognitive_governance_loop": {
     "phases": ["monitor", "reflect", "correct", "learn", "enforce"],
     "status": "active"
@@ -19,7 +19,9 @@
     {"id": "IP_11", "title": "Provenance Integrity", "description": "Immutable FAIR-compliant trails for all artifacts."},
     {"id": "IP_12", "title": "User Centricity", "description": "Tangible user-facing benefits over internal optimizations."},
     {"id": "IP_13", "title": "Universal Intelligence", "description": "Seamless integration of global reasoning fabrics (DeepSeek/Qwen)."},
-    {"id": "IP_14", "title": "Epistemic Humility", "description": "Mandatory uncertainty quantification for all predictions (Conformal)."}
+    {"id": "IP_14", "title": "Epistemic Humility", "description": "Mandatory uncertainty quantification for all predictions (Conformal)."},
+    {"id": "IP_15", "title": "Causal Grounding", "description": "All scientific hypotheses must be derived from Structural Causal Models."},
+    {"id": "IP_16", "title": "Phased Integrity", "description": "Strict adherence to the Foundation > Core > Scholarship > Collaboration roadmap."}
   ],
   "user_centric_strategic_pillars": [
     {"id": "USP_1", "title": "Deep Free-Tier Integration", "description": "Native support for Kaiwu, IBM, and AWS free backends."},
@@ -27,6 +29,26 @@
     {"id": "USP_3", "title": "Adaptive User Pedagogy", "description": "Contextual hints based on inferred user expertise."}
   ],
   "articles": [
+    {
+      "id": "ARTICLE_V45_SCHOLARSHIP",
+      "type": "scholarship",
+      "enforcement_level": "MUST",
+      "title": "Multi-Agent Scholarship Integrity",
+      "description": "Scholarship generation must balance depth and breadth through specialized agents.",
+      "constraints": [
+        "CoVe protocol mandatory for all output generators",
+        "Meta-analysis must include pooled estimates and CIs"
+      ],
+      "severity": "high"
+    },
+    {
+      "id": "ARTICLE_V45_ROADMAP",
+      "type": "governance",
+      "enforcement_level": "MUST",
+      "title": "Phased Implementation Enforcement",
+      "description": "Dependencies between architectural phases must be strictly enforced.",
+      "severity": "critical"
+    },
     {
       "id": "ARTICLE_V36_GOVERNANCE",
       "type": "governance",
