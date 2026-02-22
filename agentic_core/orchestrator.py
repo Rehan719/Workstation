@@ -8,25 +8,40 @@ from .hypothesis.generator import HypothesisGenerator
 from .proof.multi_prover import MultiProver
 from .uncertainty.bayesian_engine import BayesianEngine
 from .blockchain.ledger import BlockchainLedger
+from .reasoning.neuro_symbolic.neuro_symbolic import NeuroSymbolicEngine
+from .quantum_ml.qml_integrator import QMLIntegrator
+from .explainability.xai_framework import XAIFramework
+from .verification.multi_layer_framework import MultiLayerVerificationFramework
 
 class Orchestrator(BaseAgent):
     """
-    v47.0 Orchestrator Agent: Scientific Truth-Seeking Ecosystem.
-    Integrates AI Hypothesis Generation (AQ), Automated Theorem Proving (AR),
-    Bayesian Deep Learning (AS), and Blockchain Provenance (AT).
+    v51.0 Orchestrator Agent: Triad of Hybrid Intelligence.
+    Integrates Neuro-Symbolic AI (BJ), Quantum ML (BK), Adaptive XAI (BL),
+    and Five-Layer Verification.
     """
-    def __init__(self, agent_id: str = "orchestrator.v47", config: Optional[Dict[str, Any]] = None):
+    def __init__(self, agent_id: str = "orchestrator.v51", config: Optional[Dict[str, Any]] = None):
         super().__init__(agent_id, config)
         self.workers: Dict[str, BaseAgent] = {}
 
-        # Core v47.0 Engines
+        # Core Engines
         self.ueg = UnifiedEvidenceGraph()
         self.hypothesis_gen = HypothesisGenerator(self.ueg)
         self.multi_prover = MultiProver()
         self.bayesian_engine = BayesianEngine()
         self.blockchain_ledger = BlockchainLedger()
 
-        self.log(f"Initialized v47.0 Orchestrator: {agent_id}")
+        # v51.0 Triad Enhancements
+        self.neuro_symbolic = NeuroSymbolicEngine(self.ueg)
+        self.qml_integrator = QMLIntegrator()
+        self.xai_hub = XAIFramework()
+        self.verification_framework = MultiLayerVerificationFramework()
+
+        self.log(f"Initialized v51.0 Orchestrator: {agent_id}")
+
+    def register_worker(self, worker_id: str, agent: BaseAgent):
+        """Registers a worker agent with the orchestrator."""
+        self.workers[worker_id] = agent
+        self.log(f"Registered worker: {worker_id}")
 
     async def execute(self, task: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -59,8 +74,35 @@ class Orchestrator(BaseAgent):
             })
             self.log(f"Uncertainty calibrated: {uncertainty.get('predictive_variance')}")
 
-        # 4. Final Result & Blockchain Anchoring (AT)
+        # 4. Neuro-Symbolic Reasoning (BJ)
+        if task.get("reasoning_mode") == "neuro_symbolic":
+            reasoning_result = await self.neuro_symbolic.guided_symbolic_reasoning(goal)
+            self.log(f"Neuro-symbolic reasoning complete: {reasoning_result['status']}")
+            task['reasoning'] = reasoning_result
+
+        # 5. Quantum Machine Learning (BK)
+        if task.get("qml_task"):
+            qml_result = await self.qml_integrator.train_hybrid_model(task['qml_task'])
+            self.ueg.record_quantum_metrics(goal, qml_result)
+            self.log(f"QML Training Accuracy: {qml_result.get('val_accuracy')}")
+            task['qml_results'] = qml_result
+
+        # 6. Adaptive XAI (BL)
+        if task.get("generate_explanation"):
+            role = task.get("stakeholder_role", "end_user")
+            explanation = await self.xai_hub.generate_explanation(task, role)
+            self.ueg.log_xai_trace(goal, explanation)
+            self.log(f"XAI Narrative generated for {role}")
+            task['explanation'] = explanation
+
+        # 7. Five-Layer Verification
         final_result = {"goal": goal, "status": "completed", "hypotheses": task.get("hypotheses", [])}
+        if task.get("strict_verification"):
+            v_report = await self.verification_framework.verify_artifact(goal, final_result)
+            final_result['verification_report'] = v_report
+            self.log(f"Verification Status: {v_report['overall_status']}")
+
+        # 8. Final Result & Blockchain Anchoring (AT)
         if task.get("anchor_to_blockchain"):
             receipt = await self.blockchain_ledger.anchor_artifact(goal, str(final_result).encode())
             final_result['blockchain_receipt'] = receipt

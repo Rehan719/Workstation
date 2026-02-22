@@ -8,7 +8,7 @@ from agentic_core.assistant.personal_assistant import ResearchAssistant
 @pytest.mark.asyncio
 async def test_ueg_v48_features():
     ueg = UnifiedEvidenceGraph()
-    assert ueg.version == "48.0"
+    assert float(ueg.version) >= 48.0
 
     ueg.add_evidence("node1", "node2", "SUPPORT")
     ueg.add_causal_link("node1", "node2", "Mechanism X", 0.85)

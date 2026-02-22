@@ -9,7 +9,7 @@ class UnifiedEvidenceGraph:
     """
     def __init__(self):
         self.graph = nx.DiGraph()
-        self.version = "48.0"
+        self.version = "51.0"
 
     def add_evidence(self, source_id: str, target_id: str, relation: str, metadata: Optional[Dict[str, Any]] = None):
         """Adds a directional evidence link."""
@@ -42,6 +42,22 @@ class UnifiedEvidenceGraph:
         """v48.0: Cross-links a graph node to its blockchain provenance record."""
         if node_id in self.graph:
             self.graph.nodes[node_id]['blockchain_anchor'] = receipt
+
+    def store_symbolic_knowledge(self, rule_id: str, rule_metadata: Dict[str, Any]):
+        """v51.0 BJ-I: Stores symbolic knowledge distilled from neural models."""
+        self.graph.add_node(rule_id, type="SYMBOLIC_RULE", **rule_metadata)
+
+    def record_quantum_metrics(self, job_id: str, metrics: Dict[str, Any]):
+        """v51.0 BK-III: Records QML performance benchmarks and advantage scores."""
+        if job_id not in self.graph:
+            self.graph.add_node(job_id)
+        self.graph.nodes[job_id]['quantum_metrics'] = metrics
+
+    def log_xai_trace(self, decision_id: str, xai_metadata: Dict[str, Any]):
+        """v51.0 BL-V: Logs explanation generation traces for auditability."""
+        if decision_id not in self.graph:
+            self.graph.add_node(decision_id)
+        self.graph.nodes[decision_id]['xai_trace'] = xai_metadata
 
     def get_highest_confidence_path(self, goal: str) -> List[str]:
         """Finds the strongest evidentiary chain for a goal."""
