@@ -1,49 +1,37 @@
-# Jules AI v52.0: Autonomous Intelligence Amplification
+# Jules AI v52.0: Production Scientific Workstation
 
-Jules AI v52.0 is a self-evolving, multi-agent platform designed for the production of unassailable scientific truth. It transcends v51.0 by integrating autonomous self-improvement loops, real-time telemetry, and compliance with global AI regulatory standards.
+Jules AI v52.0 is a production-grade, self-evolving, multi-agent platform for scientific discovery. It integrates Neuro-Symbolic reasoning, Quantum Machine Learning, and a Five-Layer Verification Framework to deliver unassailable scientific truth.
 
-## New v52.0 Capabilities (Articles AM-AZ+)
-
-- **🧬 Autonomous Intelligence Amplification**: Self-improving loops that mutate and optimize the system's own orchestration logic based on telemetry.
-- **📡 Real-Time Signals Loop**: Ingests high-frequency telemetry (error rates, latency, throughput) to drive immediate recalibration of agent parameters.
-- **🔄 Scheduled Batch Analysis**: Periodic genetic-algorithm-driven optimization of the system's "genotype" (core configuration).
-- **⚖️ Regulatory Compliance**: Native mapping to ISO/IEC 42001, NIST AI RMF, and the EU AI Act for risk-aware autonomy.
-- **🛡️ 5-Layer Verification Framework**: Unified verification across Empirical, Formal, Truth Maintenance, Adversarial, and Reproducibility layers.
-- **🧩 Hybrid Triad Integration**: Seamless coordination of Neuro-Symbolic Reasoning, Quantum Machine Learning, and Adaptive XAI.
-
-## Legacy v51.0 & v47.0 Capabilities
-
-- **🧪 AI-Powered Hypothesis Generator**: Proposes novel, testable hypotheses using DeepSeek-R1.
-- **🔍 Automated Theorem Proving**: Parallelizes claims across Vampire, E, and Isabelle/HOL.
-- **📊 Bayesian Deep Learning**: Principled uncertainty quantification using Pyro and TFP.
-- **🔗 Blockchain Provenance**: Immutable publication records anchored to IPFS and Ethereum testnets.
-- **🎓 Personalized Research Assistant**: Adaptive user modeling and behavior-driven task recommendations.
-- **⚙️ Scientific Workflow Composer**: Visual programming interface for complex research pipelines.
+## Key Features
+- **Triad of Hybrid Intelligence**: Synergistic integration of Neural Networks (Transformer-based), Symbolic Logic (SymPy), and Quantum Optimization (PennyLane).
+- **Five-Layer Verification**: Rigorous validation suite (Source Integrity, Logical Consistency, Numerical Correctness, Empirical Replication, Adversarial Robustness).
+- **Unified Evidence Graph (UEG)**: Immutable knowledge graph with SHA-256 blockchain provenance and Sigstore signing.
+- **Autonomous Self-Improvement**: Real-time recalibration and evolutionary mutation loops.
+- **Production Dashboard**: Streamlit interface for monitoring discovery and integrity.
 
 ## Quick Start
-
-1. **Clone the repository**:
+1. **Prerequisites**:
+   Ensure you have [Poetry](https://python-poetry.org/) installed.
+2. **Setup**:
    ```bash
-   git clone https://github.com/Rehan719/Workstation
-   cd Workstation
+   poetry install
+   ./scripts/init-secrets.sh
+   ```
+3. **Run Workstation**:
+   ```bash
+   poetry run streamlit run src/dashboard/app.py
+   ```
+4. **Run Tests**:
+   ```bash
+   poetry run pytest
    ```
 
-2. **Initialize the environment**:
-   ```bash
-   make setup
-   ```
-
-3. **Launch the system**:
-   ```bash
-   make deploy-v52
-   ```
-
-## Project Structure
-
-- `agentic_core/`: Core intelligence (Orchestrator, Evolution, Observatory, etc.).
-- `agents/`: Specialized worker agents (Scholarship, Presentation, Web, etc.).
-- `meta/`: Constitutional and regulatory artifacts.
+## Repository Structure
+- `src/`: Functional source code (Orchestrator, Triad, Verification, UEG, Security, Self-Improvement, Dashboard).
+- `meta/`: Constitution and governance rules.
+- `docs/`: User guides and API references.
+- `tests/`: Comprehensive test suite.
+- `scripts/`: Production infrastructure scripts.
 
 ## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License.

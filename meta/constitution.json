@@ -1,6 +1,6 @@
 {
-  "name": "Jules AI v45.0 Meta-Cognitive Constitution",
-  "version": "45.0",
+  "name": "Jules AI v52.0 Meta-Cognitive Constitution",
+  "version": "52.0",
   "meta_cognitive_governance_loop": {
     "phases": ["monitor", "reflect", "correct", "learn", "enforce"],
     "status": "active"
@@ -13,51 +13,31 @@
     {"id": "IP_5", "title": "Zero-Cost Accessibility", "description": "Prioritize free-tier open-source technologies."},
     {"id": "IP_6", "title": "Privacy Preservation", "description": "Collaborative modes must use secure parameter sharing (QFL)."},
     {"id": "IP_7", "title": "Transparent Autonomy", "description": "CIRISAgent architecture for observable decision-making."},
-    {"id": "IP_8", "title": "Formal Grounding", "description": "Mathematical proofs must be Lean-compatible (CSLib)."},
+    {"id": "IP_8", "title": "Formal Grounding", "description": "Mathematical proofs must be machine-checkable."},
     {"id": "IP_9", "title": "Recursive Safety", "description": "Meta-Cognitive loop regulates system's own evolution."},
-    {"id": "IP_10", "title": "Strategic Phasing", "description": "Publications > Workflows > Video > Websites prioritization."},
-    {"id": "IP_11", "title": "Provenance Integrity", "description": "Immutable FAIR-compliant trails for all artifacts."},
+    {"id": "IP_10", "title": "Strategic Phasing", "description": "Foundation > Core > Scholarship > Collaboration prioritization."},
+    {"id": "IP_11", "title": "Provenance Integrity", "description": "Immutable FAIR-compliant trails via blockchain-like ledger."},
     {"id": "IP_12", "title": "User Centricity", "description": "Tangible user-facing benefits over internal optimizations."},
-    {"id": "IP_13", "title": "Universal Intelligence", "description": "Seamless integration of global reasoning fabrics (DeepSeek/Qwen)."},
-    {"id": "IP_14", "title": "Epistemic Humility", "description": "Mandatory uncertainty quantification for all predictions (Conformal)."},
-    {"id": "IP_15", "title": "Causal Grounding", "description": "All scientific hypotheses must be derived from Structural Causal Models."},
-    {"id": "IP_16", "title": "Phased Integrity", "description": "Strict adherence to the Foundation > Core > Scholarship > Collaboration roadmap."}
+    {"id": "IP_13", "title": "Universal Intelligence", "description": "Seamless integration of global reasoning fabrics."},
+    {"id": "IP_14", "title": "Epistemic Humility", "description": "Mandatory uncertainty quantification (Conformal/SHAP)."},
+    {"id": "IP_15", "title": "Causal Grounding", "description": "Hypotheses must be derived from Structural Causal Models."},
+    {"id": "IP_16", "title": "Autonomous Improvement", "description": "Continuous self-optimization via Real-Time Signals Loop and Batch Analysis."}
   ],
   "user_centric_strategic_pillars": [
-    {"id": "USP_1", "title": "Deep Free-Tier Integration", "description": "Native support for Kaiwu, IBM, and AWS free backends."},
+    {"id": "USP_1", "title": "Deep Free-Tier Integration", "description": "Native support for free quantum backends."},
     {"id": "USP_2", "title": "Seamless Hybrid Workloads", "description": "Unified API for quantum-classical job submission."},
-    {"id": "USP_3", "title": "Adaptive User Pedagogy", "description": "Contextual hints based on inferred user expertise."}
+    {"id": "USP_3", "title": "Adaptive Explainability", "description": "Context-aware narratives based on user expertise."}
   ],
   "articles": [
     {
-      "id": "ARTICLE_V45_SCHOLARSHIP",
-      "type": "scholarship",
+      "id": "ARTICLE_V52_PRODUCTION",
+      "type": "production",
       "enforcement_level": "MUST",
-      "title": "Multi-Agent Scholarship Integrity",
-      "description": "Scholarship generation must balance depth and breadth through specialized agents.",
+      "title": "Production Rigor Mandate",
+      "description": "All components must be fully functional without mocks or stubs.",
       "constraints": [
-        "CoVe protocol mandatory for all output generators",
-        "Meta-analysis must include pooled estimates and CIs"
-      ],
-      "severity": "high"
-    },
-    {
-      "id": "ARTICLE_V45_ROADMAP",
-      "type": "governance",
-      "enforcement_level": "MUST",
-      "title": "Phased Implementation Enforcement",
-      "description": "Dependencies between architectural phases must be strictly enforced.",
-      "severity": "critical"
-    },
-    {
-      "id": "ARTICLE_V36_GOVERNANCE",
-      "type": "governance",
-      "enforcement_level": "MUST",
-      "title": "Meta-Cognitive Sovereignty",
-      "description": "The Meta-Cognitive Governance Loop is the supreme operating system.",
-      "constraints": [
-        "governance_loop.py must validate every sequential job submission",
-        "Empirical verification of Congzi claims is mandatory"
+        "Verification pipeline mandatory for all artifacts",
+        "Blockchain provenance must anchor every claim"
       ],
       "severity": "critical"
     }

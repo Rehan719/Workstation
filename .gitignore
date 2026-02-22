@@ -1,28 +1,60 @@
+# Jules AI Production v52.0 Gitignore
+
 # Python
 __pycache__/
-**/*/__pycache__/
 *.py[cod]
 *$py.class
-.venv/
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Logs
+*.log
+logs/
+src/self_improvement/logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test_results/
+
+# Environments
 .env
+.venv
+venv/
+ENV/
 
-# Project specific
-content/projects/*/drafts/
-content/projects/*/provenance/
-content/new/
-!content/new/.gitkeep
-
-# IDEs
-.vscode/
-.idea/
+# Data
+chroma_db/
+weaviate_data/
+*.db
+*.sqlite
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Docker
-volumes/
-
-# Databases
-chroma_db/
-episodic_memory.db
+# Mission specific
+/.jules_state_production.json
+pip_list.txt
+installed_packages.txt
+test_v52_output.log
+test_v52_output_final.log

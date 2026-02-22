@@ -1,3 +1,0 @@
-./docs/qwens_background.txt
-./docs/deepseek_background.txt
-./background_files.txt
