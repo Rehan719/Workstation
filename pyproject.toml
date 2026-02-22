@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "jules-ai"
-version = "10.0.0"
-description = "Autonomous Scientific Production Ecosystem"
+version = "47.0.0"
+description = "Autonomous Multi-Agent Scientific Production Ecosystem (Article AQ-AZ)"
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -38,6 +38,13 @@ pygithub = "^2.3.0"
 pylatex = "^1.4.2"
 jinja2 = "^3.1.4"
 python-pptx = "^0.6.21"
+# v47.0 New Dependencies
+pyro-ppl = "^1.9.0"
+tensorflow-probability = "^0.24.0"
+ray = "^2.30.0"
+celery = "^5.4.0"
+web3 = "^6.20.0"
+ipfshttpclient = "^0.8.0a2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"

@@ -24,7 +24,8 @@ class ContributionEntry(json.JSONEncoder):
 
 class ScholarlyObject:
     """
-    Represents an atomic unit of intellectual value with an immutable provenance ledger.
+    v47.0: Represents an atomic unit of intellectual value with an immutable provenance ledger
+    and blockchain anchoring (Article AT).
     """
     def __init__(self, obj_type: str, content: Union[str, bytes], created_by: str,
                  derived_from: Optional[List[str]] = None):
@@ -37,6 +38,14 @@ class ScholarlyObject:
         self.derived_from = derived_from or []
         self.ledger = [ContributionEntry(created_by, "create", self.created_at).to_dict()]
         self.signature: Optional[str] = None
+        self.blockchain_receipt: Optional[Dict[str, Any]] = None
+
+    def anchor(self, receipt: Dict[str, Any]):
+        """
+        v47.0: Attaches a blockchain anchor receipt (IPFS CID, TX Hash).
+        """
+        self.blockchain_receipt = receipt
+        self.ledger.append(ContributionEntry("blockchain", "anchored", datetime.now(timezone.utc)).to_dict())
 
     def modify(self, new_content: Union[str, bytes], agent_id: str, reason: str = ""):
         self.content = new_content
@@ -44,6 +53,7 @@ class ScholarlyObject:
         self.modified_by.append((agent_id, now))
         self.ledger.append(ContributionEntry(agent_id, "modify", now, reason).to_dict())
         self.signature = None  # Invalidate signature
+        self.blockchain_receipt = None # Anchoring needs to be redone for new content
 
     def get_signing_data(self) -> bytes:
         obj_dict = {
