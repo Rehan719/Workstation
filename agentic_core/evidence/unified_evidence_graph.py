@@ -9,7 +9,7 @@ class UnifiedEvidenceGraph:
     """
     def __init__(self):
         self.graph = nx.DiGraph()
-        self.version = "47.0"
+        self.version = "48.0"
 
     def add_evidence(self, source_id: str, target_id: str, relation: str, metadata: Optional[Dict[str, Any]] = None):
         """Adds a directional evidence link."""
@@ -29,6 +29,19 @@ class UnifiedEvidenceGraph:
         """Attaches Bayesian uncertainty parameters to an evidence node."""
         if node_id in self.graph:
             self.graph.nodes[node_id].update(bayesian_stats)
+
+    def add_causal_link(self, cause_id: str, effect_id: str, mechanism: str, strength: float):
+        """v48.0: Adds a causal relationship link to the knowledge fabric."""
+        self.graph.add_edge(cause_id, effect_id,
+                            relation="CAUSALLY_INFLUENCES",
+                            mechanism=mechanism,
+                            causal_strength=strength,
+                            timestamp=datetime.now().isoformat())
+
+    def link_blockchain_receipt(self, node_id: str, receipt: Dict[str, Any]):
+        """v48.0: Cross-links a graph node to its blockchain provenance record."""
+        if node_id in self.graph:
+            self.graph.nodes[node_id]['blockchain_anchor'] = receipt
 
     def get_highest_confidence_path(self, goal: str) -> List[str]:
         """Finds the strongest evidentiary chain for a goal."""

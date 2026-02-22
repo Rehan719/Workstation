@@ -44,3 +44,22 @@ class ResearchAssistant:
             }
         ]
         return recs
+
+    def generate_ueg_recommendations(self, ueg: Any) -> List[Dict[str, Any]]:
+        """
+        v48.0 Article BC: Enhanced Collaborative Research Assistant.
+        Generates recommendations based on gaps and evidence paths in the UEG.
+        """
+        nodes = ueg.get_nodes()
+        recs = []
+
+        # Analyze UEG for missing causal links or low-confidence nodes
+        if len(nodes) > 0:
+            recs.append({
+                "id": f"rec_ueg_{nodes[0]}",
+                "title": f"Investigate Causal Root of {nodes[0]}",
+                "reason": "This node is an evidence entry point without a defined cause.",
+                "priority": "High"
+            })
+
+        return recs

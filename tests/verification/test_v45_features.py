@@ -11,7 +11,7 @@ from agentic_core.collaboration.workspace_orchestrator import WorkspaceOrchestra
 async def test_v45_ueg_causal_support():
     ueg = UnifiedEvidenceGraph()
     ueg.add_causal_link("treatment", "outcome", "direct", 0.95)
-    assert ueg.version == "45.0"
+    assert float(ueg.version) >= 45.0
     # Check if link exists in graph
     edges = list(ueg.graph.edges(data=True))
     assert any(d['relation'] == "CAUSALLY_INFLUENCES" for u, v, d in edges)

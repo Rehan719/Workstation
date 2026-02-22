@@ -44,3 +44,22 @@ class BlockchainLedger:
         """
         current_hash = f"0x{hashlib.sha256(content).hexdigest()}"
         return current_hash == receipt.get("hash")
+
+    async def anchor_peer_review(self, manuscript_id: str, reviewer_id: str, feedback: str) -> Dict[str, Any]:
+        """
+        v48.0 Article BB: Decentralized Peer Review anchoring.
+        """
+        review_data = f"{manuscript_id}:{reviewer_id}:{feedback}".encode()
+        receipt = await self.anchor_artifact(f"REVIEW_{manuscript_id}_{reviewer_id}", review_data)
+        receipt["type"] = "peer_review"
+        return receipt
+
+    async def archive_research_data(self, dataset_id: str, data_ptr: str) -> Dict[str, Any]:
+        """
+        v48.0 Article BB: Immutable Research Data Archives.
+        """
+        # data_ptr would be an IPFS CID in a production system
+        receipt = await self.anchor_artifact(dataset_id, data_ptr.encode())
+        receipt["type"] = "data_archive"
+        receipt["ipfs_cid"] = data_ptr
+        return receipt
