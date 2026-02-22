@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "jules-ai"
-version = "47.0.0"
-description = "Autonomous Multi-Agent Scientific Production Ecosystem (Article AQ-AZ)"
+version = "52.0.0"
+description = "Autonomous Multi-Agent Scientific Production Ecosystem (v52.0: Autonomous Intelligence Amplification)"
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -45,6 +45,9 @@ ray = "^2.30.0"
 celery = "^5.4.0"
 web3 = "^6.20.0"
 ipfshttpclient = "^0.8.0a2"
+# v52.0 New Dependencies
+networkx = "^3.3"
+asreview = "^1.6.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
