@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 
 class BlockchainLedger:
     """
-    Article BA: Blockchain-inspired provenance ledger (v53 Persistent).
-    Full block chaining with SHA-256 and Merkle roots, now with JSON persistence.
+    Article BA: Blockchain-inspired provenance ledger (v53 Mastery).
+    Implements full block chaining with SHA-256 and actual Merkle tree root verification for L1.
     """
     def __init__(self, persistence_path: str = "meta/ledger.json"):
         self.persistence_path = persistence_path
@@ -32,7 +32,7 @@ class BlockchainLedger:
             json.dump(self.blocks, f, indent=2)
 
     def _create_genesis_block(self):
-        self.add_block(previous_hash='0', proof=100)
+        self.add_block(proof=100, previous_hash='0')
 
     def add_transaction(self, sender: str, action: str, data: Any) -> int:
         transaction = {
@@ -41,16 +41,23 @@ class BlockchainLedger:
             'data': data,
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
+        # Cryptographic signing simulation
         data_str = json.dumps(data, sort_keys=True)
-        transaction['signature'] = hashlib.sha256(f"{sender}:{data_str}".encode()).hexdigest()
+        transaction['hash'] = hashlib.sha256(f"{sender}:{data_str}".encode()).hexdigest()
+
         self.current_transactions.append(transaction)
         return len(self.blocks) + 1
 
     def _calculate_merkle_root(self, transactions: List[Dict[str, Any]]) -> str:
-        if not transactions: return hashlib.sha256(b"empty").hexdigest()
-        hashes = [hashlib.sha256(json.dumps(tx, sort_keys=True).encode()).hexdigest() for tx in transactions]
+        """Calculates a recursive Merkle root for the block's transactions."""
+        if not transactions:
+            return hashlib.sha256(b"empty").hexdigest()
+
+        hashes = [tx.get('hash', hashlib.sha256(json.dumps(tx, sort_keys=True).encode()).hexdigest()) for tx in transactions]
+
         while len(hashes) > 1:
-            if len(hashes) % 2 != 0: hashes.append(hashes[-1])
+            if len(hashes) % 2 != 0:
+                hashes.append(hashes[-1])
             new_hashes = []
             for i in range(0, len(hashes), 2):
                 combined = hashes[i] + hashes[i+1]
@@ -59,6 +66,7 @@ class BlockchainLedger:
         return hashes[0]
 
     def add_block(self, proof: int, previous_hash: Optional[str] = None) -> Dict[str, Any]:
+        """Creates a new block and chains it to the previous one via hash."""
         block = {
             'index': len(self.blocks) + 1,
             'timestamp': datetime.now(timezone.utc).isoformat(),
@@ -74,13 +82,27 @@ class BlockchainLedger:
 
     @staticmethod
     def hash(block: Dict[str, Any]) -> str:
+        """SHA-256 hash of a block."""
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
+    def verify_integrity(self) -> bool:
+        """Verifies the entire chain and Merkle roots."""
+        for i in range(1, len(self.blocks)):
+            prev = self.blocks[i-1]
+            curr = self.blocks[i]
+            # Chain check
+            if curr['previous_hash'] != self.hash(prev):
+                return False
+            # Merkle check
+            if curr['merkle_root'] != self._calculate_merkle_root(curr['transactions']):
+                return False
+        return True
+
 class UnifiedEvidenceGraph:
     """
-    v53 Production: Persistent Unified Evidence Graph (UEG).
-    Integrates formal proofs and blockchain provenance with disk storage.
+    v53 Production Mastery: Persistent Unified Evidence Graph (UEG).
+    Integrates formal proofs, Bayesian uncertainty, and Merkle-verified provenance.
     """
     def __init__(self, persistence_path: str = "meta/ueg_graph.json"):
         self.persistence_path = persistence_path
@@ -112,6 +134,7 @@ class UnifiedEvidenceGraph:
     def add_node(self, node_id: str, node_type: str, metadata: Optional[Dict[str, Any]] = None):
         metadata = metadata or {}
         metadata['type'] = node_type
+        metadata['version'] = "v53.Mastery"
         self.graph.add_node(node_id, **metadata)
         self.ledger.add_transaction('system', 'ADD_NODE', {'id': node_id, 'metadata': metadata})
         self._save()
@@ -136,7 +159,8 @@ class UnifiedEvidenceGraph:
         self.add_edge(child_id, parent_id, 'DERIVED_FROM', metadata)
 
     def commit(self):
-        self.ledger.add_block(proof=123)
+        """Anchors the current transactions into a block."""
+        return self.ledger.add_block(proof=123)
 
     def get_edges(self):
         return self.graph.edges(data=True)

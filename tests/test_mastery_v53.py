@@ -25,11 +25,11 @@ async def test_v53_collaboration_protocol():
     collab = CollaborativeIntelligenceProtocol(orchestrator.ueg)
 
     proposal = {"action": "accept_hypothesis_1"}
-    votes = {"agent_alpha": True, "agent_beta": True, "user_admin": True}
+    votes = {"agent_alpha": True, "agent_beta": True, "agent_gamma": True, "user_admin": True}
 
-    decision = await collab.process_collaborative_decision(proposal, votes)
-    assert decision["consensus_reached"] is True
-    assert "contribution_id" in decision
+    decision = await collab.process_collaborative_decision("test_user", proposal, votes)
+    assert decision["consensus"]["status"] == "COMMITTED"
+    assert "attribution" in decision
 
 @pytest.mark.asyncio
 async def test_v53_adversarial_testing():
@@ -42,4 +42,4 @@ async def test_v53_adversarial_testing():
     # Layer 5 upgraded to Adversary (which is an AdversarialHypothesisTestingEngine)
     report = await orchestrator.verifier.l5.probe_hypothesis("hypo_1", hypothesis_data)
     assert "robustness_score" in report
-    assert "attack_results" in report
+    assert "attack_reports" in report
