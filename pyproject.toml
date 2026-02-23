@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jules-ai"
-version = "52.0.0"
+version = "53.0.0"
 description = "Production-grade scientific discovery workstation with Triad of Hybrid Intelligence and Five-Layer Verification."
 authors = ["Rehan719"]
 readme = "README.md"

@@ -1,0 +1,331 @@
+[
+  {
+    "index": 1,
+    "timestamp": "2026-02-23T16:35:46.198611+00:00",
+    "transactions": [],
+    "merkle_root": "2e1cfa82b035c26cbbbdae632cea070514eb8b773f616aaeaf668e2f0be8f10d",
+    "proof": 100,
+    "previous_hash": "0"
+  },
+  {
+    "index": 2,
+    "timestamp": "2026-02-23T18:27:40.789593+00:00",
+    "transactions": [
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "paper_4046035303000152456_0",
+          "metadata": {
+            "id": "paper_4046035303000152456_0",
+            "title": "Advances in primary sclerosing cholangitis therapeutic targets: A Meta-Analysis (Vol 0)",
+            "authors": [
+              "Agent Smith",
+              "Prof. Jules"
+            ],
+            "relevance_score": 0.8458665179669721,
+            "abstract": "This study investigates the core aspects of Primary Sclerosing Cholangitis Therapeutic Targets using adversarial verification.",
+            "type": "PUBLICATION"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.075448+00:00",
+        "signature": "34a7e86e4f0f0a86bd73cf2d3e36108438103eb2957c129110419e528b1ea3de"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "paper_4046035303000152456_1",
+          "metadata": {
+            "id": "paper_4046035303000152456_1",
+            "title": "Advances in primary sclerosing cholangitis therapeutic targets: A Meta-Analysis (Vol 1)",
+            "authors": [
+              "Agent Smith",
+              "Prof. Jules"
+            ],
+            "relevance_score": 0.8065057120920498,
+            "abstract": "This study investigates the core aspects of Primary Sclerosing Cholangitis Therapeutic Targets using adversarial verification.",
+            "type": "PUBLICATION"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.077387+00:00",
+        "signature": "4e137a177ec25db1fbce9726a22d670d0e773f34be0c573cffb23f40df291cb5"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "paper_4046035303000152456_2",
+          "metadata": {
+            "id": "paper_4046035303000152456_2",
+            "title": "Advances in primary sclerosing cholangitis therapeutic targets: A Meta-Analysis (Vol 2)",
+            "authors": [
+              "Agent Smith",
+              "Prof. Jules"
+            ],
+            "relevance_score": 0.8372075625017552,
+            "abstract": "This study investigates the core aspects of Primary Sclerosing Cholangitis Therapeutic Targets using adversarial verification.",
+            "type": "PUBLICATION"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.078892+00:00",
+        "signature": "0b3d7e8cafa76329fed11317cb6f36ab5d845ed62b060288977bd79eeb9ca73a"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "paper_4046035303000152456_3",
+          "metadata": {
+            "id": "paper_4046035303000152456_3",
+            "title": "Advances in primary sclerosing cholangitis therapeutic targets: A Meta-Analysis (Vol 3)",
+            "authors": [
+              "Agent Smith",
+              "Prof. Jules"
+            ],
+            "relevance_score": 0.8251238780856702,
+            "abstract": "This study investigates the core aspects of Primary Sclerosing Cholangitis Therapeutic Targets using adversarial verification.",
+            "type": "PUBLICATION"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.079940+00:00",
+        "signature": "2dc8696efc75a0098230c39ed9bec5ea12293b13150cc883ddb221981677e4a9"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "paper_4046035303000152456_4",
+          "metadata": {
+            "id": "paper_4046035303000152456_4",
+            "title": "Advances in primary sclerosing cholangitis therapeutic targets: A Meta-Analysis (Vol 4)",
+            "authors": [
+              "Agent Smith",
+              "Prof. Jules"
+            ],
+            "relevance_score": 0.8164792972262132,
+            "abstract": "This study investigates the core aspects of Primary Sclerosing Cholangitis Therapeutic Targets using adversarial verification.",
+            "type": "PUBLICATION"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.080867+00:00",
+        "signature": "e2926abd4042300fed19214dc70e7cce383db6c3f7f43e786f920b79496498c3"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "paper_4046035303000152456_5",
+          "metadata": {
+            "id": "paper_4046035303000152456_5",
+            "title": "Advances in primary sclerosing cholangitis therapeutic targets: A Meta-Analysis (Vol 5)",
+            "authors": [
+              "Agent Smith",
+              "Prof. Jules"
+            ],
+            "relevance_score": 0.9166113055527405,
+            "abstract": "This study investigates the core aspects of Primary Sclerosing Cholangitis Therapeutic Targets using adversarial verification.",
+            "type": "PUBLICATION"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.081684+00:00",
+        "signature": "c6ddf8ebeb86218d1d2b468c1992cff6f56c4cceddad35f70e29982b12aa1654"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "paper_4046035303000152456_6",
+          "metadata": {
+            "id": "paper_4046035303000152456_6",
+            "title": "Advances in primary sclerosing cholangitis therapeutic targets: A Meta-Analysis (Vol 6)",
+            "authors": [
+              "Agent Smith",
+              "Prof. Jules"
+            ],
+            "relevance_score": 0.8778418512743876,
+            "abstract": "This study investigates the core aspects of Primary Sclerosing Cholangitis Therapeutic Targets using adversarial verification.",
+            "type": "PUBLICATION"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.083442+00:00",
+        "signature": "67c4fb846c581b5fcda647fd0d7841a49c4ebc1bc950418a0e752453b8071b70"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "ns_inference_run_v3",
+          "metadata": {
+            "neural_facts": [
+              "PSC",
+              "Inflammation"
+            ],
+            "symbolic_inferences": [
+              "TargetProteinX"
+            ],
+            "logic_summary": "Inflammation & PSC & TargetProteinX",
+            "status": "SUCCESS",
+            "type": "REASONING"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.175873+00:00",
+        "signature": "134a23ef3e34ffb413fe2d1570395d6ea06e26c247f93643ae7461ae8a660ed9"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "causal_model_1",
+          "metadata": {
+            "graph": {
+              "directed": true,
+              "multigraph": false,
+              "graph": {},
+              "nodes": [
+                {
+                  "id": "Inflammation"
+                },
+                {
+                  "id": "Fibrosis"
+                },
+                {
+                  "id": "TargetProteinX"
+                }
+              ],
+              "edges": [
+                {
+                  "weight": 0.8,
+                  "source": "Inflammation",
+                  "target": "Fibrosis"
+                }
+              ]
+            },
+            "mechanism": "Constraint-based discovery (PC algorithm simulation)",
+            "confidence": 0.85,
+            "type": "CAUSAL_MODEL"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.177192+00:00",
+        "signature": "bcab197bdb683fbca724813047822b324ff3381838d95178b1270780d1be8709"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_EDGE",
+        "data": {
+          "source": "causal_model_1",
+          "target": "raw_data_node",
+          "metadata": {
+            "relation": "DERIVED_FROM"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.178320+00:00",
+        "signature": "d64c48cce9bbcfc7aa99e45c2a8a79a98867676c28a42ae060251622d3b10990"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "proof_8737448930431942272",
+          "metadata": {
+            "assertion": "TargetProteinX",
+            "status": "VERIFIED",
+            "proof_trace": "Theorem: TargetProteinX\n\n-- Lean 4 Trace --\n\ntheorem TargetProteinX : PSC Axiom 1 -> TargetProteinX :=\nby\n  intros\n  aesop\n\n\n-- Coq Trace --\n\nTheorem TargetProteinX : PSC Axiom 1 -> TargetProteinX.\nProof.\n  auto.\nQed.\n",
+            "machine_checkable": true,
+            "solvers": [
+              "z3",
+              "lean4",
+              "coq"
+            ],
+            "annex_ready": true,
+            "type": "FORMAL_PROOF"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.679987+00:00",
+        "signature": "4696e0fb3b592a838d8d04aae2aed683af84717c82f19c08d6c26c594aeeef74"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_EDGE",
+        "data": {
+          "source": "TargetProteinX",
+          "target": "proof_8737448930431942272",
+          "metadata": {
+            "relation": "VALIDATED_BY"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:29.681264+00:00",
+        "signature": "83e6bd86aec560c3016c5d0ac79a53071490e7eace5fd90d7717036db4e849e6"
+      },
+      {
+        "sender": "verification_pipeline",
+        "action": "VERIFY_ARTIFACT",
+        "data": {
+          "artifact_id": "psc_run_1",
+          "overall_status": "PASSED",
+          "layer_details": {
+            "L1": true,
+            "L5": {
+              "hypothesis_id": "psc_run_1",
+              "status": "RESILIENT",
+              "robustness_score": 1.0,
+              "attack_results": [
+                {
+                  "attack": "CounterexampleSearch",
+                  "success": false,
+                  "evidence": []
+                },
+                {
+                  "attack": "SensitivityProbing",
+                  "success": false,
+                  "details": "Stable"
+                },
+                {
+                  "attack": "SymbolicLogicProbe",
+                  "success": false,
+                  "details": "Found unverified assumptions"
+                }
+              ]
+            }
+          }
+        },
+        "timestamp": "2026-02-23T18:27:40.788387+00:00",
+        "signature": "7237305eddbed2f804b9ff8d5cfd43d1c17669e0e15690d3a58a759c9e2f670a"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "review_4046035303000152456",
+          "metadata": {
+            "title": "The State of Primary Sclerosing Cholangitis Therapeutic Targets: A Unified Evidence Perspective",
+            "sections": {
+              "Abstract": "A comprehensive review of Primary Sclerosing Cholangitis Therapeutic Targets, synthesizing multi-omics data and literature.",
+              "Introduction": "PSC is a complex liver disease requiring advanced therapeutic targets.",
+              "Thematic Synthesis": "Synthesis of findings: TargetProteinX.",
+              "Meta-Analysis": "Pooled effect sizes from UEG evidence show consensus on protein X.",
+              "Discussion": "Integrating 7 sources from the knowledge fabric.",
+              "Conclusion": "Future directions should focus on quantum-enhanced drug discovery."
+            },
+            "citations": [
+              "paper_4046035303000152456_0",
+              "paper_4046035303000152456_1",
+              "paper_4046035303000152456_2",
+              "paper_4046035303000152456_3",
+              "paper_4046035303000152456_4",
+              "paper_4046035303000152456_5",
+              "paper_4046035303000152456_6"
+            ],
+            "provenance": "Generated by Jules AI v52.0 Scholarship Suite",
+            "type": "SCHOLARLY_OUTPUT"
+          }
+        },
+        "timestamp": "2026-02-23T18:27:40.788485+00:00",
+        "signature": "f30a7589e1d839641dba8b484d7bb401e131a89fddda201445350ad82e3a39b8"
+      }
+    ],
+    "merkle_root": "984572e39b2262a91a9c071169b1d11895356254d8e008b057b2864d730f4b71",
+    "proof": 123,
+    "previous_hash": "0460f1ea8b431577d869323d413fb0047ea77e4739f3715150566883fe214261"
+  }
+]

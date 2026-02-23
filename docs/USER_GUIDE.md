@@ -1,18 +1,21 @@
-# Jules AI v52.0 User Guide
+# Jules AI v53.0: User Master Guide
 
-## Introduction
-Jules AI is a Production Scientific Workstation for verifiable discovery.
+## 🚀 Getting Started
+Jules AI v53.0 is designed for both autonomous discovery and collaborative research.
 
-## Usage
-1. **Initialize a Task**: Use the Orchestrator to decompose a scientific goal.
-2. **Execute Triad**:
-   - Neural-Symbolic Reasoning for initial hypothesis.
-   - Quantum Optimization for finding optimal configurations.
-   - Adaptive XAI for generating tailored explanations.
-3. **Verify Integrity**:
-   - Every result is automatically routed through the Five-Layer Verification Framework.
-4. **Inspect Ledger**:
-   - View the blockchain-like transactions in the Streamlit dashboard to audit the process.
+### Interaction Modes
+1. **Autonomous Discovery**: Provide a high-level research goal (e.g., "Find new catalysts for hydrogen production"). Jules will orchestrate hypothesis generation, literature screening, and quantum optimization.
+2. **Collaborative Research**: Multiple users can connect to a shared workspace to co-edit code and review scientific claims. Decisions are reached via BFT consensus.
 
-## Self-Improvement
-The system autonomously evolves. Check the dashboard for recalibration events and configuration mutations.
+### Navigating the Dashboard
+- **Discovery Monitor**: Track live hypothesis generation and proof status.
+- **Evidence Explorer**: Interactive graph showing semantic relationships and truth values.
+- **Integrity Report**: Real-time audit of constitutional compliance.
+
+## 🛠️ Advanced Features
+- **Generating Grant Proposals**: Use the Scholarship menu to generate research proposals grounded in the UEG.
+- **Formal Verification**: Request machine-checkable proofs for critical scientific assertions.
+- **Custom Workflows**: Assemble data loaders and models using the Workflow Composer.
+
+## 🧪 Examples
+Check `docs/EXAMPLES.md` for runnable scenarios in materials science and drug discovery.
