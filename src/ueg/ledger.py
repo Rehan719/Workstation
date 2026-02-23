@@ -1,6 +1,6 @@
 from typing import Dict, Any, List, Optional, Tuple
 import networkx as nx
-from datetime import datetime
+from datetime import datetime, timezone
 import copy
 import hashlib
 import json
@@ -25,7 +25,7 @@ class BlockchainLedger:
             'sender': sender,
             'action': action,
             'data': data,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
         # Data-dependent signature
         data_str = json.dumps(data, sort_keys=True)
@@ -54,7 +54,7 @@ class BlockchainLedger:
         """Creates a new block and chains it to the previous one."""
         block = {
             'index': len(self.blocks) + 1,
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'transactions': self.current_transactions,
             'merkle_root': self._calculate_merkle_root(self.current_transactions),
             'proof': proof,

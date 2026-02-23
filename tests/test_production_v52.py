@@ -13,15 +13,14 @@ async def test_production_v52_orchestrator_initialization():
 @pytest.mark.asyncio
 async def test_production_v52_execution_flow():
     orchestrator = Orchestrator()
-    user_profile = {"expertise": "expert"}
-    # The task now performs actual logic
-    result = await orchestrator.execute_task("Investigate factor X", user_profile)
+    # The v52 workstation uses specialized discovery workflows
+    result = await orchestrator.psc_discovery_simulation("test_user")
 
-    assert "result" in result
-    assert "verification" in result
-    assert result["verification"]["overall_status"] == "PASSED"
-    assert "explanation" in result
-    assert "narrative" in result["explanation"]
+    assert result["status"] == "MASTERED"
+    assert "findings" in result
+    assert result["verification_report"] == "PASSED"
+    assert "manuscript_preview" in result
+    assert "assistant_tip" in result
 
 @pytest.mark.asyncio
 async def test_production_v52_constitution_exists():
