@@ -9,6 +9,8 @@ async def test_production_v52_orchestrator_initialization():
     assert orchestrator.ueg is not None
     assert orchestrator.neuro_symbolic is not None
     assert orchestrator.quantum is not None
+    assert orchestrator.translator is not None
+    assert orchestrator.broker is not None
 
 @pytest.mark.asyncio
 async def test_production_v52_execution_flow():
@@ -20,7 +22,8 @@ async def test_production_v52_execution_flow():
     assert "findings" in result
     assert result["verification_report"] == "PASSED"
     assert "manuscript_preview" in result
-    assert "assistant_tip" in result
+    assert "orchestration" in result
+    assert result["orchestration"]["framework"] == "AutoGen"
 
 @pytest.mark.asyncio
 async def test_production_v52_constitution_exists():
