@@ -1,70 +1,62 @@
 import random
-from typing import List, Dict, Any
 import hashlib
+import json
+from typing import List, Dict, Any
 
-class PromptGene:
-    """Represents a single prompt variant (a gene) in the population."""
-    def __init__(self, content: str, fitness: float = 0.0):
-        self.content = content
+class Genotype:
+    """Represents a set of system parameters or prompts."""
+    def __init__(self, parameters: Dict[str, Any], fitness: float = 0.0):
+        self.parameters = parameters
         self.fitness = fitness
-        self.gene_id = hashlib.md5(content.encode()).hexdigest()
+        self.id = hashlib.md5(json.dumps(parameters, sort_keys=True).encode()).hexdigest()
 
 class GeneticEvolutionEngine:
     """
-    L7 Evolutionary Engine: Evolves prompts using mutation and crossover.
-    Fitness is determined by L4 Meta-Cognitive analysis (A/B testing).
+    v52.0 Autonomous Improvement: Genetic Algorithm.
+    Evolves system parameters (learning_rate, thresholds, prompt_suffixes).
     """
-    def __init__(self, population_size: int = 10, mutation_rate: float = 0.1):
+    def __init__(self, population_size: int = 10):
         self.population_size = population_size
-        self.mutation_rate = mutation_rate
-        self.population: List[PromptGene] = []
+        self.population: List[Genotype] = []
 
-    def initialize_population(self, seed_prompt: str):
-        """Create initial population by mutating the seed prompt."""
-        self.population = [PromptGene(seed_prompt)]
+    def initialize_population(self, seed_params: Dict[str, Any]):
+        self.population = [Genotype(seed_params)]
         for _ in range(self.population_size - 1):
-            mutated_content = self._mutate(seed_prompt)
-            self.population.append(PromptGene(mutated_content))
+            mutated = self._mutate(seed_params)
+            self.population.append(Genotype(mutated))
 
     def evolve(self):
-        """Run one generation of evolution."""
+        """Runs one generation of evolution."""
         # Sort by fitness
         self.population.sort(key=lambda x: x.fitness, reverse=True)
 
-        # Keep the top 20% (elitism)
-        new_population = self.population[:max(1, int(self.population_size * 0.2))]
+        # Elitism
+        new_population = self.population[:2]
 
-        # Fill the rest with offspring
+        # Reproduction
         while len(new_population) < self.population_size:
             if random.random() < 0.7:
                 # Crossover
-                parent1 = random.choice(new_population)
-                parent2 = random.choice(self.population)
-                child_content = self._crossover(parent1.content, parent2.content)
+                p1, p2 = random.sample(self.population[:5], 2)
+                child_params = self._crossover(p1.parameters, p2.parameters)
+                new_population.append(Genotype(child_params))
             else:
                 # Mutation
-                parent = random.choice(self.population)
-                child_content = self._mutate(parent.content)
-
-            new_population.append(PromptGene(child_content))
+                parent = random.choice(self.population[:5])
+                mutated_params = self._mutate(parent.parameters)
+                new_population.append(Genotype(mutated_params))
 
         self.population = new_population
 
-    def _mutate(self, content: str) -> str:
-        """Simulate prompt mutation (e.g., changing adjectives or instructions)."""
-        # Radical Simplification: in a real system, this would use an LLM
-        mutations = [
-            " Be more concise.",
-            " Use formal academic tone.",
-            " Focus on experimental evidence.",
-            " Explain reasoning step-by-step.",
-            " Include relevant citations."
-        ]
-        return content + random.choice(mutations)
+    def _mutate(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        mutated = params.copy()
+        key = random.choice(list(mutated.keys()))
+        if isinstance(mutated[key], (float, int)):
+            mutated[key] *= random.uniform(0.8, 1.2)
+        return mutated
 
-    def _crossover(self, p1: str, p2: str) -> str:
-        """Simulate prompt crossover (combining instructions)."""
-        parts1 = p1.split(". ")
-        parts2 = p2.split(". ")
-        split_idx = random.randint(0, min(len(parts1), len(parts2)) - 1)
-        return ". ".join(parts1[:split_idx] + parts2[split_idx:])
+    def _crossover(self, p1: Dict[str, Any], p2: Dict[str, Any]) -> Dict[str, Any]:
+        child = {}
+        for key in p1:
+            child[key] = random.choice([p1[key], p2[key]])
+        return child

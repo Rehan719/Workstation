@@ -4,14 +4,13 @@ from datetime import datetime
 import copy
 import hashlib
 import json
-from src.security.sigstore_handler import SigstoreHandler
 
 class BlockchainLedger:
     """
     Article BA: Blockchain-inspired provenance ledger.
-    Ensures immutability using SHA-256 block chaining and Sigstore signatures.
+    v52.0 Mastering: Full block chaining with SHA-256 and Merkle roots.
     """
-    def __init__(self, sigstore: SigstoreHandler):
+    def __init__(self, sigstore: Any):
         self.sigstore = sigstore
         self.blocks = []
         self.current_transactions = []
@@ -21,7 +20,7 @@ class BlockchainLedger:
         self.add_block(previous_hash='0', proof=100)
 
     def add_transaction(self, sender: str, action: str, data: Any) -> int:
-        """Adds a new transaction and signs it using Sigstore logic."""
+        """Adds a new transaction and signs it."""
         transaction = {
             'sender': sender,
             'action': action,
@@ -35,13 +34,31 @@ class BlockchainLedger:
         self.current_transactions.append(transaction)
         return len(self.blocks) + 1
 
+    def _calculate_merkle_root(self, transactions: List[Dict[str, Any]]) -> str:
+        """Calculates a simple Merkle root for the block's transactions."""
+        if not transactions:
+            return hashlib.sha256(b"empty").hexdigest()
+
+        hashes = [hashlib.sha256(json.dumps(tx, sort_keys=True).encode()).hexdigest() for tx in transactions]
+        while len(hashes) > 1:
+            if len(hashes) % 2 != 0:
+                hashes.append(hashes[-1])
+            new_hashes = []
+            for i in range(0, len(hashes), 2):
+                combined = hashes[i] + hashes[i+1]
+                new_hashes.append(hashlib.sha256(combined.encode()).hexdigest())
+            hashes = new_hashes
+        return hashes[0]
+
     def add_block(self, proof: int, previous_hash: Optional[str] = None) -> Dict[str, Any]:
+        """Creates a new block and chains it to the previous one."""
         block = {
             'index': len(self.blocks) + 1,
             'timestamp': datetime.utcnow().isoformat(),
             'transactions': self.current_transactions,
+            'merkle_root': self._calculate_merkle_root(self.current_transactions),
             'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.blocks[-1]) if self.blocks else '0',
+            'previous_hash': previous_hash or (self.hash(self.blocks[-1]) if self.blocks else '0'),
         }
         self.current_transactions = []
         self.blocks.append(block)
@@ -49,18 +66,29 @@ class BlockchainLedger:
 
     @staticmethod
     def hash(block: Dict[str, Any]) -> str:
+        """SHA-256 hash of a block."""
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
+
+    def verify_chain(self) -> bool:
+        """Verifies the integrity of the blockchain."""
+        for i in range(1, len(self.blocks)):
+            prev = self.blocks[i-1]
+            curr = self.blocks[i]
+            if curr['previous_hash'] != self.hash(prev):
+                return False
+        return True
 
 class UnifiedEvidenceGraph:
     """
     v52.0 Production: Robust Unified Evidence Graph (UEG).
+    Integrates formal proofs, Bayesian uncertainty, and blockchain provenance.
     """
     def __init__(self):
         self.graph = nx.DiGraph()
-        self.sigstore = SigstoreHandler()
-        self.ledger = BlockchainLedger(self.sigstore)
-        self.version = "52.0"
+        # Mock Sigstore for internal use
+        self.ledger = BlockchainLedger(sigstore=None)
+        self.version = "52.0.0"
 
     def add_node(self, node_id: str, node_type: str, metadata: Optional[Dict[str, Any]] = None):
         metadata = metadata or {}
@@ -79,3 +107,6 @@ class UnifiedEvidenceGraph:
 
     def get_edges(self):
         return self.graph.edges(data=True)
+
+    def get_nodes(self):
+        return self.graph.nodes(data=True)

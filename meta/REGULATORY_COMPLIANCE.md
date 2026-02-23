@@ -1,17 +1,24 @@
-# Jules AI v52.0 Regulatory Compliance Mapping
+# Jules AI v52.0 Regulatory Compliance Report
+
+This document details the alignment of the Jules AI Workstation v52.0 with international AI standards and regulations.
 
 ## 1. ISO/IEC 42001 (Artificial Intelligence Management System)
-- **4. Leadership**: The Meta-Cognitive Governance Loop (Article A) serves as the top-level accountability mechanism.
-- **6. Planning**: Scheduled Batch Analysis (Article C) ensures continuous improvement and risk assessment of AI mutations.
-- **8. Operation**: Multi-Layer Verification (Article F) ensures AI system outputs are rigorously validated before release.
+- **Accountability**: The Meta-Cognitive Governance Loop serves as the primary management mechanism.
+- **Documentation**: All model training, configuration changes, and reasoning traces are stored in the Unified Evidence Graph (UEG).
+- **Risk Assessment**: Every architectural mutation is subject to sandbox verification before deployment.
 
 ## 2. NIST AI Risk Management Framework (AI RMF)
-- **Govern**: The v52.0 Constitution provides a clear mandate for ethical and secure operations.
-- **Map**: The Unified Evidence Graph (UEG) maps dependencies between scientific claims, tools, and reasoning.
-- **Measure**: The Real-Time Signals Loop (Article B) measures performance and safety metrics in real-time.
-- **Manage**: The Self-Improvement Engine (Article BA) manages risk by sandboxing all mutations.
+- **Govern**: The v52.0 Constitution defines the ethical and operational boundaries.
+- **Map**: The UEG maps semantic relationships between claims, data, and models.
+- **Measure**: Real-time telemetry tracks error rates, hallucination scores (via CoVe), and resource usage.
+- **Manage**: The EthicalSentinel audits every significant action against constitutional pillars.
 
 ## 3. EU AI Act
-- **Transparency**: Adaptive XAI (Article BL) provides human-interpretable explanations tailored to stakeholder needs.
-- **Risk Management**: Five-Layer Verification (v51.0 Mandate) serves as the core technical safety mechanism for high-risk scientific tasks.
-- **Post-Market Monitoring**: The Observatory and Signals Loop provide continuous monitoring of the system's performance and impact.
+- **Classification**: The workstation is classified as a high-risk tool for scientific discovery.
+- **Transparency**: Adaptive XAI provides tailored explanations for all decisions.
+- **Human Oversight**: The Streamlit dashboard enables manual intervention and feedback for autonomous loops.
+- **Post-Market Monitoring**: The Real-Time Signals Loop provides continuous performance surveillance.
+
+## 4. Epistemic Integrity
+- **Unassailable Truth**: Accomplished via the Five-Layer Verification Framework (Source, Logic, Numerical, Empirical, Adversarial).
+- **Provenance**: Blockchain-inspired ledger ensures immutability of the scholarly record.

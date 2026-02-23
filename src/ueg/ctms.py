@@ -8,44 +8,48 @@ logger = logging.getLogger(__name__)
 class ContinuousTruthMaintenance:
     """
     v52.0 Article AK: Continuous Truth Maintenance System (CTMS).
-    Background daemon that monitors the UEG for logical inconsistencies.
+    v52.0 Mastering: Non-monotonic reasoning triggers and dependency tracking.
     """
     def __init__(self, ueg: UnifiedEvidenceGraph):
         self.ueg = ueg
         self.is_running = False
 
     async def start(self):
-        """Starts the background maintenance loop."""
         self.is_running = True
-        logger.info("Starting Continuous Truth Maintenance System...")
+        logger.info("Starting CTMS background daemon...")
         while self.is_running:
-            await self.scan_for_contradictions()
-            await asyncio.sleep(3600) # Scan every hour
+            await self.scan_and_resolve()
+            await asyncio.sleep(300) # Every 5 mins for demo
 
-    def stop(self):
-        self.is_running = False
-
-    async def scan_for_contradictions(self):
-        """Scans the UEG for nodes with CONTRADICTS relations."""
-        logger.info("Scanning UEG for contradictions...")
+    async def scan_and_resolve(self):
+        """
+        Scans for CONTRADICTS relations and initiates belief revision.
+        """
         edges = self.ueg.get_edges()
-        contradictionsFound = []
+        contradictions = [(u, v, d) for u, v, d in edges if d.get('relation') == 'CONTRADICTS']
 
-        for u, v, data in edges:
-            if data.get('relation') == 'CONTRADICTS':
-                contradictionsFound.append((u, v))
-                logger.warning(f"Contradiction found between {u} and {v}")
-                # Trigger reconciliation (e.g., flag for human review or use non-monotonic logic)
-                await self.reconcile(u, v)
+        for u, v, d in contradictions:
+            logger.warning(f"CTMS detected contradiction: {u} <-> {v}")
+            # Non-monotonic revision: choose the one with lower evidentiary support
+            await self._resolve_contradiction(u, v)
 
-        return contradictionsFound
+    async def _resolve_contradiction(self, node_a: str, node_b: str):
+        """
+        Heuristic: The node with fewer SUPPORTS edges is downgraded.
+        """
+        support_a = len([e for e in self.ueg.get_edges() if e[1] == node_a and e[2].get('relation') == 'SUPPORTS'])
+        support_b = len([e for e in self.ueg.get_edges() if e[1] == node_b and e[2].get('relation') == 'SUPPORTS'])
 
-    async def reconcile(self, node_a: str, node_b: str):
-        """Basic reconciliation: reduce confidence in both nodes."""
-        logger.info(f"Reconciling {node_a} and {node_b}")
-        if node_a in self.ueg.graph:
-            self.ueg.graph.nodes[node_a]['confidence'] = self.ueg.graph.nodes[node_a].get('confidence', 1.0) * 0.5
-        if node_b in self.ueg.graph:
-            self.ueg.graph.nodes[node_b]['confidence'] = self.ueg.graph.nodes[node_b].get('confidence', 1.0) * 0.5
+        weaker_node = node_a if support_a < support_b else node_b
 
-        self.ueg.ledger.add_transaction('ctms', 'RECONCILE', {'nodes': [node_a, node_b]})
+        # Log resolution to ledger
+        self.ueg.ledger.add_transaction('ctms', 'BELIEF_REVISION', {
+            'downgraded_node': weaker_node,
+            'reason': f"Contradiction found; weaker support ({min(support_a, support_b)} vs {max(support_a, support_b)})"
+        })
+
+        # Update node metadata in graph
+        self.ueg.graph.nodes[weaker_node]['status'] = 'REJECTED'
+        self.ueg.graph.nodes[weaker_node]['confidence'] = 0.0
+
+        logger.info(f"CTMS Resolved contradiction by rejecting {weaker_node}")

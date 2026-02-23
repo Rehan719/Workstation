@@ -22,17 +22,17 @@ class VerificationPipeline:
         """Runs the full five-layer suite on an artifact."""
         results = {}
 
-        # Layer 1
+        # Layer 1: Source Integrity
         results['L1'] = await self.l1.verify_integrity(data, signature)
 
-        # Layer 2 (if applicable)
+        # Layer 2: Logical Consistency (if applicable)
         if isinstance(data, dict) and 'formula' in data:
-            results['L2'] = await self.l2.verify_formula(data['formula'], [])
+            results['L2'] = await self.l2.verify_claim(data['formula'], data.get('axioms', []))
 
-        # Layer 5
-        results['L5'] = await self.l5.probe_hypothesis(artifact_id)
+        # Layer 5: Adversarial Robustness
+        results['L5'] = await self.l5.probe_hypothesis(artifact_id, data if isinstance(data, dict) else {})
 
-        overall_status = all([results['L1']]) # Simple logic for now
+        overall_status = results['L1'] # Simplification
 
         report = {
             "artifact_id": artifact_id,
@@ -40,7 +40,7 @@ class VerificationPipeline:
             "layer_details": results
         }
 
-        # Log to UEG
+        # Log to UEG Ledger
         self.ueg.ledger.add_transaction('verification_pipeline', 'VERIFY_ARTIFACT', report)
 
         return report

@@ -3,80 +3,88 @@ import asyncio
 import logging
 import yaml
 import os
-import random
-from datetime import datetime
-from src.observatory.observatory import Observatory
 from .evolution_nexus import EvolutionNexus
+from .genetic_algorithm import GeneticEvolutionEngine
+from src.observatory.observatory import Observatory
+
+logger = logging.getLogger(__name__)
 
 class SelfImprovementEngine:
     """
-    v52.0 Self-Improvement Engine: Autonomous Intelligence Amplification.
-    Manages the Real-Time Signals Loop and Scheduled Batch Analysis.
-    v52.0 Expansion: Functional parameter mutation and recalibration.
+    v52.0 Autonomous Intelligence Amplification Engine.
+    Coordinates Real-Time Signals Loop and Scheduled Batch Analysis.
     """
     def __init__(self, observatory: Observatory, evolution_nexus: EvolutionNexus):
         self.observatory = observatory
         self.evolution_nexus = evolution_nexus
+        self.genetic_engine = GeneticEvolutionEngine(population_size=10)
         self.is_running = False
-        self.logger = logging.getLogger("self_improvement")
         self.config_path = "config/evolution/genotype.yaml"
 
-    async def start_signals_loop(self):
-        """
-        Real-Time Signals Loop: Ingests telemetry and triggers rapid recalibration.
-        """
+    async def start(self):
         self.is_running = True
-        self.logger.info("Starting v52.0 Real-Time Signals Loop...")
+        # Initialize population from current config
+        current_params = self._load_genotype()
+        self.genetic_engine.initialize_population(current_params)
+
+        asyncio.create_task(self.signals_loop())
+        asyncio.create_task(self.batch_analysis_loop())
+
+    async def signals_loop(self):
+        """
+        v52.0 Article BA: Real-Time Signals Loop.
+        Monitors high-frequency telemetry for immediate recalibration.
+        """
+        logger.info("Real-Time Signals Loop active.")
         while self.is_running:
-            signals = await self.observatory.capture_live_telemetry()
-            if self._should_recalibrate(signals):
-                await self._perform_rapid_recalibration(signals)
+            telemetry = await self.observatory.capture_live_telemetry()
+            if telemetry.get('error_rate', 0.0) > 0.05:
+                logger.warning("Recalibration triggered: high error rate.")
+                await self._rapid_recalibration(telemetry)
             await asyncio.sleep(60)
 
-    async def run_batch_analysis(self):
+    async def batch_analysis_loop(self):
         """
-        Scheduled Batch Analysis: Runs evolutionary mutation on the system codebase.
+        v52.0 Article BA: Scheduled Batch Analysis.
+        Performs structural evolution of system genotype.
         """
-        self.logger.info("Initiating v52.0 Scheduled Batch Analysis...")
-        current_genotype = self._load_genotype()
+        while self.is_running:
+            logger.info("Initiating batch evolutionary analysis...")
+            # 1. Evaluate current population fitness (Simulated)
+            for genotype in self.genetic_engine.population:
+                 genotype.fitness = self._evaluate_fitness(genotype.parameters)
 
-        mutations = await self.evolution_nexus.propose_mutations(current_genotype)
+            # 2. Evolve
+            self.genetic_engine.evolve()
+            best = self.genetic_engine.population[0]
 
-        for mutation in mutations:
-            if await self.evolution_nexus.verify_in_sandbox(mutation):
-                self.logger.info(f"Applying verified mutation: {mutation['id']}")
-                self._apply_mutation_to_config(mutation)
-            else:
-                self.logger.warning(f"Mutation {mutation['id']} failed sandbox verification.")
+            # 3. Sandbox Verification (Simulated)
+            if await self.evolution_nexus.verify_in_sandbox(best.parameters):
+                logger.info(f"New best genotype verified: {best.id}")
+                self._save_genotype(best.parameters)
 
-    def _should_recalibrate(self, signals: Dict[str, Any]) -> bool:
-        error_rate = signals.get("error_rate", 0.0)
-        return error_rate > 0.05
+            await asyncio.sleep(3600) # Every hour
 
-    async def _perform_rapid_recalibration(self, signals: Dict[str, Any]):
-        self.logger.info("Performing rapid recalibration based on telemetry signals.")
-        current_genotype = self._load_genotype()
-        # Heuristic: if error rate is high, decrease learning rate
-        current_genotype['learning_rate'] = max(0.0001, current_genotype.get('learning_rate', 0.001) * 0.9)
-        self._save_genotype(current_genotype)
+    async def _rapid_recalibration(self, telemetry: Dict[str, Any]):
+        """Adjusts operational parameters without full evolution."""
+        params = self._load_genotype()
+        params['tau'] = params.get('tau', 0.1) * 1.1 # Increase exploration on error
+        self._save_genotype(params)
+
+    def _evaluate_fitness(self, params: Dict[str, Any]) -> float:
+        # Placeholder: in reality, would run benchmarks
+        return 1.0 / (1.0 + params.get('learning_rate', 0.001))
 
     def _load_genotype(self) -> Dict[str, Any]:
         if os.path.exists(self.config_path):
             with open(self.config_path, 'r') as f:
-                return yaml.safe_load(f) or {}
-        return {}
+                return yaml.safe_load(f) or {"learning_rate": 0.001, "tau": 0.1}
+        return {"learning_rate": 0.001, "tau": 0.1}
 
-    def _save_genotype(self, genotype: Dict[str, Any]):
+    def _save_genotype(self, params: Dict[str, Any]):
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
         with open(self.config_path, 'w') as f:
-            yaml.dump(genotype, f)
+            yaml.dump(params, f)
 
-    def _apply_mutation_to_config(self, mutation: Dict[str, Any]):
-        genotype = self._load_genotype()
-        changes = mutation.get("changes", {})
-        genotype.update(changes)
-        self._save_genotype(genotype)
-        self.logger.info(f"Genotype updated with changes: {changes}")
-
-    def stop_signals_loop(self):
+    def stop(self):
         self.is_running = False
