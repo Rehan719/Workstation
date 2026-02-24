@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "jules-ai"
-version = "61.0.0"
-description = "Autonomous, biologically-orchestrated scientific organism with hard real-time veto and evolutionary synthesis."
+version = "62.0.0"
+description = "Autonomous scientific organism with Central Dogma mimicry, evolutionary dynamics, and synergistic optimization."
 authors = ["Rehan719"]
 readme = "README.md"
 

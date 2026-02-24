@@ -61,3 +61,15 @@ class SurvivalEngineV2:
             return source_rank <= target_rank
         except ValueError:
             return True
+
+    def enforce_latency(self, system: str, start_time_ns: int):
+        """Enforces Tier 1 latency constraints."""
+        elapsed = (time.perf_counter_ns() - start_time_ns) / 1_000_000
+        # Budgets as defined in BT
+        budgets = {"immune": 8.3, "nervous": 50.0, "digestive": 42.0}
+        budget = budgets.get(system.lower(), 1000.0)
+
+        if elapsed > budget:
+            logger.warning(f"LATENCY BREACH in {system}: {elapsed:.2f}ms > {budget}ms")
+            return False
+        return True

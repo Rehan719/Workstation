@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from agentic_core.immunity.immune_system import ImmuneSystem
+from agentic_core.immune.immune_system import ImmuneSystemV2 as ImmuneSystem
 from agentic_core.nervous_system.nervous_system import NervousSystem
 from agentic_core.cardiovascular.cardiovascular_system import CardiovascularSystem
 from agentic_core.digestion.digestive_system import DigestiveSystem

@@ -2,7 +2,7 @@
   "mission": "v60.0 Ultimate Mastery & Final Optimization",
   "status": "STARTED",
   "current_phase": 0,
-  "started_at": "$(date --utc +%Y-%m-%dT%H:%M:%SZ)",
+  "started_at": "2024-05-22T10:00:00Z",
   "enhancement_areas": [
     "constitutional_enforcement",
     "biological_hardening",

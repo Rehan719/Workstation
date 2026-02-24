@@ -46,3 +46,6 @@ class AppetitiveDigestiveSystem:
         """BX-IV: Waste Excretion."""
         # Identify low-quality or obsolete info
         return []
+
+# Backward compatibility alias
+DigestiveSystem = AppetitiveDigestiveSystem

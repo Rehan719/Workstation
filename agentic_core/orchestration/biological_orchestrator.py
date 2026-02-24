@@ -2,8 +2,9 @@ import logging
 import time
 from typing import Dict, Any
 
-from agentic_core.survival.survival_engine import SurvivalEngine
-from agentic_core.immunity.immune_system import ImmuneSystem
+from agentic_core.pulse.pulse_clock import PulseClock
+from agentic_core.survival.survival_engine import SurvivalEngineV2 as SurvivalEngine
+from agentic_core.immune.immune_system import ImmuneSystemV2 as ImmuneSystem
 from agentic_core.nervous_system.nervous_system import NervousSystem
 from agentic_core.cardiovascular.cardiovascular_system import CardiovascularSystem
 from agentic_core.digestion.digestive_system import DigestiveSystem
@@ -19,7 +20,8 @@ class BiologicalOrchestrator:
     Coordinates all biological subsystems to maintain organism health and execute tasks.
     """
     def __init__(self):
-        self.survival = SurvivalEngine()
+        self.clock = PulseClock()
+        self.survival = SurvivalEngine(self.clock)
         self.immune = ImmuneSystem()
         self.nervous = NervousSystem()
         self.cardio = CardiovascularSystem()
@@ -42,9 +44,9 @@ class BiologicalOrchestrator:
         # Dynamic routing based on HRV
         task["priority"] = "reflex" if self.homeostasis.get_routing_decision() == "peripheral" else "deliberative"
 
-        start = time.time()
+        start_ns = time.perf_counter_ns()
         result = self.nervous.process_signal(task)
-        self.survival.enforce_latency("nervous", start)
+        self.survival.enforce_latency("nervous", start_ns)
 
         # 3. Immune Surveillance
         threat_score = self.immune.evaluate_threat(task)

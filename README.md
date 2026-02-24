@@ -1,13 +1,13 @@
-# Jules AI v61.0 – The Ultimate Scientific Organism
+# Jules AI v62.0 – The Genomic Scientific Organism
 
-Jules AI v61.0 is a fully autonomous, biologically-orchestrated scientific organism with hard real-time veto mechanics and evolutionary synthesis.
+Jules AI v62.0 is a fully autonomous, biologically-orchestrated scientific organism governed by the Central Dogma of Molecular Biology.
 
 ## Key Features
-- **1.2MHz Pulse Clock**: Synchronizes all subsystems with 833ns granularity.
-- **Survival Instinct v2.0**: Hard real-time veto mechanics with strict priority hierarchy.
-- **Evolutionary Grand Synthesis**: Recursive self-improvement via constrained mutation operators.
-- **Ethical Fitness Scalar**: Dynamic integrity metric gating major decisions.
-- **Appetitive Digestive System**: Hunger-driven development with 68% lexical divergence thresholds.
+- **Central Dogma Engine**: DNA -> RNA -> Protein flow for capability expression.
+- **Synergistic Optimization**: Hard-coded drive for lean best practices and resource synergy.
+- **Natural Selection**: Multi-objective fitness function and selection mechanism.
+- **Agent Reproduction**: Subsystem fission, budding, and recombination for specialized instances.
+- **Adaptive Immunity**: Memory B-cells and T-cell regulation for learned defense.
 - **Quantum-AI Mastery**: Functional VQE simulators and QNLP processing.
 - **Five-Layer Verification**: Unassailable epistemic integrity from Merkle trees to Formal Proofs.
 

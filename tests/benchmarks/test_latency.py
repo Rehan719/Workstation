@@ -16,9 +16,9 @@ async def benchmark_latency():
     results = []
     for _ in range(10):
         task = {"name": "reflex_test", "perplexity": 10.0}
-        start = time.time()
+        start = time.perf_counter()
         await orchestrator.execute_scientific_task(task)
-        results.append((time.time() - start) * 1000)
+        results.append((time.perf_counter() - start) * 1000)
 
     avg_latency = sum(results) / len(results)
     logger.info(f"AVG Peripheral Latency: {avg_latency:.2f}ms")
@@ -28,9 +28,9 @@ async def benchmark_latency():
     logger.info("Running Central Deliberative Latency Benchmark...")
     # Force central by setting high HRV
     orchestrator.homeostasis.biomarkers["hrv_sdnn"] = 100.0
-    start = time.time()
+    start = time.perf_counter()
     await orchestrator.execute_scientific_task({"name": "central_test", "perplexity": 10.0})
-    central_latency = (time.time() - start) * 1000
+    central_latency = (time.perf_counter() - start) * 1000
     logger.info(f"Central Latency: {central_latency:.2f}ms")
     assert 200 <= central_latency <= 1000
 

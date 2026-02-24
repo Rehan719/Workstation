@@ -45,3 +45,10 @@ class SelfDevelopmentPipeline:
         risk = self.ml_ensemble.predict_risk(metrics)
         thresholds = self.calibrator.calibrate(metrics)
         return thresholds["approval_threshold"]
+
+    # Backward compatibility alias
+    async def start_incubation(self, goal: str, constraints: Dict[str, Any]):
+        return await self.start_incubation_cycle(goal, constraints.get("duration", "standard"))
+
+# Backward compatibility alias
+AdaptiveIncubationEngine = SelfDevelopmentPipeline
