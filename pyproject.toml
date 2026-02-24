@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "jules-ai"
-version = "53.0.0"
-description = "Production-grade scientific discovery workstation with Triad of Hybrid Intelligence and Five-Layer Verification."
+version = "60.0.0"
+description = "Autonomous, biologically-orchestrated, self-evolving scientific discovery organism."
 authors = ["Rehan719"]
 readme = "README.md"
 

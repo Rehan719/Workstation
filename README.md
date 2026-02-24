@@ -1,37 +1,24 @@
-# Jules AI v53.0: Strategic Discovery Workstation (Mastery Edition)
+# Jules AI v60.0 – The Ultimate Grand Synthesis
 
-Jules AI v53.0 Mastery is the definitive, self-improving, multi-agent ecosystem for unassailable scientific advancement. This version masters adversarial verification, meta-cognitive evolution, and Byzantine-resistant collaborative intelligence.
+Jules AI v60.0 is an autonomous, biologically-orchestrated, self-evolving scientific discovery organism. It represents the culmination of 60 versions of architectural evolution, moving beyond a static workstation to a living system.
 
-## Mastery Capabilities (v53.0)
-- **Triad of Hybrid Intelligence**: Enhanced Neuro-Symbolic (Z3/Lean4), Quantum (Hybrid VQE & QNLP), and Adaptive XAI (Conformal intervals).
-- **Adversarial Verification Pipeline**: Upgraded Five-Layer suite with CEGAR-enabled refutation search and Numerical Error Analysis.
-- **Continuous Truth Maintenance (CTMS)**: Persistent, Merkle-anchored knowledge graph with trust-weighted belief revision.
-- **Meta-Cognitive Self-Improvement**: Recursive evolution loop with multi-objective fitness and problem decomposition.
-- **Mastered Scholarly Suite**: Automated Grant Proposals and Policy Briefs grounded in validated evidence.
-- **Byzantine Collaborative Intelligence**: Multi-stage BFT consensus and cryptographic contribution attribution.
+## Key Features
+- **Grand Synthesis Engine**: Analyzes v1-v59 history to extract optimal architectural DNA.
+- **Adaptive Incubation**: Goal-driven growth with ML-calibrated approval gates.
+- **Integrated Biological Systems**: Subsystems (Immune, Nervous, Cardiovascular, Digestive, Aging, Survival) coordinating with <50ms reflex arcs.
+- **Quantum-AI Mastery**: Functional VQE simulators and QNLP processing.
+- **Five-Layer Verification**: Unassailable epistemic integrity from Merkle trees to Formal Proofs.
 
 ## Quick Start
-1. **Prerequisites**:
-   Ensure you have [Poetry](https://python-poetry.org/) and `z3-solver` installed.
-2. **Setup**:
-   ```bash
-   poetry install
-   ./scripts/init-secrets.sh
-   ```
-3. **Run Mastery Dashboard**:
-   ```bash
-   poetry run streamlit run src/dashboard/app.py
-   ```
-4. **Run Discovery Mastery Simulation**:
-   ```bash
-   poetry run python run_discovery.py
-   ```
+1. Install dependencies: `pip install -r requirements.txt` (or use Poetry)
+2. Initialize the organism: `python3 -m agentic_core.synthesis.grand_synthesis_engine`
+3. Start incubation: `python3 -m agentic_core.incubation.adaptive_incubation_engine`
 
-## Repository Structure
-- `src/`: Mastered source code (Orchestrator, Triad, Verification, UEG, Self-Improvement, Scholarship).
-- `meta/`: Constitution (Mastery Edition) and persistent ledgers.
-- `docs/`: Comprehensive mastery-level documentation.
-- `tests/`: End-to-end mastery verification suite.
+## Architecture
+The system is built on a **Tiered Biological Parameterization** model:
+- **Tier 1 (Fixed)**: Core reflexes and cryptographic integrity.
+- **Tier 2 (Tunable)**: Environmentally responsive parameters (synaptic scaling, homeostasis).
+- **Tier 3 (User)**: Dashboard-controlled safe-range overrides.
 
-## License
-Apache 2.0 (Scientific Open-Source Excellence).
+---
+*Built for high-stakes institutional research and autonomous scientific discovery.*
