@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "jules-ai"
-version = "64.0.0"
-description = "Autonomous scientific organism with psychological awareness, sociological modeling, and reflexive responsiveness."
+version = "66.0.0"
+description = "Autonomous scientific enterprise organism with cell signaling, genomic networks, and professional competencies."
 authors = ["Rehan719"]
 readme = "README.md"
 

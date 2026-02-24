@@ -1,67 +1,55 @@
 import streamlit as st
+import time
 import pandas as pd
-import networkx as nx
-from src.ueg.ledger import UnifiedEvidenceGraph
+import plotly.express as px
+from agentic_core import EnterpriseOrganism
 
-st.set_page_config(page_title="Jules AI v52.0 Production Command Center", layout="wide")
+st.set_page_config(page_title="Jules AI v66.0 Enterprise Organism", layout="wide")
 
-st.title("🤖 Jules AI v52.0 Production Command Center")
-st.markdown("### Autonomous Intelligence Amplification & Scientific Discovery")
+st.title("🧬 Jules AI v66.0: The Enterprise Organism")
+st.markdown("### Biological Orchestration & Professional Competency Command Center")
 
-# Sidebar Metrics
-st.sidebar.header("System Vitals")
-st.sidebar.metric("UEG Version", "52.0.0")
-st.sidebar.metric("Epistemic Trust Index", "0.992")
-st.sidebar.metric("Quantum Shot Success", "94.5%")
+if 'organism' not in st.session_state:
+    st.session_state.organism = EnterpriseOrganism()
+    st.session_state.history = []
 
-# Main Content
-col1, col2 = st.columns(2)
+col1, col2 = st.columns([1, 2])
 
 with col1:
-    st.header("Unified Evidence Graph (UEG)")
-    st.write("Real-time knowledge fabric status:")
-    # Simulated visualization
-    st.json({
-        "nodes": [
-            {"id": "NovelCatalyst", "type": "HYPOTHESIS", "proof": "VERIFIED"},
-            {"id": "CausalModel_1", "type": "SCM", "confidence": 0.85},
-            {"id": "Proof_123", "type": "FORMAL_PROOF", "kernel": "Lean4"}
-        ],
-        "edges": [
-            {"source": "NovelCatalyst", "target": "Proof_123", "relation": "VALIDATED_BY"}
-        ]
-    })
+    st.header("Environmental Input")
+    signal_type = st.selectbox("Signal Type", ["GrowthFactor", "Cytokine", "NutrientLevel", "Risk"])
+    intensity = st.slider("Intensity", 0.0, 1.0, 0.5)
+
+    if st.button("Trigger Environmental Signal"):
+        with st.spinner("Processing through signaling cascades..."):
+            result = st.session_state.organism.process_environment(signal_type, intensity, {"source": "Dashboard"})
+            st.session_state.history.append(result)
+            st.success("Signal Transduced.")
 
 with col2:
-    st.header("Epistemic Integrity Ledger")
-    st.write("Blockchain-anchored transactions:")
-    df = pd.DataFrame([
-        {"Block": 1, "Action": "GENESIS", "Hash": "0000abc..."},
-        {"Block": 2, "Action": "ADD_CAUSAL_MODEL", "Hash": "f8a21d..."},
-        {"Block": 3, "Action": "FORMAL_VERIFICATION", "Hash": "e991c2..."}
-    ])
-    st.table(df)
+    if st.session_state.history:
+        latest = st.session_state.history[-1]
 
-st.divider()
+        st.header("Genomic Expression Profile")
+        exp_df = pd.DataFrame(latest['expression'].items(), columns=['Module', 'Expression Level'])
+        fig_exp = px.bar(exp_df, x='Module', y='Expression Level', color='Expression Level', range_y=[0, 1])
+        st.plotly_chart(fig_exp, use_container_width=True)
 
-st.header("Triad of Hybrid Intelligence")
-tabs = st.tabs(["Neuro-Symbolic Reasoning", "Quantum Optimization", "Adaptive XAI"])
+        st.header("Metabolic Flux Allocation")
+        flux_df = pd.DataFrame(latest['flux'].items(), columns=['Pathway', 'Flux Units'])
+        fig_flux = px.pie(flux_df, values='Flux Units', names='Pathway', hole=.3)
+        st.plotly_chart(fig_flux, use_container_width=True)
+    else:
+        st.info("No active signals. Awaiting environmental stimuli.")
 
-with tabs[0]:
-    st.subheader("Symbolic Rule Induction")
-    st.code("A & B -> C (Verified via Sympy SAT Solver)", language="text")
-    st.info("Continuous Truth Maintenance: ACTIVE (Scanning for contradictions)")
+st.sidebar.header("System Status")
+st.sidebar.write("Version: v66.0.0")
+st.sidebar.write("Clock Speed: 1.2MHz")
+st.sidebar.progress(85, text="Organism Integrity")
 
-with tabs[1]:
-    st.subheader("QAOA Optimization Results")
-    st.progress(94)
-    st.write("Optimal Max-Cut partition found: **0101**")
-
-with tabs[2]:
-    st.subheader("SHAP Confidence Calibration")
-    st.markdown("**Explanation Narrative:** The model prioritized 'FeatureA' (wt=0.58). Rigorous 95% Conformal Interval: [0.85, 1.15].")
-
-st.divider()
-st.header("Autonomous Evolution (v52.0)")
-st.info("Genetic Evolution Engine: GENERATION 12. Current Best Fitness: 0.88")
-st.write("Last genotype mutation: `learning_rate` adjusted to `0.00092` (Sandbox Verified)")
+if st.session_state.history:
+    st.header("Conserved Patterns Discovered")
+    if latest['patterns']:
+        st.write(latest['patterns'])
+    else:
+        st.write("Synthesizing patterns from history...")
