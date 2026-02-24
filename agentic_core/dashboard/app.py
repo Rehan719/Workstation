@@ -4,10 +4,10 @@ import time
 
 st.set_page_config(page_title="Jules AI v60.0 Command Center", layout="wide")
 
-st.title("🚀 Jules AI v63.0 Command Center")
-st.subheader("Autonomous Organism Dashboard [Multi-Modal Sensory Active]")
+st.title("🚀 Jules AI v64.0 Command Center")
+st.subheader("Autonomous Organism Dashboard [Psychological-Sociological Awareness Active]")
 
-# 1. Biological Health & Genetics
+# 1. Biological & Psychological Status
 st.sidebar.header("🧬 Biological Status")
 allostatic_load = st.sidebar.slider("Allostatic Load", 0.0, 10.0, 1.2)
 st.sidebar.progress(allostatic_load / 10.0)
@@ -18,19 +18,22 @@ st.sidebar.metric("Ethical Fitness Scalar", f"{ethical_fitness:.2f}", "Stable")
 res_synergy = st.sidebar.slider("Resource Synergy", 0.0, 1.0, 0.92)
 st.sidebar.metric("Synergy Scalar", f"{res_synergy:.2f}", "Optimal")
 
+emotion_valence = st.sidebar.slider("Emotional Valence", 0.0, 1.0, 0.85)
+st.sidebar.metric("System Affect", "Stable", "Pleasant")
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric("Peripheral Latency", "42.4ms", "-0.6ms")
-    st.metric("Gene Expression", "98.4%", "High")
+    st.metric("Reflex Latency", "42.4ms", "SLA MET")
+    st.metric("Metacognitive Conf", "92%", "High")
 
 with col2:
-    st.metric("Immune Memory", "142 Patterns", "Adaptive (CF)")
-    st.metric("Reproduction Count", "12 Agents", "+2 Budding")
+    st.metric("Active Users", "4 Researchers", "+1 Bot")
+    st.metric("Consensus Rate", "88%", "Stable")
 
 with col3:
-    st.metric("Sensory Salience", "0.92 Score", "High Salience")
-    st.metric("Attention Focus", "Visual", "Active")
+    st.metric("Curiosity Level", "0.75", "Proactive")
+    st.metric("Normative Alignment", "99.8%", "Compliant")
 
 # 2. Sensory & Perceptual Activity
 st.header("👁️ Sensory Network & Perception")
@@ -43,17 +46,28 @@ with col_s2:
     st.write("**Cross-Modal Binding**")
     st.info("PERCEPT_v63_a42: [Vision] Flask + [Audition] Bubbling -> Lab_Entity")
 
-# 3. Genomic Explorer
+# 3. Inner World & Social Dynamics
+st.header("🧠 Psychological & Sociological Monitor")
+col_p1, col_p2 = st.columns(2)
+with col_p1:
+    st.write("**Self-Model (Inner State)**")
+    st.info("Current Focus: Cross-modal binding of NMR data. Valence: 0.85 (Curiosity).")
+with col_p2:
+    st.write("**Collaboration Dynamics**")
+    st.write("Session Entropy: 0.42 | Conflict Level: Low")
+    st.success("Consensus reached on molecular stability hypothesis.")
+
+# 4. Genomic Explorer
 st.header("🧬 Genomic Explorer")
 gene_data = pd.DataFrame({
-    'Gene ID': ['CA-I', 'CB-II', 'CC-I', 'CD-III'],
+    'Gene ID': ['CN-I (Introspection)', 'CO-II (Social)', 'CP-II (Reflex)', 'CD-III'],
     'Expression': ['Active', 'Active', 'Dormant', 'Suppressed'],
     'Transcription Rate': [0.95, 0.88, 0.0, 0.12],
     'Stability': [0.99, 0.97, 1.0, 0.95]
 })
 st.table(gene_data)
 
-# 4. Autonomous Self-Development & Reproduction
+# 5. Autonomous Self-Development & Reproduction
 st.header("🔄 Evolutionary Selection & Reproduction")
 projects = pd.DataFrame({
     'Project': ['Quantum Synergy', 'Neuro-Symbolic Reasoning', 'VQE Optimization'],
@@ -69,4 +83,4 @@ chart_data = pd.DataFrame([1.0, 0.5, 2.0, 0.8, 1.2, 0.4, 0.9, 0.1, 0.2, 0.5],
                          index=['HRV', 'Latency', 'Error', 'Resource', 'Throughput', 'Scaling', 'Immune', 'Hunger', 'Health', 'Conflict'])
 st.bar_chart(chart_data)
 
-st.info("System governing by CONSTITUTION_v63.0.md with Multi-Modal Sensory & Cross-Modal Perception.")
+st.info("System governing by CONSTITUTION_v64.0.md with Psychological & Sociological Awareness.")
