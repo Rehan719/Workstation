@@ -1,6 +1,7 @@
 agentic_core/
 docs/
 tests/
+simulations/
 src/
 meta/
 *.json
