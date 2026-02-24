@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  coordination-server:
+    build: ./infra/coordination_server
+    ports:
+      - "8000:8000"
+    environment:
+      - LOG_LEVEL=INFO
+
+  jules-agent-1:
+    image: jules-ai-v67:latest
+    depends_on:
+      - coordination-server
+    environment:
+      - AGENT_ID=organism-001
+      - COORDINATION_SERVER=http://coordination-server:8000
+      - SWARM_MODE=LOCAL
+
+  jules-agent-2:
+    image: jules-ai-v67:latest
+    depends_on:
+      - coordination-server
+    environment:
+      - AGENT_ID=organism-002
+      - COORDINATION_SERVER=http://coordination-server:8000
+      - SWARM_MODE=LOCAL
+
+  jules-agent-3:
+    image: jules-ai-v67:latest
+    depends_on:
+      - coordination-server
+    environment:
+      - AGENT_ID=organism-003
+      - COORDINATION_SERVER=http://coordination-server:8000
+      - SWARM_MODE=LOCAL
