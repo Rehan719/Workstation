@@ -1,0 +1,22 @@
+{
+  "articles": {
+    "C-I": "Infrastructure & Network Mandate",
+    "C-II": "Tool Enhancement Mandate",
+    "C-III": "Memory & Personalization Mandate",
+    "C-IV": "Orchestration & Coordination Mandate",
+    "C-V": "Reception & Perception Mandate",
+    "C-VI": "Reasoning & Cognition Mandate",
+    "C-VII": "Application Logic Mandate",
+    "C-VIII": "Governance & Safety Mandate",
+    "CN": "Grand Synthesis Engine Mandate",
+    "CO": "Dynamically Adaptive Incubation Mechanism",
+    "CP": "Tiered Biological Parameterization Mandate",
+    "CQ": "Context-Aware Meta-Cognitive RL Portfolio",
+    "SurvivalHierarchy": "Immune > Nervous > Digestive > Aging",
+    "LatencyReflex": "Peripheral latency < 50ms",
+    "LatencyImmune": "Immune arbitration < 8.3ms",
+    "Homeostasis": "±5% firing rate regulation",
+    "NoStubs": "Mandatory functional implementation",
+    "ZeroCost": "Use only free and open-source resources"
+  }
+}

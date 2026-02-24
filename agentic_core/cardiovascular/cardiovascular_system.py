@@ -10,7 +10,7 @@ class CardiovascularSystem:
     """
     def __init__(self):
         self.resource_flow = 100.0
-        self.peristaltic_delay = 0.05 # 50ms
+        self.peristaltic_delay = 0.005 # 5ms (Optimized for <50ms reflex targets)
 
     def route_resources(self, destination: str):
         """Routes computational resources to subsystems."""

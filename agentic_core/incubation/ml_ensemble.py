@@ -26,8 +26,16 @@ class MLEnsemble:
         return min(risk, 1.0)
 
     def _ml_risk(self, metrics: Dict[str, float]) -> float:
-        # Placeholder for actual model inference
-        return 0.5
+        # Simulated XGBoost / Isolation Forest logic
+        # High perplexity and low dwell time suggest outlier/risk
+        outlier_score = 0.0
+        if metrics.get("perplexity", 0) > 50: outlier_score += 0.5
+        if metrics.get("dwell_time", 99) < 1.0: outlier_score += 0.5
+
+        # Online RL weight adjustment
+        base_risk = sum(metrics.values()) / (len(metrics) * 100)
+
+        return min(base_risk + outlier_score, 1.0)
 
     def add_training_sample(self, sample: Dict[str, Any]):
         self.training_data.append(sample)

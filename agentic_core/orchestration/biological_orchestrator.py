@@ -8,6 +8,8 @@ from agentic_core.nervous_system.nervous_system import NervousSystem
 from agentic_core.cardiovascular.cardiovascular_system import CardiovascularSystem
 from agentic_core.digestion.digestive_system import DigestiveSystem
 from agentic_core.aging.longevity_engine import LongevityEngine
+from agentic_core.ethics.constitutional_enforcer import ConstitutionalEnforcer
+from agentic_core.homeostasis.homeostatic_regulator import HomeostaticRegulator
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +25,23 @@ class BiologicalOrchestrator:
         self.cardio = CardiovascularSystem()
         self.digestion = DigestiveSystem()
         self.aging = LongevityEngine()
+        self.enforcer = ConstitutionalEnforcer()
+        self.homeostasis = HomeostaticRegulator()
 
     async def execute_scientific_task(self, task: Dict[str, Any]):
         logger.info(f"Organism executing task: {task['name']}")
+
+        # 0. Constitutional Check
+        if not self.enforcer.verify_action("task_execution", task):
+             return {"status": "aborted", "reason": "constitutional_violation"}
 
         # 1. Cardio Resource Allocation
         self.cardio.route_resources("nervous_system")
 
         # 2. Nervous Processing
+        # Dynamic routing based on HRV
+        task["priority"] = "reflex" if self.homeostasis.get_routing_decision() == "peripheral" else "deliberative"
+
         start = time.time()
         result = self.nervous.process_signal(task)
         self.survival.enforce_latency("nervous", start)

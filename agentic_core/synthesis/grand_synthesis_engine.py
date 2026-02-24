@@ -26,6 +26,10 @@ class GrandSynthesisEngine:
         """Executes the full grand synthesis cycle."""
         logger.info("Starting Grand Synthesis Cycle...")
 
+        # 0. Load Previous Evolutionary Memory (Closing the loop)
+        previous_insights = self.memory.load_previous_insights()
+        logger.info(f"Loaded {len(previous_insights)} previous evolutionary data points.")
+
         # 1. Historical Analysis
         raw_insights = await self.analyzer.analyze_all()
         logger.info(f"Analyzed {len(raw_insights)} historical artifacts.")

@@ -10,7 +10,7 @@ class ImmuneSystem:
     Innate, adaptive, and humoral immunity with sigmoidal checkpoint calibration.
     """
     def __init__(self):
-        self.threat_database = []
+        self.threat_database = [] # Adaptive immune memory
         self.ic50_perplexity = 42.3
 
     def evaluate_threat(self, sample: Dict[str, Any]) -> float:
@@ -25,8 +25,15 @@ class ImmuneSystem:
         k = 0.5
         score = 1.0 / (1.0 + math.exp(-k * (perplexity - self.ic50_perplexity)))
 
+        # Check adaptive memory
+        content_hash = hash(str(sample))
+        if content_hash in self.threat_database:
+             logger.warning("IMMUNE MEMORY: Known threat pattern detected.")
+             return 1.0
+
         if score > 0.8:
             logger.warning(f"IMMUNE RESPONSE: High threat detected (score: {score:.2f})")
+            self.threat_database.append(content_hash)
 
         return score
 
