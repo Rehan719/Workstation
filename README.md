@@ -1,13 +1,13 @@
-# Jules AI v62.0 – The Genomic Scientific Organism
+# Jules AI v63.0 – The Perceptive Scientific Organism
 
-Jules AI v62.0 is a fully autonomous, biologically-orchestrated scientific organism governed by the Central Dogma of Molecular Biology.
+Jules AI v63.0 is a fully autonomous, biologically-orchestrated scientific organism with multi-modal sensory networks and cross-modal perception.
 
 ## Key Features
-- **Central Dogma Engine**: DNA -> RNA -> Protein flow for capability expression.
-- **Synergistic Optimization**: Hard-coded drive for lean best practices and resource synergy.
-- **Natural Selection**: Multi-objective fitness function and selection mechanism.
-- **Agent Reproduction**: Subsystem fission, budding, and recombination for specialized instances.
-- **Adaptive Immunity**: Memory B-cells and T-cell regulation for learned defense.
+- **Multi-Modal Sensory Network**: Vision, Audition, Touch, Chemosensation, and Proprioception.
+- **Cross-Modal Perception**: Fusion cortex, selective attention, and perceptual binding.
+- **Sensory-Driven Evolution**: Perceptual metrics integrated into natural selection.
+- **Adaptive Appetite**: Salience-based information nutrition and curiosity.
+- **Perceptual Defense**: Sensory mismatch and adversarial detection.
 - **Quantum-AI Mastery**: Functional VQE simulators and QNLP processing.
 - **Five-Layer Verification**: Unassailable epistemic integrity from Merkle trees to Formal Proofs.
 

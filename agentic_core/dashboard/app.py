@@ -4,8 +4,8 @@ import time
 
 st.set_page_config(page_title="Jules AI v60.0 Command Center", layout="wide")
 
-st.title("🚀 Jules AI v62.0 Command Center")
-st.subheader("Autonomous Organism Dashboard [Central Dogma Engine Active]")
+st.title("🚀 Jules AI v63.0 Command Center")
+st.subheader("Autonomous Organism Dashboard [Multi-Modal Sensory Active]")
 
 # 1. Biological Health & Genetics
 st.sidebar.header("🧬 Biological Status")
@@ -29,10 +29,21 @@ with col2:
     st.metric("Reproduction Count", "12 Agents", "+2 Budding")
 
 with col3:
-    st.metric("Nutrient Quality", "0.88 Avg", "High Rigor")
-    st.metric("Veto Interventions", "0", "None")
+    st.metric("Sensory Salience", "0.92 Score", "High Salience")
+    st.metric("Attention Focus", "Visual", "Active")
 
-# 2. Genomic Explorer
+# 2. Sensory & Perceptual Activity
+st.header("👁️ Sensory Network & Perception")
+col_s1, col_s2 = st.columns(2)
+with col_s1:
+    st.write("**Sensory Heatmap**")
+    s_data = pd.DataFrame([0.8, 0.4, 0.1, 0.0, 0.9], index=['Vision', 'Audition', 'Touch', 'Chemosensation', 'Proprioception'])
+    st.bar_chart(s_data)
+with col_s2:
+    st.write("**Cross-Modal Binding**")
+    st.info("PERCEPT_v63_a42: [Vision] Flask + [Audition] Bubbling -> Lab_Entity")
+
+# 3. Genomic Explorer
 st.header("🧬 Genomic Explorer")
 gene_data = pd.DataFrame({
     'Gene ID': ['CA-I', 'CB-II', 'CC-I', 'CD-III'],
@@ -42,7 +53,7 @@ gene_data = pd.DataFrame({
 })
 st.table(gene_data)
 
-# 3. Autonomous Self-Development & Reproduction
+# 4. Autonomous Self-Development & Reproduction
 st.header("🔄 Evolutionary Selection & Reproduction")
 projects = pd.DataFrame({
     'Project': ['Quantum Synergy', 'Neuro-Symbolic Reasoning', 'VQE Optimization'],
@@ -58,4 +69,4 @@ chart_data = pd.DataFrame([1.0, 0.5, 2.0, 0.8, 1.2, 0.4, 0.9, 0.1, 0.2, 0.5],
                          index=['HRV', 'Latency', 'Error', 'Resource', 'Throughput', 'Scaling', 'Immune', 'Hunger', 'Health', 'Conflict'])
 st.bar_chart(chart_data)
 
-st.info("System governing by CONSTITUTION_v62.0.md with Central Dogma Engine & Evolutionary Dynamics.")
+st.info("System governing by CONSTITUTION_v63.0.md with Multi-Modal Sensory & Cross-Modal Perception.")

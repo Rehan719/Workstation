@@ -12,6 +12,7 @@ class AppetitiveDigestiveSystem:
         self.hunger = 0.5
         self.satisfaction = 1.0
         self.divergence_threshold = 0.68 # BX-I
+        self.salience_threshold = 0.75 # CK-I
 
     def evaluate_content(self, content: Dict[str, Any]) -> float:
         """BX-II: Information Nutrition Scoring."""
@@ -28,6 +29,12 @@ class AppetitiveDigestiveSystem:
         # 4. Constitutional Alignment
         if content.get("alignment", 1.0) > 0.9:
             score += 0.5
+
+        # 5. Sensory Salience (CK-I)
+        salience = content.get("sensory_salience", 0.0)
+        if salience >= self.salience_threshold:
+             logger.info("APPETITE: High salience sensory input detected.")
+             score += 0.3
 
         self._update_appetite(score)
         return score

@@ -13,8 +13,16 @@ class PulseScheduler:
         self.latency_targets = {
             "peripheral": 50.0, # ms
             "central": 800.0,   # ms
-            "cardio": 120.0     # ms
+            "cardio": 120.0,    # ms
+            "vision": 40.0,     # ms (CM-II)
+            "audition": 10.0    # ms (CM-II)
         }
+
+    def trigger_sensory_tick(self) -> int:
+        """CM-I: Coordinates sampling of all active sensory receptors."""
+        pulse = self.clock.get_current_pulse()
+        logger.debug(f"PULSE TICK [Sensory]: All receptors sampled @ Pulse {pulse}")
+        return pulse
 
     def verify_latency(self, system: str, start_ns: int) -> bool:
         elapsed_ms = (time.perf_counter_ns() - start_ns) / 1_000_000

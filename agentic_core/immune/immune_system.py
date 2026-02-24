@@ -21,7 +21,17 @@ class ImmuneSystemV2:
             logger.warning("BY-II: Rapid threat recognition via memory.")
             return 1.0
 
-        # Layer 2: Sigmoidal Detection (BY-I)
+        # Layer 2: Perceptual Mismatch Detection (CL-I)
+        if sample.get("perceptual_mismatch"):
+             logger.warning("IMMUNE: Sensory mismatch detected (Potential misinformation).")
+             return 0.9
+
+        # Layer 3: Perceptual Adversarial Detection (CL-II)
+        if sample.get("adversarial_score", 0.0) > 0.8:
+             logger.error("IMMUNE: Perceptual adversarial input detected.")
+             return 1.0
+
+        # Layer 4: Sigmoidal Detection (BY-I)
         perplexity = sample.get("perplexity", 0)
         k = 0.5
         score = 1.0 / (1.0 + math.exp(-k * (perplexity - self.ic50_perplexity)))
