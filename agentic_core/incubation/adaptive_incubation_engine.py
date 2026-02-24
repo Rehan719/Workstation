@@ -1,49 +1,47 @@
 import logging
 import asyncio
-from typing import List, Dict, Any
-from .goal_decomposer import GoalDecomposer
+from typing import Dict, Any, List
 from .ml_ensemble import MLEnsemble
 from .gate_calibrator import GateCalibrator
-from .autonomy_manager import AutonomyManager
-from .approval_manager import ApprovalManager
 
 logger = logging.getLogger(__name__)
 
-class AdaptiveIncubationEngine:
+class SelfDevelopmentPipeline:
     """
-    L-CO: Dynamically Adaptive Incubation Mechanism.
-    Manages the user-driven incubation environment with hybrid governance.
+    BZ: Autonomous Self-Development Pipeline.
+    Continuous background improvements and structured incubation.
     """
     def __init__(self):
-        self.decomposer = GoalDecomposer()
         self.ml_ensemble = MLEnsemble()
-        self.gate_calibrator = GateCalibrator()
-        self.autonomy_mgr = AutonomyManager()
-        self.approval_mgr = ApprovalManager()
-        self.active_projects = {}
+        self.calibrator = GateCalibrator()
+        self.active_incubations = []
 
-    async def start_incubation(self, goal: str, constraints: Dict[str, Any]):
-        logger.info(f"Starting incubation for goal: {goal}")
+    async def run_background_evolution(self):
+        """BZ-I: Continuous background micro-improvements."""
+        while True:
+            logger.debug("PIPELINE: Scanning for micro-improvement opportunities...")
+            # Simulate discovery of a small optimization
+            await asyncio.sleep(60) # Run every minute
 
-        # 1. Goal Decomposition
-        tasks = self.decomposer.decompose(goal)
-        logger.info(f"Decomposed goal into {len(tasks)} tasks.")
+    async def start_incubation_cycle(self, goal: str, duration: str):
+        """BZ-II: Structured incubation cycles."""
+        logger.info(f"INCUBATION: Starting cycle for '{goal}' (Duration: {duration})")
 
-        # 2. Adaptive Gate Calibration
-        # Simulated metrics for initial calibration
-        metrics = {"perplexity": 45.0, "entropy": 5.0, "dwell_time": 1.5}
-        thresholds = self.gate_calibrator.calibrate(metrics)
+        # BZ-V: Gestation Monitoring
+        project = {"goal": goal, "maturity": 0.0, "status": "gestating"}
+        self.active_incubations.append(project)
 
-        # 3. Hybrid Governance Execution
-        for task in tasks:
-            if self.autonomy_mgr.is_delegated(task):
-                await self._execute_task(task)
-            else:
-                await self.approval_mgr.request_approval(task, thresholds)
+        # Simulated growth
+        for i in range(1, 11):
+            await asyncio.sleep(0.5)
+            project["maturity"] = i / 10.0
+            logger.info(f"INCUBATION [{goal}]: Maturity {project['maturity']*100}%")
 
-        return {"status": "incubating", "goal": goal}
+        project["status"] = "matured"
+        return project
 
-    async def _execute_task(self, task: Dict[str, Any]):
-        logger.info(f"Executing delegated task: {task['name']}")
-        # Integration with content generators would happen here
-        await asyncio.sleep(0.1)
+    def get_approval_thresholds(self, metrics: Dict[str, float]) -> float:
+        """BZ-III: ML-Ensemble Adaptive Thresholding."""
+        risk = self.ml_ensemble.predict_risk(metrics)
+        thresholds = self.calibrator.calibrate(metrics)
+        return thresholds["approval_threshold"]

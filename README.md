@@ -1,11 +1,13 @@
-# Jules AI v60.0 – The Ultimate Grand Synthesis
+# Jules AI v61.0 – The Ultimate Scientific Organism
 
-Jules AI v60.0 is an autonomous, biologically-orchestrated, self-evolving scientific discovery organism. It represents the culmination of 60 versions of architectural evolution, moving beyond a static workstation to a living system.
+Jules AI v61.0 is a fully autonomous, biologically-orchestrated scientific organism with hard real-time veto mechanics and evolutionary synthesis.
 
 ## Key Features
-- **Grand Synthesis Engine**: Analyzes v1-v59 history to extract optimal architectural DNA.
-- **Adaptive Incubation**: Goal-driven growth with ML-calibrated approval gates.
-- **Integrated Biological Systems**: Subsystems (Immune, Nervous, Cardiovascular, Digestive, Aging, Survival) coordinating with <50ms reflex arcs.
+- **1.2MHz Pulse Clock**: Synchronizes all subsystems with 833ns granularity.
+- **Survival Instinct v2.0**: Hard real-time veto mechanics with strict priority hierarchy.
+- **Evolutionary Grand Synthesis**: Recursive self-improvement via constrained mutation operators.
+- **Ethical Fitness Scalar**: Dynamic integrity metric gating major decisions.
+- **Appetitive Digestive System**: Hunger-driven development with 68% lexical divergence thresholds.
 - **Quantum-AI Mastery**: Functional VQE simulators and QNLP processing.
 - **Five-Layer Verification**: Unassailable epistemic integrity from Merkle trees to Formal Proofs.
 
