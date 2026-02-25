@@ -3,57 +3,54 @@ import logging
 from typing import List, Dict, Any
 from .historical_analyzer import HistoricalAnalyzer
 from .conflict_resolver import ConflictResolver
-from .pattern_recognizer import PatternRecognizer
-from .constitutional_generator import ConstitutionalGenerator
+from .pattern_extractor import PatternExtractor
+from .dna_generator import DNAGenerator
 from .evolutionary_memory import EvolutionaryMemory
 
 logger = logging.getLogger(__name__)
 
 class GrandSynthesisEngine:
     """
-    L-CN: The Grand Synthesis Engine.
-    Analyzes and consolidates elements from versions v1-v60.
+    ARTICLE CN: The Grand Synthesis Engine.
+    Analyzes and consolidates all elements from versions v1-v60.
     """
     def __init__(self, history_paths: List[str]):
         self.analyzer = HistoricalAnalyzer(history_paths)
         self.resolver = ConflictResolver()
-        self.recognizer = PatternRecognizer()
-        self.generator = ConstitutionalGenerator()
+        self.extractor = PatternExtractor()
+        self.dna_gen = DNAGenerator()
         self.memory = EvolutionaryMemory()
         self.is_synthesized = False
 
     async def run_synthesis(self):
-        """Executes the full grand synthesis cycle."""
-        logger.info("Starting Grand Synthesis Cycle...")
+        """Executes the full grand synthesis cycle (CN-I to CN-V)."""
+        logger.info("CN: Starting Grand Synthesis Cycle...")
 
-        # 0. Load Previous Evolutionary Memory (Closing the loop)
-        previous_insights = self.memory.load_previous_insights()
-        logger.info(f"Loaded {len(previous_insights)} previous evolutionary data points.")
-
-        # 1. Historical Analysis
+        # CN-I. Comprehensive Historical Analysis
         raw_insights = await self.analyzer.analyze_all()
-        logger.info(f"Analyzed {len(raw_insights)} historical artifacts.")
+        logger.info(f"CN-I: Analyzed {len(raw_insights)} historical artifacts.")
 
-        # 2. Pattern Extraction
-        patterns = self.recognizer.extract_patterns(raw_insights)
-        logger.info(f"Extracted {len(patterns)} optimal architectural patterns.")
+        # CN-III. Optimal Pattern Extraction
+        patterns = self.extractor.extract_patterns(raw_insights)
+        logger.info(f"CN-III: Extracted {len(patterns)} optimal architectural patterns.")
 
-        # 3. Conflict Resolution
+        # CN-II. Conflict Resolution via Contextual Evaluation
         resolved_config = self.resolver.resolve_conflicts(patterns)
+        logger.info("CN-II: Conflicts resolved via contextual evaluation.")
 
-        # 4. Constitution Generation
-        constitution_path = self.generator.generate_v60_constitution(resolved_config)
-        logger.info(f"v60.0 Constitution generated at {constitution_path}")
+        # CN-IV. Immutable DNA Generation
+        constitution_path = self.dna_gen.generate_v60_constitution(resolved_config)
+        logger.info(f"CN-IV: v60.0 Constitution generated at {constitution_path}")
 
-        # 5. Store in UEG
+        # CN-V. Evolutionary Memory Storage
         self.memory.store_synthesis_results(resolved_config)
+        logger.info("CN-V: Synthesis insights stored in UEG.")
 
         self.is_synthesized = True
         logger.info("Grand Synthesis complete. Immutable DNA established.")
         return resolved_config
 
 if __name__ == "__main__":
-    # Example execution (simulated)
     logging.basicConfig(level=logging.INFO)
     engine = GrandSynthesisEngine(["."])
     asyncio.run(engine.run_synthesis())

@@ -1,54 +1,74 @@
 import logging
 import asyncio
 from typing import Dict, Any, List
+from .goal_decomposer import GoalDecomposer
+from .feature_extractor import FeatureExtractor
 from .ml_ensemble import MLEnsemble
 from .gate_calibrator import GateCalibrator
+from .autonomy_manager import AutonomyManager
+from .approval_manager import ApprovalManager
+from .escalation_manager import EscalationManager
+from .crypto_signer import CryptoSigner
 
 logger = logging.getLogger(__name__)
 
-class SelfDevelopmentPipeline:
+class AdaptiveIncubationEngine:
     """
-    BZ: Autonomous Self-Development Pipeline.
-    Continuous background improvements and structured incubation.
+    ARTICLE CO: Dynamically Adaptive Incubation Mechanism.
+    Orchestrates user-driven incubation with hybrid governance and ML-calibrated gates.
     """
     def __init__(self):
-        self.ml_ensemble = MLEnsemble()
+        self.decomposer = GoalDecomposer()
+        self.extractor = FeatureExtractor()
+        self.ensemble = MLEnsemble()
         self.calibrator = GateCalibrator()
-        self.active_incubations = []
+        self.autonomy = AutonomyManager()
+        self.approval = ApprovalManager()
+        self.escalation = EscalationManager()
+        self.signer = CryptoSigner()
+        self.active_projects = {}
 
-    async def run_background_evolution(self):
-        """BZ-I: Continuous background micro-improvements."""
-        while True:
-            logger.debug("PIPELINE: Scanning for micro-improvement opportunities...")
-            # Simulate discovery of a small optimization
-            await asyncio.sleep(60) # Run every minute
+    async def incubate_project(self, user_goal: Dict[str, Any]):
+        """CO-I: Goal-Driven Autonomy."""
+        logger.info(f"CO: Incubating project for goal: {user_goal['title']}")
 
-    async def start_incubation_cycle(self, goal: str, duration: str):
-        """BZ-II: Structured incubation cycles."""
-        logger.info(f"INCUBATION: Starting cycle for '{goal}' (Duration: {duration})")
+        # 1. Decompose goal into workflows
+        workflows = self.decomposer.decompose(user_goal)
 
-        # BZ-V: Gestation Monitoring
-        project = {"goal": goal, "maturity": 0.0, "status": "gestating"}
-        self.active_incubations.append(project)
+        for workflow in workflows:
+            # CO-II: Fully Delegated Autonomy for operational execution
+            if self.autonomy.is_delegated(workflow):
+                await self._execute_autonomously(workflow)
+            else:
+                # CO-VI: Conditional Approval Gates
+                approval = await self.approval.request_approval(workflow)
+                if approval['status'] == 'approved':
+                    await self._execute_with_oversight(workflow, approval['signature'])
+                else:
+                    logger.warning(f"Workflow {workflow['id']} rejected by user.")
 
-        # Simulated growth
-        for i in range(1, 11):
-            await asyncio.sleep(0.5)
-            project["maturity"] = i / 10.0
-            logger.info(f"INCUBATION [{goal}]: Maturity {project['maturity']*100}%")
+    async def _execute_autonomously(self, workflow: Dict[str, Any]):
+        logger.info(f"CO-II: Executing {workflow['id']} autonomously.")
+        # Simulated execution
+        await asyncio.sleep(0.1)
 
-        project["status"] = "matured"
-        return project
+    async def _execute_with_oversight(self, workflow: Dict[str, Any], signature: str):
+        logger.info(f"CO-VIII: Executing {workflow['id']} with cryptographic oversight.")
+        # CO-VIII: Cryptographic Signing validation
+        if self.signer.verify_signature(workflow, signature):
+            await asyncio.sleep(0.1)
+        else:
+            logger.error(f"CO-VIII: Invalid signature for workflow {workflow['id']}")
 
-    def get_approval_thresholds(self, metrics: Dict[str, float]) -> float:
-        """BZ-III: ML-Ensemble Adaptive Thresholding."""
-        risk = self.ml_ensemble.predict_risk(metrics)
-        thresholds = self.calibrator.calibrate(metrics)
-        return thresholds["approval_threshold"]
+    def calibrate_gates(self, content: str, user_signals: Dict[str, Any]):
+        """CO-V: ML Ensemble Calibration."""
+        # CO-III: Content Complexity Metrics
+        content_metrics = self.extractor.extract_content_features(content)
 
-    # Backward compatibility alias
-    async def start_incubation(self, goal: str, constraints: Dict[str, Any]):
-        return await self.start_incubation_cycle(goal, constraints.get("duration", "standard"))
+        # CO-IV: User Behavior Signals
+        behavior_metrics = self.extractor.extract_behavior_features(user_signals)
 
-# Backward compatibility alias
-AdaptiveIncubationEngine = SelfDevelopmentPipeline
+        # CO-V: Ensemble adjustment
+        thresholds = self.ensemble.calibrate_thresholds(content_metrics, behavior_metrics)
+        self.calibrator.apply_thresholds(thresholds)
+        return thresholds
