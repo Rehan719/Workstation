@@ -15,12 +15,3 @@ class ContractIntelligence:
             "compliance_status": "aligned",
             "obligations": ["milestone_delivery", "confidentiality"]
         }
-
-class RegulatoryCompliance:
-    """
-    CU: Regulatory Compliance Mandate.
-    Continuous monitoring of global regulations (EU AI Act, GDPR).
-    """
-    def check_compliance(self, action: Dict[str, Any]) -> bool:
-        logger.info(f"REGULATORY: Verifying compliance for action type: {action.get('type')}")
-        return True

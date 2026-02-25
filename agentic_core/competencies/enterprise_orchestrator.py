@@ -1,9 +1,9 @@
 import logging
 from typing import Dict, Any, List
-from .project_mgmt import ProjectManager
-from .contract_intel import ContractIntel
+from .project_management import ProjectManagementEngine
+from .contract_intelligence import ContractIntelligence
 from .marketing import MarketingGrowth
-from .research_dev import ResearchDevelopment
+from .rd_pipeline import ResearchDevelopment
 from .legal import LegalReasoning
 from .regulatory import RegulatoryCompliance
 from .business_dev import BusinessDevelopment
@@ -19,8 +19,8 @@ class EnterpriseOrchestrator:
     Coordinates the 10 professional competency modules to drive organizational goals.
     """
     def __init__(self):
-        self.project_manager = ProjectManager()
-        self.contract_intel = ContractIntel()
+        self.project_manager = ProjectManagementEngine()
+        self.contract_intel = ContractIntelligence()
         self.marketing = MarketingGrowth()
         self.research_dev = ResearchDevelopment()
         self.legal = LegalReasoning()
@@ -48,7 +48,7 @@ class EnterpriseOrchestrator:
 
             # 4. Marketing & Projects
             self.marketing.generate_campaign(opp['opportunity'])
-            self.project_manager.assign_task("Finalize Production Run", "ProductionAgent")
+            self.project_manager.create_project(opp['opportunity'], "Scale Up", {})
 
         # 5. Stakeholders
         report = self.stakeholders.generate_report("Board")
