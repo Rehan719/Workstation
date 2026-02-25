@@ -1,38 +1,56 @@
 import logging
 import time
+import numpy as np
+from multiprocessing import shared_memory
 from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
 class GlobalWorkspace:
     """
-    DB-I: Shared Memory Infrastructure.
-    Central workspace for global broadcast of subsystem state vectors.
+    ARTICLE DB: Low-Latency Shared Memory Infrastructure.
     Target latency: <10 ms.
+    Uses multiprocessing.shared_memory for zero-copy state aggregation.
     """
-    def __init__(self):
-        self.workspace: Dict[str, Any] = {}
-        self.ignition_listeners: List[Any] = []
-        self.last_ignition_timestamp = 0.0
+    def __init__(self, name: str = "jules_v70_workspace", size: int = 1024):
+        self.name = name
+        self.size = size
+        try:
+            self.shm = shared_memory.SharedMemory(name=name, create=True, size=size)
+            logger.info(f"WORKSPACE: Created shared memory segment '{name}'.")
+        except FileExistsError:
+            self.shm = shared_memory.SharedMemory(name=name)
+            logger.info(f"WORKSPACE: Attached to existing shared memory segment '{name}'.")
 
-    def publish_state(self, component_id: str, state_vector: Dict[str, Any]):
-        """Publishes state with latency tracking."""
+        # State Vector Schema (Simplified for simulation)
+        # We use a numpy array backed by shared memory
+        self.state_array = np.ndarray((16,), dtype=np.float64, buffer=self.shm.buf)
+        self.state_array.fill(0)
+
+    def publish_state(self, index: int, value: float):
+        """
+        Publishes a scalar state to a specific slot in the shared vector.
+        """
         start = time.perf_counter()
-        self.workspace[component_id] = {
-            "data": state_vector,
-            "timestamp": time.time()
-        }
+        self.state_array[index] = value
         latency_ms = (time.perf_counter() - start) * 1000
+
         if latency_ms > 10:
-            logger.warning(f"WORKSPACE: High latency publish: {latency_ms:.3f}ms")
+             logger.warning(f"WORKSPACE: High latency write: {latency_ms:.4f}ms")
 
-        logger.debug(f"WORKSPACE: Published {component_id} state.")
+    def read_workspace(self) -> np.ndarray:
+        """Returns the current state vector snapshot."""
+        return np.copy(self.state_array)
 
-    def read_workspace(self) -> Dict[str, Any]:
-        """Returns the full unified field of the workspace."""
-        return self.workspace
+    def close(self):
+        self.shm.close()
+        try:
+            self.shm.unlink()
+        except:
+            pass
 
-    def trigger_global_ignition(self):
-        """Simulates global broadcast/ignition event (<250ms)."""
-        self.last_ignition_timestamp = time.time()
-        logger.info("WORKSPACE: GLOBAL IGNITION triggered. Synchronizing modules.")
+    def __del__(self):
+        try:
+            self.shm.close()
+        except:
+            pass

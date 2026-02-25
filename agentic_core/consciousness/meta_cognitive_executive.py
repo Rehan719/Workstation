@@ -1,54 +1,67 @@
 import numpy as np
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
 class MetaCognitiveExecutive:
     """
     ARTICLE DB: Meta-Cognitive Executive (MCE).
-    Decision time <50 ms.
+    Hybrid RNN-Transformer Decision Logic.
+    Target decision time: <50 ms.
     """
-    def __init__(self):
-        # Weight matrices for simplified attention RNN
-        self.weights_q = np.random.rand(8, 8)
-        self.weights_k = np.random.rand(8, 8)
-        self.weights_v = np.random.rand(8, 8)
-        self.state = np.zeros(8)
+    def __init__(self, input_dim: int = 16, hidden_dim: int = 32):
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
 
-    def _process_state_vector(self, vector: np.ndarray) -> np.ndarray:
-        """Simplified Attention mechanism."""
-        q = np.dot(vector, self.weights_q)
-        k = np.dot(vector, self.weights_k)
-        v = np.dot(vector, self.weights_v)
+        # RNN (GRU-like) weights
+        self.w_rz = np.random.randn(input_dim + hidden_dim, hidden_dim * 2)
+        self.w_h = np.random.randn(input_dim + hidden_dim, hidden_dim)
+        self.h = np.zeros(hidden_dim)
 
-        # Softmax attention
-        score = np.dot(q, k.T) / np.sqrt(8)
-        attention = np.exp(score) / np.sum(np.exp(score))
+        # Transformer-Attention weights
+        self.w_q = np.random.randn(hidden_dim, hidden_dim)
+        self.w_k = np.random.randn(hidden_dim, hidden_dim)
+        self.w_v = np.random.randn(hidden_dim, hidden_dim)
 
-        return attention * v
+    def _attention(self, x):
+        q = np.dot(x, self.w_q)
+        k = np.dot(x, self.w_k)
+        v = np.dot(x, self.w_v)
 
-    def make_strategic_decision(self, workspace_state: Dict[str, Any]) -> Dict[str, Any]:
+        scores = np.dot(q, k.T) / np.sqrt(self.hidden_dim)
+        weights = np.exp(scores) / np.sum(np.exp(scores))
+        return weights * v
+
+    def make_strategic_decision(self, workspace_vec: np.ndarray) -> Dict[str, Any]:
         """
-        Consumes Global Workspace data and outputs a decision.
+        Processes shared memory vector through hybrid RNN-Attention logic.
         """
-        # Feature extraction from workspace
-        triad_data = workspace_state.get("triad", {})
-        redox_pot = triad_data.get("redox_potential_mv", -225)
-        atp = triad_data.get("atp_adp_ratio", 5.0)
+        # 1. RNN Update (Sequential memory)
+        concat = np.concatenate([workspace_vec[:self.input_dim], self.h])
+        self.h = np.tanh(np.dot(concat, self.w_h))
 
-        input_vec = np.array([redox_pot/300.0, atp/15.0, 0.5, 0.1, 0, 0, 0, 0])
-        self.state = self._process_state_vector(input_vec)
+        # 2. Attention (Contextual relevance)
+        attended_state = self._attention(self.h)
 
-        # Decision logic
+        # 3. Value Extraction
+        # Indices: 0=Redox, 1=ATP, 2=p53
+        redox = workspace_vec[0]
+        atp = workspace_vec[1]
+
+        # Article DN: Grounding cognition in physiological reality
         if atp < 2.0:
             action = "RESOURCE_CONSERVATION"
-            reason = "Energy ratio critical"
-        elif redox_pot > -210: # Sensitive threshold for v70.0
+            reason = f"Energy ratio critical (ATP/ADP={atp:.2f})"
+        elif redox > -210.0:
             action = "OXIDATIVE_REPAIR"
-            reason = f"High redox potential ({redox_pot:.1f}mV) detected"
+            reason = f"High redox potential ({redox:.1f}mV) exceeds threshold"
         else:
             action = "SCIENTIFIC_DISCOVERY"
-            reason = "Homeostasis maintained"
+            reason = "Organism homeostasis verified by MCE"
 
-        return {"action": action, "reason": reason, "mce_confidence": float(np.mean(self.state))}
+        return {
+            "action": action,
+            "reason": reason,
+            "mce_confidence": float(np.mean(np.abs(attended_state)))
+        }

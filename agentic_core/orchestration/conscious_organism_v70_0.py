@@ -7,6 +7,10 @@ from agentic_core.consciousness.workspace_integration import ConsciousnessEngine
 from agentic_core.genetics.genomic_registry import GenomicRegistry
 from agentic_core.governance.danger_signaling import DangerSignaling
 from agentic_core.interface.behavioral_proxies import BehavioralProxyPipeline
+from agentic_core.validation.biomimetic_fidelity import BiomimeticFidelityScorer
+from agentic_core.competencies.design_studio import DesignStudio
+from agentic_core.competencies.content_generator import ContentGenerator
+from agentic_core.competencies.rd_pipeline import ResearchDevelopment
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +31,12 @@ class ConsciousOrganismV70_0:
         self.danger = DangerSignaling()
         self.proxies = BehavioralProxyPipeline()
         self.phase_tracker = PhaseTracker()
+        self.fidelity_scorer = BiomimeticFidelityScorer()
+
+        # Commercial Modules
+        self.design_studio = DesignStudio()
+        self.content_gen = ContentGenerator()
+        self.rd_pipeline = ResearchDevelopment()
 
         logger.info(f"ORGANISM_v70: Instantiated instance {self.agent_id}")
 
@@ -46,21 +56,33 @@ class ConsciousOrganismV70_0:
         metabolic_state = self.triad.run_cycle(ros_level=ros)
 
         # 4. Cognitive Processing (L2)
-        cog_result = self.consciousness.run_cognitive_cycle({"triad": metabolic_state})
+        # Check for fidelity degradation before deciding
+        fidelity_report = self.fidelity_scorer.check_degradation(metabolic_state)
+
+        if fidelity_report["is_suspended"]:
+            action_result = {"action": "SUSPENDED", "reason": "Fidelity degradation detected."}
+        else:
+            cog_result = self.consciousness.run_cognitive_cycle({"triad": metabolic_state})
+            action_result = cog_result["decision"]
 
         # 5. Genomic Lineage (L3)
-        if cog_result["decision"]["action"] == "SCIENTIFIC_DISCOVERY":
+        if action_result["action"] == "SCIENTIFIC_DISCOVERY":
             self.genome.commit_mutation(
-                acquired_traits={"discovery": cog_result["decision"]["reason"]},
+                acquired_traits={"discovery": action_result["reason"]},
                 zkp_proof=f"zkp:{self.agent_id}"
             )
 
         return {
             "agent_id": self.agent_id,
-            "modality": cog_result["decision"]["action"],
-            "fidelity": 0.972,
+            "modality": action_result["action"],
+            "fidelity": fidelity_report["fidelity_score"],
             "triad": metabolic_state,
-            "mce": cog_result["decision"],
+            "mce": action_result,
             "genome_depth": self.genome.get_genome_depth(),
-            "inferred_neural": inferred_state
+            "inferred_neural": inferred_state,
+            "fidelity_report": fidelity_report
         }
+
+    def shutdown(self):
+        """Cleanup shared memory and resources."""
+        self.consciousness.cleanup()

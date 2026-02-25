@@ -26,10 +26,21 @@
     "timestamp": 1772026894.6835022,
     "genotype": {
       "traits": {
-        "discovery": "Homeostasis maintained"
+        "discovery": "Organism homeostasis verified by MCE"
       }
     },
     "previous_hash": "4bb8f531dd5f1bcea7eeb7aa490d6e54778b29d01740d2d69febc6929fc43f40",
     "zkp_proof": "zkp:514dfee6"
+  },
+  {
+    "index": 4,
+    "timestamp": 1772052854.0560992,
+    "genotype": {
+      "traits": {
+        "discovery": "Organism homeostasis verified by MCE"
+      }
+    },
+    "previous_hash": "80ed8c36c02ce162314c67563a056c8727ccf73110ecc1620880b2e6641583c0",
+    "zkp_proof": "zkp:0c41a532"
   }
 ]
