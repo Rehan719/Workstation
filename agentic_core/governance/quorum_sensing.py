@@ -1,44 +1,45 @@
-import time
 import logging
-import numpy as np
-from typing import Dict
+import time
+from typing import List
 
 logger = logging.getLogger(__name__)
 
 class QuorumSensing:
     """
-    DK, DD-III: Quorum-Sensing Consensus.
-    Autoinducer-2 (AI-2) analogs with calibrated t1/2 = 2 hours.
-    Consensus latency target: <= 200 ms.
+    ARTICLE DD: AI-2 Quorum Sensing.
+    Calibrated decay t½ = 2 hours.
     """
-    def __init__(self, min_colony_size: int = 5):
-        self.ai2_concentrations: Dict[str, float] = {} # agent_id -> conc
-        self.min_colony_size = min_colony_size
-        self.decay_rate = 0.346 # ln(2) / 2 hours = 0.346 h^-1
-        self.last_sync_time = time.time()
+    def __init__(self, node_id: str):
+        self.node_id = node_id
+        self.signal_strength = 0.0 # Concentration of AI-2
+        self.half_life_s = 7200.0 # 2 hours
+        self.last_decay = time.time()
+        self.nodes_detected = 0
 
-    def broadcast_health_signal(self, agent_id: str, intensity: float):
-        """Simulates secretion of AI-2 signal."""
-        start_sync = time.perf_counter()
-        self.ai2_concentrations[agent_id] = intensity * 100.0
+    def broadcast_signal(self):
+        """Simulates release of AI-2."""
+        self.signal_strength += 1.0
+        logger.debug(f"QUORUM: Node {self.node_id} broadcasted AI-2 signal.")
 
-        sync_latency = (time.perf_counter() - start_sync) * 1000
-        if sync_latency > 200:
-             logger.warning(f"QUORUM: Consensus sync latency ({sync_latency:.2f}ms) exceeded target.")
-
-        logger.debug(f"QUORUM: Node {agent_id} signaled. Colony size={len(self.ai2_concentrations)}")
-
-    def update_colony_state(self):
-        """Processes decay of signals across the ecosystem."""
+    def update_concentration(self, received_signals: int):
+        """
+        Updates concentration based on external signals and internal decay.
+        """
         now = time.time()
-        dt_h = (now - self.last_sync_time) / 3600.0
-        for aid in self.ai2_concentrations:
-             self.ai2_concentrations[aid] *= np.exp(-self.decay_rate * dt_h)
-        self.last_sync_time = now
+        dt = now - self.last_decay
+        self.last_decay = now
 
-    def has_ecosystem_quorum(self) -> bool:
-        """Determines if enough nodes are 'healthy' and active."""
-        active_nodes = sum(1 for c in self.ai2_concentrations.values() if c > 15.0)
-        quorum = active_nodes >= self.min_colony_size
-        logger.info(f"QUORUM: Active Nodes={active_nodes}, Result={quorum}")
-        return quorum
+        # Exponential decay: C = C0 * exp(-lambda * t)
+        lam = 0.693 / self.half_life_s
+        self.signal_strength *= (0.5 ** (dt / self.half_life_s))
+
+        # Add external signals
+        self.signal_strength += received_signals
+        self.nodes_detected = received_signals
+
+    def check_quorum(self, threshold: float = 5.0) -> bool:
+        """Determines if a 'Minimum Viable Colony' exists."""
+        is_met = self.signal_strength >= threshold
+        if is_met:
+             logger.info(f"QUORUM: Threshold reached ({self.signal_strength:.2f}). Activating group behavior.")
+        return is_met

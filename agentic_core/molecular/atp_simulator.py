@@ -1,34 +1,26 @@
+import numpy as np
 import logging
-import time
 
 logger = logging.getLogger(__name__)
 
 class ATPSimulator:
     """
-    Simulates ATP/ADP ratio as energy currency.
-    Update frequency: 50 ms.
+    DA-IV: ATP/ADP Ratio Simulation.
+    Target energy state: 2.0 to 10.0.
     """
     def __init__(self):
-        self.atp_adp_ratio = 5.0 # Healthy baseline
-        self.last_update = time.time()
+        self.ratio = 5.0
 
-    def update(self, production: float, demand: float):
+    def update(self, dt: float, metabolic_load: float):
         """
-        production: Input metabolic flux.
-        demand: Computational/executive load.
+        Energy consumption: ratio decreases with load.
+        Energy production: ratio increases with recovery.
         """
-        now = time.time()
-        dt = now - self.last_update
-        if dt < 0.05: # Enforce 50ms interval if called too fast
-             return self.atp_adp_ratio
+        consumption = 0.1 * metabolic_load
+        production = 0.5 # Basal respiration
 
-        self.last_update = now
+        # dE/dt = production - consumption
+        self.ratio += (production - consumption) * dt
+        self.ratio = max(0.5, min(15.0, self.ratio))
 
-        # dEnergy/dt = Production - Demand
-        self.atp_adp_ratio = max(0.1, self.atp_adp_ratio + (production - demand) * dt * 5.0)
-
-        # Homeostatic pull back to 5.0
-        self.atp_adp_ratio += (5.0 - self.atp_adp_ratio) * 0.01
-
-        logger.debug(f"ATP_SIM: Ratio={self.atp_adp_ratio:.2f}")
-        return self.atp_adp_ratio
+        return self.ratio

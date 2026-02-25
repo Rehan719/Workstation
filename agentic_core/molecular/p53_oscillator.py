@@ -1,53 +1,55 @@
 import numpy as np
 import logging
-import time
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
 class p53Oscillator:
     """
-    DA-I: p53-Mdm2 oscillator with redox sensing and conformational switching.
-    Implements 4-6 hour ultradian period with empirical parameters (2024-2026).
+    ARTICLE DA: p53-Mdm2 stochastic oscillator.
+    Implements 4-6 hour ultradian period with redox sensing.
     """
     def __init__(self, period_hours: float = 5.0):
-        self.period_seconds = period_hours * 3600
-        self.start_time = time.time()
-        # p53 conformational state (0: Denatured/Inactive, 1: Active)
-        self.active_fraction = 0.5
-        # Concentrations
+        self.period_s = period_hours * 3600
         self.p53 = 0.5
         self.mdm2 = 0.5
+        self.active_fraction = 0.5
+        self.phase = 0.0 # 0 to 2*pi
 
-    def update(self, dt: float, ros_level: float, nadh_ratio: float):
+    def update(self, dt: float, potential_mv: float, ros_level: float):
         """
-        Update oscillator based on redox conditions.
-        ROS thresholds: 0.5-1.2 uM hormetic, >2.5 uM apoptotic.
-        Redox sensing range: -240 to -210 mV.
+        Gillespie-inspired stochastic update for p53 conformational switching.
+        Redox range: -240 to -210 mV.
         """
-        # Redox-dependent conformational switch (sigmoid)
-        # Higher ROS/lower NADH -> Higher Active Fraction
-        redox_stress = (ros_level / 2.5) + (1.0 - nadh_ratio)
-        self.active_fraction = 1.0 / (1.0 + np.exp(-8 * (redox_stress - 0.6)))
+        # Conformational switch: p53 becomes more active as potential increases (oxidative)
+        # Midpoint at -225 mV. Sigmoid width 15 mV.
+        self.active_fraction = 1.0 / (1.0 + np.exp(-(potential_mv + 225.0) / 7.5))
 
-        # ODE system for p53-Mdm2 negative feedback
-        # dp53/dt = synthesis - degradation(mdm2)
-        # dmdm2/dt = synthesis(p53) - degradation
-        s_p53 = 0.1 * (1.0 + self.active_fraction) # Stress-induced synthesis
-        k_deg_p53 = 0.2 * self.mdm2
-        s_mdm2 = 0.15 * self.p53
-        k_deg_mdm2 = 0.1
+        # Hormetic ROS (0.5-1.2) stabilizes p53
+        if 0.5 <= ros_level <= 1.2:
+             self.active_fraction = min(1.0, self.active_fraction + 0.2)
 
-        self.p53 += (s_p53 - k_deg_p53 * self.p53) * dt
+        # Basic SDE for oscillator
+        # dp/dt = s1 - d1*m*p + sigma*dW
+        # dm/dt = s2*p - d2*m
+        s_p53 = 0.2 * (1.0 + self.active_fraction * 2.0)
+        k_deg_p53 = 0.3 * self.mdm2
+        s_mdm2 = 0.25 * self.p53
+        k_deg_mdm2 = 0.15
+
+        # Stochastic noise
+        noise = 0.05 * np.random.randn()
+
+        self.p53 += (s_p53 - k_deg_p53 * self.p53 + noise) * dt
         self.mdm2 += (s_mdm2 - k_deg_mdm2 * self.mdm2) * dt
 
-        # Clamp values
-        self.p53 = max(0.0, min(2.0, self.p53))
-        self.mdm2 = max(0.0, min(2.0, self.mdm2))
+        self.p53 = max(0.01, self.p53)
+        self.mdm2 = max(0.01, self.mdm2)
 
-        logger.debug(f"P53_OSC: p53={self.p53:.3f}, mdm2={self.mdm2:.3f}, ActiveFrac={self.active_fraction:.2f}")
+        # Update phase based on p53/mdm2 ratio (limit cycle approximation)
+        self.phase = np.arctan2(self.p53 - 0.7, self.mdm2 - 0.7)
+
         return self.p53, self.mdm2
 
     def get_phase(self) -> float:
-        """Returns current phase angle (0-2pi)"""
-        elapsed = (time.time() - self.start_time) % self.period_seconds
-        return (elapsed / self.period_seconds) * 2 * np.pi
+        return self.phase

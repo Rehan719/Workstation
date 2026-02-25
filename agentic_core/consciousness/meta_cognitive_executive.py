@@ -1,58 +1,54 @@
+import numpy as np
 import logging
-import time
 from typing import Dict, Any, List
-from .global_workspace import GlobalWorkspace
-from .self_model import UnifiedSelfModel
 
 logger = logging.getLogger(__name__)
 
 class MetaCognitiveExecutive:
     """
-    DB-II: Meta-Cognitive Executive.
-    Central reasoning engine grounded in physiological reality.
-    Decision latency: <50 ms.
+    ARTICLE DB: Meta-Cognitive Executive (MCE).
+    Decision time <50 ms.
     """
-    def __init__(self, workspace: GlobalWorkspace):
-        self.workspace = workspace
-        self.self_model = UnifiedSelfModel()
-        self.decision_history: List[Dict] = []
+    def __init__(self):
+        # Weight matrices for simplified attention RNN
+        self.weights_q = np.random.rand(8, 8)
+        self.weights_k = np.random.rand(8, 8)
+        self.weights_v = np.random.rand(8, 8)
+        self.state = np.zeros(8)
 
-    def perform_cognitive_cycle(self) -> Dict[str, Any]:
+    def _process_state_vector(self, vector: np.ndarray) -> np.ndarray:
+        """Simplified Attention mechanism."""
+        q = np.dot(vector, self.weights_q)
+        k = np.dot(vector, self.weights_k)
+        v = np.dot(vector, self.weights_v)
+
+        # Softmax attention
+        score = np.dot(q, k.T) / np.sqrt(8)
+        attention = np.exp(score) / np.sum(np.exp(score))
+
+        return attention * v
+
+    def make_strategic_decision(self, workspace_state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Executes one full cognitive loop: Read -> Model -> Plan -> Broadcast.
+        Consumes Global Workspace data and outputs a decision.
         """
-        start_cycle = time.perf_counter()
+        # Feature extraction from workspace
+        triad_data = workspace_state.get("triad", {})
+        redox_pot = triad_data.get("redox_potential_mv", -225)
+        atp = triad_data.get("atp_adp_ratio", 5.0)
 
-        # 1. Integrate Subsystem States
-        data = self.workspace.read_workspace()
-        self.self_model.update_from_workspace(data)
+        input_vec = np.array([redox_pot/300.0, atp/15.0, 0.5, 0.1, 0, 0, 0, 0])
+        self.state = self._process_state_vector(input_vec)
 
-        # 2. Strategic Intent Formulation (Simulated RNN/Attention)
-        intent = self._formulate_strategic_intent()
+        # Decision logic
+        if atp < 2.0:
+            action = "RESOURCE_CONSERVATION"
+            reason = "Energy ratio critical"
+        elif redox_pot > -210: # Sensitive threshold for v70.0
+            action = "OXIDATIVE_REPAIR"
+            reason = f"High redox potential ({redox_pot:.1f}mV) detected"
+        else:
+            action = "SCIENTIFIC_DISCOVERY"
+            reason = "Homeostasis maintained"
 
-        # 3. Publish Decision back to Workspace
-        self.workspace.publish_state("MCE_INTENT", intent)
-
-        latency_ms = (time.perf_counter() - start_cycle) * 1000
-        if latency_ms > 50:
-            logger.warning(f"MCE: Cycle latency ({latency_ms:.2f}ms) exceeded target.")
-
-        logger.info(f"MCE: Strategy formulated: {intent['action']}")
-        return intent
-
-    def _formulate_strategic_intent(self) -> Dict[str, Any]:
-        """Strategic logic grounded in self-model health and values."""
-        health = self.self_model.self_image["allostatic_health"]
-        focus = self.self_model.attention_focus
-
-        # Priority mapping
-        if health < 0.3:
-            return {"action": "SYSTEM_TRIAGE", "priority": 10, "reason": "Severe physiological stress"}
-
-        if focus == "STRESS_RESPONSE":
-            return {"action": "REALLOCATE_TO_MAINTENANCE", "priority": 8, "reason": "Hormetic response induction"}
-
-        if focus == "METABOLIC_CONSERVATION":
-            return {"action": "THROTTLE_NON_ESSENTIAL", "priority": 7, "reason": "Energy deficit mitigation"}
-
-        return {"action": "EXPLORATORY_RESEARCH", "priority": 5, "reason": "Organism stable, executing tasks"}
+        return {"action": action, "reason": reason, "mce_confidence": float(np.mean(self.state))}

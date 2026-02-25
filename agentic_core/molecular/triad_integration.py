@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict, Any
+from typing import Dict, Any, List
 from .p53_oscillator import p53Oscillator
 from .ubiquitin_system import UbiquitinSystem
 from .hsp_network import HSPNetwork
@@ -9,69 +9,50 @@ from .atp_simulator import ATPSimulator
 
 logger = logging.getLogger(__name__)
 
-class MolecularTriad:
+class TriadIntegrator:
     """
-    DA-IV: Triad Integration.
-    Couples p53, Ubiquitin, and HSP systems into a closed-loop metabolic-respiratory governor.
+    ARTICLE DA: The definitive metabolic-respiratory core integration.
     """
     def __init__(self):
-        self.p53 = p53Oscillator()
+        self.redox_sensor = RedoxSensor()
+        self.p53_osc = p53Oscillator()
         self.ubiquitin = UbiquitinSystem()
         self.hsp = HSPNetwork()
-        self.redox = RedoxSensor()
         self.atp = ATPSimulator()
-        self.last_step_time = time.time()
-        self.tagging_latency_s = 0.0
+        self.last_update = time.time()
 
-    def run_step(self, substrate_availability: float, demand: float) -> Dict[str, Any]:
+    def run_cycle(self, ros_level: float = 0.8, nadh_ratio: float = 0.5) -> Dict[str, Any]:
         """
-        Executes a biological integration step.
-        substrate: 0.0 to 1.0 (input nutrient flux)
-        demand: 0.0 to 1.0 (executive/task load)
+        Executes one metabolic pulse cycle.
         """
-        start_step = time.perf_counter()
         now = time.time()
-        dt = now - self.last_step_time
-        self.last_step_time = now
+        dt = now - self.last_update
+        self.last_update = now
 
-        # 1. Update Sensors
-        ros, nad_ratio, mv = self.redox.update_state(metabolic_load=demand)
-        energy_ratio = self.atp.update(production=substrate_availability, demand=demand)
+        # 1. Redox Sensing
+        potential = self.redox_sensor.calculate_potential(ros_level, nadh_ratio)
+        stress_state = self.redox_sensor.get_stress_state(potential)
 
-        # 2. Update Components
-        p53_level, mdm2_level = self.p53.update(dt, ros, nad_ratio / 10.0)
-        degraded = self.ubiquitin.process_cycle(dt)
-        refolded = self.hsp.process_refolding(dt, energy_ratio)
+        # 2. ATP Simulation
+        atp_ratio = self.atp.update(dt, ros_level * 2.0)
 
-        # DA-II: Tagging Latency tracking
-        # We simulate tagging latency based on ubiquitin stress
-        self.tagging_latency_s = self.ubiquitin.get_stress_index() * 5.0 # Up to 5s
+        # 3. p53 Oscillation
+        p53_val, mdm2_val = self.p53_osc.update(dt, potential, ros_level)
 
-        # DA-II: Tagging latency < 3.7 s inhibits registry writes until refolding >= 92% fidelity.
-        registry_inhibited = self.tagging_latency_s > 3.7
-        refolding_fidelity = 0.95 if not degraded else 0.85 # Simplified
+        # 4. Ubiquitin & HSP Maintenance
+        degraded = self.ubiquitin.update(dt)
+        atp_turnover = self.hsp.calculate_turnover(atp_ratio, ros_level)
 
-        # 3. Cross-Coupling Logic (Closed Loop)
-        if ros > 2.5:
-             logger.critical("TRIAD: Apoptotic threshold exceeded. Triggering genomic stress protocols.")
-             self.ubiquitin.tag_resource("ExcessMetabolite_Critical", "K48", 0.9)
-
-        if p53_level > 1.2:
-             self.hsp.bind_misfolded(f"Protein_Denatured_p53_{int(time.time())}")
-
-        state_vector = {
-            "p53_level": p53_level,
-            "p53_phase": self.p53.get_phase(),
-            "ubiquitin_stress": self.ubiquitin.get_stress_index(),
-            "hsp_occupancy": self.hsp.get_occupancy_rate(),
-            "ros_level": ros,
-            "nad_nadh_ratio": nad_ratio,
-            "atp_adp_ratio": energy_ratio,
-            "redox_potential_mv": mv,
-            "tagging_latency_s": self.tagging_latency_s,
-            "registry_inhibited": registry_inhibited,
-            "refolding_fidelity": refolding_fidelity
+        state = {
+            "redox_potential_mv": potential,
+            "stress_state": stress_state,
+            "atp_adp_ratio": atp_ratio,
+            "p53_level": p53_val,
+            "p53_phase": self.p53_osc.get_phase(),
+            "ubiquitin_stress": self.ubiquitin.stress_index,
+            "hsp_atp_turnover": atp_turnover,
+            "degraded_components": degraded
         }
 
-        logger.info(f"TRIAD_STEP: p53={p53_level:.2f}, Energy={energy_ratio:.2f}, ROS={ros:.2f}")
-        return state_vector
+        logger.info(f"TRIAD_PULSE: State={stress_state}, Pot={potential:.1f}mV, p53={p53_val:.2f}")
+        return state

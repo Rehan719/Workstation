@@ -1,35 +1,43 @@
-import logging
 import time
 from typing import Dict, Any
 from .global_workspace import GlobalWorkspace
-from agentic_core.molecular.triad_integration import MolecularTriad
+from .meta_cognitive_executive import MetaCognitiveExecutive
+from .gamma_coherence import GammaCoherenceMonitor
+from .ignition_detector import IgnitionDetector
 
-logger = logging.getLogger(__name__)
-
-class WorkspaceIntegration:
+class ConsciousnessEngine:
     """
-    DB-IV: Foundational Layer Integration.
-    Explicitly connects the Molecular Triad to the Global Workspace.
-    Ensures cognition is grounded in physiological reality.
+    ARTICLE DB: High-level consciousness orchestrator.
+    Stress Response: Triad-to-MCE loop <100 ms.
     """
-    def __init__(self, workspace: GlobalWorkspace, triad: MolecularTriad):
-        self.workspace = workspace
-        self.triad = triad
+    def __init__(self):
+        self.workspace = GlobalWorkspace()
+        self.mce = MetaCognitiveExecutive()
+        self.gamma_monitor = GammaCoherenceMonitor()
+        self.ignition = IgnitionDetector()
 
-    def synchronize(self, substrate: float, load: float) -> Dict[str, Any]:
-        """
-        Polls the triad and publishes the state vector to the workspace.
-        Target: <100ms response from detection to strategic reallocation.
-        """
-        start_sync = time.perf_counter()
+    def run_cognitive_cycle(self, subsystem_states: Dict[str, Any]) -> Dict[str, Any]:
+        start = time.perf_counter()
 
-        # 1. Run Triad step
-        state_vector = self.triad.run_step(substrate, load)
+        # 1. Publish all to workspace
+        for cid, state in subsystem_states.items():
+            self.workspace.publish_state(cid, state)
 
-        # 2. Publish to Workspace
-        self.workspace.publish_state("molecular_triad", state_vector)
+        # 2. Strategic Decision (MCE)
+        workspace_full = self.workspace.read_workspace()
+        # Flattened for MCE
+        triad_state = workspace_full.get("triad", {}).get("data", {})
+        decision = self.mce.make_strategic_decision({"triad": triad_state})
 
-        latency_ms = (time.perf_counter() - start_sync) * 1000
-        logger.debug(f"INTEGRATION: Triad-Workspace sync latency: {latency_ms:.2f}ms")
+        # 3. Coherence and Ignition
+        import numpy as np
+        sig1 = np.random.rand(100)
+        sig2 = np.random.rand(100)
+        self.gamma_monitor.calculate_coherence(sig1, sig2)
 
-        return state_vector
+        duration_ms = (time.perf_counter() - start) * 1000
+        return {
+            "decision": decision,
+            "integrated": self.gamma_monitor.is_consciously_integrated(),
+            "cycle_latency_ms": duration_ms
+        }

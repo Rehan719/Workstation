@@ -1,30 +1,45 @@
-import logging
 import numpy as np
+import logging
+from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
 class RedoxSensor:
     """
-    Simulates cellular redox state: NAD+/NADH and ROS levels.
-    Redox potential range: -240 to -210 mV.
+    ARTICLE DA: Redox Sensing Core.
+    Operating within -240 to -210 mV.
+    Maps ROS (uM) and NADH ratio to a voltage potential.
     """
     def __init__(self):
-        self.ros_level = 0.3 # uM
-        self.nad_nadh_ratio = 8.0 # Baseline
-        self.redox_mv = -230.0 # Baseline mV
+        self.v_mid = -225.0  # mV
+        self.k = 30.0        # Simplified Nernst slope
+        self.ros_level = 0.8 # uM
+        self.nadh_ratio = 0.5 # NAD+ / (NAD+ + NADH)
 
-    def update_state(self, metabolic_load: float):
+    def calculate_potential(self, ros: float, nadh_ratio: float) -> float:
         """
-        metabolic_load: 0.0 (idle) to 1.0 (overload)
-        Higher load -> Higher ROS, lower NAD/NADH, higher potential (less negative).
+        Computes cellular redox potential based on metabolism.
         """
-        # Linear/sigmoid mapping
-        self.ros_level = 0.1 + (metabolic_load * 3.0) # 0.1 to 3.1 uM
-        self.nad_nadh_ratio = max(1.0, 10.0 - (metabolic_load * 8.0))
+        self.ros_level = ros
+        self.nadh_ratio = nadh_ratio
 
-        # Nernst-like potential shift
-        # -240 (healthy) to -210 (oxidized)
-        self.redox_mv = -240.0 + (metabolic_load * 30.0)
+        # Simplified Nernst equation implementation for p53-redox coupling
+        # Potential decreases (more negative) as NADH increases
+        potential = self.v_mid + self.k * np.log10(max(nadh_ratio, 0.01) / max(1.0 - nadh_ratio, 0.01))
 
-        logger.debug(f"REDOX: ROS={self.ros_level:.2f}uM, Ratio={self.nad_nadh_ratio:.1f}, Potential={self.redox_mv:.1f}mV")
-        return self.ros_level, self.nad_nadh_ratio, self.redox_mv
+        # ROS shift: ROS increases oxidative potential (makes it more positive)
+        # 1 uM shift approx 5 mV
+        potential += (ros - 0.8) * 5.0
+
+        # Clamp to physiological range for v70.0
+        potential = max(-260.0, min(-190.0, potential))
+        return potential
+
+    def get_stress_state(self, potential: float) -> str:
+        """ROS thresholds: 0.5-1.2 uM (hormetic), >2.5 uM (apoptotic)."""
+        if self.ros_level > 2.5:
+            return "APOPTOTIC"
+        elif 0.5 <= self.ros_level <= 1.2:
+            return "HORMETIC"
+        else:
+            return "BASAL"

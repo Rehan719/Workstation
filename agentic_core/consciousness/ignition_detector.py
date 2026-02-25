@@ -5,27 +5,19 @@ logger = logging.getLogger(__name__)
 
 class IgnitionDetector:
     """
-    DB-III: Ignition Latency Tracking.
-    Measures the time for information to reach global conscious ignition.
-    Target: < 250 ms.
+    ARTICLE DB: Detects 'ignition' of global broadcast.
+    Latency target: <250 ms.
     """
-    def __init__(self):
-        self.start_time = 0.0
-        self.ignition_latencies = []
+    def __init__(self, threshold: float = 0.5):
+        self.threshold = threshold
+        self.last_ignition_time = 0.0
 
-    def start_broadcast(self):
-        self.start_time = time.perf_counter()
-
-    def confirm_ignition(self) -> float:
-        if self.start_time == 0.0:
-            return 0.0
-
-        latency_ms = (time.perf_counter() - self.start_time) * 1000
-        self.ignition_latencies.append(latency_ms)
-        self.start_time = 0.0
-
-        if latency_ms > 250:
-            logger.warning(f"IGNITION: Latency ({latency_ms:.2f}ms) exceeded target.")
-
-        logger.info(f"IGNITION: Global ignition confirmed in {latency_ms:.2f}ms.")
-        return latency_ms
+    def detect_ignition(self, workspace_entropy: float) -> bool:
+        """
+        Ignition occurs when entropy drops (information integration).
+        """
+        if workspace_entropy < self.threshold:
+            self.last_ignition_time = time.time()
+            logger.info(f"CONSCIOUSNESS: Ignition detected. Entropy: {workspace_entropy:.3f}")
+            return True
+        return False

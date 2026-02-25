@@ -1,31 +1,26 @@
-import logging
-from typing import Dict
+import numpy as np
+from typing import Dict, Any
 
-logger = logging.getLogger(__name__)
-
-class BiomimeticFidelity:
+class BiomimeticFidelityScorer:
     """
-    DG: Biomimetic Fidelity Validation.
-    Computes scores (0.0 to 1.0) for each layer based on empirical parameter matching.
+    ARTICLE DF: Hierarchical Implementation Blueprint.
+    Computes fidelity scores for each layer based on empirical targets.
     """
-    def __init__(self):
-        self.fidelity_scores = {
-            "L1_Molecular": 0.98,
-            "L2_Consciousness": 0.96,
-            "L3_Evolution": 0.99,
-            "L4_Governance": 0.97,
-            "L5_Interface": 0.95
-        }
+    def compute_layer_da_fidelity(self, state: Dict[str, Any]) -> float:
+        # Targets: p53 phase lock ±5%, ubiquitin accuracy >95%
+        # Simplified: check if redox potential is in range
+        potential = state.get("redox_potential_mv", 0)
+        if -240 <= potential <= -210:
+            return 1.0
+        return 0.5
 
-    def compute_layer_fidelity(self, layer: str, measured_params: Dict) -> float:
-        """
-        In a real system, this would compare runtime telemetry to 2024-2026 targets.
-        """
-        # Simulated logic
-        score = 0.95 + (0.05 * measured_params.get("stability", 0.8))
-        self.fidelity_scores[layer] = score
-        logger.info(f"FIDELITY: Layer {layer} score = {score:.4f}")
-        return score
+    def compute_layer_db_fidelity(self, cycle_latency: float) -> float:
+        # Target: Stress response loop <100 ms
+        if cycle_latency < 100:
+            return 1.0
+        return 0.1
 
-    def get_overall_fidelity(self) -> float:
-        return sum(self.fidelity_scores.values()) / len(self.fidelity_scores)
+    def compute_global_fidelity(self, results: Dict[str, Any]) -> float:
+        f1 = self.compute_layer_da_fidelity(results.get("triad", {}))
+        f2 = self.compute_layer_db_fidelity(results.get("mce", {}).get("latency", 20.0))
+        return (f1 + f2) / 2.0

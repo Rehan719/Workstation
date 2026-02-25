@@ -5,31 +5,23 @@ logger = logging.getLogger(__name__)
 
 class EEGIntegration:
     """
-    DE-II: EEG Integration.
-    Real-time EEG acquisition with SQI monitoring.
+    ARTICLE DE: EEG Data Stream Integration.
+    Fallback Switch: <50 ms latency at SQI < 0.7.
     """
     def __init__(self):
-        self.device_connected = False
-        self.sqi = 0.0
+        self.sqi = 0.9 # Signal Quality Index
+        self.active_modality = "EEG"
 
-    def connect_bci(self):
-        self.device_connected = True
-        logger.info("EEG: BCI hardware connected.")
+    def get_raw_signal(self):
+        """Simulates raw EEG data."""
+        # Random noise for simulation
+        if self.sqi < 0.7:
+            self.active_modality = "BEHAVIORAL_PROXY"
+            logger.warning(f"EEG: SQI low ({self.sqi:.2f}). Falling back to Proxies.")
+        else:
+            self.active_modality = "EEG"
 
-    def get_signal_quality(self) -> float:
-        if not self.device_connected: return 0.0
-        # Simulating fluctuations in signal quality
-        self.sqi = 0.85 + random.uniform(-0.2, 0.1)
-        return self.sqi
+        return [random.uniform(-50, 50) for _ in range(8)]
 
-class HybridFallback:
-    """
-    DL, DE-IV: Hybrid Adaptive Fallback.
-    Seamless switching between EEG and Behavioral Proxies.
-    Switch latency target: < 50 ms.
-    """
-    def decide_modality(self, eeg_sqi: float) -> str:
-        if eeg_sqi >= 0.7:
-            return "BCI_EEG"
-        logger.info("FALLBACK: Low SQI detected. Switching to BEHAVIORAL_PROXIES.")
-        return "BEHAVIORAL_PROXIES"
+    def update_sqi(self, new_sqi: float):
+        self.sqi = new_sqi
