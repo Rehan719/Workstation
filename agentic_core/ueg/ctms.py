@@ -93,5 +93,4 @@ class ContinuousTruthMaintenanceSystem:
 
 class ContinuousTruthMaintenance(ContinuousTruthMaintenanceSystem):
     """Wrapper for backward compatibility."""
-    def __init__(self, ueg: UnifiedEvidenceGraph):
-        super().__init__(ueg)
+    pass

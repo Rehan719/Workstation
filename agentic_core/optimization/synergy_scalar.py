@@ -19,10 +19,8 @@ class SynergyScalar:
         social_alignment = subsystem_metrics.get("social_alignment", 1.0)
 
         # Synergy increases with accuracy and decreases with overhead
-        # Updated formula to align with test: base_synergy - overhead/2 - contention/2
-        contention = subsystem_metrics.get("resource_contention", 0.0)
         base_synergy = (binding_accuracy + social_alignment) / 2
-        self.scalar = round(max(0.0, base_synergy - (overhead + contention) / 2), 4)
+        self.scalar = round(max(0.0, base_synergy - overhead), 4)
 
         if self.scalar < 0.6:
             logger.warning(f"LOW SYNERGY DETECTED: {self.scalar}. Triggering optimization.")

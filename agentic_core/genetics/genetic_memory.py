@@ -12,7 +12,7 @@ class GeneticMemory:
     def __init__(self, ueg_path: str = "meta/ueg_graph.json"):
         self.ueg_path = ueg_path
 
-    def store_genetic_event(self, ueg: Any, event_type: str, data: Dict[str, Any]):
+    def store_genetic_event(self, event_type: str, data: Dict[str, Any]):
         logger.info(f"GENETIC LOGGING: Recording {event_type} in UEG.")
-        # CA-VI: Stores genetic event in UEG ledger
-        ueg.ledger.add_transaction('genetic_memory', f'GENETIC_{event_type.upper()}', data)
+        # Actual implementation would append to ueg_graph.json
+        pass
