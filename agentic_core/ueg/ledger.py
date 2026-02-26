@@ -22,7 +22,11 @@ class BlockchainLedger:
         if os.path.exists(self.persistence_path):
             try:
                 with open(self.persistence_path, 'r') as f:
-                    self.blocks = json.load(f)
+                    content = f.read()
+                    if content:
+                        self.blocks = json.loads(content)
+                    else:
+                        self.blocks = []
             except Exception:
                 self.blocks = []
 

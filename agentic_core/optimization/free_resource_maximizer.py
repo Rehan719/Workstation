@@ -20,6 +20,11 @@ class FreeResourceMaximizer:
         logger.info("RESOURCE ALLOCATION: Falling back to Free Cloud Tier.")
         return "free_cloud_tier"
 
-    def track_dependencies(self, decision: str, cost: float = 0.0):
+    def track_dependencies(self, ueg: Any, decision: str, cost: float = 0.0):
         """Logs resource usage in UEG."""
-        pass
+        ueg.ledger.add_transaction('resource_maximizer', 'RESOURCE_ALLOCATION', {
+            'decision': decision,
+            'cost': cost,
+            'type': 'Zero-Cost OSS' if cost == 0 else 'Paid API'
+        })
+        logger.info(f"RESOURCE ALLOCATION: Logged {decision} to UEG with cost {cost}")

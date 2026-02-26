@@ -1,0 +1,29 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+plugins: cov-7.0.0, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+__________________ ERROR collecting tests/v70_mastery_test.py __________________
+ImportError while importing test module '/app/tests/v70_mastery_test.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/v70_mastery_test.py:5: in <module>
+    from agentic_core.orchestration.conscious_organism_v70_0 import ConsciousOrganismV70_0
+agentic_core/orchestration/conscious_organism_v70_0.py:6: in <module>
+    from agentic_core.consciousness.workspace_integration import ConsciousnessEngine
+agentic_core/consciousness/workspace_integration.py:6: in <module>
+    from .gamma_coherence import GammaCoherenceMonitor
+agentic_core/consciousness/gamma_coherence.py:3: in <module>
+    from scipy.signal import hilbert, cwt
+E   ImportError: cannot import name 'cwt' from 'scipy.signal' (/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/scipy/signal/__init__.py)
+=========================== short test summary info ============================
+ERROR tests/v70_mastery_test.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 1.92s ===============================

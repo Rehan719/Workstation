@@ -21,6 +21,8 @@ class EvolutionNexus:
         # Simulated verification
         return True
 
-    async def apply_mutation(self, mutation: Dict[str, Any]):
-        """Applies a verified mutation."""
-        pass
+    async def apply_mutation(self, ueg: Any, mutation: Dict[str, Any]):
+        """Applies a verified mutation and logs to UEG."""
+        # DCs-III: Mutation logging in Unified Evidence Graph
+        ueg.ledger.add_transaction('evolution_nexus', 'APPLY_MUTATION', mutation)
+        logger.info(f"EVOLUTION: Applied mutation {mutation.get('id', 'unknown')} and logged to UEG.")
