@@ -7,8 +7,8 @@ class NumericalErrorAnalyzer:
     Article BM: Numerical Error Analysis (v53 Mastery).
     v53 Upgrade: Performs automated error analysis and precision tuning.
     """
-    def __init__(self):
-        pass
+    def __init__(self, baseline_epsilon: float = 2**-52):
+        self.baseline_epsilon = baseline_epsilon
 
     async def analyze_error(self, result: float, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """

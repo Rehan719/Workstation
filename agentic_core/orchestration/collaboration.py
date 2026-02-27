@@ -43,8 +43,8 @@ class CryptographicContributionAttribution:
     Article AC: Contribution Attribution (v53 Mastery).
     Tracks and signs every user/agent contribution for provenance.
     """
-    def __init__(self):
-        pass
+    def __init__(self, key: str = "master_v70_key"):
+        self.key = key
 
     def attribute_contribution(self, user_id: str, action_data: Any) -> Dict[str, Any]:
         timestamp = datetime.now(timezone.utc).isoformat()

@@ -6,18 +6,21 @@ from .ubiquitin_system import UbiquitinSystem
 from .hsp_network import HSPNetwork
 from .redox_sensor import RedoxSensor
 from .atp_simulator import ATPSimulator
+from .chaperone_cascade import ChaperoneCascade
 
 logger = logging.getLogger(__name__)
 
 class TriadIntegrator:
     """
     ARTICLE DA: The definitive metabolic-respiratory core integration.
+    Enhanced for v71.0 Alpha.
     """
     def __init__(self):
         self.redox_sensor = RedoxSensor()
         self.p53_osc = p53Oscillator()
         self.ubiquitin = UbiquitinSystem()
         self.hsp = HSPNetwork()
+        self.cascade = ChaperoneCascade()
         self.atp = ATPSimulator()
         self.last_update = time.time()
 
@@ -41,7 +44,11 @@ class TriadIntegrator:
 
         # 4. Ubiquitin & HSP Maintenance
         degraded = self.ubiquitin.update(dt)
-        atp_turnover = self.hsp.calculate_turnover(atp_ratio, ros_level)
+        # v71.0: HSP turnover is now redox-gated
+        atp_turnover = self.hsp.calculate_turnover(atp_ratio, ros_level, potential)
+
+        # 5. Chaperone Cascade Partitioning
+        cascade_state = self.cascade.process_fold({}, potential)
 
         state = {
             "redox_potential_mv": potential,
@@ -51,7 +58,9 @@ class TriadIntegrator:
             "p53_phase": self.p53_osc.get_phase(),
             "ubiquitin_stress": self.ubiquitin.stress_index,
             "hsp_atp_turnover": atp_turnover,
-            "degraded_components": degraded
+            "degraded_components": degraded,
+            "keap1_active": self.redox_sensor.nrf2_released,
+            "cascade": cascade_state
         }
 
         logger.info(f"TRIAD_PULSE: State={stress_state}, Pot={potential:.1f}mV, p53={p53_val:.2f}")

@@ -9,8 +9,8 @@ class AdaptiveXAI:
     Article BL: Adaptive Explainable AI.
     v52.0 Mastering: SHAP attribution + Conformal Prediction + Counterfactuals.
     """
-    def __init__(self):
-        pass
+    def __init__(self, baseline_data: Optional[pd.DataFrame] = None):
+        self.baseline_data = baseline_data if baseline_data is not None else pd.DataFrame(np.random.rand(100, 3))
 
     async def explain(self, model: Any, input_data: Any, user_profile: Dict[str, Any]) -> Dict[str, Any]:
         """

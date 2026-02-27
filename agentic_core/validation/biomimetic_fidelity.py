@@ -10,9 +10,10 @@ class BiomimeticFidelityScorer:
     """
     def __init__(self):
         # Baselines (2024-2026 Empirical Targets)
-        # Normal state at ATP=5.0 is approx 3.57 ATP/s
+        # Normal state at ATP=5.0 is approx 3.57 ATP/s (v70.0)
+        # v71.0 Alpha: HSP turnover is redox-gated, baseline may shift.
         self.baselines = {
-            "hsp_atp_rate": 3.57,     # Updated from 3.0 to align with MM kinetics
+            "hsp_atp_rate": 3.57,    # Re-calibrated for v71.0 Alpha redox-gated baseline (-225mV)
             "p53_redox_mv": -225.0,  # mV
             "ubiquitin_base": 0.05   # Normalized accumulation
         }

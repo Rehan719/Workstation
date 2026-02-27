@@ -13,22 +13,25 @@ class HSPNetwork:
         self.occupancy = 0.0
         self.atp_turnover = 3.0 # base ATP/s
 
-    def calculate_turnover(self, atp_adp_ratio: float, ros_level: float) -> float:
+    def calculate_turnover(self, atp_adp_ratio: float, ros_level: float, redox_potential: float = -225.0) -> float:
         """
-        Computes ATPase turnover based on energy availability.
+        Computes ATPase turnover based on energy availability and redox state (v71.0).
         Target range: 1-5 ATP/sec.
         """
         # Michaelis-Menten like kinetics
-        # Max rate 5.0
         v_max = 5.0
-        km = 2.0 # Ratio at which half-max is achieved
-        rate = v_max * (atp_adp_ratio / (km + atp_adp_ratio))
+        km = 2.0
+        # For basal at ratio=5.0, rate is 5 * 5/7 = 3.57
+        base_rate = v_max * (atp_adp_ratio / (km + atp_adp_ratio))
 
-        # ROS activation: Stress increases chaperone activity
-        if ros_level > 1.2:
-            rate = min(5.0, rate * 1.5)
+        # ARTICLE DA-II: Redox-gated activation (v71.0)
+        # More negative potential (stress) -> higher chaperone activity.
+        # Ensure we capture a clear increase in stressful potentials
+        # If V < -225, gate starts to grow
+        redox_gate = 1.0 + max(0.0, (-225.0 - redox_potential) / 15.0)
 
-        self.atp_turnover = max(1.0, rate)
+        # Combined rate limited to max 5.0
+        self.atp_turnover = min(5.0, max(1.0, base_rate * redox_gate))
         return self.atp_turnover
 
     def refold_artifact(self, artifact_id: str, atp_adp_ratio: float, ros_level: float) -> bool:

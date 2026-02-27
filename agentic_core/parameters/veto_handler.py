@@ -24,8 +24,9 @@ class VetoHandler:
 
         # Logic to check survival engine if needed
         if self.survival_engine:
-             # Add check here
-             pass
+             from agentic_core.survival.latency_arbiter import SystemTier
+             if not self.survival_engine.validate_action(SystemTier.NERVOUS, {"parameter": param_name, "value": new_value}):
+                 self.trigger_veto(f"Survival Engine action validation failed for {param_name}")
 
         duration = (time.perf_counter() - start) * 1000
         logger.debug(f"VETO: Mutation evaluation for {param_name} took {duration:.4f}ms")

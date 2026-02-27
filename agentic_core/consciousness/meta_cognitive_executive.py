@@ -35,7 +35,7 @@ class MetaCognitiveExecutive:
 
     def make_strategic_decision(self, workspace_vec: np.ndarray) -> Dict[str, Any]:
         """
-        Processes shared memory vector through hybrid RNN-Attention logic.
+        Processes shared memory vector through hybrid RNN-Attention logic with predictive modeling (v71.0).
         """
         # 1. RNN Update (Sequential memory)
         concat = np.concatenate([workspace_vec[:self.input_dim], self.h])
@@ -44,21 +44,30 @@ class MetaCognitiveExecutive:
         # 2. Attention (Contextual relevance)
         attended_state = self._attention(self.h)
 
-        # 3. Value Extraction
-        # Indices: 0=Redox, 1=ATP, 2=p53
+        # 3. Predictive Value Extraction (v71.0)
+        # Indices: 0=Redox, 1=ATP, 2=p53, 3=HSP, 4=Ubiquitin
         redox = workspace_vec[0]
         atp = workspace_vec[1]
+        hsp = workspace_vec[3]
+
+        # Phase 1 Objective: Predictive Allostatic Load
+        # If redox is worsening or ATP is falling faster than baseline
+        # In a real RNN this would be handled by internal state, here we emulate:
+        predicted_redox = redox + 2.0 # simplified future trend
 
         # Article DN: Grounding cognition in physiological reality
-        if atp < 2.0:
+        if atp < 2.5: # Increased threshold for v71.0 proactivity
             action = "RESOURCE_CONSERVATION"
-            reason = f"Energy ratio critical (ATP/ADP={atp:.2f})"
-        elif redox > -210.0:
+            reason = f"Predictive energy ratio warning (ATP/ADP={atp:.2f})"
+        elif predicted_redox > -215.0: # Tightened threshold for predictive repair
             action = "OXIDATIVE_REPAIR"
-            reason = f"High redox potential ({redox:.1f}mV) exceeds threshold"
+            reason = f"Impending high redox ({predicted_redox:.1f}mV) anticipated"
+        elif hsp < 2.0: # HSP-driven proactivity
+            action = "PROTEOSTATIC_BOOST"
+            reason = "HSP availability dropping below predictive safety margin"
         else:
             action = "SCIENTIFIC_DISCOVERY"
-            reason = "Organism homeostasis verified by MCE"
+            reason = "Organism homeostasis verified by MCE (Predictive)"
 
         return {
             "action": action,

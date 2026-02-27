@@ -20,12 +20,13 @@ class ConsciousnessEngine:
     def run_cognitive_cycle(self, triad_state: Dict[str, Any]) -> Dict[str, Any]:
         start = time.perf_counter()
 
-        # 1. Publish to Shared Memory Workspace
+        # 1. Publish to Shared Memory Workspace (Indices v71.0)
+        # 0=Redox, 1=ATP, 2=p53, 3=HSP, 4=Ubiquitin
         self.workspace.publish_state(0, triad_state.get("redox_potential_mv", -225.0))
         self.workspace.publish_state(1, triad_state.get("atp_adp_ratio", 5.0))
         self.workspace.publish_state(2, triad_state.get("p53_level", 0.5))
-        self.workspace.publish_state(3, triad_state.get("ubiquitin_stress", 0.05))
-        self.workspace.publish_state(4, triad_state.get("hsp_atp_turnover", 3.0))
+        self.workspace.publish_state(3, triad_state.get("hsp_atp_turnover", 3.0))
+        self.workspace.publish_state(4, triad_state.get("ubiquitin_stress", 0.05))
 
         # 2. Strategic Decision (MCE)
         workspace_vec = self.workspace.read_workspace()
