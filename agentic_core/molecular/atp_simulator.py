@@ -11,13 +11,14 @@ class ATPSimulator:
     def __init__(self):
         self.ratio = 5.0
 
-    def update(self, dt: float, metabolic_load: float):
+    def update(self, dt: float, metabolic_load: float, circadian_efficiency: float = 1.0):
         """
         Energy consumption: ratio decreases with load.
         Energy production: ratio increases with recovery.
+        v71.0: circadian_efficiency improves production (P/O ratio) by up to 19%.
         """
         consumption = 0.1 * metabolic_load
-        production = 0.5 # Basal respiration
+        production = 0.5 * circadian_efficiency
 
         # dE/dt = production - consumption
         self.ratio += (production - consumption) * dt

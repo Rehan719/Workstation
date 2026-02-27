@@ -97,5 +97,27 @@
     },
     "previous_hash": "6295bfe7b35a1db65a21937b9892832ce965345227032fad3b51850146954915",
     "zkp_proof": "zkp:950c20e2"
+  },
+  {
+    "index": 10,
+    "timestamp": 1772214291.3377676,
+    "genotype": {
+      "traits": {
+        "discovery": "Organism homeostasis verified by MCE (Predictive)"
+      }
+    },
+    "previous_hash": "07a8b43322a4b7a6752edc707d322f0fada4cd38aecc2083a078eb4c2c781a9f",
+    "zkp_proof": "zkp:7cdf19e9"
+  },
+  {
+    "index": 11,
+    "timestamp": 1772214291.3656247,
+    "genotype": {
+      "traits": {
+        "discovery": "Organism homeostasis verified by MCE (Predictive)"
+      }
+    },
+    "previous_hash": "8414cd69971f4a37e354499d57afc8caab5d5c2eb808cc4a5c24d55cb95ffb82",
+    "zkp_proof": "zkp:60bd61b7"
   }
 ]
