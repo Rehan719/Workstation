@@ -46,11 +46,13 @@ class GlobalWorkspace:
         self.shm.close()
         try:
             self.shm.unlink()
-        except:
+        except Exception as e:
+            logger.debug(f"WORKSPACE: Unlink handled: {e}")
             pass
 
     def __del__(self):
         try:
             self.shm.close()
-        except:
+        except Exception as e:
+            logger.debug(f"WORKSPACE: Unlink handled: {e}")
             pass

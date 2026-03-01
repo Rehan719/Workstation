@@ -22,4 +22,7 @@ class FreeResourceMaximizer:
 
     def track_dependencies(self, decision: str, cost: float = 0.0):
         """Logs resource usage in UEG."""
-        pass
+        logger.info(f"RESOURCE AUDIT: {decision} (Estimated Cost: ${cost:.4f})")
+        # Functional logic to ensure Article 6 (Zero-Cost) is monitored
+        if cost > 0.0:
+            logger.warning("ARTICLE 6 VIOLATION: Non-zero cost resource allocated.")

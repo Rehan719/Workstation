@@ -55,7 +55,8 @@ class SignalingProtocol:
                 signal = self.low_priority_queue.get(timeout=0.1)
                 self._dispatch(signal)
             except queue.Empty:
-                pass
+                # v71.0 Alpha: Functional empty queue handling
+                logger.debug("SIGNAL: Queue empty, awaiting signals.")
 
     def _dispatch(self, signal: SwarmSignal):
         for handler in self.handlers[signal.signal_type]:

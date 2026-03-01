@@ -11,6 +11,10 @@ from agentic_core.validation.biomimetic_fidelity import BiomimeticFidelityScorer
 from agentic_core.competencies.design_studio import DesignStudio
 from agentic_core.competencies.content_generator import ContentGenerator
 from agentic_core.competencies.rd_pipeline import ResearchDevelopment
+from agentic_core.triad.quantum.qnlp_processor import QNLPProcessor
+from agentic_core.verification.multi_prover import MultiProverFramework
+from agentic_core.digestion.appetite_engine import AppetiteEngine
+from agentic_core.immunity.immune_checkpoint import ImmuneCheckpoint
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +26,7 @@ class ConsciousOrganismV70_0:
     """
     ARTICLE DN: The definitive Jules AI v70.0 master orchestrator.
     Synthesizes all layers into a singular digital organism.
+    v71.0 Alpha: Unified scientific and business workflows.
     """
     def __init__(self):
         self.agent_id = str(uuid.uuid4())[:8]
@@ -33,12 +38,29 @@ class ConsciousOrganismV70_0:
         self.phase_tracker = PhaseTracker()
         self.fidelity_scorer = BiomimeticFidelityScorer()
 
-        # Commercial Modules
+        # v71.0 Unified Competencies (Business & Science)
         self.design_studio = DesignStudio()
         self.content_gen = ContentGenerator()
         self.rd_pipeline = ResearchDevelopment()
 
-        logger.info(f"ORGANISM_v70: Instantiated instance {self.agent_id}")
+        # v71.0 Unified Scientific Infrastructure
+        self.appetite = AppetiteEngine()
+        self.immune_check = ImmuneCheckpoint()
+        self.qnlp = QNLPProcessor(immune_checkpoint=self.immune_check)
+        self.prover = MultiProverFramework(immune_checkpoint=self.immune_check)
+
+        logger.info(f"ORGANISM_v71: Instantiated instance {self.agent_id}")
+
+    def process_scientific_discovery(self, source: str, raw_data: Dict[str, Any]):
+        """Unified scholarship logic (formerly scholarship_orchestrator)."""
+        nutrition = self.appetite.ingest(source, raw_data)
+        if nutrition < 0.5:
+            return {"status": "REJECTED", "reason": "Low nutrition"}
+
+        stability = self.qnlp.analyze_claim(raw_data.get("claim", ""))
+        if stability > 0.8:
+            return self.prover.prove_hypothesis(raw_data.get("id", "H0"), raw_data.get("formal_logic", ""))
+        return {"status": "PENDING", "stability": stability}
 
     def run_lifecycle_pulse(self, user_dwell_ms: float, user_latency_ms: float) -> Dict[str, Any]:
         """

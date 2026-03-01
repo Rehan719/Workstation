@@ -19,11 +19,15 @@ class BlockchainLedger:
             self._create_genesis_block()
 
     def _load(self):
+        """Loads the blockchain from persistence with integrity check."""
         if os.path.exists(self.persistence_path):
             try:
                 with open(self.persistence_path, 'r') as f:
                     self.blocks = json.load(f)
-            except Exception:
+                    if not self.verify_integrity():
+                        logger.error("LEDGER: Integrity check FAILED during load.")
+            except Exception as e:
+                logger.error(f"LEDGER: Load error: {e}")
                 self.blocks = []
 
     def _save(self):
@@ -119,7 +123,8 @@ class UnifiedEvidenceGraph:
                         self.graph.add_node(node['id'], **node['metadata'])
                     for edge in data.get('edges', []):
                         self.graph.add_edge(edge['source'], edge['target'], **edge['metadata'])
-            except Exception:
+            except Exception as e:
+                logger.error(f"UEG: Load error: {e}")
                 pass
 
     def _save(self):

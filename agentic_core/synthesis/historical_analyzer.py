@@ -11,18 +11,27 @@ class HistoricalAnalyzer:
         self.paths = paths
 
     async def analyze_all(self) -> List[Dict[str, Any]]:
+        """CN-I: Comprehensive Historical Analysis."""
         insights = []
-        # Find all background text files and current code
+        # Find all background text files, current code, and version maps
         files_to_analyze = []
         for path in self.paths:
-            files_to_analyze.extend(glob.glob(os.path.join(path, "*.txt")))
-            files_to_analyze.extend(glob.glob(os.path.join(path, "src/**/*.py"), recursive=True))
+            # Recursively find all documentation and source code
+            files_to_analyze.extend(glob.glob(os.path.join(path, "**/*.txt"), recursive=True))
+            files_to_analyze.extend(glob.glob(os.path.join(path, "agentic_core/**/*.py"), recursive=True))
             files_to_analyze.extend(glob.glob(os.path.join(path, "meta/**/*.md"), recursive=True))
+            files_to_analyze.extend(glob.glob(os.path.join(path, "docs/**/*.md"), recursive=True))
+
+        # Explicitly include the version history map
+        version_map = "docs/planning/version_history_map.md"
+        if os.path.exists(version_map) and version_map not in files_to_analyze:
+            files_to_analyze.append(version_map)
 
         for filepath in files_to_analyze:
-            insight = self._analyze_file(filepath)
-            if insight:
-                insights.append(insight)
+            if os.path.isfile(filepath):
+                insight = self._analyze_file(filepath)
+                if insight:
+                    insights.append(insight)
 
         return insights
 
