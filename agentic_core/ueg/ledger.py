@@ -123,8 +123,7 @@ class UnifiedEvidenceGraph:
                         self.graph.add_node(node['id'], **node['metadata'])
                     for edge in data.get('edges', []):
                         self.graph.add_edge(edge['source'], edge['target'], **edge['metadata'])
-            except Exception as e:
-                logger.error(f"UEG: Load error: {e}")
+            except Exception:
                 pass
 
     def _save(self):

@@ -158,3 +158,11 @@ meta/ueg_graph.json
 meta/ledger.json
 meta/genome_ledger.json
 *.log
+
+# Jules AI v71.0 Beta Artifacts
+meta/
+logs/
+artifacts/
+*.log
+__pycache__/
+.pytest_cache/
