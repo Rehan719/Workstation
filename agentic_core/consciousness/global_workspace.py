@@ -43,11 +43,11 @@ class GlobalWorkspace:
         return np.copy(self.state_array)
 
     def close(self):
-        self.shm.close()
         try:
+            self.shm.close()
             self.shm.unlink()
-        except:
-            pass
+        except Exception as e:
+            logger.debug(f"Shm cleanup info: {e}")
 
     def __del__(self):
         try:

@@ -1,6 +1,9 @@
 import os
 import logging
+<<<<<<< HEAD
 import json
+=======
+>>>>>>> origin/jules-ai-v10-foundation-15734730789908784640
 
 class BaseGenerator:
     def __init__(self, output_dir: str = "output/incubation"):
@@ -15,6 +18,7 @@ class BaseGenerator:
 
 class ReportGenerator(BaseGenerator):
     def generate_report(self, title: str, data: dict):
+<<<<<<< HEAD
         content = f"""# Scientific Report: {title}
 ## Abstract
 {data.get('abstract', 'Autonomous scientific discovery facilitated by Jules AI v60.0.')}
@@ -30,11 +34,16 @@ class ReportGenerator(BaseGenerator):
 - Verification Status: PASSED
 """
         return self.generate(content, f"report_{title.lower().replace(' ', '_')}.md")
+=======
+        content = f"# Scientific Report: {title}\n\n## Abstract\n{data.get('abstract', 'N/A')}\n\n## Results\n{data.get('results', 'N/A')}"
+        return self.generate(content, f"{title.lower().replace(' ', '_')}.md")
+>>>>>>> origin/jules-ai-v10-foundation-15734730789908784640
 
 class PresentationGenerator(BaseGenerator):
     def generate_slides(self, title: str, slides: list):
         content = f"# Presentation: {title}\n"
         for i, slide in enumerate(slides):
+<<<<<<< HEAD
             content += f"\n---\n## Slide {i+1}: {slide['title']}\n{slide['content']}\n"
         return self.generate(content, f"slides_{title.lower().replace(' ', '_')}.md")
 
@@ -76,3 +85,7 @@ class AppGenerator(BaseGenerator):
         with open(path, "w") as f:
             json.dump(manifest, f, indent=4)
         return path
+=======
+            content += f"\n## Slide {i+1}: {slide['title']}\n{slide['content']}\n"
+        return self.generate(content, f"{title.lower().replace(' ', '_')}_slides.md")
+>>>>>>> origin/jules-ai-v10-foundation-15734730789908784640

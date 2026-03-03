@@ -5,46 +5,51 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 class DNAGenerator:
-    """CN-IV: Immutable DNA Generation."""
+    """CN-IV: Immutable DNA Generation for v92.0."""
 
-    def generate_v60_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation."""
-        version = config.get("version", "60.0.0")
-        major_version = version.split('.')[0]
-        path = f"agentic_core/constitution/CONSTITUTION_v{major_version}.0.md"
+    def generate_v92_constitution(self, config: Dict[str, Any]) -> str:
+        """CN-IV: Immutable DNA Generation for Project OMEGA v92.0."""
+        version = "92.0.0-beta.1"
+        path = "agentic_core/constitution/CONSTITUTION_v92.0.md"
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
-        mode = config.get("orchestration_mode", "conscious_digital_organism")
-        hierarchy = " > ".join(config.get("survival_instinct_hierarchy", ["Immune", "Nervous", "Digestive", "Aging"]))
-        params = config.get("parameters", {})
-
-        content = f"""# JULES AI v{version}: THE META-COGNITIVE CONSTITUTION
+        content = f"""# JULES AI v{version}: THE OMEGA CONSTITUTION
 
 ## ⚜️ PREAMBLE
-This document establishes the immutable DNA of Jules AI v{version}, a fully autonomous, {mode}, self-evolving scientific organism. It represents the grand synthesis of all iterations from v1 to v{major_version}.
+This document establishes the definitive, unified DNA of Jules AI v92.0, a self-evolving digital organism.
+It represents the grand synthesis of ninety-two generations of evolutionary history (v1.0 - v92.0).
 
-## 🔄 ARTICLE 73 (CN): THE GRAND SYNTHESIS ENGINE MANDATE
-The system must continuously analyze its evolutionary history (v1-v{major_version}) to resolve conflicts and extract optimal patterns. All architectural shifts must be recorded in the Unified Evidence Graph.
+## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
+**ARTICLE 47: SUPREME PRIORITY**
+The organism must prioritize resource allocation in the following absolute order:
+**IMMUNE SYSTEM > NERVOUS SYSTEM > DIGESTIVE SYSTEM > AGING**
 
-## 🧪 ARTICLE 74 (CO): THE DYNAMICALLY ADAPTIVE INCUBATION MECHANISM
-Incubation of scholarly projects is governed by hybrid autonomy and ML-calibrated gates (XGBoost, Isolation Forest). Maturity is tracked via cellular senescence detection and telomere-like versioning.
+## ⚙️ SECTION II: OPERATIONAL MANDATES (Articles 48-63)
+**ARTICLE 60: NO-STUBS MANDATE**
+All code within the core hierarchy must contain functional logic; stubs and placeholders are strictly prohibited.
 
-## ⚙️ ARTICLE 75 (CP): THE TIERED BIOLOGICAL PARAMETERIZATION MANDATE
-1. **Tier 1 (Foundationally Fixed)**: Reflex arc latency <50ms, cryptographic key sizes, formal proof axioms.
-2. **Tier 2 (Environmentally Tunable)**: Synaptic scaling τ_H ({params.get('synaptic_scaling_tau', 18.6)}s baseline), learning rates, anomaly thresholds.
-3. **Tier 3 (User-Controlled)**: Dashboard-exposed Tier 2 parameters with safe-range enforcement.
+## 🔄 SECTION III: TRANSITION & MIGRATION (Articles 64-77)
+**ARTICLE 73: GRAND SYNTHESIS ENGINE**
+The system must maintain an operational Grand Synthesis Engine to resolve historical conflicts and extract optimal traits.
 
-## 🧠 ARTICLE 76 (CQ): THE CONTEXT-AWARE META-COGNITIVE RL PORTFOLIO
-The system dynamically adjusts the 70/30 capability/innovation split based on task complexity (cognitive load ≥4.2), performance degradation (>12.7% latency), and user engagement (dwell time >8.2s).
+**ARTICLE 77: GRADUATED BALANCED TRANSITION**
+All version migrations must follow a 5-cycle graduated protocol with fidelity-gated validation.
 
-## 🧬 ARTICLE 77: SURVIVAL INSTINCT HIERARCHY
-The Meta-Cognitive Executive (MCE) must resolve all resource allocation conflicts according to the strict priority:
-**{hierarchy}** (Immune > Nervous > Digestive > Aging).
+## 🧠 SECTION IV: ADVANCED COGNITION (Articles 78-89)
+**ARTICLE 78: MINIMAX ADVERSARIAL OPTIMIZATION**
+Decision cycles must evaluate worst-case strategy outcomes to ensure adversarial robustness.
 
-## 🔬 EMPIRICAL TARGETS (v{version})
-- **Redox Midpoint**: {params.get('redox_midpoint', -225.0)} mV.
-- **Reflex Latency**: < {params.get('reflex_latency', 50)} ms.
-- **HSP ATPase**: 1-5 ATP/sec.
+**ARTICLE 81: DYNAMIC ADAPTIVE BALANCED APPROACH (DABA)**
+Resource allocation must dynamically adjust between stability (Axis X) and innovation (Axis Y) based on system confidence scores.
+
+**ARTICLE 84: BALANCED FOUNDATIONALISM**
+Initial scaffolding for all twenty-two knowledge pillars must receive equal weight to prevent fragile dependencies.
+
+**ARTICLE 85: HYBRID META-LEARNING ORACLE**
+The system shall maintain runtime-switchable optimization between Bayesian and Reinforcement Learning.
+
+**ARTICLE 89: CROSS-PILLAR CONSENSUS**
+All modules must demonstrate simultaneous activation of all 22 pillars prior to production operation.
 
 ---
 *Codified via Grand Synthesis Engine v{version}*

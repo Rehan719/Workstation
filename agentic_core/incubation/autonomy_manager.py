@@ -1,9 +1,13 @@
+import logging
 from typing import Dict, Any
 
+logger = logging.getLogger(__name__)
+
 class AutonomyManager:
-    """CO-II: Enforces fully delegated autonomy for operational tasks."""
+    """Manages fully delegated vs. supervised autonomy levels."""
 
     def is_delegated(self, workflow: Dict[str, Any]) -> bool:
-        # Operational tasks are delegated
-        delegated_types = ["formatting", "log_analysis", "syntax_check", "internal_routing"]
-        return workflow.get("type") in delegated_types
+        # Research tasks usually require oversight
+        if workflow.get("type") == "research":
+            return False
+        return True

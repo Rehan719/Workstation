@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class AdaptiveIncubationEngine:
     """
-    ARTICLE CO: Dynamically Adaptive Incubation Mechanism.
+    ARTICLE 74: Dynamically Adaptive Incubation Mechanism.
     Orchestrates user-driven incubation with hybrid governance and ML-calibrated gates.
     """
     def __init__(self):
@@ -30,7 +30,7 @@ class AdaptiveIncubationEngine:
 
     async def incubate_project(self, user_goal: Dict[str, Any]):
         """CO-I: Goal-Driven Autonomy."""
-        logger.info(f"CO: Incubating project for goal: {user_goal['title']}")
+        logger.info(f"CO: Incubating project for goal: {user_goal.get('title', 'Untitled')}")
 
         # 1. Decompose goal into workflows
         workflows = self.decomposer.decompose(user_goal)
@@ -42,23 +42,26 @@ class AdaptiveIncubationEngine:
             else:
                 # CO-VI: Conditional Approval Gates
                 approval = await self.approval.request_approval(workflow)
-                if approval['status'] == 'approved':
-                    await self._execute_with_oversight(workflow, approval['signature'])
+                if approval.get('status') == 'approved':
+                    await self._execute_with_oversight(workflow, approval.get('signature'))
                 else:
-                    logger.warning(f"Workflow {workflow['id']} rejected by user.")
+                    logger.warning(f"Workflow {workflow.get('id')} rejected by user.")
+
+    async def start_incubation(self, goal: str, constraints: Dict[str, Any]):
+        """Compatibility layer for legacy callers."""
+        logger.info(f"Starting incubation for goal: {goal}")
+        return await self.incubate_project({"title": goal, "constraints": constraints})
 
     async def _execute_autonomously(self, workflow: Dict[str, Any]):
-        logger.info(f"CO-II: Executing {workflow['id']} autonomously.")
-        # Simulated execution
+        logger.info(f"CO-II: Executing {workflow.get('id')} autonomously.")
         await asyncio.sleep(0.1)
 
     async def _execute_with_oversight(self, workflow: Dict[str, Any], signature: str):
-        logger.info(f"CO-VIII: Executing {workflow['id']} with cryptographic oversight.")
-        # CO-VIII: Cryptographic Signing validation
+        logger.info(f"CO-VIII: Executing {workflow.get('id')} with cryptographic oversight.")
         if self.signer.verify_signature(workflow, signature):
             await asyncio.sleep(0.1)
         else:
-            logger.error(f"CO-VIII: Invalid signature for workflow {workflow['id']}")
+            logger.error(f"CO-VIII: Invalid signature for workflow {workflow.get('id')}")
 
     def calibrate_gates(self, content: str, user_signals: Dict[str, Any]):
         """CO-V: ML Ensemble Calibration."""

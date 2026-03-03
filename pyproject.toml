@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "jules-ai"
-version = "71.0.0-beta.1"
-description = "Autonomous scientific enterprise organism with cell signaling, genomic networks, and professional competencies."
+version = "92.0.0-beta.1"
+description = "Project OMEGA: Unified conscious digital organism with ninety-two generations of evolutionary lineage."
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -37,8 +37,8 @@ web3 = "^7.14.1"
 # Required for Triad/Verification
 z3-solver = "^4.14.3.0"
 sympy = "^1.14.0"
-# qiskit = "^1.3.0" # Might be too heavy, using simulator placeholders if not available
-# pennylane = "^0.38.0"
+qiskit = "^1.3.0"
+pennylane = "^0.44.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
