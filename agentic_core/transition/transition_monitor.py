@@ -25,3 +25,19 @@ class TransitionMonitor:
         latest = self.telemetry[-1]["metrics"].get(metric, 0)
         previous = self.telemetry[-2]["metrics"].get(metric, 0)
         return latest - previous
+
+    def get_v93_readiness(self) -> Dict[str, Any]:
+        """Assesses readiness for v93.0 POLYMATH era."""
+        if not self.telemetry: return {"status": "NO_DATA"}
+
+        latest_fidelity = self.telemetry[-1]["metrics"].get("fidelity", 0)
+        stability_trend = self.get_trend("stability")
+
+        ready = latest_fidelity >= 0.98 and stability_trend >= 0
+
+        return {
+            "status": "READY" if ready else "IN_TRANSITION",
+            "fidelity": latest_fidelity,
+            "trend": stability_trend,
+            "v93_gate": ready
+        }

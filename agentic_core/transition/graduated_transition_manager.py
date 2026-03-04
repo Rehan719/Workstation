@@ -19,12 +19,15 @@ class GraduatedTransitionManager:
         progress = self.current_phase / self.total_phases
         # Transition from 60% Triad focus to 4.5% per pillar (1/22nd)
         triad_weight = 0.60 - (0.555 * progress)
-        other_weight = (1.0 - triad_weight) / 19  # 22 total pillars - 3 triad pillars
+        # Handle v93+ 22-pillar target: triad_weight should converge to 3/22 (~0.136)
+        # progress=1.0 -> triad_weight = 0.60 - 0.555 = 0.045 (wait, 0.045*22=0.99)
+        # So at progress 1.0, each of the 22 pillars gets 0.04545 (1/22)
+        other_weight = (1.0 - triad_weight) / 19 if self.current_phase < self.total_phases else (1.0 / 22)
 
         return {
-            "triad": round(triad_weight, 4),
-            "pillars": round(other_weight, 4),
-            "progress": progress * 100
+            "triad_aggregate": round(triad_weight, 4),
+            "per_pillar": round(1.0 / 22, 4) if self.current_phase == self.total_phases else round(other_weight, 4),
+            "progress_percent": progress * 100
         }
 
     def advance_cycle(self, gate_metrics: Dict[str, Any]) -> bool:
