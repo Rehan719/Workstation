@@ -24,7 +24,6 @@ class NervousSystem:
 
     def _reflex_arc(self, signal: Dict[str, Any], start: float):
         # Tier 1 fixed: <50ms
-<<<<<<< HEAD
         # Benchmarked against human H-reflex (40-45ms)
         logger.info("Executing PERIPHERAL REFLEX ARC...")
         time.sleep(0.042) # 42ms processing (simulating biological baseline)
@@ -36,17 +35,6 @@ class NervousSystem:
         logger.info("Executing CENTRAL DELIBERATIVE REASONING...")
         time.sleep(0.4) # 400ms processing
         return {"latency": (time.time() - start) * 1000, "path": "central"}
-=======
-        logger.info("Executing PERIPHERAL REFLEX ARC...")
-        time.sleep(0.01) # 10ms processing
-        return {"latency": (time.time() - start) * 1000}
-
-    def _deliberative_cortex(self, signal: Dict[str, Any], start: float):
-        # Tier 2 tunable: 200-800ms
-        logger.info("Executing CENTRAL DELIBERATIVE REASONING...")
-        time.sleep(0.3) # 300ms processing
-        return {"latency": (time.time() - start) * 1000}
->>>>>>> origin/jules-ai-v10-foundation-15734730789908784640
 
     def maintain_homeostasis(self):
         """Astrocyte-inspired homeostasis: ±5% firing rate regulation."""

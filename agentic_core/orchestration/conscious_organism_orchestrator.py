@@ -16,8 +16,12 @@ from agentic_core.interface.eeg_integration import EEGIntegration, HybridFallbac
 from agentic_core.interface.neuromorphic_cortex import NeuromorphicCortex
 from agentic_core.validation.biomimetic_fidelity import BiomimeticFidelity
 from agentic_core.validation.phase_tracker import PhaseTracker
+from agentic_core.orchestrator.conscious_organism_v99 import ConsciousOrganismV99_0
 
 logger = logging.getLogger(__name__)
+
+# v99 Transcendent Alias
+ConsciousOrganismOrchestrator = ConsciousOrganismV99_0
 
 class ConsciousOrganismV70_0:
     """

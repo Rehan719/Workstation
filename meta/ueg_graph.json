@@ -17,5 +17,5 @@
         "qwen_reasoning_steps": 5,
         "retro_causal_optimization": true
     },
-    "version": "92.0.0"
+    "version": "99.0.0"
 }

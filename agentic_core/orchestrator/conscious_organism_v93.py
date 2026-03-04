@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 from agentic_core.molecular.triad_integration import TriadIntegrator
 from agentic_core.consciousness.global_workspace import GlobalWorkspace
 from agentic_core.consciousness.meta_cognitive_executive import MetaCognitiveExecutive
-from agentic_core.evolution.genomic_registry import GenomicRegistry
+from agentic_core.genetics.genomic_registry import GenomicRegistry
 from agentic_core.governance.sais_identity import SAISIdentity
 from agentic_core.validation.biomimetic_fidelity import BiomimeticFidelityScorer
 from agentic_core.cognition.minimax_optimizer import MinimaxOptimizer, default_utility_func

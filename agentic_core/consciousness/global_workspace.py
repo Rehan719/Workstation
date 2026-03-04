@@ -52,5 +52,5 @@ class GlobalWorkspace:
     def __del__(self):
         try:
             self.shm.close()
-        except:
-            pass
+        except Exception as e:
+            logger.debug(f"Shm __del__ cleanup: {e}")

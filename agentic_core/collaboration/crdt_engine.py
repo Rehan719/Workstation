@@ -3,6 +3,8 @@ import asyncio
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
+logger = logging.getLogger(__name__)
+
 class CRDTState:
     """
     ARTICLE 92: DUAL-MODE LOCAL-FIRST ARCHITECTURE.
@@ -56,8 +58,8 @@ class CRDTState:
                         resolved_val = self.conflict_resolver_hook(key, local_val, remote_val)
                         self.data[key] = resolved_val
                     else:
-                        # Default heuristic: keep local
-                        pass
+                        # Default heuristic: keep local (no-op)
+                        logger.debug(f"CRDT merge collision for {key}. Keeping local version.")
 
 class CollaborationManager:
     """Manages real-time multi-user collaboration sessions."""

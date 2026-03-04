@@ -52,6 +52,9 @@ class HistoricalAnalyzer:
         terms = [
             "Quantum", "Neuro-Symbolic", "Verification", "Blockchain", "UEG",
             "Immune", "Nervous", "Minimax", "Qwen", "Retro-Causal",
-            "Balanced Foundationalism", "Graduated Transition", "Rollback"
+            "Balanced Foundationalism", "Graduated Transition", "Rollback",
+            "CRDT", "Y.js", "Framework Router", "ScholarlyObject", "Sigstore",
+            "Recursive Prompt", "Universal Provenance", "Behavior-Driven",
+            "Transcendent", "POLYMATH"
         ]
         return [t for t in terms if t.lower() in content.lower()]

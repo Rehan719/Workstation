@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import logging
 from typing import List, Dict, Any
 from collections import Counter
@@ -15,6 +14,17 @@ class PatternRecognizer:
 
     def ingest_data(self, data: Dict[str, Any]):
         self.history.append(data)
+
+    def extract_patterns(self, insights: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Extracts optimal patterns from historical insights."""
+        patterns = []
+        for insight in insights:
+            if "key_terms" in insight:
+                patterns.append({
+                    "concept": insight["key_terms"],
+                    "relevance": 1.0 if insight["type"] == "doc" else 0.8
+                })
+        return patterns
 
     def discover_patterns(self) -> List[Dict[str, Any]]:
         """
@@ -39,19 +49,4 @@ class PatternRecognizer:
                 })
 
         logger.info(f"PATTERN: Discovered {len(patterns)} conserved patterns.")
-=======
-from typing import List, Dict, Any
-
-class PatternRecognizer:
-    """Extracts optimal patterns from historical insights."""
-
-    def extract_patterns(self, insights: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        patterns = []
-        for insight in insights:
-            if "key_terms" in insight:
-                patterns.append({
-                    "concept": insight["key_terms"],
-                    "relevance": 1.0 if insight["type"] == "doc" else 0.8
-                })
->>>>>>> origin/jules-ai-v10-foundation-15734730789908784640
         return patterns
