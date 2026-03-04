@@ -1,5 +1,3 @@
 from .orchestrator.conscious_organism_v99 import ConsciousOrganismV99_0
-from .orchestrator.conscious_organism_v93 import ConsciousOrganismV93_0
-from .orchestrator.conscious_organism_v92 import ConsciousOrganismV92_0
 
 ConsciousOrganismOrchestrator = ConsciousOrganismV99_0

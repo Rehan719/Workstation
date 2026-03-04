@@ -1,7 +1,7 @@
 import logging
 import uuid
 import asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 # Core Layers (Inherited from v93)
 from agentic_core.molecular.triad_integration import TriadIntegrator
@@ -22,6 +22,31 @@ from agentic_core.triad.xai.explainer import AdaptiveXAI
 from agentic_core.quantum.unified_gateway import UnifiedQuantumGateway
 from agentic_core.evolution.prompt_evolver import RecursivePromptEvolver
 from agentic_core.ui.granularity_controller import GranularityController
+from agentic_core.optimization.engine import OptimizationEngine
+from agentic_core.reliability.engine import ReliabilityEngine
+from agentic_core.validation.accuracy_validator import AccuracyValidator
+from agentic_core.governance.trustworthiness_engine import TrustworthinessEngine
+from agentic_core.nlp.nli_engine import NLIEngine
+from agentic_core.config.loader import settings
+from agentic_core.db.manager import DatabaseManager
+
+# v99 Platform Assimilation Modules
+from agentic_core.builder.conversational_engine import ConversationalEngine
+from agentic_core.ide.code_workspace import CodeWorkspace
+from agentic_core.builder.visual_designer import VisualDesigner
+from agentic_core.integrations.connector_registry import ConnectorRegistry
+from agentic_core.deployment.deployment_orchestrator import DeploymentOrchestrator
+from agentic_core.deployment.environment_manager import EnvironmentManager
+from agentic_core.collaboration.workspace_manager import WorkspaceManager
+from agentic_core.collaboration.framework_router import FrameworkRouter
+from agentic_core.governance.app_compliance import AppCompliance
+from agentic_core.analytics.platform_telemetry import PlatformTelemetry
+
+# PC-Agent Hierarchy
+from agentic_core.pc_agent.manager_agent import ManagerAgent
+from agentic_core.pc_agent.progress_agent import ProgressAgent
+from agentic_core.pc_agent.decision_agent import DecisionAgent
+from agentic_core.pc_agent.reflection_agent import ReflectionAgent
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +54,11 @@ class ConsciousOrganismV99_0:
     """
     v99.0: The Transcendent Conscious Organism.
     Final Integration of Project OMEGA, POLYMATH, and TRANSCENDENT protocols.
+    Full Platform Assimilation mode enabled.
     """
     def __init__(self, agent_id: str = None):
-        self.agent_id = agent_id or f"transcendent-{str(uuid.uuid4())[:8]}"
-        self.version = "99.0.0-beta.1"
+        self.agent_id = agent_id or settings.get("AGENT_ID")
+        self.version = "99.0.0" # Final Release
 
         # 1. BIOLOGICAL & COGNITIVE LAYERS
         self.triad = TriadIntegrator()
@@ -46,8 +72,9 @@ class ConsciousOrganismV99_0:
         self.retro = RetroCausalProcessor()
 
         # 3. TRANSITION & COLLABORATION
-        self.transition_mgr = GraduatedTransitionManager()
+        self.transition_mgr = GraduatedTransitionManager(total_phases=settings.get("TRANSITION_PHASES"))
         self.collab = CollaborationManager()
+        self.router = FrameworkRouter(agent_id=self.agent_id)
         self.xai = AdaptiveXAI()
 
         # 4. TRANSCENDENT SYNERGY (v99)
@@ -55,17 +82,42 @@ class ConsciousOrganismV99_0:
         self.prompt_evolver = RecursivePromptEvolver()
         self.granularity = GranularityController()
 
+        # 4.1 PRODUCTION HARDENING (v99)
+        self.db = DatabaseManager()
+        self.optimizer = OptimizationEngine()
+        self.reliability = ReliabilityEngine()
+        self.validator = AccuracyValidator(target_accuracy=settings.get("FIDELITY_TARGET"))
+        self.trust = TrustworthinessEngine()
+        self.nli = NLIEngine()
+
+        # 5. PLATFORM ASSIMILATION (v99)
+        self.builder = ConversationalEngine()
+        self.ide = CodeWorkspace()
+        self.designer = VisualDesigner()
+        self.integrations = ConnectorRegistry()
+        self.deployment = DeploymentOrchestrator()
+        self.env_mgr = EnvironmentManager()
+        self.workspaces = WorkspaceManager()
+        self.compliance = AppCompliance()
+        self.telemetry = PlatformTelemetry(db=self.db)
+
+        # 6. PC-AGENT HIERARCHY (v99)
+        self.pa_manager = ManagerAgent()
+        self.pa_progress = ProgressAgent()
+        self.pa_decision = DecisionAgent()
+        self.pa_reflection = ReflectionAgent(transition_mgr=self.transition_mgr)
+
         self.is_running = False
 
     async def start(self):
         self.is_running = True
         logger.info(f"--- ORGANISM v99.0: {self.agent_id} AWAKENED ---")
-        logger.info(f"STATUS: Transcendent Integration Active. SIH Enforced.")
+        logger.info(f"STATUS: Transcendent Integration & Platform Assimilation Active.")
 
     async def handle_intent(self, user_intent: str, interaction_signals: Dict[str, Any] = None):
         """
         Main entry point for v99.0 Transcendent Processing.
-        Integrates Behavior-Driven Granularity and SIH.
+        Integrates Behavior-Driven Granularity, SIH, and Platform logic.
         """
         # A. Process Behavior Signals (Article 135)
         if interaction_signals:
@@ -84,10 +136,10 @@ class ConsciousOrganismV99_0:
         reasoning = self.qwen.generate_reasoning_chain(user_intent, triad_state)
 
         # D. Minimax Strategy Selection
-        decision = self.minimax.evaluate_strategy(triad_state, ["RESEARCH", "SYNC", "QUANTUM_COMPUTE"], default_utility_func)
+        decision = self.minimax.evaluate_strategy(triad_state, ["RESEARCH", "SYNC", "QUANTUM_COMPUTE", "PLATFORM_TASK"], default_utility_func)
         action = decision["selected_action"]
 
-        logger.info(f"Transcendent Decision: {action} (Fitness: {decision['worst_case_utility']:.2f})")
+        logger.info(f"Transcendent Decision: {action} (Worst-Case Utility: {decision['worst_case_utility']:.2f})")
 
         # E. Execution & Recursive Improvement
         result = await self._execute_action(action, user_intent)
@@ -104,8 +156,34 @@ class ConsciousOrganismV99_0:
             "new_prompt": new_prompt
         }
 
+    async def create_app_from_conversation(self, prompt: str) -> Dict[str, Any]:
+        """ARTICLE 145: User-Centric App Generation."""
+        app = await self.builder.build_from_prompt(prompt)
+        self.telemetry.log_event("creator", "app_build", True)
+        return app
+
+    async def deploy_app(self, app_id: str, target: str) -> Dict[str, Any]:
+        """ARTICLE 148: Deployment Flexibility."""
+        # SIH Preemption Check
+        triad_state = self.triad.run_cycle(ros_level=0.1, nadh_ratio=0.9)
+        if triad_state["atp_adp_ratio"] < 2.5:
+             logger.error("SIH VETO: Energy levels insufficient for deployment.")
+             self.telemetry.log_event("admin", "deployment", False)
+             return {"status": "failed", "reason": "SIH_PREEMPTION"}
+
+        res = await self.deployment.deploy_app(app_id, target, {})
+        self.telemetry.log_event("developer", "deployment", res["status"] == "success")
+        return res
+
     async def _execute_action(self, action: str, intent: str) -> Dict[str, Any]:
         """Internal router for v99 actions."""
+        if action == "RESEARCH":
+            # Article 120: Dynamic Routing for research tasks
+            return await self.router.route_task(intent, target_framework="pc_agent")
+
+        if action == "PLATFORM_TASK":
+            return await self.router.route_task(intent, target_framework="autogen")
+
         if action == "QUANTUM_COMPUTE":
             # ARTICLE 110: Transform intent into a structured circuit for the Gateway
             circuit_data = {

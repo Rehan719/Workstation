@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jules-ai"
-version = "99.0.0-beta.1"
+version = "99.0.0"
 description = "TRANSCENDENT: Unified Transcendent AI Workstation with ninety-nine generations of evolutionary lineage."
 authors = ["Rehan719"]
 readme = "README.md"

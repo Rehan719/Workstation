@@ -1,0 +1,30 @@
+openapi: 3.0.0
+info:
+  title: Jules AI Workstation API
+  description: Public API for the v99.0 Transcendent Workstation
+  version: 99.0.0
+paths:
+  /app/generate:
+    post:
+      summary: Generate a new application from a prompt
+      responses:
+        '200':
+          description: Successful app generation
+  /workspace/create:
+    post:
+      summary: Create a new collaborative workspace
+      responses:
+        '200':
+          description: Workspace ID returned
+  /deploy/{app_id}:
+    post:
+      summary: Deploy an application to a target environment
+      parameters:
+        - name: app_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deployment status and URL
