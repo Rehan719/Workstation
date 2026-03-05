@@ -12,6 +12,7 @@ from agentic_core.cognition.minimax_optimizer import MinimaxOptimizer, default_u
 from agentic_core.cognition.qwen_integration import QwenReasoningEngine
 from agentic_core.cognition.retro_causal_processor import RetroCausalProcessor
 from agentic_core.transition.graduated_transition_manager import GraduatedTransitionManager
+from agentic_core.transition.transition_monitor import TransitionStateMonitor, RollbackController
 
 # v93 Collaboration & Provenance
 from agentic_core.collaboration.crdt_engine import CollaborationManager
@@ -26,6 +27,7 @@ from agentic_core.ui.granularity_controller import GranularityController
 # v99 Genomic Evolution Modules
 from agentic_core.genome.chromosome import Chromosome
 from agentic_core.genome.gene import Gene, GeneType
+from agentic_core.genome.epigenetics import EpigeneticMemory
 from agentic_core.evolution.evolution_engine import GenomeEvolutionEngine
 from agentic_core.evolution.assimilation.executor import AssimilationExecutor
 from agentic_core.evolution.assimilation.evaluator import AssimilationEvaluator
@@ -36,6 +38,7 @@ from agentic_core.architecture.phylotypic_core import PhylotypicCore
 from agentic_core.governance.gene_regulatory_network import GeneRegulatoryNetwork
 from agentic_core.compiler.biological_compiler import BiologicalCompiler
 from agentic_core.governance.germ_layer_stratification import GermLayerEnforcer
+from agentic_core.governance.grn_modeler import GRNModeler
 from agentic_core.governance.command_dispatch import AICommander, AIDispatcher
 from agentic_core.governance.adaptive_profiles import IndustryAdaptiveGovernance, IndustryType
 from agentic_core.business.pipelines import BusinessPipeline
@@ -43,6 +46,8 @@ from agentic_core.business.pipelines import BusinessPipeline
 from agentic_core.optimization.engine import OptimizationEngine
 from agentic_core.reliability.engine import ReliabilityEngine
 from agentic_core.validation.accuracy_validator import AccuracyValidator
+from agentic_core.validation.digital_twin_orchestrator import DigitalTwinOrchestrator
+from agentic_core.validation.benchmarks import BenchmarkSuite
 from agentic_core.governance.trustworthiness_engine import TrustworthinessEngine
 from agentic_core.nlp.nli_engine import NLIEngine
 from agentic_core.config.loader import settings
@@ -92,6 +97,8 @@ class ConsciousOrganismV99_0:
 
         # 3. TRANSITION & COLLABORATION
         self.transition_mgr = GraduatedTransitionManager(total_phases=settings.get("TRANSITION_PHASES"))
+        self.transition_monitor = TransitionStateMonitor()
+        self.rollback = RollbackController(self.transition_mgr)
         self.collab = CollaborationManager()
         self.router = FrameworkRouter(agent_id=self.agent_id)
         self.xai = AdaptiveXAI()
@@ -112,6 +119,8 @@ class ConsciousOrganismV99_0:
         # 4.2 BIOLOGICAL ARCHITECTURE (v99.0.0)
         self.hox_registry = HoxPatternRegistry()
         self.grn = GeneRegulatoryNetwork()
+        self.grn_modeler = GRNModeler()
+        self.epigenetics = EpigeneticMemory()
         self.bio_compiler = BiologicalCompiler()
         self.germ_layers = GermLayerEnforcer()
 
@@ -125,6 +134,7 @@ class ConsciousOrganismV99_0:
         self.optimizer = OptimizationEngine()
         self.reliability = ReliabilityEngine()
         self.validator = AccuracyValidator(target_accuracy=settings.get("FIDELITY_TARGET"))
+        self.digital_twin = DigitalTwinOrchestrator()
         self.trust = TrustworthinessEngine()
         self.nli = NLIEngine()
 

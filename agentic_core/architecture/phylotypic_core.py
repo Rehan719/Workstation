@@ -64,4 +64,5 @@ class PhylotypicCore:
         if change_rate > cls.CORE_METRICS["max_annual_change"]:
             logger.warning(f"PHYLOTYPIC: Stability violation in {module_name}")
             return False
+        logger.info(f"PHYLOTYPIC: Module {module_name} verified for stability (drift: {change_rate:.4f})")
         return True

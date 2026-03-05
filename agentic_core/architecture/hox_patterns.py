@@ -5,6 +5,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 class ConstitutionalViolation(Exception):
+    """Exception raised for violations of master architectural patterns."""
     pass
 
 class HoxPatternRegistry:
@@ -77,7 +78,6 @@ class HoxPatternRegistry:
         ]
         for pattern in sorted(applicable_patterns, key=lambda p: p["expression_order"]):
             for constraint in pattern["structural_constraints"]:
-                # Logic for satisfying constraints
                 if hasattr(module, "satisfies") and not module.satisfies(constraint):
                     raise ConstitutionalViolation(
                         f"Module {module.name} violates {pattern['pattern_id']}: {constraint}"
