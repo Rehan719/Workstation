@@ -30,6 +30,13 @@ from agentic_core.evolution.evolution_engine import GenomeEvolutionEngine
 from agentic_core.evolution.assimilation.executor import AssimilationExecutor
 from agentic_core.evolution.assimilation.evaluator import AssimilationEvaluator
 
+# v99 Biological Design Principles
+from agentic_core.architecture.hox_patterns import HoxPatternRegistry
+from agentic_core.architecture.phylotypic_core import PhylotypicCore
+from agentic_core.governance.gene_regulatory_network import GeneRegulatoryNetwork
+from agentic_core.compiler.biological_compiler import BiologicalCompiler
+from agentic_core.governance.germ_layer_stratification import GermLayerStratification, GermLayer
+
 from agentic_core.optimization.engine import OptimizationEngine
 from agentic_core.reliability.engine import ReliabilityEngine
 from agentic_core.validation.accuracy_validator import AccuracyValidator
@@ -98,7 +105,13 @@ class ConsciousOrganismV99_0:
         self.genomic_evaluator = AssimilationEvaluator("CONSTITUTION_v99.0.0.md")
         self.genomic_executor = AssimilationExecutor(self.core_genome)
 
-        # 4.2 PRODUCTION HARDENING (v99)
+        # 4.2 BIOLOGICAL ARCHITECTURE (v99.0.0)
+        self.hox_registry = HoxPatternRegistry()
+        self.grn = GeneRegulatoryNetwork()
+        self.bio_compiler = BiologicalCompiler()
+        self.germ_layers = GermLayerStratification()
+
+        # 4.3 PRODUCTION HARDENING (v99)
         self.db = DatabaseManager()
         self.optimizer = OptimizationEngine()
         self.reliability = ReliabilityEngine()
