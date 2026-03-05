@@ -39,16 +39,21 @@ class WorkspaceManager:
         self.client_subscriptions: Dict[str, Dict[str, Any]] = {}
 
     def onboard_client(self, client_id: str, company: str, plan: str) -> str:
-        """Onboards a commercial client with a subscription plan (Article 171)."""
+        """Onboards a commercial client with automated contract generation (Article 171/201)."""
         ws_id = self.create_workspace(f"{company}_Corporate", client_id)
         self.workspaces[ws_id]["members"][client_id] = "client"
+
+        # ARTICLE 201: Automated contract generation simulation
+        contract_hash = f"CONTRACT_{uuid.uuid4().hex[:8]}"
+
         self.client_subscriptions[client_id] = {
             "ws_id": ws_id,
             "plan": plan,
             "active": True,
+            "contract": contract_hash,
             "start_date": datetime.datetime.now().isoformat()
         }
-        logger.info(f"CLIENT: Onboarded {client_id} from {company} on {plan} plan.")
+        logger.info(f"CLIENT: Onboarded {client_id} from {company} on {plan} plan. Contract: {contract_hash}")
         return ws_id
 
     def create_workspace(self, name: str, owner_id: str) -> str:
