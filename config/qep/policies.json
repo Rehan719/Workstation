@@ -1,0 +1,18 @@
+{
+  "spiritual_thresholds": {
+    "tazkiyah_min": 75.0,
+    "dawah_readiness_min": 0.85
+  },
+  "business_thresholds": {
+    "retention_min": 0.60,
+    "growth_min": 0.05
+  },
+  "tazkiyah_weights": {
+    "memorization": 0.25,
+    "prayer": 0.30,
+    "dhikr": 0.15,
+    "fasting": 0.15,
+    "charity": 0.10,
+    "character": 0.05
+  }
+}

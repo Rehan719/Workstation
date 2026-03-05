@@ -23,3 +23,11 @@
 | agentic_core/evolution/assimilation/ | 165 | Controlled Metamorphosis | v99.0.0 |
 | agentic_core/evolution/polyploid.py | 169 | Adaptive Duplication | v99.0.0 |
 | agentic_core/evolution/history/ | 168 | Evolutionary Traceability | v99.0.0 |
+| agentic_core/religious_domain/ | 236 | Sacred Mission | v99.0 (QEP) |
+| agentic_core/religious_domain/governance/ | 237, 246, 247-249 | Sharia & Spiritual KPIs | v99.0 (QEP) |
+| agentic_core/religious_domain/tajwid/ | 239 | Recitation Integrity | v99.0 (QEP) |
+| agentic_core/religious_domain/memorization/ | 240 | Hifz Retention | v99.0 (QEP) |
+| agentic_core/religious_domain/finops/ | 245 | Financial Sharia | v99.0 (QEP) |
+| agentic_core/religious_domain/community/ | 241-243 | Ethical Engagement | v99.0 (QEP) |
+| agentic_core/religious_domain/integrations/ | 250 | Dawah Amplification | v99.0 (QEP) |
+| src/qep_frontend/ | 238 | Universal Accessibility | v99.0 (QEP) |

@@ -87,5 +87,51 @@ The system shall support whole genome duplication studies to investigate adaptiv
 **ARTICLE 170: SELF-DEVELOPMENT SOVEREIGNTY**
 The system shall possess the capability for planned, projected self-development through controlled genomic evolution guided by the Survival Instinct Hierarchy.
 
+## 🕌 SECTION VIII: QURANIC EDUCATION & DAWAH (Articles 236-250)
+**ARTICLE 236: QURANIC EDUCATION PLATFORM MANDATE**
+The platform exists to facilitate Quranic education and Islamic learning globally, with the ultimate purpose of drawing users closer to Allah SWT through knowledge, practice, and spiritual growth. This mandate supersedes all commercial considerations.
+
+**ARTICLE 237: SHARIA COMPLIANCE MANDATE**
+All platform features, content, and operations must be reviewed for Sharia compliance by the Scholar Governance Board before deployment. Maintain annual Sharia compliance certification through independent scholarly review.
+
+**ARTICLE 238: UNIVERSAL ACCESSIBILITY MANDATE**
+Offline‑first architecture with ≤15MB app size; support for 2G connections; multilingual support (Arabic, Urdu, Bengali, Indonesian, Turkish, Swahili, Farsi); WCAG 2.1 AA compliance; Starlink integration. Core Tajwīd and Memorization features must function flawlessly offline.
+
+**ARTICLE 239: AI TAJWĪD INTEGRITY MANDATE**
+Maintain ≥98% accuracy verified by qualified Qari's and Tajwid scholars. Include confidence indicators; escalate low‑confidence feedback to human instructors. Implement feedback loop for model improvement. On-device inference must achieve ≤3s latency.
+
+**ARTICLE 240: MEMORIZATION SUITE INTEGRITY MANDATE**
+Support verified Hifz methodologies; validate algorithmic recommendations by experienced Huffaz; maintain redundant backups of user progress.
+
+**ARTICLE 241: EDUCATOR EMPOWERMENT MANDATE**
+Provide full content control, fair revenue sharing (platform commission 5-10%), transparent terms, and no hidden fees.
+
+**ARTICLE 242: COMMUNITY MODERATION MANDATE**
+Combine AI‑assisted filtering with human review; escalate religious matters to qualified scholars; define response time SLAs.
+
+**ARTICLE 243: GAMIFICATION ETHICS MANDATE**
+Design to encourage consistent practice without fostering pride, comparison, or riya. Leaderboards opt‑in only; monitor for unhealthy usage patterns via GRN.
+
+**ARTICLE 244: AR/VR AUTHENTICITY MANDATE**
+Ensure historical and theological accuracy; label artistic interpretations; review sacred content by scholars with relevant expertise.
+
+**ARTICLE 245: ZAKAT AND DONATION INTEGRITY MANDATE**
+Segregate charitable funds from platform revenue; follow explicit user designations; publish quarterly audited financial reports. No charitable funds used for commercial purposes.
+
+**ARTICLE 246: SCHOLAR OVERSIGHT MANDATE**
+Scholar Governance Board has authority to approve religious content, set educator standards, resolve disputes, and issue binding Sharia directives. Board represents diverse scholarly traditions and regions.
+
+**ARTICLE 247: DUAL-METRIC GOVERNANCE MANDATE**
+The platform shall operate under a dual-metric governance system that runs spiritual KPIs (Tazkiyah Score, Da'wah Readiness) and business KPIs in parallel. Spiritual KPIs shall be enforced through policy-as-code middleware at runtime.
+
+**ARTICLE 248: TAZKIYAH SCORE MANDATE**
+The Tazkiyah Score shall measure user spiritual purification and growth based on Quran memorization, prayer consistency, dhikr, fasting, charity, and character. Range 0-100, private by default.
+
+**ARTICLE 249: DA'WAH READINESS MANDATE**
+Da'wah Readiness shall gate user qualification for Dawah activities based on Quran 3:104 and Hadith Muslim 1036. Requirements include module completion, Tazkiyah threshold, and character verification.
+
+**ARTICLE 250: SOCIAL MEDIA INTEGRATION MANDATE**
+The platform shall integrate with major social media and technology networks to maximize Dawah impact while maintaining user privacy and Sharia compliance.
+
 ---
 *Codified via Grand Synthesis Engine v99.0.0*
