@@ -1,6 +1,12 @@
 import asyncio
 import logging
 from typing import List, Dict, Any
+import os
+import sys
+
+# Ensure parent directory is in sys.path if needed
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from .historical_analyzer import HistoricalAnalyzer
 from .conflict_resolver import ConflictResolver
 from .pattern_extractor import PatternExtractor

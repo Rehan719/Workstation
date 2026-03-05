@@ -13,6 +13,13 @@
 | agentic_core/collaboration/crdt_manager.py | 93, 118 | Strong Eventual Consistency | v93.0 |
 | agentic_core/collaboration/framework_router.py | 95, 120 | Hybrid Orchestration | v93.0 |
 | agentic_core/provenance/scholarly_object.py | 98, 125 | Universal Provenance | v93.0 |
-| agentic_core/quantum/unified_gateway.py | 130 | Quantum-AI Synergy | v99.0 |
+| agentic_core/quantum/unified_gateway.py | 110 | Quantum-AI Synergy | v99.0 |
 | agentic_core/evolution/prompt_evolver.py | 140 | Recursive Improvement | v99.0 |
 | agentic_core/ui/granularity_controller.py | 135 | Behavior-Driven Detail | v99.0 |
+| agentic_core/genome/ | 161, 166, 167 | Biomimicked Genome | v99.0.0 |
+| agentic_core/incubator/ | 162 | Petri Dish Environment | v99.0.0 |
+| agentic_core/evolution/mutation/ | 163 | Genomic Variation | v99.0.0 |
+| agentic_core/evolution/search/ | 164 | Multimodal Optimization | v99.0.0 |
+| agentic_core/evolution/assimilation/ | 165 | Controlled Metamorphosis | v99.0.0 |
+| agentic_core/evolution/polyploid.py | 169 | Adaptive Duplication | v99.0.0 |
+| agentic_core/evolution/history/ | 168 | Evolutionary Traceability | v99.0.0 |

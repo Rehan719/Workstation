@@ -24,3 +24,8 @@
 - [[v92] Deepseek_workstation_background_Further_development.txt](v91_v92/integrated_research/[v92] Deepseek_workstation_background_Further_development.txt)
 - [[v92] Qwens_workstation_background.txt](v91_v92/integrated_research/[v92] Qwens_workstation_background.txt)
 - [[v92] Deepseek_workstation_background.txt](v91_v92/integrated_research/[v92] Deepseek_workstation_background.txt)
+
+## v1 - v99 (Comprehensive Synthesis)
+- [[v1-v99] Deepseek_further_background.txt](v1_v99/[v1-v99] Deepseek_further_background.txt)
+- [[v1-v99] MinimaxAi_further_background.txt](v1_v99/[v1-v99] MinimaxAi_further_background.txt)
+- [[v1-v99] Qwen_further_background.txt](v1_v99/[v1-v99] Qwen_further_background.txt)
