@@ -24,6 +24,8 @@ class IntentParser:
         # Heuristic-based requirement extraction
         if "dashboard" in text_lower or "portal" in text_lower:
             requirements.append("dashboard")
+            if "health" in text_lower:
+                requirements.append("health_metrics")
         if "slack" in text_lower or "notify" in text_lower:
             requirements.append("notifications")
         if "p53" in text_lower or "protein" in text_lower:

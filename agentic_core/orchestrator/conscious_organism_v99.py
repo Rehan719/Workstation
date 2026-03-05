@@ -36,6 +36,9 @@ from agentic_core.architecture.phylotypic_core import PhylotypicCore
 from agentic_core.governance.gene_regulatory_network import GeneRegulatoryNetwork
 from agentic_core.compiler.biological_compiler import BiologicalCompiler
 from agentic_core.governance.germ_layer_stratification import GermLayerStratification, GermLayer
+from agentic_core.governance.command_dispatch import AICommander, AIDispatcher
+from agentic_core.governance.adaptive_profiles import IndustryAdaptiveGovernance, IndustryType
+from agentic_core.business.pipelines import BusinessPipeline
 
 from agentic_core.optimization.engine import OptimizationEngine
 from agentic_core.reliability.engine import ReliabilityEngine
@@ -47,6 +50,7 @@ from agentic_core.db.manager import DatabaseManager
 
 # v99 Platform Assimilation Modules
 from agentic_core.builder.conversational_engine import ConversationalEngine
+from agentic_core.builder.refinement_engine import RefinementEngine
 from agentic_core.ide.code_workspace import CodeWorkspace
 from agentic_core.builder.visual_designer import VisualDesigner
 from agentic_core.integrations.connector_registry import ConnectorRegistry
@@ -111,7 +115,12 @@ class ConsciousOrganismV99_0:
         self.bio_compiler = BiologicalCompiler()
         self.germ_layers = GermLayerStratification()
 
-        # 4.3 PRODUCTION HARDENING (v99)
+        # 4.3 SOVEREIGN BUSINESS ENTITY (v99.0.0)
+        self.commander = AICommander()
+        self.dispatcher = AIDispatcher()
+        self.business_governance = IndustryAdaptiveGovernance()
+
+        # 4.4 PRODUCTION HARDENING (v99)
         self.db = DatabaseManager()
         self.optimizer = OptimizationEngine()
         self.reliability = ReliabilityEngine()
@@ -121,6 +130,7 @@ class ConsciousOrganismV99_0:
 
         # 5. PLATFORM ASSIMILATION (v99)
         self.builder = ConversationalEngine()
+        self.refiner = RefinementEngine(self.builder)
         self.ide = CodeWorkspace()
         self.designer = VisualDesigner()
         self.integrations = ConnectorRegistry()
