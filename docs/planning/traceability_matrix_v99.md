@@ -32,3 +32,17 @@
 | agentic_core/governance/germ_layer_stratification.py | 189 | Germ Layer Stratification | v99.0.0-commercial |
 | agentic_core/architecture/phylotypic_core.py | 186 | Phylotypic Core | v99.0.0-commercial |
 | agentic_core/architecture/hox_patterns.py | 185, 190 | Hox Gene-Inspired Patterns | v99.0.0-commercial |
+| agentic_core/intelligence/market_intelligence.py | 216 | Predictive Intelligence | v99.0.0-autonomous |
+| agentic_core/strategy/autonomous_executor.py | 217 | Autonomous Strategy | v99.0.0-autonomous |
+| agentic_core/business/pipelines/autonomous_optimizer.py | 218 | Self-Optimizing Pipelines | v99.0.0-autonomous |
+| agentic_core/business/client_personalizer.py | 219 | Client Personalization | v99.0.0-autonomous |
+| agentic_core/ecosystem/developer_platform.py | 220 | Developer Marketplace | v99.0.0-autonomous |
+| agentic_core/ecosystem/client_community.py | 222 | Client Community | v99.0.0-autonomous |
+| agentic_core/business/asset_manager.py | 224 | Autonomous Investment | v99.0.0-autonomous |
+| agentic_core/business/wealth_structuring.py | 225 | Multi-Gen Wealth | v99.0.0-autonomous |
+| agentic_core/mission/ambassador_program.py | 227 | Ambassador Program | v99.0.0-autonomous |
+| agentic_core/mission/movement_analytics.py | 229 | Mission Storytelling | v99.0.0-autonomous |
+| agentic_core/constitution/interpretation_engine.py | 230 | Constitutional AI | v99.0.0-autonomous |
+| agentic_core/constitution/amendment_framework.py | 231 | Auto-Amendment | v99.0.0-autonomous |
+| agentic_core/governance/legacy_planning.py | 232, 234 | Succession & Legacy | v99.0.0-autonomous |
+| agentic_core/governance/autonomy_maturity.py | 235 | Ultimate Autonomy | v99.0.0-autonomous |

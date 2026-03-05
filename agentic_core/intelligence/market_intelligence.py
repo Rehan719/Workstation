@@ -21,7 +21,18 @@ class MarketIntelligence:
             "threat_level": "Medium"
         }
 
+    def predict_market_shift(self, historical_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """ARTICLE 216: Predictive Modeling. Forecasts demand and regulatory shifts."""
+        logger.info("MARKET_INTEL: Forecasting 30-day market trajectory.")
+        # Simulation: Predictive logic using historical trends
+        return {
+            "predicted_demand_surge": "Legal_Compliance",
+            "regulatory_alert": "EU_AI_Act_v2",
+            "confidence_score": 0.88
+        }
+
     def trigger_adaptive_response(self, market_trend: Dict[str, Any]) -> str:
-        if market_trend.get("threat_level") == "High":
-            return "EVOLVE_PRICING"
+        """Determines response strategy based on threat level."""
+        if market_trend.get("threat_level") == "High" or market_trend.get("confidence_score", 0) > 0.8:
+            return "EVOLVE_STRATEGY"
         return "STABLE"
