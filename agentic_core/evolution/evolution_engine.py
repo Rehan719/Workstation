@@ -63,7 +63,7 @@ class GenomeEvolutionEngine:
 
     def run_cycle(self, environmental_target: Dict[str, Any]) -> Chromosome:
         """
-        Executes one full evolutionary cycle (Article 162/163/170).
+        Executes one full evolutionary cycle (Article 162/163/170/180).
         """
         logger.info("EVOLUTION: Starting Sovereign Development Cycle...")
 
@@ -83,10 +83,13 @@ class GenomeEvolutionEngine:
         # 3. Fitness Computation & Selection
         fitness_scores = {}
         for mutant_id, mutant_chrom in mutant_pool.items():
-            # Fitness derived from behavior in simulation and target match
-            # Simplified: Random walk around target match
-            base_fitness = 0.6
-            fitness_scores[mutant_id] = base_fitness + 0.4 * np.random.random()
+            # Fitness derived from behavior in simulation and target match (Article 180)
+            base_fitness = 0.5
+
+            # Mission alignment bonus
+            mission_alignment = 0.2 if any(g.gene_type == GeneType.COMMERCIAL for g in mutant_chrom.gene_map.values()) else 0.0
+
+            fitness_scores[mutant_id] = base_fitness + mission_alignment + 0.3 * np.random.random()
 
         # 4. Wright-Fisher Population Replacement
         self.population.replace_generation(fitness_scores)

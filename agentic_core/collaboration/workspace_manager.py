@@ -30,12 +30,26 @@ class AuthManager:
 
 class WorkspaceManager:
     """
-    ARTICLE 149: Collaborative Governance.
-    Multi-user workspaces with RBAC (admin, developer, viewer).
+    ARTICLE 149/171: Collaborative Governance & Client Onboarding.
+    Multi-user workspaces with RBAC (admin, developer, viewer, client).
     """
     def __init__(self):
         self.workspaces: Dict[str, Dict[str, Any]] = {}
         self.auth = AuthManager()
+        self.client_subscriptions: Dict[str, Dict[str, Any]] = {}
+
+    def onboard_client(self, client_id: str, company: str, plan: str) -> str:
+        """Onboards a commercial client with a subscription plan (Article 171)."""
+        ws_id = self.create_workspace(f"{company}_Corporate", client_id)
+        self.workspaces[ws_id]["members"][client_id] = "client"
+        self.client_subscriptions[client_id] = {
+            "ws_id": ws_id,
+            "plan": plan,
+            "active": True,
+            "start_date": datetime.datetime.now().isoformat()
+        }
+        logger.info(f"CLIENT: Onboarded {client_id} from {company} on {plan} plan.")
+        return ws_id
 
     def create_workspace(self, name: str, owner_id: str) -> str:
         ws_id = str(uuid.uuid4())[:8]

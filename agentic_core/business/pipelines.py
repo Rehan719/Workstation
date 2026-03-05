@@ -3,11 +3,19 @@ from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
+from agentic_core.business.pipelines.scientific_research_pipeline import ScientificResearchPipeline
+from agentic_core.business.pipelines.legal_services_pipeline import LegalServicesPipeline
+from agentic_core.business.pipelines.religious_research_pipeline import ReligiousResearchPipeline
+
 class BusinessPipeline:
     """
-    ARTICLE 150: Sovereign Business Entity - End-to-End Pipelines.
-    Implements Procure-to-Pay, Order-to-Cash, and Record-to-Report automation.
+    ARTICLE 150/172: Sovereign Business Entity - End-to-End Pipelines.
+    Implements Procure-to-Pay, Order-to-Cash, Record-to-Report and Multi-Domain Services.
     """
+    def __init__(self):
+        self.science = ScientificResearchPipeline()
+        self.legal = LegalServicesPipeline()
+        self.religion = ReligiousResearchPipeline()
 
     @classmethod
     async def run_p2p(cls, vendor_data: Dict[str, Any]) -> Dict[str, Any]:

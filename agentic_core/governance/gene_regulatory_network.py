@@ -29,7 +29,7 @@ class GeneRegulatoryNetwork:
             self.signaling_protocols[sig].append(name)
 
     def emit_signal(self, signal: str, data: Any, source: str):
-        """Broadcast signal to all modules that listen for it."""
+        """Broadcast signal and evaluate regulatory rules (Article 187)."""
         if signal not in self.signaling_protocols:
             return
         for module_name in self.signaling_protocols[signal]:
@@ -37,7 +37,22 @@ class GeneRegulatoryNetwork:
                 continue
             module_info = self.modules[module_name]
             try:
-                # Simulate signal reception
-                logger.info(f"GRN: {module_name} received {signal} from {source}")
+                # Actual signal processing logic
+                if hasattr(module_info["instance"], "receive_signal"):
+                    module_info["instance"].receive_signal(signal, data, source)
+                logger.info(f"GRN: {module_name} processed {signal} from {source}")
+
+                # Evaluate regulatory rules
+                self._evaluate_rules(signal, data)
             except Exception as e:
                 logger.error(f"GRN: Signal {signal} failed for {module_name}: {e}")
+
+    def _evaluate_rules(self, signal: str, data: Any):
+        """Condition-action pairs for system-wide adaptation."""
+        for rule in self.regulatory_rules:
+            if rule["condition"](signal, data):
+                logger.info(f"GRN: Executing regulatory action for rule {rule['name']}")
+                rule["action"]()
+
+    def add_rule(self, name: str, condition: Any, action: Any):
+        self.regulatory_rules.append({"name": name, "condition": condition, "action": action})

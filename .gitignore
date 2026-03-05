@@ -81,3 +81,5 @@ Thumbs.db
 .jules_state_*.json
 pip_list.txt
 installed_packages.txt
+**/__pycache__/
+*.pyc

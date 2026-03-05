@@ -42,6 +42,11 @@ from agentic_core.governance.grn_modeler import GRNModeler
 from agentic_core.governance.command_dispatch import AICommander, AIDispatcher
 from agentic_core.governance.adaptive_profiles import IndustryAdaptiveGovernance, IndustryType
 from agentic_core.business.pipelines import BusinessPipeline
+from agentic_core.business.profit_distributor import ProfitDistributor
+from agentic_core.business.owner_dashboard import OwnerDashboard
+from agentic_core.governance.hoxd_boundary_negotiator import HoxDBoundaryNegotiator
+from agentic_core.governance.span_control import SpanOfControlEngine
+from agentic_core.governance.verifiable_governance import VGAEngine
 
 from agentic_core.optimization.engine import OptimizationEngine
 from agentic_core.reliability.engine import ReliabilityEngine
@@ -128,6 +133,14 @@ class ConsciousOrganismV99_0:
         self.commander = AICommander()
         self.dispatcher = AIDispatcher()
         self.business_governance = IndustryAdaptiveGovernance()
+        self.business_pipelines = BusinessPipeline()
+        self.distributor = ProfitDistributor()
+        self.dashboard = OwnerDashboard(self.distributor, self.commander)
+
+        # 4.3.1 ADAPTIVE GOVERNANCE MACHINERY (v99.0.0)
+        self.hoxd = HoxDBoundaryNegotiator()
+        self.span_control = SpanOfControlEngine()
+        self.vga = VGAEngine()
 
         # 4.4 PRODUCTION HARDENING (v99)
         self.db = DatabaseManager()
@@ -265,6 +278,27 @@ class ConsciousOrganismV99_0:
             return {"sync_status": "complete"}
 
         return {"msg": f"Action {action} executed."}
+
+    async def execute_service(self, domain: str, task: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """ARTICLE 172: Direct service execution for commercial domains."""
+        # Recalibrate HoxD boundary based on task context (Article 181)
+        self.hoxd.recalibrate_boundary(domain.upper(), 0.1)
+
+        if domain == "science":
+            res = await self.business_pipelines.science.execute(task, context)
+        elif domain == "law":
+            res = await self.business_pipelines.legal.execute(task, context)
+        elif domain == "religion":
+            res = await self.business_pipelines.religion.execute(task, context)
+        else:
+            return {"status": "error", "msg": "Invalid domain"}
+
+        # Log to telemetry and distributor
+        self.telemetry.log_event("commercial", f"{domain}_service", res["status"] == "success")
+        if res["status"] == "success":
+             self.distributor.record_sale(100.0, {"description": task})
+
+        return res
 
     async def shutdown(self):
         self.is_running = False
