@@ -35,7 +35,7 @@ from agentic_core.architecture.hox_patterns import HoxPatternRegistry
 from agentic_core.architecture.phylotypic_core import PhylotypicCore
 from agentic_core.governance.gene_regulatory_network import GeneRegulatoryNetwork
 from agentic_core.compiler.biological_compiler import BiologicalCompiler
-from agentic_core.governance.germ_layer_stratification import GermLayerStratification, GermLayer
+from agentic_core.governance.germ_layer_stratification import GermLayerEnforcer
 from agentic_core.governance.command_dispatch import AICommander, AIDispatcher
 from agentic_core.governance.adaptive_profiles import IndustryAdaptiveGovernance, IndustryType
 from agentic_core.business.pipelines import BusinessPipeline
@@ -113,7 +113,7 @@ class ConsciousOrganismV99_0:
         self.hox_registry = HoxPatternRegistry()
         self.grn = GeneRegulatoryNetwork()
         self.bio_compiler = BiologicalCompiler()
-        self.germ_layers = GermLayerStratification()
+        self.germ_layers = GermLayerEnforcer()
 
         # 4.3 SOVEREIGN BUSINESS ENTITY (v99.0.0)
         self.commander = AICommander()
