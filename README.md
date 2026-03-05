@@ -1,5 +1,13 @@
 # Jules AI v99.0 TRANSCENDENT: The Ultimate Master Workstation
 
+## 🚀 One-Click Operations
+This repository is equipped with an expert-level automation suite for VS Code and GitHub.
+- **Setup**: Run `QEP: Setup Environment` from VS Code tasks.
+- **Audit**: Use `QEP: Constitutional Audit` to ensure compliance.
+- **CI/CD**: Workflows are integrated into `.github/workflows/`.
+
+See [VS Code Setup Guide](docs/development/vscode-setup.md) for full details.
+
 ## ⚜️ Overview
 Jules AI v99.0 is the definitive, unified realization of ninety-nine generations of architectural evolution. It represents the final convergence of biological fidelity, collaborative multi-user intelligence (POLYMATH), and transcendent quantum-AI synergy. Jules AI is a **Transcendent Architect of Meta-Universal Evolution**, a constitutionally governed, production-ready digital organism.
 

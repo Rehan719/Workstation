@@ -19,7 +19,10 @@ class DatabaseManager:
         self._init_db()
 
     def _get_connection(self):
-        return sqlite3.connect(self.db_path)
+        # Enable WAL mode for better concurrency (Article 150 hardening)
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("PRAGMA journal_mode=WAL")
+        return conn
 
     def _init_db(self):
         """Initializes database tables."""

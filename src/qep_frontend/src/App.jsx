@@ -1,77 +1,85 @@
 import React, { useState, useEffect } from 'react';
 
 function App() {
-  const [status, setStatus] = useState('Initializing Digital Sanctuary...');
+  const [status, setStatus] = useState('Initializing Sanctuary...');
+  const [activeTab, setActiveTab] = useState('Dashboard');
 
   useEffect(() => {
-    // Simulate v99.0 baseline sync
-    setTimeout(() => {
-      setStatus('v99.0 Conscious Organism Ready. Religious Domain: QEP Active.');
-    }, 1500);
+    const timer = setTimeout(() => {
+      setStatus('v99.0 Religious Domain: Active');
+    }, 1200);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      backgroundColor: '#f4f7f6',
-      color: '#2d3e50',
-      textAlign: 'center',
-      padding: '20px'
-    }}>
-      <header style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>AI-Driven Quranic Education Platform</h1>
-        <p style={{ fontSize: '1.2rem', color: '#6b7280' }}>
-          Striving for the love and pleasure of Allah (SWT)
-        </p>
-      </header>
+    <div className="dashboard-container">
+      {/* Sidebar Navigation */}
+      <aside className="sidebar" aria-label="Main Navigation">
+        <h2 style={{ color: 'var(--color-accent)', marginBottom: '2rem' }}>QEP Sanctuary</h2>
+        <nav>
+          <NavItem label="Dashboard" active={activeTab === 'Dashboard'} onClick={() => setActiveTab('Dashboard')} />
+          <NavItem label="Tajwid Coach" active={activeTab === 'Tajwid'} onClick={() => setActiveTab('Tajwid')} />
+          <NavItem label="Hifz Suite" active={activeTab === 'Hifz'} onClick={() => setActiveTab('Hifz')} />
+          <NavItem label="Modules" active={activeTab === 'Modules'} onClick={() => setActiveTab('Modules')} />
+          <NavItem label="Community" active={activeTab === 'Community'} onClick={() => setActiveTab('Community')} />
+        </nav>
+      </aside>
 
-      <main style={{
-        backgroundColor: 'white',
-        padding: '30px',
-        borderRadius: '12px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        maxWidth: '600px',
-        width: '100%'
-      }}>
-        <h2 style={{ marginBottom: '20px' }}>Domain Dashboard</h2>
-        <div style={{
-          padding: '15px',
-          backgroundColor: '#e0f2f1',
-          borderRadius: '8px',
-          marginBottom: '20px'
-        }}>
-          <strong>System Status:</strong> {status}
-        </div>
+      {/* Main Content */}
+      <main className="content-area">
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '2.2rem' }}>As-salaam Alaykum</h1>
+            <p className="color-text-muted">Welcome back to your spiritual journey.</p>
+          </div>
+          <div className="status-badge" aria-live="polite">
+            {status}
+          </div>
+        </header>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-          <button style={buttonStyle}>AI Tajwīd Coach</button>
-          <button style={buttonStyle}>Memorization Suite</button>
-          <button style={buttonStyle}>Learning Modules</button>
-          <button style={buttonStyle}>Educator Platform</button>
-        </div>
+        {/* Global Stats */}
+        <section className="stat-grid">
+          <StatCard label="Tazkiyah Score" value="84" />
+          <StatCard label="Nur Points" value="1,240" />
+          <StatCard label="Daily Streak" value="12 Days" />
+          <StatCard label="Juz Memorized" value="4 / 30" />
+        </section>
+
+        {/* Dynamic Section */}
+        <section className="card">
+          <h2>{activeTab} Overview</h2>
+          <p>This is your primary hub for spiritual growth and Quranic mastery.</p>
+          <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+            <button className="btn-primary" aria-label="Resume Learning">Resume Last Lesson</button>
+            <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-light)', border: '1px solid var(--color-primary-light)' }}>
+              View Schedule
+            </button>
+          </div>
+        </section>
+
+        <footer style={{ marginTop: 'auto', textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+          Transcendent Workstation v99.0.0 'GENOMIC' Baseline | Expert Refinement Phase
+        </footer>
       </main>
-
-      <footer style={{ marginTop: '40px', color: '#9ca3af', fontSize: '0.9rem' }}>
-        Transcendent Workstation v99.0.0 'GENOMIC' Baseline | Religious Domain flagship
-      </footer>
     </div>
   );
 }
 
-const buttonStyle = {
-  padding: '12px',
-  border: '1px solid #00796b',
-  borderRadius: '6px',
-  backgroundColor: '#00796b',
-  color: 'white',
-  fontWeight: '600',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s'
-};
+function NavItem({ label, active, onClick }) {
+  return (
+    <div className={`nav-item ${active ? 'active' : ''}`} onClick={onClick} role="button" tabIndex={0}>
+      {label}
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}
 
 export default App;
