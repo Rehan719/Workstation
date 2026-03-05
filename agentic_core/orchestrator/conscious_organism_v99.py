@@ -22,6 +22,14 @@ from agentic_core.triad.xai.explainer import AdaptiveXAI
 from agentic_core.quantum.unified_gateway import UnifiedQuantumGateway
 from agentic_core.evolution.prompt_evolver import RecursivePromptEvolver
 from agentic_core.ui.granularity_controller import GranularityController
+
+# v99 Genomic Evolution Modules
+from agentic_core.genome.chromosome import Chromosome
+from agentic_core.genome.gene import Gene, GeneType
+from agentic_core.evolution.evolution_engine import GenomeEvolutionEngine
+from agentic_core.evolution.assimilation.executor import AssimilationExecutor
+from agentic_core.evolution.assimilation.evaluator import AssimilationEvaluator
+
 from agentic_core.optimization.engine import OptimizationEngine
 from agentic_core.reliability.engine import ReliabilityEngine
 from agentic_core.validation.accuracy_validator import AccuracyValidator
@@ -82,7 +90,15 @@ class ConsciousOrganismV99_0:
         self.prompt_evolver = RecursivePromptEvolver()
         self.granularity = GranularityController()
 
-        # 4.1 PRODUCTION HARDENING (v99)
+        # 4.1 GENOMIC EVOLUTION (v99.0.0)
+        self.core_genome = Chromosome("core_v99")
+        # Add baseline gene for synteny validation
+        self.core_genome.add_gene(Gene("gene_stable_baseline", GeneType.REGULATORY, "h1"))
+        self.evolution_engine = GenomeEvolutionEngine(self.core_genome)
+        self.genomic_evaluator = AssimilationEvaluator("CONSTITUTION_v99.0.0.md")
+        self.genomic_executor = AssimilationExecutor(self.core_genome)
+
+        # 4.2 PRODUCTION HARDENING (v99)
         self.db = DatabaseManager()
         self.optimizer = OptimizationEngine()
         self.reliability = ReliabilityEngine()
@@ -136,7 +152,7 @@ class ConsciousOrganismV99_0:
         reasoning = self.qwen.generate_reasoning_chain(user_intent, triad_state)
 
         # D. Minimax Strategy Selection
-        decision = self.minimax.evaluate_strategy(triad_state, ["RESEARCH", "SYNC", "QUANTUM_COMPUTE", "PLATFORM_TASK"], default_utility_func)
+        decision = self.minimax.evaluate_strategy(triad_state, ["RESEARCH", "SYNC", "QUANTUM_COMPUTE", "PLATFORM_TASK", "EVOLVE_GENOME"], default_utility_func)
         action = decision["selected_action"]
 
         logger.info(f"Transcendent Decision: {action} (Worst-Case Utility: {decision['worst_case_utility']:.2f})")
@@ -177,6 +193,21 @@ class ConsciousOrganismV99_0:
 
     async def _execute_action(self, action: str, intent: str) -> Dict[str, Any]:
         """Internal router for v99 actions."""
+        if action == "EVOLVE_GENOME":
+            # ARTICLE 170: Sovereign Self-Development Cycle
+            environmental_target = {"required_behaviors": ["resilience", "throughput"]}
+            best_mutant = self.evolution_engine.run_cycle(environmental_target)
+
+            # ARTICLE 165: Controlled Metamorphosis
+            success = self.genomic_executor.assimilate(best_mutant, self.genomic_evaluator)
+
+            return {
+                "evolution_status": "success" if success else "failed",
+                "generation": self.evolution_engine.population.generation,
+                "synteny_score": self.core_genome.validate_synteny(["gene_stable_baseline"]),
+                "traits_integrated": len(self.core_genome.sequence)
+            }
+
         if action == "RESEARCH":
             # Article 120: Dynamic Routing for research tasks
             return await self.router.route_task(intent, target_framework="pc_agent")
