@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class CoreViolation(Exception):
-    pass
+    """Exception raised for violations of core platform logic."""
 
 class PhylotypicCore:
     """

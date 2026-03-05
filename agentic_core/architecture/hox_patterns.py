@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 
 class ConstitutionalViolation(Exception):
     """Exception raised for violations of master architectural patterns."""
-    pass
 
 class HoxPatternRegistry:
     """

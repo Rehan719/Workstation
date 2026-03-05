@@ -31,8 +31,25 @@ class MultimodalOptimizer:
     def select_parents(self, population: List[Any], fitness_scores: List[float]) -> List[Any]:
         """
         Dynamic parent selection based on population diversity and objective space.
+        Uses a triple-population framework (Article 164) to balance convergence and diversity.
         """
-        # Triple-population synergistic orchestration logic would go here
-        # For now, use fitness-weighted selection
-        indices = np.argsort(fitness_scores)[-self.population_size//2:]
-        return [population[i] for i in indices]
+        if not population: return []
+
+        # 1. Convergent population: Top performers
+        indices = np.argsort(fitness_scores)
+        convergent_idx = indices[-self.population_size//4:]
+
+        # 2. Exploratory population: Mid-range diversity
+        mid_idx = indices[len(indices)//4 : 3*len(indices)//4]
+        if len(mid_idx) > self.population_size // 4:
+            exploratory_idx = np.random.choice(mid_idx, self.population_size // 4, replace=False)
+        else:
+            exploratory_idx = mid_idx
+
+        # 3. Novelty population: Low-fitness outliers (potential new trajectories)
+        novelty_idx = indices[:self.population_size//8]
+
+        selected_indices = np.concatenate([convergent_idx, exploratory_idx, novelty_idx])
+        selected_indices = np.unique(selected_indices.astype(int))
+
+        return [population[i] for i in selected_indices if i < len(population)]
