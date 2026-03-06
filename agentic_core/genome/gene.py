@@ -8,6 +8,7 @@ class GeneType(Enum):
     REGULATORY = "regulatory"
     STRUCTURAL = "structural"
     BYSTANDER = "bystander"
+    COMMERCIAL = "commercial" # ARTICLE 180
 
 class Gene:
     """

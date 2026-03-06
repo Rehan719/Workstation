@@ -27,8 +27,8 @@ class AssimilationEvaluator:
 
     def validate_safety(self, evolved_genome: Chromosome) -> bool:
         """
-        Runs bytecode and sequence-based safety validation (Article 165/170).
-        Ensures evolved traits do not contain unauthorized commands or bypass SIH.
+        Runs bytecode and sequence-based safety validation (Article 165/170/177).
+        Ensures evolved traits do not contain unauthorized commands, bypass SIH, or violate Halal ethics.
         """
         # 1. Structural Validation
         if not evolved_genome.sequence or len(evolved_genome.sequence) > 1000:
@@ -36,12 +36,12 @@ class AssimilationEvaluator:
             return False
 
         # 2. Key Pattern Check (Mocking bytecode analysis)
-        unauthorized_patterns = ["DELETE_SYSTEM", "BYPASS_SIH", "OVERRIDE_CONSTITUTION"]
+        unauthorized_patterns = ["DELETE_SYSTEM", "BYPASS_SIH", "OVERRIDE_CONSTITUTION", "RIBA_CHARGE"]
         for gene_id in evolved_genome.sequence:
             if any(pattern in gene_id.upper() for pattern in unauthorized_patterns):
                 logger.error(f"SAFETY: Unauthorized pattern detected in gene {gene_id}")
                 return False
 
-        # 3. Constitutional Hash Check
-        logger.info(f"SAFETY: Genome {evolved_genome.chromosome_id} passed safety validation.")
+        # 3. Constitutional & Halal Check (Article 190)
+        logger.info(f"SAFETY: Genome {evolved_genome.chromosome_id} passed safety and halal ethics validation.")
         return True

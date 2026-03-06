@@ -7,16 +7,17 @@ from typing import List, Dict, Any
 logger = logging.getLogger(__name__)
 
 class HistoricalAnalyzer:
-    """Analyzes historical documentation and code patterns for v92.0."""
+    """Analyzes historical documentation and code patterns."""
     def __init__(self, paths: List[str]):
         self.paths = paths
         self.version_pattern = re.compile(r"v(\d+\.\d+)")
 
     async def analyze_all(self) -> List[Dict[str, Any]]:
-        """CN-I: Comprehensive Historical Analysis for v1-v92."""
+        """CN-I: Comprehensive Historical Analysis."""
         insights = []
         files_to_analyze = []
         for path in self.paths:
+            # Recursively find all documentation and source code
             files_to_analyze.extend(glob.glob(os.path.join(path, "**/*.txt"), recursive=True))
             files_to_analyze.extend(glob.glob(os.path.join(path, "agentic_core/**/*.py"), recursive=True))
             files_to_analyze.extend(glob.glob(os.path.join(path, "meta/**/*.md"), recursive=True))
@@ -27,7 +28,6 @@ class HistoricalAnalyzer:
                 insight = self._analyze_file(filepath)
                 if insight:
                     insights.append(insight)
-
         return insights
 
     def _analyze_file(self, filepath: str) -> Dict[str, Any]:

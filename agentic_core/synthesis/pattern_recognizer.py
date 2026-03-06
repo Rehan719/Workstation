@@ -5,10 +5,8 @@ from collections import Counter
 logger = logging.getLogger(__name__)
 
 class PatternRecognizer:
-    """
-    DD: Conserved Pattern Discovery.
-    Analyzes historical data and operational logs to find successful patterns.
-    """
+    """Extracts optimal patterns from historical insights."""
+
     def __init__(self):
         self.history = []
 

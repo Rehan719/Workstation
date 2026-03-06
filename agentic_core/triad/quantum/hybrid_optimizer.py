@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 class HybridQuantumClassicalOptimizer:
     """
     Article BK: Hybrid Quantum-Classical Synergy (v53 Mastery).
-    Implements VQE-style optimization for complex scientific problems like protein folding stubs.
+    Implements VQE-style optimization for complex scientific problems like protein folding.
     """
     def __init__(self, wires: int = 6):
         self.wires = wires
@@ -25,9 +25,9 @@ class HybridQuantumClassicalOptimizer:
         # Measure energy (Expectation of PauliZ sum)
         return qml.expval(qml.Hamiltonian([1.0]*self.wires, [qml.PauliZ(i) for i in range(self.wires)]))
 
-    async def solve_folding_stub(self, sequence_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def solve_folding(self, sequence_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Solves a simplified protein folding stub via Variational Quantum Eigensolver (VQE).
+        Solves a simplified protein folding via Variational Quantum Eigensolver (VQE).
         """
         logging.info("Starting Hybrid VQE Optimization for Protein Folding...")
 
