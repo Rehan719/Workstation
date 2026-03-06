@@ -50,6 +50,10 @@ from agentic_core.collaboration.framework_router import FrameworkRouter
 from agentic_core.governance.app_compliance import AppCompliance
 from agentic_core.analytics.platform_telemetry import PlatformTelemetry
 
+# Sovereign Business Modules
+from agentic_core.business.commander import AICommander
+from agentic_core.business.dispatcher import AIDispatcher
+
 # PC-Agent Hierarchy
 from agentic_core.pc_agent.manager_agent import ManagerAgent
 from agentic_core.pc_agent.progress_agent import ProgressAgent
@@ -123,6 +127,10 @@ class ConsciousOrganismV99_0:
         self.pa_decision = DecisionAgent()
         self.pa_reflection = ReflectionAgent(transition_mgr=self.transition_mgr)
 
+        # 7. SOVEREIGN BUSINESS ENTITY
+        self.ceo = AICommander(business_id="SOVEREIGN_V99")
+        self.dispatcher = AIDispatcher(commander_ref=self.ceo)
+
         self.is_running = False
 
     async def start(self):
@@ -152,7 +160,7 @@ class ConsciousOrganismV99_0:
         reasoning = self.qwen.generate_reasoning_chain(user_intent, triad_state)
 
         # D. Minimax Strategy Selection
-        decision = self.minimax.evaluate_strategy(triad_state, ["RESEARCH", "SYNC", "QUANTUM_COMPUTE", "PLATFORM_TASK", "EVOLVE_GENOME"], default_utility_func)
+        decision = self.minimax.evaluate_strategy(triad_state, ["RESEARCH", "SYNC", "QUANTUM_COMPUTE", "PLATFORM_TASK", "EVOLVE_GENOME", "DAWAH_WORK"], default_utility_func)
         action = decision["selected_action"]
 
         logger.info(f"Transcendent Decision: {action} (Worst-Case Utility: {decision['worst_case_utility']:.2f})")
@@ -230,6 +238,11 @@ class ConsciousOrganismV99_0:
         if action == "SYNC":
             await self.collab.sync_project("v99_transcendent", {"intent": intent})
             return {"sync_status": "complete"}
+
+        if action == "DAWAH_WORK":
+            # ARTICLE 236: Core Religious Mission Action
+            self.dispatcher.allocate_resources("QEP", "DAWAH_OPERATION")
+            return {"mission": "DAWAH", "status": "ACTIVE", "impact": "POSITIVE"}
 
         return {"msg": f"Action {action} executed."}
 

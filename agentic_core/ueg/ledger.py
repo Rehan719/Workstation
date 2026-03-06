@@ -79,6 +79,20 @@ class BlockchainLedger:
         }
         return self.add_block(entry)
 
+    def log_sharia_transaction(self, tx_type: str, user_id: str, amount: float, designation: str):
+        """
+        ARTICLE 245: Immutable audit trail for Zakat, Sadaqah, and Wakaf.
+        """
+        entry = {
+            "action": "SHARIA_TX",
+            "tx_type": tx_type,
+            "user_id": user_id,
+            "amount": amount,
+            "designation": designation,
+            "timestamp": time.time()
+        }
+        return self.add_block(entry)
+
     def add_block(self, data: Dict[str, Any]):
         """Adds a new block with actual Proof-of-Work simulation."""
         previous_hash = self.chain[-1]["hash"] if self.chain else "0" * 64
