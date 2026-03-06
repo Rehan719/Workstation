@@ -106,7 +106,7 @@ The system shall possess the capability for planned, projected self-development 
 ---
 *Codified via Grand Synthesis Engine v{version}*
 """
-        with open(path, "w") as f:
+        with open(path, 'w', encoding='utf-8') as f:
             f.write(content)
 
         return path
