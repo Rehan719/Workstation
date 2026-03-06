@@ -16,11 +16,19 @@ class EducationReactor(DigitalReactor):
         self.generator = DomainGenerator("education")
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Incubate curriculum for a specific grade/subject."""
+        """
+        ARTICLE 268/273: Deepened Education Reactor with Live Standards.
+        Includes live Common Core standards integration.
+        """
         subject = str(input_data)
         logger.info(f"EducationReactor: Incubating curriculum for '{subject}'")
 
-        # 1. Learning Path Synthesis
+        # 1. Live Standards alignment (ARTICLE 273)
+        from agentic_core.reactor.api_client import LiveAPIClient
+        client = LiveAPIClient("education")
+        standards = await client.call_api("/standards/common_core", {"subject": subject})
+
+        # 2. Learning Path Synthesis
         curriculum = await self.generator.generate({"task": "curriculum_design", "subject": subject})
 
         # 2. Lesson Plan Generation

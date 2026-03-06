@@ -16,12 +16,17 @@ class LawReactor(DigitalReactor):
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        ARTICLE 268: Deepened Law Reactor.
-        Includes genetic clause optimization and structured compliance rules.
+        ARTICLE 268/273: Deepened Law Reactor with Live APIs.
+        Includes live precedent search and genetic clause optimization.
         """
         logger.info(f"LawReactor: Incubating contract for {input_data}")
 
-        # 1. Genetic Clause Optimization (Simulated GA)
+        # 1. Live Precedent Search (ARTICLE 273)
+        from agentic_core.reactor.api_client import LiveAPIClient
+        client = LiveAPIClient("law")
+        precedents = await client.call_api("/precedent/search", {"q": str(input_data)})
+
+        # 2. Genetic Clause Optimization (Simulated GA)
         optimized_clauses = await self.generator.generate({
             "task": "genetic_clause_optimization",
             "specs": input_data,

@@ -16,13 +16,18 @@ class ReligionReactor(DigitalReactor):
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        ARTICLE 268: Deepened Religious Scholarship.
-        Includes NetworkX-based Isnad authentication and clustering.
+        ARTICLE 268/273: Deepened Religious Scholarship with Live APIs.
+        Includes NetworkX Isnad and Live Hadith retrieval.
         """
         logger.info(f"ReligionReactor: Scholarly incubation on {input_data}")
 
-        # 1. Isnad Authentication (NetworkX functional logic)
-        isnad_data = self._generate_isnad_graph(str(input_data))
+        # 1. Live API Hadith retrieval (ARTICLE 273)
+        from agentic_core.reactor.api_client import LiveAPIClient
+        client = LiveAPIClient("religion")
+        hadith_res = await client.call_api("/hadith/retrieve", {"verse": str(input_data)})
+
+        # 2. Isnad Authentication (NetworkX functional logic)
+        isnad_data = self._generate_isnad_graph(hadith_res.get("hadith", {}).get("text", ""))
 
         # 2. Deep Tafsir synthesis
         tafsir = await self.generator.generate({

@@ -33,6 +33,10 @@ class DomainGenerator:
         # 3. Quality evaluation
         quality_score = 0.92 + (len(str(context)) % 8) / 100.0
 
+        # Inject live identifiers if present in specs
+        if "sources" in specs and self.domain == "science":
+            generated_content = f"{generated_content}\nSOURCES: {', '.join(specs['sources'])}"
+
         return {
             "content": generated_content,
             "quality": min(1.0, quality_score),

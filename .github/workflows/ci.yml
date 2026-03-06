@@ -18,11 +18,11 @@ jobs:
     - name: Install Python Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install numpy scipy scikit-learn pandas sqlalchemy fastapi uvicorn pytest pytest-asyncio
+        pip install numpy scipy scikit-learn pandas sqlalchemy fastapi uvicorn pytest pytest-asyncio networkx deap
     - name: Run Backend Tests
       run: |
         export PYTHONPATH=$PYTHONPATH:.
-        pytest tests/test_religious_domain.py
+        pytest tests/test_religious_domain.py tests/test_reactor_ecosystem.py
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:

@@ -49,3 +49,13 @@ class AICommander:
         draft = await marketing.generate_campaign(reactor_domain, audience)
         logger.info(f"AICommander: Campaign {draft['campaign_id']} approved for launch.")
         return await marketing.publish_campaign(draft["campaign_id"])
+
+    def get_market_intelligence(self, domain: str) -> Dict[str, Any]:
+        """ARTICLE 275: CEO strategic dashboard access."""
+        from agentic_core.ai_ceo.pricing.optimizer import PricingOptimizer
+        po = PricingOptimizer()
+        return {
+            "optimal_pricing": po.get_optimal_price(domain, 29.99),
+            "demand_forecast": po.forecast_demand(domain),
+            "competitive_status": "SOVEREIGN_ADVANTAGE"
+        }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import HifzHeatMap from './components/HifzHeatMap';
 import CumulativeDashboard from './components/dashboards/CumulativeDashboard';
+import ImmersiveBackground from './components/immersive/ImmersiveBackground';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
@@ -38,8 +39,9 @@ function App() {
   };
 
   return (
-    <div className="dashboard-container font-inter">
-      <aside className="sidebar bg-slate-900 text-white w-72 p-8 flex flex-col">
+    <div className="dashboard-container font-inter relative min-h-screen flex">
+      <ImmersiveBackground domain={activeTab === 'Dashboard' ? 'religion' : activeTab.toLowerCase()} />
+      <aside className="sidebar bg-slate-900/80 backdrop-blur-xl text-white w-72 p-8 flex flex-col border-r border-white/10 relative z-10">
         <div className="mb-12">
           <motion.h2
             initial={{ scale: 0.9 }}
@@ -68,13 +70,13 @@ function App() {
         </div>
       </aside>
 
-      <main className="content-area bg-gray-50 flex-1 p-12 overflow-y-auto">
+      <main className="content-area flex-1 p-12 overflow-y-auto relative z-10">
         <header className="flex justify-between items-start mb-12">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-5xl font-black text-slate-900 mb-2">As-salaam Alaykum, {userProfile.name}</h1>
-            <p className="text-slate-500 text-lg">Elevating your potential across five transcendent domains.</p>
+            <h1 className="text-5xl font-black text-white mb-2">As-salaam Alaykum, {userProfile.name}</h1>
+            <p className="text-slate-400 text-lg">Elevating your potential across five transcendent domains.</p>
           </motion.div>
-          <div className="bg-emerald-100 text-emerald-800 px-6 py-3 rounded-2xl font-bold shadow-sm text-sm border border-emerald-200">
+          <div className="bg-emerald-500/10 text-emerald-400 px-6 py-3 rounded-2xl font-bold shadow-sm text-sm border border-emerald-500/30 backdrop-blur-md">
             {status}
           </div>
         </header>
@@ -174,10 +176,10 @@ function NavItem({ label, active, onClick }) {
 
 function StatCard({ label, value, sub, color }) {
   const colors = {
-    emerald: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-    amber: 'text-amber-600 bg-amber-50 border-amber-100',
-    blue: 'text-blue-600 bg-blue-50 border-blue-100',
-    purple: 'text-purple-600 bg-purple-50 border-purple-100'
+    emerald: 'text-emerald-400 bg-emerald-900/20 border-emerald-500/30 backdrop-blur-md',
+    amber: 'text-amber-400 bg-amber-900/20 border-amber-500/30 backdrop-blur-md',
+    blue: 'text-blue-400 bg-blue-900/20 border-blue-500/30 backdrop-blur-md',
+    purple: 'text-purple-400 bg-purple-900/20 border-purple-500/30 backdrop-blur-md'
   };
 
   return (

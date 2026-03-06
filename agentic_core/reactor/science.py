@@ -18,13 +18,13 @@ class ScienceReactor(DigitalReactor):
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        ARTICLE 268: Deepened Science Incubation.
-        Includes real-time API simulation and evolutionary paper synthesis.
+        ARTICLE 268/273: Deepened Science Incubation with Live APIs.
+        Includes real-time API search and evolutionary paper synthesis.
         """
         logger.info(f"ScienceReactor: Incubating research on {input_data}")
 
-        # 1. Simulate API search (arXiv/PubMed)
-        sources = self._simulate_external_search(str(input_data))
+        # 1. Live API search (arXiv/PubMed)
+        sources = await self._simulate_external_search(str(input_data))
 
         # 2. Literature review synthesis
         lit_review = await self.generator.generate({
@@ -48,12 +48,12 @@ class ScienceReactor(DigitalReactor):
             "status": "INCUBATION_COMPLETE"
         }
 
-    def _simulate_external_search(self, query: str) -> List[str]:
-        """Functional mock for arXiv/Semantic Scholar."""
-        return [
-            f"DOI: 10.1101/v99.{random.randint(100,999)} (Emergent Patterns in {query})",
-            f"arXiv:2505.{random.randint(1000,9999)} (Computational {query} for Transcendent Systems)"
-        ]
+    async def _simulate_external_search(self, query: str) -> List[str]:
+        """ARTICLE 273: Live API integration for literature search."""
+        from agentic_core.reactor.api_client import LiveAPIClient
+        client = LiveAPIClient("science")
+        res = await client.call_api("/search/arxiv", {"q": query})
+        return [f"{r['id']} ({r['title']})" for r in res.get("results", [])]
 
     async def interact(self, state: Any, action: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Run 'What-If' scenarios on research variables."""

@@ -17,12 +17,17 @@ class EmploymentReactor(DigitalReactor):
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        ARTICLE 268/264: Deepened Career Development.
-        Includes ATS optimization and market intelligence modeling.
+        ARTICLE 268/273: Deepened Career Development with Live APIs.
+        Includes live market trends and ATS optimization.
         """
         logger.info(f"EmploymentReactor: Generating Career Launch Kit for {input_data}")
 
-        # 1. ATS-Optimized CV synthesis
+        # 1. Live Market Trends (ARTICLE 273)
+        from agentic_core.reactor.api_client import LiveAPIClient
+        client = LiveAPIClient("employment")
+        live_stats = await client.call_api("/jobs/market", {"q": str(input_data)})
+
+        # 2. ATS-Optimized CV synthesis
         cv = await self.generator.generate({
             "task": "ats_optimized_cv_generation",
             "profile": input_data,

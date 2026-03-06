@@ -17,33 +17,40 @@ class SovereignBusinessIncubator(DigitalReactor):
         self.generator = DomainGenerator("sovereign")
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
-        """End-to-end incubation of a new sovereign entity."""
+        """
+        ARTICLE 272: End-to-end incubation and optional live deployment.
+        """
         concept = str(input_data)
         logger.info(f"SovereignIncubator: Starting incubation for '{concept}'")
 
-        # 1. Constitutional Evolution
+        # 1. Component Synthesis
         constitution = await self.generator.generate({"task": "evolve_constitution", "concept": concept})
-
-        # 2. Product Catalog Synthesis
         catalog = await self.generator.generate({"task": "synthesize_catalog", "concept": concept})
 
-        # 3. AI CEO Configuration
         ceo_config = {
             "commander_id": f"CEO_{random.randint(1000, 9999)}",
             "strategic_threshold": 0.85,
             "mission_focus": "ETHICAL_GROWTH"
         }
 
-        # 4. Marketing Package
         marketing = await self.generator.generate({"task": "marketing_kit", "concept": concept})
 
         bundle = self.bundle([constitution, catalog, ceo_config, marketing], "SOVEREIGN_ENTITY_PKG")
+        business_id = f"SOV_{random.randint(100, 999)}"
+
+        # 2. Automatic Live Deployment (ARTICLE 272)
+        live_result = {}
+        if params.get("auto_deploy", False):
+            from agentic_core.reactor.deployment.manager import DeploymentManager
+            dm = DeploymentManager()
+            live_result = await dm.launch_business(business_id, bundle)
 
         return {
-            "business_id": f"SOV_{random.randint(100, 999)}",
+            "business_id": business_id,
             "deployable_package": bundle,
+            "live_entity": live_result,
             "readiness_score": 0.98,
-            "status": "INCUBATION_COMPLETE"
+            "status": "LIVE" if live_result else "INCUBATION_COMPLETE"
         }
 
     async def interact(self, state: Any, action: str, context: Dict[str, Any]) -> Dict[str, Any]:

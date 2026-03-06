@@ -4,6 +4,7 @@ from agentic_core.reactor.science import ScienceReactor
 from agentic_core.reactor.law import LawReactor
 from agentic_core.reactor.employment import EmploymentReactor
 from agentic_core.reactor.religion import ReligionReactor
+from agentic_core.reactor.sovereign_business import SovereignBusinessIncubator
 from agentic_core.quantum.interface import UnifiedQuantumInterface
 from agentic_core.business.commander import AICommander
 from agentic_core.business.dispatcher import AIDispatcher
@@ -57,3 +58,20 @@ def test_ai_dispatcher_onboarding():
     dispatcher = AIDispatcher(commander)
     dispatcher.onboard_client("user_001", "law", "pro")
     dispatcher.meter_usage("user_001", "law", "contract_generation")
+
+@pytest.mark.asyncio
+async def test_live_deployment_pipeline():
+    sbi = SovereignBusinessIncubator()
+    # Incubate with auto_deploy=True
+    res = await sbi.incubate("Organic Coffee Chain", {"auto_deploy": True})
+    assert res["status"] == "LIVE"
+    assert "live_entity" in res
+    assert "frontend_url" in res["live_entity"]
+
+@pytest.mark.asyncio
+async def test_reactor_live_api_integration():
+    reactor = ScienceReactor()
+    res = await reactor.incubate("Genomic Evolution", {})
+    # Verify live API search results are present
+    assert res["sources_count"] > 0
+    assert "arXiv" in res["scientific_paper"]["content"] or "Live Research" in res["literature_review"]["content"]
