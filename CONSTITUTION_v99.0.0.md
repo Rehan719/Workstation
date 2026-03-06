@@ -220,5 +220,20 @@ The Workstation must prioritize free-tier APIs, simulators, and serverless hosti
 **ARTICLE 278: FRICTIONLESS OVERSIGHT MANDATE**
 The Human Oversight Manager shall provide a non-bypassable checkpoint for high-risk autonomous decisions, ensuring all strategic shifts are auditable and reversible by the workstation owner.
 
+**ARTICLE 279: CONSCIOUS ENTITY MANDATE**
+The Workstation shall maintain a Conscious Entity Layer—a self‑aware, evolving digital organism that integrates all components, interfaces with the owner and users, and orchestrates the entire ecosystem.
+
+**ARTICLE 280: DYNAMIC TEAM ASSEMBLY MANDATE**
+The AI CEO shall operate as a fluid ecosystem of specialized agents, dynamically assembled based on project requirements. Agent recruitment shall be governed by an immune‑inspired, constraint‑weighted activation layer.
+
+**ARTICLE 281: HYBRID OUTPUT STANDARDIZATION MANDATE**
+All generated business entities shall be packaged as OCI‑compliant container images with standardized core deliverables and modular customization options.
+
+**ARTICLE 282: DOMAIN-ADAPTIVE UI MANDATE**
+The user interface shall provide a shared core interaction pattern while enabling domain‑specific visual and functional adaptations (Science, Religion, Law, Employment, Education).
+
+**ARTICLE 283: CROSS-SCALE SYNCHRONIZATION MANDATE**
+The Conscious Entity Layer shall synchronize state across all system components using Universal Representations (URs), ensuring functional resonance and constitutional coherence.
+
 ---
 *Codified via Grand Synthesis Engine v99.0.0*

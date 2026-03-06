@@ -5,7 +5,7 @@ set -e
 echo "Initializing QEP Environment..."
 
 # 1. Backend Dependencies
-pip install -r requirements.txt || pip install numpy scipy scikit-learn pandas sqlalchemy fastapi uvicorn pytest pytest-asyncio
+pip install -r requirements.txt || pip install numpy scipy scikit-learn pandas sqlalchemy fastapi uvicorn pytest pytest-asyncio networkx deap httpx
 
 # 2. Frontend Dependencies
 cd src/qep_frontend

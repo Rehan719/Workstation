@@ -12,12 +12,27 @@ class AIDispatcher:
     def __init__(self, commander_ref: Any):
         self.commander = commander_ref
         self.active_tasks = []
+        from agentic_core.ai_ceo.recruitment_engine import RecruitmentEngine, SpanControlEngine
+        self.recruiter = RecruitmentEngine()
+        self.span_ctrl = SpanControlEngine()
 
     def allocate_resources(self, product_id: str, requirement: str) -> Dict[str, Any]:
-        """Manages operational scaling."""
-        # ARTICLE 60: Dynamic resource allocation
+        """
+        ARTICLE 280: Dynamic Team Assembly & Resource Allocation.
+        Recruits specialized agents and throttles span.
+        """
+        # 1. Span Control check
+        limit = self.span_ctrl.get_optimal_dispatch_limit(system_load=0.2) # Simulation load
+
+        # 2. Dynamic Recruitment
+        context = {"domain": product_id, "risk_level": 0.1}
+        pool = [{"id": "agent_legal", "specialization": "law"}, {"id": "agent_tech", "specialization": "science"}]
+        active_team = self.recruiter.recruit_agents(context, pool)
+
         allocation = {
-            "compute": "LOW_PRIORITY" if requirement == "UI_FETCH" else "HIGH_PRIORITY",
+            "compute": "HIGH_PRIORITY",
+            "active_team": active_team,
+            "dispatch_limit": limit,
             "allocated_at": datetime.now().isoformat()
         }
         return allocation

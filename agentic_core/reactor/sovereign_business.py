@@ -34,9 +34,17 @@ class SovereignBusinessIncubator(DigitalReactor):
         }
 
         marketing = await self.generator.generate({"task": "marketing_kit", "concept": concept})
-
-        bundle = self.bundle([constitution, catalog, ceo_config, marketing], "SOVEREIGN_ENTITY_PKG")
         business_id = f"SOV_{random.randint(100, 999)}"
+
+        # 1.5 OCI Packaging & OpenAPI (ARTICLE 281)
+        oci_metadata = {
+            "image_name": f"v99/sovereign_{random.randint(100,999)}",
+            "openapi_spec": "3.1.0",
+            "verifiable_credential": f"VC_{business_id}_SIGNED",
+            "dockerfile": "FROM v99-workstation-base\nCOPY . /app\nRUN setup-sovereign.sh"
+        }
+
+        bundle = self.bundle([constitution, catalog, ceo_config, marketing, oci_metadata], "SOVEREIGN_ENTITY_PKG")
 
         # 2. Automatic Live Deployment (ARTICLE 272)
         live_result = {}

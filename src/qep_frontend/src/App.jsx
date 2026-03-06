@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import HifzHeatMap from './components/HifzHeatMap';
 import CumulativeDashboard from './components/dashboards/CumulativeDashboard';
 import ImmersiveBackground from './components/immersive/ImmersiveBackground';
+import { PersonalizationProvider } from './components/PersonalizationEngine';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
   };
 
   return (
+    <PersonalizationProvider profile={userProfile}>
     <div className="dashboard-container font-inter relative min-h-screen flex">
       <ImmersiveBackground domain={activeTab === 'Dashboard' ? 'religion' : activeTab.toLowerCase()} />
       <aside className="sidebar bg-slate-900/80 backdrop-blur-xl text-white w-72 p-8 flex flex-col border-r border-white/10 relative z-10">
@@ -152,10 +154,11 @@ function App() {
         </AnimatePresence>
 
         <footer className="mt-20 pt-8 border-t border-gray-200 opacity-40 text-[11px] font-bold uppercase tracking-widest text-center">
-          Sovereign Business Entity: SOV_V99 | Powered by Transcendent Workstation | Article 265 Compliant
+          Sovereign Business Entity: SOV_V99 | Powered by Transcendent Workstation | Article 283 Compliant
         </footer>
       </main>
     </div>
+    </PersonalizationProvider>
   );
 }
 
