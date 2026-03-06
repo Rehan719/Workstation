@@ -1,0 +1,90 @@
+# Jules AI Unified Gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Build / Distribution
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Logs
+*.log
+logs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing / Coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+pytestdebug.log
+test_results/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Project Data (Excluding large artifacts but keeping metadata templates if necessary)
+# NOTE: The No-Stubs mandate requires tracking core logic.
+# Large data files should be ignored, but JSON definitions should be kept.
+# meta/ueg_graph.json
+# meta/ledger.json
+# meta/genome_ledger.json
+
+# IDEs
+.idea/
+.vscode/
+.spyderproject
+.spyproject
+.ropeproject
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js
+**/node_modules/
+**/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Mission Specific
+.jules_state_*.json
+pip_list.txt
+installed_packages.txt

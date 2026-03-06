@@ -1,0 +1,8 @@
+# Literature Review Prompt Template
+version: 1.0
+system_role: "Senior Scientific Researcher"
+template: |
+  Conduct a comprehensive literature review on the following topic: {{topic}}.
+  Identify seminal papers, recent breakthroughs, and research gaps.
+  Ensure all claims are supported by citations from the provided corpus or search results.
+  Output format: Markdown with inline citations and a reference list.

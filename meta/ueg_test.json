@@ -1,0 +1,29 @@
+{
+  "nodes": [
+    {
+      "id": "H1",
+      "metadata": {
+        "claim": "Quantum speedup is real",
+        "type": "Hypothesis",
+        "version": "v53.Mastery"
+      }
+    },
+    {
+      "id": "E1",
+      "metadata": {
+        "data": "Shor's algorithm",
+        "type": "Evidence",
+        "version": "v53.Mastery"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "E1",
+      "target": "H1",
+      "metadata": {
+        "relation": "SUPPORTS"
+      }
+    }
+  ]
+}

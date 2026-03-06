@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0 -- /home/jules/.pyenv/versions/3.12.12/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /dev
+configfile: null
+plugins: asyncio-1.3.0, anyio-4.12.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 6 items
+
+../dev::test_religious_auth PASSED                                       [ 16%]
+../dev::test_community_orchestrator PASSED                               [ 33%]
+../dev::test_db_concurrency PASSED                                       [ 50%]
+../dev::test_tazkiyah_weights_from_config PASSED                         [ 66%]
+../dev::test_tajwid_coach_robustness PASSED                              [ 83%]
+../dev::test_sharia_finops_adapter PASSED                                [100%]
+
+=============================== warnings summary ===============================
+../home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/cacheprovider.py:475
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/cacheprovider.py:475: PytestCacheWarning: could not create cache path /dev/.pytest_cache/v/cache/nodeids: [Errno 13] Permission denied: '/dev/pytest-cache-files-yb51jzpx'
+    config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========================= 6 passed, 1 warning in 2.11s =========================

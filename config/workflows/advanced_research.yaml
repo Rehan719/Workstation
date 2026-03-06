@@ -1,0 +1,27 @@
+name: Advanced Research Pipeline
+version: 10.0
+trigger:
+  type: high_level_prompt
+steps:
+  - id: plan
+    agent: pc_agent.manager.v10
+  - id: research
+    agent: research.paperqa.v10
+    parallel: true
+  - id: audit
+    agent: agents.research.citation_auditor.v2
+  - id: writing
+    agent: writing.manuscript.architect.v4
+  - id: ethics_scan
+    agent: ethical.sentinel.v10
+    gates:
+      - condition: ${output.risk_score} < 0.2
+        fail_step: refine_content
+  - id: presentation
+    agent: presentation.slide_maestro.v10
+  - id: animation
+    agent: animation.manim.generator.v10
+    condition: ${task.needs_animation}
+  - id: finalize
+    agent: transcendent.v10
+    action: consolidate

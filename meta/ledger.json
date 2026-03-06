@@ -1,0 +1,49 @@
+[
+  {
+    "index": 1,
+    "timestamp": "2026-02-25T09:53:44.745718+00:00",
+    "transactions": [],
+    "merkle_root": "2e1cfa82b035c26cbbbdae632cea070514eb8b773f616aaeaf668e2f0be8f10d",
+    "proof": 100,
+    "previous_hash": "0"
+  },
+  {
+    "index": 2,
+    "timestamp": "2026-02-25T12:00:00.000000+00:00",
+    "transactions": [
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "H1",
+          "metadata": {
+            "claim": "Quantum-AI Synergy enables Transcendent Evolution",
+            "type": "Hypothesis",
+            "version": "v99.Transcendent"
+          }
+        },
+        "timestamp": "2026-02-25T12:01:00.000000+00:00",
+        "hash": "v99_transcendent_hash_001"
+      },
+      {
+        "sender": "system",
+        "action": "ADD_NODE",
+        "data": {
+          "id": "PSC_Target_Analysis",
+          "metadata": {
+            "title": "Primary Sclerosing Cholangitis Therapeutic Targets",
+            "authors": ["Prof. Jules", "Agent Smith"],
+            "relevance_score": 0.92,
+            "type": "PUBLICATION",
+            "version": "v99.Transcendent"
+          }
+        },
+        "timestamp": "2026-02-25T12:05:00.000000+00:00",
+        "signature": "v99_scholarly_sig_404"
+      }
+    ],
+    "merkle_root": "999999999b2262a91a9c071169b1d11895356254d8e008b057b2864d730f4b71",
+    "proof": 999,
+    "previous_hash": "2e1cfa82b035c26cbbbdae632cea070514eb8b773f616aaeaf668e2f0be8f10d"
+  }
+]

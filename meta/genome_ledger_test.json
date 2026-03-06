@@ -1,0 +1,13 @@
+[
+  {
+    "index": 1,
+    "timestamp": 1772214291.3561826,
+    "genotype": {
+      "traits": {
+        "optimized_vqe": "0.998"
+      }
+    },
+    "previous_hash": "0",
+    "zkp_proof": "zkp:test"
+  }
+]

@@ -1,0 +1,18 @@
+policies:
+  - name: trusted-repositories
+    type: repository
+    allowed_patterns:
+      - "docker.io/julesai/*"
+      - "ghcr.io/rehan719/*"
+    action: allow
+
+  - name: require-signature
+    type: signature
+    require_valid_signature: true
+    require_rekor_entry: true
+    action: allow
+
+  - name: block-unsigned
+    type: default
+    action: deny
+    reason: "All containers must be signed and verified (Article V)"

@@ -1,0 +1,25 @@
+name: QEP Production Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build Production Assets
+      run: |
+        cd src/qep_frontend
+        npm install
+        npm run build
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          src/qep_frontend/dist/*
+        body: "Automated production release for AI-Driven Quranic Education Platform."
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,21 @@
+{
+  "products": [
+    {
+      "product_id": "QEP_BASIC",
+      "name": "Quranic Sanctuary - Basic",
+      "price": 0.0,
+      "tier": "FREE",
+      "features": ["Tajwid Coach", "Memorization Suite", "Learning Modules"]
+    },
+    {
+      "product_id": "QEP_PREMIUM",
+      "name": "Quranic Sanctuary - Elite",
+      "price": 0.0,
+      "tier": "DONATION_BASED",
+      "features": ["AI Guidance", "Advanced Analytics", "Custom Geometric Themes"]
+    }
+  ],
+  "commissions": {
+    "educator_platform": 0.05
+  }
+}

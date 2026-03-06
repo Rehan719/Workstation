@@ -1,0 +1,3 @@
+cache_size: 2048
+learning_rate: 0.001
+tau: 0.05

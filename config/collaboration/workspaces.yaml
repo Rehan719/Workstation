@@ -1,0 +1,13 @@
+default_config:
+  persistence: true
+  realtime_sync: true
+  rbac_enabled: true
+  max_members: 10
+
+roles:
+  owner:
+    permissions: ["create", "edit", "delete", "execute", "invite"]
+  editor:
+    permissions: ["create", "edit", "execute"]
+  viewer:
+    permissions: ["read"]
