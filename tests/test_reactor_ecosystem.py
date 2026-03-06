@@ -75,3 +75,19 @@ async def test_reactor_live_api_integration():
     # Verify live API search results are present
     assert res["sources_count"] > 0
     assert "arXiv" in res["scientific_paper"]["content"] or "Live Research" in res["literature_review"]["content"]
+
+@pytest.mark.asyncio
+async def test_ai_ceo_oversight():
+    from agentic_core.ai_ceo.oversight_manager import HumanOversightManager
+    hom = HumanOversightManager()
+
+    # Test Auto-approval
+    id1 = hom.request_approval("LOW_RISK_MARKETING", {"msg": "hello"})
+    assert id1.startswith("rev_")
+    assert any(a["id"] == id1 and a["status"] == "AUTO_APPROVED" for a in hom.audit_log)
+
+    # Test Pending/Reject
+    id2 = hom.request_approval("HIGH_STAKES_PRICING", {"price": 999.0})
+    assert any(a["id"] == id2 and a["status"] == "PENDING" for a in hom.pending_actions)
+    hom.reject_action(id2, "Too expensive")
+    assert any(a["id"] == id2 and a["status"] == "REJECTED" for a in hom.audit_log)

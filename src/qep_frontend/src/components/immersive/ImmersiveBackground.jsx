@@ -10,10 +10,14 @@ const GeometricCore = ({ color }) => {
   });
 
   return (
-    <mesh ref={mesh}>
-      <octahedronGeometry args={[2, 0]} />
-      <meshStandardMaterial color={color} wireframe />
-    </mesh>
+    <group>
+      <mesh ref={mesh}>
+        <octahedronGeometry args={[2, 0]} />
+        <meshStandardMaterial color={color} wireframe />
+      </mesh>
+      {/* ARTICLE 274: Particle synergy for high-end UI */}
+      <Stars radius={50} depth={50} count={1000} factor={2} saturation={0.5} fade speed={2} />
+    </group>
   );
 };
 

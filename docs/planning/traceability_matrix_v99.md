@@ -52,3 +52,6 @@
 | agentic_core/reactor/api_client.py | 273 | Real-World API Integration | v99.0 (Ultimate Excellence) |
 | src/qep_frontend/components/immersive/ | 274 | Immersive 3D UX | v99.0 (Ultimate Excellence) |
 | agentic_core/ai_ceo/pricing/ | 275 | Tactical Autonomous CEO | v99.0 (Ultimate Excellence) |
+| agentic_core/ai_ceo/partnerships/ | 276 | Sovereign Partnerships | v99.0 (Ultimate Synthesis) |
+| agentic_core/ai_ceo/oversight_manager.py | 278 | Frictionless Override | v99.0 (Ultimate Synthesis) |
+| agentic_core/reactor/api_client.py | 277 | Zero-Cost Hardening | v99.0 (Ultimate Synthesis) |

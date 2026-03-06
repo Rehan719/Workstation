@@ -211,5 +211,14 @@ The user interfaces shall achieve the highest standards of modern web design, in
 **ARTICLE 275: AI CEO SUPREME AUTONOMY MANDATE**
 The AI CEO shall operate with full tactical autonomy in publishing marketing campaigns, optimizing pricing in real-time, and conducting partner outreach, with immutable audit trails and frictionless owner override.
 
+**ARTICLE 276: SOVEREIGN PARTNERSHIP MANDATE**
+The AI CEO shall autonomously identify and initiate outreach to institutional and strategic partners across Science, Law, and Education domains, using synthesis engines for personalized high-fidelity communication.
+
+**ARTICLE 277: ZERO-COST OPERATIONAL MANDATE**
+The Workstation must prioritize free-tier APIs, simulators, and serverless hosting to maintain zero incurred costs for standard operations. Premium resources shall be dynamically allocated based on ROI projections.
+
+**ARTICLE 278: FRICTIONLESS OVERSIGHT MANDATE**
+The Human Oversight Manager shall provide a non-bypassable checkpoint for high-risk autonomous decisions, ensuring all strategic shifts are auditable and reversible by the workstation owner.
+
 ---
 *Codified via Grand Synthesis Engine v99.0.0*
