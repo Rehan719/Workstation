@@ -6,7 +6,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 class KnowledgeGraph:
-    """ARTICLE 279: Central repository for entity context."""
+    """ARTICLE 279/284: Central repository for entity and cross-domain context."""
     def __init__(self):
         # Emulation using NetworkX pattern
         self.nodes = {}
@@ -14,10 +14,18 @@ class KnowledgeGraph:
 
     def add_fact(self, subject: str, relation: str, obj: str, metadata: Dict[str, Any] = None):
         fact_id = f"{subject}_{relation}_{obj}"
-        self.nodes[subject] = {"type": "ENTITY"}
-        self.nodes[obj] = {"type": "OBJECT"}
+        self.nodes[subject] = {"type": "ENTITY", "domain": metadata.get("domain") if metadata else None}
+        self.nodes[obj] = {"type": "OBJECT", "domain": metadata.get("target_domain") if metadata else None}
         self.edges.append({"id": fact_id, "from": subject, "rel": relation, "to": obj, "meta": metadata})
         logger.debug(f"KnowledgeGraph: Fact added -> {fact_id}")
+
+    def query_cross_domain_synergies(self, domain: str) -> List[Dict[str, Any]]:
+        """ARTICLE 284: Identifies potential links between reactors."""
+        synergies = []
+        for edge in self.edges:
+            if edge["from"] == domain or edge["to"] == domain:
+                 synergies.append(edge)
+        return synergies
 
 class ConsciousEntityCore:
     """

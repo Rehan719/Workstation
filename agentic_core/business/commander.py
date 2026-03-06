@@ -59,3 +59,11 @@ class AICommander:
             "demand_forecast": po.forecast_demand(domain),
             "competitive_status": "SOVEREIGN_ADVANTAGE"
         }
+
+    def trigger_cross_domain_synergy(self, workflow_name: str):
+        """ARTICLE 285: Strategic cross-domain workflow activation."""
+        from agentic_core.ai_ceo.strategy.cross_domain import CrossDomainStrategyModule
+        strategy = CrossDomainStrategyModule()
+        path = strategy.optimize_workflow_path(workflow_name, ["science", "religion", "law", "employment", "education"])
+        logger.info(f"AICommander: Triggering synergy workflow '{workflow_name}' across {path}.")
+        return {"status": "ORCHESTRATING", "optimized_path": path}

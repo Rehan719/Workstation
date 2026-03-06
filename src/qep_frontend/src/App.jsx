@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import HifzHeatMap from './components/HifzHeatMap';
 import CumulativeDashboard from './components/dashboards/CumulativeDashboard';
 import ImmersiveBackground from './components/immersive/ImmersiveBackground';
+import UnifiedDashboard from './pages/UnifiedDashboard';
 import { PersonalizationProvider } from './components/PersonalizationEngine';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -56,10 +57,11 @@ function App() {
         </div>
 
         <nav className="flex-1 space-y-2">
-          {['Dashboard', 'Education', 'Science', 'Law', 'Employment', 'Scholar'].map((tab) => (
+          <NavItem label="Unified Workspace" active={activeTab === 'Unified'} onClick={() => setActiveTab('Unified')} />
+          {['Education', 'Science', 'Law', 'Employment', 'Scholar'].map((tab) => (
             <NavItem
               key={tab}
-              label={tab === 'Dashboard' ? 'Sovereign Core' : `${tab} Reactor`}
+              label={`${tab} Reactor`}
               active={activeTab === tab}
               onClick={() => setActiveTab(tab)}
             />
@@ -92,6 +94,8 @@ function App() {
             exit="out"
             transition={{ type: 'tween', ease: 'anticipate', duration: 0.4 }}
           >
+            {activeTab === 'Unified' && <UnifiedDashboard userProfile={userProfile} mockData={mockData} />}
+
             {activeTab === 'Dashboard' && (
               <div className="space-y-12">
                 <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
