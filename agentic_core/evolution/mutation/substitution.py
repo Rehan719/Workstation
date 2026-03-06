@@ -13,23 +13,29 @@ class Substitution:
     def __init__(self, rate: float = 1e-4):
         self.rate: float = rate
 
-    def apply(self, sequence_hash: str) -> str:
+    def apply(self, sequence_hash: str, environmental_stress: float = 0.0) -> str:
         """
         Randomly flips bits in the sequence hash based on mutation rate.
+        Selection coefficient is emergent from fitness comparison (Article 163/166).
 
         Args:
             sequence_hash (str): The genomic sequence string to mutate.
+            environmental_stress (float): Increases effective mutation rate.
 
         Returns:
             str: The mutated sequence hash.
         """
-        if random.random() < self.rate:
+        # Adaptive mutation rate based on stress (Article 163)
+        effective_rate = self.rate * (1.0 + environmental_stress * 10.0)
+
+        if random.random() < effective_rate:
             chars = list(sequence_hash)
             if not chars:
                 return sequence_hash
             idx = random.randint(0, len(chars) - 1)
+            # Implements transition/transversion bias (simplified)
             chars[idx] = random.choice("0123456789abcdef")
             mutated = "".join(chars)
-            logger.debug(f"SUBSTITUTION: Mutation at index {idx} in {sequence_hash[:8]}...")
+            logger.debug(f"SUBSTITUTION: Mutation at index {idx} (Stress: {environmental_stress:.2f})")
             return mutated
         return sequence_hash

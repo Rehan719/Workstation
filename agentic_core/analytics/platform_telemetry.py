@@ -14,22 +14,17 @@ class PlatformTelemetry:
         self.events = []
         self.db = db
 
-    def log_event(self, persona: str, feature: str, success: bool, metadata: Optional[Dict[str, Any]] = None):
-        """
-        ARTICLE 150/247: Logs events with spiritual and business KPI context.
-        """
+    def log_event(self, persona: str, feature: str, success: bool):
         event = {
             "ts": time.time(),
             "persona": persona,
             "feature": feature,
-            "success": success,
-            "metadata": metadata or {}
+            "success": success
         }
         self.events.append(event)
         if self.db:
-            # Enhanced logging for dual-metric dashboards
-            self.db.log_telemetry(persona, feature, success, metadata)
-        logger.info(f"Telemetry: Logged {feature} for {persona} (Success: {success})")
+            self.db.log_telemetry(persona, feature, success)
+        logger.info(f"Telemetry: Logged {feature} for {persona}")
 
     def get_stats(self) -> Dict[str, Any]:
         return {

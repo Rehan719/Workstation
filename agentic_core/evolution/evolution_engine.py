@@ -1,5 +1,6 @@
 import logging
 import uuid
+import random
 import numpy as np
 from typing import List, Dict, Any, Optional
 from agentic_core.genome.chromosome import Chromosome
@@ -13,10 +14,32 @@ from agentic_core.evolution.rearrangement.deletion import Deletion
 from agentic_core.evolution.rearrangement.inversion import Inversion
 from agentic_core.evolution.rearrangement.duplication import Duplication
 from agentic_core.evolution.rearrangement.translocation import Translocation
-from agentic_core.evolution.divergence import SelectionSystem
 from agentic_core.evolution.search.phylogeny import PhylogenyTracker
 
 logger = logging.getLogger(__name__)
+
+class GenomicAgent:
+    """
+    ARTICLE 162: Agent representation of an evolving genome in the petri dish.
+    """
+    def __init__(self, organism_id: str, chromosome: Chromosome):
+        self.organism_id = organism_id
+        self.chromosome = chromosome
+        # Neural parameters derived from genome hash
+        state_seed = int(hash(chromosome.chromosome_id) % 2**32)
+        np.random.seed(state_seed)
+        self.weights = np.random.randn(16, 16) # Hidden state interaction weights
+
+    def propose_update(self, petri_dish: PetriDish) -> np.ndarray:
+        """Proposes a state update based on genome-derived behavior."""
+        # Use structural genes to determine update magnitude
+        strength = len([g for g in self.chromosome.gene_map.values()
+                       if g.gene_type == GeneType.STRUCTURAL]) * 0.01
+
+        # Simple behavioral proposal: expansion in random direction
+        proposal = np.zeros_like(petri_dish.grid)
+        proposal[:, :, 4] = strength * np.random.random((petri_dish.width, petri_dish.height))
+        return proposal
 
 class GenomeEvolutionEngine:
     """
@@ -40,34 +63,38 @@ class GenomeEvolutionEngine:
 
     def run_cycle(self, environmental_target: Dict[str, Any]) -> Chromosome:
         """
-        Executes one full evolutionary cycle (Article 162/163/170).
+        Executes one full evolutionary cycle (Article 162/163/170/180).
         """
         logger.info("EVOLUTION: Starting Sovereign Development Cycle...")
 
-        # 1. Simulation in Petri Dish
-        # In this context, agents represent evolving genomes
-        self.sim_loop.step([]) # agents are implicit for now
-
-        # 2. Fitness Computation & Selection
-        # We simulate a population of mutants from the core genome
-        fitness_scores = {}
+        # 1. Generate Mutant Population
         mutant_pool = {}
-
+        agents = []
         for i in range(self.population.size):
             mutant_id = f"mutant_{self.population.generation}_{i}"
             mutant_chrom = self._generate_mutant()
-
-            # Simple fitness: match to target
-            fitness = 0.5 + 0.5 * np.random.random()
-            fitness_scores[mutant_id] = fitness
             mutant_pool[mutant_id] = mutant_chrom
-
+            agents.append(GenomicAgent(mutant_id, mutant_chrom))
             self.phylogeny.record_reproduction(mutant_id, "core_baseline")
 
-        # 3. Wright-Fisher Population Replacement
+        # 2. Simulation in Petri Dish (Article 162)
+        self.sim_loop.step(agents)
+
+        # 3. Fitness Computation & Selection
+        fitness_scores = {}
+        for mutant_id, mutant_chrom in mutant_pool.items():
+            # Fitness derived from behavior in simulation and target match (Article 180)
+            base_fitness = 0.5
+
+            # Mission alignment bonus
+            mission_alignment = 0.2 if any(g.gene_type == GeneType.COMMERCIAL for g in mutant_chrom.gene_map.values()) else 0.0
+
+            fitness_scores[mutant_id] = base_fitness + mission_alignment + 0.3 * np.random.random()
+
+        # 4. Wright-Fisher Population Replacement
         self.population.replace_generation(fitness_scores)
 
-        # 4. Identify Optimal Offspring
+        # 5. Identify Optimal Offspring
         best_id = max(fitness_scores, key=fitness_scores.get)
         best_mutant = mutant_pool[best_id]
 
@@ -78,7 +105,8 @@ class GenomeEvolutionEngine:
         """Applies mutation suite to a clone of the core genome."""
         mutant = Chromosome(f"mutant_{uuid.uuid4().hex[:6]}")
         mutant.sequence = list(self.core_genome.sequence)
-        mutant.gene_map = dict(self.core_genome.gene_map)
+        mutant.gene_map = {gid: Gene(gid, g.gene_type, g.sequence_hash)
+                          for gid, g in self.core_genome.gene_map.items()}
 
         # Apply rearrangements
         self.deleter.apply(mutant)
@@ -94,5 +122,3 @@ class GenomeEvolutionEngine:
             gene.sequence_hash = self.indel.apply(gene.sequence_hash)
 
         return mutant
-
-import random

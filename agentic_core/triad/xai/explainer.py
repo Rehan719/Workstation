@@ -77,3 +77,10 @@ class AdaptiveXAI:
         else:
             return (f"{base_msg} The model mainly looked at {main_feat}. "
                     f"Reliability window: [{interval[0]:.2f}, {interval[1]:.2f}].")
+        main_feat = max(importance, key=lambda k: abs(importance[k]))
+        if expertise == 'expert':
+            return (f"Main feature: {main_feat}. "
+                    f"Rigorous {conf*100}% Conformal Interval: [{interval[0]:.4f}, {interval[1]:.4f}].")
+        else:
+            return (f"The model mainly looked at {main_feat}. "
+                    f"We are very sure (95%) the true value is between {interval[0]:.2f} and {interval[1]:.2f}.")

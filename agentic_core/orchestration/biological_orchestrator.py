@@ -2,6 +2,11 @@ import logging
 import time
 from typing import Dict, Any
 
+from agentic_core.survival.survival_engine import SurvivalEngine
+from agentic_core.immunity.immune_system import ImmuneSystem
+from agentic_core.pulse.pulse_clock import PulseClock
+from agentic_core.survival.survival_engine import SurvivalEngineV2 as SurvivalEngine
+from agentic_core.immune.immune_system import ImmuneSystemV2 as ImmuneSystem
 from agentic_core.pulse.pulse_clock import PulseClock
 from agentic_core.survival.survival_engine import SurvivalEngineV2 as SurvivalEngine
 from agentic_core.immune.immune_system import ImmuneSystemV2 as ImmuneSystem
@@ -9,6 +14,8 @@ from agentic_core.nervous_system.nervous_system import NervousSystem
 from agentic_core.cardiovascular.cardiovascular_system import CardiovascularSystem
 from agentic_core.digestion.digestive_system import DigestiveSystem
 from agentic_core.aging.longevity_engine import LongevityEngine
+from agentic_core.ethics.constitutional_enforcer import ConstitutionalEnforcer
+from agentic_core.homeostasis.homeostatic_regulator import HomeostaticRegulator
 from agentic_core.ethics.constitutional_enforcer import ConstitutionalEnforcer
 from agentic_core.homeostasis.homeostatic_regulator import HomeostaticRegulator
 
@@ -20,6 +27,9 @@ class BiologicalOrchestrator:
     Coordinates all biological subsystems to maintain organism health and execute tasks.
     """
     def __init__(self):
+        self.survival = SurvivalEngine()
+        self.clock = PulseClock()
+        self.survival = SurvivalEngine(self.clock)
         self.clock = PulseClock()
         self.survival = SurvivalEngine(self.clock)
         self.immune = ImmuneSystem()
@@ -27,6 +37,8 @@ class BiologicalOrchestrator:
         self.cardio = CardiovascularSystem()
         self.digestion = DigestiveSystem()
         self.aging = LongevityEngine()
+        self.enforcer = ConstitutionalEnforcer()
+        self.homeostasis = HomeostaticRegulator()
         self.enforcer = ConstitutionalEnforcer()
         self.homeostasis = HomeostaticRegulator()
 
@@ -47,6 +59,9 @@ class BiologicalOrchestrator:
         start_ns = time.perf_counter_ns()
         result = self.nervous.process_signal(task)
         self.survival.enforce_latency("nervous", start_ns)
+        start = time.time()
+        result = self.nervous.process_signal(task)
+        self.survival.enforce_latency("nervous", start)
 
         # 3. Immune Surveillance
         threat_score = self.immune.evaluate_threat(task)

@@ -38,6 +38,12 @@ class VQESimulator:
                 "status": "hardware_emulated",
                 "backend": self.backend
             }
+            # Placeholder for actual hardware integration
+            logger.warning(f"Backend {self.backend} not fully connected. Falling back to simulator.")
+            return self.solve_ground_state({"fallback": True})
+            # Placeholder for actual hardware integration
+            logger.warning(f"Backend {self.backend} not fully connected. Falling back to simulator.")
+            return self.solve_ground_state({"fallback": True})
 
 class QNLPProcessor:
     """Quantum Natural Language Processing (QNLP) processor."""
