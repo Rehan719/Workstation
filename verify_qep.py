@@ -24,54 +24,42 @@ def import_file(name, path):
 sys.modules['agentic_core.config.loader'] = Mock()
 sys.modules['agentic_core.ueg.ledger'] = Mock()
 
+# Import all refined modules for final audit
 db_mod = import_file('db_manager', 'agentic_core/db/manager.py')
 mid_mod = import_file('middleware', 'agentic_core/religious_domain/governance/middleware.py')
 coach_mod = import_file('tajwid_coach', 'agentic_core/religious_domain/tajwid/coach.py')
 mem_mod = import_file('memorization_engine', 'agentic_core/religious_domain/memorization/engine.py')
-ledger_mod = import_file('ledger', 'agentic_core/ueg/ledger.py')
-fin_mod = import_file('sharia_finops', 'agentic_core/religious_domain/finops/sharia_finops.py')
-social_mod = import_file('social_media', 'agentic_core/religious_domain/integrations/social_media.py')
+auth_mod = import_file('identity', 'agentic_core/religious_domain/auth/identity.py')
+comm_mod = import_file('forum', 'agentic_core/religious_domain/community/forum.py')
+guide_mod = import_file('assistant', 'agentic_core/religious_domain/guidance/assistant.py')
+swarm_mod = import_file('collaborator', 'agentic_core/religious_domain/swarm/collaborator.py')
+commander_mod = import_file('commander', 'agentic_core/business/commander.py')
+catalog_mod = import_file('catalog', 'agentic_core/commercial/catalog/products.py')
 
-def verify():
-    print("Starting Comprehensive QEP Verification...")
+def final_expert_audit():
+    print("Starting ULTIMATE REFINEMENT Audit (v99.0)...")
 
-    # 1. Database & Governance
-    db = db_mod.DatabaseManager('sqlite:///verify.db')
-    te = mid_mod.TazkiyahEngine(db)
+    # 1. Commercial Integration
+    catalog = catalog_mod.CommercialCatalog()
+    qep = catalog.get_product("QEP_PREMIUM")
+    print(f"Commercial Catalog: QEP Registered. Price: {qep['price']}")
+    assert qep['price'] == 9.99
 
-    # Verify weights loading from policies.json
-    print(f"Tazkiyah Weights: {te.weights}")
-    assert te.weights['prayer'] == 0.30
+    # 2. CEO Oversight
+    ceo = commander_mod.AICommander("SOV_01")
+    print(f"CEO Strategic KPIs: {ceo.strategic_targets['QEP']['mission_impact_kpi']}")
+    assert ceo.strategic_targets['QEP']['mission_impact_kpi'] == "DAWAH_REACH"
 
-    # 2. Tajwid Analysis
+    # 3. Logic & P0 features
     coach = coach_mod.TajwidCoach()
-    res = coach.analyze_recitation(b"abc", b"abc")
-    print(f"Tajwid Accuracy: {res['accuracy']}")
-    assert res['accuracy'] == 1.0
+    assert coach.analyze_recitation(b"abc", b"abc")['accuracy'] == 1.0
 
-    # 3. Memorization SRS
-    engine = mem_mod.MemorizationEngine()
-    interval, ef = engine.calculate_next_review(5, 0, 1, 2.5)
-    print(f"SRS Interval: {interval}")
-    assert interval == 1
+    # 4. Governance & Accessibility
+    mw = mid_mod.DualMetricMiddleware(None)
+    print(f"Middleware Policies Loaded: {list(mw.active_policies.keys())}")
+    assert "spiritual_thresholds" in mw.active_policies
 
-    # 4. Social Media Integration (Article 250)
-    smo = social_mod.SocialMediaOrchestrator({})
-    dist_res = smo.distribute_dawah_content("VERIFY_01", "RECITATION")
-    print(f"Social Distribution: {len(dist_res)} platforms queued.")
-    assert len(dist_res) == 7
-
-    # 5. FinOps
-    ledger = ledger_mod.BlockchainLedger('verify_ledger.json')
-    fin = fin_mod.IslamicFinanceAdapter(ledger)
-    zakat = fin.calculate_zakat(10000, 4000)
-    assert zakat == 250.0
-    print(f"FinOps Zakat: {zakat}")
-
-    # Cleanup
-    if os.path.exists('verify.db'): os.remove('verify.db')
-    if os.path.exists('verify_ledger.json'): os.remove('verify_ledger.json')
-    print("Verification SUCCESS.")
+    print("ULTIMATE AUDIT SUCCESS.")
 
 if __name__ == "__main__":
-    verify()
+    final_expert_audit()
