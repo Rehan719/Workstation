@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import random
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 
@@ -15,24 +16,38 @@ class MarketingAgent:
         self.campaign_drafts = [] # Ideally backed by DB
 
     async def generate_campaign(self, reactor_domain: str, target_audience: str) -> Dict[str, Any]:
-        """Generates platform-specific copy."""
-        logger.info(f"MarketingAgent: Generating campaign for {reactor_domain} targeting {target_audience}.")
+        """
+        ARTICLE 271: Deep Marketing Automation.
+        Generates full campaigns including landing pages and email sequences.
+        """
+        logger.info(f"MarketingAgent: Generating deep campaign for {reactor_domain}.")
 
-        # Simulated generation logic
-        copy = {
-            "x_twitter": f"Future-proof your {reactor_domain} journey with our v99.0 Digital Reactor! #AI #Innovation",
-            "linkedin": f"Excited to announce the new v99.0 {reactor_domain.capitalize()} Reactor. Revolutionizing domain incubation.",
-            "email_subject": f"Maximize your {reactor_domain} potential today"
+        # 1. Landing Page HTML synthesis
+        landing_page = f"<html><body><h1>v99.0 {reactor_domain.upper()} Reactor</h1><p>Transcendent evolution for {target_audience}.</p></body></html>"
+
+        # 2. Email sequence (Onboarding, Re-engagement)
+        emails = [
+            {"subject": f"Welcome to the {reactor_domain} Sanctuary", "body": "Your journey begins..."},
+            {"subject": f"Unlocking {reactor_domain} potential", "body": "Did you know our reactor uses GA optimization?"}
+        ]
+
+        # 3. Social Media Pack
+        social_pack = {
+            "x_twitter": f"Elevate your {reactor_domain} workflow with v99.0. #TranscendentAI",
+            "linkedin_article": f"The future of {reactor_domain} incubation is sovereign."
         }
 
         draft = {
-            "campaign_id": f"camp_{reactor_domain}_{datetime.now().strftime('%Y%m%d')}",
+            "campaign_id": f"camp_{reactor_domain}_{datetime.now().strftime('%Y%m%d_%H%M')}",
             "domain": reactor_domain,
-            "audience": target_audience,
-            "copy": copy,
+            "assets": {
+                "landing_page": landing_page,
+                "email_sequence": emails,
+                "social_pack": social_pack
+            },
             "scheduled_time": (datetime.now() + timedelta(days=1)).isoformat(),
             "status": "DRAFT",
-            "metrics": {"projected_reach": 5000, "conversion_est": 0.02}
+            "a_b_test_group": random.choice(["A", "B"])
         }
 
         self.campaign_drafts.append(draft)

@@ -29,7 +29,7 @@ async def test_employment_launch_kit():
     assert res["status"] == "READY_FOR_LAUNCH"
     bundle = res["launch_kit"]
     assert bundle["metadata"]["type"] == "CareerLaunchKit"
-    assert len(bundle["items"]) == 2
+    assert len(bundle["items"]) == 3
 
 @pytest.mark.asyncio
 async def test_religion_reactor_scholarship():
