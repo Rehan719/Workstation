@@ -1,43 +1,51 @@
 import logging
-import time
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
-class TransitionMonitor:
-    """Continuous tracking of rebalancing progress."""
-
+class TransitionStateMonitor:
+    """
+    ARTICLE 77/89: Transition State Monitor.
+    Provides continuous, real-time feedback on the rebalancing progress.
+    """
     def __init__(self):
-        self.telemetry = []
+        self.telemetry_log: List[Dict[str, Any]] = []
 
-    def log_state(self, phase: int, metrics: Dict[str, Any]):
-        entry = {
-            "timestamp": time.time(),
+    def record_state(self, phase: int, metrics: Dict[str, Any]):
+        """Logs current transition metrics."""
+        record = {
             "phase": phase,
-            "metrics": metrics
+            "metrics": metrics,
+            "timestamp": metrics.get("timestamp", 0)
         }
-        self.telemetry.append(entry)
-        logger.info(f"Transition Monitor [Phase {phase}]: Fidelity={metrics.get('fidelity')}, Consistency={metrics.get('consistency')}")
+        self.telemetry_log.append(record)
+        logger.info(f"MONITOR: Phase {phase} telemetry recorded.")
 
-    def get_trend(self, metric: str) -> float:
-        """Calculates trend slope for a given metric."""
-        if len(self.telemetry) < 2: return 0.0
-        latest = self.telemetry[-1]["metrics"].get(metric, 0)
-        previous = self.telemetry[-2]["metrics"].get(metric, 0)
-        return latest - previous
+    def analyze_trend(self) -> str:
+        """Analyzes performance trends during transition."""
+        if len(self.telemetry_log) < 2:
+            return "STABLE"
 
-    def get_v93_readiness(self) -> Dict[str, Any]:
-        """Assesses readiness for v93.0 POLYMATH era."""
-        if not self.telemetry: return {"status": "NO_DATA"}
+        last = self.telemetry_log[-1]["metrics"].get("fidelity", 1.0)
+        prev = self.telemetry_log[-2]["metrics"].get("fidelity", 1.0)
 
-        latest_fidelity = self.telemetry[-1]["metrics"].get("fidelity", 0)
-        stability_trend = self.get_trend("stability")
+        if last < prev - 0.05:
+            return "DEGRADING"
+        return "STABLE"
 
-        ready = latest_fidelity >= 0.98 and stability_trend >= 0
+class RollbackController:
+    """
+    ARTICLE 77/89: Rollback Controller.
+    Reverts the system to a previous stable state if degradation is detected.
+    """
+    def __init__(self, manager_instance):
+        self.manager = manager_instance
 
-        return {
-            "status": "READY" if ready else "IN_TRANSITION",
-            "fidelity": latest_fidelity,
-            "trend": stability_trend,
-            "v93_gate": ready
-        }
+    def execute_rollback(self):
+        """Decrements the current phase to restore stability."""
+        if self.manager.current_phase > 0:
+            logger.warning(f"ROLLBACK: Reverting from phase {self.manager.current_phase} to {self.manager.current_phase - 1}")
+            self.manager.current_phase -= 1
+            return True
+        logger.error("ROLLBACK: Already at baseline phase 0. Cannot revert further.")
+        return False

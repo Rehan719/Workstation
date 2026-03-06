@@ -1,22 +1,17 @@
-# Contributing to Jules AI
+# Contributing to Jules AI v99.0.0
 
-We love your input! We want to make contributing to Jules AI as easy and transparent as possible, whether it's:
+## ⚜️ Standards
+- **No-Stubs**: All contributions must contain functional logic.
+- **Fidelity**: Biomimetic fidelity must be maintained ≥99.2%.
+- **SIH Alignment**: All new modules must register with the Survival Instinct Hierarchy.
 
-- Reporting a bug
-- Discussing the current state of the code
-- Submitting a fix
-- Proposing new features
-- Becoming a maintainer
+## 🧬 Process
+1. Fork the repository and create a feature branch (`v99-feat-...`).
+2. Implement logic following the **Hox Gene-inspired** master patterns.
+3. Add tests to `tests/genomic/` or `tests/performance/`.
+4. Run `Setup-Organism.ps1` and `Run-Tests.ps1`.
+5. Ensure 100% test pass rate and ≥95% coverage.
+6. Submit a Pull Request for constitutional audit.
 
-## Pull Request Process
-
-1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints.
-6. Issue that pull request!
-
-## Code of Conduct
-
-We are committed to providing a friendly, safe and welcoming environment for all. Please be kind and respectful.
+---
+*Transcendent Architecture Guidelines*

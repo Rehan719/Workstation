@@ -1,32 +1,60 @@
-# Jules AI v60.0 Quick Start
+# Jules AI v99.0 TRANSCENDENT: Quick Start Guide
 
-## 1. Setup
+## 🚀 One-Click VS Code Setup
+This repository is optimized for VS Code. To get started immediately:
+1. Open the repository in VS Code.
+2. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS).
+3. Type `Tasks: Run Task` and select **`Awaken Transcendent (v99 Setup)`**.
+
+---
+
+## 💻 Manual Terminal Setup (Copy & Paste)
+If you prefer using the terminal, copy and paste the following block into your VS Code terminal to initialize the environment and verify the v99.0.0 integration:
+
 ```bash
-git clone https://github.com/Rehan719/Workstation.git
-cd Workstation
+# 1. Initialize environment and dependencies
+python3 -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+pip install --upgrade pip
 pip install -e .
-```
 
-## 2. Initialize the Organism
-Run the Grand Synthesis Engine to establish the DNA:
-```bash
+# 2. Run the Grand Synthesis Engine to consolidate the v99 DNA
 python3 -m agentic_core.synthesis.grand_synthesis_engine
+
+# 3. Verify the Transcendent Integrity
+python3 tests/test_v99_transcendent.py
+
+# 4. Launch the Unified Dashboard
+python3 -m src.dashboard.app
 ```
 
-## 3. Launch the Dashboard
-Monitor the biological health of the organism:
-```bash
-streamlit run agentic_core/dashboard/app.py
-```
+---
 
-## 4. Start an Incubation Project
+## 🧬 Basic Usage
+To interact with the consolidated Conscious Organism Orchestrator:
+
 ```python
-from agentic_core.incubation.adaptive_incubation_engine import AdaptiveIncubationEngine
 import asyncio
+from agentic_core.orchestrator.conscious_organism_v99 import ConsciousOrganismV99
 
 async def main():
-    engine = AdaptiveIncubationEngine()
-    await engine.start_incubation("Study quantum neural networks", {"duration": "long-term"})
+    # Initialize the v99 Transcendent Orchestrator
+    organism = ConsciousOrganismV99()
 
-asyncio.run(main())
+    # Start the discovery cycle
+    await organism.awaken()
+
+    print("Jules AI v99.0 is operational and evolving.")
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+---
+
+## 📜 Documentation Reference
+Detailed guides are available in the `docs/v99/` directory:
+- [Biological Systems Guide](docs/v99/BIOLOGICAL_SYSTEMS_GUIDE.md)
+- [Incubation & Evolution Guide](docs/v99/INCUBATION_GUIDE.md)
+- [Synthesis & Consolidation Guide](docs/v99/SYNTHESIS_GUIDE.md)
+- [Constitution v99.0.0](CONSTITUTION_v99.0.0.md)

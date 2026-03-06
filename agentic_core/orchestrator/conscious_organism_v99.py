@@ -12,6 +12,7 @@ from agentic_core.cognition.minimax_optimizer import MinimaxOptimizer, default_u
 from agentic_core.cognition.qwen_integration import QwenReasoningEngine
 from agentic_core.cognition.retro_causal_processor import RetroCausalProcessor
 from agentic_core.transition.graduated_transition_manager import GraduatedTransitionManager
+from agentic_core.transition.transition_monitor import TransitionStateMonitor, RollbackController
 
 # v93 Collaboration & Provenance
 from agentic_core.collaboration.crdt_engine import CollaborationManager
@@ -26,13 +27,33 @@ from agentic_core.ui.granularity_controller import GranularityController
 # v99 Genomic Evolution Modules
 from agentic_core.genome.chromosome import Chromosome
 from agentic_core.genome.gene import Gene, GeneType
+from agentic_core.genome.epigenetics import EpigeneticMemory
 from agentic_core.evolution.evolution_engine import GenomeEvolutionEngine
 from agentic_core.evolution.assimilation.executor import AssimilationExecutor
 from agentic_core.evolution.assimilation.evaluator import AssimilationEvaluator
 
+# v99 Biological Design Principles
+from agentic_core.architecture.hox_patterns import HoxPatternRegistry
+from agentic_core.architecture.phylotypic_core import PhylotypicCore
+from agentic_core.governance.gene_regulatory_network import GeneRegulatoryNetwork
+from agentic_core.compiler.biological_compiler import BiologicalCompiler
+from agentic_core.governance.germ_layer_stratification import GermLayerEnforcer
+from agentic_core.governance.grn_modeler import GRNModeler
+from agentic_core.governance.command_dispatch import AICommander
+from agentic_core.business.dispatcher import AIDispatcher
+from agentic_core.governance.adaptive_profiles import IndustryAdaptiveGovernance, IndustryType
+from agentic_core.business.pipelines import BusinessPipeline
+from agentic_core.business.profit_distributor import ProfitDistributor
+from agentic_core.business.owner_dashboard import OwnerDashboard
+from agentic_core.governance.hoxd_boundary_negotiator import HoxDBoundaryNegotiator
+from agentic_core.governance.span_control import SpanOfControlEngine
+from agentic_core.governance.verifiable_governance import VGAEngine
+
 from agentic_core.optimization.engine import OptimizationEngine
 from agentic_core.reliability.engine import ReliabilityEngine
 from agentic_core.validation.accuracy_validator import AccuracyValidator
+from agentic_core.validation.digital_twin_orchestrator import DigitalTwinOrchestrator
+from agentic_core.validation.benchmarks import BenchmarkSuite
 from agentic_core.governance.trustworthiness_engine import TrustworthinessEngine
 from agentic_core.nlp.nli_engine import NLIEngine
 from agentic_core.config.loader import settings
@@ -40,6 +61,7 @@ from agentic_core.db.manager import DatabaseManager
 
 # v99 Platform Assimilation Modules
 from agentic_core.builder.conversational_engine import ConversationalEngine
+from agentic_core.builder.refinement_engine import RefinementEngine
 from agentic_core.ide.code_workspace import CodeWorkspace
 from agentic_core.builder.visual_designer import VisualDesigner
 from agentic_core.integrations.connector_registry import ConnectorRegistry
@@ -49,10 +71,6 @@ from agentic_core.collaboration.workspace_manager import WorkspaceManager
 from agentic_core.collaboration.framework_router import FrameworkRouter
 from agentic_core.governance.app_compliance import AppCompliance
 from agentic_core.analytics.platform_telemetry import PlatformTelemetry
-
-# Sovereign Business Modules
-from agentic_core.business.commander import AICommander
-from agentic_core.business.dispatcher import AIDispatcher
 
 # PC-Agent Hierarchy
 from agentic_core.pc_agent.manager_agent import ManagerAgent
@@ -85,6 +103,8 @@ class ConsciousOrganismV99_0:
 
         # 3. TRANSITION & COLLABORATION
         self.transition_mgr = GraduatedTransitionManager(total_phases=settings.get("TRANSITION_PHASES"))
+        self.transition_monitor = TransitionStateMonitor()
+        self.rollback = RollbackController(self.transition_mgr)
         self.collab = CollaborationManager()
         self.router = FrameworkRouter(agent_id=self.agent_id)
         self.xai = AdaptiveXAI()
@@ -102,16 +122,39 @@ class ConsciousOrganismV99_0:
         self.genomic_evaluator = AssimilationEvaluator("CONSTITUTION_v99.0.0.md")
         self.genomic_executor = AssimilationExecutor(self.core_genome)
 
-        # 4.2 PRODUCTION HARDENING (v99)
+        # 4.2 BIOLOGICAL ARCHITECTURE (v99.0.0)
+        self.hox_registry = HoxPatternRegistry()
+        self.grn = GeneRegulatoryNetwork()
+        self.grn_modeler = GRNModeler()
+        self.epigenetics = EpigeneticMemory()
+        self.bio_compiler = BiologicalCompiler()
+        self.germ_layers = GermLayerEnforcer()
+
+        # 4.3 SOVEREIGN BUSINESS ENTITY (v99.0.0)
+        self.commander = AICommander()
+        self.dispatcher = AIDispatcher(commander_ref=self.commander)
+        self.business_governance = IndustryAdaptiveGovernance()
+        self.business_pipelines = BusinessPipeline()
+        self.distributor = ProfitDistributor()
+        self.dashboard = OwnerDashboard(self.distributor, self.commander)
+
+        # 4.3.1 ADAPTIVE GOVERNANCE MACHINERY (v99.0.0)
+        self.hoxd = HoxDBoundaryNegotiator()
+        self.span_control = SpanOfControlEngine()
+        self.vga = VGAEngine()
+
+        # 4.4 PRODUCTION HARDENING (v99)
         self.db = DatabaseManager()
         self.optimizer = OptimizationEngine()
         self.reliability = ReliabilityEngine()
         self.validator = AccuracyValidator(target_accuracy=settings.get("FIDELITY_TARGET"))
+        self.digital_twin = DigitalTwinOrchestrator()
         self.trust = TrustworthinessEngine()
         self.nli = NLIEngine()
 
         # 5. PLATFORM ASSIMILATION (v99)
         self.builder = ConversationalEngine()
+        self.refiner = RefinementEngine(self.builder)
         self.ide = CodeWorkspace()
         self.designer = VisualDesigner()
         self.integrations = ConnectorRegistry()
@@ -126,10 +169,6 @@ class ConsciousOrganismV99_0:
         self.pa_progress = ProgressAgent()
         self.pa_decision = DecisionAgent()
         self.pa_reflection = ReflectionAgent(transition_mgr=self.transition_mgr)
-
-        # 7. SOVEREIGN BUSINESS ENTITY
-        self.ceo = AICommander(business_id="SOVEREIGN_V99")
-        self.dispatcher = AIDispatcher(commander_ref=self.ceo)
 
         self.is_running = False
 
@@ -160,7 +199,7 @@ class ConsciousOrganismV99_0:
         reasoning = self.qwen.generate_reasoning_chain(user_intent, triad_state)
 
         # D. Minimax Strategy Selection
-        decision = self.minimax.evaluate_strategy(triad_state, ["RESEARCH", "SYNC", "QUANTUM_COMPUTE", "PLATFORM_TASK", "EVOLVE_GENOME", "DAWAH_WORK"], default_utility_func)
+        decision = self.minimax.evaluate_strategy(triad_state, ["RESEARCH", "SYNC", "QUANTUM_COMPUTE", "PLATFORM_TASK", "EVOLVE_GENOME"], default_utility_func)
         action = decision["selected_action"]
 
         logger.info(f"Transcendent Decision: {action} (Worst-Case Utility: {decision['worst_case_utility']:.2f})")
@@ -239,12 +278,28 @@ class ConsciousOrganismV99_0:
             await self.collab.sync_project("v99_transcendent", {"intent": intent})
             return {"sync_status": "complete"}
 
-        if action == "DAWAH_WORK":
-            # ARTICLE 236: Core Religious Mission Action
-            self.dispatcher.allocate_resources("QEP", "DAWAH_OPERATION")
-            return {"mission": "DAWAH", "status": "ACTIVE", "impact": "POSITIVE"}
-
         return {"msg": f"Action {action} executed."}
+
+    async def execute_service(self, domain: str, task: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """ARTICLE 172: Direct service execution for commercial domains."""
+        # Recalibrate HoxD boundary based on task context (Article 181)
+        self.hoxd.recalibrate_boundary(domain.upper(), 0.1)
+
+        if domain == "science":
+            res = await self.business_pipelines.science.execute(task, context)
+        elif domain == "law":
+            res = await self.business_pipelines.legal.execute(task, context)
+        elif domain == "religion":
+            res = await self.business_pipelines.religion.execute(task, context)
+        else:
+            return {"status": "error", "msg": "Invalid domain"}
+
+        # Log to telemetry and distributor
+        self.telemetry.log_event("commercial", f"{domain}_service", res["status"] == "success")
+        if res["status"] == "success":
+             self.distributor.record_sale(100.0, {"description": task})
+
+        return res
 
     async def shutdown(self):
         self.is_running = False

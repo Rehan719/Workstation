@@ -11,6 +11,7 @@ from .historical_analyzer import HistoricalAnalyzer
 from .conflict_resolver import ConflictResolver
 from .pattern_extractor import PatternExtractor
 from .dna_generator import DNAGenerator
+from .pattern_recognizer import PatternRecognizer
 from .evolutionary_memory import EvolutionaryMemory
 
 logger = logging.getLogger(__name__)
@@ -18,11 +19,14 @@ logger = logging.getLogger(__name__)
 class GrandSynthesisEngine:
     """
     ARTICLE 73: The Grand Synthesis Engine.
-    Analyzes and consolidates ninety-two generations of evolution.
+    Analyzes and consolidates ninety-nine generations of evolution.
     """
-    def __init__(self, history_paths: List[str]):
+    def __init__(self, history_paths: List[str] = None):
+        if history_paths is None:
+            history_paths = ["."]
         self.analyzer = HistoricalAnalyzer(history_paths)
         self.resolver = ConflictResolver()
+        self.recognizer = PatternRecognizer()
         self.extractor = PatternExtractor()
         self.dna_gen = DNAGenerator()
         self.memory = EvolutionaryMemory()
