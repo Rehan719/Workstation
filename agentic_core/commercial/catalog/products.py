@@ -21,6 +21,28 @@ class CommercialCatalog:
                 "price": 9.99,
                 "tier": "PREMIUM",
                 "features": ["AR/VR", "Expert Coaching", "Advanced Analytics"]
+            },
+            # SCIENCE DOMAIN (Monetized)
+            "SCI_PAPER_GEN": {
+                "name": "Research Paper Generation",
+                "price": 49.99,
+                "domain": "SCIENCE",
+                "commission": 0.10,
+                "mission_link": "KNOWLEDGE_AMPLIFICATION"
+            },
+            "SCI_LIT_REVIEW": {
+                "name": "Literature Review Automation",
+                "price": 29.99,
+                "domain": "SCIENCE",
+                "commission": 0.10
+            },
+            # LAW DOMAIN (Monetized)
+            "LAW_CONTRACT_DRAFT": {
+                "name": "Sovereign Contract Drafting",
+                "price": 19.99,
+                "domain": "LAW",
+                "commission": 0.10,
+                "mission_link": "JUSTICE_STABILITY"
             }
         }
 

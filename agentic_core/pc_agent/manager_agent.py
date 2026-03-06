@@ -18,3 +18,9 @@ class ManagerAgent:
         ]
         self.active_tasks.extend(subtasks)
         return subtasks
+
+    async def handle_task(self, task: str) -> Dict[str, Any]:
+        """Entry point for task handling."""
+        logger.info(f"PC-Agent [MA]: Handling task -> '{task}'")
+        subtasks = await self.decompose_goal(task)
+        return {"status": "success", "subtasks": subtasks}

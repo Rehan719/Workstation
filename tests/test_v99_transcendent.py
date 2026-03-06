@@ -11,7 +11,7 @@ class TestV99Transcendent(unittest.TestCase):
 
     def test_orchestrator_initialization(self):
         org = ConsciousOrganismV99_0()
-        self.assertEqual(org.version, "99.0.0-beta.1")
+        self.assertEqual(org.version, "99.0.0")
         self.assertIsNotNone(org.quantum_gateway)
         self.assertIsNotNone(org.prompt_evolver)
         self.assertIsNotNone(org.granularity)

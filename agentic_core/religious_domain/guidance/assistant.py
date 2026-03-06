@@ -16,14 +16,18 @@ class AIGuidance:
         """ARTICLE 60: Logic for personalized suggestions."""
         tazkiyah = user_profile.get("tazkiyah_score", 0.0)
 
-        # ARTICLE 10: Ethical boundaries
-        if user_profile.get("query_type") == "FIQH_RULING":
+        # ARTICLE 246/10: Ethical boundaries and Fitrah profiling
+        query_type = user_profile.get("query_type")
+        if query_type in ["FIQH_RULING", "AQIDAH_COMPLEXITY", "FATWA_REQUEST"]:
+            logger.warning(f"AIGuidance: Escalating sensitive query {query_type} to Scholar Board.")
             return {
                 "status": "ESCALATED",
-                "message": "This query requires scholarly judgment. Escalated to Scholar Board.",
-                "escalation_id": f"ESC_{datetime.now().timestamp()}"
+                "message": "This query involves sacred knowledge that requires qualified scholarly judgment (Article 246).",
+                "escalation_id": f"ESC_{datetime.now().timestamp()}",
+                "scholar_queue": "PRIORITY_RELIGIOUS_ADVICE"
             }
 
+        # Fitrah-aligned recommendation logic
         recommendation = "Focus on Surah Al-Baqarah revision" if tazkiyah > 50 else "Complete Tajwid 101"
         return {
             "status": "SUCCESS",

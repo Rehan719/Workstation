@@ -83,10 +83,21 @@ class DatabaseManager:
         conn.commit()
         conn.close()
 
-    def log_telemetry(self, persona: str, event_type: str, success: bool):
+    def log_telemetry(self, persona: str, event_type: str, success: bool, metadata: Optional[Dict[str, Any]] = None):
+        """
+        ARTICLE 150/247: Enhanced telemetry logging for dual-metric dashboards.
+        """
         conn = self._get_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO telemetry (persona, event_type, success) VALUES (?, ?, ?)", (persona, event_type, success))
+
+        # Ensure metadata column exists (Article 150 hardening)
+        try:
+            cursor.execute("ALTER TABLE telemetry ADD COLUMN metadata TEXT")
+        except sqlite3.OperationalError:
+            pass # Column already exists
+
+        cursor.execute("INSERT INTO telemetry (persona, event_type, success, metadata) VALUES (?, ?, ?, ?)",
+                       (persona, event_type, success, json.dumps(metadata) if metadata else None))
         conn.commit()
         conn.close()
 

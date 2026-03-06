@@ -49,6 +49,7 @@ def test_db_concurrency(db):
     conn2 = db._get_connection()
 
     conn1.execute("INSERT INTO workspaces (ws_id, name, owner_id) VALUES ('ws1', 'N1', 'O1')")
+    conn1.commit() # Ensure released
     conn2.execute("INSERT INTO workspaces (ws_id, name, owner_id) VALUES ('ws2', 'N2', 'O2')")
 
     conn1.commit()

@@ -1,129 +1,221 @@
 import React, { useState, useEffect } from 'react';
+import HifzHeatMap from './components/HifzHeatMap';
+import CumulativeDashboard from './components/dashboards/CumulativeDashboard';
+import ImmersiveBackground from './components/immersive/ImmersiveBackground';
+import UnifiedDashboard from './pages/UnifiedDashboard';
+import { PersonalizationProvider } from './components/PersonalizationEngine';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
   const [status, setStatus] = useState('Initializing Digital Sanctuary...');
   const [activeTab, setActiveTab] = useState('Dashboard');
-  const [tazkiyahHistory, setTazkiyahHistory] = useState([78, 79, 81, 84]);
+  const [userProfile, setUserProfile] = useState({
+    name: 'Abdullah',
+    tazkiyah: 84,
+    nurPoints: 1240,
+    completedJuz: [1, 2, 3, 4, 18, 36, 67, 112, 113, 114]
+  });
+
+  const mockData = {
+    timeline: [
+      { name: 'W1', value: 45 }, { name: 'W2', value: 52 }, { name: 'W3', value: 48 },
+      { name: 'W4', value: 61 }, { name: 'W5', value: 75 }, { name: 'W6', value: 84 }
+    ],
+    distribution: [
+      { label: 'Science', level: 85 }, { label: 'Law', level: 40 },
+      { label: 'Faith', level: 95 }, { label: 'Career', level: 60 }, { label: 'Edu', level: 75 }
+    ]
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setStatus('v99.0 Conscious Business: QEP Sovereign Product Active');
+      setStatus('v99.0 Transcendent Organism: Active');
     }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
+  const pageVariants = {
+    initial: { opacity: 0, x: -20 },
+    in: { opacity: 1, x: 0 },
+    out: { opacity: 0, x: 20 }
+  };
+
   return (
-    <div className="dashboard-container">
-      {/* Sidebar with Geometric Sublayer */}
-      <aside className="sidebar">
-        <div style={{ marginBottom: '3rem' }}>
-          <h2 style={{ color: 'var(--color-accent)', margin: 0 }}>QEP</h2>
-          <small style={{ opacity: 0.7, letterSpacing: '1px' }}>SOVEREIGN PRODUCT</small>
+    <PersonalizationProvider profile={userProfile}>
+    <div className="dashboard-container font-inter relative min-h-screen flex">
+      <ImmersiveBackground domain={activeTab === 'Dashboard' ? 'religion' : activeTab.toLowerCase()} />
+      <aside className="sidebar bg-slate-900/80 backdrop-blur-xl text-white w-72 p-8 flex flex-col border-r border-white/10 relative z-10">
+        <div className="mb-12">
+          <motion.h2
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            className="text-3xl font-black text-amber-500 tracking-tighter"
+          >
+            JULES AI
+          </motion.h2>
+          <p className="text-[10px] uppercase tracking-[0.2em] opacity-50 font-bold">Transcendent v99.0</p>
         </div>
-        <nav style={{ flex: 1 }}>
-          <NavItem label="Spiritual Dashboard" active={activeTab === 'Dashboard'} onClick={() => setActiveTab('Dashboard')} />
-          <NavItem label="Tajwid Coach" active={activeTab === 'Tajwid'} onClick={() => setActiveTab('Tajwid')} />
-          <NavItem label="Hifz Progress" active={activeTab === 'Hifz'} onClick={() => setActiveTab('Hifz')} />
-          <NavItem label="Learning Vault" active={activeTab === 'Modules'} onClick={() => setActiveTab('Modules')} />
-          <NavItem label="Commercial Hub" active={activeTab === 'Business'} onClick={() => setActiveTab('Business')} />
+
+        <nav className="flex-1 space-y-2">
+          <NavItem label="Unified Workspace" active={activeTab === 'Unified'} onClick={() => setActiveTab('Unified')} />
+          {['Education', 'Science', 'Law', 'Employment', 'Scholar'].map((tab) => (
+            <NavItem
+              key={tab}
+              label={`${tab} Reactor`}
+              active={activeTab === tab}
+              onClick={() => setActiveTab(tab)}
+            />
+          ))}
         </nav>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
-          <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>AI Commander Status:</div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--color-accent)' }}>STRATEGIC_ALIGNMENT_OK</div>
+
+        <div className="pt-6 border-t border-white/10">
+          <div className="text-[10px] uppercase opacity-50 font-bold mb-1">AI CEO Status</div>
+          <div className="text-xs text-amber-500 font-mono">STRATEGIC_ALIGNMENT_OK</div>
         </div>
       </aside>
 
-      {/* Main Sanctuary Area */}
-      <main className="content-area">
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3.5rem' }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 800 }}>As-salaam Alaykum, Abdullah</h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', marginTop: '0.5rem' }}>
-              Your journey of spiritual refinement continues.
-            </p>
-          </div>
-          <div className="status-badge" style={{ backgroundColor: '#e0f2f1', color: '#004d40', padding: '0.75rem 1.5rem', borderRadius: '30px', fontWeight: 600 }}>
+      <main className="content-area flex-1 p-12 overflow-y-auto relative z-10">
+        <header className="flex justify-between items-start mb-12">
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <h1 className="text-5xl font-black text-white mb-2">As-salaam Alaykum, {userProfile.name}</h1>
+            <p className="text-slate-400 text-lg">Elevating your potential across five transcendent domains.</p>
+          </motion.div>
+          <div className="bg-emerald-500/10 text-emerald-400 px-6 py-3 rounded-2xl font-bold shadow-sm text-sm border border-emerald-500/30 backdrop-blur-md">
             {status}
           </div>
         </header>
 
-        {/* Cumulative Data Visualizations */}
-        <section className="stat-grid">
-          <StatCard label="Current Tazkiyah" value="84" sub="+5.2% this week" trend="up" />
-          <StatCard label="Nur Points (XP)" value="1,240" sub="Top 5% of Students" />
-          <StatCard label="Streak" value="12 Days" sub="Ramadan Ready" />
-          <StatCard label="Dawah Ready" value="Level 2" sub="Article 249 Compliant" />
-        </section>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            variants={pageVariants}
+            initial="initial"
+            animate="in"
+            exit="out"
+            transition={{ type: 'tween', ease: 'anticipate', duration: 0.4 }}
+          >
+            {activeTab === 'Unified' && <UnifiedDashboard userProfile={userProfile} mockData={mockData} />}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-          {/* Interactive Hifz Map */}
-          <div className="card">
-            <h3 style={{ marginTop: 0 }}>Interactive Hifz Map (114 Surahs)</h3>
-            <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>Visualizing your memorization across the Quranic landscape.</p>
-            <div className="juz-map">
-              {Array.from({ length: 40 }).map((_, i) => (
-                <div key={i} className={`juz-box ${i < 12 ? 'complete' : ''}`}>
-                  {i + 1}
+            {activeTab === 'Dashboard' && (
+              <div className="space-y-12">
+                <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <StatCard label="Tazkiyah" value={userProfile.tazkiyah} sub="+5.2% growth" color="emerald" />
+                  <StatCard label="Nur Points" value={userProfile.nurPoints} sub="Top 5% Global" color="amber" />
+                  <StatCard label="Active Streak" value="12 Days" sub="Ramadan Ready" color="blue" />
+                  <StatCard label="Mastery" value="Level 9" sub="Cross-Domain" color="purple" />
+                </section>
+
+                <CumulativeDashboard domain="religion" data={mockData} />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+                    <h3 className="text-xl font-bold mb-6 text-slate-800">Hifz Progress Matrix</h3>
+                    <HifzHeatMap completedJuz={userProfile.completedJuz} />
+                  </div>
+
+                  <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+                    <h3 className="text-xl font-bold mb-6 text-slate-800">Business Incubation Pulse</h3>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-slate-50 rounded-xl flex justify-between items-center">
+                        <span className="font-semibold text-slate-600">Sovereign Entity Readiness</span>
+                        <span className="text-emerald-600 font-bold">98%</span>
+                      </div>
+                      <div className="p-4 bg-slate-50 rounded-xl flex justify-between items-center">
+                        <span className="font-semibold text-slate-600">Quantum Search Speedup</span>
+                        <span className="text-blue-600 font-bold">142x</span>
+                      </div>
+                      <div className="p-4 bg-slate-50 rounded-xl flex justify-between items-center">
+                        <span className="font-semibold text-slate-600">Market Intelligence Score</span>
+                        <span className="text-purple-600 font-bold">8.9</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ))}
-              <div style={{ gridColumn: 'span 10', textAlign: 'center', padding: '1rem', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
-                ... and 74 more surahs in progress
               </div>
-            </div>
-          </div>
+            )}
 
-          {/* Adaptive Actions */}
-          <div className="card" style={{ borderLeft: '6px solid var(--color-accent)' }}>
-            <h3 style={{ marginTop: 0 }}>Adaptive Actions</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <button className="btn-primary">Tajwid: Improve Makharij</button>
-              <button className="btn-primary" style={{ background: 'white', color: 'var(--color-primary)', border: '2px solid var(--color-primary)' }}>
-                Review Surah Al-Kahf
-              </button>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '1rem', fontStyle: 'italic' }}>
-                * Recommended based on your morning usage pattern.
+            {activeTab !== 'Dashboard' && activeTab !== 'Scholar' && (
+               <CumulativeDashboard domain={activeTab.toLowerCase()} data={mockData} />
+            )}
+
+            {activeTab === 'Scholar' && (
+              <div className="bg-white p-12 rounded-3xl shadow-2xl border border-emerald-100">
+                <h2 className="text-3xl font-black text-emerald-900 mb-8 flex items-center gap-3">
+                  <span className="w-2 h-8 bg-emerald-500 rounded-full"></span>
+                  Scholar Governance Portal
+                </h2>
+                <div className="space-y-6">
+                  <ReviewItem title="v99.0 AI Tafsir (Surah An-Nur)" type="CONTENT" status="PENDING" />
+                  <ReviewItem title="Educator Accreditation: Dr. Yusuf" type="IDENTITY" status="APPROVED" />
+                  <ReviewItem title="Refined Tazkiyah Calculation" type="POLICY" status="PENDING" />
+                </div>
+                <button className="mt-12 w-full py-4 bg-emerald-900 text-emerald-50 rounded-xl font-bold hover:bg-emerald-800 transition-all shadow-lg">
+                  Access Immutable Audit Ledger
+                </button>
               </div>
-            </div>
-          </div>
-        </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-        <footer style={{ marginTop: '4rem', opacity: 0.6, fontSize: '0.85rem', textAlign: 'center' }}>
-          Sovereign Business Entity: SOV_V99 | Powered by Transcendent Workstation | No Incurred Costs Policy Active
+        <footer className="mt-20 pt-8 border-t border-gray-200 opacity-40 text-[11px] font-bold uppercase tracking-widest text-center">
+          Sovereign Business Entity: SOV_V99 | Powered by Transcendent Workstation | Article 283 Compliant
         </footer>
       </main>
     </div>
+    </PersonalizationProvider>
   );
 }
 
 function NavItem({ label, active, onClick }) {
   return (
-    <div className={`nav-item ${active ? 'active' : ''}`}
-         onClick={onClick}
-         role="button"
-         tabIndex={0}
-         style={{
-           padding: '1.2rem',
-           marginBottom: '0.5rem',
-           borderRadius: '12px',
-           cursor: 'pointer',
-           transition: 'all 0.3s',
-           fontWeight: active ? 700 : 400,
-           backgroundColor: active ? 'rgba(255,255,255,0.1)' : 'transparent'
-         }}>
+    <motion.div
+      whileHover={{ x: 5 }}
+      className={`px-6 py-4 rounded-xl cursor-pointer transition-all flex items-center gap-4 ${
+        active ? 'bg-amber-500 text-slate-900 font-black shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
+      }`}
+      onClick={onClick}
+    >
+      <div className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-slate-900' : 'bg-transparent'}`}></div>
       {label}
-    </div>
+    </motion.div>
   );
 }
 
-function StatCard({ label, value, sub, trend }) {
+function StatCard({ label, value, sub, color }) {
+  const colors = {
+    emerald: 'text-emerald-400 bg-emerald-900/20 border-emerald-500/30 backdrop-blur-md',
+    amber: 'text-amber-400 bg-amber-900/20 border-amber-500/30 backdrop-blur-md',
+    blue: 'text-blue-400 bg-blue-900/20 border-blue-500/30 backdrop-blur-md',
+    purple: 'text-purple-400 bg-purple-900/20 border-purple-500/30 backdrop-blur-md'
+  };
+
   return (
-    <div className="stat-card" style={{ background: 'white', padding: '2rem', borderRadius: '16px', boxShadow: '0 10px 20px rgba(0,0,0,0.03)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--color-primary)' }}>{value}</div>
-        {trend === 'up' && <div style={{ color: '#2e7d32', fontWeight: 700 }}>↑</div>}
+    <motion.div
+      whileHover={{ y: -5 }}
+      className={`p-6 rounded-2xl border shadow-sm ${colors[color]}`}
+    >
+      <div className="text-3xl font-black mb-1">{value}</div>
+      <div className="text-xs font-bold uppercase opacity-70 tracking-tighter">{label}</div>
+      <div className="text-[10px] mt-2 font-medium opacity-60 italic">{sub}</div>
+    </motion.div>
+  );
+}
+
+function ReviewItem({ title, type, status }) {
+  return (
+    <div className="flex justify-between items-center p-6 border-b border-gray-100 last:border-0 hover:bg-emerald-50/30 transition-colors">
+      <div className="space-y-1">
+        <h4 className="font-bold text-slate-800">{title}</h4>
+        <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded">TYPE: {type}</span>
       </div>
-      <div className="stat-label" style={{ fontWeight: 600, marginTop: '0.2rem' }}>{label}</div>
-      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.4rem' }}>{sub}</div>
+      <div className="flex items-center gap-6">
+        <span className={`text-xs font-black ${status === 'PENDING' ? 'text-amber-600' : 'text-emerald-600'}`}>
+          {status}
+        </span>
+        <button className="px-4 py-2 border border-gray-200 rounded-lg text-xs font-bold hover:bg-white hover:shadow-md transition-all text-slate-600">
+          Review
+        </button>
+      </div>
     </div>
   );
 }
