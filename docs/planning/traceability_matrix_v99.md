@@ -28,6 +28,8 @@
 | agentic_core/religious_domain/tajwid/ | 239 | Recitation Integrity | v99.0 (QEP) |
 | agentic_core/religious_domain/memorization/ | 240 | Hifz Retention | v99.0 (QEP) |
 | agentic_core/religious_domain/finops/ | 245 | Financial Sharia | v99.0 (QEP) |
-| agentic_core/religious_domain/community/ | 241-243 | Ethical Engagement | v99.0 (QEP) |
+| agentic_core/religious_domain/community/ | 242-243 | Ethical Engagement | v99.0 (QEP) |
+| agentic_core/religious_domain/educator/ | 241 | Educator Empowerment | v99.0 (QEP) |
+| agentic_core/religious_domain/immersive/ | 244 | AR/VR Authenticity | v99.0 (QEP) |
 | agentic_core/religious_domain/integrations/ | 250 | Dawah Amplification | v99.0 (QEP) |
 | src/qep_frontend/ | 238 | Universal Accessibility | v99.0 (QEP) |

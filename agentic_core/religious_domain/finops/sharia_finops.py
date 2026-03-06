@@ -72,3 +72,16 @@ class IslamicFinanceAdapter:
             amount=amount,
             designation=endowment_target
         )
+
+    def distribute_revenue(self, gross_amount: float, dispatcher_ref: Any) -> Dict[str, float]:
+        """
+        ARTICLE 150/241: Distributes revenue between Educator and Platform.
+        Ensures zero-cost sustainability via platform commission.
+        """
+        commission = dispatcher_ref.calculate_commission(gross_amount)
+        net_to_educator = gross_amount - commission
+
+        return {
+            "platform_commission": round(commission, 2),
+            "educator_net": round(net_to_educator, 2)
+        }
