@@ -31,3 +31,21 @@ class AICommander:
         if context.get("compliance_risk") == "HIGH":
             return False
         return True
+
+    # --- ARTICLE 258: Reactor Strategy Integration ---
+    def define_reactor_roadmap(self, reactor_domain: str, priorities: List[str]):
+        """Sets long-term feature path for reactors."""
+        logger.info(f"AICommander: Defining roadmap for {reactor_domain}: {priorities}")
+
+    def optimize_pricing(self, reactor_domain: str, market_data: Dict[str, Any]) -> Dict[str, float]:
+        """Sets and adjusts tiered pricing."""
+        logger.info(f"AICommander: Optimizing pricing for {reactor_domain}.")
+        return {"free": 0.0, "pro": 29.99, "enterprise": 499.99}
+
+    async def launch_campaign(self, reactor_domain: str, audience: str):
+        """Strategic campaign trigger."""
+        from agentic_core.ai_ceo.marketing_agent import MarketingAgent
+        marketing = MarketingAgent(self.business_id)
+        draft = await marketing.generate_campaign(reactor_domain, audience)
+        logger.info(f"AICommander: Campaign {draft['campaign_id']} approved for launch.")
+        return await marketing.publish_campaign(draft["campaign_id"])

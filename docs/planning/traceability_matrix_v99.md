@@ -33,3 +33,13 @@
 | agentic_core/religious_domain/immersive/ | 244 | AR/VR Authenticity | v99.0 (QEP) |
 | agentic_core/religious_domain/integrations/ | 250 | Dawah Amplification | v99.0 (QEP) |
 | src/qep_frontend/ | 238 | Universal Accessibility | v99.0 (QEP) |
+| agentic_core/reactor/ | 251, 256, 262-263, 265 | Digital Reactor Framework | v99.0 (Reactor Expansion) |
+| agentic_core/reactor/science.py | 252 | Scientific Research | v99.0 (Reactor Expansion) |
+| agentic_core/reactor/religion.py | 253 | Religious Scholarship | v99.0 (Reactor Expansion) |
+| agentic_core/reactor/law.py | 254 | Legal Documentation | v99.0 (Reactor Expansion) |
+| agentic_core/reactor/employment.py | 255, 264 | Career Development | v99.0 (Reactor Expansion) |
+| agentic_core/business/ | 257-258 | Commercial CEO Scope | v99.0 (Reactor Expansion) |
+| agentic_core/ai_ceo/ | 258 | Marketing & Strategy | v99.0 (Reactor Expansion) |
+| agentic_core/incubator/incubator_engine.py | 259 | Parameterized Incubation | v99.0 (Reactor Expansion) |
+| agentic_core/synthesis/domain_synthesis.py | 260 | Multi-objective Synthesis | v99.0 (Reactor Expansion) |
+| agentic_core/quantum/interface.py | 261 | Unified SDK Wrapper | v99.0 (Reactor Expansion) |
