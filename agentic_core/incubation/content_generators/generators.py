@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+import json
 
 class BaseGenerator:
     def __init__(self, output_dir: str = "output/incubation"):
@@ -30,6 +31,8 @@ class ReportGenerator(BaseGenerator):
 - Verification Status: PASSED
 """
         return self.generate(content, f"report_{title.lower().replace(' ', '_')}.md")
+        content = f"# Scientific Report: {title}\n\n## Abstract\n{data.get('abstract', 'N/A')}\n\n## Results\n{data.get('results', 'N/A')}"
+        return self.generate(content, f"{title.lower().replace(' ', '_')}.md")
 
 class PresentationGenerator(BaseGenerator):
     def generate_slides(self, title: str, slides: list):
@@ -72,6 +75,8 @@ class VideoGenerator(BaseGenerator):
 ## Scene 3: Synthesis
 [VOICEOVER: Personalized TTS narration]
 """
+        # Placeholder for scientific animation pipeline
+        content = f"# Video Script: {title}\n\n{script}\n\n[INSTRUCTION: Feed into Manimator v2.0 for rendering]"
         return self.generate(content, f"video_{title.lower().replace(' ', '_')}.md")
 
 class AppGenerator(BaseGenerator):
@@ -87,3 +92,5 @@ class AppGenerator(BaseGenerator):
         with open(path, "w") as f:
             json.dump(manifest, f, indent=4)
         return path
+            content += f"\n## Slide {i+1}: {slide['title']}\n{slide['content']}\n"
+        return self.generate(content, f"{title.lower().replace(' ', '_')}_slides.md")

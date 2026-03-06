@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, Any, List, Optional
 import numpy as np
+import difflib
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,10 @@ class AccuracyValidator:
                 confidence = 0.0
 
         elif task_type == "SEMANTIC":
-            # Semantic similarity placeholder (v99 implementation would use embeddings)
-            is_accurate = prediction == actual
-            confidence = 0.9 if is_accurate else 0.1
+            # Article 60: Replace placeholder with difflib SequenceMatcher ratio for semantic similarity
+            ratio = difflib.SequenceMatcher(None, str(prediction), str(actual)).ratio()
+            is_accurate = ratio >= 0.8
+            confidence = ratio
 
         elif task_type == "APP_CODE":
             # Simple check for code validity and presence of key elements

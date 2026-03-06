@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
@@ -8,20 +8,18 @@ class AppetitiveDigestiveSystem:
     """
     BX: Hunger-driven autonomous development.
     Evaluates information nutrition and lexical divergence.
+    L-C-VI: Digestive System with Appetite-Driven Growth.
     """
     def __init__(self):
         self.hunger = 0.5
         self.satisfaction = 1.0
-        self.divergence_threshold = 0.68 # BX-I
-        self.salience_threshold = 0.75 # CK-I
-        self.hunger_level = 0.5 # For backward compat
-        self.tau_h = 18.6 # Tier 2 tunable
+        self.divergence_threshold = 0.68  # BX-I
+        self.salience_threshold = 0.75    # CK-I
+        self.hunger_level = 0.5           # For backward compat
+        self.tau_h = 18.6                 # Tier 2 tunable
 
     def evaluate_content(self, content: Dict[str, Any]) -> float:
         """BX-II: Information Nutrition Scoring."""
-        # 1. Recency Score
-        # 2. Credibility Score
-        # 3. Novelty (Lexical Divergence)
         divergence = content.get("lexical_divergence", 0.0)
 
         score = 0.0
@@ -29,11 +27,9 @@ class AppetitiveDigestiveSystem:
             score += 0.5
             logger.info("APPETITE: High novelty content detected.")
 
-        # 4. Constitutional Alignment
         if content.get("alignment", 1.0) > 0.9:
             score += 0.5
 
-        # 5. Sensory Salience (CK-I)
         salience = content.get("sensory_salience", 0.0)
         if salience >= self.salience_threshold:
              logger.info("APPETITE: High salience sensory input detected.")
@@ -56,6 +52,7 @@ class AppetitiveDigestiveSystem:
     def ingest(self, source_type: str, data: Dict[str, Any]) -> float:
         """L-C-VI: Quantitative ingestion weighting."""
         logger.info(f"Ingesting data from {source_type}...")
+
         weight = 0.0
         if source_type == "github":
             weight = 0.4 * data.get("citation_velocity", 1) + 0.35 * data.get("test_coverage", 0.8)
@@ -64,16 +61,18 @@ class AppetitiveDigestiveSystem:
 
         self.satisfaction += weight * 0.1
         self.hunger -= weight * 0.05
-        self.hunger_level = self.hunger
+        self.hunger_level = max(0.0, min(1.0, self.hunger))
         return weight
 
-    def identify_waste(self, knowledge_base: list):
+    def identify_waste(self, knowledge_base: List) -> List:
         """BX-IV: Waste Excretion."""
+        # Identify low-quality or obsolete info
         return []
 
     def excrete(self):
         """L-C-VI: Excretion cycle."""
         logger.info("Digestive excretion cycle: purging low-value artifacts.")
+        self.satisfaction = max(0.0, min(2.0, self.satisfaction))
 
 # Backward compatibility alias
 DigestiveSystem = AppetitiveDigestiveSystem
