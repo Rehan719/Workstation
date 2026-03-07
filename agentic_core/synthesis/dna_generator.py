@@ -107,7 +107,12 @@ The system shall possess the capability for planned, projected self-development 
 ---
 *Codified via Grand Synthesis Engine v{version}*
 """
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except UnicodeEncodeError:
+            # Fallback for environments with strict encoding
+            with open(path, 'w', encoding='ascii', errors='replace') as f:
+                f.write(content)
 
         return path

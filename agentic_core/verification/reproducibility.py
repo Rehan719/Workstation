@@ -1,7 +1,10 @@
 import os
 import subprocess
 import logging
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
 import sys
 from typing import Any, Dict, List, Optional
 
@@ -17,6 +20,8 @@ class ReproducibilityEngine:
 
     def _set_resource_limits(self):
         """Standard v53 resource limiting."""
+        if not resource:
+            return
         mem_limit = 256 * 1024 * 1024
         resource.setrlimit(resource.RLIMIT_AS, (mem_limit, mem_limit))
         resource.setrlimit(resource.RLIMIT_CPU, (self.timeout, self.timeout))
@@ -58,12 +63,13 @@ def test_reproducibility():
 
         try:
             # Use subprocess.run with hardening
+            preexec = self._set_resource_limits if os.name != 'nt' else None
             result = subprocess.run(
                 [sys.executable, file_path],
                 capture_output=True,
                 text=True,
                 timeout=self.timeout,
-                preexec_fn=self._set_resource_limits,
+                preexec_fn=preexec,
                 env={"PYTHONPATH": os.getcwd()}
             )
             return {

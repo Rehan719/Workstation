@@ -55,3 +55,25 @@ class AICommander:
         else:
             logger.error("COMMANDER: Intent rejected by governance resolver.")
             return False
+
+    async def define_objective(self, description: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Article 280: AI CEO Strategic Objective Definition."""
+        logger.info(f"AI CEO: Defining objective: {description}")
+        return {
+            "objective_id": f"OBJ_{description[:3].upper()}",
+            "priority": "HIGH",
+            "constraints": context,
+            "description": description
+        }
+
+class AIDispatcher:
+    """Operational execution and task distribution."""
+    def __init__(self):
+        self.active_tasks = {}
+
+    async def dispatch_task(self, objective: Dict[str, Any], resources: Dict[str, Any]) -> str:
+        """Article 280: Operational Task Dispatch."""
+        task_id = f"task_{objective['objective_id']}_{len(self.active_tasks)}"
+        self.active_tasks[task_id] = {"objective": objective, "status": "RUNNING"}
+        logger.info(f"DISPATCHER: Dispatched task {task_id}")
+        return task_id

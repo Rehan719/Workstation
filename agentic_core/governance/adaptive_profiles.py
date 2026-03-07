@@ -30,6 +30,7 @@ class IslamicFinanceAdapter(IndustryAdapter):
 class IndustryType:
     FINANCE = "finance"
     HEALTHCARE = "healthcare"
+    HEALTH = "healthcare" # Alias for compatibility
     RELIGION = "religion"
 
 class IndustryAdaptiveGovernance:
@@ -39,3 +40,12 @@ class IndustryAdaptiveGovernance:
             IndustryType.HEALTHCARE: HealthcareHIPAAAdapter(),
             IndustryType.RELIGION: IslamicFinanceAdapter()
         }
+
+    def apply_profile(self, industry: str) -> Dict[str, Any]:
+        """Article 184: Apply industry-specific governance profile."""
+        logger.info(f"IAG: Applying profile for {industry}")
+        if industry == IndustryType.HEALTHCARE or industry == IndustryType.HEALTH:
+            return {"phi_protection": True, "compliance": "HIPAA"}
+        elif industry == IndustryType.FINANCE:
+            return {"compliance": "SOX", "riba_free": True}
+        return {"compliance": "GENERIC"}
