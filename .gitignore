@@ -1,4 +1,4 @@
-# Jules AI Unified Gitignore (v99.0.0 Transcendent)
+# Jules AI Production v52.0 Gitignore
 
 # Python
 __pycache__/
@@ -6,8 +6,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-
-# Distribution / packaging
+env/
 build/
 develop-eggs/
 dist/
@@ -26,64 +25,36 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Testing / Coverage
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.pytest_cache/
-pytestdebug.log
-test_results/
-
 # Logs
 *.log
 logs/
-pip-log.txt
+src/self_improvement/logs/
 
-# Databases
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test_results/
+
+# Environments
+.env
+.venv
+venv/
+ENV/
+
+# Data
 chroma_db/
 weaviate_data/
 *.db
 *.sqlite
-*.sqlite-journal
-
-# IDEs
-.idea/
-.vscode/
-.spyderproject
-.spyproject
-.ropeproject
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Mission Specific
-.jules_state_*.json
+# Mission specific
+/.jules_state_production.json
 pip_list.txt
 installed_packages.txt
-synthesis_out.txt
-test_out.txt
-conflicts.txt
-stubs.txt
-
-# Project Data (Allow meta templates but ignore runtime state)
-# meta/
-# !meta/*.json # Uncomment if you want to track JSON templates
-
-# Jules AI v99.0 Transcendent Artifacts
-artifacts/
+test_v52_output.log
+test_v52_output_final.log
