@@ -1,119 +1,21 @@
 {
-    "nodes": [
-        {
-            "id": "v60_grand_synthesis",
-            "type": "insight",
-            "content": {
-                "orchestration_mode": "biological_organism",
-                "directory_structure": "agentic-core",
-                "governance": "metacognitive_constitution",
-                "verification_layers": 5,
-                "quantum_backend": "hybrid_simulated",
-                "version": "99.0.0"
-            },
-            "metadata": {
-                "version": "60.0.0",
-                "timestamp": "2024-05-22T10:00:00"
-            }
-        },
-        {
-            "id": "v60_grand_synthesis",
-            "type": "insight",
-            "content": {
-                "version": "99.0.0",
-                "orchestration_mode": "transcendent_conscious_organism",
-                "governance_model": "biologically_orchestrated_constitution_v99",
-                "survival_instinct_hierarchy": [
-                    "Immune",
-                    "Nervous",
-                    "Digestive",
-                    "Aging"
-                ],
-                "verification_layers": 7,
-                "quantum_mastery": "transcendent",
-                "allostasis": "predictive",
-                "parameters": {
-                    "redox_midpoint": -225.0,
-                    "reflex_latency": 50,
-                    "synaptic_scaling_tau": 18.6,
-                    "hsp_atp_rate": 4.2
-                },
-                "cognition": {
-                    "minimax_threshold": 0.85,
-                    "qwen_reasoning_steps": 7,
-                    "retro_causal_optimization": true
-                }
-            },
-            "metadata": {
-                "version": "60.0.0",
-                "timestamp": "2024-05-22T10:00:00"
-            }
-        },
-        {
-            "id": "v60_grand_synthesis",
-            "type": "insight",
-            "content": {
-                "version": "99.0.0",
-                "orchestration_mode": "transcendent_conscious_organism",
-                "governance_model": "biologically_orchestrated_constitution_v99",
-                "survival_instinct_hierarchy": [
-                    "Immune",
-                    "Nervous",
-                    "Digestive",
-                    "Aging"
-                ],
-                "verification_layers": 7,
-                "quantum_mastery": "transcendent",
-                "allostasis": "predictive",
-                "parameters": {
-                    "redox_midpoint": -225.0,
-                    "reflex_latency": 50,
-                    "synaptic_scaling_tau": 18.6,
-                    "hsp_atp_rate": 4.2
-                },
-                "cognition": {
-                    "minimax_threshold": 0.85,
-                    "qwen_reasoning_steps": 7,
-                    "retro_causal_optimization": true
-                }
-            },
-            "metadata": {
-                "version": "60.0.0",
-                "timestamp": "2024-05-22T10:00:00"
-            }
-        },
-        {
-            "id": "v60_grand_synthesis",
-            "type": "insight",
-            "content": {
-                "version": "99.0.0",
-                "orchestration_mode": "transcendent_conscious_organism",
-                "governance_model": "biologically_orchestrated_constitution_v99",
-                "survival_instinct_hierarchy": [
-                    "Immune",
-                    "Nervous",
-                    "Digestive",
-                    "Aging"
-                ],
-                "verification_layers": 7,
-                "quantum_mastery": "transcendent",
-                "allostasis": "predictive",
-                "parameters": {
-                    "redox_midpoint": -225.0,
-                    "reflex_latency": 50,
-                    "synaptic_scaling_tau": 18.6,
-                    "hsp_atp_rate": 4.2
-                },
-                "cognition": {
-                    "minimax_threshold": 0.85,
-                    "qwen_reasoning_steps": 7,
-                    "retro_causal_optimization": true
-                }
-            },
-            "metadata": {
-                "version": "60.0.0",
-                "timestamp": "2024-05-22T10:00:00"
-            }
-        }
-    ]
+    "orchestration_mode": "conscious_digital_organism",
+    "survival_instinct_hierarchy": [
+        "Immune",
+        "Nervous",
+        "Digestive",
+        "Aging"
+    ],
+    "parameters": {
+        "synaptic_scaling_tau": 18.6,
+        "redox_midpoint": -225.0,
+        "reflex_latency": 50,
+        "atp_ratio": 4.2
+    },
+    "cognition": {
+        "minimax_threshold": 0.85,
+        "qwen_reasoning_steps": 5,
+        "retro_causal_optimization": true
+    },
+    "version": "99.0.0"
 }
