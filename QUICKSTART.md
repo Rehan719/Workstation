@@ -14,7 +14,11 @@ If you prefer using the terminal, copy and paste the following block into your V
 ```bash
 # 1. Initialize environment and dependencies
 python3 -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+# On Linux/macOS:
+source venv/bin/activate
+# On Windows:
+# .\venv\Scripts\activate
+
 pip install --upgrade pip
 pip install -e .
 
@@ -25,7 +29,7 @@ python3 -m agentic_core.synthesis.grand_synthesis_engine
 python3 tests/test_v99_transcendent.py
 
 # 4. Launch the Unified Dashboard
-python3 -m src.dashboard.app
+streamlit run src/dashboard/app.py
 ```
 
 ---
