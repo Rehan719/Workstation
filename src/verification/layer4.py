@@ -49,7 +49,7 @@ class ReplicationEngine:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 preexec_fn=self._set_resource_limits,
-                env={"PYTHONPATH": os.getcwd(), "JULES_AI_VERSION": "53.0.0"} # Restricted env
+                env={"PYTHONPATH": os.getcwd(), "JULES_AI_VERSION": "99.0.0"} # Restricted env
             )
 
             try:
