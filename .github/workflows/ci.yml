@@ -1,28 +1,51 @@
-name: QEP Continuous Integration
+name: Jules AI v99 TRANSCENDENT CI
 
 on:
   push:
-    branches: [ main, feature/* ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  test:
+    name: Test on ${{ matrix.os }} (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest pytest-asyncio
+
+    - name: Verify Environment
+      run: python scripts/verify_environment.py
+
+    - name: Run Grand Synthesis
+      run: python -m agentic_core.synthesis.grand_synthesis_engine
+
+    - name: Run Transcendent Tests
+      run: pytest tests/test_v99_transcendent.py
+
+    - name: Run Genomic Tests
+      run: pytest tests/genomic/
+
+  frontend:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-    - name: Install Python Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install numpy scipy scikit-learn pandas sqlalchemy fastapi uvicorn pytest pytest-asyncio networkx deap httpx
-    - name: Run Backend Tests
-      run: |
-        export PYTHONPATH=$PYTHONPATH:.
-        pytest tests/test_religious_domain.py tests/test_reactor_ecosystem.py
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:

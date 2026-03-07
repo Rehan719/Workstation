@@ -1,7 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
 version = "99.0.0"
-description = "TRANSCENDENT: Unified Transcendent AI Workstation. Final synthesis of ninety-nine generations of evolutionary lineage."
+packages = [
+    { include = "agentic_core" },
+    { include = "src" },
+]
+description = "TRANSCENDENT: Unified Transcendent AI Workstation with ninety-nine generations of evolutionary lineage."
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -9,7 +13,7 @@ readme = "README.md"
 python = "^3.12"
 langchain = "^0.2.0"
 langchain-community = "^0.2.0"
-autogen = "^0.2.27"
+autogen = "^0.9.10"
 pydantic = "^2.12.5"
 pyyaml = "^6.0.3"
 fastapi = "^0.129.0"
@@ -22,8 +26,10 @@ prefect = "^2.19.0"
 openai = "^1.30.1"
 transformers = "^4.41.0"
 torch = "^2.10.0"
-numpy = "^1.26.4"
-pandas = "^2.2.2"
+numpy = ">=1.26.4,<2.0.0"
+shap = ">=0.45.0,<0.46.0"
+PyJWT = ">=2.10.0"
+pandas = "^2.3.3"
 matplotlib = "^3.9.0"
 seaborn = "^0.13.2"
 plotly = "^5.22.0"
@@ -42,6 +48,7 @@ pennylane = "^0.36.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
+pytest-asyncio = "^0.23.7"
 ruff = "^0.4.4"
 mypy = "^1.10.0"
 black = "^24.4.2"

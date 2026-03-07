@@ -1,31 +1,24 @@
 # Jules AI v99.0 TRANSCENDENT: Quick Start Guide
 
-## 🚀 One-Click VS Code Setup
-This repository is optimized for VS Code. To get started immediately:
-1. Open the repository in VS Code.
-2. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS).
-3. Type `Tasks: Run Task` and select **`Awaken Transcendent (v99 Setup)`**.
+## 🚀 One-Click Setup
+Run the command corresponding to your platform to initialize the v99 environment:
+
+### 🪟 Windows (PowerShell)
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_windows.ps1
+```
+
+### 🍎 macOS / 🐧 Linux
+```bash
+python3 -m venv venv && source venv/bin/activate && pip install -e . && python3 -m agentic_core.synthesis.grand_synthesis_engine && pytest tests/test_v99_transcendent.py && streamlit run src/dashboard/app.py
+```
 
 ---
 
-## 💻 Manual Terminal Setup (Copy & Paste)
-If you prefer using the terminal, copy and paste the following block into your VS Code terminal to initialize the environment and verify the v99.0.0 integration:
-
+## 🛠️ Verification
+To manually verify the environment integrity:
 ```bash
-# 1. Initialize environment and dependencies
-python3 -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-pip install --upgrade pip
-pip install -e .
-
-# 2. Run the Grand Synthesis Engine to consolidate the v99 DNA
-python3 -m agentic_core.synthesis.grand_synthesis_engine
-
-# 3. Verify the Transcendent Integrity
-python3 tests/test_v99_transcendent.py
-
-# 4. Launch the Unified Dashboard
-python3 -m src.dashboard.app
+python scripts/verify_environment.py
 ```
 
 ---

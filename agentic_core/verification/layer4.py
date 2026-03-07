@@ -3,7 +3,10 @@ import sys
 import tempfile
 import os
 import logging
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
 from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
@@ -19,6 +22,8 @@ class ReplicationEngine:
 
     def _set_resource_limits(self):
         """Sets memory and CPU limits for the child process."""
+        if not resource:
+            return
         # Limit address space
         resource.setrlimit(resource.RLIMIT_AS, (self.memory_limit, self.memory_limit))
         # Limit CPU time
@@ -44,12 +49,14 @@ class ReplicationEngine:
 
         try:
             # Execute in a subprocess with resource limits via preexec_fn
+            # Note: preexec_fn is not supported on Windows
+            preexec = self._set_resource_limits if os.name != 'nt' else None
             process = await asyncio.create_subprocess_exec(
                 sys.executable, tmp_path,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                preexec_fn=self._set_resource_limits,
-                env={"PYTHONPATH": os.getcwd(), "JULES_AI_VERSION": "53.0.0"} # Restricted env
+                preexec_fn=preexec,
+                env={"PYTHONPATH": os.getcwd(), "JULES_AI_VERSION": "99.0.0"} # Restricted env
             )
 
             try:
