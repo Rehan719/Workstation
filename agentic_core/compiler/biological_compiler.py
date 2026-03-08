@@ -1,7 +1,7 @@
-import time
 import logging
 import uuid
-from typing import Dict, Any, Optional, Union, List
+from datetime import datetime
+from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +56,15 @@ class BiologicalCompiler:
             "dna_hash": self._generate_dna_hash(system["parts"]),
         }
 
-    def _generate_dna_hash(self, parts: list) -> str:
-        import hashlib
-        data = "".join(sorted([p["name"] for p in parts])).encode()
-        return hashlib.sha256(data).hexdigest()
+    def _resolve_parts(self, intent: str) -> List[str]:
+        resolved = []
+        if "web" in intent: resolved.extend(self.parts_registry["web"])
+        if "sim" in intent: resolved.extend(self.parts_registry["sim"])
+        if "spiritual" in intent or "quran" in intent: resolved.extend(self.parts_registry["spiritual"])
+
+        # Default to sim if nothing else matches (core functionality)
+        if not resolved:
+            resolved.extend(self.parts_registry["sim"])
 
     class PartsRegistry:
         def __init__(self):
