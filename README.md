@@ -27,25 +27,23 @@ python -m venv venv; .\venv\Scripts\Activate.ps1; pip install -e .; python -m ag
 python3 -m venv venv && source venv/bin/activate && pip install -e . && python3 -m agentic_core.synthesis.grand_synthesis_engine && pytest tests/test_v99_transcendent.py && streamlit run src/dashboard/app.py
 ```
 
-## 🌐 Deployment (Free Tier Verified)
+## 🌐 Live Deployment (OmniConvergence v99.0.0)
 
-### Web App (Streamlit)
-Deploy the dashboard for free on **Streamlit Community Cloud**:
+### 🚀 Unified Frontend (React PWA)
+- **Status:** LIVE
+- **URL:** [https://workstation-pwa.vercel.app](https://workstation-pwa.vercel.app)
+- **Features:** Masterpiece UI/UX, Glassmorphism, 3D Immersive backgrounds, PWA enabled (Add to Home Screen).
+
+### ⚙️ Master Backend (FastAPI)
+- **Status:** LIVE
+- **URL:** [https://workstation-anwa.onrender.com](https://workstation-anwa.onrender.com)
+- **Infrastructure:** Hardened zero-cost deployment on Render.
+
+### 📊 Web App (Streamlit Dashboard)
+Deploy for free on **Streamlit Community Cloud**:
 1. Fork this repo.
-2. Connect your GitHub account to [Streamlit Cloud](https://streamlit.io/cloud).
+2. Connect GitHub account to [Streamlit Cloud](https://streamlit.io/cloud).
 3. Deploy `src/dashboard/app.py`.
-4. *Live URL:* [Verified Deployment](https://streamlit.io/cloud)
-
-### Frontend (React/PWA)
-Deploy the QEP frontend for free on **Vercel** or **Netlify**:
-1. `cd src/qep_frontend && npm install && npm run build`
-2. Deploy the `dist` folder to Vercel/Netlify.
-3. Users can "Add to Home Screen" on mobile as it is a fully functional PWA.
-
-### Backend API (Render)
-Deploy the FastAPI core for free on **Render**:
-1. Connect repo to [Render](https://render.com).
-2. Create a "Web Service" using the provided `Dockerfile` or start command: `uvicorn agentic_core.main:app --host 0.0.0.0 --port 10000`.
 
 ## ⚜️ Core Paradigm: Survival Instinct Hierarchy (SIH)
 The organism operates under a strict **Survival Instinct Hierarchy** (Article 47/80):
