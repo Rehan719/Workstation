@@ -1,1 +1,1 @@
-{"buildCommand": "npm run build","outputDirectory": "dist","rootDirectory": "src/qep_frontend"}
+{"buildCommand": "npm run build","outputDirectory": "dist"}
