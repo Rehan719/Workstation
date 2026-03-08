@@ -1,7 +1,6 @@
-# agentic_core/compiler/biological_compiler.py
 import time
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +17,10 @@ class BiologicalCompiler:
         self.parts_registry = self.PartsRegistry()
         self.compilation_history = []
 
-    def compile(self, user_intent, context=None):
+    def compile(self, user_intent: Union[str, Dict[str, Any]], context: Optional[Dict] = None) -> Dict[str, Any]:
         """
-        Step 1: Parse intent into logical specification
-        Step 2: Map specification to required parts
-        Step 3: Composition
-        Step 4: Verification
-        Step 5: Artifact generation
+        Compiles user intent into a deployable artifact.
+        If user_intent is a string, it's treated as the primary intent.
         """
         start_time = time.time()
 
@@ -37,8 +33,7 @@ class BiologicalCompiler:
         # Phase 3: Composition
         system = self._compose_parts(required_parts, spec)
 
-        # Phase 4: Verification
-        # Verified via accuracy validator in orchestrator
+        # Phase 4: Verification – performed externally by accuracy validator
 
         # Phase 5: Artifact generation
         artifact = self._generate_artifact(system, spec)
@@ -53,24 +48,34 @@ class BiologicalCompiler:
 
         return artifact
 
-    def parse_intent(self, intent, context):
-        """Parse natural language intent into structured specification"""
-        spec = {
-            "app_type": "web_portal",
-            "features": ["auth"],
-            "data_models": ["user"],
-            "integrations": ["postgres"],
-            "ui_requirements": ["tailwind"]
-        }
-        return spec
+    def parse_intent(self, intent: Union[str, Dict[str, Any]], context: Optional[Dict] = None) -> Dict[str, Any]:
+        """
+        Parse natural language intent into structured specification.
+        If intent is a string, convert to a basic spec.
+        """
+        # If intent is a string, create a minimal spec
+        if isinstance(intent, str):
+            return {
+                "app_type": "web_portal",
+                "features": ["auth"],
+                "data_models": ["user"],
+                "integrations": ["postgres"],
+                "ui_requirements": ["tailwind"],
+                "raw_intent": intent
+            }
+        # If intent is already a dict, use it directly (could be enhanced with NLP)
+        return intent
 
-    def select_parts(self, spec):
+    def select_parts(self, spec: Dict[str, Any]) -> list:
+        """Select required parts based on specification."""
         return self.parts_registry.find_parts(spec)
 
-    def _compose_parts(self, parts, spec):
+    def _compose_parts(self, parts: list, spec: Dict[str, Any]) -> Dict[str, Any]:
+        """Compose selected parts into a coherent system."""
         return {"composed": True, "parts": parts}
 
-    def _generate_artifact(self, system, spec):
+    def _generate_artifact(self, system: Dict[str, Any], spec: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate the final deployable artifact."""
         return {
             "id": f"app_{int(time.time())}",
             "status": "DEPLOYABLE",
@@ -99,6 +104,7 @@ class BiologicalCompiler:
                 }
             }
 
-        def find_parts(self, requirements):
-            """Find parts matching requirements"""
+        def find_parts(self, requirements: Dict[str, Any]) -> list:
+            """Find parts matching requirements."""
+            # For now, always return the auth module as a stub
             return [self.parts["auth_module"]]
