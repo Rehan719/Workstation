@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 class ConstitutionalEnforcer:
     """
     L-C-VIII: Constitutional Runtime Enforcement.
-    Actively monitors system behavior against the 77 articles of v60.0.
+    Actively monitors system behavior against the 77 articles of v99.0.0.
     """
-    def __init__(self, constitution_path: str = "agentic_core/constitution/CONSTITUTION_v60.0.md"):
+    def __init__(self, constitution_path: str = "agentic_core/constitution/CONSTITUTION_v99.0.0.md"):
         self.constitution_path = constitution_path
         self.audit_log = []
         self.violations = []

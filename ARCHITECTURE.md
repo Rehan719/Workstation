@@ -1,7 +1,7 @@
-# Jules AI v60.0 Architecture
+# Jules AI v99.0.0 Architecture
 
 ## Overview
-Jules AI v60.0 is an autonomous organism based on an **8-Layer Cognitive Kernel** and **Biological Subsystems**.
+Jules AI v99.0.0 is an autonomous organism based on an **8-Layer Cognitive Kernel** and **Biological Subsystems**.
 
 ## Layered Hierarchy
 1. **C-I (Infrastructure)**: Cardiovascular resource distribution and Quantum resource gateway.

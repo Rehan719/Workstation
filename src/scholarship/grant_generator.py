@@ -19,15 +19,15 @@ class GrantProposalGenerator:
         # v53: UEG-grounded Specific Aims
         aims = [
             f"Aim 1: Investigating the causal links in {topic} using structural causal modeling.",
-            "Aim 2: Formally verifying the discovered therapeutic targets via the v53.0 Proof Agent."
+            "Aim 2: Formally verifying the discovered therapeutic targets via the v99.0.0 Proof Agent."
         ]
 
         content = {
-            "title": f"Advancing Research in {topic}: A Jules AI v53.0 Initiative",
+            "title": f"Advancing Research in {topic}: A Jules AI v99.0.0 Initiative",
             "specific_aims": aims,
-            "significance": "This project leverages the v53.0 adversarial verification pipeline to ensure unassailable integrity.",
+            "significance": "This project leverages the v99.0.0 adversarial verification pipeline to ensure unassailable integrity.",
             "collaborators": collaborators,
-            "ueg_grounding": "Linked to UEG cluster v53.0.PROPOSAL"
+            "ueg_grounding": "Linked to UEG cluster v99.0.0.PROPOSAL"
         }
 
         return content

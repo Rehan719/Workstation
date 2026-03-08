@@ -1,4 +1,4 @@
-# Incubation Mechanism Guide - Jules AI v60.0
+# Incubation Mechanism Guide - Jules AI v99.0.0
 
 Incubation is the process by which Jules AI grows its capabilities and generates research artifacts autonomously.
 

@@ -1,7 +1,7 @@
-# Jules AI v53.0: User Master Guide
+# Jules AI v99.0.0: User Master Guide
 
 ## 🚀 Getting Started
-Jules AI v53.0 is designed for both autonomous discovery and collaborative research.
+Jules AI v99.0.0 is designed for both autonomous discovery and collaborative research.
 
 ### Interaction Modes
 1. **Autonomous Discovery**: Provide a high-level research goal (e.g., "Find new catalysts for hydrogen production"). Jules will orchestrate hypothesis generation, literature screening, and quantum optimization.

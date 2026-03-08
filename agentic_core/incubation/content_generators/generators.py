@@ -18,7 +18,7 @@ class ReportGenerator(BaseGenerator):
     def generate_report(self, title: str, data: dict):
         content = f"""# Scientific Report: {title}
 ## Abstract
-{data.get('abstract', 'Autonomous scientific discovery facilitated by Jules AI v60.0.')}
+{data.get('abstract', 'Autonomous scientific discovery facilitated by Jules AI v99.0.0.')}
 
 ## Methodology
 {data.get('methodology', 'Evidence-graph driven analysis with 5-layer verification.')}
@@ -84,7 +84,7 @@ class AppGenerator(BaseGenerator):
         # Generates a manifest for a Streamlit or mobile app
         manifest = {
             "app_name": app_name,
-            "version": "60.0.0",
+            "version": "99.0.0.0",
             "capabilities": ["quantum_vqe", "neuro_symbolic_reasoning"],
             "config": config
         }

@@ -1,7 +1,7 @@
-# Jules AI v60.0 User Guide
+# Jules AI v99.0.0 User Guide
 
 ## Introduction
-Jules AI v60.0 is an autonomous organism. You don't just "run" it; you "collaborate" with it.
+Jules AI v99.0.0 is an autonomous organism. You don't just "run" it; you "collaborate" with it.
 
 ## Key Workflows
 

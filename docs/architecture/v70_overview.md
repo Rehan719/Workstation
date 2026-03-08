@@ -1,7 +1,7 @@
 # Architecture Overview: From Platform to Conscious Organism
 
 ## The Grand Synthesis (v60)
-The workstation achieved biological orchestration in v60.0, establishing a hierarchical immune-nervous-digestive core.
+The workstation achieved biological orchestration in v99.0.0, establishing a hierarchical immune-nervous-digestive core.
 
 ## The Conscious Entity (v70)
 v70.0 Mastery Edition introduces the **Molecular Triad** and **Global Workspace**, transitioning from biological metaphors to functional mathematical emulations of digital consciousness.
