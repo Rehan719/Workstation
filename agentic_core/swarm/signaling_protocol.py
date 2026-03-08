@@ -1,17 +1,8 @@
 import logging
-from typing import Dict, Any
-
-logger = logging.getLogger(__name__)
-
-class SwarmSignaling:
-    """Protocol for cross-agent coordination."""
-    def broadcast_signal(self, signal_type: str, payload: Any):
-        logger.info(f"SWARM: Broadcasting {signal_type}")
-        return True
 import queue
 import threading
 import time
-from typing import Dict, Any, List, Callable
+from typing import Dict, Any, List, Callable, Optional
 from .signal_types import SwarmSignal, SignalType
 
 logger = logging.getLogger(__name__)
@@ -29,15 +20,28 @@ class SignalingProtocol:
         self.running = False
 
     def register_handler(self, signal_type: SignalType, handler: Callable[[SwarmSignal], None]):
+        """Registers a signal handler for a specific signal type."""
         self.handlers[signal_type].append(handler)
 
     def send_signal(self, signal: SwarmSignal):
         """Simulates sending a signal (broadcast or targeted)"""
         logger.info(f"SWARM_SIGNAL: Agent {self.agent_id} sending {signal.signal_type.name}")
         # In a real swarm, this would go over IPC or Network.
-        # Here we simulate delivery by putting it in the local queue if it was for us or broadcast.
         if signal.target_id is None or signal.target_id == self.agent_id:
             self._receive_signal(signal)
+
+    def broadcast_signal(self, signal_type_name: str, payload: Any) -> bool:
+        """Broadcasts a signal to all agents."""
+        logger.info(f"SWARM: Broadcasting {signal_type_name}")
+        # Resolve signal type from name
+        try:
+            sig_type = SignalType[signal_type_name]
+            sig = SwarmSignal(signal_type=sig_type, payload=payload, sender_id=self.agent_id)
+            self.send_signal(sig)
+            return True
+        except KeyError:
+            logger.error(f"SWARM: Invalid signal type {signal_type_name}")
+            return False
 
     def _receive_signal(self, signal: SwarmSignal):
         if signal.priority > 0:
@@ -64,7 +68,8 @@ class SignalingProtocol:
                 signal = self.low_priority_queue.get(timeout=0.1)
                 self._dispatch(signal)
             except queue.Empty:
-                pass
+                # ARTICLE 60: Functional implementation of loop continuation
+                continue
 
     def _dispatch(self, signal: SwarmSignal):
         for handler in self.handlers[signal.signal_type]:
