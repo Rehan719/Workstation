@@ -1,16 +1,26 @@
 import time
 import logging
+<<<<<<< HEAD
 from typing import Dict, Any, Optional, Union
+=======
+import uuid
+from typing import Dict, Any, Optional, Union, List
+>>>>>>> e5fcfa3832e087a50a0b3aaff69f3505ca866864
 
 logger = logging.getLogger(__name__)
 
-class CompilationError(Exception): pass
-class IntentError(Exception): pass
+class CompilationError(Exception):
+    """Exception raised during biological compilation."""
+    pass
+
+class IntentError(Exception):
+    """Exception raised when intent resolution fails."""
+    pass
 
 class BiologicalCompiler:
     """
-    Compiles user intent (high-level specification) into deployable applications
-    using standard software parts.
+    ARTICLE 270: Biological Compiler.
+    Transforms logical specifications into deployable biological organisms via a parts registry.
     """
 
     def __init__(self):
@@ -53,7 +63,10 @@ class BiologicalCompiler:
         Parse natural language intent into structured specification.
         If intent is a string, convert to a basic spec.
         """
+<<<<<<< HEAD
         # If intent is a string, create a minimal spec
+=======
+>>>>>>> e5fcfa3832e087a50a0b3aaff69f3505ca866864
         if isinstance(intent, str):
             return {
                 "app_type": "web_portal",
@@ -77,10 +90,16 @@ class BiologicalCompiler:
     def _generate_artifact(self, system: Dict[str, Any], spec: Dict[str, Any]) -> Dict[str, Any]:
         """Generate the final deployable artifact."""
         return {
-            "id": f"app_{int(time.time())}",
+            "id": spec.get("id", str(uuid.uuid4())[:8]),
             "status": "DEPLOYABLE",
-            "parts": [p["name"] for p in system["parts"]]
+            "parts": system["parts"],
+            "dna_hash": self._generate_dna_hash(system["parts"]),
         }
+
+    def _generate_dna_hash(self, parts: list) -> str:
+        import hashlib
+        data = "".join(sorted([p["name"] for p in parts])).encode()
+        return hashlib.sha256(data).hexdigest()
 
     class PartsRegistry:
         """Registry of verified, reusable software components"""

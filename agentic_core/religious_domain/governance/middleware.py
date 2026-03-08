@@ -95,7 +95,8 @@ class TazkiyahEngine:
                     data = json.load(f)
                     return data.get("tazkiyah_weights", {})
         except Exception:
-            pass
+            logger.warning(f"TazkiyahEngine: Could not load weights from {path}, using defaults.")
+
         return {
             "memorization": 0.25, "prayer": 0.30, "dhikr": 0.15,
             "fasting": 0.15, "charity": 0.10, "character": 0.05
@@ -177,7 +178,8 @@ class DawahReadinessEngine:
         }
 
         # Persist to DB
-        self.db.save_dawah_readiness(user_id, is_ready, details)
+        if self.db:
+            self.db.save_dawah_readiness(user_id, is_ready, details)
 
         logger.info(f"DawahReadinessEngine: User {user_id} readiness: {is_ready}")
         return {

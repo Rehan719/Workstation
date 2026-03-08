@@ -1,6 +1,8 @@
 import asyncio
+import pytest
 from agentic_core.incubation.adaptive_incubation_engine import AdaptiveIncubationEngine
 
+@pytest.mark.asyncio
 async def test_incubation_flow():
     engine = AdaptiveIncubationEngine()
     result = await engine.start_incubation(

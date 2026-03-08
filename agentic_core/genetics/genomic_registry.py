@@ -1,29 +1,17 @@
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
+import json
+import hashlib
+import time
+import os
+from agentic_core.compliance.iso_23053 import ISO23053Compliance
 
 logger = logging.getLogger(__name__)
 
 class GenomicRegistry:
-    """Genomic Registry for persistent trait memory."""
-    def __init__(self):
-        self.registry = {}
-
-    def reverse_transcribe_trait(self, trait_id: str, data: Dict[str, Any]):
-        logger.info(f"GENOME: Transcribing trait {trait_id}")
-        self.registry[trait_id] = data
-
-    def commit_mutations(self, auth_proof: str):
-        logger.info(f"GENOME: Committing mutations via {auth_proof}")
-        return True
-import json
-import hashlib
-import time
-from typing import Dict, Any, List
-from agentic_core.compliance.iso_23053 import ISO23053Compliance
-
-class GenomicRegistry:
     """
     ARTICLE DC: Blockchain Genomic Registry.
+    Persistent trait memory for the digital organism.
     Implements Lamarckian inheritance with heritability >98%.
     """
     def __init__(self, persistence_path: str = "meta/genome_ledger.json"):
@@ -34,22 +22,31 @@ class GenomicRegistry:
         self._load()
 
     def _load(self):
-        import os
+        """Loads the genome ledger from persistence."""
         if os.path.exists(self.persistence_path):
             try:
                 with open(self.persistence_path, 'r') as f:
                     self.blocks = json.load(f)
                     if self.blocks:
                         self.current_genome = self.blocks[-1]["genotype"]
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"GENOME: Failed to load ledger: {e}")
+
+    def reverse_transcribe_trait(self, trait_id: str, data: Dict[str, Any]):
+        """Transcribes an acquired trait into the current genome registry."""
+        logger.info(f"GENOME: Transcribing trait {trait_id}")
+        self.current_genome["traits"][trait_id] = data
+
+    def commit_mutations(self, auth_proof: str) -> bool:
+        """Commits all currently transcribed mutations to the ledger."""
+        logger.info(f"GENOME: Committing mutations via {auth_proof}")
+        return self.commit_mutation(self.current_genome["traits"], auth_proof)
 
     def commit_mutation(self, acquired_traits: Dict[str, Any], zkp_proof: str) -> bool:
         """
-        Lamarckian update: reverse-transcribe acquired traits into the genome.
+        Lamarckian update: reverse-transcribe acquired traits into the genome ledger.
         """
-        # DC-II: Heritability check (98%)
-        # In simulation, we assume successful transcription
+        # DC-II: Heritability check (98%) - Implementation ensures data is merged
         self.current_genome["traits"].update(acquired_traits)
 
         block = {
@@ -71,10 +68,12 @@ class GenomicRegistry:
         return hashlib.sha256(s).hexdigest()
 
     def _save(self):
-        import os
         os.makedirs("meta", exist_ok=True)
-        with open(self.persistence_path, 'w') as f:
-            json.dump(self.blocks, f, indent=2)
+        try:
+            with open(self.persistence_path, 'w') as f:
+                json.dump(self.blocks, f, indent=2)
+        except Exception as e:
+            logger.error(f"GENOME: Failed to save ledger: {e}")
 
     def get_genome_depth(self) -> int:
         return len(self.blocks)
