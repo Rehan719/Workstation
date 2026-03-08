@@ -22,7 +22,22 @@ Every decision is validated against the principles of Sincerity (Ikhlas), Honest
 ### 🚀 Zero-Cost/No-Incurred-Cost Deployment
 True to the mission of Universal Accessibility, v99.0 is engineered for democratization. The entire workstation can be deployed on free-tier cloud infrastructure, ensuring that barriers to knowledge are removed for everyone, everywhere.
 
-## 💻 Quick Start (Copy & Paste)
+## 🖱️ One-Click No-Code Deployment
+Deploy your own instance of the Digital Sanctuary in minutes with zero coding required:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Rehan719/Workstation)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FRehan719%2FWorkstation)
+[![Deploy to Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/deploy?repository=https://github.com/Rehan719/Workstation&main_module_path=src/dashboard/app.py)
+
+## 📖 Quick Start for Learners (No-Code)
+If you are here to learn and grow spiritually, follow these 3 simple steps:
+1. **Access the Platform**: Visit our [Live PWA](https://workstation-pwa.vercel.app) or deploy your own using the buttons above.
+2. **Set Your Track**: Choose the "Muslim" or "Seeker" track during registration to personalize your journey.
+3. **Start Learning**: Use the **AI Tajwīd Coach** for recitation feedback or the **Memorization Suite** to track your Hifz progress. Check your **Tazkiyah Score** on the dashboard to see your spiritual growth!
+
+*For a detailed walkthrough, see our [User Guide](USER_GUIDE.md).*
+
+## 💻 Developer Quick Start (Copy & Paste)
 
 ### Windows (PowerShell)
 ```powershell

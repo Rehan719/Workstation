@@ -20,11 +20,11 @@ const UnifiedDashboard = ({ userProfile, mockData }) => {
   ];
 
   return (
-    <div className="space-y-12 pb-20">
-      <header className="flex justify-between items-end">
+    <div className="space-y-12 pb-20 px-4 md:px-0">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <p className="text-amber-500 font-bold uppercase tracking-widest text-xs mb-2">Cross-Domain Overview</p>
-          <h2 className="text-4xl font-black text-white">Unified Workspace</h2>
+          <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">Unified Workspace</h2>
         </div>
         <div className="flex gap-2">
           {products.map(p => (
@@ -35,7 +35,7 @@ const UnifiedDashboard = ({ userProfile, mockData }) => {
         </div>
       </header>
 
-      <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {impactStats.map((stat, i) => (
           <motion.div
             key={i}
