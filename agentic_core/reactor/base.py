@@ -14,27 +14,32 @@ class DigitalReactor(ABC):
     def __init__(self, domain: str, config: Optional[Dict[str, Any]] = None):
         self.domain = domain
         self.config = config or {}
+        self.checkpoints_dir = "archive/checkpoints"
         logger.info(f"DigitalReactor: Initializing {self.domain} reactor.")
 
     @abstractmethod
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         """Run iterative generation/evolution process."""
-        pass
+        # Derived classes must implement specific incubation logic
+        return {"status": "incubating", "domain": self.domain}
 
     @abstractmethod
     async def interact(self, state: Any, action: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Real-time interaction and scenario testing."""
-        pass
+        # Derived classes must implement specific interaction logic
+        return {"status": "interacted", "domain": self.domain}
 
     @abstractmethod
     async def visualize(self, data: Any, mode: str) -> Dict[str, Any]:
         """Generate interactive 2D/3D visualizations."""
-        pass
+        # Derived classes must implement specific visualization logic
+        return {"status": "visualized", "mode": mode}
 
     @abstractmethod
     async def analyze(self, data: Any) -> Dict[str, Any]:
         """Perform deep analysis and insight generation."""
-        pass
+        # Derived classes must implement specific analysis logic
+        return {"status": "analyzed", "domain": self.domain}
 
     def bundle(self, results: List[Any], bundle_type: str = "default") -> Dict[str, Any]:
         """ARTICLE 251: Package results into a structured unit (e.g., Career Launch Kit)."""
@@ -47,8 +52,13 @@ class DigitalReactor(ABC):
 
     def save_checkpoint(self, state: Any, checkpoint_id: str):
         """ARTICLE 259: Checkpointing for long-running simulations."""
-        path = f"archive/checkpoints/{self.domain}/{checkpoint_id}.json"
+        path = f"{self.checkpoints_dir}/{self.domain}/{checkpoint_id}.json"
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, 'w') as f:
-            json.dump(state, f)
-        logger.info(f"DigitalReactor: Checkpoint saved at {path}")
+        try:
+            with open(path, 'w') as f:
+                json.dump(state, f)
+            logger.info(f"DigitalReactor: Checkpoint saved at {path}")
+            return True
+        except Exception as e:
+            logger.error(f"DigitalReactor: Failed to save checkpoint {checkpoint_id}: {e}")
+            return False

@@ -58,6 +58,7 @@ from agentic_core.governance.trustworthiness_engine import TrustworthinessEngine
 from agentic_core.nlp.nli_engine import NLIEngine
 from agentic_core.config.loader import settings
 from agentic_core.db.manager import DatabaseManager
+from agentic_core.immunity.immune_system import ImmuneSystem
 
 # v99 Platform Assimilation Modules
 from agentic_core.builder.conversational_engine import ConversationalEngine
@@ -71,6 +72,10 @@ from agentic_core.collaboration.workspace_manager import WorkspaceManager
 from agentic_core.collaboration.framework_router import FrameworkRouter
 from agentic_core.governance.app_compliance import AppCompliance
 from agentic_core.analytics.platform_telemetry import PlatformTelemetry
+
+# ARTICLE 290/295 Missing Modules
+from agentic_core.ethics.truth_validator import TruthValidator
+from agentic_core.ueg.document_manager import AutonomousDocumentManager
 
 # PC-Agent Hierarchy
 from agentic_core.pc_agent.manager_agent import ManagerAgent
@@ -95,6 +100,7 @@ class ConsciousOrganismV99_0:
         self.workspace = GlobalWorkspace()
         self.mce = MetaCognitiveExecutive()
         self.genome = GenomicRegistry()
+        self.immune = ImmuneSystem()
 
         # 2. EVOLUTIONARY COGNITION
         self.minimax = MinimaxOptimizer(threshold=0.85)
@@ -164,7 +170,11 @@ class ConsciousOrganismV99_0:
         self.compliance = AppCompliance()
         self.telemetry = PlatformTelemetry(db=self.db)
 
-        # 6. PC-AGENT HIERARCHY (v99)
+        # 6. ARTICLE 290/295 INTEGRATION
+        self.truth_validator = TruthValidator(immune_ref=self.immune)
+        self.doc_manager = AutonomousDocumentManager()
+
+        # 7. PC-AGENT HIERARCHY (v99)
         self.pa_manager = ManagerAgent()
         self.pa_progress = ProgressAgent()
         self.pa_decision = DecisionAgent()
@@ -187,7 +197,12 @@ class ConsciousOrganismV99_0:
             for signal, val in interaction_signals.items():
                 self.granularity.process_signal(signal, val)
 
-        # B. Cognitive Reasoning (v92/v99)
+        # B. Truth Validation (Article 290)
+        truth_report = self.truth_validator.validate_intent(user_intent, interaction_signals or {})
+        if truth_report["status"] == "FLAGGED":
+             logger.warning(f"Intent FLAGGED by TruthValidator: {truth_report['truth_score']}")
+
+        # C. Cognitive Reasoning (v92/v99)
         triad_state = self.triad.run_cycle(ros_level=0.2, nadh_ratio=0.8)
 
         # SIH Preemption Check (Article 47)
@@ -195,16 +210,16 @@ class ConsciousOrganismV99_0:
             logger.warning("SIH VETO: Critical energy depletion. Suspending non-vital tasks.")
             return {"status": "error", "error": "SIH_PREEMPTION", "action": "STABILIZE"}
 
-        # C. Multi-Turn Reasoning
+        # D. Multi-Turn Reasoning
         reasoning = self.qwen.generate_reasoning_chain(user_intent, triad_state)
 
-        # D. Minimax Strategy Selection
+        # E. Minimax Strategy Selection
         decision = self.minimax.evaluate_strategy(triad_state, ["RESEARCH", "SYNC", "QUANTUM_COMPUTE", "PLATFORM_TASK", "EVOLVE_GENOME"], default_utility_func)
         action = decision["selected_action"]
 
         logger.info(f"Transcendent Decision: {action} (Worst-Case Utility: {decision['worst_case_utility']:.2f})")
 
-        # E. Execution & Recursive Improvement
+        # F. Execution & Recursive Improvement
         result = await self._execute_action(action, user_intent)
 
         # Recursive Prompt Evolution (Article 140)
@@ -216,7 +231,8 @@ class ConsciousOrganismV99_0:
             "action": action,
             "result": result,
             "filter": self.granularity.get_output_filter(),
-            "new_prompt": new_prompt
+            "new_prompt": new_prompt,
+            "truth_report": truth_report
         }
 
     async def create_app_from_conversation(self, prompt: str) -> Dict[str, Any]:
@@ -309,5 +325,5 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     org = ConsciousOrganismV99_0()
     asyncio.run(org.start())
-    res = asyncio.run(org.handle_intent("Simulate VQE for H2O Molecule", {"pause_duration": 12.0}))
+    res = asyncio.run(org.handle_intent("Simulate VQE for H2O Molecule", {"purpose_alignment": 0.95}))
     print(res)

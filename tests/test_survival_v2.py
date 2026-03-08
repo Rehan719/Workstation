@@ -1,7 +1,9 @@
 import asyncio
+import pytest
 from agentic_core.pulse.pulse_clock import PulseClock
 from agentic_core.survival.survival_engine import SurvivalEngineV2
 
+@pytest.mark.asyncio
 async def test_survival_v2():
     clock = PulseClock()
     engine = SurvivalEngineV2(clock)

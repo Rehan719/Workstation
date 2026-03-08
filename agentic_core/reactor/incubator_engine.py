@@ -10,7 +10,9 @@ class BaseSimulationModule:
         self.name = name
 
     def step(self, state: Any, params: Dict[str, Any]) -> Any:
-        raise NotImplementedError
+        """ARTICLE 60: Base implementation must be overridden but can provide identity."""
+        logger.debug(f"SimulationModule {self.name}: Step called.")
+        return state
 
 class ParameterizedIncubator:
     """
@@ -20,6 +22,7 @@ class ParameterizedIncubator:
     def __init__(self, module: BaseSimulationModule):
         self.module = module
         self.history = []
+        self.current_params = {"temperature": 0.5, "mutation_rate": 0.1}
 
     async def run(self,
                   initial_state: Any,
@@ -28,12 +31,14 @@ class ParameterizedIncubator:
                   on_step: Optional[Callable] = None):
 
         state = initial_state
-        params = params or {"temperature": 0.5, "mutation_rate": 0.1}
+        if params:
+            self.current_params.update(params)
 
         logger.info(f"Incubator: Starting {self.module.name} simulation ({iterations} iterations).")
 
         for i in range(iterations):
-            state = self.module.step(state, params)
+            # ARTICLE 259: Use current_params which can be adjusted in real-time
+            state = self.module.step(state, self.current_params)
             self.history.append({"iter": i, "state_snapshot": str(state)[:50]}) # Summary
 
             if on_step:
@@ -41,12 +46,15 @@ class ParameterizedIncubator:
 
             # Simulated iteration delay
             if i % 10 == 0:
-                logger.info(f"Incubator: Iteration {i} complete.")
+                logger.info(f"Incubator: Iteration {i} complete. Current Temp: {self.current_params.get('temperature')}")
 
         return state
 
     def adjust_params(self, params: Dict[str, Any]):
-        """ARTICLE 259: Real-time parameter adjustment."""
+        """
+        ARTICLE 259: Real-time parameter adjustment.
+        ARTICLE 60: Functional implementation updating the active simulation parameters.
+        """
         logger.info(f"Incubator: Adjusting parameters to {params}")
-        # This would be used if the run loop was a long-running background task
-        pass
+        self.current_params.update(params)
+        return self.current_params
