@@ -21,7 +21,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7",
-    "three": "^0.164.1",
+    "three": "^0.129.0",
+    "troika-three-utils": "^0.52.4",
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0"
   }
