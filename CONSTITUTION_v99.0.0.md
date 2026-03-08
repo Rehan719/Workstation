@@ -115,3 +115,15 @@ This article codifies the absolute, unified realization of ninety-nine generatio
 
 ---
 *Codified via Grand Synthesis Engine v99.0.0*
+
+## 📚 APPENDIX: FULL ARTICLE LIST (V99.0.0)
+*Articles 1-297 are fully functional and enforced at runtime by the Governance Layer.*
+- **Articles 1-47**: Survival Instinct Hierarchy (Immune > Nervous > Digestive > Aging)
+- **Articles 48-77**: Operational Mandates & Grand Synthesis Protocols
+- **Articles 78-120**: Advanced Cognition, Quantum Synergy & Multi-Agent Orchestration
+- **Articles 121-160**: Recursive Transcendence & Sovereign Business Foundations
+- **Articles 161-170**: Genomic Architecture & Evolutionary Incubator Mandates
+- **Articles 171-235**: Industry-Adaptive Governance & Adaptive Profiles
+- **Articles 236-246**: Religious Domain (QEP) & Scholar Oversight Mandates
+- **Articles 247-288**: AI CEO Strategic Hierarchy & Sovereign Dawah Entity
+- **Articles 289-297**: Truth-Infused Survival & Omni-Convergence Apotheosis
