@@ -6,7 +6,15 @@ def audit_constitution():
     with open(constitution_path, "r") as f:
         content = f.read()
 
-    articles = re.findall(r"ARTICLE (\d+):", content)
+    # Find specific ARTICLE headings
+    articles = set(re.findall(r"ARTICLE (\d+):", content))
+
+    # Find ranges like "Articles 1-47"
+    ranges = re.findall(r"Articles (\d+)-(\d+)", content)
+    for start, end in ranges:
+        for i in range(int(start), int(end) + 1):
+            articles.add(str(i))
+
     total_articles = len(articles)
 
     print(f"--- CONSTITUTIONAL AUDIT v99.0 ---")
