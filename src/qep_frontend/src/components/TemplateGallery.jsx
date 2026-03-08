@@ -3,50 +3,50 @@ import { motion } from 'framer-motion';
 
 const TemplateGallery = ({ onSelect }) => {
   const templates = [
-    {
-      id: 'qep-standard',
-      title: 'Quranic Education Hub',
-      category: 'Religion',
-      description: 'Standard setup with Tajwid Coach, Hifz tracking, and study circles.',
-      icon: '📖'
-    },
-    {
-      id: 'business-sov',
-      title: 'Sovereign Business',
-      category: 'Business',
-      description: 'E-commerce and FinOps ready. Sharia-compliant billing.',
-      icon: '🏢'
-    },
-    {
-      id: 'scholar-audit',
-      title: 'Governance Portal',
-      category: 'Law/Religion',
-      description: 'Content review workflows and immutable audit logs.',
-      icon: '⚖️'
-    }
+    { id: 'qep-std', title: 'Quranic Hub', category: 'Religion', icon: '📖' },
+    { id: 'hifz-track', title: 'Hifz Tracker', category: 'Religion', icon: '🕋' },
+    { id: 'tajwid-coach', title: 'Tajwid Coach', category: 'Religion', icon: '🗣️' },
+    { id: 'revert-support', title: 'Revert Path', category: 'Religion', icon: '🌱' },
+    { id: 'study-circle', title: 'Halaqa Manager', category: 'Religion', icon: '👥' },
+    { id: 'business-sov', title: 'Sovereign Biz', category: 'Business', icon: '🏢' },
+    { id: 'zakat-calc', title: 'Zakat Portal', category: 'Business', icon: '💰' },
+    { id: 'waqf-endow', title: 'Waqf Manager', category: 'Business', icon: '📜' },
+    { id: 'finops-core', title: 'FinOps Suite', category: 'Business', icon: '📈' },
+    { id: 'legal-advisor', title: 'Legal Counsel', category: 'Law', icon: '⚖️' },
+    { id: 'compliance-aud', title: 'Compliance Audit', category: 'Law', icon: '📋' },
+    { id: 'contract-gen', title: 'Contract Smith', category: 'Law', icon: '🖋️' },
+    { id: 'research-hub', title: 'Research Reactor', category: 'Science', icon: '🧪' },
+    { id: 'bio-forge', title: 'Bio Forge', category: 'Science', icon: '🧬' },
+    { id: 'quantum-sim', title: 'Quantum Lab', category: 'Science', icon: '⚛️' },
+    { id: 'career-kit', title: 'Career Launch', category: 'Employment', icon: '🚀' },
+    { id: 'job-readiness', title: 'Job Ready AI', category: 'Employment', icon: '👔' },
+    { id: 'skill-mapper', title: 'Skill Map', category: 'Employment', icon: '🗺️' },
+    { id: 'edu-portal', title: 'Education Portal', category: 'Education', icon: '🎓' },
+    { id: 'curriculum-gen', title: 'Curriculum AI', category: 'Education', icon: '📚' },
+    { id: 'student-dash', title: 'Student Insight', category: 'Education', icon: '📊' },
+    { id: 'community-forum', title: 'Community Hub', category: 'Social', icon: '🌐' },
+    { id: 'dawah-outreach', title: 'Dawah Mission', category: 'Social', icon: '📣' },
+    { id: 'vga-explorer', title: 'Governance Viz', category: 'Governance', icon: '🛡️' },
+    { id: 'ceo-dashboard', title: 'AI CEO Ops', category: 'Executive', icon: '👑' }
   ];
 
   return (
     <div className="p-8 bg-white/50 backdrop-blur-xl rounded-3xl border border-white/20 shadow-xl">
       <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
         <span className="w-2 h-6 bg-amber-500 rounded-full"></span>
-        No-Code Template Gallery
+        Professional Template Gallery (25+ Starters)
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {templates.map(tpl => (
           <motion.div
             key={tpl.id}
-            whileHover={{ y: -5 }}
-            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-amber-500/50 cursor-pointer group"
+            whileHover={{ scale: 1.05 }}
+            className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 hover:border-amber-500/50 cursor-pointer group text-center"
             onClick={() => onSelect(tpl)}
           >
-            <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">{tpl.icon}</div>
-            <div className="text-[10px] font-black text-amber-600 uppercase mb-1">{tpl.category}</div>
-            <h4 className="text-lg font-bold text-slate-800 mb-2">{tpl.title}</h4>
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">{tpl.description}</p>
-            <button className="w-full py-3 bg-slate-900 text-white text-xs font-black rounded-xl group-hover:bg-amber-500 transition-colors">
-              Deploy Template
-            </button>
+            <div className="text-3xl mb-2">{tpl.icon}</div>
+            <div className="text-[8px] font-black text-amber-600 uppercase mb-1">{tpl.category}</div>
+            <h4 className="text-xs font-bold text-slate-800 truncate">{tpl.title}</h4>
           </motion.div>
         ))}
       </div>

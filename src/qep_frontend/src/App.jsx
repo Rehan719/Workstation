@@ -4,6 +4,12 @@ import CumulativeDashboard from './components/dashboards/CumulativeDashboard';
 import ImmersiveBackground from './components/immersive/ImmersiveBackground';
 import UnifiedDashboard from './pages/UnifiedDashboard';
 import VisualEditor from './components/VisualEditor';
+import ScholarDashboard from './components/ScholarDashboard';
+import FinOpsDashboard from './components/FinOpsDashboard';
+import GenomicLab from './components/GenomicLab';
+import QuantumLabs from './components/QuantumLabs';
+import SocialLogin from './components/SocialLogin';
+import ShareWidget from './components/ShareWidget';
 import Onboarding from './components/Onboarding';
 import TemplateGallery from './components/TemplateGallery';
 import LanguageSwitcher from './components/LanguageSwitcher';
@@ -82,6 +88,7 @@ function App() {
         </nav>
 
         <div className="pt-6 border-t border-white/10 space-y-6">
+          <SocialLogin />
           <LanguageSwitcher currentLang={currentLang} setLang={setCurrentLang} />
 
           <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
@@ -105,7 +112,10 @@ function App() {
         <header className="flex justify-between items-start mb-12">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-5xl font-black text-white mb-2">As-salaam Alaykum, {userProfile.name}</h1>
-            <p className="text-slate-400 text-lg">Elevating your potential across five transcendent domains.</p>
+            <div className="flex gap-4 items-center">
+              <p className="text-slate-400 text-lg">Elevating your potential across five transcendent domains.</p>
+              <ShareWidget />
+            </div>
           </motion.div>
           <div className="flex flex-col gap-2 items-end">
             <div className="bg-emerald-500/10 text-emerald-400 px-6 py-3 rounded-2xl font-bold shadow-sm text-sm border border-emerald-500/30 backdrop-blur-md">
@@ -181,20 +191,18 @@ function App() {
                <CumulativeDashboard domain={activeTab.toLowerCase()} data={mockData} />
             )}
 
-            {activeTab === 'Scholar' && (
-              <div className="bg-white p-12 rounded-3xl shadow-2xl border border-emerald-100">
-                <h2 className="text-3xl font-black text-emerald-900 mb-8 flex items-center gap-3">
-                  <span className="w-2 h-8 bg-emerald-500 rounded-full"></span>
-                  Scholar Governance Portal
-                </h2>
-                <div className="space-y-6">
-                  <ReviewItem title="v99.0 AI Tafsir (Surah An-Nur)" type="CONTENT" status="PENDING" />
-                  <ReviewItem title="Educator Accreditation: Dr. Yusuf" type="IDENTITY" status="APPROVED" />
-                  <ReviewItem title="Refined Tazkiyah Calculation" type="POLICY" status="PENDING" />
-                </div>
-                <button className="mt-12 w-full py-4 bg-emerald-900 text-emerald-50 rounded-xl font-bold hover:bg-emerald-800 transition-all shadow-lg">
-                  Access Immutable Audit Ledger
-                </button>
+            {activeTab === 'Scholar' && <ScholarDashboard />}
+            {activeTab === 'Science' && (
+              <div className="space-y-12">
+                <GenomicLab />
+                <QuantumLabs />
+                <CumulativeDashboard domain="science" data={mockData} />
+              </div>
+            )}
+            {activeTab === 'Employment' && (
+              <div className="space-y-12">
+                <FinOpsDashboard />
+                <CumulativeDashboard domain="employment" data={mockData} />
               </div>
             )}
           </motion.div>
