@@ -1,0 +1,35 @@
+{
+  "README.md": [
+    {
+      "version": 1,
+      "hash": "8bc3249724af3671c4c25362dbe4d1794cad163587223d061ddd3a548411b14c",
+      "timestamp": "2026-03-08T14:32:50.546171",
+      "metadata": {
+        "verified_source": true
+      },
+      "fidelity_score": 0.99
+    }
+  ],
+  "CONSTITUTION_v99.0.0.md": [
+    {
+      "version": 1,
+      "hash": "0d6bef6c6b60637a529162d29256eda08ece8977b350d2d0c8311b84b0efb337",
+      "timestamp": "2026-03-08T14:32:50.547859",
+      "metadata": {
+        "verified_source": true
+      },
+      "fidelity_score": 0.99
+    }
+  ],
+  "ARCHITECTURE.md": [
+    {
+      "version": 1,
+      "hash": "eb9d30d731702b4bf19faba5253636c88344b37594106c9437a967409233934f",
+      "timestamp": "2026-03-08T14:32:50.549074",
+      "metadata": {
+        "verified_source": true
+      },
+      "fidelity_score": 0.99
+    }
+  ]
+}
