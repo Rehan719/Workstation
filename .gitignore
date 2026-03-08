@@ -58,3 +58,4 @@ pip_list.txt
 installed_packages.txt
 test_v52_output.log
 test_v52_output_final.log
+src/qep_frontend/.vercel/
