@@ -62,11 +62,11 @@ const UnifiedDashboard = ({ userProfile, mockData }) => {
               </h4>
               <ul className="space-y-3 text-sm text-slate-400">
                 <li className="flex justify-between">
-                  <span>Research -> Copyright</span>
+                  <span>{"Research -> Copyright"}</span>
                   <span className="text-emerald-500 font-mono">RUNNING</span>
                 </li>
                 <li className="flex justify-between">
-                  <span>Isnad -> Education</span>
+                  <span>{"Isnad -> Education"}</span>
                   <span className="text-amber-500 font-mono">PENDING</span>
                 </li>
               </ul>
