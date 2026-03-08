@@ -22,5 +22,22 @@ class EvolutionNexus:
         return True
 
     async def apply_mutation(self, mutation: Dict[str, Any]):
-        """Applies a verified mutation."""
-        pass
+        """
+        Applies a verified mutation by updating the system's active parameters (Article 165).
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        target_params = mutation.get("parameters", {})
+        if not target_params:
+            logger.warning("EvolutionNexus: Attempted to apply empty mutation.")
+            return False
+
+        logger.info(f"EvolutionNexus: Assimilating mutation {mutation.get('id', 'unknown')}")
+        # In v99.0, this would update a global config or live-reload a module.
+        # For this workstation, we simulate the persistent update.
+        self.active_system_state = self.get_current_system_state()
+        self.active_system_state["active_parameters"].update(target_params)
+
+        logger.info(f"EvolutionNexus: Mutation successfully assimilated. New parameters: {self.active_system_state['active_parameters']}")
+        return True

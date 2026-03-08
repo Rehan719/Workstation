@@ -3,6 +3,7 @@ import HifzHeatMap from './components/HifzHeatMap';
 import CumulativeDashboard from './components/dashboards/CumulativeDashboard';
 import ImmersiveBackground from './components/immersive/ImmersiveBackground';
 import UnifiedDashboard from './pages/UnifiedDashboard';
+import VisualEditor from './components/VisualEditor';
 import Onboarding from './components/Onboarding';
 import TemplateGallery from './components/TemplateGallery';
 import LanguageSwitcher from './components/LanguageSwitcher';
@@ -127,7 +128,12 @@ function App() {
             exit="out"
             transition={{ type: 'tween', ease: 'anticipate', duration: 0.4 }}
           >
-            {activeTab === 'Unified' && <UnifiedDashboard userProfile={userProfile} mockData={mockData} />}
+            {activeTab === 'Unified' && (
+              <div className="space-y-12">
+                <VisualEditor />
+                <UnifiedDashboard userProfile={userProfile} mockData={mockData} />
+              </div>
+            )}
 
             {activeTab === 'Dashboard' && (
               <div className="space-y-12">

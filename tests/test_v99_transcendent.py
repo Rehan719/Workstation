@@ -7,7 +7,11 @@ from agentic_core.ui.granularity_controller import GranularityController
 
 class TestV99Transcendent(unittest.TestCase):
     def setUp(self):
-        self.loop = asyncio.get_event_loop()
+        try:
+            self.loop = asyncio.get_event_loop()
+        except RuntimeError:
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
 
     def test_orchestrator_initialization(self):
         org = ConsciousOrganismV99_0()
