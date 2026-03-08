@@ -32,8 +32,9 @@ class ShariahCompliancePolicy(IGovernancePolicy):
     def verify(self, intent: Dict[str, Any]) -> bool:
         logger.info("VGA: Verifying Shariah compliance.")
         # Prohibit Riba (interest) and Gharar (uncertainty) in commercial intents
-        prohibited = ["interest_bearing", "uncertain_derivative", "prohibited_content"]
-        payload = str(intent).lower()
+        # Normalized prohibited list using dashes
+        prohibited = ["interest-bearing", "uncertain-derivative", "prohibited-content"]
+        payload = str(intent).lower().replace("_", "-")
         return not any(item in payload for item in prohibited)
 
     def attest(self, data: Dict[str, Any]) -> str:

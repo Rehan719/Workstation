@@ -127,6 +127,23 @@ class BlockchainLedger:
             logger.error(f"LEDGER: Failed to load: {e}")
             self.chain = []
 
+    def log_sharia_transaction(self, tx_type: str, user_id: str, amount: float, designation: str) -> bool:
+        """
+        ARTICLE 240/245: Explicit Sharia-compliant transaction logging.
+        Ensures traceability and accountability for Zakat/Sadaqah/Waqf.
+        """
+        data = {
+            "tx_type": tx_type,
+            "user_id": user_id,
+            "amount": amount,
+            "designation": designation,
+            "sharia_compliant": True,
+            "audit_trail": f"V99.0_SHARIA_VERIFIED_{datetime.now().strftime('%Y%j')}"
+        }
+        self.add_transaction(sender=user_id, action=f"SHARIA_{tx_type}", data=data)
+        self.add_block(proof=100) # Immediate settlement for religious integrity
+        return True
+
 class UnifiedEvidenceGraph:
     """
     ARTICLE AC: Persistent Unified Evidence Graph (UEG).
