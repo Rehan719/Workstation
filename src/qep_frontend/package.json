@@ -1,30 +1,28 @@
 {
-    "name":  "qep_frontend",
-    "version":  "1.0.0",
-    "description":  "",
-    "main":  "index.js",
-    "scripts":  {
-                    "dev":  "vite",
-                    "build":  "vite build",
-                    "preview":  "vite preview"
-                },
-    "keywords":  [
-
-                 ],
-    "author":  "",
-    "license":  "ISC",
-    "type":  "commonjs",
-    "dependencies":  {
-                         "@vitejs/plugin-react":  "^5.1.4",
-                         "react":  "^18.3.1",
-                         "react-dom":  "^18.3.1",
-                         "vite":  "^7.3.1",
-                         "vite-plugin-pwa":  "^1.2.0",
-                         "framer-motion":  "^11.1.7",
-                         "recharts":  "^2.12.7",
-                         "three":  "^0.164.1",
-                         "@react-three/fiber":  "^8.16.6",
-                         "@react-three/drei":  "^9.105.6",
-                         "lucide-react":  "^0.378.0"
-                     }
+  "name": "qep_frontend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "vite": "^7.3.1",
+    "vite-plugin-pwa": "^1.2.0",
+    "framer-motion": "^11.1.7",
+    "recharts": "^2.12.7",
+    "three": "^0.164.1",
+    "@react-three/fiber": "^8.16.6",
+    "@react-three/drei": "^9.105.6",
+    "lucide-react": "^0.378.0"
+  }
 }

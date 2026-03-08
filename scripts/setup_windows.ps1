@@ -1,5 +1,7 @@
 # Jules AI v99 Windows Setup Script
-Write-Host "?? Awaken Transcendent: Initializing v99 Environment on Windows..." -ForegroundColor Cyan
+# Run with: powershell -ExecutionPolicy Bypass -File scripts/setup_windows.ps1
+
+Write-Host "⚜️ Awaken Transcendent: Initializing v99 Environment on Windows..." -ForegroundColor Cyan
 
 # 1. Create Virtual Environment
 if (!(Test-Path venv)) {
@@ -21,16 +23,12 @@ Write-Host "Installing development tools..."
 python -m pip install pytest pytest-asyncio
 
 # 5. Run Grand Synthesis
-Write-Host "?? Synchronizing Transcendent DNA..."
+Write-Host "🧬 Synchronizing Transcendent DNA..."
 python -m agentic_core.synthesis.grand_synthesis_engine
 
-# 6. Verify Installation (skip if verify_environment.py missing)
-if (Test-Path scripts/verify_environment.py) {
-    Write-Host "?? Verifying environment integrity..."
-    python scripts/verify_environment.py
-} else {
-    Write-Host "Verification script not found ? skipping."
-}
+# 6. Verify Installation
+Write-Host "🔍 Verifying environment integrity..."
+python scripts/verify_environment.py
 
-Write-Host "`n? Jules AI v99.0 is operational and ready for evolution." -ForegroundColor Green
+Write-Host "`n✅ Jules AI v99.0 is operational and ready for evolution." -ForegroundColor Green
 Write-Host "To start the dashboard, run: streamlit run src/dashboard/app.py" -ForegroundColor Yellow
