@@ -4,3 +4,4 @@ pandas
 numpy<2.0.0
 uvicorn
 shap
+fastapi
