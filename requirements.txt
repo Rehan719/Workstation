@@ -1,5 +1,6 @@
 streamlit
 plotly
 pandas
-numpy
-numpy
+numpy<2.0.0
+uvicorn
+shap
