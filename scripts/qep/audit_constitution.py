@@ -3,13 +3,15 @@ import re
 
 def audit_constitution():
     constitution_path = "CONSTITUTION_v99.0.0.md"
+    if not os.path.exists(constitution_path):
+        print(f"❌ {constitution_path} not found!")
+        return
+
     with open(constitution_path, "r") as f:
         content = f.read()
 
-    # Find specific ARTICLE headings
+    # Find specific ARTICLE headings and ranges
     articles = set(re.findall(r"ARTICLE (\d+):", content))
-
-    # Find ranges like "Articles 1-47"
     ranges = re.findall(r"Articles (\d+)-(\d+)", content)
     for start, end in ranges:
         for i in range(int(start), int(end) + 1):
@@ -20,7 +22,6 @@ def audit_constitution():
     print(f"--- CONSTITUTIONAL AUDIT v99.0 ---")
     print(f"Total Codified Articles: {total_articles}")
 
-    # Check for specific critical articles
     mandatory = ["47", "60", "150", "236", "237", "247", "280", "297"]
     for art in mandatory:
         if art in articles:
@@ -28,7 +29,6 @@ def audit_constitution():
         else:
             print(f"❌ Article {art} is MISSING!")
 
-    # Check for No-Stubs adherence (informational)
     stubs = os.popen('grep -r "NotImplementedError" agentic_core/ src/').read()
     if not stubs:
         print("✅ Article 60: No-Stubs compliance verified in core logic.")
