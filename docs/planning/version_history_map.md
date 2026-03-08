@@ -16,14 +16,14 @@
 - **Multi-Agent Scholarship**: Generation of Scientific Reviews, Intelligence Reports, Research Dossiers, and Doctoral Theses.
 - **Truth Foundations**: AI-Powered Hypothesis Generation, Formal Proof Agent (Lean/Coq), and Blockchain Publication (IPFS/Ethereum).
 
-### v49.0 – v53.0: Verification Mastery & Hardening
+### v49.0 – v99.0.0: Verification Mastery & Hardening
 - Five-Layer Verification Framework: Physical Integrity, Formal Proofs, Numerical Correctness, Empirical Verification, and Adversarial Testing.
 - Security Hardening: OS-level resource constraints and restricted sandboxes.
 
-### v54.0 – v60.0: The Biological Organism Shift
+### v54.0 – v99.0.0: The Biological Organism Shift
 - Shift from platform to **Biologically-Orchestrated Organism**.
 - Biological Analogues: Immune, Nervous, Digestive, and Aging systems.
-- **Grand Synthesis Engine**: Consolidation of v1-v60 into CONSTITUTION_v60.0.md.
+- **Grand Synthesis Engine**: Consolidation of v1-v99 into CONSTITUTION_v99.0.0.md.
 - Survival Instinct Hierarchy (Article 77): Immune > Nervous > Digestive > Aging.
 
 ### v61.0 – v70.0: The Conscious Digital Organism
@@ -43,7 +43,7 @@
 - **v12.0**: Immutable Constitution established.
 - **v32.0**: Interoperability Foundation (Article U) and Cryptographic Trust (Article V).
 - **v45.0**: Phased Implementation Architecture (Article AH).
-- **v60.0**: Grand Synthesis (Article 73), Adaptive Incubation (Article 74), Tiered Parameters (Article 75), RL Portfolio (Article 76).
+- **v99.0.0**: Grand Synthesis (Article 73), Adaptive Incubation (Article 74), Tiered Parameters (Article 75), RL Portfolio (Article 76).
 - **v71.0**: Survival Instinct Hierarchy (Article 77).
 
 ## 3. Empirical Parameters (2024-2026 Research)

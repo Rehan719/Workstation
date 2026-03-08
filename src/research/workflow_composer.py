@@ -20,7 +20,7 @@ class WorkflowComposerBackend:
         """
         Executes research tasks with dependency-aware parallelization (v53).
         """
-        logger.info("Executing v53.0 advanced composed workflow...")
+        logger.info("Executing v99.0.0 advanced composed workflow...")
 
         # v53: Automatic dependency resolution
         # Simplified: identify independent tasks (those without 'depends_on')

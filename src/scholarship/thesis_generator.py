@@ -28,7 +28,7 @@ class ThesisGenerator:
             "title": f"The Evolution of {research_topic}: An Autonomous Multi-Agent Perspective",
             "author": author,
             "chapters": chapters,
-            "grounding": "Synthesized from 100+ UEG nodes and formally verified via v53.0 Proof Agent.",
+            "grounding": "Synthesized from 100+ UEG nodes and formally verified via v99.0.0 Proof Agent.",
             "status": "CONSTITUTIONALLY_COMPLIANT"
         }
 

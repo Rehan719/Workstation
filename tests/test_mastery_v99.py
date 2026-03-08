@@ -12,12 +12,12 @@ async def test_v53_scholarship_extension():
     policy_gen = PolicyBriefGenerator(orchestrator.ueg)
 
     proposal = await grant_gen.generate_proposal("PSC Cure", ["Alice", "Bob"])
-    assert "v53.0" in proposal["title"]
+    assert "v99.0.0" in proposal["title"]
     assert len(proposal["specific_aims"]) == 2
 
     brief = await policy_gen.generate_brief("AI Safety", "Regulators")
     assert brief["integrity_level"] == "Formally Verified"
-    assert "v53.0" in brief["executive_summary"]
+    assert "v99.0.0" in brief["executive_summary"]
 
 @pytest.mark.asyncio
 async def test_v53_collaboration_protocol():

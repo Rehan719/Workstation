@@ -1,4 +1,4 @@
-# Jules AI v53.0: API Reference Manual
+# Jules AI v99.0.0: API Reference Manual
 
 ## 🧠 Core Orchestrator
 ### `Orchestrator.psc_discovery_simulation(user_id)`

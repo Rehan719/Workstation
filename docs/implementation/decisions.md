@@ -1,8 +1,8 @@
-# Architectural Decisions - Jules AI v60.0
+# Architectural Decisions - Jules AI v99.0.0
 
 ## AD-001: Clean Migration to `agentic_core/`
 - **Status**: Accepted
-- **Decision**: Migrate all v60.0 core logic to the `agentic_core/` directory.
+- **Decision**: Migrate all v99.0.0 core logic to the `agentic_core/` directory.
 - **Rationale**: Signals the fundamental architectural shift from a tool-based system to an autonomous organism.
 - **Consequences**: `src/` will be treated as legacy. All new imports should point to `agentic_core/`.
 

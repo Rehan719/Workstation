@@ -4,7 +4,7 @@
 | :--- | :--- | :--- | :--- |
 | agentic_core/molecular/ | 1-10 | Metabolism | v1.0 |
 | agentic_core/consciousness/ | 11-20 | Self-Awareness | v10.0 |
-| agentic_core/synthesis/ | 73, 144 | Grand Synthesis | v60.0 (v99 Refined) |
+| agentic_core/synthesis/ | 73, 144 | Grand Synthesis | v99.0.0 (v99 Refined) |
 | agentic_core/cognition/minimax_optimizer.py | 78, 110 | Adversarial Robustness | v92.0 |
 | agentic_core/cognition/qwen_integration.py | 85, 115 | Multi-turn Reasoning | v92.0 |
 | agentic_core/cognition/retro_causal_processor.py | 81, 88 | Predictive Optimization | v92.0 |

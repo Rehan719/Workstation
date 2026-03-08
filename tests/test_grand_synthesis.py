@@ -11,7 +11,7 @@ async def test_grand_synthesis_cycle():
     results = await engine.run_synthesis()
 
     assert results["orchestration_mode"] == "biological_organism"
-    assert os.path.exists("agentic_core/constitution/CONSTITUTION_v60.0.md")
+    assert os.path.exists("agentic_core/constitution/CONSTITUTION_v99.0.0.md")
     assert os.path.exists("meta/ueg_graph.json")
 
 if __name__ == "__main__":
