@@ -17,7 +17,7 @@ asgiref==3.8.1
 astunparse==1.6.3
 asyncpg==0.31.0
 attrs==25.4.0
-autogen==0.9.10
+autogen==0.1.1
 autograd==1.8.0
 autoray==0.8.10
 bcrypt==5.0.0
