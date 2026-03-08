@@ -7,10 +7,10 @@ from typing import Dict, Any, List, Optional, Union
 logger = logging.getLogger(__name__)
 
 class CompilationError(Exception):
-    pass
+    """Raised when compilation fails."""
 
 class IntentError(Exception):
-    pass
+    """Raised when user intent is invalid."""
 
 class BiologicalCompiler:
     def __init__(self):
@@ -57,15 +57,22 @@ class BiologicalCompiler:
             "dna_hash": self._generate_dna_hash(system["parts"]),
         }
 
+    def _generate_dna_hash(self, parts: list) -> str:
+        """ARTICLE 60/161: Generates cryptographic DNA hash for the artifact."""
+        parts_str = ",".join([p["name"] for p in parts])
+        import hashlib
+        return hashlib.sha256(parts_str.encode()).hexdigest()[:16]
+
     def _resolve_parts(self, intent: str) -> List[str]:
         resolved = []
-        if "web" in intent: resolved.extend(self.parts_registry["web"])
-        if "sim" in intent: resolved.extend(self.parts_registry["sim"])
-        if "spiritual" in intent or "quran" in intent: resolved.extend(self.parts_registry["spiritual"])
+        # Mapping intent to part types
+        if "web" in intent: resolved.append("auth_module")
+        if "payment" in intent: resolved.append("payment_processor")
 
-        # Default to sim if nothing else matches (core functionality)
+        # Default if nothing matches
         if not resolved:
-            resolved.extend(self.parts_registry["sim"])
+            resolved.append("auth_module")
+        return resolved
 
     class PartsRegistry:
         def __init__(self):
