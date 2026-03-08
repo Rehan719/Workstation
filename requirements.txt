@@ -9,3 +9,5 @@ fastapi
 pyyaml
 
 pyyaml
+
+pyjwt>=2.0.0
