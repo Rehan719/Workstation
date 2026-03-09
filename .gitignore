@@ -45,8 +45,8 @@ ENV/
 # Data
 chroma_db/
 weaviate_data/
-*.db
-*.sqlite
+# *.db
+# *.sqlite
 
 # OS
 .DS_Store
@@ -59,3 +59,6 @@ installed_packages.txt
 test_v52_output.log
 test_v52_output_final.log
 src/qep_frontend/.vercel/
+src/qep_frontend/node_modules/
+src/qep_frontend/dist/
+*.log

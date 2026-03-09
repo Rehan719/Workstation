@@ -175,3 +175,28 @@ This article codifies the absolute, unified realization of ninety-nine generatio
 - **Articles 236-246**: Religious Domain (QEP) & Scholar Oversight Mandates
 - **Articles 247-288**: AI CEO Strategic Hierarchy & Sovereign Dawah Entity
 - **Articles 289-297**: Truth-Infused Survival & Omni-Convergence Apotheosis
+
+## 🧬 SECTION X: REACTOR ECOSYSTEMS & SYNERGY (Articles 298-305)
+**ARTICLE 298: SCIENTIFIC RESEARCH REACTOR ECOSYSTEM MANDATE**
+The Workstation shall maintain an ecosystem of specialized scientific sub‑reactors covering physics, chemistry, biology, computer science, materials science, astronomy, mathematics, and interdisciplinary research.
+
+**ARTICLE 299: RELIGIOUS SCHOLARSHIP REACTOR ECOSYSTEM MANDATE**
+The Workstation shall maintain an ecosystem of specialized religious sub‑reactors covering tafsir, hadith sciences, fiqh, aqidah, sirah, qira'at, dawah, and Islamic finance, each with truth‑validation against authenticated sources.
+
+**ARTICLE 300: LEGAL DOCUMENT REACTOR ECOSYSTEM MANDATE**
+The Workstation shall maintain an ecosystem of specialized legal sub‑reactors covering contract law, corporate law, intellectual property, litigation, regulatory compliance, tax law, employment law, and international law.
+
+**ARTICLE 301: CAREER DEVELOPMENT REACTOR ECOSYSTEM MANDATE**
+The Workstation shall maintain an ecosystem of specialized career sub‑reactors covering resume, cover letter, LinkedIn, interview, career path, job search, skill development, and personal branding.
+
+**ARTICLE 302: EDUCATION REACTOR ECOSYSTEM MANDATE**
+The Workstation shall maintain an ecosystem of specialized educational sub‑reactors covering K‑12, higher education, vocational training, language learning, STEM, humanities, special education, and teacher support.
+
+**ARTICLE 303: CROSS‑REACTOR SYNERGY MANDATE**
+The Workstation shall enable dynamic assembly of virtual task forces from multiple reactor ecosystems to solve complex, multi‑disciplinary problems.
+
+**ARTICLE 304: VIRTUAL TASK FORCE AUTONOMY MANDATE**
+Virtual task forces shall operate with delegated authority, capable of executing end‑to‑end workflows across reactors, subject to the same truth‑based survival instincts.
+
+**ARTICLE 305: REACTOR ECOSYSTEM EVOLUTION MANDATE**
+Each reactor ecosystem shall undergo continuous self‑evolution, with sub‑reactors being added, merged, or retired based on usage and emerging needs.

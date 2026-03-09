@@ -10,22 +10,28 @@ from unittest.mock import MagicMock
 
 @pytest.mark.asyncio
 async def test_scholar_veto_enforcement():
-    # Scenario 10.2: Business operation violating scholarly rule
-    scholar_board = MagicMock()
-    scholar_board.approve_major_decision.return_value = False # Vetoed
-
+    # ARTICLE 246: Human-in-the-loop veto enforcement.
     commander = AICommander()
-    # Mocking the veto through a configuration-like intent
+
+    # Intent that triggers the FinancialResolver (which requires 'riba-free')
     intent = {
-        "action": "execute_donation_campaign",
-        "scope": "religion:campaign",
-        "sharia_override": False # This triggers the veto check in logic
+        "action": "distribute_profits",
+        "scope": "financial:investment",
+        "compliance": ["standard"] # Missing 'riba-free'
     }
 
-    # In a real v99.0, the commander checks with the VGA/ScholarBoard
-    # We simulate the preemption
-    preempted = not scholar_board.approve_major_decision("DONATION_CAMPAIGN", intent)
-    assert preempted is True
+    # This should be rejected by the resolver
+    allowed = await commander.execute_intent(intent)
+    assert allowed is False
+
+    # Corrected intent
+    valid_intent = {
+        "action": "distribute_profits",
+        "scope": "financial:investment",
+        "compliance": ["riba-free"]
+    }
+    allowed_valid = await commander.execute_intent(valid_intent)
+    assert allowed_valid is True
 
 @pytest.mark.asyncio
 async def test_dual_metric_conflict_prioritization():
@@ -60,24 +66,17 @@ async def test_deterministic_rollback():
     assert dm.active_deployments["qep_service"]["version"] == target_version
 
 @pytest.mark.asyncio
-async def test_evolved_prompt_compiler_speed():
-    # Scenario 10.5: Genomic Evolution Demonstration
+async def test_evolved_prompt_compiler_dna():
+    # ARTICLE 167: Genotype-to-Phenotype mapping.
     compiler = BiologicalCompiler()
 
-    # Baseline speed
-    start_base = asyncio.get_event_loop().time()
-    res_base = compiler.compile("Basic App")
-    end_base = asyncio.get_event_loop().time()
-    time_base = end_base - start_base
+    res = compiler.compile("Quranic Study App")
 
-    # Apply "evolved" mutation (Simulated logic update)
-    # In v99.0, mutations are vetted by the Constitutional Layer
-    mutation = {"optimization_factor": 0.5}
-
-    # Simulated speedup in compiler (if we were to actually modify the instance)
-    # For validation, we assert the logic path
-    assert "dna_hash" in res_base
-    assert len(res_base["parts"]) > 0
+    assert "dna_hash" in res
+    assert len(res["parts"]) > 0
+    # Phenotype verification: Ensure essential parts are selected
+    part_names = [p["name"] for p in res["parts"]]
+    assert "auth_module" in part_names
 
 def test_pwa_icon_integrity():
     # Scenario 10.6: Accessibility check
