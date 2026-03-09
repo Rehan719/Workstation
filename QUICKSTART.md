@@ -1,53 +1,44 @@
 # Jules AI v99.0 TRANSCENDENT: Quick Start Guide
 
-## 🚀 One-Click Setup
-Run the command corresponding to your platform to initialize the v99 environment:
+## 🚀 One-Click Setup (All-in-One)
+Run the following command to install dependencies, synthesize the DNA baseline, run verification tests, and launch the dashboard:
 
 ### 🪟 Windows (PowerShell)
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/setup_windows.ps1
+powershell -ExecutionPolicy Bypass -c "pip install -e .; python -m agentic_core.synthesis.grand_synthesis_engine; python -m pytest tests/; streamlit run src/dashboard/app.py"
 ```
 
 ### 🍎 macOS / 🐧 Linux
 ```bash
-python3 -m venv venv && source venv/bin/activate && pip install -e . && python3 -m agentic_core.synthesis.grand_synthesis_engine && pytest tests/test_v99_transcendent.py && streamlit run src/dashboard/app.py
+pip install -e . && python3 -m agentic_core.synthesis.grand_synthesis_engine && python3 -m pytest tests/ && streamlit run src/dashboard/app.py
 ```
 
 ---
 
-## 🛠️ Verification
-To manually verify the environment integrity:
+## 🛠️ Verification & Audits
+To manually verify the environment integrity and constitutional adherence:
 ```bash
-python scripts/verify_environment.py
+# Environment Verification
+python3 scripts/verify_environment.py
+
+# Constitutional Audit (297 Articles)
+python3 scripts/qep/audit_constitution.py
+
+# Biomimetic Fidelity Score
+python3 -m agentic_core.validation.biomimetic_fidelity
 ```
 
 ---
 
-## 🧬 Basic Usage
-To interact with the consolidated Conscious Organism Orchestrator:
-
-```python
-import asyncio
-from agentic_core.orchestrator.conscious_organism_v99 import ConsciousOrganismV99
-
-async def main():
-    # Initialize the v99 Transcendent Orchestrator
-    organism = ConsciousOrganismV99()
-
-    # Start the discovery cycle
-    await organism.awaken()
-
-    print("Jules AI v99.0 is operational and evolving.")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
+## 🌐 Deployment
+Deploy the workstation for free using the following targets:
+- **Frontend (Vercel)**: `cd src/qep_frontend && npm install && npm run build` -> Deploy `dist/`
+- **Backend (Render)**: Connect repo, set build command `pip install -r requirements.txt`, start command `uvicorn agentic_core.main:app --host 0.0.0.0 --port $PORT`
+- **Dashboard (Streamlit)**: Deploy `src/dashboard/app.py` directly to Streamlit Cloud.
 
 ---
 
 ## 📜 Documentation Reference
-Detailed guides are available in the `docs/v99/` directory:
-- [Biological Systems Guide](docs/v99/BIOLOGICAL_SYSTEMS_GUIDE.md)
-- [Incubation & Evolution Guide](docs/v99/INCUBATION_GUIDE.md)
-- [Synthesis & Consolidation Guide](docs/v99/SYNTHESIS_GUIDE.md)
-- [Constitution v99.0.0](CONSTITUTION_v99.0.0.md)
+- [User Guide (Non-Technical)](USER_GUIDE.md)
+- [Architecture Deep Dive](ARCHITECTURE.md)
+- [Transcendent Constitution](CONSTITUTION_v99.0.0.md)

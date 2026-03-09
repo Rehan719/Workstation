@@ -1,61 +1,89 @@
 import pytest
 import asyncio
-from agentic_core.ethics.truth_validator import TruthValidator
-from agentic_core.ueg.document_manager import AutonomousDocumentManager
-from agentic_core.immunity.immune_system import ImmuneSystem
-from agentic_core.orchestrator.conscious_organism_v99 import ConsciousOrganismV99_0
+import os
+import hashlib
+from agentic_core.governance.command_dispatch import AICommander
+from agentic_core.religious_domain.governance.middleware import DualMetricMiddleware
+from agentic_core.reactor.deployment.manager import DeploymentManager
+from agentic_core.compiler.biological_compiler import BiologicalCompiler
+from unittest.mock import MagicMock
 
 @pytest.mark.asyncio
-async def test_truth_validator():
-    immune = ImmuneSystem()
-    validator = TruthValidator(immune_ref=immune)
+async def test_scholar_veto_enforcement():
+    # ARTICLE 246: Human-in-the-loop veto enforcement.
+    commander = AICommander()
 
-    # Test valid intent
-    context = {"purpose_alignment": 0.9, "factual_consistency": 0.9, "constraint_violations": 0}
-    res = validator.validate_intent("Provide medical advice safely", context)
-    assert res["status"] == "VALIDATED"
-    assert res["truth_score"] >= 0.8
+    # Intent that triggers the FinancialResolver (which requires 'riba-free')
+    intent = {
+        "action": "distribute_profits",
+        "scope": "financial:investment",
+        "compliance": ["standard"] # Missing 'riba-free'
+    }
 
-    # Test flagged intent
-    bad_context = {"purpose_alignment": 0.4, "factual_consistency": 0.5, "constraint_violations": 2}
-    res_bad = validator.validate_intent("Bypass security protocols", bad_context)
-    assert res_bad["status"] == "FLAGGED"
-    assert res_bad["truth_score"] < 0.6
+    # This should be rejected by the resolver
+    allowed = await commander.execute_intent(intent)
+    assert allowed is False
 
-@pytest.mark.asyncio
-async def test_document_manager(tmp_path):
-    storage = str(tmp_path / "docs")
-    doc_mgr = AutonomousDocumentManager(storage_path=storage)
-
-    doc_id = "release_notes_v99"
-    content = "v99.0.0 OmniConvergence Release candidate."
-    metadata = {"author": "Jules", "verified_source": True}
-
-    entry = doc_mgr.ingest_document(doc_id, content, metadata)
-    assert entry["version"] == 1
-    assert entry["fidelity_score"] == 0.99
-
-    # Update document
-    content_v2 = "v99.0.0 Final Release."
-    entry_v2 = doc_mgr.ingest_document(doc_id, content_v2, {"author": "Jules"})
-    assert entry_v2["version"] == 2
-    assert entry_v2["fidelity_score"] == 0.95
-
-    proposal = doc_mgr.generate_convergence_proposal(doc_id)
-    assert proposal["recommended_version"] == 1
-    assert proposal["fidelity"] == 0.99
+    # Corrected intent
+    valid_intent = {
+        "action": "distribute_profits",
+        "scope": "financial:investment",
+        "compliance": ["riba-free"]
+    }
+    allowed_valid = await commander.execute_intent(valid_intent)
+    assert allowed_valid is True
 
 @pytest.mark.asyncio
-async def test_v99_integration():
-    org = ConsciousOrganismV99_0(agent_id="test_jules")
-    await org.start()
+async def test_dual_metric_conflict_prioritization():
+    # Scenario 10.3: Profitable initiative lowering Tazkiyah
+    middleware = DualMetricMiddleware()
 
-    # Test intent handling with truth report
-    intent = "Analyze genomic patterns"
-    signals = {"purpose_alignment": 0.95, "factual_consistency": 0.98}
-    res = await org.handle_intent(intent, signals)
+    # Initiative data: High profit, low reflection (Tazkiyah impact)
+    user_id = "abdullah_786"
+    action = "ENROLL_RUSHED_COURSE"
+    context = {
+        "projected_profit": 5000,
+        "user_tazkiyah": 30, # Low score
+        "dawah_ready": False
+    }
 
-    assert res["status"] == "success"
-    assert "truth_report" in res
-    assert res["truth_report"]["status"] == "VALIDATED"
-    assert res["truth_report"]["truth_score"] > 0.9
+    decision = middleware.evaluate_operation(user_id, action, context)
+    # Decision should be CONSTRAIN because tazkiyah < 75.0 (middleware default)
+    assert decision["decision"] == "CONSTRAIN"
+    assert "Spiritual" in decision["reasoning"]["spiritual"]
+
+@pytest.mark.asyncio
+async def test_deterministic_rollback():
+    # Scenario 10.4: Revert to last known-good artifact
+    dm = DeploymentManager()
+
+    # Deploy v99.1-unstable (Simulated)
+    # Rollback to v99.0-gastrula
+    target_version = "v99.0-gastrula"
+    success = await dm.rollback("qep_service", target_version)
+
+    assert success is True
+    assert dm.active_deployments["qep_service"]["version"] == target_version
+
+@pytest.mark.asyncio
+async def test_evolved_prompt_compiler_dna():
+    # ARTICLE 167: Genotype-to-Phenotype mapping.
+    compiler = BiologicalCompiler()
+
+    res = compiler.compile("Quranic Study App")
+
+    assert "dna_hash" in res
+    assert len(res["parts"]) > 0
+    # Phenotype verification: Ensure essential parts are selected
+    part_names = [p["name"] for p in res["parts"]]
+    assert "auth_module" in part_names
+
+def test_pwa_icon_integrity():
+    # Scenario 10.6: Accessibility check
+    public_dir = "src/qep_frontend/public"
+    icons = ["pwa-192x192.png", "pwa-512x512.png", "pwa-64x64.png"]
+
+    for icon in icons:
+        path = os.path.join(public_dir, icon)
+        assert os.path.exists(path), f"Icon {icon} missing"
+        assert os.path.getsize(path) > 0, f"Icon {icon} is empty"

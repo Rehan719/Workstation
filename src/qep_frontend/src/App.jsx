@@ -3,12 +3,28 @@ import HifzHeatMap from './components/HifzHeatMap';
 import CumulativeDashboard from './components/dashboards/CumulativeDashboard';
 import ImmersiveBackground from './components/immersive/ImmersiveBackground';
 import UnifiedDashboard from './pages/UnifiedDashboard';
+import Marketplace from './pages/Marketplace';
+import SynergyConsole from './pages/SynergyConsole';
+import VisualEditor from './components/VisualEditor';
+import ScholarDashboard from './components/ScholarDashboard';
+import FinOpsDashboard from './components/FinOpsDashboard';
+import GenomicLab from './components/GenomicLab';
+import QuantumLabs from './components/QuantumLabs';
+import SocialLogin from './components/SocialLogin';
+import ShareWidget from './components/ShareWidget';
+import Onboarding from './components/Onboarding';
+import TemplateGallery from './components/TemplateGallery';
+import LanguageSwitcher from './components/LanguageSwitcher';
+import SupportPanel from './components/SupportPanel';
 import { PersonalizationProvider } from './components/PersonalizationEngine';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
   const [status, setStatus] = useState('Initializing Digital Sanctuary...');
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [currentLang, setCurrentLang] = useState({ code: 'en', name: 'English', rtl: false });
+  const [isLowBandwidth, setIsLowBandwidth] = useState(false);
   const [userProfile, setUserProfile] = useState({
     name: 'Abdullah',
     tazkiyah: 84,
@@ -42,8 +58,13 @@ function App() {
 
   return (
     <PersonalizationProvider profile={userProfile}>
-    <div className="dashboard-container font-inter relative min-h-screen flex">
-      <ImmersiveBackground domain={activeTab === 'Dashboard' ? 'religion' : activeTab.toLowerCase()} />
+    <div className={`dashboard-container font-inter relative min-h-screen flex ${currentLang.rtl ? 'flex-row-reverse' : ''}`} dir={currentLang.rtl ? 'rtl' : 'ltr'}>
+      <AnimatePresence>
+        {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
+      </AnimatePresence>
+
+      <ImmersiveBackground domain={activeTab === 'Dashboard' ? 'religion' : activeTab.toLowerCase()} lowBandwidth={isLowBandwidth} />
+
       <aside className="sidebar bg-slate-900/80 backdrop-blur-xl text-white w-72 p-8 flex flex-col border-r border-white/10 relative z-10">
         <div className="mb-12">
           <motion.h2
@@ -58,6 +79,8 @@ function App() {
 
         <nav className="flex-1 space-y-2">
           <NavItem label="Unified Workspace" active={activeTab === 'Unified'} onClick={() => setActiveTab('Unified')} />
+          <NavItem label="Reactor Marketplace" active={activeTab === 'Marketplace'} onClick={() => setActiveTab('Marketplace')} />
+          <NavItem label="Synergy Console" active={activeTab === 'Synergy'} onClick={() => setActiveTab('Synergy')} />
           {['Education', 'Science', 'Law', 'Employment', 'Scholar'].map((tab) => (
             <NavItem
               key={tab}
@@ -68,9 +91,24 @@ function App() {
           ))}
         </nav>
 
-        <div className="pt-6 border-t border-white/10">
-          <div className="text-[10px] uppercase opacity-50 font-bold mb-1">AI CEO Status</div>
-          <div className="text-xs text-amber-500 font-mono">STRATEGIC_ALIGNMENT_OK</div>
+        <div className="pt-6 border-t border-white/10 space-y-6">
+          <SocialLogin />
+          <LanguageSwitcher currentLang={currentLang} setLang={setCurrentLang} />
+
+          <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+             <div className="text-[10px] uppercase opacity-50 font-bold">Low Bandwidth</div>
+             <input
+               type="checkbox"
+               checked={isLowBandwidth}
+               onChange={(e) => setIsLowBandwidth(e.target.checked)}
+               className="toggle-checkbox"
+             />
+          </div>
+
+          <div>
+            <div className="text-[10px] uppercase opacity-50 font-bold mb-1">AI CEO Status</div>
+            <div className="text-xs text-amber-500 font-mono">STRATEGIC_ALIGNMENT_OK</div>
+          </div>
         </div>
       </aside>
 
@@ -78,10 +116,20 @@ function App() {
         <header className="flex justify-between items-start mb-12">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-5xl font-black text-white mb-2">As-salaam Alaykum, {userProfile.name}</h1>
-            <p className="text-slate-400 text-lg">Elevating your potential across five transcendent domains.</p>
+            <div className="flex gap-4 items-center">
+              <p className="text-slate-400 text-lg">Elevating your potential across five transcendent domains.</p>
+              <ShareWidget />
+            </div>
           </motion.div>
-          <div className="bg-emerald-500/10 text-emerald-400 px-6 py-3 rounded-2xl font-bold shadow-sm text-sm border border-emerald-500/30 backdrop-blur-md">
-            {status}
+          <div className="flex flex-col gap-2 items-end">
+            <div className="bg-emerald-500/10 text-emerald-400 px-6 py-3 rounded-2xl font-bold shadow-sm text-sm border border-emerald-500/30 backdrop-blur-md">
+              {status}
+            </div>
+            {isLowBandwidth && (
+              <span className="text-[10px] font-black uppercase text-amber-500 bg-amber-900/40 px-3 py-1 rounded-full border border-amber-500/30">
+                Low Bandwidth Active
+              </span>
+            )}
           </div>
         </header>
 
@@ -94,10 +142,19 @@ function App() {
             exit="out"
             transition={{ type: 'tween', ease: 'anticipate', duration: 0.4 }}
           >
-            {activeTab === 'Unified' && <UnifiedDashboard userProfile={userProfile} mockData={mockData} />}
+            {activeTab === 'Marketplace' && <Marketplace />}
+            {activeTab === 'Synergy' && <SynergyConsole />}
+            {activeTab === 'Unified' && (
+              <div className="space-y-12">
+                <VisualEditor />
+                <UnifiedDashboard userProfile={userProfile} mockData={mockData} />
+              </div>
+            )}
 
             {activeTab === 'Dashboard' && (
               <div className="space-y-12">
+                <TemplateGallery onSelect={(tpl) => console.log('Selected:', tpl)} />
+
                 <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <StatCard label="Tazkiyah" value={userProfile.tazkiyah} sub="+5.2% growth" color="emerald" />
                   <StatCard label="Nur Points" value={userProfile.nurPoints} sub="Top 5% Global" color="amber" />
@@ -131,6 +188,8 @@ function App() {
                     </div>
                   </div>
                 </div>
+
+                <SupportPanel />
               </div>
             )}
 
@@ -138,20 +197,18 @@ function App() {
                <CumulativeDashboard domain={activeTab.toLowerCase()} data={mockData} />
             )}
 
-            {activeTab === 'Scholar' && (
-              <div className="bg-white p-12 rounded-3xl shadow-2xl border border-emerald-100">
-                <h2 className="text-3xl font-black text-emerald-900 mb-8 flex items-center gap-3">
-                  <span className="w-2 h-8 bg-emerald-500 rounded-full"></span>
-                  Scholar Governance Portal
-                </h2>
-                <div className="space-y-6">
-                  <ReviewItem title="v99.0 AI Tafsir (Surah An-Nur)" type="CONTENT" status="PENDING" />
-                  <ReviewItem title="Educator Accreditation: Dr. Yusuf" type="IDENTITY" status="APPROVED" />
-                  <ReviewItem title="Refined Tazkiyah Calculation" type="POLICY" status="PENDING" />
-                </div>
-                <button className="mt-12 w-full py-4 bg-emerald-900 text-emerald-50 rounded-xl font-bold hover:bg-emerald-800 transition-all shadow-lg">
-                  Access Immutable Audit Ledger
-                </button>
+            {activeTab === 'Scholar' && <ScholarDashboard />}
+            {activeTab === 'Science' && (
+              <div className="space-y-12">
+                <GenomicLab />
+                <QuantumLabs />
+                <CumulativeDashboard domain="science" data={mockData} />
+              </div>
+            )}
+            {activeTab === 'Employment' && (
+              <div className="space-y-12">
+                <FinOpsDashboard />
+                <CumulativeDashboard domain="employment" data={mockData} />
               </div>
             )}
           </motion.div>

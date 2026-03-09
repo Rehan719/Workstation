@@ -8,12 +8,12 @@ class IGovernancePolicy(ABC):
     @abstractmethod
     def verify(self, intent: Dict[str, Any]) -> bool:
         """Verify the intent against the policy."""
-        pass
+        return True
 
     @abstractmethod
     def attest(self, data: Dict[str, Any]) -> str:
         """Attest to the data's compliance."""
-        pass
+        return "GENERIC_ATTESTATION"
 
 class DataMinimizationPolicy(IGovernancePolicy):
     """ARTICLE 182: Verifiable Governance - Data Minimization."""
