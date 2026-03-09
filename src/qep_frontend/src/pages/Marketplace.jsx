@@ -50,14 +50,25 @@ const Marketplace = () => {
     { id: 'edu:stem', name: 'STEM Academy', domain: 'Education', icon: '🔬', status: 'GOLD' },
     { id: 'edu:hum', name: 'Humanities Suite', domain: 'Education', icon: '🎭', status: 'GOLD' },
     { id: 'edu:spec', name: 'Special Ed Suite', domain: 'Education', icon: '♿', status: 'GOLD' },
-    { id: 'edu:teach', name: 'Teacher Support', domain: 'Education', icon: '👩‍🏫', status: 'GOLD' }
+    { id: 'edu:teach', name: 'Teacher Support', domain: 'Education', icon: '👩‍🏫', status: 'GOLD' },
+    { id: 'edu:parent', name: 'Parent Portal', domain: 'Education', icon: '👨‍👩-👧', status: 'GOLD' },
+    { id: 'edu:policy', name: 'Policy Lab', domain: 'Education', icon: '🏛️', status: 'GOLD' },
+    { id: 'edu:assess', name: 'Assessment AI', domain: 'Education', icon: '📝', status: 'GOLD' },
+    { id: 'edu:curric', name: 'Curriculum Gen', domain: 'Education', icon: '📚', status: 'GOLD' },
+    { id: 'edu:tech', name: 'EdTech Forge', domain: 'Education', icon: '💻', status: 'GOLD' },
+    { id: 'edu:early', name: 'Early Childhood', domain: 'Education', icon: '👶', status: 'GOLD' },
+    { id: 'edu:life', name: 'Lifelong Learning', domain: 'Education', icon: '♾️', status: 'GOLD' },
+    { id: 'edu:analyt', name: 'Success Analytics', domain: 'Education', icon: '📊', status: 'GOLD' },
+    // Employment Additions
+    { id: 'emp:free', name: 'Freelance Agent', domain: 'Career', icon: '👨‍💻', status: 'GOLD' },
+    { id: 'emp:entre', name: 'Startup Incubator', domain: 'Career', icon: '🚀', status: 'GOLD' }
   ];
 
   return (
     <div className="space-y-8 p-8">
       <header>
         <h1 className="text-4xl font-black text-white mb-2">Reactor Marketplace</h1>
-        <p className="text-slate-400">Browse and launch 46+ hyper-specialized sub-reactors (v100.0).</p>
+        <p className="text-slate-400">Browse and launch 57+ hyper-specialized sub-reactors (v100.0).</p>
       </header>
 
       <div className="flex gap-4">

@@ -7,3 +7,5 @@ from .career_path import CareerPathReactor
 from .job_search import JobSearchReactor
 from .skill_dev import SkillDevReactor
 from .branding import BrandingReactor
+from .freelance import FreelanceReactor
+from .entrepreneurship import EntrepreneurshipReactor

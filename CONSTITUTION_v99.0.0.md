@@ -237,3 +237,9 @@ Virtual task forces shall retain and propagate successful strategies across the 
 
 **ARTICLE 317: RESILIENCE AND ADAPTABILITY MANDATE**
 Teams shall be self‑healing: when an agent fails, others shall automatically step in; when conditions change, teams shall reconfigure; when innovation is needed, teams shall explore divergent approaches.
+
+**ARTICLE 318: DYNAMIC RESOURCE ASSEMBLY MANDATE**
+The Workstation shall maintain a Dynamic Resource Fabric that enables on‑demand assembly and disassembly of resource pools for projects, experiments, and user‑defined specifications. Resources shall be treated as composable building blocks, with zero‑waste reclamation.
+
+**ARTICLE 319: RESOURCE ASSEMBLY LANGUAGE (RAL) MANDATE**
+The Workstation shall provide a declarative Resource Assembly Language (RAL) allowing users and agents to specify resource requirements for projects. RAL definitions shall be verifiable, auditable, and enforceable by the Dynamic Resource Fabric.

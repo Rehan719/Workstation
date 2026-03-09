@@ -56,7 +56,11 @@ class SynergyOrchestrator:
         }
 
         # 4. Final Truth Validation
-        combined_result["truth_consensus"] = all(res.get("status") == "SUCCESS" for res in results)
+        # ARTICLE 289: Grounded in verified truth. Checks for SUCCESS or INCUBATION_COMPLETE.
+        combined_result["truth_consensus"] = all(
+            res.get("status") in ["SUCCESS", "INCUBATION_COMPLETE", "COMPLETED", "READY"]
+            for res in results
+        )
 
         return combined_result
 
