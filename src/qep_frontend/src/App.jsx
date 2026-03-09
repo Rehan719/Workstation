@@ -4,6 +4,7 @@ import CumulativeDashboard from './components/dashboards/CumulativeDashboard';
 import ImmersiveBackground from './components/immersive/ImmersiveBackground';
 import UnifiedDashboard from './pages/UnifiedDashboard';
 import Marketplace from './pages/Marketplace';
+import SynergyConsole from './pages/SynergyConsole';
 import VisualEditor from './components/VisualEditor';
 import ScholarDashboard from './components/ScholarDashboard';
 import FinOpsDashboard from './components/FinOpsDashboard';
@@ -79,6 +80,7 @@ function App() {
         <nav className="flex-1 space-y-2">
           <NavItem label="Unified Workspace" active={activeTab === 'Unified'} onClick={() => setActiveTab('Unified')} />
           <NavItem label="Reactor Marketplace" active={activeTab === 'Marketplace'} onClick={() => setActiveTab('Marketplace')} />
+          <NavItem label="Synergy Console" active={activeTab === 'Synergy'} onClick={() => setActiveTab('Synergy')} />
           {['Education', 'Science', 'Law', 'Employment', 'Scholar'].map((tab) => (
             <NavItem
               key={tab}
@@ -141,6 +143,7 @@ function App() {
             transition={{ type: 'tween', ease: 'anticipate', duration: 0.4 }}
           >
             {activeTab === 'Marketplace' && <Marketplace />}
+            {activeTab === 'Synergy' && <SynergyConsole />}
             {activeTab === 'Unified' && (
               <div className="space-y-12">
                 <VisualEditor />

@@ -200,3 +200,40 @@ Virtual task forces shall operate with delegated authority, capable of executing
 
 **ARTICLE 305: REACTOR ECOSYSTEM EVOLUTION MANDATE**
 Each reactor ecosystem shall undergo continuous self‑evolution, with sub‑reactors being added, merged, or retired based on usage and emerging needs.
+
+## 🌌 SECTION XI: DIGITAL TWINS, OPTIMIZATION & TEAMS (Articles 306-317)
+**ARTICLE 306: DIGITAL TWINNING MANDATE**
+The Workstation shall maintain a unified Environmental Simulator Engine capable of creating, managing, and evolving digital twins of real‑world systems across all domains. Twins must exhibit high fidelity, real‑time interaction, and predictive accuracy.
+
+**ARTICLE 307: DOMAIN‑SPECIFIC TWIN CAPABILITIES**
+Each domain reactor ecosystem shall include sub‑reactors specialized in creating digital twins relevant to that domain, as detailed in the expansion specifications.
+
+**ARTICLE 308: TWIN FIDELITY MANDATE**
+All digital twins must achieve a fidelity score of ≥0.95 when validated against real‑world data or expert benchmarks. Twins used for critical decision‑making must undergo independent verification.
+
+**ARTICLE 309: CROSS‑DOMAIN TWIN SYNERGY MANDATE**
+The Synergy Orchestrator shall enable the creation of mega‑twins that integrate twins from multiple domains, allowing users to explore complex, multi‑faceted scenarios.
+
+**ARTICLE 310: TWIN LIFECYCLE GOVERNANCE**
+Digital twins shall be subject to the same truth‑based survival instincts, constitutional constraints, and ethical oversight as any other Workstation output. Their creation, modification, and destruction must be auditable and cryptographically verifiable.
+
+**ARTICLE 311: ADAPTIVE RESOURCE OPTIMIZATION MANDATE**
+The Workstation shall maintain an Adaptive Resource Optimizer that dynamically allocates computational, data, and agent resources across all domains based on user context, real‑time demand, and service tier, ensuring optimal performance and adherence to zero‑cost constraints.
+
+**ARTICLE 312: PERSONALIZATION ENGINE MANDATE**
+The Workstation shall provide a personalization engine that adapts user interfaces, recommended actions, and resource allocation based on individual user profiles, skill levels, and domain preferences, integrated with the Conscious Entity's knowledge graph.
+
+**ARTICLE 313: DOMAIN‑SPECIFIC OPTIMIZATION MANDATE**
+Each reactor ecosystem shall be tuned to its domain's unique resource characteristics (e.g., GPU acceleration for physics, low‑latency API access for legal research), with the Adaptive Resource Optimizer respecting these requirements.
+
+**ARTICLE 314: BIOMIMETIC TEAM DYNAMICS MANDATE**
+The Workstation shall enable virtual task forces that mimic the emergent behaviors, collaboration patterns, and decision‑making processes of human teams and societies. Agents shall negotiate roles, maintain collective memory, and evolve new problem‑solving heuristics.
+
+**ARTICLE 315: TEAM FORMATION AND ORCHESTRATION MANDATE**
+The Biomimetic Team Orchestrator shall proactively form teams when complex, multi‑domain problems are detected, and shall optimize team composition based on agent capabilities, workload, and past performance.
+
+**ARTICLE 316: COLLECTIVE INTELLIGENCE MANDATE**
+Virtual task forces shall retain and propagate successful strategies across the ecosystem, building a "societal memory" that informs future collaborations. The Conscious Entity's knowledge graph shall be the repository of this collective intelligence.
+
+**ARTICLE 317: RESILIENCE AND ADAPTABILITY MANDATE**
+Teams shall be self‑healing: when an agent fails, others shall automatically step in; when conditions change, teams shall reconfigure; when innovation is needed, teams shall explore divergent approaches.

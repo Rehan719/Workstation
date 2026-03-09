@@ -1,1 +1,10 @@
-{"buildCommand": "npm run build","outputDirectory": "dist"}
+{
+  "buildCommand": "cd src/qep_frontend && npm run build",
+  "outputDirectory": "src/qep_frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}

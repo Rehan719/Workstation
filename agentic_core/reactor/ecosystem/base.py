@@ -29,3 +29,18 @@ class SpecializedReactor(DigitalReactor, ABC):
     def get_capabilities(self) -> List[str]:
         """Returns list of specific tasks this reactor can perform."""
         return self.config.get("capabilities", [])
+
+    async def get_digital_twin(self, twin_id: str) -> Dict[str, Any]:
+        """ARTICLE 306/307: Retrieves or initializes a digital twin for this reactor."""
+        from agentic_core.simulation.engine import EnvironmentalSimulator
+        ese = EnvironmentalSimulator()
+        twin = ese.registry.get_twin(twin_id)
+        if not twin:
+            twin = await ese.lifecycle.create_twin(self.registry_id, twin_id, self.config)
+        return twin
+
+    async def optimize_resources(self, user_id: str, tier: str) -> Dict[str, Any]:
+        """ARTICLE 311/313: Domain-specific resource optimization."""
+        from agentic_core.optimizer.engine import AdaptiveResourceOptimizer
+        aro = AdaptiveResourceOptimizer()
+        return aro.allocator.allocate(user_id, tier, self.domain)

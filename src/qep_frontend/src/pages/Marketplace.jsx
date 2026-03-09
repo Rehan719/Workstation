@@ -57,7 +57,7 @@ const Marketplace = () => {
     <div className="space-y-8 p-8">
       <header>
         <h1 className="text-4xl font-black text-white mb-2">Reactor Marketplace</h1>
-        <p className="text-slate-400">Browse and launch 40+ hyper-specialized sub-reactors (v100.0).</p>
+        <p className="text-slate-400">Browse and launch 46+ hyper-specialized sub-reactors (v100.0).</p>
       </header>
 
       <div className="flex gap-4">
