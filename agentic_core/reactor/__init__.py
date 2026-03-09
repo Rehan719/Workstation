@@ -41,6 +41,8 @@ from .employment.career_path import CareerPathReactor
 from .employment.job_search import JobSearchReactor
 from .employment.skill_dev import SkillDevReactor
 from .employment.branding import BrandingReactor
+from .employment.freelance import FreelanceReactor
+from .employment.entrepreneurship import EntrepreneurshipReactor
 
 from .education.k12 import K12Reactor
 from .education.higher_ed import HigherEdReactor
@@ -50,6 +52,14 @@ from .education.stem import STEMReactor
 from .education.humanities import HumanitiesReactor
 from .education.special_ed import SpecialEdReactor
 from .education.teacher import TeacherReactor
+from .education.parent import ParentReactor
+from .education.policy import PolicyReactor
+from .education.assessment import AssessmentReactor
+from .education.curriculum import CurriculumReactor
+from .education.edtech import EdTechReactor
+from .education.early_childhood import EarlyChildhoodReactor
+from .education.lifelong import LifelongLearningReactor
+from .education.analytics import LearningAnalyticsReactor
 
 from .ecosystem.registry import ReactorRegistry
 
@@ -96,7 +106,7 @@ def initialize_reactor_ecosystem():
     registry.register(FamilyLawReactor())
     registry.register(CriminalLawReactor())
 
-    # Employment (8)
+    # Employment (10)
     registry.register(ResumeReactor())
     registry.register(CoverLetterReactor())
     registry.register(LinkedInReactor())
@@ -105,8 +115,10 @@ def initialize_reactor_ecosystem():
     registry.register(JobSearchReactor())
     registry.register(SkillDevReactor())
     registry.register(BrandingReactor())
+    registry.register(FreelanceReactor())
+    registry.register(EntrepreneurshipReactor())
 
-    # Education (8)
+    # Education (16)
     registry.register(K12Reactor())
     registry.register(HigherEdReactor())
     registry.register(VocationalReactor())
@@ -115,6 +127,14 @@ def initialize_reactor_ecosystem():
     registry.register(HumanitiesReactor())
     registry.register(SpecialEdReactor())
     registry.register(TeacherReactor())
+    registry.register(ParentReactor())
+    registry.register(PolicyReactor())
+    registry.register(AssessmentReactor())
+    registry.register(CurriculumReactor())
+    registry.register(EdTechReactor())
+    registry.register(EarlyChildhoodReactor())
+    registry.register(LifelongLearningReactor())
+    registry.register(LearningAnalyticsReactor())
 
-    logger.info("Ecosystem: All 46 specialized sub-reactors registered successfully.")
+    logger.info("Ecosystem: All 57 specialized sub-reactors registered successfully.")
     return registry

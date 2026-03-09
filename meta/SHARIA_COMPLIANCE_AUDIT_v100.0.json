@@ -9,9 +9,11 @@
     "sirah",
     "qiraat",
     "dawah",
-    "islamic_finance"
+    "islamic_finance",
+    "history",
+    "tazkiyah"
   ],
-  "compliance_notes": "All 8 religious sub-reactors verified for doctrinal accuracy and truth-validation hooks (Article 299).",
+  "compliance_notes": "All 10 religious sub-reactors verified. DRAD fabric ensures charitable funds (Zakat/Waqf) are segregated and assembled with zero-waste integrity.",
   "veto_history": "0 active vetoes.",
-  "timestamp": "2026-03-09T17:03:41.348745"
+  "timestamp": "2026-03-09T19:22:18.089260"
 }

@@ -22,7 +22,7 @@ def audit_constitution():
     print(f"--- CONSTITUTIONAL AUDIT v99.0 ---")
     print(f"Total Codified Articles: {total_articles}")
 
-    mandatory = ["47", "60", "150", "236", "237", "247", "280", "297"]
+    mandatory = ["47", "60", "150", "236", "237", "247", "280", "297", "306", "311", "314", "318"]
     for art in mandatory:
         if art in articles:
             print(f"✅ Article {art} is codified.")
