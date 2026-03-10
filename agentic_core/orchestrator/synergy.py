@@ -24,7 +24,7 @@ class SynergyOrchestrator:
         self.registry = ReactorRegistry()
         logger.info("Synergy: Orchestrator Integrated and Ready.")
 
-    async def execute_mega_twin(self, objective: str, reactors: List[str], user_id: str, tier: str = "free") -> Dict[str, Any]:
+    async def execute_mega_twin(self, objective: str, reactors: List[str], user_id: str, domain: str = "general", tier: str = "free") -> Dict[str, Any]:
         """
         ARTICLE 309/320: Executes a multi-domain Mega-Twin workflow.
         """
@@ -35,8 +35,8 @@ class SynergyOrchestrator:
         pool_id = self.fabric.assemble_pool(reqs)
 
         # 2. Team Formation (BTO)
-        team_id = f"vtf_{uuid.uuid4().hex[:8]}"
-        team = await self.bto.assemble_vtf(team_id, objective, reactors)
+        intent_id = uuid.uuid4().hex[:8]
+        team_id = await self.bto.form_vtf(intent_id, domain, reactors)
 
         # 3. Simulation Execution (ESE)
         simulation_results = []
