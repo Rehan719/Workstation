@@ -58,5 +58,18 @@
       },
       "fidelity_score": 0.99
     }
+  ],
+  "constitution_v100": [
+    {
+      "version": 1,
+      "hash": "a5c9c56ec27d3a410da57373acc504f1b0335f63c6ff4455ab80c1cb64e9445f",
+      "timestamp": "2026-03-10T13:14:03.604352",
+      "metadata": {
+        "type": "constitution",
+        "version": "100.0.0",
+        "verified_source": true
+      },
+      "fidelity_score": 0.99
+    }
   ]
 }

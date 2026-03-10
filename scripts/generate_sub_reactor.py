@@ -1,9 +1,9 @@
+import logging
 import os
-import sys
-from pathlib import Path
+import argparse
+from typing import Dict, Any
 
-def generate_sub_reactor(domain, sub_domain):
-    template = f"""import logging
+TEMPLATE = '''import logging
 from typing import Dict, Any, List
 from agentic_core.reactor.ecosystem.base import SpecializedReactor
 
@@ -14,7 +14,7 @@ class {sub_domain.capitalize()}Reactor(SpecializedReactor):
     v100.0: Hyper-Specialized Sub-Reactor for {sub_domain} in {domain}.
     \"\"\"
     def __init__(self, config: Dict[str, Any] = None):
-        config = config or {{"capabilities": ["simulation", "analysis"]}}
+        config = config or {{"capabilities": ["high_fidelity_simulation"]}}
         super().__init__("{domain}", "{sub_domain}", config)
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -51,7 +51,8 @@ class {sub_domain.capitalize()}Reactor(SpecializedReactor):
     print(f"Generated sub-reactor: {{target_file}}")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python generate_sub_reactor.py <domain> <sub_domain>")
-    else:
-        generate_sub_reactor(sys.argv[1], sys.argv[2])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--domain", required=True)
+    parser.add_argument("--sub_domain", required=True)
+    args = parser.parse_args()
+    generate_reactor(args.domain, args.sub_domain)
