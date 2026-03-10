@@ -1,30 +1,12 @@
 import json
 import os
 import logging
-from typing import Dict, Any
-import os
-import logging
 from typing import Dict, Any, List
-import logging
-from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
 class EvolutionaryMemory:
     """CN-V: Evolutionary Memory Storage in the UEG."""
-
-    def __init__(self, storage_path: str = "meta/ueg_graph.json"):
-        self.storage_path = storage_path
-
-    def store_synthesis_results(self, result: Dict[str, Any]):
-        """Persists the grand synthesis results."""
-        try:
-            with open(self.storage_path, "w") as f:
-                json.dump(result, f, indent=4)
-            logger.info(f"Synthesis results stored in {self.storage_path}")
-        except Exception as e:
-            logger.error(f"Failed to store memory: {e}")
-    """Stores synthesis results and insights in the Unified Evidence Graph (UEG)."""
 
     def __init__(self, ueg_path: str = "meta/ueg_graph.json"):
         self.ueg_path = ueg_path
@@ -51,15 +33,20 @@ class EvolutionaryMemory:
             except Exception:
                 ueg = {}
 
-        # Add synthesis insight node
-        if "nodes" not in ueg: ueg["nodes"] = []
+        # Ensure ueg is a dict and has nodes
+        if not isinstance(ueg, dict):
+            ueg = {"nodes": []}
+        if "nodes" not in ueg:
+            ueg["nodes"] = []
 
+        # Add synthesis insight node
         ueg["nodes"].append({
-            "id": "v60_grand_synthesis",
+            "id": f"v{results.get('version', '100.0.0')}_grand_synthesis",
             "type": "insight",
             "content": results,
-            "metadata": {"version": "60.0.0", "timestamp": "2024-05-22T10:00:00"}
+            "metadata": {"version": results.get('version', '100.0.0'), "timestamp": "2024-10-01T00:00:00"}
         })
 
+        os.makedirs(os.path.dirname(self.ueg_path), exist_ok=True)
         with open(self.ueg_path, "w") as f:
             json.dump(ueg, f, indent=4)
