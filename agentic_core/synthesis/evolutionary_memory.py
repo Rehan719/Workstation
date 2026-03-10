@@ -39,9 +39,14 @@ class EvolutionaryMemory:
         if "nodes" not in ueg:
             ueg["nodes"] = []
 
+        node_id = f"v{results.get('version', '100.0.0')}_grand_synthesis"
+
+        # Avoid duplicates
+        ueg["nodes"] = [n for n in ueg["nodes"] if n.get("id") != node_id]
+
         # Add synthesis insight node
         ueg["nodes"].append({
-            "id": f"v{results.get('version', '100.0.0')}_grand_synthesis",
+            "id": node_id,
             "type": "insight",
             "content": results,
             "metadata": {"version": results.get('version', '100.0.0'), "timestamp": "2024-10-01T00:00:00"}

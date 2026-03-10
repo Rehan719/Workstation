@@ -23,9 +23,9 @@ class GrandSynthesisEngine:
     """
     def __init__(self, history_paths: List[str] = None):
         if history_paths is None:
-            # Look in the archived directory as well
             history_paths = ["sources/background", "docs/historical/background"]
-        self.analyzer = HistoricalAnalyzer(history_paths)
+        self.history_paths = history_paths
+        self.analyzer = HistoricalAnalyzer(self.history_paths)
         self.resolver = ConflictResolver()
         self.extractor = PatternExtractor()
         self.dna_gen = DNAGenerator()
@@ -44,7 +44,7 @@ class GrandSynthesisEngine:
         logger.info(f"Analyzed {len(raw_insights)} historical and research artifacts.")
 
         if not raw_insights:
-            logger.warning("No historical insights found during analysis.")
+            logger.warning(f"No historical insights found during analysis in {self.history_paths}")
 
         # CN-III. Optimal Pattern Extraction
         patterns = self.extractor.extract_patterns(raw_insights)
@@ -69,6 +69,5 @@ class GrandSynthesisEngine:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    # Use PYTHONPATH=. python3 -m agentic_core.synthesis.grand_synthesis_engine
-    engine = GrandSynthesisEngine(["docs/historical/background"])
+    engine = GrandSynthesisEngine(["sources/background"])
     asyncio.run(engine.run_synthesis())

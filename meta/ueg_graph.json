@@ -2143,25 +2143,25 @@
                     {
                         "id": "bto_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
                         "domain": "qep"
                     },
                     {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
                         "domain": "qep"
                     },
                     {
                         "id": "bto_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
                         "domain": "qep"
                     },
                     {
                         "id": "bto_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
                         "domain": "qep"
                     },
                     {
@@ -2172,30 +2172,13 @@
                     {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Tools_scripts/Tools scripts background.txt",
+                        "source": "sources/background/background/Tools_scripts/Tools scripts background.txt",
                         "domain": "tools"
                     },
                     {
                         "id": "bto_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Tools_scripts/Tools scripts background.txt",
-                        "domain": "tools"
-                    },
-                    {
-                        "id": "quantum_apotheosis",
-                        "confidence": 0.99,
-                        "article": 94
-                    },
-                    {
-                        "id": "aro_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
-                        "domain": "tools"
-                    },
-                    {
-                        "id": "bto_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
+                        "source": "sources/background/background/Tools_scripts/Tools scripts background.txt",
                         "domain": "tools"
                     },
                     {
@@ -2206,19 +2189,36 @@
                     {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "source": "sources/background/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation.txt",
                         "domain": "core"
                     },
                     {
                         "id": "bto_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation.txt",
                         "domain": "core"
                     },
                     {
                         "id": "drad_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation.txt",
                         "domain": "core"
                     },
                     {
@@ -2229,82 +2229,13 @@
                     {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
+                        "source": "sources/background/background/Workstation/Qwens workstation background Further development.txt",
                         "domain": "core"
                     },
                     {
                         "id": "drad_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "quantum_apotheosis",
-                        "confidence": 0.99,
-                        "article": 94
-                    },
-                    {
-                        "id": "twinning_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "aro_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "bto_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "drad_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "quantum_apotheosis",
-                        "confidence": 0.99,
-                        "article": 94
-                    },
-                    {
-                        "id": "aro_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "bto_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "drad_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "quantum_apotheosis",
-                        "confidence": 0.99,
-                        "article": 94
-                    },
-                    {
-                        "id": "aro_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "drad_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
+                        "source": "sources/background/background/Workstation/Qwens workstation background Further development.txt",
                         "domain": "core"
                     },
                     {
@@ -2315,19 +2246,25 @@
                     {
                         "id": "twinning_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "source": "sources/background/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
                         "domain": "core"
                     },
                     {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "source": "sources/background/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
                         "domain": "core"
                     },
                     {
                         "id": "bto_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "source": "sources/background/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
                         "domain": "core"
                     },
                     {
@@ -2338,19 +2275,19 @@
                     {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "source": "sources/background/background/Workstation/Qwens workstation background.txt",
                         "domain": "core"
                     },
                     {
                         "id": "bto_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "source": "sources/background/background/Workstation/Qwens workstation background.txt",
                         "domain": "core"
                     },
                     {
                         "id": "drad_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "source": "sources/background/background/Workstation/Qwens workstation background.txt",
                         "domain": "core"
                     },
                     {
@@ -2359,97 +2296,15 @@
                         "article": 94
                     },
                     {
-                        "id": "twinning_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
-                        "domain": "core"
-                    },
-                    {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "bto_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "source": "sources/background/background/Workstation/Deepseek workstation background Further development.txt",
                         "domain": "core"
                     },
                     {
                         "id": "drad_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "quantum_apotheosis",
-                        "confidence": 0.99,
-                        "article": 94
-                    },
-                    {
-                        "id": "bto_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "twinning_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "aro_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "bto_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "drad_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "quantum_apotheosis",
-                        "confidence": 0.99,
-                        "article": 94
-                    },
-                    {
-                        "id": "bto_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "twinning_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "aro_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "bto_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "drad_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "source": "sources/background/background/Workstation/Deepseek workstation background Further development.txt",
                         "domain": "core"
                     },
                     {
@@ -2460,25 +2315,19 @@
                     {
                         "id": "twinning_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation Further.txt",
                         "domain": "core"
                     },
                     {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation Further.txt",
                         "domain": "core"
                     },
                     {
                         "id": "bto_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
-                        "domain": "core"
-                    },
-                    {
-                        "id": "drad_pattern",
-                        "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation Further.txt",
                         "domain": "core"
                     },
                     {
@@ -2489,13 +2338,19 @@
                     {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "source": "sources/background/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek workstation background.txt",
                         "domain": "core"
                     },
                     {
                         "id": "drad_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "source": "sources/background/background/Workstation/Deepseek workstation background.txt",
                         "domain": "core"
                     },
                     {
@@ -2506,25 +2361,170 @@
                     {
                         "id": "twinning_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "source": "sources/background/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
                         "domain": "core"
                     },
                     {
                         "id": "aro_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "source": "sources/background/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
                         "domain": "core"
                     },
                     {
                         "id": "bto_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "source": "sources/background/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
                         "domain": "core"
                     },
                     {
                         "id": "drad_pattern",
                         "confidence": 0.95,
-                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "source": "sources/background/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Build on and enhance the plan; jule.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
                         "domain": "core"
                     },
                     {

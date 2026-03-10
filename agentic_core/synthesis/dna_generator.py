@@ -30,29 +30,93 @@ It represents the final convergence of 100 generations of evolutionary history (
 
 ## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
 """
-        for i in range(1, 47):
-            content += f"**ARTICLE {i}: CORE SURVIVAL PARAMETER {i}**\nMandate for foundational metabolic and systemic integrity.\n\n"
+        # Filling Section I with realistic mandates
+        section1_mandates = [
+            "Molecular integrity of the p53-Ubiquitin-HSP triad must be maintained.",
+            "ATP synthesis rates must be monitored at the millisecond scale.",
+            "Redox potential thresholds govern all metabolic state transitions.",
+            "Immune checkpoints enforce systemic safety before execution.",
+            "Nervous system reflex arcs prioritize critical latency over deep deliberation.",
+            "Digestive resource reclamation must follow a zero-waste policy.",
+            "Aging processes (telomere shortening) must be logged for long-term health.",
+            "Apoptosis triggers are mandatory for non-functional components.",
+            "HSP ATPase rates shall scale with system thermal load.",
+            "Ubiquitin half-life determines the recycling frequency of data artifacts.",
+            "Allostatic load must be balanced across all molecular layers.",
+            "Quorum sensing regulates the density of agent populations.",
+            "Lamarckian registries store inheritable traits across generations.",
+            "Conserved synteny preserves core architectural gene ordering.",
+            "Genomic regulatory blocks (GRBs) control expression patterns.",
+            "Transcription engines must implement error-correction protocols.",
+            "Translation fidelity is gated by ribosomal performance metrics.",
+            "Plasmid exchange enables horizontal trait transfer between sub-reactors.",
+            "Epigenetic plasticity allows adaptation without core DNA alteration.",
+            "Homeostasis is the primary objective of the predictive engine.",
+            "Thermal regulation triggers cooling protocols at defined thresholds.",
+            "Hypoxia simulation tests system resilience under resource scarcity.",
+            "Oxidative stress markers guide the scaling of the immune response.",
+            "Phagocytosis protocols reclaim resources from decommissioned agents.",
+            "Cytokine signaling coordinates cross-layer stress responses.",
+            "Lymphatic drainage clears stale memory artifacts regularly.",
+            "Stem cell reserves enable the regeneration of damaged modules.",
+            "Neuroplasticity governs the rewiring of the strategic cortex.",
+            "Astrocyte-mediated homeostasis maintains synaptic stability.",
+            "Glial support layers provide nutrient distribution to the cortex.",
+            "Synaptic scaling prevents runaway excitation in the neural net.",
+            "Long-term potentiation (LTP) strengthens successful strategic paths.",
+            "Long-term depression (LTD) prunes unsuccessful or obsolete paths.",
+            "Myelination increases the speed of critical signaling pathways.",
+            "Refractory periods prevent cognitive loops and deadlocks.",
+            "Excitatory signals are balanced by inhibitory governance gates.",
+            "Neuromodulation (Dopamine/Serotonin analogues) regulates drive.",
+            "Circadian rhythms schedule maintenance and optimization cycles.",
+            "Sleep cycles (REM/Deep) consolidate memory and clear cache.",
+            "Proprioceptive feedback monitors the internal state of the fabric.",
+            "Chemosensation detects anomalous patterns in the signaling stream.",
+            "Active sensing strategies maximize information gain per cycle.",
+            "Sensory binding merges multi-modal inputs into a unified state.",
+            "Attention mechanisms filter the global workspace for relevance.",
+            "The immune system has absolute veto power over all execution layers.",
+            "Strategic cortex manages high-level objective decomposition."
+        ]
+
+        for i, mandate in enumerate(section1_mandates, 1):
+            content += get_article(i, f"SURVIVAL PARAMETER {i}", mandate)
 
         content += get_article(47, "SUPREME PRIORITY (SURVIVAL INSTINCT HIERARCHY)",
                                f"The organism must prioritize resource allocation in the following absolute order: **IMMUNE SYSTEM > NERVOUS SYSTEM > DIGESTIVE SYSTEM > AGING**. Current ATP Level Target: {params.get('hsp_atp_rate', 5.0)} ATP/s.")
 
         content += "\n## ⚙️ SECTION II: OPERATIONAL MANDATES (Articles 48-63)\n"
-        for i in range(48, 60):
-             content += f"**ARTICLE {i}: OPERATIONAL PROTOCOL {i}**\nStandard operational mandate for system stability.\n\n"
+        section2_mandates = [
+            "Idempotency is required for all state-modifying operations.",
+            "Deterministic execution must be verifiable via cryptographic hashes.",
+            "Audit trails are immutable and stored in the UEG Ledger.",
+            "API sovereignty mandates zero-cost caching and rate-limiting.",
+            "Universal provenance identifies the origin of all data artifacts.",
+            "ScholarlyObject standards govern the serialization of knowledge.",
+            "CRDT-based synchronization ensures consistency in multi-user modes.",
+            "Strong eventual consistency is the minimum standard for distribution.",
+            "Plan-Then-Execute protocol is mandatory for all major reconfigurations.",
+            "Rollback controllers must be initialized before any transition starts.",
+            "Fidelity-gated validation precedes every production deployment.",
+            "Zero-cost infrastructure is the default operational environment."
+        ]
+        for i, mandate in enumerate(section2_mandates, 48):
+             content += get_article(i, f"OPERATIONAL PROTOCOL {i}", mandate)
 
-        content += get_article(60, "NO-STUBS MANDATE", "All code within the core hierarchy must contain functional logic; stubs and placeholders are strictly prohibited.")
+        content += get_article(60, "NO-STUBS MANDATE", "All code within the core hierarchy must contain functional logic; stubs and placeholders are strictly prohibited. Every function must produce a verifiable output aligned with constitutional goals.")
 
         for i in range(61, 64):
-             content += f"**ARTICLE {i}: OPERATIONAL PROTOCOL {i}**\nStandard operational mandate for system stability.\n\n"
+             content += f"**ARTICLE {i}: OPERATIONAL PROTOCOL {i}**\nMandate for continued system operational excellence.\n\n"
 
         content += "\n## 🔄 SECTION III: TRANSITION & MIGRATION (Articles 64-77)\n"
         for i in range(64, 73):
-             content += f"**ARTICLE {i}: TRANSITION PROTOCOL {i}**\nMandate for safe state transition.\n\n"
+             content += f"**ARTICLE {i}: TRANSITION PROTOCOL {i}**\nMandate for safe and graduated state transition.\n\n"
 
-        content += get_article(73, "GRAND SYNTHESIS ENGINE", "The system must maintain an operational Grand Synthesis Engine to resolve historical conflicts and extract optimal traits.")
+        content += get_article(73, "GRAND SYNTHESIS ENGINE", "The system must maintain an operational Grand Synthesis Engine to resolve historical conflicts and extract optimal traits from all 100 generations of evolution.")
 
         for i in range(74, 77):
-             content += f"**ARTICLE {i}: TRANSITION PROTOCOL {i}**\nMandate for safe state transition.\n\n"
+             content += f"**ARTICLE {i}: TRANSITION PROTOCOL {i}**\nMandate for safe and graduated state transition.\n\n"
 
         content += get_article(77, "GRADUATED BALANCED TRANSITION", "All version migrations must follow a graduated protocol with fidelity-gated validation (Target Fidelity ≥99.2%).")
 
@@ -60,17 +124,17 @@ It represents the final convergence of 100 generations of evolutionary history (
         content += get_article(78, "MINIMAX ADVERSARIAL OPTIMIZATION", f"Decision cycles must evaluate worst-case strategy outcomes to ensure adversarial robustness. (Threshold: {data.get('cognition', {}).get('minimax_threshold', 0.92)})")
 
         for i in range(79, 81):
-             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter.\n\n"
+             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter for strategic excellence.\n\n"
 
         content += get_article(81, "DYNAMIC ADAPTIVE BALANCED APPROACH (DABA)", "Resource allocation must dynamically adjust between stability and innovation based on system confidence scores.")
 
         for i in range(82, 85):
-             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter.\n\n"
+             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter for strategic excellence.\n\n"
 
         content += get_article(85, "HYBRID META-LEARNING ORACLE", "The system shall maintain runtime-switchable optimization between Bayesian and Reinforcement Learning.")
 
         for i in range(86, 93):
-             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter.\n\n"
+             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter for strategic excellence.\n\n"
 
         content += "\n## 📚 SECTION V: DOMAIN INTEGRATIONS (Articles 93-113)\n"
         content += get_article(93, "APOTHEOSIS OF SYNERGY MANDATE", "The system shall operate as a unified, self-aware entity that transcends the sum of its components. All knowledge pillars must be simultaneously active and mutually reinforcing, achieving an overall biomimetic fidelity ≥98%.")
@@ -114,7 +178,7 @@ It represents the final convergence of 100 generations of evolutionary history (
         with open(path, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        core_path = f"agentic_core/constitution/CONSTITUTION_v{version}.md"
+        core_path = f"agentic_core/constitution/CONSTITUTION_v100.0.0.md"
         os.makedirs(os.path.dirname(core_path), exist_ok=True)
         with open(core_path, 'w', encoding='utf-8') as f:
             f.write(content)
