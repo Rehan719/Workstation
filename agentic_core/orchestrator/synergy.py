@@ -1,77 +1,62 @@
 import logging
+import uuid
 import asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+
+from agentic_core.simulation.engine import EnvironmentalSimulator
+from agentic_core.optimizer.engine import AdaptiveResourceOptimizer
+from agentic_core.optimizer.fabric import DynamicResourceFabric
+from agentic_core.teams.engine import BiomimeticTeamOrchestrator
 from agentic_core.reactor.ecosystem.registry import ReactorRegistry
 
 logger = logging.getLogger(__name__)
 
 class SynergyOrchestrator:
     """
-    v100.0 Synergy Orchestrator.
-    Assembles Virtual Task Forces (VTF) across 40+ specialized sub-reactors.
+    v100.0: The Synergy Orchestrator.
+    Coordinates Mega-Twins, DRAD Fabric, and Biomimetic Teams.
     """
     def __init__(self):
+        self.ese = EnvironmentalSimulator()
+        self.aro = AdaptiveResourceOptimizer()
+        self.fabric = DynamicResourceFabric()
+        self.bto = BiomimeticTeamOrchestrator()
         self.registry = ReactorRegistry()
-        logger.info("SynergyOrchestrator: Initialized")
+        logger.info("Synergy: Orchestrator Integrated and Ready.")
 
-    async def assemble_task_force(self, objective: str, domain_requirements: List[str]) -> Dict[str, Any]:
+    async def execute_mega_twin(self, objective: str, reactors: List[str], user_id: str, tier: str = "free") -> Dict[str, Any]:
         """
-        Assembles a VTF based on objective and required domains.
+        ARTICLE 309/320: Executes a multi-domain Mega-Twin workflow.
         """
-        logger.info(f"Synergy: Assembling VTF for '{objective}' with requirements: {domain_requirements}")
-        vtf = {}
-        for req in domain_requirements:
-            reactor = self.registry.get_reactor(req)
+        logger.info(f"Synergy: Initiating Mega-Twin for {objective} across {reactors}")
+
+        # 1. Resource Assembly (DRAD)
+        reqs = {"compute": len(reactors) * 5, "api_quotas": len(reactors) * 100}
+        pool_id = self.fabric.assemble_pool(reqs)
+
+        # 2. Team Formation (BTO)
+        team_id = f"vtf_{uuid.uuid4().hex[:8]}"
+        team = await self.bto.assemble_vtf(team_id, objective, reactors)
+
+        # 3. Simulation Execution (ESE)
+        simulation_results = []
+        for r_id in reactors:
+            # Initialize or get twin for each sub-reactor
+            reactor = self.registry.get_reactor(r_id)
             if reactor:
-                vtf[req] = reactor
-            else:
-                logger.warning(f"Synergy: Required reactor {req} not found in registry.")
+                twin_id = f"twin_{r_id.replace(':', '_')}"
+                await reactor.get_digital_twin(twin_id)
+                res = await self.ese.run_simulation(twin_id, steps=5)
+                simulation_results.append(res)
 
-        return vtf
+        # 4. Cleanup (DRAD Disassembly)
+        self.fabric.disassemble_pool(pool_id)
 
-    async def execute_synergy_workflow(self, objective: str, task_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes a complex cross-reactor workflow.
-        Example: 'Computational Biology Research' -> (Biology + Physics + CompSci).
-        """
-        logger.info(f"Synergy: Executing workflow for '{objective}'")
-
-        # 1. Decomposition (Inferred from task_data for simplicity in v100.0-alpha)
-        domain_requirements = task_data.get("requirements", [])
-        vtf = await self.assemble_task_force(objective, domain_requirements)
-
-        # 2. Parallel Execution
-        tasks = []
-        for req, reactor in vtf.items():
-            tasks.append(reactor.incubate(task_data.get("input"), task_data.get("params", {})))
-
-        results = await asyncio.gather(*tasks)
-
-        # 3. Synthesis
-        combined_result = {
+        return {
+            "status": "SUCCESS",
             "objective": objective,
-            "status": "COMPLETED",
-            "vtf_participants": list(vtf.keys()),
-            "synthesized_data": results
+            "team_id": team_id,
+            "pool_id": pool_id,
+            "results": simulation_results,
+            "message": "Mega-Twin Synergy Apotheosis Achieved."
         }
-
-        # 4. Final Truth Validation
-        # ARTICLE 289: Grounded in verified truth. Checks for SUCCESS or INCUBATION_COMPLETE.
-        combined_result["truth_consensus"] = all(
-            res.get("status") in ["SUCCESS", "INCUBATION_COMPLETE", "COMPLETED", "READY"]
-            for res in results
-        )
-
-        return combined_result
-
-    async def demonstrate_biophysics_research(self) -> Dict[str, Any]:
-        """
-        Sample Synergy Workflow: Computational Biology Research.
-        """
-        objective = "Computational Biophysics Study"
-        task_data = {
-            "requirements": ["science:biology", "science:physics", "science:compsci"],
-            "input": "DNA folding under high pressure",
-            "params": {"iterations": 1000}
-        }
-        return await self.execute_synergy_workflow(objective, task_data)

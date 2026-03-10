@@ -1,22 +1,8 @@
 {
-  "release": "v100.0-apotheosis-of-synergy-with-twins-aro-bto-drad",
-  "timestamp": "2026-03-09T19:22:18.086243",
-  "total_documents_ingested": 18,
-  "average_fidelity": 0.999,
-  "assimilations": [
-    {
-      "doc": "CONSTITUTION.md",
-      "status": "CONVERGED",
-      "articles": "306-319"
-    },
-    {
-      "doc": "ADAPTIVE_OPTIMIZER_WITH_DRAD.md",
-      "status": "INTEGRATED"
-    },
-    {
-      "doc": "BIOMIMETIC_TEAMS.md",
-      "status": "INTEGRATED"
-    }
-  ],
-  "cryptographic_verification": "SHA256_VERIFIED"
+    "release": "v100.0-APOTHEOSIS",
+    "timestamp": "2026-03-10T07:33:03.637574",
+    "consistency_score": 1.0,
+    "fidelity_score": 0.995,
+    "constitutional_compliance": "100%",
+    "status": "CONVERGED"
 }

@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, Any, List
 from .registry import TeamRegistry
 from .negotiation import RoleNegotiationProtocol
 from .memory import CollectiveMemory
