@@ -26,9 +26,6 @@ AI interpretation (Tafsir) is strictly hierarchical: (1) Quran, (2) Hadith, (3) 
 **ARTICLE 76: SURVIVAL INSTINCT HIERARCHY (RELIGIOUS)**
 Existential threat priority: (1) Sacred text integrity, (2) Scholar Board authority, (3) User spiritual records.
 
-**ARTICLE 77: EMERGENCY CONSTITUTIONAL OVERRIDE**
-The Scholar Governance Board may invoke Emergency Override with 2/3 board approval.
-
 ## 🧠 SECTION IV: ADVANCED COGNITION (Articles 78-120)
 **ARTICLE 78: MINIMAX ADVERSARIAL OPTIMIZATION**
 Decision cycles must evaluate worst-case strategy outcomes.
@@ -43,14 +40,7 @@ The Workstation shall operate as a sovereign commercial organism with autonomous
 **ARTICLE 170: SELF-DEVELOPMENT SOVEREIGNTY**
 The system shall possess the capability for planned self-development through controlled genomic evolution.
 
-## 🧬 SECTION VI: GENOMIC EVOLUTION (Articles 171-235)
-**ARTICLE 171: GENOMIC ARCHITECTURE MANDATE**
-Explicit biomimicked genome architecture with Genomic Regulatory Blocks (GRBs).
-
-**ARTICLE 200: EVOLUTIONARY INCUBATOR MANDATE**
-The system shall operate a petri dish simulation incubator for digital organism populations.
-
-## 🏢 SECTION VII: RELIGIOUS DOMAIN (Articles 236-247)
+## 🏢 SECTION VI: RELIGIOUS DOMAIN (Articles 236-247)
 **ARTICLE 236: QURANIC EDUCATION PLATFORM MANDATE**
 The platform exists to facilitate Quranic education globally, striving to seek the pleasure of Allah SWT.
 
@@ -60,7 +50,7 @@ The Scholar Board has binding veto power over all religious content and operatio
 **ARTICLE 247: DUAL-METRIC GOVERNANCE**
 The system shall run spiritual KPIs (Tazkiyah Score) and business KPIs in parallel.
 
-## 🌌 SECTION VIII: TRUTH & OMNI-CONVERGENCE (Articles 248-297)
+## 🌌 SECTION VII: TRUTH & OMNI-CONVERGENCE (Articles 248-297)
 **ARTICLE 289: THE TRUTH FOUNDATION (AL-HAQQ)**
 Every system operation must be grounded in verified truth.
 
@@ -70,73 +60,80 @@ Decision-making incorporates sincerity (Ikhlas), honesty (Sidq), and integrity (
 **ARTICLE 297: OMNI-CONVERGENCE APOTHEOSIS**
 Codifies the absolute realization of one hundred generations of evolution.
 
-## 🧬 SECTION IX: REACTOR ECOSYSTEM EXPANSION (Articles 298-305)
-**ARTICLE 298: REACTOR ECOSYSTEM EXPANSION**
-Mandates the decomposition of primary reactors into 50+ specialized sub-reactors with deep domain expertise.
+## 🧬 SECTION VIII: REACTOR ECOSYSTEM MANDATES (Articles 298-302)
+**ARTICLE 298: SCIENTIFIC RESEARCH REACTOR ECOSYSTEM MANDATE**
+Maintain specialized scientific sub-reactors with full generative, simulation, and digital twinning capabilities.
 
-**ARTICLE 299: DIGITAL TWINNING MANDATE**
-Requires all sub-reactors to maintain high-fidelity digital twins (≥95% scientific, ≥90% social) for predictive simulation.
+**ARTICLE 299: RELIGIOUS SCHOLARSHIP REACTOR ECOSYSTEM MANDATE**
+Maintain specialized religious sub-reactors with truth-validation and digital twinning.
 
-**ARTICLE 300: ENVIRONMENTAL SIMULATION ENGINE**
-Establishes a unified engine (ESE) for running complex, multi-variable environmental simulations across all domains.
+**ARTICLE 300: LEGAL DOCUMENT REACTOR ECOSYSTEM MANDATE**
+Maintain specialized legal sub-reactors integrated with live legal databases and digital twinning.
 
-**ARTICLE 301: ADAPTIVE RESOURCE OPTIMIZATION**
-Mandates dynamic allocation and release of resources based on real-time user needs and project specifications.
+**ARTICLE 301: CAREER DEVELOPMENT REACTOR ECOSYSTEM MANDATE**
+Maintain specialized career sub-reactors integrated with job boards and digital twinning.
 
-**ARTICLE 302: DYNAMIC ASSEMBLE/DISASSEMBLE**
-Codifies the protocol for fluidly forming and dissolving agent teams and resource clusters in <2 seconds.
+**ARTICLE 302: EDUCATION REACTOR ECOSYSTEM MANDATE**
+Maintain specialized educational sub-reactors aligned with standards and possessing digital twinning.
 
-**ARTICLE 303: BIOMIMETIC TEAM DYNAMICS**
-Requires agent collaborations to mimic human expert teamwork, including debate, consensus, and emergent problem-solving.
+## 🌌 SECTION IX: DIGITAL TWINNING & SIMULATION (Articles 303-307)
+**ARTICLE 303: DIGITAL TWINNING MANDATE**
+Maintain a unified Environmental Simulator Engine for creating, managing, and evolving high-fidelity digital twins.
 
-**ARTICLE 304: SPECIALIZED EXPERT AGENTS**
-Mandates the creation of domain-specific, highly trained AI agents for every sub-reactor niche.
+**ARTICLE 304: DOMAIN-SPECIFIC TWIN CAPABILITIES**
+Each domain reactor ecosystem shall include sub-reactors specialized in creating domain-relevant digital twins.
 
-**ARTICLE 305: AI CEO SUPERVISION**
-Reinforces the AI CEO's role as the ultimate supervisor of all multidisciplinary teams and resource flows.
+**ARTICLE 305: TWIN FIDELITY MANDATE**
+All digital twins must achieve fidelity ≥0.95 (scientific) or ≥0.90 (social) when validated against real-world data.
 
-## ⚙️ SECTION X: OPERATION & GOVERNANCE (Articles 306-319)
-**ARTICLE 306: ZERO-COST INVIOLABILITY**
-Reaffirms that all free-tier operations must remain zero-cost through aggressive optimization and resource pooling.
+**ARTICLE 306: CROSS-DOMAIN TWIN SYNERGY MANDATE**
+The Synergy Orchestrator shall enable the creation of mega-twins integrating twins from multiple domains.
 
-**ARTICLE 307: CONTINUOUS IMPROVEMENT**
-Requires continuous improvement loops using feedback and validation against real-world data.
+**ARTICLE 307: TWIN LIFECYCLE GOVERNANCE**
+Digital twins shall be subject to the same truth-based survival instincts and constitutional oversight.
 
-**ARTICLE 308: SCIENTIFIC REACTOR MANDATE**
-Decomposition of Science into Physics, Chemistry, Biology, Neuroscience, Engineering, Mathematics, Environmental, Astronomy, Materials, and Computer Science.
+## ⚙️ SECTION X: ADAPTIVE RESOURCE OPTIMIZATION (Articles 308-310)
+**ARTICLE 308: ADAPTIVE RESOURCE OPTIMIZATION MANDATE**
+Maintain an Adaptive Resource Optimizer dynamically allocating resources based on user context and demand.
 
-**ARTICLE 309: RELIGIOUS REACTOR MANDATE**
-Expansion of Religion into Quranic Studies, Hadith, Fiqh, Aqidah, Sirah, Qira'at, Dawah, Islamic Finance, History, and Tazkiyah.
+**ARTICLE 309: PERSONALIZATION ENGINE MANDATE**
+Provide a personalization engine that adapts interfaces, recommendations, and resources to individual user profiles.
 
-**ARTICLE 310: LEGAL REACTOR MANDATE**
-Sub-reactors for Contract, Corporate, IP, Litigation, Regulatory, Tax, Employment, International, Family, and Criminal law.
+**ARTICLE 310: DOMAIN-SPECIFIC OPTIMIZATION MANDATE**
+Each reactor ecosystem shall be tuned to its domain's unique resource characteristics.
 
-**ARTICLE 311: EMPLOYMENT REACTOR MANDATE**
-Specialization in Resume, Cover Letter, LinkedIn, Interview, Career Path, Job Search, Skill Dev, Personal Branding, entrepreneurship, and remote work.
+## 🤖 SECTION XI: BIOMIMETIC TEAM DYNAMICS (Articles 311-313)
+**ARTICLE 311: BIOMIMETIC TEAM DYNAMICS MANDATE**
+Enable virtual task forces that mimic the emergent behaviours and collaboration patterns of human teams.
 
-**ARTICLE 312: EDUCATION REACTOR MANDATE**
-Reactors for K-12, Higher Ed, Vocational, Language, STEM, Humanities, Special Ed, Teacher Support, Policy, and Lifelong learning.
+**ARTICLE 312: TEAM FORMATION AND ORCHESTRATION MANDATE**
+The Biomimetic Team Orchestrator shall proactively form teams when complex, multi-domain problems are detected.
 
-**ARTICLE 313: TRUTH-INFUSED SIMULATION GOVERNANCE**
-All simulations and digital twins must be vetted by the TruthValidator to prevent hallucinatory outcomes.
+**ARTICLE 313: COLLECTIVE INTELLIGENCE MANDATE**
+Virtual task forces shall retain and propagate successful strategies across the ecosystem, building a societal memory.
 
-**ARTICLE 314: BIOMIMETIC COLLECTIVE INTELLIGENCE**
-Virtual task forces are mandated to maintain collective memory via the Conscious Entity's knowledge graph.
+## 🧱 SECTION XII: DYNAMIC RESOURCE FABRIC (Articles 314-317)
+**ARTICLE 314: DYNAMIC RESOURCE ASSEMBLY MANDATE**
+Maintain a Dynamic Resource Fabric enabling on-demand assembly and disassembly of resource pools.
 
-**ARTICLE 315: RESOURCE ASSEMBLY LANGUAGE (RAL) COMPLIANCE**
-All resource requests must be formulated in verified RAL JSON, ensuring auditable provisioning.
+**ARTICLE 315: RESOURCE ASSEMBLY LANGUAGE (RAL) MANDATE**
+Provide a declarative Resource Assembly Language allowing users and agents to specify resource requirements.
 
-**ARTICLE 316: SCHOLAR-GATED SIMULATION VALIDATION**
-Religious domain simulations below scholar-defined confidence thresholds must be paused for human review.
+**ARTICLE 316: RESOURCE REUSABILITY AND ZERO-WASTE MANDATE**
+All resources shall be designed for maximum reusability; idle resources automatically reclaimed.
 
-**ARTICLE 317: DYNAMIC VTF ROLE NEGOTIATION**
-Agents must autonomously negotiate roles based on real-time capability assessment and workload.
+**ARTICLE 317: AI CEO OVERSIGHT OF RESOURCE ASSEMBLY**
+The AI CEO shall have ultimate authority over all resource assembly and disassembly operations.
 
-**ARTICLE 318: DYNAMIC RESOURCE FABRIC**
-Codifies the DRAD fabric as a core architectural component with supreme authority over resource assembly.
+## ✨ SECTION XIII: CONTINUOUS EVOLUTION & EXCELLENCE (Articles 318-320)
+**ARTICLE 318: CONTINUOUS EVOLUTION OF REACTOR ECOSYSTEMS**
+Each reactor ecosystem shall undergo continuous self-evolution based on usage, performance, and emerging needs.
 
-**ARTICLE 319: SOVEREIGN OWNERSHIP**
-Reaffirms all outputs, agents, and resources are owned by the Virtual Sovereign Business Entity.
+**ARTICLE 319: ZERO-COST INVIOLABILITY MANDATE**
+All core components must operate on free-tier infrastructure by default, with transparent monetization only for premium features.
+
+**ARTICLE 320: ENGINEERING EXCELLENCE MANDATE**
+Every component shall be developed to the highest standards of correctness, performance, and maintainability.
 
 ---
 *Codified via Grand Synthesis Engine v100.0.0*
