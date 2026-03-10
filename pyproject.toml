@@ -5,7 +5,7 @@ packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "TRANSCENDENT: Unified Transcendent AI Workstation with ninety-nine generations of evolutionary lineage."
+description = "APOTHEOSIS: Unified Sovereign Digital Organism with one hundred generations of evolutionary lineage and Quadruple-Engine Integration."
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -45,6 +45,8 @@ z3-solver = "^4.13.0.0"
 sympy = "^1.12"
 qiskit = "^1.1.0"
 pennylane = "^0.36.0"
+deap = "^1.4.3"
+httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
