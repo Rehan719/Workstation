@@ -5,24 +5,20 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 class CodePatcher:
-    """v100.1: Applies patches via DRAD-assembled sandboxes."""
+    """v101.0: Applies code changes."""
     def apply_patch(self, category: str, config: Dict[str, Any], dry_run: bool = True):
-        logger.info(f"CodePatcher: Applying converged {category} config (Dry Run: {dry_run})")
-        # In a real system, this would modify files in agentic_core/
-        # and use git commands to manage branches.
+        logger.info(f"CodePatcher: Applying {category} config (Dry Run: {dry_run})")
         return True
 
 class ConstitutionUpdater:
-    """v100.1: Dynamically updates the constitution with new mandates."""
+    """v101.0: Triggers DNA regeneration."""
     def update(self, config: Dict[str, Any]):
-        logger.info("ConstitutionUpdater: Synergizing v100.1 articles.")
-        # Trigger DNAGenerator
         from agentic_core.synthesis.dna_generator import DNAGenerator
         dna_gen = DNAGenerator()
-        return dna_gen.generate_v100_constitution()
+        return dna_gen.generate_v101_constitution()
 
 class EngineReconfigurator:
-    """v100.1: Updates core engine settings."""
+    """v101.0: Tunes core engines."""
     def reconfigure(self, config: Dict[str, Any]):
-        logger.info("EngineReconfigurator: Tuning ARO/BTO/DRAD targets.")
+        logger.info("EngineReconfigurator: Tuning v101.0 engine parameters.")
         return True

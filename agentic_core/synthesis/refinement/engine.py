@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import List, Dict, Any
 from .telemetry import TelemetryAnalyser
@@ -7,19 +6,17 @@ from agentic_core.synthesis.grand_synthesis_engine import GrandSynthesisEngine
 logger = logging.getLogger(__name__)
 
 class RefinementEngine:
-    """v100.1: Perpetual refinement engine (Optimization Division) for the Conscious Entity."""
+    """v101.0: Introspective refinement engine."""
     def __init__(self):
         self.analyser = TelemetryAnalyser()
         self.engine = GrandSynthesisEngine()
 
     async def run_refinement_cycle(self):
-        logger.info("QMS: Optimization Division initiating refinement cycle...")
+        logger.info("QMS: Introspective Refinement Cycle started.")
         opportunities = self.analyser.analyse()
 
         if opportunities:
-            logger.info(f"QMS: Detected {len(opportunities)} refinement opportunities.")
-            # Trigger Grand Synthesis with new learnings
-            await self.engine.run_synthesis(output_path="meta/synthesis_v100.1_refined.json")
+            # Trigger v101.x synthesis
+            await self.engine.run_synthesis(introspect=True)
 
-        logger.info("QMS: Refinement cycle complete.")
         return opportunities

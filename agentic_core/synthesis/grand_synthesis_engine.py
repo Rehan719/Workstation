@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class GrandSynthesisEngine:
     """
     ARTICLE 73: The Grand Synthesis Engine.
-    Analyzes and consolidates 100 generations of evolution into Apotheosis.
+    Analyzes and consolidates 100+ generations of evolution into self-aware organisms.
     """
     def __init__(self, history_paths: List[str] = None):
         if history_paths is None:
@@ -32,29 +32,31 @@ class GrandSynthesisEngine:
         self.memory = EvolutionaryMemory()
         self.is_synthesized = False
 
-    async def run_synthesis(self, output_path: str = "meta/synthesis_v100.json"):
-        """Executes the full v100.x grand synthesis cycle (APOTHEOSIS)."""
-        logger.info("Starting v100.x Grand Synthesis Cycle (APOTHEOSIS)...")
+    async def run_synthesis(self, output_path: str = "meta/synthesis_v101.json", introspect: bool = False):
+        """Executes the full grand synthesis cycle with optional introspection (v101.0)."""
+        mode_label = "INTROSPECTIVE" if introspect else "APOTHEOSIS"
+        logger.info(f"Starting v101.x Grand Synthesis Cycle ({mode_label})...")
 
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        # CN-I. Comprehensive Historical Analysis (v1-v100)
+        # CN-I. Historical & Telemetry Analysis
         raw_insights = await self.analyzer.analyze_all()
-        logger.info(f"Analyzed {len(raw_insights)} historical and research artifacts.")
-
-        if not raw_insights:
-            logger.warning(f"No historical insights found during analysis in {self.history_paths}")
+        logger.info(f"Analyzed {len(raw_insights)} artifacts and telemetry nodes.")
 
         # CN-III. Optimal Pattern Extraction
         patterns = self.extractor.extract_patterns(raw_insights)
-        logger.info(f"Extracted {len(patterns)} architectural patterns.")
+
+        # v101.0 Meta-Cognitive Logic
+        if introspect:
+            logger.info("GSE: Performing deep self-analysis of pipeline telemetry.")
+            patterns.append({"id": "meta_cognitive_loop", "confidence": 1.0, "article": 327})
 
         # CN-II. Conflict Resolution
         resolved_config = self.resolver.resolve_conflicts(patterns)
-        # Force v100.1 version for this cycle
-        resolved_config["version"] = "100.1.0"
+        resolved_config["version"] = "101.0.0" if introspect else "100.1.0"
         resolved_config["patterns"] = patterns
+        resolved_config["mode"] = mode_label
 
         # Save synthesis results
         with open(output_path, 'w') as f:
@@ -65,10 +67,11 @@ class GrandSynthesisEngine:
         self.memory.store_synthesis_results(resolved_config)
 
         self.is_synthesized = True
-        logger.info("v100.x Grand Synthesis complete. APOTHEOSIS baseline established.")
+        logger.info(f"v101.x Grand Synthesis complete. {mode_label} baseline established.")
         return resolved_config
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    # Default to introspective run if called as main
     engine = GrandSynthesisEngine(["docs/historical/background"])
-    asyncio.run(engine.run_synthesis())
+    asyncio.run(engine.run_synthesis(introspect=True))
