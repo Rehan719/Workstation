@@ -118,6 +118,28 @@ Flawless synchronization between URL, Text, and Introspection threads.
 
     def generate_suite_v2(self, config: Dict[str, Any]):
         """ARTICLE 363: Generates the hyper-detailed v107.1/v109.0 documentation suite."""
+        logger.info("Generating v109.0 Detailed Documentation Suite (v2)...")
+
+        guides = {
+            "repo_owner_v2.md": self._get_repo_owner_v2_content(),
+            "developer_v2.md": self._get_developer_v2_content(),
+            "user_v2.md": self._get_user_v2_content(),
+            "platform_features_v2.md": self._get_features_v2_content(),
+            "background_v2.md": self._get_background_v2_content(),
+            "technical_whitepaper.md": self._get_whitepaper_content()
+        }
+
+        from agentic_core.enterprise.policy import PolicyCoE
+        policy = PolicyCoE()
+
+        for filename, content in guides.items():
+            path = os.path.join(self.output_dir, filename)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+            logger.info(f"Generated {path}")
+            policy.store_in_dcs(filename, content)
+
+        self._generate_onboarding_metadata()
 
     def _get_repo_owner_v2_content(self) -> str:
         return """# Expanded Repo Owner Manual - v109.0

@@ -14,9 +14,9 @@ import asyncio
 from agentic_core.orchestrator.conscious_organism_v99 import ConsciousOrganismV99_0
 
 # Article 284: Unified Product Interface Mandate
-st.set_page_config(page_title="Jules AI v100.0 Apotheosis Dashboard", layout="wide")
+st.set_page_config(page_title="Jules AI v111.0 Transcendent Dashboard", layout="wide")
 
-st.title("🧬 Jules AI v100.0: Apotheosis of Synergy")
+st.title("🧬 Jules AI v111.0: Transcendent Command Center")
 st.markdown("### Integrated Digital Reactor Ecosystem (Science, Religion, Law, Employment, Education)")
 
 if 'organism' not in st.session_state:
@@ -72,10 +72,10 @@ with col3:
             st.text_area("Mutated Prompt", latest['new_prompt'], height=150)
 
 st.divider()
-st.sidebar.header("System v99.0 Status")
+st.sidebar.header("System v111.0 Status")
 if hasattr(st.session_state.organism, 'agent_id'):
     st.sidebar.write(f"Agent ID: `{st.session_state.organism.agent_id}`")
-st.sidebar.write("Governance: `CONSTITUTION v100.0` (288 Articles)")
+st.sidebar.write("Governance: `CONSTITUTION v111.0` (380 Articles)")
 st.sidebar.write("Era: `TRANSCENDENT`")
 
 if st.session_state.history:
