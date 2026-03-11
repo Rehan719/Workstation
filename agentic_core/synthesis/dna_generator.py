@@ -23,6 +23,10 @@ It transforms the organism into a fully asynchronous agentic system capable of a
 The organism must prioritize resource allocation in the following absolute order:
 **IMMUNE SYSTEM > NERVOUS SYSTEM > DIGESTIVE SYSTEM > AGING**
 
+## ✅ SECTION XV: EXPERT QUALITY ASSURANCE (Articles 381-385)
+**ARTICLE 381: CODE QUALITY MANDATE**
+The system shall maintain the highest standards of code quality, ensuring correctness, security, performance, maintainability, and purpose alignment.
+
 ## 🔄 SECTION III: TRANSITION & MIGRATION (Articles 64-77)
 **ARTICLE 73: GRAND SYNTHESIS ENGINE**
 The system must maintain an operational Grand Synthesis Engine to resolve historical conflicts and extract optimal traits.
