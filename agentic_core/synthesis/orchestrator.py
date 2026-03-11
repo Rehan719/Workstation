@@ -9,7 +9,7 @@ from agentic_core.synthesis.refinement.engine import RefinementEngine
 logger = logging.getLogger(__name__)
 
 class PipelineOrchestrator:
-    """ARTICLE 321: v100.1 Infrastructure Orchestrator."""
+    """ARTICLE 321: v100.1 Infrastructure Orchestrator (Virtual Sovereign Business)."""
     def __init__(self):
         self.collator = CollationOrchestrator()
         self.converger = ConvergenceEngine()
@@ -29,7 +29,7 @@ class PipelineOrchestrator:
         await self.assimilator.assimilate_all(converged_configs)
 
         # 4. Refinement
-        await self.refiner.run_refinement()
+        await self.refiner.run_refinement_cycle()
 
         logger.info("v100.1 Meta-Evolution Cycle Complete.")
 

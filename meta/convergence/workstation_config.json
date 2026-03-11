@@ -2,14 +2,16 @@
     "category": "workstation",
     "version": "100.0.0",
     "variation": {
-        "file": "AI-Driven Quranic Education Platform - Developer Guide.txt",
-        "tag": "patch"
+        "file": "AI-Driven Quranic Education Platfor SAVED.txt",
+        "tag": "stable",
+        "confidence": 1.0
     },
+    "strategy": "NSGA-II_Optimized",
     "targets": {
         "fidelity": 0.995,
-        "waste": 0.04,
-        "team_health": 0.92,
-        "scale_up": 25
+        "waste": 0.03,
+        "team_health": 0.95,
+        "scale_up": 20
     },
     "validation": {
         "predicted_outcome": "stable",

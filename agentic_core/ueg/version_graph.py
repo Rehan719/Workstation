@@ -6,23 +6,25 @@ from typing import Dict, Any, List, Optional
 logger = logging.getLogger(__name__)
 
 class VersionGraph:
-    """ARTICLE 295: UEG Extension for Version-Variation Tracking."""
+    """ARTICLE 295/321: UEG Extension for Business Process Lineage."""
     def __init__(self, ueg_path: str = "meta/ueg_graph.json"):
         self.ueg_path = ueg_path
 
     def add_version_node(self, version_id: str, metadata: Dict[str, Any]):
-        """Adds a Version node to the graph."""
         self._add_node(version_id, "version", metadata)
 
     def add_variation_node(self, variation_id: str, version_id: str, metadata: Dict[str, Any]):
-        """Adds a Variation node and links it to a Version."""
         self._add_node(variation_id, "variation", metadata)
         self._add_edge(variation_id, version_id, "variation_of")
 
     def add_pipeline_run(self, run_id: str, stage: str, status: str):
-        """Logs a pipeline run (Collation, Convergence, etc.)."""
         metadata = {"stage": stage, "status": status, "timestamp": "2024-10-01T00:00:00"}
         self._add_node(run_id, "pipeline_run", metadata)
+
+    def add_audit_trail(self, audit_id: str, stage: str, results: Dict[str, Any]):
+        """Logs a QMS audit event."""
+        metadata = {"stage": stage, "results": results, "timestamp": "2024-10-01T00:00:00"}
+        self._add_node(audit_id, "audit_event", metadata)
 
     def _add_node(self, node_id: str, node_type: str, content: Dict[str, Any]):
         ueg = self._load_ueg()
