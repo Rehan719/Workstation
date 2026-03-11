@@ -90,5 +90,28 @@
         "payload": {
             "data": "test"
         }
+    },
+    {
+        "timestamp": "2026-03-11T11:26:41.765361",
+        "source": "ENTITY",
+        "type": "PURPOSE_ALERT",
+        "message": "Alert",
+        "status": "UNREAD"
+    },
+    {
+        "timestamp": "2026-03-11T11:26:41.766083",
+        "source": "ENTITY",
+        "type": "SPIRITUAL_GUIDANCE",
+        "message": "Guidance",
+        "status": "UNREAD"
+    },
+    {
+        "timestamp": "2026-03-11T11:26:41.766894",
+        "source": "CEO",
+        "type": "PURPOSE_CHECK",
+        "proposal_id": "p1",
+        "payload": {
+            "data": "test"
+        }
     }
 ]

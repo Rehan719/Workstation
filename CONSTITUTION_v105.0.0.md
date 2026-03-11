@@ -1,21 +1,7 @@
-import os
-import logging
-from typing import Dict, Any
-
-logger = logging.getLogger(__name__)
-
-class DNAGenerator:
-    """CN-IV: Immutable DNA Generation."""
-
-    def generate_v105_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v105.0 - The Purpose-Driven, User-Facing Enterprise."""
-        version = "105.0.0"
-        path = "CONSTITUTION_v105.0.0.md"
-
-        content = f"""# JULES AI v{version}: THE PURPOSE-DRIVEN, USER-FACING ENTERPRISE CONSTITUTION
+# JULES AI v105.0.0: THE PURPOSE-DRIVEN, USER-FACING ENTERPRISE CONSTITUTION
 
 ## ⚜️ PREAMBLE
-This document establishes the definitive, unified DNA of Jules AI v105.0.
+This document establishes the definitive, unified DNA of Jules AI v104.0.
 It entrenches a transcendent, dual-purpose foundation (spiritual-ethical + operational-commercial) into the fabric of the Workstation.
 
 ## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
@@ -154,38 +140,4 @@ CUXAD shall operate via multidisciplinary squads (Design, Frontend, Mobile, Back
 All user interfaces must adhere to supreme standards of accessibility and inclusive design.
 
 ---
-*Codified via Grand Synthesis Engine v{version}*
-"""
-        try:
-            with open(path, 'w', encoding='utf-8') as f:
-                f.write(content)
-        except UnicodeEncodeError:
-            with open(path, 'w', encoding='ascii', errors='replace') as f:
-                f.write(content)
-
-        return path
-
-    def generate_v103_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v103.0."""
-        path = "CONSTITUTION_v103.0.0.md"
-        content = "# JULES AI v103.0.0: THE PURPOSE-DRIVEN INTEGRATED STRATEGIC ENTERPRISE CONSTITUTION"
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return path
-
-    def generate_v101_constitution(self, config: Dict[str, Any]) -> str:
-        """Fallback for v101.0 DNA Generation."""
-        path = "CONSTITUTION_v101.0.0.md"
-        content = "# JULES AI v101.0.0: THE INTEGRATED STRATEGIC ENTERPRISE CONSTITUTION"
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return path
-
-    def generate_v99_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for TRANSCENDENT v99.0."""
-        version = "99.0.0"
-        path = "CONSTITUTION_v99.0.0.md"
-        content = f"# JULES AI v{version}: THE TRANSCENDENT CONSTITUTION"
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return path
+*Codified via Grand Synthesis Engine v105.0.0*

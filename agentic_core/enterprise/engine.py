@@ -52,11 +52,11 @@ class EnterpriseEvolutionEngine:
 
     def orchestrate_evolution(self, introspection_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Main E3 Orchestration loop (ARTICLE 342/346/344: C-Suite/IEMF/Transformation enabled):
+        Main E3 Orchestration loop (ARTICLE 342/346/344/350: C-Suite/IEMF/Transformation/CUXAD enabled):
         1. Unified Audit across BMS/QMS/UEG.
-        2. C-Suite Council & CoE Hub Reviews.
-        3. Performance & Structural Efficiency Analysis.
-        4. Strategic & Organizational Proposal Generation.
+        2. C-Suite Council & CoE Hub Reviews (including Product oversight).
+        3. Performance, Structural, and User-Experience Analysis.
+        4. Strategic, Organizational, and Product Proposal Generation.
         5. Trigger Grand Synthesis if needed.
         """
         logger.info("E3: Starting Enterprise Evolution Orchestration Cycle.")
@@ -69,7 +69,7 @@ class EnterpriseEvolutionEngine:
         introspection_data["c_suite_guidance"] = self.c_suite.gather_executive_council(introspection_data)
         introspection_data["coe_strategic_hub"] = self.coe_manager.synthesize_strategic_hub_input(introspection_data)
 
-        # 1. Performance & Structural Analysis (Article 344)
+        # 1. Performance, Structural & UX Analysis (Article 344/350)
         gaps = self._analyze_performance_gaps(introspection_data)
         struct_health = self.transformation_engine.analyze_structural_efficiency(introspection_data)
 

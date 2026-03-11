@@ -12,9 +12,15 @@ class IEMFIntegrator:
         self.systems = ["BMS", "QMS", "UEG"]
 
     def track_traceability(self, decision_id: str, source_id: str, article: str) -> bool:
-        """Links a decision to its originating source file and constitutional article (Article 346)."""
+        """Links a decision to its originating source file and constitutional article (Article 346/352)."""
         logger.info(f"IEMF Traceability: Decision {decision_id} -> Source {source_id} -> Article {article}")
         # Logic: In a real system, this updates the UEG graph database
+        return True
+
+    def track_product_release(self, release_id: str, squad_results: List[Dict[str, Any]]) -> bool:
+        """Traceability for product releases (Article 352)."""
+        logger.info(f"IEMF: Tracking product release {release_id} with multidisciplinary results.")
+        # Logic: Update DCS with release metadata
         return True
 
     def run_unified_audit(self) -> Dict[str, Any]:

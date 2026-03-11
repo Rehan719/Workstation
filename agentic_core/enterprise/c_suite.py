@@ -73,6 +73,26 @@ class ChiefOperatingOfficer(CSuiteExecutive):
             "bottlenecks": []
         }
 
+from .cuxad import CUXADTeam
+
+class ChiefProductOfficer(CSuiteExecutive):
+    def __init__(self):
+        super().__init__("CPO", "User experience and product roadmap")
+        self.cuxad = CUXADTeam()
+
+    def provide_strategic_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        logger.info("CPO: Refining user-facing strategy with CUXAD oversight.")
+        # Simulating active oversight of a feature release
+        feature = data.get("current_focus_feature", "UnifiedDashboard")
+        cuxad_status = self.cuxad.process_feature_release(feature)
+
+        return {
+            "role": "CPO",
+            "product_roadmap": ["Feature A", "Feature B", feature],
+            "user_satisfaction_target": 0.95,
+            "cuxad_active_release": cuxad_status
+        }
+
 class VirtualCSuite:
     """The Executive Council of Jules AI."""
     def __init__(self):
@@ -81,7 +101,8 @@ class VirtualCSuite:
             "CTO": ChiefTechnologyOfficer(),
             "CFO": ChiefFinancialOfficer(),
             "CMO": ChiefMissionOfficer(),
-            "COO": ChiefOperatingOfficer()
+            "COO": ChiefOperatingOfficer(),
+            "CPO": ChiefProductOfficer()
         }
 
     def gather_executive_council(self, telemetry: Dict[str, Any]) -> Dict[str, Any]:

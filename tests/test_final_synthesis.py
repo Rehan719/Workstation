@@ -9,6 +9,7 @@ from agentic_core.enterprise.c_suite import VirtualCSuite
 from agentic_core.enterprise.coe_manager import COEManager
 from agentic_core.enterprise.transformation_engine import TransformationEngine
 from agentic_core.enterprise.iemf import IEMFIntegrator
+from agentic_core.enterprise.cuxad import CUXADTeam
 
 class TestFinalSynthesis(unittest.TestCase):
     def test_purpose_evaluator(self):
@@ -64,6 +65,21 @@ class TestFinalSynthesis(unittest.TestCase):
         iemf = IEMFIntegrator()
         audit = iemf.run_unified_audit()
         self.assertEqual(audit["purpose_alignment_verification"], "PASSED")
+
+    def test_cuxad_collaboration(self):
+        team = CUXADTeam()
+        results = team.process_feature_release("UserOnboarding")
+        self.assertEqual(len(results), 4)
+        roles = [r["role"] for r in results]
+        self.assertIn("UXDesigner", roles)
+        self.assertIn("FrontendDeveloper", roles)
+
+    def test_cpo_oversight(self):
+        suite = VirtualCSuite()
+        report = suite.gather_executive_council({"current_focus_feature": "ProfilePage"})
+        cpo_data = report["CPO"]
+        self.assertIn("cuxad_active_release", cpo_data)
+        self.assertEqual(cpo_data["cuxad_active_release"][0]["task"], "Prototype ProfilePage")
 
     def test_vga_m7(self):
         vga = VGAEngine()
