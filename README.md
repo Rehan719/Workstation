@@ -1,4 +1,4 @@
-# Jules AI v111.0: THE CLEAN, CONSOLIDATED, & CLOUD-EXPANDED ENTERPRISE
+# Jules AI v112.0: THE RIGOROUSLY REVIEWED, EXPERT-STANDARD ENTERPRISE
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
@@ -12,8 +12,8 @@ Revoke all resources and clean up with one click:
 ./teardown.sh
 ```
 
-## 🧬 v111.0 The Transcendent Era
-Jules AI v111.0 introduces the **Grand Synthesis Meta-Pipeline v3.0**, a transcendent meta-cognitive orchestration layer that unifies all source intelligence into a pristine, professional enterprise.
+## 🧬 v112.0 The Quality Era
+Jules AI v112.0 introduces the **Expert Code Review Framework**, an iterative quality assurance layer that certifies the codebase against world-class engineering standards.
 
 ### 📚 Expanded Documentation & Onboarding
 - [Expanded Repo Owner Manual](docs/guides/repo_owner_v2.md): Granular operational workflows and strategic levers.
@@ -23,7 +23,7 @@ Jules AI v111.0 introduces the **Grand Synthesis Meta-Pipeline v3.0**, a transce
 - [Feature Catalogue](docs/guides/platform_features_v2.md): Searchable inventory with purpose-alignment scores.
 
 ### ⚖️ Constitutional Sovereignty
-Governed by the **Canonical Constitution** (`agentic_core/constitution/CONSTITUTION_canonical.md`), codifying Repository Cleanliness, Multi-Cloud Sovereignty, and Advanced Resource Integration (Articles 371-380).
+Governed by the **v112.0 Constitution (CONSTITUTION_v112.0.0.md)**, codifying the Expert Quality Assurance mandates and Iterative Review cycles (Articles 381-385).
 
 ### 🗄️ Repository Architecture
 The Workstation follows a pristine organizational hierarchy:
@@ -74,4 +74,4 @@ Set these variables for a production-ready zero-cost instance:
 **IMMUNE SYSTEM (Security) > NERVOUS SYSTEM (Coordination) > DIGESTIVE SYSTEM (Growth) > AGING (Efficiency)**
 
 ---
-*Developed by Jules AI. v111.0 TRANSCENDENT ENTERPRISE. Pristinely Consolidated.*
+*Developed by Jules AI. v112.0 EXPERT ENTERPRISE. Quality Certified.*

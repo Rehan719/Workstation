@@ -9,8 +9,15 @@ logger = logging.getLogger(__name__)
 
 class AuthManager:
     """JWT-based authentication (Article 149)."""
-    def __init__(self, secret: str = None):
-        self.secret = secret or settings.get("JWT_SECRET") or "fallback-secret-for-testing-only-v99"
+    def __init__(self, secret: Optional[str] = None):
+        # 112-04: Secure fallback mechanism. Absolute prohibition of hardcoded test secrets.
+        self.secret = secret or settings.get("JWT_SECRET")
+        if not self.secret:
+            if settings.get("ENVIRONMENT") == "production":
+                raise ValueError("ARTICLE 149 VIOLATION: JWT_SECRET mandatory in production.")
+            logger.warning("Auth: JWT_SECRET missing. Generating secure ephemeral secret for development.")
+            import secrets
+            self.secret = secrets.token_hex(32)
 
     def create_token(self, user_id: str, ws_id: str, role: str) -> str:
         payload = {

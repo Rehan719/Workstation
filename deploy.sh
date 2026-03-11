@@ -47,15 +47,24 @@ echo "🚀 Using Profile: $PROFILE"
 
 # 2. Backend Deployment (Render)
 echo "⚙️  Step 2: Deploying Backend to Render..."
-# Simulated Render deployment call
-echo "curl -X POST https://api.render.com/v1/services/REPLACE_WITH_SERVICE_ID/deploys -H 'Authorization: Bearer $RENDER_API_KEY'"
-echo "✅ Backend deployment initiated."
+if [ "$PROFILE" == "default" ] || [ "$PROFILE" == "render" ]; then
+    # Real logic: Trigger Render Deploy Hook if SERVICE_ID is provided
+    if [ ! -z "$RENDER_SERVICE_ID" ]; then
+        curl -s -X POST "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+             -H "Authorization: Bearer $RENDER_API_KEY" > /dev/null
+        echo "✅ Render deployment signal sent."
+    else
+        echo "⚠️  RENDER_SERVICE_ID not set. Skipping automated hook."
+    fi
+fi
 
 # 3. Frontend Deployment (Vercel)
 echo "🌐 Step 3: Deploying Frontend to Vercel..."
-# Simulated Vercel deployment call
-echo "vercel --token $VERCEL_TOKEN --prod"
-echo "✅ Frontend deployment initiated."
+if [ "$PROFILE" == "default" ] || [ "$PROFILE" == "vercel" ]; then
+    # Use the config from the new infra location
+    vercel --token "$VERCEL_TOKEN" --prod --confirm --local-config infra/deployment/vercel.json
+    echo "✅ Vercel deployment initiated."
+fi
 
 # 4. Mobile App Build (Local & Remote)
 echo "📱 Step 4: Automating Mobile App Builds..."

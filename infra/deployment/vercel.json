@@ -1,0 +1,10 @@
+{
+    "name": "workstation-frontend",
+    "version": 2,
+    "builds": [
+        { "src": "src/dashboard/app.py", "use": "@vercel/python" }
+    ],
+    "routes": [
+        { "src": "/(.*)", "dest": "src/dashboard/app.py" }
+    ]
+}
