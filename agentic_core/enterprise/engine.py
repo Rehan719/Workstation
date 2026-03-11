@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Any, List
 import json
 import os
+from .iemf import IEMFIntegrator
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class EnterpriseEvolutionEngine:
         self.registry_path = "agentic_core/registry/capabilities.json"
         self.current_plan = self._load_business_plan()
         self.capabilities = self._load_capabilities()
+        self.iemf = IEMFIntegrator()
 
     def _load_business_plan(self) -> Dict[str, Any]:
         """Loads the current living Business Plan."""
@@ -44,28 +46,46 @@ class EnterpriseEvolutionEngine:
 
     def orchestrate_evolution(self, introspection_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Main E3 Orchestration loop:
-        1. Review performance against OKRs.
-        2. Analyze gaps and opportunities.
-        3. Propose updates to BMS/QMS/GOS.
-        4. Trigger Grand Synthesis if needed.
+        Main E3 Orchestration loop (ARTICLE 342/345: C-Suite/IEMF enabled):
+        1. Unified Audit across BMS/QMS/UEG.
+        2. Performance Analysis against OKRs.
+        3. Analyze gaps and opportunities (CGO/CTO oversight).
+        4. Propose updates to BMS/QMS/GOS (Transformation Team).
+        5. Trigger Grand Synthesis if needed.
         """
         logger.info("E3: Starting Enterprise Evolution Orchestration Cycle.")
+
+        # 0. IEMF Unified Audit (Article 345)
+        audit_results = self.iemf.run_unified_audit()
+        introspection_data.update(audit_results)
 
         # 1. Performance Analysis
         gaps = self._analyze_performance_gaps(introspection_data)
 
-        # 2. Strategic Proposal Generation
+        # 2. Strategic Proposal Generation (Transformation Team Role)
         proposals = self._generate_strategic_proposals(gaps)
 
-        # 3. Simulation & Validation
+        # 3. Simulation & Validation (ESE/Transformation Sandbox)
         validated_proposals = self._simulate_proposals(proposals)
 
+        # 4. Executive Review (C-Suite logic)
+        decision = self._executive_review(validated_proposals)
+
         return {
-            "status": "PROPOSED",
+            "status": decision["status"],
             "proposals": validated_proposals,
             "strategic_alignment": self._calculate_alignment(validated_proposals),
+            "executive_auth": decision["auth_agent"],
             "constitutional_compliance": 1.0
+        }
+
+    def _executive_review(self, proposals: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Simulates C-Suite review process (Article 342)."""
+        # Logic: If high-severity gaps exist, escalate to CEO, else CGO approves
+        high_priority = any(p["priority"] == "HIGH" for p in proposals)
+        return {
+            "status": "APPROVED" if not high_priority else "CEO_REVIEW_REQUIRED",
+            "auth_agent": "ChiefGrowthOfficer" if not high_priority else "AI_CEO"
         }
 
     def _analyze_performance_gaps(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
