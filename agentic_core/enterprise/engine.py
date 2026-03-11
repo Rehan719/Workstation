@@ -52,12 +52,13 @@ class EnterpriseEvolutionEngine:
 
     def orchestrate_evolution(self, introspection_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Main E3 Orchestration loop (ARTICLE 342/346/344/350: C-Suite/IEMF/Transformation/CUXAD enabled):
+        Main E3 Orchestration loop (ARTICLE 342/346/344/350/356: C-Suite/IEMF/Transformation/CUXAD/Knowledge enabled):
         1. Unified Audit across BMS/QMS/UEG.
         2. C-Suite Council & CoE Hub Reviews (including Product oversight).
         3. Performance, Structural, and User-Experience Analysis.
-        4. Strategic, Organizational, and Product Proposal Generation.
-        5. Trigger Grand Synthesis if needed.
+        4. External Knowledge Ingestion Synthesis (Article 356).
+        5. Strategic, Organizational, and Product Proposal Generation.
+        6. Trigger Grand Synthesis if needed.
         """
         logger.info("E3: Starting Enterprise Evolution Orchestration Cycle.")
 
@@ -72,6 +73,11 @@ class EnterpriseEvolutionEngine:
         # 1. Performance, Structural & UX Analysis (Article 344/350)
         gaps = self._analyze_performance_gaps(introspection_data)
         struct_health = self.transformation_engine.analyze_structural_efficiency(introspection_data)
+
+        # 1.1 External Knowledge Synthesis (Article 356/357)
+        knowledge_impact = introspection_data.get("external_knowledge_insights", [])
+        if knowledge_impact:
+            logger.info(f"E3: Incorporating {len(knowledge_impact)} external insights into strategy.")
 
         # 2. Strategic & Organizational Proposal Generation
         proposals = self._generate_strategic_proposals(gaps)

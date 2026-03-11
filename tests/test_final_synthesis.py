@@ -10,6 +10,8 @@ from agentic_core.enterprise.coe_manager import COEManager
 from agentic_core.enterprise.transformation_engine import TransformationEngine
 from agentic_core.enterprise.iemf import IEMFIntegrator
 from agentic_core.enterprise.cuxad import CUXADTeam
+from agentic_core.synthesis.url_ingestor import URLIngestor
+from agentic_core.synthesis.insight_extractor import InsightExtractor
 
 class TestFinalSynthesis(unittest.TestCase):
     def test_purpose_evaluator(self):
@@ -65,6 +67,25 @@ class TestFinalSynthesis(unittest.TestCase):
         iemf = IEMFIntegrator()
         audit = iemf.run_unified_audit()
         self.assertEqual(audit["purpose_alignment_verification"], "PASSED")
+
+    def test_knowledge_ingestion(self):
+        import asyncio
+        ingestor = URLIngestor()
+        res = asyncio.run(ingestor.ingest_urls(["https://chat.deepseek.com/share/123"]))
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["platform"], "DeepSeek")
+
+    def test_insight_extraction(self):
+        extractor = InsightExtractor()
+        convs = [{
+            "source_url": "url1",
+            "transcript": [{"text": "We need better Governance and Purpose alignment."}]
+        }]
+        insights = extractor.extract_insights(convs)
+        self.assertGreater(len(insights), 0)
+        themes = [i["theme"] for i in insights]
+        self.assertIn("Governance", themes)
+        self.assertIn("Purpose", themes)
 
     def test_cuxad_collaboration(self):
         team = CUXADTeam()

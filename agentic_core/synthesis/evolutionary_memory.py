@@ -65,5 +65,25 @@ class EvolutionaryMemory:
             "metadata": {"version": version, "timestamp": timestamp}
         })
 
+    def store_external_knowledge(self, insights: List[Dict[str, Any]]):
+        """Stores extracted insights from LLM conversations (Article 357)."""
+        logger.info(f"Storing {len(insights)} external insights in UEG.")
+
+        # Load existing
+        ueg = {"nodes": []}
+        if os.path.exists(self.ueg_path):
+            try:
+                with open(self.ueg_path, "r") as f:
+                    ueg = json.load(f)
+            except Exception: pass
+
+        for i, insight in enumerate(insights):
+            ueg["nodes"].append({
+                "id": f"external_insight_{i}_{insight['theme']}",
+                "type": "LLMConversation",
+                "content": insight,
+                "metadata": {"source": insight["source"], "quality": insight["quality_score"]}
+            })
+
         with open(self.ueg_path, "w") as f:
             json.dump(ueg, f, indent=4)
