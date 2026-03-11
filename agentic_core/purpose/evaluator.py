@@ -19,10 +19,6 @@ class PurposeAlignmentEvaluator:
         spiritual_hits = sum(1 for kw in self.spiritual_keywords if kw in description)
         commercial_hits = sum(1 for kw in self.commercial_keywords if kw in description)
 
-        # ARTICLE 336: Both purposes are complementary
-        # A high PAS requires non-violation of ethics and contribution to goals.
-
-        # Baseline score starts high for neutral actions
         score = 0.90
 
         if spiritual_hits > 0:
@@ -30,7 +26,6 @@ class PurposeAlignmentEvaluator:
         if commercial_hits > 0:
             score += 0.03
 
-        # Veto check: if intent is purely profit-driven without ethical context
         if commercial_hits > 3 and spiritual_hits == 0:
             logger.warning("Purpose Evaluator: Commercial intent lacks ethical/spiritual context.")
             score -= 0.10
@@ -43,7 +38,3 @@ class PurposeAlignmentEvaluator:
             "commercial_index": commercial_hits,
             "recommendation": "PROCEED" if score >= 0.85 else "ENHANCE_ETHICAL_CONTEXT"
         }
-
-if __name__ == "__main__":
-    evaluator = PurposeAlignmentEvaluator()
-    print(evaluator.evaluate_intent({"description": "Launch a charity scholarship portal for productivity."}))

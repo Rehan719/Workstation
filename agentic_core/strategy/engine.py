@@ -81,7 +81,6 @@ class ResourceManagementModule:
     """
     def allocate_resources(self, priorities: List[Dict[str, Any]]) -> Dict[str, float]:
         """Allocates resources using weighted priority and Purpose Alignment scores."""
-        # Weighted allocation logic: Higher priority and higher Purpose Target gets more
         weight_map = {"HIGH": 3, "MEDIUM": 2, "LOW": 1}
         total_weight = sum(weight_map.get(p.get("priority", "LOW"), 1) for p in priorities)
 
@@ -92,7 +91,6 @@ class ResourceManagementModule:
         for p in priorities:
             name = p.get("type", "UNKNOWN")
             weight = weight_map.get(p.get("priority", "LOW"), 1)
-            # Factor in purpose alignment target if available
             purpose_factor = p.get("purpose_target", 1.0)
             allocation[name] = round((weight * purpose_factor) / total_weight, 2)
 
@@ -108,7 +106,6 @@ class PerformanceManagementModule:
 
     def get_kpis(self, raw_telemetry: Dict[str, Any]) -> Dict[str, Any]:
         """Returns key performance indicators based on actual system telemetry."""
-        # Calculate scores from telemetry
         alignment = raw_telemetry.get("strategic_alignment", 0.95)
         efficiency = 1.0 - raw_telemetry.get("resource_waste", 0.04)
         achievement = raw_telemetry.get("okr_progress", 0.8)

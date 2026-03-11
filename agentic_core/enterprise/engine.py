@@ -23,7 +23,6 @@ class EnterpriseEvolutionEngine:
         if os.path.exists(self.bms_path):
             try:
                 with open(self.bms_path, 'r', encoding='utf-8') as f:
-                    # Basic parser for key-value pairs in markdown
                     content = f.read()
                     plan = {}
                     if "Vision" in content:
@@ -109,7 +108,6 @@ class EnterpriseEvolutionEngine:
     def _simulate_proposals(self, proposals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Simulates projected impact using ARO/ESE models (Functional logic)."""
         for p in proposals:
-            # Impact is proportional to priority and a baseline improvement factor
             base_impact = 0.05
             multiplier = 2.0 if p["priority"] == "HIGH" else 1.2
             p["simulation_result"] = "SUCCESS"

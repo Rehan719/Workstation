@@ -15,15 +15,15 @@ class ConflictResolver:
             "version": "103.0.0",
             "orchestration_mode": "purpose_driven_integrated_enterprise",
             "governance_model": "purpose_governed_constitution_v103",
-            "survival_instinct_hierarchy": ["Immune", "Nervous", "Digestive", "Aging"], # Article 47/80/330/337
-            "verification_layers": 13, # Increased for v103
+            "survival_instinct_hierarchy": ["Immune", "Nervous", "Digestive", "Aging"],
+            "verification_layers": 13,
             "quantum_mastery": "transcendent",
             "allostasis": "predictive",
             "parameters": {
-                "redox_midpoint": -225.0, # mV
-                "reflex_latency": 50,     # ms
-                "synaptic_scaling_tau": 18.6, # s
-                "hsp_atp_rate": 4.2       # ATP/s (v99 target)
+                "redox_midpoint": -225.0,
+                "reflex_latency": 50,
+                "synaptic_scaling_tau": 18.6,
+                "hsp_atp_rate": 4.2
             },
             "cognition": {
                 "minimax_threshold": 0.85,
@@ -31,15 +31,4 @@ class ConflictResolver:
                 "retro_causal_optimization": True
             }
         }
-
-        # Resolve from patterns if available
-        for p in patterns:
-            concept = p.get("concept")
-            if isinstance(concept, list):
-                for term in concept:
-                    if term == "Quantum":
-                        resolved["quantum_mastery"] = "transcendent"
-                    elif term == "Transcendent":
-                        resolved["orchestration_mode"] = "transcendent_conscious_organism"
-
         return resolved
