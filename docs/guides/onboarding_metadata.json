@@ -1,0 +1,15 @@
+{
+    "version": "109.0.0",
+    "tutorials": [
+        {
+            "id": "welcome",
+            "steps": 5,
+            "agent": "OnboardingAgent"
+        },
+        {
+            "id": "dev_quickstart",
+            "steps": 10,
+            "agent": "TechWriterAgent"
+        }
+    ]
+}

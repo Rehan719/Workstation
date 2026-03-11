@@ -1,0 +1,11 @@
+{
+    "version": "110.0.0",
+    "release": "Transcendent",
+    "tutorials": [
+        {
+            "id": "ultimate_rerun",
+            "steps": 3,
+            "agent": "MetaOrchestrator"
+        }
+    ]
+}

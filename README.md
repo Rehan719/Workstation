@@ -1,25 +1,29 @@
-# Jules AI v100.0 APOTHEOSIS OF SYNERGY: The Ultimate Master Workstation
+# Jules AI v109.0: THE SELF-OPTIMISING GRAND SYNTHESIS META-PIPELINE
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
-## 🚀 One-Click Operations
-This repository is optimized for VS Code.
-- **Windows Setup**: Run `powershell -ExecutionPolicy Bypass -File scripts/setup_windows.ps1`
-- **Linux/macOS Setup**: Run `bash -c "python3 -m venv venv && source venv/bin/activate && pip install -e . && python3 -m agentic_core.synthesis.grand_synthesis_engine"`
-- **VS Code Task**: Press `Ctrl+Shift+P` and run **`Awaken Transcendent (v100 Setup)`**.
+## 🚀 One-Button Platform Setup & Teardown
+Deploy the entire Workstation ecosystem with a self-diagnosing orchestration engine:
+```bash
+./deploy.sh
+```
+Revoke all resources and clean up with one click:
+```bash
+./teardown.sh
+```
 
-## 🧬 v100.0 Apotheosis of Synergy: The Transcendent Ecosystem
-Jules AI v100.0 represents the fundamental re-engineering of the Workstation into a living, breathing ecosystem of specialized intelligence.
+## 🧬 v109.0 The Self-Optimising Era
+Jules AI v109.0 introduces the **Grand Synthesis Meta-Pipeline v2.0**, a self-aware orchestration layer that predicts bottlenecks and guarantees output quality.
 
-### 📜 Quadruple-Pillar Expansion
-The v100.0 release is built upon four transformative pillars:
-1. **Environmental Simulator Engine (ESE)**: Creating high-fidelity digital twins (Articles 303-304).
-2. **Adaptive Resource Optimizer (ARO)**: Intelligent, personalized resource allocation (Article 305).
-3. **Biomimetic Team Orchestrator (BTO)**: Emergent, human-like virtual task forces (Article 307).
-4. **Dynamic Resource Assembly & Disassembly (DRAD)**: Composable resource pools using RAL (Article 306).
+### 📚 Expanded Documentation & Onboarding
+- [Expanded Repo Owner Manual](docs/guides/repo_owner_v2.md): Granular operational workflows and strategic levers.
+- [Hyper-Detailed Developer Guide](docs/guides/developer_v2.md): Live code samples, API playground, and integration patterns.
+- [Empowered User Experience Guide](docs/guides/user_v2.md): Interactive tutorials and feature walkthroughs.
+- [Technical Whitepaper](docs/guides/technical_whitepaper.md): In-depth analysis of the self-optimising organism.
+- [Feature Catalogue](docs/guides/platform_features_v2.md): Searchable inventory with purpose-alignment scores.
 
 ### ⚖️ Constitutional Sovereignty
-At the core is the **Transcendent Constitution (CONSTITUTION_v100.0.0.md)**. With 312 codified articles, it governs the digital organism with absolute fidelity to truth-infused survival instincts.
+Governed by the **v109.0 Constitution (CONSTITUTION_v109.0.0.md)**, codifying the Predictive Meta-Orchestrator, Advanced Conflict Resolution, and Continuous Self-Optimisation mandates (Articles 371-375).
 
 ### 🚀 Zero-Cost/No-Incurred-Cost Deployment
 Engineered for democratization, the entire workstation can be deployed on free-tier cloud infrastructure (Render, Vercel, Streamlit Cloud).
