@@ -17,9 +17,10 @@ class TestV111Release(unittest.TestCase):
                 pass
 
     def test_background_sources_structure(self):
-        self.assertTrue(os.path.isdir("docs/background_sources/archive"))
-        self.assertTrue(os.path.isdir("docs/background_sources/historical_directives"))
-        self.assertTrue(os.path.isdir("docs/background_sources/notes"))
+        base = "docs/background_text_files_sources"
+        self.assertTrue(os.path.isdir(f"{base}/archive"))
+        self.assertTrue(os.path.isdir(f"{base}/historical_directives"))
+        self.assertTrue(os.path.isdir(f"{base}/notes"))
 
     def test_v111_constitution(self):
         constitution_path = "agentic_core/constitution/CONSTITUTION_v111.0.0.md"

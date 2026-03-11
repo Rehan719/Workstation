@@ -1,4 +1,4 @@
-# Transcendent Repo Owner Guide - v110.0
+# Transcendent Repo Owner Guide - 111.0.0
 
 ## Ultimate Governance
 The organism now operates with Meta-Cognitive Self-Optimisation (Article 375).

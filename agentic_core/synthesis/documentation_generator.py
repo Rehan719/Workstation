@@ -12,16 +12,17 @@ class DocumentationGenerator:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def generate_suite_v3(self, config: Dict[str, Any]):
-        """ARTICLE 363 & 374: Generates the Transcendent v110.0 Documentation Suite (v3)."""
-        logger.info("Generating v110.0 Transcendent Documentation Suite (v3)...")
+        """ARTICLE 363 & 374: Generates the Transcendent v111.0 Documentation Suite (v3)."""
+        version = config.get("version", "111.0.0")
+        logger.info(f"Generating {version} Transcendent Documentation Suite (v3)...")
 
         guides = {
-            "repo_owner_v3.md": self._get_repo_owner_v3_content(),
-            "developer_v3.md": self._get_developer_v3_content(),
-            "user_v3.md": self._get_user_v3_content(),
-            "platform_features_v3.md": self._get_features_v3_content(),
-            "background_v3.md": self._get_background_v3_content(),
-            "transcendent_whitepaper.md": self._get_transcendent_whitepaper_content(),
+            "repo_owner_v3.md": self._get_repo_owner_v3_content().replace("v110.0", version),
+            "developer_v3.md": self._get_developer_v3_content().replace("v110.0", version),
+            "user_v3.md": self._get_user_v3_content().replace("v110.0", version),
+            "platform_features_v3.md": self._get_features_v3_content().replace("v110.0", version),
+            "background_v3.md": self._get_background_v3_content().replace("v110.0", version),
+            "transcendent_whitepaper.md": self._get_transcendent_whitepaper_content().replace("v110.0", version),
             "ultimate_rerun_guide.md": self._get_ultimate_rerun_content()
         }
 

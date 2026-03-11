@@ -23,7 +23,15 @@ Jules AI v111.0 introduces the **Grand Synthesis Meta-Pipeline v3.0**, a transce
 - [Feature Catalogue](docs/guides/platform_features_v2.md): Searchable inventory with purpose-alignment scores.
 
 ### ⚖️ Constitutional Sovereignty
-Governed by the **v111.0 Constitution (CONSTITUTION_v111.0.0.md)**, codifying Repository Cleanliness, Multi-Cloud Sovereignty, and Advanced Resource Integration (Articles 371-380).
+Governed by the **Canonical Constitution** (`agentic_core/constitution/CONSTITUTION_canonical.md`), codifying Repository Cleanliness, Multi-Cloud Sovereignty, and Advanced Resource Integration (Articles 371-380).
+
+### 🗄️ Repository Architecture
+The Workstation follows a pristine organizational hierarchy:
+- `agentic_core/`: The autonomous brain and constitutional framework.
+- `docs/background_text_files_sources/`: Secured archive of all historical intelligence and directives.
+- `docs/guides/`: Role-specific empowerment manuals (v3).
+- `docs/resources/`: Multi-cloud and advanced compute strategy.
+- See [Repository Structure](docs/repository_structure.md) for full details.
 
 ### 🚀 Zero-Cost/No-Incurred-Cost Deployment
 Engineered for democratization, the entire workstation can be deployed on free-tier cloud infrastructure (Render, Vercel, Streamlit Cloud).

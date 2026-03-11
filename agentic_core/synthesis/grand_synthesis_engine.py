@@ -100,7 +100,7 @@ class GrandSynthesisEngine:
             logger.info(f"Ingested {len(ingested_knowledge)} LLM Chat URL insights.")
 
         if is_ultimate:
-            base_path = "docs/background_sources/historical_directives/"
+            base_path = "docs/background_text_files_sources/historical_directives/"
             text_sources = [
                 os.path.join(base_path, "source_background_v110.txt"),
                 os.path.join(base_path, "conversation_history_v110.txt")
