@@ -65,10 +65,22 @@ The Workstation shall maintain a unified Environmental Simulator Engine (ESE).
 
 ## 🏢 SECTION XI: STRATEGIC ENTERPRISE GOVERNANCE (Articles 327-332)
 **ARTICLE 327: BUSINESS MANAGEMENT SYSTEM MANDATE**
-The system shall maintain a Business Management System (BMS).
+The system shall maintain a Business Management System (BMS) that generates, reviews, and updates the Business Plan (Vision, Mission, Aims, Objectives) and manages resources and performance in alignment with the constitution.
+
+**ARTICLE 328: STRATEGIC BUSINESS PLANNING MANDATE**
+The Business Plan shall be continuously reviewed and updated through a formal cycle, fed by insights from the Introspective Self-Refinement Cycle and overseen by the AI CEO.
+
+**ARTICLE 329: DYNAMIC STRATEGY RESOLUTION MANDATE**
+The system shall support dynamic, adaptive strategy updates mid-cycle when critical opportunities or threats are identified, subject to AI CEO and Entity oversight.
+
+**ARTICLE 330: STRATEGIC INTEGRATION WITH ENTITY**
+The Entity shall provide strategic guidance and constitutional oversight, ensuring all business decisions align with the organism's core identity and survival instincts.
 
 **ARTICLE 331: GOVERNANCE SYSTEMS INTEGRATION**
-All governance systems shall be fully integrated and operate concurrently.
+All governance systems (Constitutional Enforcer, Source Traceability, AI CEO Dashboard, Entity Oversight) shall be fully integrated and operate concurrently.
+
+**ARTICLE 332: INTROSPECTIVE SELF-REFINEMENT CYCLE MANDATE**
+The system shall formalize the Introspective Self-Refinement Cycle (Analysis, Planning, Simulation, Execution, Verification, Reporting) as a core business process.
 
 ## ✨ SECTION VI: PURPOSE-DRIVEN FOUNDATION (Articles 336-340)
 **ARTICLE 336: DUAL-PURPOSE FOUNDATION MANDATE**
