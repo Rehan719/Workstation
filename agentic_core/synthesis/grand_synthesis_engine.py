@@ -32,9 +32,9 @@ class GrandSynthesisEngine:
         self.memory = EvolutionaryMemory()
         self.is_synthesized = False
 
-    async def run_synthesis(self):
+    async def run_synthesis(self, target_version: str = None):
         """Executes the full grand synthesis cycle."""
-        logger.info("Starting Grand Synthesis Cycle...")
+        logger.info(f"Starting Grand Synthesis Cycle for {target_version or 'detected version'}...")
 
         raw_insights = await self.analyzer.analyze_all()
         logger.info(f"Analyzed {len(raw_insights)} historical and research artifacts.")
@@ -44,7 +44,7 @@ class GrandSynthesisEngine:
 
         resolved_config = self.resolver.resolve_conflicts(patterns)
 
-        version = resolved_config.get("version")
+        version = target_version or resolved_config.get("version")
         if version == "105.0.0":
             constitution_path = self.dna_gen.generate_v105_constitution(resolved_config)
             logger.info(f"v105.0 Constitution generated at {constitution_path}")

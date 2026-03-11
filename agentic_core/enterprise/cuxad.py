@@ -43,6 +43,22 @@ class TechnicalWriterAgent(CUXADAgent):
         logger.info(f"Docs: Updating user guides for {task}.")
         return super().execute_task(task)
 
+class MobileDeveloperAgent(CUXADAgent):
+    def __init__(self):
+        super().__init__("MobileDeveloper")
+
+    def execute_task(self, task: str) -> Dict[str, Any]:
+        logger.info(f"Mobile: Developing {task} for iOS/Android platforms.")
+        return super().execute_task(task)
+
+class BackendDeveloperAgent(CUXADAgent):
+    def __init__(self):
+        super().__init__("BackendDeveloper")
+
+    def execute_task(self, task: str) -> Dict[str, Any]:
+        logger.info(f"Backend: Developing APIs for {task}.")
+        return super().execute_task(task)
+
 class CUXADTeam:
     """
     ARTICLE 350/354: Multidisciplinary CUXAD Team.
@@ -52,6 +68,8 @@ class CUXADTeam:
         self.squad = {
             "UX": UXDesignerAgent(),
             "Frontend": FrontendDeveloperAgent(),
+            "Mobile": MobileDeveloperAgent(),
+            "Backend": BackendDeveloperAgent(),
             "QA": QAEngineerAgent(),
             "Docs": TechnicalWriterAgent()
         }
@@ -61,7 +79,9 @@ class CUXADTeam:
         logger.info(f"CUXAD: Initiating development for feature: {feature_name}")
         results = []
         results.append(self.squad["UX"].execute_task(f"Prototype {feature_name}"))
-        results.append(self.squad["Frontend"].execute_task(f"Build {feature_name}"))
-        results.append(self.squad["QA"].execute_task(f"Test {feature_name}"))
+        results.append(self.squad["Frontend"].execute_task(f"Build Web {feature_name}"))
+        results.append(self.squad["Mobile"].execute_task(f"Build Mobile {feature_name}"))
+        results.append(self.squad["Backend"].execute_task(f"Expose APIs for {feature_name}"))
+        results.append(self.squad["QA"].execute_task(f"Verify {feature_name}"))
         results.append(self.squad["Docs"].execute_task(f"Document {feature_name}"))
         return results

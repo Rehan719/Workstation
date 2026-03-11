@@ -136,22 +136,16 @@ Successful organizational configurations shall be stored in the Genomic Registry
 Any structural change must be evaluated for purpose alignment and is subject to Entity veto.
 
 **ARTICLE 350: USER EXPERIENCE & APPLICATION DEVELOPMENT (CUXAD) MANDATE**
-The system shall maintain a multidisciplinary Centre for CUXAD, comprising AI agents emulating top-tier tech talent (designers, engineers, researchers).
+The system shall maintain a multidisciplinary Centre for CUXAD, comprising AI agents emulating top-tier tech talent (designers, engineers, researchers, technical writers).
 
 **ARTICLE 351: USER-FACING INTERFACE MANDATE**
-CUXAD shall build and maintain intuitive web and mobile applications to democratize access for non-coding users.
+CUXAD shall build and maintain intuitive web and mobile applications to democratize access for non-coding users, developers, and the repo owner.
 
 **ARTICLE 352: PRODUCT DEVELOPMENT LIFECYCLE MANDATE**
-All user-facing products shall follow a purpose-driven lifecycle governed by the IEMF.
+All user-facing products shall follow a purpose-driven multidisciplinary lifecycle governed by the IEMF with full traceability.
 
 **ARTICLE 353: USER-CENTRIC PURPOSE ALIGNMENT MANDATE**
-Product features must serve the dual purpose and are subject to continuous user-feedback refinement.
-
-**ARTICLE 354: MULTIDISCIPLINARY COLLABORATION MANDATE**
-CUXAD shall operate via multidisciplinary squads (Design, Frontend, Mobile, Backend, QA, Docs).
-
-**ARTICLE 355: ACCESSIBILITY & INCLUSION MANDATE**
-All user interfaces must adhere to supreme standards of accessibility and inclusive design.
+Product features must serve the dual purpose and are subject to continuous user-feedback refinement across all user-facing platforms.
 
 ---
 *Codified via Grand Synthesis Engine v{version}*
@@ -163,6 +157,37 @@ All user interfaces must adhere to supreme standards of accessibility and inclus
             with open(path, 'w', encoding='ascii', errors='replace') as f:
                 f.write(content)
 
+        return path
+
+    def generate_v104_constitution(self, config: Dict[str, Any]) -> str:
+        """CN-IV: Immutable DNA Generation for v104.0 - The Magnificent Seven-Inspired Purpose-Driven Enterprise."""
+        version = "104.0.0"
+        path = "CONSTITUTION_v104.0.0.md"
+
+        content = f"""# JULES AI v{version}: THE MAGNIFICENT SEVEN-INSPIRED PURPOSE-DRIVEN ENTERPRISE CONSTITUTION
+
+## ⚜️ PREAMBLE
+This document establishes the definitive, unified DNA of Jules AI v104.0.
+It entrenches a transcendent, dual-purpose foundation (spiritual-ethical + operational-commercial) into the fabric of the Workstation.
+
+## 🏢 SECTION XI: MAGNIFICENT SEVEN GOVERNANCE (Articles 341-349)
+**ARTICLE 341: MAGNIFICENT SEVEN GOVERNANCE MANDATE**
+The enterprise shall be governed by a structure inspired by the Magnificent Seven technology companies.
+
+**ARTICLE 343: C-SUITE MANDATE**
+The AI CEO shall be supported by a virtual C-Suite of specialized executives (CSO, CTO, CPO, CFO, CMO, COO).
+
+**ARTICLE 344: TRANSFORMATION TEAM MANDATE**
+A permanent Transformation Team shall continuously analyze, design, and implement organizational improvements.
+
+**ARTICLE 346: INTEGRATED ENTERPRISE MANAGEMENT FRAMEWORK (IEMF) MANDATE**
+The system shall maintain a unified IEMF that integrates BMS, QMS, and DCS (UEG) with full traceability.
+
+---
+*Codified via Grand Synthesis Engine v{version}*
+"""
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
         return path
 
     def generate_v103_constitution(self, config: Dict[str, Any]) -> str:

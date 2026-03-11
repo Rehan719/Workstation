@@ -7,8 +7,8 @@ class ConflictResolver:
     """CN-II: Conflict Resolution via Contextual Evaluation."""
 
     def resolve_conflicts(self, patterns: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Resolves architectural and constitutional conflicts for v105.0 User-Facing Enterprise."""
-        logger.info("Resolving architectural conflicts for v105.0...")
+        """Resolves architectural and constitutional conflicts for Magnificent Seven Enterprise."""
+        logger.info("Resolving architectural conflicts...")
 
         # Final Transcendent Baseline Integration (Article 160/331/336/341/350)
         resolved = {

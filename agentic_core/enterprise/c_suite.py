@@ -73,6 +73,18 @@ class ChiefOperatingOfficer(CSuiteExecutive):
             "bottlenecks": []
         }
 
+class ChiefInfrastructureOfficer(CSuiteExecutive):
+    def __init__(self):
+        super().__init__("CIO", "Zero-touch deployment and platform reliability")
+
+    def provide_strategic_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        logger.info("CIO: Monitoring platform resilience.")
+        return {
+            "role": "CIO",
+            "uptime_p99": 0.999,
+            "deployment_velocity": "HIGH"
+        }
+
 from .cuxad import CUXADTeam
 
 class ChiefProductOfficer(CSuiteExecutive):
@@ -102,7 +114,8 @@ class VirtualCSuite:
             "CFO": ChiefFinancialOfficer(),
             "CMO": ChiefMissionOfficer(),
             "COO": ChiefOperatingOfficer(),
-            "CPO": ChiefProductOfficer()
+            "CPO": ChiefProductOfficer(),
+            "CIO": ChiefInfrastructureOfficer()
         }
 
     def gather_executive_council(self, telemetry: Dict[str, Any]) -> Dict[str, Any]:

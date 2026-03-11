@@ -69,7 +69,7 @@ class TestFinalSynthesis(unittest.TestCase):
     def test_cuxad_collaboration(self):
         team = CUXADTeam()
         results = team.process_feature_release("UserOnboarding")
-        self.assertEqual(len(results), 4)
+        self.assertEqual(len(results), 6)
         roles = [r["role"] for r in results]
         self.assertIn("UXDesigner", roles)
         self.assertIn("FrontendDeveloper", roles)
