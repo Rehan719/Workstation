@@ -32,6 +32,60 @@ class UEGManager:
         self._save()
         return node
 
+    def add_agent_task(self, goal: str, parent_id: str = None):
+        """ARTICLE 386: Adds an Agent Task node to the UEG."""
+        node = {
+            "id": f"task_{len(self.graph['nodes'])}",
+            "type": "AgentTask",
+            "goal": goal,
+            "parent": parent_id,
+            "status": "pending",
+            "created_at": time.time()
+        }
+        self.graph["nodes"].append(node)
+        self._save()
+        return node
+
+    def add_execution_plan(self, task_id: str, steps: List[Dict[str, Any]]):
+        """ARTICLE 386: Adds an Execution Plan node to the UEG."""
+        node = {
+            "id": f"plan_{len(self.graph['nodes'])}",
+            "type": "ExecutionPlan",
+            "task_id": task_id,
+            "steps": steps,
+            "status": "created"
+        }
+        self.graph["nodes"].append(node)
+        self._save()
+        return node
+
+    def add_sandbox(self, task_id: str, environment_info: Dict[str, Any]):
+        """ARTICLE 387: Adds a Sandbox Environment node to the UEG."""
+        node = {
+            "id": f"sandbox_{len(self.graph['nodes'])}",
+            "type": "SandboxEnvironment",
+            "task_id": task_id,
+            "info": environment_info,
+            "status": "active"
+        }
+        self.graph["nodes"].append(node)
+        self._save()
+        return node
+
+    def add_audit_log(self, source_id: str, message: str, metadata: Dict[str, Any] = None):
+        """ARTICLE 390: Adds an Audit Log node to the UEG."""
+        node = {
+            "id": f"audit_{len(self.graph['nodes'])}",
+            "type": "AuditLog",
+            "source": source_id,
+            "message": message,
+            "metadata": metadata or {},
+            "timestamp": time.time()
+        }
+        self.graph["nodes"].append(node)
+        self._save()
+        return node
+
     def add_conversation(self, url: str, transcript: List[Dict[str, Any]], metadata: Dict[str, Any] = None):
         """ARTICLE 356: Adds an LLM Conversation node to the UEG."""
         node = {

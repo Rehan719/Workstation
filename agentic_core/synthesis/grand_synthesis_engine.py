@@ -17,6 +17,8 @@ from .url_ingestor import URLIngestor
 from .text_ingestor import TextIngestor
 from .insight_extractor import InsightExtractor
 from .biomimetic_agents import NeurobiomimeticAgent, ImmunomimeticAgent
+from .agentic_orchestrator import AgenticOrchestrator
+from .autonomic_system import AgenticAutonomicSystem
 from .documentation_generator import DocumentationGenerator
 from agentic_core.ueg.ueg_manager import UEGManager
 from agentic_core.genetics.genomic_registry import GenomicRegistry
@@ -43,6 +45,8 @@ class GrandSynthesisEngine:
         self.insight_extractor = InsightExtractor()
         self.biomimetic_agents = [NeurobiomimeticAgent(), ImmunomimeticAgent()]
         self.doc_gen = DocumentationGenerator()
+        self.agentic_orchestrator = AgenticOrchestrator()
+        self.autonomic_system = AgenticAutonomicSystem()
         self.ueg = UEGManager()
         self.genomic_registry = GenomicRegistry()
         self.is_synthesized = False
@@ -60,11 +64,12 @@ class GrandSynthesisEngine:
 
     async def run_synthesis(self, target_version: Optional[str] = None) -> Dict[str, Any]:
         """
-        ARTICLE 371-380: Executes the full Transcendent Grand Synthesis cycle v3.1.
+        ARTICLE 371-391: Executes the full Transcendent Grand Synthesis cycle v3.1.
         Unifies URLs, background sources, and introspection data into a flawless configuration.
         """
         is_ultimate = "--ultimate-rerun" in sys.argv
-        logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version or 'v112.0.0'}...")
+        target_version = target_version or ("114.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0")
+        logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
         if is_ultimate:
@@ -72,12 +77,17 @@ class GrandSynthesisEngine:
             # 112-05: Expert-level synchronization. Using event-based telemetry check (simulated).
             await self._predictive_sync()
 
-        # Mode: Unified Multi-Source Ingestion (Article 356, 357, 367, 382)
+        # Mode: Unified Multi-Source Ingestion (Article 356, 357, 367, 382, 386)
         ingested_knowledge = []
         biomimetic_patterns = []
         is_deep_biomimetic = "--deep-biomimetic" in sys.argv or "--deep-biomimetic-ingest" in sys.argv
+        is_agentic = "--agentic" in sys.argv or "--full-agentic-synthesis" in sys.argv
 
-        if is_ultimate or "--ingest-urls" in sys.argv or is_deep_biomimetic:
+        if is_agentic:
+             await self.autonomic_system.start()
+             logger.info("ARTICLE 386: Agentic mode active. Autonomous background operations initiated.")
+
+        if is_ultimate or "--ingest-urls" in sys.argv or is_deep_biomimetic or is_agentic:
             urls = self._get_url_list()
             raw_conversations = await self.ingestor.ingest_urls(urls)
             logger.info(f"Ingested {len(raw_conversations)} LLM Chat URL conversations.")
@@ -99,10 +109,14 @@ class GrandSynthesisEngine:
                                 self.genomic_registry.reverse_transcribe_trait(f"biomimetic_{p['principle'].replace(' ', '_')}", p)
                 ingested_knowledge.extend(insights)
 
-            proof = "v113_deep_biomimetic_proof" if is_deep_biomimetic else "v112_ingestion_proof"
+            proof = "v114_agentic_synthesis_proof" if is_agentic else ("v113_deep_biomimetic_proof" if is_deep_biomimetic else "v112_ingestion_proof")
             self.genomic_registry.commit_mutations(proof)
 
-            if is_deep_biomimetic:
+            if is_agentic:
+                logger.info("ARTICLE 387: Executing ad-hoc agentic task during synthesis.")
+                await self.agentic_orchestrator.execute_directive("Optimize repository hygiene and constitutional alignment.")
+
+            if is_deep_biomimetic or is_agentic:
                 self._generate_biomimetic_report(raw_conversations, ingested_knowledge, biomimetic_patterns, target_version or "v113.0.0")
                 self._generate_assimilation_blueprints(biomimetic_patterns, target_version or "v113.0.0")
             else:
@@ -136,13 +150,18 @@ class GrandSynthesisEngine:
         logger.info(f"Extracted {len(patterns)} architectural patterns from unified corpus.")
 
         # ARTICLE 372: Transcendent Conflict Resolution
-        resolved_config = self.resolver.resolve_conflicts(patterns)
+        resolved_config = self.resolver.resolve_conflicts(patterns, target_version)
         if is_ultimate or (target_version and target_version.startswith("11")):
             logger.info("Transcendent Conflict Resolution: 100% automated priority-based alignment.")
             resolved_config["version"] = target_version or "112.0.0"
 
         version = resolved_config.get("version")
-        if version == "113.0.0":
+        if version == "114.0.0":
+            constitution_path = self.dna_gen.generate_v114_constitution(resolved_config)
+            logger.info(f"v114.0 Constitution generated at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "113.0.0":
             constitution_path = self.dna_gen.generate_v113_constitution(resolved_config)
             logger.info(f"v113.0 Constitution generated at {constitution_path}")
             if is_ultimate or "--generate-docs-v3" in sys.argv:
