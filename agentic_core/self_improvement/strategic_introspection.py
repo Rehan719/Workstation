@@ -39,12 +39,33 @@ class GovernanceAnalystAgent:
             "status": "SECURE" if alignment_score > 0.95 else "GOVERNANCE_DRIFT"
         }
 
+class PurposeAnalystAgent:
+    """
+    ARTICLE 5.2: Introspection-P - Purpose Analyst.
+    Tracks how purpose alignment has evolved over time across all processes.
+    """
+    def analyze_purpose_drift(self, pas_history: List[float]) -> Dict[str, Any]:
+        logger.info("Introspection: PurposeAnalystAgent checking for PAS drift.")
+        if not pas_history:
+            return {"status": "NO_DATA", "drift": 0.0}
+
+        current_pas = pas_history[-1]
+        avg_pas = sum(pas_history) / len(pas_history)
+        drift = avg_pas - current_pas
+
+        return {
+            "current_pas": current_pas,
+            "drift_index": round(drift, 4),
+            "status": "STABLE" if drift < 0.02 else "DRIFT_DETECTED",
+            "recommendation": "Initiate purpose-alignment audit" if drift >= 0.02 else "Maintain current trajectory"
+        }
+
 class StrategicReflector:
     """
     ARTICLE 2.2: Introspective Cycle (Strategic Integration).
-    Phase 3: Strategic Reflection.
+    Phase 3: Strategic Reflection (Enhanced for Purpose v103.0).
     """
-    def reflect_on_strategy(self, business_analysis: Dict[str, Any], governance_assessment: Dict[str, Any]) -> Dict[str, Any]:
+    def reflect_on_strategy(self, business_analysis: Dict[str, Any], governance_assessment: Dict[str, Any], purpose_analysis: Dict[str, Any] = None) -> Dict[str, Any]:
         logger.info("Introspection: StrategicReflector performing strategic reflection.")
 
         proposals = []
@@ -54,8 +75,15 @@ class StrategicReflector:
         if governance_assessment["status"] == "GOVERNANCE_DRIFT":
             proposals.append({"type": "CONSTITUTIONAL_AMENDMENT", "reason": "High Veto Rate"})
 
+        if purpose_analysis and purpose_analysis["status"] == "DRIFT_DETECTED":
+            proposals.append({"type": "PURPOSE_REALIGNMENT", "reason": f"PAS Drift: {purpose_analysis['drift_index']}"})
+
+        health_scores = [business_analysis["achievement_score"], governance_assessment["alignment_score"]]
+        if purpose_analysis and "current_pas" in purpose_analysis:
+            health_scores.append(purpose_analysis["current_pas"])
+
         return {
-            "reflection_timestamp": "2024-05-23T12:00:00Z",
+            "reflection_timestamp": datetime.datetime.now().isoformat(),
             "strategic_proposals": proposals,
-            "overall_enterprise_health": (business_analysis["achievement_score"] + governance_assessment["alignment_score"]) / 2
+            "overall_enterprise_health": sum(health_scores) / len(health_scores)
         }

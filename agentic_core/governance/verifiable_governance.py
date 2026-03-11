@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Any
+from agentic_core.purpose.evaluator import PurposeAlignmentEvaluator
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,22 @@ class ConstitutionalPolicy(IGovernancePolicy):
     def attest(self, data: Dict[str, Any]) -> str:
         return "Constitutional_Attestation_SIH_Aligned"
 
+class PurposeAlignmentPolicy(IGovernancePolicy):
+    """ARTICLE 338: Purpose Alignment Evaluation Policy."""
+    def __init__(self):
+        self.evaluator = PurposeAlignmentEvaluator()
+
+    def verify(self, intent: Dict[str, Any]) -> bool:
+        logger.info("VGA: Verifying purpose alignment policy.")
+        analysis = self.evaluator.evaluate_intent(intent)
+        if analysis["purpose_alignment_score"] < 0.85:
+            logger.warning(f"VGA: Purpose drift detected (Score: {analysis['purpose_alignment_score']})")
+            return False
+        return True
+
+    def attest(self, data: Dict[str, Any]) -> str:
+        return "Purpose_Attestation_Foundation_Aligned"
+
 class VGAEngine:
     """
     ARTICLE 290: Verifiable Governance Architecture Engine.
@@ -65,7 +82,8 @@ class VGAEngine:
         self.policies: Dict[str, IGovernancePolicy] = {
             "minimization": DataMinimizationPolicy(),
             "shariah": ShariahCompliancePolicy(),
-            "constitutional": ConstitutionalPolicy()
+            "constitutional": ConstitutionalPolicy(),
+            "purpose": PurposeAlignmentPolicy()
         }
 
     def validate_action(self, policy_name: str, data: Dict[str, Any]) -> bool:

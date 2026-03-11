@@ -21,27 +21,29 @@ class EntityCEOInterface:
                 import json
                 json.dump([], f)
 
-    def send_strategic_guidance(self, message: str) -> str:
-        """Entity sends strategic guidance to AI CEO."""
+    def send_strategic_guidance(self, message: str, type: str = "STRATEGIC") -> str:
+        """Entity sends strategic or purpose guidance to AI CEO."""
         guidance = {
             "timestamp": datetime.datetime.now().isoformat(),
             "source": "ENTITY",
+            "type": type,
             "message": message,
             "status": "UNREAD"
         }
         self._log_interaction(guidance)
         return guidance["timestamp"]
 
-    def issue_veto(self, decision_id: str, reason: str):
-        """Entity issues a veto for a strategic decision."""
+    def issue_veto(self, decision_id: str, reason: str, category: str = "CONSTITUTIONAL"):
+        """Entity issues a veto (Constitutional or Purpose-based)."""
         veto = {
             "timestamp": datetime.datetime.now().isoformat(),
             "source": "ENTITY",
             "type": "VETO",
+            "category": category,
             "decision_id": decision_id,
             "reason": reason
         }
-        logger.warning(f"ENTITY VETO: Decision {decision_id} rejected. Reason: {reason}")
+        logger.warning(f"ENTITY {category} VETO: Decision {decision_id} rejected. Reason: {reason}")
         self._log_interaction(veto)
 
     def query_entity(self, question: str) -> str:

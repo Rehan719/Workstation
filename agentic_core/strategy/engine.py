@@ -14,21 +14,23 @@ class StrategicPlanningModule:
         self.plan_path = plan_path
 
     def generate_draft_plan(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """Generates a draft Business Plan based on strategic inputs and current system state."""
-        # Use provided inputs or default to core workstation aims
-        vision = inputs.get("vision", "Transcendent Evolution of Sovereign Intelligence")
-        mission = inputs.get("mission", "Perpetual Strategic Optimization via Integrated Introspection")
+        """Generates a draft Business Plan based on strategic inputs and dual-purpose mandates."""
+        # ARTICLE 336: Dual-Purpose Foundation
+        vision = inputs.get("vision", "Transcendent Evolution of Purpose-Driven Intelligence")
+        mission = inputs.get("mission", "Seeking Divine Pleasure via Profit-Enabled Innovation & Scholarship")
+
         aims = inputs.get("aims", [
-            "Scale Specialized Sub-Reactors to 100+ instances",
-            "Achieve 99.8% Digital Twin Fidelity (ESE)",
-            "Automate 100% of Resource Assembly (DRAD)",
-            "Ensure 100% Constitutional Compliance (VGA)"
+            "Become the leading platform for Islamic scholarship and Dawah-tech.",
+            "Generate sustainable profit to fund charitable works and system expansion.",
+            "Empower users in scholarship, enterprise, and personal affairs.",
+            "Ensure 100% Purpose Alignment across all sub-reactors."
         ])
+
+        # OKRs now include purpose alignment targets (Article 339)
         objectives = inputs.get("objectives", [
-            "Deploy Integrated Strategic Enterprise (v101.0)",
-            "Execute Grand Synthesis for v101.0 DNA",
-            "Implement Entity-CEO Strategic Interface",
-            "Establish QMS 3.0 Integrated Governance"
+            {"desc": "Launch free Dawah module", "purpose_target": 0.95},
+            {"desc": "Increase revenue by 20% (5% to charity)", "purpose_target": 0.90},
+            {"desc": "Execute v103.0 Purpose Grand Synthesis", "purpose_target": 1.0}
         ])
 
         return {
@@ -63,8 +65,14 @@ class StrategicPlanningModule:
         with open(self.plan_path, 'w', encoding='utf-8') as f:
             f.write(content)
 
-    def _format_list(self, items: List[str]) -> str:
-        return "\n".join([f"- {i}" for i in items])
+    def _format_list(self, items: List[Any]) -> str:
+        formatted = []
+        for i in items:
+            if isinstance(i, dict):
+                formatted.append(f"- {i.get('desc')} (Purpose Target: {i.get('purpose_target')})")
+            else:
+                formatted.append(f"- {i}")
+        return "\n".join(formatted)
 
 class ResourceManagementModule:
     """
@@ -72,8 +80,8 @@ class ResourceManagementModule:
     Allocates resources based on strategic priorities using ARO-ready formulas.
     """
     def allocate_resources(self, priorities: List[Dict[str, Any]]) -> Dict[str, float]:
-        """Allocates compute and agent time using weighted priority formulas."""
-        # Weighted allocation logic: Higher priority (HIGH) gets more resource shares
+        """Allocates resources using weighted priority and Purpose Alignment scores."""
+        # Weighted allocation logic: Higher priority and higher Purpose Target gets more
         weight_map = {"HIGH": 3, "MEDIUM": 2, "LOW": 1}
         total_weight = sum(weight_map.get(p.get("priority", "LOW"), 1) for p in priorities)
 
@@ -84,7 +92,9 @@ class ResourceManagementModule:
         for p in priorities:
             name = p.get("type", "UNKNOWN")
             weight = weight_map.get(p.get("priority", "LOW"), 1)
-            allocation[name] = round(weight / total_weight, 2)
+            # Factor in purpose alignment target if available
+            purpose_factor = p.get("purpose_target", 1.0)
+            allocation[name] = round((weight * purpose_factor) / total_weight, 2)
 
         return allocation
 
