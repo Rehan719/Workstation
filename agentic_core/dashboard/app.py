@@ -11,10 +11,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="Jules AI v109.0 AI CEO Command Center", layout="wide")
+st.set_page_config(page_title="Jules AI v110.0 Transcendent Command Center", layout="wide")
 
-st.title("🧬 Jules AI v109.0: The AI CEO Master Dashboard")
-st.markdown("### The Self-Optimising Grand Synthesis Meta-Pipeline v2.0")
+st.title("🧬 Jules AI v110.0: The Transcendent AI CEO Command Center")
+st.markdown("### The Flawlessly Coordinated, Self-Optimising Grand Synthesis Meta-Pipeline v3.0")
 
 if 'organism' not in st.session_state:
     try:
@@ -83,10 +83,10 @@ with col2:
         st.write(f"Rationale: {latest['mce']['reason']}")
 
 with col3:
-    st.header("📚 Documentation & Onboarding (v109.0)")
+    st.header("📚 Documentation & Onboarding (v110.0)")
 
-    # ARTICLE 365: Interactive Onboarding Agent
-    st.subheader("🤖 Onboarding Agent")
+    # ARTICLE 365 & 376: Transcendent Onboarding Agent
+    st.subheader("🤖 Transcendent Onboarding Agent")
     user_interest = st.selectbox("I want to learn about:", ["Quranic Study", "Development", "Administration"])
     if st.button("Launch Personalized Tour"):
         st.info(f"Onboarding Agent: Initiating tour for {user_interest}...")
@@ -104,15 +104,15 @@ with col3:
 
     st.divider()
 
-    st.header("📖 Expanded Guides")
+    st.header("📖 Transcendent Guides")
     docs_path = Path("docs/guides")
     if docs_path.exists():
-        docs = [f.name for f in docs_path.glob("*_v2.md")]
-        st.write(f"**Generated v2 Guides:** {len(docs)}")
+        docs = [f.name for f in docs_path.glob("*_v3.md")]
+        st.write(f"**Generated v3 Guides:** {len(docs)}")
         for doc in docs:
             st.markdown(f"- [{doc}](https://github.com/Rehan719/Workstation/blob/main/docs/guides/{doc})")
     else:
-        st.warning("No documentation found. Run Grand Synthesis with --generate-docs-v2.")
+        st.warning("No documentation found. Run Grand Synthesis with --ultimate-rerun.")
 
     st.divider()
 
@@ -131,10 +131,10 @@ with col3:
         snn_data = np.random.normal(latest['triad']['p53_level'], 0.1, 12)
         st.plotly_chart(px.bar(snn_data, title="SNN Cortical Spikes"), use_container_width=True)
 
-st.sidebar.header("AI CEO v109.0 Status")
-st.sidebar.write(f"Instance ID: {st.session_state.organism.agent_id if st.session_state.organism else 'v109-MASTER'}")
-st.sidebar.write("Governance: CONSTITUTION v109.0.0")
-st.sidebar.write("Status: Self-Optimising Meta-Pipeline Phase")
+st.sidebar.header("AI CEO v110.0 Status")
+st.sidebar.write(f"Instance ID: {st.session_state.organism.agent_id if st.session_state.organism else 'v110-TRANSCENDENT'}")
+st.sidebar.write("Governance: CONSTITUTION v110.0.0")
+st.sidebar.write("Status: Transcendent Meta-Cognition Phase")
 
 if st.session_state.history:
     st.header("Global Workspace Event Log")

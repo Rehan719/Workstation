@@ -7,16 +7,16 @@ logger = logging.getLogger(__name__)
 class DNAGenerator:
     """CN-IV: Immutable DNA Generation."""
 
-    def generate_v109_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v109.0 - The Self-Optimising, Flawlessly Coordinated, Unified Grand Synthesis Meta-Pipeline Release."""
-        version = "109.0.0"
-        path = "CONSTITUTION_v109.0.0.md"
+    def generate_v110_constitution(self, config: Dict[str, Any]) -> str:
+        """CN-IV: Immutable DNA Generation for v110.0 - The Transcendent Unified Knowledge & Grand Synthesis Release."""
+        version = "110.0.0"
+        path = "CONSTITUTION_v110.0.0.md"
 
-        content = f"""# JULES AI v{version}: THE SELF-OPTIMISING, FLAWLESSLY COORDINATED, UNIFIED GRAND SYNTHESIS META-PIPELINE CONSTITUTION
+        content = f"""# JULES AI v{version}: THE TRANSCENDENT UNIFIED KNOWLEDGE & GRAND SYNTHESIS CONSTITUTION
 
 ## ⚜️ PREAMBLE
-This document establishes the definitive, unified DNA of Jules AI v109.0.
-It entrenches a transcendent, dual-purpose foundation into a self-optimising digital organism that predicts its own evolution and guarantees the quality of its outputs.
+This document establishes the definitive, unified DNA of Jules AI v110.0.
+It unifies all source knowledge, introspection data, and evolutionary history into a single, flawless, self-optimising Grand Synthesis Meta-Pipeline.
 
 ## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
 **ARTICLE 47: SUPREME PRIORITY**
@@ -137,21 +137,27 @@ The system shall provide a personalised, AI‑powered onboarding experience for 
 **ARTICLE 366: DOCUMENTATION FEEDBACK & EVOLUTION MANDATE**
 The system shall maintain a continuous feedback loop for all documentation, with automatic updates triggered when gaps are identified.
 
-## 🚀 SECTION XIV: GRAND SYNTHESIS META-PIPELINE v2.0 (Articles 371-375)
-**ARTICLE 371: PREDICTIVE META-ORCHESTRATOR MANDATE**
-The system shall maintain a Meta‑Orchestrator 2.0 Agent that uses predictive analytics to forecast bottlenecks and dynamically allocate resources across all Grand Synthesis threads.
+## 🚀 SECTION XIV: GRAND SYNTHESIS META-PIPELINE v3.0 (Articles 371-380)
+**ARTICLE 371: PREDICTIVE META-ORCHESTRATOR 3.0 MANDATE**
+The system shall maintain a Meta‑Orchestrator 3.0 Agent that uses hierarchical orchestration and predictive resource balancing to manage the Ultimate Rerun Pipeline.
 
-**ARTICLE 372: ADVANCED CONFLICT RESOLUTION MANDATE**
-The system shall maintain an Advanced Conflict Resolution Layer that auto‑resolves ≥95% of conflicts between knowledge sources using priority schemes and machine learning.
+**ARTICLE 372: TRANSCENDENT CONFLICT RESOLUTION MANDATE**
+The system shall maintain a Transcendent Conflict Resolution Layer that auto‑resolves 100% of conflicts using priority-weighted alignment (Source Background > Introspection > URL Ingest).
 
-**ARTICLE 373: UNIFIED KNOWLEDGE GRAPH 2.0 MANDATE**
-The system shall maintain a Unified Knowledge Graph that is updated in real‑time during Grand Syntheses and provides a query API for all CoEs.
+**ARTICLE 373: UNIFIED KNOWLEDGE GRAPH 3.0 MANDATE**
+The system shall maintain a Unified Knowledge Graph 3.0 that performs real-time semantic linking across URLs, background texts, and full conversation history.
 
-**ARTICLE 374: GUARANTEED OUTPUT QUALITY MANDATE**
-All outputs from the Grand Synthesis Meta‑Pipeline shall undergo multi‑stage validation and impact simulation. Each output shall include a generation provenance certificate.
+**ARTICLE 374: TRANSCENDENT OUTPUT QUALITY MANDATE**
+All outputs from the v3.0 Meta‑Pipeline shall undergo recursive validation and multi-agent peer review. Each output shall include a Transcendent Generation Provenance Certificate.
 
-**ARTICLE 375: CONTINUOUS SELF-OPTIMISATION MANDATE**
-The Grand Synthesis Meta‑Pipeline shall continuously learn from its own operations, with an Optimisation Agent proposing configuration changes to be auto-incorporated.
+**ARTICLE 375: META-COGNITIVE SELF-OPTIMISATION MANDATE**
+The Meta‑Pipeline shall perform real-time introspection on its own synthesis logic, dynamically reconfiguring its parameters to achieve absolute flawlessness.
+
+**ARTICLE 376: ULTIMATE RERUN MANDATE**
+The system shall maintain a one-button `ultimate-rerun` mode that integrates all source background text files, introspection data, and URL ingestion modes into a united, unified optimally configured pipeline.
+
+**ARTICLE 377: CONVERSATION HISTORY INTEGRATION MANDATE**
+The system shall ingest and synthesize the entire conversation history to ensure absolute alignment with the repo owner's strategic intent and nuances.
 
 ---
 *Codified via Grand Synthesis Engine v{version}*
