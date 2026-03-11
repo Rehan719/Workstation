@@ -1,0 +1,48 @@
+{
+    "core_engines": [
+        {
+            "name": "ESE",
+            "description": "Environmental Simulator Engine (Digital Twins)",
+            "article": 303,
+            "path": "agentic_core/simulation/engine.py"
+        },
+        {
+            "name": "ARO",
+            "description": "Adaptive Resource Optimizer",
+            "article": 305,
+            "path": "agentic_core/optimization/engine.py"
+        },
+        {
+            "name": "BTO",
+            "description": "Biomimetic Team Orchestrator",
+            "article": 307,
+            "path": "agentic_core/teams/team_orchestrator.py"
+        },
+        {
+            "name": "DRAD",
+            "description": "Dynamic Resource Assembly & Disassembly",
+            "article": 306,
+            "path": "agentic_core/optimizer/fabric.py"
+        }
+    ],
+    "strategic_components": [
+        {
+            "name": "BMS",
+            "description": "Business Management System",
+            "article": 327,
+            "path": "agentic_core/enterprise/engine.py"
+        },
+        {
+            "name": "QMS",
+            "description": "Quality Management System",
+            "article": 328,
+            "path": "agentic_core/compliance/qms.py"
+        },
+        {
+            "name": "GOS",
+            "description": "Governance & Oversight System",
+            "article": 331,
+            "path": "agentic_core/governance/executive_intelligence.py"
+        }
+    ]
+}

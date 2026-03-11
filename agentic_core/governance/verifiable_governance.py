@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Any
+from agentic_core.purpose.evaluator import PurposeAlignmentEvaluator
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,6 @@ class DataMinimizationPolicy(IGovernancePolicy):
     """ARTICLE 182: Verifiable Governance - Data Minimization."""
     def verify(self, intent: Dict[str, Any]) -> bool:
         logger.info("VGA: Verifying data minimization policy intent.")
-        # Logic: Intent must not contain raw PII unless specifically flagged as redacted/anonymized
         forbidden = ["ssn", "raw_email", "raw_phone"]
         payload = str(intent).lower()
         return not any(field in payload for field in forbidden) or intent.get("anonymized", False)
@@ -31,14 +31,42 @@ class ShariahCompliancePolicy(IGovernancePolicy):
     """ARTICLE 60/244: Shariah Governance Policy."""
     def verify(self, intent: Dict[str, Any]) -> bool:
         logger.info("VGA: Verifying Shariah compliance.")
-        # Prohibit Riba (interest) and Gharar (uncertainty) in commercial intents
-        # Normalized prohibited list using dashes
         prohibited = ["interest-bearing", "uncertain-derivative", "prohibited-content"]
         payload = str(intent).lower().replace("_", "-")
         return not any(item in payload for item in prohibited)
 
     def attest(self, data: Dict[str, Any]) -> str:
         return "Shariah_Attestation_Halal_Verified"
+
+class ConstitutionalPolicy(IGovernancePolicy):
+    """ARTICLE 329: Constitutional Enforcer."""
+    def verify(self, intent: Dict[str, Any]) -> bool:
+        logger.info("VGA: Verifying constitutional compliance.")
+        sih_order = ["immune", "nervous", "digestive", "aging"]
+        priority = intent.get("priority_layer", "digestive").lower()
+        if priority in ["nervous", "digestive", "aging"] and intent.get("security_context", False):
+            logger.warning(f"VGA: SIH Violation - security context must use 'immune' priority.")
+            return False
+        return True
+
+    def attest(self, data: Dict[str, Any]) -> str:
+        return "Constitutional_Attestation_SIH_Aligned"
+
+class PurposeAlignmentPolicy(IGovernancePolicy):
+    """ARTICLE 338: Purpose Alignment Evaluation Policy."""
+    def __init__(self):
+        self.evaluator = PurposeAlignmentEvaluator()
+
+    def verify(self, intent: Dict[str, Any]) -> bool:
+        logger.info("VGA: Verifying purpose alignment policy.")
+        analysis = self.evaluator.evaluate_intent(intent)
+        if analysis["purpose_alignment_score"] < 0.85:
+            logger.warning(f"VGA: Purpose drift detected (Score: {analysis['purpose_alignment_score']})")
+            return False
+        return True
+
+    def attest(self, data: Dict[str, Any]) -> str:
+        return "Purpose_Attestation_Foundation_Aligned"
 
 class VGAEngine:
     """
@@ -48,7 +76,9 @@ class VGAEngine:
     def __init__(self):
         self.policies: Dict[str, IGovernancePolicy] = {
             "minimization": DataMinimizationPolicy(),
-            "shariah": ShariahCompliancePolicy()
+            "shariah": ShariahCompliancePolicy(),
+            "constitutional": ConstitutionalPolicy(),
+            "purpose": PurposeAlignmentPolicy()
         }
 
     def validate_action(self, policy_name: str, data: Dict[str, Any]) -> bool:
