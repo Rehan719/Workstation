@@ -1,25 +1,26 @@
-# Jules AI v100.0 APOTHEOSIS OF SYNERGY: The Ultimate Master Workstation
+# Jules AI v107.0: THE COMPREHENSIVE DOCUMENTATION & USER EMPOWERMENT RELEASE
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
-## 🚀 One-Click Operations
-This repository is optimized for VS Code.
-- **Windows Setup**: Run `powershell -ExecutionPolicy Bypass -File scripts/setup_windows.ps1`
-- **Linux/macOS Setup**: Run `bash -c "python3 -m venv venv && source venv/bin/activate && pip install -e . && python3 -m agentic_core.synthesis.grand_synthesis_engine"`
-- **VS Code Task**: Press `Ctrl+Shift+P` and run **`Awaken Transcendent (v100 Setup)`**.
+## 🚀 One-Button Platform Setup
+Deploy the entire Workstation platform (Backend, Frontend, Cloud, and Mobile) with a single command:
+```bash
+./deploy.sh
+```
+*Note: Ensure you have your API keys ready (OpenAI, Vercel, Render, GCP).*
 
-## 🧬 v100.0 Apotheosis of Synergy: The Transcendent Ecosystem
-Jules AI v100.0 represents the fundamental re-engineering of the Workstation into a living, breathing ecosystem of specialized intelligence.
+## 🧬 v107.0 The Empowerment Era
+Jules AI v107.0 focuses on democratizing the power of the Virtual Sovereign Business through crystal-clear documentation and effortless deployment.
 
-### 📜 Quadruple-Pillar Expansion
-The v100.0 release is built upon four transformative pillars:
-1. **Environmental Simulator Engine (ESE)**: Creating high-fidelity digital twins (Articles 303-304).
-2. **Adaptive Resource Optimizer (ARO)**: Intelligent, personalized resource allocation (Article 305).
-3. **Biomimetic Team Orchestrator (BTO)**: Emergent, human-like virtual task forces (Article 307).
-4. **Dynamic Resource Assembly & Disassembly (DRAD)**: Composable resource pools using RAL (Article 306).
+### 📚 Comprehensive Documentation Suite
+- [Repo Owner Guide](docs/guides/repo_owner.md): Strategic vision, governance, and management.
+- [Developer Guide](docs/guides/developer.md): APIs, SDKs, and contribution workflows.
+- [User Guide](docs/guides/user.md): Step-by-step instructions for non-coding users.
+- [Platform Features](docs/guides/platform_features.md): Detailed inventory of all platform capabilities.
+- [Background & Accessibility](docs/guides/background.md): Resource overview and accessibility commitment.
 
 ### ⚖️ Constitutional Sovereignty
-At the core is the **Transcendent Constitution (CONSTITUTION_v100.0.0.md)**. With 312 codified articles, it governs the digital organism with absolute fidelity to truth-infused survival instincts.
+At the core is the **v107.0 Constitution (CONSTITUTION_v107.0.0.md)**. With 362 codified articles, it mandate user empowerment and frictionless deployment as supreme guiding principles.
 
 ### 🚀 Zero-Cost/No-Incurred-Cost Deployment
 Engineered for democratization, the entire workstation can be deployed on free-tier cloud infrastructure (Render, Vercel, Streamlit Cloud).

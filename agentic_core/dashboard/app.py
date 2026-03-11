@@ -10,18 +10,18 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from agentic_core.orchestration.conscious_organism_v70_0 import ConsciousOrganismV70_0
 
-st.set_page_config(page_title="Jules AI v70.0 Organism Command Center", layout="wide")
+st.set_page_config(page_title="Jules AI v107.0 AI CEO Command Center", layout="wide")
 
-st.title("🧬 Jules AI v70.0: The Conscious Digital Organism")
-st.markdown("### Unified v1-v70 Biomimetic Integration Dashboard")
+st.title("🧬 Jules AI v107.0: The AI CEO Master Dashboard")
+st.markdown("### The Comprehensive Documentation & User Empowerment Release")
 
 if 'organism' not in st.session_state:
-    # We will implement this class in Step 7
     try:
+        from agentic_core.orchestration.conscious_organism_v70_0 import ConsciousOrganismV70_0
         st.session_state.organism = ConsciousOrganismV70_0()
-    except ImportError:
+    except Exception as e:
+        st.write(f"⚠️ Warning: Could not initialize Master Orchestrator: {e}")
         st.session_state.organism = None
     st.session_state.history = []
 
@@ -83,6 +83,18 @@ with col2:
         st.write(f"Rationale: {latest['mce']['reason']}")
 
 with col3:
+    st.header("📚 Documentation Panel (v107.0)")
+    docs_path = Path("docs/guides")
+    if docs_path.exists():
+        docs = [f.name for f in docs_path.glob("*.md")]
+        st.write(f"**Generated Guides:** {len(docs)}")
+        for doc in docs:
+            st.markdown(f"- [{doc}](https://github.com/Rehan719/Workstation/blob/main/docs/guides/{doc})")
+    else:
+        st.warning("No documentation found. Run Grand Synthesis with --generate-docs.")
+
+    st.divider()
+
     if st.session_state.history:
         st.header("Genomic Registry (L3)")
         st.metric("Lineage Blocks", latest['genome_depth'])
@@ -92,10 +104,10 @@ with col3:
         snn_data = np.random.normal(latest['triad']['p53_level'], 0.1, 12)
         st.plotly_chart(px.bar(snn_data, title="SNN Cortical Spikes"), use_container_width=True)
 
-st.sidebar.header("Organism v70.0 Status")
-st.sidebar.write(f"Instance ID: {st.session_state.organism.agent_id}")
-st.sidebar.write("Governance: CONSTITUTION v70.0")
-st.sidebar.write("Status: Phase 1 (Molecular Triad)")
+st.sidebar.header("AI CEO v107.0 Status")
+st.sidebar.write(f"Instance ID: {st.session_state.organism.agent_id if st.session_state.organism else 'v107-MASTER'}")
+st.sidebar.write("Governance: CONSTITUTION v107.0.0")
+st.sidebar.write("Status: Documentation & Empowerment Phase")
 
 if st.session_state.history:
     st.header("Global Workspace Event Log")

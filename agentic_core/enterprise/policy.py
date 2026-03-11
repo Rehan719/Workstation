@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
@@ -8,6 +9,17 @@ class PolicyCoE:
     ARTICLE 341: Centre for Policy & Governance.
     Ensures constitutional fidelity and ethical alignment.
     """
+    def __init__(self):
+        self.dcs_path = "docs/dcs"
+        os.makedirs(self.dcs_path, exist_ok=True)
+
+    def store_in_dcs(self, document_name: str, content: str):
+        """ARTICLE 359: Stores documentation in the Document Control System (DCS)."""
+        logger.info(f"Policy: Storing {document_name} in DCS.")
+        path = os.path.join(self.dcs_path, document_name)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+
     def interpret_mandate(self, article_num: int) -> str:
         """Provides scholarly interpretation of constitutional articles."""
         # Simulated knowledge base lookup
