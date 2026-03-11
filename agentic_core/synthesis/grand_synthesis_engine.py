@@ -33,8 +33,8 @@ class GrandSynthesisEngine:
         self.is_synthesized = False
 
     async def run_synthesis(self, output_path: str = "meta/synthesis_v100.json"):
-        """Executes the full v100.0 grand synthesis cycle (APOTHEOSIS)."""
-        logger.info("Starting v100.0 Grand Synthesis Cycle (APOTHEOSIS)...")
+        """Executes the full v100.x grand synthesis cycle (APOTHEOSIS)."""
+        logger.info("Starting v100.x Grand Synthesis Cycle (APOTHEOSIS)...")
 
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -52,7 +52,8 @@ class GrandSynthesisEngine:
 
         # CN-II. Conflict Resolution
         resolved_config = self.resolver.resolve_conflicts(patterns)
-        resolved_config["version"] = "100.0.0"
+        # Force v100.1 version for this cycle
+        resolved_config["version"] = "100.1.0"
         resolved_config["patterns"] = patterns
 
         # Save synthesis results
@@ -64,10 +65,10 @@ class GrandSynthesisEngine:
         self.memory.store_synthesis_results(resolved_config)
 
         self.is_synthesized = True
-        logger.info("v100.0 Grand Synthesis complete. APOTHEOSIS baseline established.")
+        logger.info("v100.x Grand Synthesis complete. APOTHEOSIS baseline established.")
         return resolved_config
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    engine = GrandSynthesisEngine(["sources/background"])
+    engine = GrandSynthesisEngine(["docs/historical/background"])
     asyncio.run(engine.run_synthesis())

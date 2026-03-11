@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jules-ai"
-version = "100.0.0"
+version = "100.1.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
