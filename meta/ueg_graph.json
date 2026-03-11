@@ -1026,6 +1026,4598 @@
                 "version": "60.0.0",
                 "timestamp": "2024-05-22T10:00:00"
             }
+        },
+        {
+            "id": "v60_grand_synthesis",
+            "type": "insight",
+            "content": {
+                "version": "100.0.0",
+                "orchestration_mode": "apotheosis_of_synergy",
+                "governance_model": "biologically_orchestrated_constitution_v100",
+                "survival_instinct_hierarchy": [
+                    "Immune",
+                    "Nervous",
+                    "Digestive",
+                    "Aging"
+                ],
+                "verification_layers": 12,
+                "quantum_mastery": "apotheosis",
+                "allostasis": "predictive_twin_enabled",
+                "parameters": {
+                    "redox_midpoint": -225.0,
+                    "reflex_latency": 45,
+                    "synaptic_scaling_tau": 15.0,
+                    "hsp_atp_rate": 5.0
+                },
+                "engines": {
+                    "twinning": {
+                        "enabled": true,
+                        "fidelity_target": 0.99
+                    },
+                    "aro": {
+                        "enabled": true,
+                        "waste_limit": 0.05
+                    },
+                    "bto": {
+                        "enabled": true,
+                        "health_target": 0.9
+                    },
+                    "drad": {
+                        "enabled": true,
+                        "scale_up_time": 30
+                    }
+                },
+                "cognition": {
+                    "minimax_threshold": 0.92,
+                    "qwen_reasoning_steps": 12,
+                    "retro_causal_optimization": true,
+                    "cognitive_hierarchy_levels": 5
+                },
+                "patterns": [
+                    {
+                        "id": "apotheosis_of_synergy",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "quadruple_engine_integration",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "twinning_engine",
+                        "confidence": 1.0,
+                        "article": 114,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "aro_engine",
+                        "confidence": 1.0,
+                        "article": 115,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "bto_engine",
+                        "confidence": 1.0,
+                        "article": 116,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "drad_engine",
+                        "confidence": 1.0,
+                        "article": 117,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "qep_integration",
+                        "confidence": 1.0,
+                        "article": 98,
+                        "v_range": "v94-v100"
+                    },
+                    {
+                        "id": "minimax_strategy",
+                        "confidence": 0.99,
+                        "article": 95,
+                        "v_range": "v95-v100"
+                    },
+                    {
+                        "id": "cognitive_hierarchy",
+                        "confidence": 0.99,
+                        "article": 96,
+                        "v_range": "v96-v100"
+                    },
+                    {
+                        "id": "retro_causal_processing",
+                        "confidence": 0.98,
+                        "article": 97,
+                        "v_range": "v97-v100"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Build on and enhance the plan; jule.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    }
+                ]
+            },
+            "metadata": {
+                "version": "60.0.0",
+                "timestamp": "2024-05-22T10:00:00"
+            }
+        },
+        {
+            "id": "v60_grand_synthesis",
+            "type": "insight",
+            "content": {
+                "version": "100.0.0",
+                "orchestration_mode": "apotheosis_of_synergy",
+                "governance_model": "biologically_orchestrated_constitution_v100",
+                "survival_instinct_hierarchy": [
+                    "Immune",
+                    "Nervous",
+                    "Digestive",
+                    "Aging"
+                ],
+                "verification_layers": 12,
+                "quantum_mastery": "apotheosis",
+                "allostasis": "predictive_twin_enabled",
+                "parameters": {
+                    "redox_midpoint": -225.0,
+                    "reflex_latency": 45,
+                    "synaptic_scaling_tau": 15.0,
+                    "hsp_atp_rate": 5.0
+                },
+                "engines": {
+                    "twinning": {
+                        "enabled": true,
+                        "fidelity_target": 0.99
+                    },
+                    "aro": {
+                        "enabled": true,
+                        "waste_limit": 0.05
+                    },
+                    "bto": {
+                        "enabled": true,
+                        "health_target": 0.9
+                    },
+                    "drad": {
+                        "enabled": true,
+                        "scale_up_time": 30
+                    }
+                },
+                "cognition": {
+                    "minimax_threshold": 0.92,
+                    "qwen_reasoning_steps": 12,
+                    "retro_causal_optimization": true,
+                    "cognitive_hierarchy_levels": 5
+                },
+                "patterns": [
+                    {
+                        "id": "apotheosis_of_synergy",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "quadruple_engine_integration",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "twinning_engine",
+                        "confidence": 1.0,
+                        "article": 114,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "aro_engine",
+                        "confidence": 1.0,
+                        "article": 115,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "bto_engine",
+                        "confidence": 1.0,
+                        "article": 116,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "drad_engine",
+                        "confidence": 1.0,
+                        "article": 117,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "qep_integration",
+                        "confidence": 1.0,
+                        "article": 98,
+                        "v_range": "v94-v100"
+                    },
+                    {
+                        "id": "minimax_strategy",
+                        "confidence": 0.99,
+                        "article": 95,
+                        "v_range": "v95-v100"
+                    },
+                    {
+                        "id": "cognitive_hierarchy",
+                        "confidence": 0.99,
+                        "article": 96,
+                        "v_range": "v96-v100"
+                    },
+                    {
+                        "id": "retro_causal_processing",
+                        "confidence": 0.98,
+                        "article": 97,
+                        "v_range": "v97-v100"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    }
+                ]
+            },
+            "metadata": {
+                "version": "60.0.0",
+                "timestamp": "2024-05-22T10:00:00"
+            }
+        },
+        {
+            "id": "v100.0.0_grand_synthesis",
+            "type": "insight",
+            "content": {
+                "version": "100.0.0",
+                "orchestration_mode": "continuous_synergy_optimization",
+                "governance_model": "biologically_orchestrated_constitution_v100.1",
+                "survival_instinct_hierarchy": [
+                    "Immune",
+                    "Nervous",
+                    "Digestive",
+                    "Aging"
+                ],
+                "verification_layers": 15,
+                "quantum_mastery": "active_apotheosis",
+                "allostasis": "meta_evolution_loop",
+                "parameters": {
+                    "redox_midpoint": -225.0,
+                    "reflex_latency": 42,
+                    "synaptic_scaling_tau": 12.0,
+                    "hsp_atp_rate": 5.5
+                },
+                "engines": {
+                    "twinning": {
+                        "enabled": true,
+                        "fidelity_target": 0.995
+                    },
+                    "aro": {
+                        "enabled": true,
+                        "waste_limit": 0.04
+                    },
+                    "bto": {
+                        "enabled": true,
+                        "health_target": 0.92
+                    },
+                    "drad": {
+                        "enabled": true,
+                        "scale_up_time": 25
+                    }
+                },
+                "cognition": {
+                    "minimax_threshold": 0.95,
+                    "qwen_reasoning_steps": 15,
+                    "retro_causal_optimization": true,
+                    "cognitive_hierarchy_levels": 7
+                },
+                "platforms": {
+                    "huggingface": {
+                        "enabled": true,
+                        "mode": "twinning_validated"
+                    },
+                    "github": {
+                        "enabled": true,
+                        "mode": "genomic_sync"
+                    }
+                },
+                "patterns": [
+                    {
+                        "id": "apotheosis_of_synergy",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "quadruple_engine_integration",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "twinning_engine",
+                        "confidence": 1.0,
+                        "article": 114,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "aro_engine",
+                        "confidence": 1.0,
+                        "article": 115,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "bto_engine",
+                        "confidence": 1.0,
+                        "article": 116,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "drad_engine",
+                        "confidence": 1.0,
+                        "article": 117,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "qep_integration",
+                        "confidence": 1.0,
+                        "article": 98,
+                        "v_range": "v94-v100"
+                    },
+                    {
+                        "id": "minimax_strategy",
+                        "confidence": 0.99,
+                        "article": 95,
+                        "v_range": "v95-v100"
+                    },
+                    {
+                        "id": "cognitive_hierarchy",
+                        "confidence": 0.99,
+                        "article": 96,
+                        "v_range": "v96-v100"
+                    },
+                    {
+                        "id": "retro_causal_processing",
+                        "confidence": 0.98,
+                        "article": 97,
+                        "v_range": "v97-v100"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/Production environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/Production environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Build on and enhance the plan; jule.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Build on and enhance the plan; jule.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "sources/background/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    }
+                ]
+            },
+            "metadata": {
+                "version": "100.0.0",
+                "timestamp": "2024-10-01T00:00:00"
+            }
+        },
+        {
+            "id": "run_17162",
+            "type": "pipeline_run",
+            "content": {
+                "stage": "gse_operations",
+                "status": "completed",
+                "mode": "routine",
+                "timestamp": "2024-10-01T00:00:00"
+            }
+        },
+        {
+            "id": "workstation:1.0.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "1.0.1"
+            }
+        },
+        {
+            "id": "workstation:1.2",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "1.2"
+            }
+        },
+        {
+            "id": "workstation:18.18.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "18.18.0"
+            }
+        },
+        {
+            "id": "workstation:18.20.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "18.20.0"
+            }
+        },
+        {
+            "id": "workstation:2.2",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "2.2"
+            }
+        },
+        {
+            "id": "workstation:2.3",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "2.3"
+            }
+        },
+        {
+            "id": "workstation:2.5",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "2.5"
+            }
+        },
+        {
+            "id": "workstation:3.3",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.3"
+            }
+        },
+        {
+            "id": "workstation:3.3.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.3."
+            }
+        },
+        {
+            "id": "workstation:3.4",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.4"
+            }
+        },
+        {
+            "id": "workstation:3.5",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.5"
+            }
+        },
+        {
+            "id": "workstation:3.5.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.5."
+            }
+        },
+        {
+            "id": "workstation:3.6",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.6"
+            }
+        },
+        {
+            "id": "workstation:3.6.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.6."
+            }
+        },
+        {
+            "id": "workstation:3.7",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.7"
+            }
+        },
+        {
+            "id": "workstation:3.8",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.8"
+            }
+        },
+        {
+            "id": "workstation:4.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "4.1"
+            }
+        },
+        {
+            "id": "workstation:4.2",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "4.2"
+            }
+        },
+        {
+            "id": "workstation:4.3",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "4.3"
+            }
+        },
+        {
+            "id": "workstation:4.3.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "4.3."
+            }
+        },
+        {
+            "id": "workstation:5.0.4",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "5.0.4"
+            }
+        },
+        {
+            "id": "workstation:8.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "8.0.0"
+            }
+        },
+        {
+            "id": "workstation:8.16.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "8.16.0"
+            }
+        },
+        {
+            "id": "v100.1.0_grand_synthesis",
+            "type": "insight",
+            "content": {
+                "version": "100.1.0",
+                "orchestration_mode": "continuous_synergy_optimization",
+                "governance_model": "biologically_orchestrated_constitution_v100.1",
+                "survival_instinct_hierarchy": [
+                    "Immune",
+                    "Nervous",
+                    "Digestive",
+                    "Aging"
+                ],
+                "verification_layers": 15,
+                "quantum_mastery": "active_apotheosis",
+                "allostasis": "meta_evolution_loop",
+                "parameters": {
+                    "redox_midpoint": -225.0,
+                    "reflex_latency": 42,
+                    "synaptic_scaling_tau": 12.0,
+                    "hsp_atp_rate": 5.5
+                },
+                "engines": {
+                    "twinning": {
+                        "enabled": true,
+                        "fidelity_target": 0.995
+                    },
+                    "aro": {
+                        "enabled": true,
+                        "waste_limit": 0.04
+                    },
+                    "bto": {
+                        "enabled": true,
+                        "health_target": 0.92
+                    },
+                    "drad": {
+                        "enabled": true,
+                        "scale_up_time": 25
+                    }
+                },
+                "cognition": {
+                    "minimax_threshold": 0.95,
+                    "qwen_reasoning_steps": 15,
+                    "retro_causal_optimization": true,
+                    "cognitive_hierarchy_levels": 7
+                },
+                "platforms": {
+                    "huggingface": {
+                        "enabled": true,
+                        "mode": "twinning_validated"
+                    },
+                    "github": {
+                        "enabled": true,
+                        "mode": "genomic_sync"
+                    }
+                },
+                "patterns": [
+                    {
+                        "id": "apotheosis_of_synergy",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "quadruple_engine_integration",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "twinning_engine",
+                        "confidence": 1.0,
+                        "article": 114,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "aro_engine",
+                        "confidence": 1.0,
+                        "article": 115,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "bto_engine",
+                        "confidence": 1.0,
+                        "article": 116,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "drad_engine",
+                        "confidence": 1.0,
+                        "article": 117,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "qep_integration",
+                        "confidence": 1.0,
+                        "article": 98,
+                        "v_range": "v94-v100"
+                    },
+                    {
+                        "id": "minimax_strategy",
+                        "confidence": 0.99,
+                        "article": 95,
+                        "v_range": "v95-v100"
+                    },
+                    {
+                        "id": "cognitive_hierarchy",
+                        "confidence": 0.99,
+                        "article": 96,
+                        "v_range": "v96-v100"
+                    },
+                    {
+                        "id": "retro_causal_processing",
+                        "confidence": 0.98,
+                        "article": 97,
+                        "v_range": "v97-v100"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Production environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Production environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    }
+                ]
+            },
+            "metadata": {
+                "version": "100.1.0",
+                "timestamp": "2024-10-01T00:00:00"
+            }
+        },
+        {
+            "id": "run_19604",
+            "type": "pipeline_run",
+            "content": {
+                "stage": "gse_operations",
+                "status": "completed",
+                "mode": "routine",
+                "timestamp": "2024-10-01T00:00:00"
+            }
+        },
+        {
+            "id": "workstation:0.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "0.1"
+            }
+        },
+        {
+            "id": "workstation:0.3",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "0.3"
+            }
+        },
+        {
+            "id": "workstation:0.9",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "0.9"
+            }
+        },
+        {
+            "id": "workstation:1.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "1.0"
+            }
+        },
+        {
+            "id": "workstation:1.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "1.0."
+            }
+        },
+        {
+            "id": "workstation:1.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "1.0.0"
+            }
+        },
+        {
+            "id": "workstation:1.2.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "1.2.1"
+            }
+        },
+        {
+            "id": "workstation:1.2.3",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "1.2.3"
+            }
+        },
+        {
+            "id": "workstation:1.2.4",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "1.2.4"
+            }
+        },
+        {
+            "id": "workstation:10.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "10.0"
+            }
+        },
+        {
+            "id": "workstation:100.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "100.0"
+            }
+        },
+        {
+            "id": "workstation:100.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "100.0."
+            }
+        },
+        {
+            "id": "workstation:100.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "100.0.0"
+            }
+        },
+        {
+            "id": "workstation:11.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "11.0"
+            }
+        },
+        {
+            "id": "workstation:12.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "12.0"
+            }
+        },
+        {
+            "id": "workstation:12.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "12.0."
+            }
+        },
+        {
+            "id": "workstation:13.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "13.0"
+            }
+        },
+        {
+            "id": "workstation:13.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "13.0."
+            }
+        },
+        {
+            "id": "workstation:14.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "14.0"
+            }
+        },
+        {
+            "id": "workstation:15.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "15.0"
+            }
+        },
+        {
+            "id": "workstation:16.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "16.0"
+            }
+        },
+        {
+            "id": "workstation:17.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "17.0"
+            }
+        },
+        {
+            "id": "workstation:18.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "18.0"
+            }
+        },
+        {
+            "id": "workstation:18.20.8",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "18.20.8"
+            }
+        },
+        {
+            "id": "workstation:19.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "19.0"
+            }
+        },
+        {
+            "id": "workstation:2.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "2.0"
+            }
+        },
+        {
+            "id": "workstation:2.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "2.0."
+            }
+        },
+        {
+            "id": "workstation:2.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "2.1"
+            }
+        },
+        {
+            "id": "workstation:2.1.2",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "2.1.2"
+            }
+        },
+        {
+            "id": "workstation:2.36.2",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "2.36.2"
+            }
+        },
+        {
+            "id": "workstation:20.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "20.0"
+            }
+        },
+        {
+            "id": "workstation:20.19.2",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "20.19.2"
+            }
+        },
+        {
+            "id": "workstation:21.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "21.0"
+            }
+        },
+        {
+            "id": "workstation:21.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "21.0."
+            }
+        },
+        {
+            "id": "workstation:22.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "22.0"
+            }
+        },
+        {
+            "id": "workstation:22.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "22.0."
+            }
+        },
+        {
+            "id": "workstation:22.16.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "22.16.0"
+            }
+        },
+        {
+            "id": "workstation:23.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "23.0"
+            }
+        },
+        {
+            "id": "workstation:23.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "23.0."
+            }
+        },
+        {
+            "id": "workstation:24.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "24.0"
+            }
+        },
+        {
+            "id": "workstation:25.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "25.0"
+            }
+        },
+        {
+            "id": "workstation:26.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "26.0"
+            }
+        },
+        {
+            "id": "workstation:27.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "27.0"
+            }
+        },
+        {
+            "id": "workstation:28.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "28.0"
+            }
+        },
+        {
+            "id": "workstation:29.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "29.0"
+            }
+        },
+        {
+            "id": "workstation:3.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.0"
+            }
+        },
+        {
+            "id": "workstation:3.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.0."
+            }
+        },
+        {
+            "id": "workstation:3.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.1"
+            }
+        },
+        {
+            "id": "workstation:3.2",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "3.2"
+            }
+        },
+        {
+            "id": "workstation:30.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "30.0"
+            }
+        },
+        {
+            "id": "workstation:30.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "30.0."
+            }
+        },
+        {
+            "id": "workstation:31.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "31.0"
+            }
+        },
+        {
+            "id": "workstation:32.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "32.0"
+            }
+        },
+        {
+            "id": "workstation:32.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "32.0."
+            }
+        },
+        {
+            "id": "workstation:33.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "33.0"
+            }
+        },
+        {
+            "id": "workstation:34.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "34.0"
+            }
+        },
+        {
+            "id": "workstation:35.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "35.0"
+            }
+        },
+        {
+            "id": "workstation:36.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "36.0"
+            }
+        },
+        {
+            "id": "workstation:36.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "36.0."
+            }
+        },
+        {
+            "id": "workstation:37.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "37.0"
+            }
+        },
+        {
+            "id": "workstation:38.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "38.0"
+            }
+        },
+        {
+            "id": "workstation:39.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "39.0"
+            }
+        },
+        {
+            "id": "workstation:39.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "39.0."
+            }
+        },
+        {
+            "id": "workstation:4.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "4.0"
+            }
+        },
+        {
+            "id": "workstation:4.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "4.0."
+            }
+        },
+        {
+            "id": "workstation:40.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "40.0"
+            }
+        },
+        {
+            "id": "workstation:41.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "41.0"
+            }
+        },
+        {
+            "id": "workstation:41.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "41.0."
+            }
+        },
+        {
+            "id": "workstation:42.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "42.0"
+            }
+        },
+        {
+            "id": "workstation:42.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "42.0."
+            }
+        },
+        {
+            "id": "workstation:43.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "43.0"
+            }
+        },
+        {
+            "id": "workstation:43.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "43.0."
+            }
+        },
+        {
+            "id": "workstation:44.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "44.0"
+            }
+        },
+        {
+            "id": "workstation:45.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "45.0"
+            }
+        },
+        {
+            "id": "workstation:46.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "46.0"
+            }
+        },
+        {
+            "id": "workstation:46.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "46.0."
+            }
+        },
+        {
+            "id": "workstation:47.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "47.0"
+            }
+        },
+        {
+            "id": "workstation:48.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "48.0"
+            }
+        },
+        {
+            "id": "workstation:49.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "49.0"
+            }
+        },
+        {
+            "id": "workstation:5.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "5.0"
+            }
+        },
+        {
+            "id": "workstation:50.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "50.0"
+            }
+        },
+        {
+            "id": "workstation:51.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "51.0"
+            }
+        },
+        {
+            "id": "workstation:52.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "52.0"
+            }
+        },
+        {
+            "id": "workstation:52.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "52.0."
+            }
+        },
+        {
+            "id": "workstation:52.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "52.0.0"
+            }
+        },
+        {
+            "id": "workstation:53.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "53.0"
+            }
+        },
+        {
+            "id": "workstation:53.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "53.0.0"
+            }
+        },
+        {
+            "id": "workstation:54.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "54.0"
+            }
+        },
+        {
+            "id": "workstation:55.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "55.0"
+            }
+        },
+        {
+            "id": "workstation:56.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "56.0"
+            }
+        },
+        {
+            "id": "workstation:57.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "57.0"
+            }
+        },
+        {
+            "id": "workstation:58.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "58.0"
+            }
+        },
+        {
+            "id": "workstation:59.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "59.0"
+            }
+        },
+        {
+            "id": "workstation:6.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "6.0"
+            }
+        },
+        {
+            "id": "workstation:60.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "60.0"
+            }
+        },
+        {
+            "id": "workstation:60.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "60.0."
+            }
+        },
+        {
+            "id": "workstation:60.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "60.0.0"
+            }
+        },
+        {
+            "id": "workstation:61.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "61.0"
+            }
+        },
+        {
+            "id": "workstation:61.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "61.0."
+            }
+        },
+        {
+            "id": "workstation:61.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "61.0.0"
+            }
+        },
+        {
+            "id": "workstation:62.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "62.0"
+            }
+        },
+        {
+            "id": "workstation:62.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "62.0."
+            }
+        },
+        {
+            "id": "workstation:63.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "63.0"
+            }
+        },
+        {
+            "id": "workstation:63.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "63.0."
+            }
+        },
+        {
+            "id": "workstation:64.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "64.0"
+            }
+        },
+        {
+            "id": "workstation:64.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "64.0."
+            }
+        },
+        {
+            "id": "workstation:64.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "64.0.0"
+            }
+        },
+        {
+            "id": "workstation:65.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "65.0"
+            }
+        },
+        {
+            "id": "workstation:66.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "66.0"
+            }
+        },
+        {
+            "id": "workstation:66.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "66.0."
+            }
+        },
+        {
+            "id": "workstation:66.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "66.1"
+            }
+        },
+        {
+            "id": "workstation:66.1.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "66.1."
+            }
+        },
+        {
+            "id": "workstation:66.1.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "66.1.0"
+            }
+        },
+        {
+            "id": "workstation:67.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "67.0"
+            }
+        },
+        {
+            "id": "workstation:67.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "67.0."
+            }
+        },
+        {
+            "id": "workstation:67.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "67.0.0"
+            }
+        },
+        {
+            "id": "workstation:68.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "68.0"
+            }
+        },
+        {
+            "id": "workstation:68.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "68.0."
+            }
+        },
+        {
+            "id": "workstation:69.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "69.0"
+            }
+        },
+        {
+            "id": "workstation:69.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "69.0."
+            }
+        },
+        {
+            "id": "workstation:69.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "69.0.0"
+            }
+        },
+        {
+            "id": "workstation:7.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "7.0"
+            }
+        },
+        {
+            "id": "workstation:70.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "70.0"
+            }
+        },
+        {
+            "id": "workstation:70.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "70.0."
+            }
+        },
+        {
+            "id": "workstation:70.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "70.0.0"
+            }
+        },
+        {
+            "id": "workstation:71.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "71.0"
+            }
+        },
+        {
+            "id": "workstation:71.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "71.0."
+            }
+        },
+        {
+            "id": "workstation:72.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "72.0"
+            }
+        },
+        {
+            "id": "workstation:72.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "72.0."
+            }
+        },
+        {
+            "id": "workstation:73.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "73.0"
+            }
+        },
+        {
+            "id": "workstation:73.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "73.0."
+            }
+        },
+        {
+            "id": "workstation:74.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "74.0"
+            }
+        },
+        {
+            "id": "workstation:75.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "75.0"
+            }
+        },
+        {
+            "id": "workstation:76.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "76.0"
+            }
+        },
+        {
+            "id": "workstation:77.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "77.0"
+            }
+        },
+        {
+            "id": "workstation:78.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "78.0"
+            }
+        },
+        {
+            "id": "workstation:78.3",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "78.3"
+            }
+        },
+        {
+            "id": "workstation:79.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "79.0"
+            }
+        },
+        {
+            "id": "workstation:8.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "8.0"
+            }
+        },
+        {
+            "id": "workstation:8.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "8.0."
+            }
+        },
+        {
+            "id": "workstation:80.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "80.0"
+            }
+        },
+        {
+            "id": "workstation:81.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "81.0"
+            }
+        },
+        {
+            "id": "workstation:82.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "82.0"
+            }
+        },
+        {
+            "id": "workstation:82.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "82.1"
+            }
+        },
+        {
+            "id": "workstation:83.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "83.0"
+            }
+        },
+        {
+            "id": "workstation:83.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "83.0."
+            }
+        },
+        {
+            "id": "workstation:84.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "84.0"
+            }
+        },
+        {
+            "id": "workstation:85.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "85.0"
+            }
+        },
+        {
+            "id": "workstation:85.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "85.0."
+            }
+        },
+        {
+            "id": "workstation:85.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "85.1"
+            }
+        },
+        {
+            "id": "workstation:85.2",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "85.2"
+            }
+        },
+        {
+            "id": "workstation:86.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "86.0"
+            }
+        },
+        {
+            "id": "workstation:87.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "87.0"
+            }
+        },
+        {
+            "id": "workstation:87.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "87.1"
+            }
+        },
+        {
+            "id": "workstation:88.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "88.0"
+            }
+        },
+        {
+            "id": "workstation:88.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "88.0."
+            }
+        },
+        {
+            "id": "workstation:89.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "89.0"
+            }
+        },
+        {
+            "id": "workstation:89.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "89.0."
+            }
+        },
+        {
+            "id": "workstation:9.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "9.0"
+            }
+        },
+        {
+            "id": "workstation:9.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "9.0."
+            }
+        },
+        {
+            "id": "workstation:9.29.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "9.29.0"
+            }
+        },
+        {
+            "id": "workstation:90.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "90.0"
+            }
+        },
+        {
+            "id": "workstation:91.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "91.0"
+            }
+        },
+        {
+            "id": "workstation:91.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "91.0."
+            }
+        },
+        {
+            "id": "workstation:92.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "92.0"
+            }
+        },
+        {
+            "id": "workstation:92.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "92.0."
+            }
+        },
+        {
+            "id": "workstation:93.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "93.0"
+            }
+        },
+        {
+            "id": "workstation:93.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "93.0."
+            }
+        },
+        {
+            "id": "workstation:94.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "94.0"
+            }
+        },
+        {
+            "id": "workstation:94.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "94.0."
+            }
+        },
+        {
+            "id": "workstation:95.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "95.0"
+            }
+        },
+        {
+            "id": "workstation:95.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "95.0."
+            }
+        },
+        {
+            "id": "workstation:96.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "96.0"
+            }
+        },
+        {
+            "id": "workstation:96.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "96.0."
+            }
+        },
+        {
+            "id": "workstation:97.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "97.0"
+            }
+        },
+        {
+            "id": "workstation:97.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "97.0."
+            }
+        },
+        {
+            "id": "workstation:98.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "98.0"
+            }
+        },
+        {
+            "id": "workstation:98.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "98.0."
+            }
+        },
+        {
+            "id": "workstation:99.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "99.0"
+            }
+        },
+        {
+            "id": "workstation:99.0.",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "99.0."
+            }
+        },
+        {
+            "id": "workstation:99.0.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "99.0.0"
+            }
+        },
+        {
+            "id": "workstation:99.0.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "99.0.1"
+            }
+        },
+        {
+            "id": "workstation:99.1",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "99.1"
+            }
+        },
+        {
+            "id": "workstation:99.1.0",
+            "type": "version",
+            "content": {
+                "category": "workstation",
+                "v": "99.1.0"
+            }
+        },
+        {
+            "id": "v101.0.0_grand_synthesis",
+            "type": "insight",
+            "content": {
+                "version": "101.0.0",
+                "orchestration_mode": "continuous_synergy_optimization",
+                "governance_model": "biologically_orchestrated_constitution_v100.1",
+                "survival_instinct_hierarchy": [
+                    "Immune",
+                    "Nervous",
+                    "Digestive",
+                    "Aging"
+                ],
+                "verification_layers": 15,
+                "quantum_mastery": "active_apotheosis",
+                "allostasis": "meta_evolution_loop",
+                "parameters": {
+                    "redox_midpoint": -225.0,
+                    "reflex_latency": 42,
+                    "synaptic_scaling_tau": 12.0,
+                    "hsp_atp_rate": 5.5
+                },
+                "engines": {
+                    "twinning": {
+                        "enabled": true,
+                        "fidelity_target": 0.995
+                    },
+                    "aro": {
+                        "enabled": true,
+                        "waste_limit": 0.04
+                    },
+                    "bto": {
+                        "enabled": true,
+                        "health_target": 0.92
+                    },
+                    "drad": {
+                        "enabled": true,
+                        "scale_up_time": 25
+                    }
+                },
+                "cognition": {
+                    "minimax_threshold": 0.95,
+                    "qwen_reasoning_steps": 15,
+                    "retro_causal_optimization": true,
+                    "cognitive_hierarchy_levels": 7
+                },
+                "platforms": {
+                    "huggingface": {
+                        "enabled": true,
+                        "mode": "twinning_validated"
+                    },
+                    "github": {
+                        "enabled": true,
+                        "mode": "genomic_sync"
+                    }
+                },
+                "patterns": [
+                    {
+                        "id": "apotheosis_of_synergy",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "quadruple_engine_integration",
+                        "confidence": 1.0,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "twinning_engine",
+                        "confidence": 1.0,
+                        "article": 114,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "aro_engine",
+                        "confidence": 1.0,
+                        "article": 115,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "bto_engine",
+                        "confidence": 1.0,
+                        "article": 116,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "drad_engine",
+                        "confidence": 1.0,
+                        "article": 117,
+                        "v_range": "v100"
+                    },
+                    {
+                        "id": "qep_integration",
+                        "confidence": 1.0,
+                        "article": 98,
+                        "v_range": "v94-v100"
+                    },
+                    {
+                        "id": "minimax_strategy",
+                        "confidence": 0.99,
+                        "article": 95,
+                        "v_range": "v95-v100"
+                    },
+                    {
+                        "id": "cognitive_hierarchy",
+                        "confidence": 0.99,
+                        "article": 96,
+                        "v_range": "v96-v100"
+                    },
+                    {
+                        "id": "retro_causal_processing",
+                        "confidence": 0.98,
+                        "article": 97,
+                        "v_range": "v97-v100"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Developer Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platfor SAVED.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/QEP/AI-Driven Quranic Education Platform - Jules Agent Guide.txt",
+                        "domain": "qep"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Production environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Production environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Tools scripts background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Tools_scripts/Design environment script background.txt",
+                        "domain": "tools"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwens workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background Further development.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Qwen Further background to Workstation Further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek workstation background.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/JULES PROMPT WORKSTATION PROJECT v9.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule SAVED.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/MinimaxAi  further background to Workstation Evolutionary cognition.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Build on and enhance the plan; jule.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation further.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Jules AI v100.0 Sovereign Digital O.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/Deepseek further background to Workstation.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "twinning_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "aro_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "bto_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "drad_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "platforms_pattern",
+                        "confidence": 0.95,
+                        "source": "docs/historical/background/Workstation/chat-Advanced GitHub Repo Design for Jules Collaboration.txt",
+                        "domain": "core"
+                    },
+                    {
+                        "id": "quantum_apotheosis",
+                        "confidence": 0.99,
+                        "article": 94
+                    },
+                    {
+                        "id": "meta_cognitive_loop",
+                        "confidence": 1.0,
+                        "article": 327
+                    }
+                ],
+                "mode": "INTROSPECTIVE"
+            },
+            "metadata": {
+                "version": "101.0.0",
+                "timestamp": "2024-10-01T00:00:00"
+            }
         }
     ],
     "edges": [
