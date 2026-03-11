@@ -14,9 +14,9 @@ import asyncio
 from agentic_core.orchestrator.conscious_organism_v99 import ConsciousOrganismV99_0
 
 # Article 284: Unified Product Interface Mandate
-st.set_page_config(page_title="Jules AI v112.0 Expert Dashboard", layout="wide")
+st.set_page_config(page_title="Jules AI v114.0 Agentic Dashboard", layout="wide")
 
-st.title("🧬 Jules AI v112.0: Expert Command Center")
+st.title("🧬 Jules AI v114.0: Agentic Command Center")
 st.markdown("### Integrated Digital Reactor Ecosystem (Science, Religion, Law, Employment, Education)")
 
 if 'organism' not in st.session_state:
@@ -71,6 +71,22 @@ with col2:
         st.info("Trigger a cycle to view real-time metrics.")
 
 with col3:
+    st.header("Asynchronous Agentic Operations")
+    # ARTICLE 389: Agentic Dashboard Panel
+    st.subheader("Live Activity Feed")
+
+    # Mock activity data for feed
+    activities = [
+        {"time": "T-02m", "event": "Goal Decomposition", "status": "Done"},
+        {"time": "T-01m", "event": "Sandbox v114-A2 Spawning", "status": "Active"},
+        {"time": "T-30s", "event": "Parallel Payload Execution", "status": "Running"},
+        {"time": "T-05s", "event": "Autonomous QMS Verification", "status": "Pending"}
+    ]
+
+    for act in activities:
+        st.write(f"**{act['time']}**: {act['event']} - `{act['status']}`")
+
+    st.divider()
     st.header("Advanced Resource Intelligence")
     st.write("Centres of Excellence (CoE-ACR): **ACTIVE**")
 
@@ -95,11 +111,11 @@ with col3:
             st.text_area("Mutated Prompt", latest['new_prompt'], height=150)
 
 st.divider()
-st.sidebar.header("System v112.0 Status")
+st.sidebar.header("System v114.0 Status")
 if hasattr(st.session_state.organism, 'agent_id'):
     st.sidebar.write(f"Agent ID: `{st.session_state.organism.agent_id}`")
-st.sidebar.write("Governance: `CONSTITUTION v112.0` (385 Articles)")
-st.sidebar.write("Era: `QUALITY-CERTIFIED TRANSCENDENT`")
+st.sidebar.write("Governance: `CONSTITUTION v114.0` (391 Articles)")
+st.sidebar.write("Era: `ASYNCHRONOUS AGENTIC`")
 
 if st.session_state.history:
     with st.expander("Transcendent Event Log"):
