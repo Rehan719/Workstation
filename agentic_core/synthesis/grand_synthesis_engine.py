@@ -46,11 +46,14 @@ class GrandSynthesisEngine:
 
         # CN-II. Conflict Resolution
         resolved_config = self.resolver.resolve_conflicts(patterns)
-        resolved_config["version"] = "99.0.0"
 
-        # CN-IV. Immutable DNA Generation (v99)
-        constitution_path = self.dna_gen.generate_v99_constitution(resolved_config)
-        logger.info(f"v99.0 Constitution generated at {constitution_path}")
+        # CN-IV. Immutable DNA Generation (v101.0)
+        if resolved_config.get("version") == "101.0.0":
+            constitution_path = self.dna_gen.generate_v101_constitution(resolved_config)
+            logger.info(f"v101.0 Constitution generated at {constitution_path}")
+        else:
+            constitution_path = self.dna_gen.generate_v99_constitution(resolved_config)
+            logger.info(f"v99.0 Constitution generated at {constitution_path}")
 
         # CN-V. Evolutionary Memory Storage
         self.memory.store_synthesis_results(resolved_config)

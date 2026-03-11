@@ -40,6 +40,22 @@ class ShariahCompliancePolicy(IGovernancePolicy):
     def attest(self, data: Dict[str, Any]) -> str:
         return "Shariah_Attestation_Halal_Verified"
 
+class ConstitutionalPolicy(IGovernancePolicy):
+    """ARTICLE 329: Constitutional Enforcer."""
+    def verify(self, intent: Dict[str, Any]) -> bool:
+        logger.info("VGA: Verifying constitutional compliance.")
+        # Logic: All strategic moves must be aligned with SIH
+        sih_order = ["immune", "nervous", "digestive", "aging"]
+        priority = intent.get("priority_layer", "digestive").lower()
+        # Veto if priority is higher than immune but context is security
+        if priority in ["nervous", "digestive", "aging"] and intent.get("security_context", False):
+            logger.warning(f"VGA: SIH Violation - security context must use 'immune' priority.")
+            return False
+        return True
+
+    def attest(self, data: Dict[str, Any]) -> str:
+        return "Constitutional_Attestation_SIH_Aligned"
+
 class VGAEngine:
     """
     ARTICLE 290: Verifiable Governance Architecture Engine.
@@ -48,7 +64,8 @@ class VGAEngine:
     def __init__(self):
         self.policies: Dict[str, IGovernancePolicy] = {
             "minimization": DataMinimizationPolicy(),
-            "shariah": ShariahCompliancePolicy()
+            "shariah": ShariahCompliancePolicy(),
+            "constitutional": ConstitutionalPolicy()
         }
 
     def validate_action(self, policy_name: str, data: Dict[str, Any]) -> bool:
