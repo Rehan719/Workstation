@@ -5,16 +5,24 @@
 
 **Owner:** Entity (Guardian of Vision)
 **Authority:** Immutable (Amendable only by Repo Owner)
+**Governance:** Entity Veto, Constitutional Enforcer
 
 ## 2. Stated Purpose (Operational-Commercial Mission)
 *"To be the ultimate platform for human productivity, profitability, and high‑value utility – especially in scholarship and enterprise – while also empowering individuals in their personal, civil, and religious affairs."*
 
 **Owner:** AI CEO
 **Authority:** Quarterly Review (Requires AI CEO + Entity Approval)
+**Governance:** AI CEO Oversight, Quarterly Review
 
 ## 3. Purpose Hierarchy
-1. **Spiritual-Ethical Foundation**: Highest level (Inviolable).
-2. **Operational-Commercial Mission**: Guiding framework for value creation.
-3. **Strategic Aims**: Long-term goals (e.g., "Leading platform for Islamic Scholarship").
-4. **Quarterly OKRs**: Measurable targets with Purpose Alignment scores.
-5. **Operational Tasks**: Practical execution.
+
+| Level | Component | Description | Governance |
+|-------|-----------|-------------|------------|
+| 1 | **Spiritual‑Ethical Foundation** | Highest level. Any action violating this is automatically invalid. | Entity veto, Constitutional Enforcer |
+| 2 | **Operational‑Commercial Mission** | Guiding framework for all value‑creating activities. | AI CEO oversight, quarterly review |
+| 3 | **Strategic Aims** | Long‑term goals derived from the stated purpose. | Strategic Planning Team |
+| 4 | **Quarterly OKRs** | Specific, measurable objectives implementing aims. | OKRAgent, Performance Management |
+| 5 | **Operational Tasks** | Lowest level, directly contributing to OKRs. | BTO teams, individual agents |
+
+## 4. Purpose Alignment Engine
+Continuously evaluates all processes, proposals, and strategic decisions against this framework.

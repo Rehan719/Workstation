@@ -6,7 +6,7 @@ from agentic_core.self_improvement.strategic_introspection import BusinessAnalys
 from agentic_core.governance.verifiable_governance import VGAEngine
 from agentic_core.purpose.evaluator import PurposeAlignmentEvaluator
 
-class TestFullIntegration(unittest.TestCase):
+class TestFinalSynthesis(unittest.TestCase):
     def test_purpose_evaluator(self):
         eval = PurposeAlignmentEvaluator()
         res = eval.evaluate_intent({"description": "Dawah and profit."})
@@ -25,6 +25,19 @@ class TestFullIntegration(unittest.TestCase):
         pa = PurposeAnalystAgent()
         analysis = pa.analyze_purpose_drift([0.95, 0.96, 0.88])
         self.assertEqual(analysis["status"], "DRIFT_DETECTED")
+
+    def test_interface_extended(self):
+        interface = EntityCEOInterface()
+        interface.send_purpose_alert("Alert")
+        interface.provide_spiritual_guidance("Guidance")
+        interface.purpose_check("p1", {"data": "test"})
+        import json
+        with open(interface.log_path, 'r') as f:
+            log = json.load(f)
+            types = [e["type"] for e in log]
+            self.assertIn("PURPOSE_ALERT", types)
+            self.assertIn("SPIRITUAL_GUIDANCE", types)
+            self.assertIn("PURPOSE_CHECK", types)
 
 if __name__ == "__main__":
     unittest.main()

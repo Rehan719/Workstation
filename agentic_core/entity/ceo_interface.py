@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 class EntityCEOInterface:
     """
-    ARTICLE 330: Strategic Integration with Entity.
-    A secure channel for strategic communications between the Entity and AI CEO.
+    ARTICLE 330/337: Entity-CEO Interface (Purpose-Aware).
+    A secure channel for strategic and purpose-driven communications.
     """
     def __init__(self, owner_id: str = "Jules"):
         self.owner_id = owner_id
@@ -21,8 +21,16 @@ class EntityCEOInterface:
                 import json
                 json.dump([], f)
 
+    def send_purpose_alert(self, message: str) -> str:
+        """Entity flags potential purpose misalignment (ARTICLE 337)."""
+        return self.send_strategic_guidance(message, type="PURPOSE_ALERT")
+
+    def provide_spiritual_guidance(self, message: str) -> str:
+        """Entity provides ethical/spiritual input (ARTICLE 337)."""
+        return self.send_strategic_guidance(message, type="SPIRITUAL_GUIDANCE")
+
     def send_strategic_guidance(self, message: str, type: str = "STRATEGIC") -> str:
-        """Entity sends strategic or purpose guidance to AI CEO."""
+        """Generic method for Entity-to-CEO messages."""
         guidance = {
             "timestamp": datetime.datetime.now().isoformat(),
             "source": "ENTITY",
@@ -34,7 +42,7 @@ class EntityCEOInterface:
         return guidance["timestamp"]
 
     def issue_veto(self, decision_id: str, reason: str, category: str = "CONSTITUTIONAL"):
-        """Entity issues a veto (Constitutional or Purpose-based)."""
+        """Entity issues a veto (ARTICLE 337)."""
         veto = {
             "timestamp": datetime.datetime.now().isoformat(),
             "source": "ENTITY",
@@ -46,16 +54,16 @@ class EntityCEOInterface:
         logger.warning(f"ENTITY {category} VETO: Decision {decision_id} rejected. Reason: {reason}")
         self._log_interaction(veto)
 
-    def query_entity(self, question: str) -> str:
-        """AI CEO queries the Entity for constitutional guidance."""
-        query = {
+    def purpose_check(self, proposal_id: str, payload: Dict[str, Any]):
+        """AI CEO submits proposal for evaluation (ARTICLE 2.2)."""
+        entry = {
             "timestamp": datetime.datetime.now().isoformat(),
             "source": "CEO",
-            "question": question
+            "type": "PURPOSE_CHECK",
+            "proposal_id": proposal_id,
+            "payload": payload
         }
-        self._log_interaction(query)
-        # Mocking the response
-        return "Guidance provided: Aligned with Article 77."
+        self._log_interaction(entry)
 
     def _log_interaction(self, entry: Dict[str, Any]):
         import json
