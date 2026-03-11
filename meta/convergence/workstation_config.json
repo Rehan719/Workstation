@@ -1,0 +1,19 @@
+{
+    "category": "workstation",
+    "version": "100.0.0",
+    "variation": {
+        "file": "Qwen Further background to Workstation.txt",
+        "tag": "stable",
+        "confidence": 1.0
+    },
+    "strategy": "NSGA-II_Meta",
+    "targets": {
+        "fidelity": 0.998,
+        "waste": 0.025,
+        "team_health": 0.95
+    },
+    "validation": {
+        "predicted_outcome": "stable",
+        "confidence": 0.98
+    }
+}
