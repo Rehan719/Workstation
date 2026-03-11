@@ -124,12 +124,17 @@ class GrandSynthesisEngine:
 
         # ARTICLE 372: Transcendent Conflict Resolution
         resolved_config = self.resolver.resolve_conflicts(patterns)
-        if is_ultimate or target_version == "110.0.0":
+        if is_ultimate or (target_version and target_version.startswith("11")):
             logger.info("Transcendent Conflict Resolution: 100% automated priority-based alignment.")
-            resolved_config["version"] = target_version or "110.0.0"
+            resolved_config["version"] = target_version or "111.0.0"
 
         version = resolved_config.get("version")
-        if version == "110.0.0":
+        if version == "111.0.0":
+            constitution_path = self.dna_gen.generate_v111_constitution(resolved_config)
+            logger.info(f"v111.0 Constitution generated at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "110.0.0":
             constitution_path = self.dna_gen.generate_v110_constitution(resolved_config)
             logger.info(f"v110.0 Constitution generated at {constitution_path}")
             if is_ultimate or "--generate-docs-v3" in sys.argv:

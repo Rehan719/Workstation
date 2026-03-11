@@ -33,6 +33,12 @@ Engineered for democratization, the entire workstation can be deployed on free-t
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FRehan719%2FWorkstation)
 [![Deploy to Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/deploy?repository=https://github.com/Rehan719/Workstation&main_module_path=src/dashboard/app.py)
 
+### ☁️ Multi-Cloud Free Tier Guides
+- **Google Cloud (GCP)**: [GCP Free Tier Setup](docs/deployment/gcp-free-tier.md) - Cloud Run, Firebase, BigQuery.
+- **Amazon Web Services (AWS)**: [AWS Free Tier Setup](docs/deployment/aws-free-tier.md) - EC2 t2.micro, Lambda, S3.
+- **Microsoft Azure**: [Azure Free Account Setup](docs/deployment/azure-free-tier.md) - App Service, Functions, CosmosDB.
+- **Oracle Cloud**: [Oracle Always Free](docs/deployment/oracle-free-tier.md) - 4x ARM Ampere A1 Compute, 200GB Block storage.
+
 ## 💻 Developer Quick Start
 
 ### Setup Ecosystem
@@ -52,6 +58,8 @@ Set these variables for a production-ready zero-cost instance:
 - `DATABASE_URL`: Your Supabase/PostgreSQL connection string.
 - `RENDER_API_KEY`: For autonomous backend scaling.
 - `VERCEL_TOKEN`: For frontend PWA deployment.
+- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`: For AWS Free Tier integration.
+- `AZURE_CREDENTIALS`: For Azure Free Account deployment.
 - `OPENAI_API_KEY`: (Optional) For high-fidelity agent reasoning.
 
 ## ⚜️ Core Paradigm: Survival Instinct Hierarchy (SIH)

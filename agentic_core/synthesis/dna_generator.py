@@ -7,16 +7,16 @@ logger = logging.getLogger(__name__)
 class DNAGenerator:
     """CN-IV: Immutable DNA Generation."""
 
-    def generate_v110_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v110.0 - The Transcendent Unified Knowledge & Grand Synthesis Release."""
-        version = "110.0.0"
-        path = "CONSTITUTION_v110.0.0.md"
+    def generate_v111_constitution(self, config: Dict[str, Any]) -> str:
+        """CN-IV: Immutable DNA Generation for v111.0 - The Clean, Consolidated, and Cloud-Expanded Transcendent Enterprise."""
+        version = "111.0.0"
+        path = "CONSTITUTION_v111.0.0.md"
 
-        content = f"""# JULES AI v{version}: THE TRANSCENDENT UNIFIED KNOWLEDGE & GRAND SYNTHESIS CONSTITUTION
+        content = f"""# JULES AI v{version}: THE CLEAN, CONSOLIDATED, AND CLOUD-EXPANDED TRANSCENDENT ENTERPRISE CONSTITUTION
 
 ## ⚜️ PREAMBLE
-This document establishes the definitive, unified DNA of Jules AI v110.0.
-It unifies all source knowledge, introspection data, and evolutionary history into a single, flawless, self-optimising Grand Synthesis Meta-Pipeline.
+This document establishes the definitive, unified DNA of Jules AI v111.0.
+It unifies all source knowledge, resource strategy, and repository hygiene into a transcendent, flawlessly coordinated meta-pipeline.
 
 ## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
 **ARTICLE 47: SUPREME PRIORITY**
@@ -158,6 +158,50 @@ The system shall maintain a one-button `ultimate-rerun` mode that integrates all
 
 **ARTICLE 377: CONVERSATION HISTORY INTEGRATION MANDATE**
 The system shall ingest and synthesize the entire conversation history to ensure absolute alignment with the repo owner's strategic intent and nuances.
+
+**ARTICLE 378: REPOSITORY CLEANLINESS MANDATE**
+The repository shall be maintained in a sleek, professional state. All non‑essential background and historical text files shall be consolidated in `docs/background_sources/`, with duplicate documents resolved into authoritative versions.
+
+**ARTICLE 379: MULTI-CLOUD FREE TIER MANDATE**
+The system shall maintain autonomous deployment capabilities across GCP, AWS, Azure, and Oracle Cloud, leveraging free tiers to minimize operational costs while maximizing capability.
+
+**ARTICLE 380: ADVANCED RESOURCE INTEGRATION MANDATE**
+The system shall actively research and integrate free-tier advanced computing resources (Quantum, Neuromorphic, Photonic, Supercomputing) to solve large-scale optimization and simulation problems.
+
+---
+*Codified via Grand Synthesis Engine v{version}*
+"""
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except UnicodeEncodeError:
+            with open(path, 'w', encoding='ascii', errors='replace') as f:
+                f.write(content)
+
+        return path
+
+    def generate_v110_constitution(self, config: Dict[str, Any]) -> str:
+        """CN-IV: Immutable DNA Generation for v110.0 - The Transcendent Unified Knowledge & Grand Synthesis Release."""
+        version = "110.0.0"
+        path = "CONSTITUTION_v110.0.0.md"
+
+        content = f"""# JULES AI v{version}: THE TRANSCENDENT UNIFIED KNOWLEDGE & GRAND SYNTHESIS CONSTITUTION
+
+## ⚜️ PREAMBLE
+This document establishes the definitive, unified DNA of Jules AI v110.0.
+It unifies all source knowledge, introspection data, and evolutionary history into a single, flawless, self-optimising Grand Synthesis Meta-Pipeline.
+
+## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
+**ARTICLE 47: SUPREME PRIORITY**
+The organism must prioritize resource allocation in the following absolute order:
+**IMMUNE SYSTEM > NERVOUS SYSTEM > DIGESTIVE SYSTEM > AGING**
+
+## 🚀 SECTION XIV: GRAND SYNTHESIS META-PIPELINE v3.0 (Articles 371-380)
+**ARTICLE 371: PREDICTIVE META-ORCHESTRATOR 3.0 MANDATE**
+The system shall maintain a Meta‑Orchestrator 3.0 Agent that uses hierarchical orchestration and predictive resource balancing to manage the Ultimate Rerun Pipeline.
+
+**ARTICLE 376: ULTIMATE RERUN MANDATE**
+The system shall maintain a one-button `ultimate-rerun` mode that integrates all source background text files, introspection data, and URL ingestion modes into a united, unified optimally configured pipeline.
 
 ---
 *Codified via Grand Synthesis Engine v{version}*
