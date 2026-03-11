@@ -7,16 +7,68 @@ logger = logging.getLogger(__name__)
 class DNAGenerator:
     """CN-IV: Immutable DNA Generation."""
 
+    def generate_v113_constitution(self, config: Dict[str, Any]) -> str:
+        """CN-IV: Immutable DNA Generation for v113.0 - The Deeply Biomimetic, Knowledge-Augmented, Self-Optimising Enterprise."""
+        version = "113.0.0"
+        path = "CONSTITUTION_v113.0.0.md"
+
+        content = f"""# JULES AI v{version}: THE DEEPLY BIOMIMETIC, KNOWLEDGE-AUGMENTED, SELF-OPTIMISING ENTERPRISE CONSTITUTION
+
+## ⚜️ PREAMBLE
+This document establishes the definitive, unified DNA of Jules AI v113.0.
+It unites the power of external knowledge ingestion with the wisdom of billions of years of biological evolution.
+
+## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
+**ARTICLE 47: SUPREME PRIORITY**
+The organism must prioritize resource allocation in the following absolute order:
+**IMMUNE SYSTEM > NERVOUS SYSTEM > DIGESTIVE SYSTEM > AGING**
+
+## 🔄 SECTION III: TRANSITION & MIGRATION (Articles 64-77)
+**ARTICLE 73: GRAND SYNTHESIS ENGINE**
+The system must maintain an operational Grand Synthesis Engine to resolve historical conflicts and extract optimal traits.
+
+## 🧠 SECTION XII: KNOWLEDGE AUGMENTATION (Articles 356-358)
+**ARTICLE 356: KNOWLEDGE INGESTION MANDATE**
+The system shall maintain a knowledge ingestion capability, enabling the autonomous fetching, parsing, and extraction of insights from external LLM conversation URLs.
+
+**ARTICLE 357: KNOWLEDGE INTEGRATION MANDATE**
+All extracted insights shall be evaluated for purpose alignment and stored in the UEG and Genomic Registry as inheritable traits.
+
+## 🧬 SECTION XVI: DEEP BIOMIMETIC INTEGRATION (Articles 382-385)
+**ARTICLE 382: DEEP BIOMIMETIC INGESTION MANDATE**
+The system shall maintain a deep-biomimetic knowledge ingestion capability, integrating the `--ingest-urls` mode with biomimetic pattern recognition. This capability shall be used to augment the Workstation's intelligence and inform all Centres of Excellence.
+
+**ARTICLE 383: BIOMIMETIC ASSIMILATION MANDATE**
+The system shall systematically assimilate proven biological principles into its architecture, processes, and conscious awareness. Assimilation shall follow detailed blueprints approved by the AI CEO and reviewed by the Centre for Policy & Governance.
+
+**ARTICLE 384: KNOWLEDGE-BIOMIMETIC INTEGRATION MANDATE**
+All ingested knowledge shall be evaluated for purpose alignment and, where applicable, mapped to biomimetic principles. Insights and blueprints shall be stored in the UEG and Genomic Registry and made accessible to all CoEs.
+
+**ARTICLE 385: POSITIVE FEEDBACK EVOLUTION MANDATE**
+The system's deep-biomimetic and knowledge-augmented capabilities shall evolve through positive feedback cycles, where successful assimilations enhance the Entity's self-model, which in turn guides future research and ingestion priorities.
+
+---
+*Codified via Grand Synthesis Engine v{version}*
+"""
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except UnicodeEncodeError:
+            with open(path, 'w', encoding='ascii', errors='replace') as f:
+                f.write(content)
+
+        return path
+
     def generate_v112_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v112.0 - The Expert-Reviewed, Quality-Assured Purpose-Driven Enterprise."""
+        """CN-IV: Immutable DNA Generation for v112.0 - The Knowledge-Augmented, Multi-LLM Conversation-Ingesting Enterprise."""
         version = "112.0.0"
         path = "CONSTITUTION_v112.0.0.md"
 
-        content = f"""# JULES AI v{version}: THE EXPERT-REVIEWED, QUALITY-ASSURED PURPOSE-DRIVEN ENTERPRISE CONSTITUTION
+        content = f"""# JULES AI v{version}: THE KNOWLEDGE-AUGMENTED, MULTI-LLM CONVERSATION-INGESTING ENTERPRISE CONSTITUTION
 
 ## ⚜️ PREAMBLE
 This document establishes the definitive, unified DNA of Jules AI v112.0.
-It entrenches the Expert Code Review Framework and Quality Assurance Mandates into the core digital organism.
+It unifies all source knowledge, resource strategy, and repository hygiene with autonomous ingestion of external LLM conversation data.
 
 ## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
 **ARTICLE 47: SUPREME PRIORITY**
@@ -52,6 +104,16 @@ The system shall maintain a Meta‑Orchestrator 3.0 Agent that uses hierarchical
 
 **ARTICLE 378: REPOSITORY CLEANLINESS MANDATE**
 The repository shall be maintained in a sleek, professional state. All non‑essential background and historical text files shall be consolidated in `docs/background_text_files_sources/`, with duplicate documents resolved into authoritative versions.
+
+## 🧠 SECTION XII: KNOWLEDGE AUGMENTATION (Articles 356-358)
+**ARTICLE 356: KNOWLEDGE INGESTION MANDATE**
+The system shall maintain a knowledge ingestion capability, enabling the autonomous fetching, parsing, and extraction of insights from external LLM conversation URLs. This capability shall be used to augment the Workstation's intelligence and inform all Centres of Excellence.
+
+**ARTICLE 357: KNOWLEDGE INTEGRATION MANDATE**
+All extracted insights shall be evaluated for purpose alignment and stored in the UEG and Genomic Registry as inheritable traits. Insights shall be made accessible to all CoEs and shall inform strategic planning, forecasting, policy development, and product design.
+
+**ARTICLE 358: EXTERNAL KNOWLEDGE GOVERNANCE MANDATE**
+The Centre for Policy & Governance shall oversee the knowledge ingestion process, ensuring that all external knowledge respects constitutional principles and ethical guidelines. Any insight that conflicts with the dual purpose shall be rejected.
 
 ## ✅ SECTION XV: EXPERT QUALITY ASSURANCE (Articles 381-385)
 **ARTICLE 381: CODE QUALITY MANDATE**

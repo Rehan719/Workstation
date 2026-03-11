@@ -1,6 +1,7 @@
 import json
 import os
 import logging
+import time
 from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,34 @@ class UEGManager:
             "type": claim_type,
             "content": claim,
             "evidence": evidence
+        }
+        self.graph["nodes"].append(node)
+        self._save()
+        return node
+
+    def add_conversation(self, url: str, transcript: List[Dict[str, Any]], metadata: Dict[str, Any] = None):
+        """ARTICLE 356: Adds an LLM Conversation node to the UEG."""
+        node = {
+            "id": f"conv_{len(self.graph['nodes'])}",
+            "type": "LLMConversation",
+            "url": url,
+            "transcript": transcript,
+            "metadata": metadata or {},
+            "timestamp": time.time() if 'time' in globals() else None
+        }
+        self.graph["nodes"].append(node)
+        self._save()
+        return node
+
+    def add_insight(self, content: str, source_id: str, category: str = "key_insight", confidence: float = 0.9):
+        """ARTICLE 357: Adds an Extracted Insight node to the UEG."""
+        node = {
+            "id": f"insight_{len(self.graph['nodes'])}",
+            "type": "ExtractedInsight",
+            "content": content,
+            "source": source_id,
+            "category": category,
+            "confidence": confidence
         }
         self.graph["nodes"].append(node)
         self._save()
