@@ -5,8 +5,15 @@ from agentic_core.entity.ceo_interface import EntityCEOInterface
 from agentic_core.self_improvement.strategic_introspection import BusinessAnalystAgent, GovernanceAnalystAgent, PurposeAnalystAgent, StrategicReflector
 from agentic_core.governance.verifiable_governance import VGAEngine
 from agentic_core.purpose.evaluator import PurposeAlignmentEvaluator
+from agentic_core.enterprise.c_suite import VirtualCSuite
+from agentic_core.enterprise.coe_manager import COEManager
+from agentic_core.enterprise.transformation_engine import TransformationEngine
+from agentic_core.enterprise.iemf import IEMFIntegrator
+from agentic_core.enterprise.cuxad import CUXADTeam
+from agentic_core.synthesis.url_ingestor import URLIngestor
+from agentic_core.synthesis.insight_extractor import InsightExtractor
 
-class TestFullIntegration(unittest.TestCase):
+class TestFinalSynthesis(unittest.TestCase):
     def test_purpose_evaluator(self):
         eval = PurposeAlignmentEvaluator()
         res = eval.evaluate_intent({"description": "Dawah and profit."})
@@ -25,6 +32,80 @@ class TestFullIntegration(unittest.TestCase):
         pa = PurposeAnalystAgent()
         analysis = pa.analyze_purpose_drift([0.95, 0.96, 0.88])
         self.assertEqual(analysis["status"], "DRIFT_DETECTED")
+
+    def test_interface_extended(self):
+        interface = EntityCEOInterface()
+        interface.send_purpose_alert("Alert")
+        interface.provide_spiritual_guidance("Guidance")
+        interface.purpose_check("p1", {"data": "test"})
+        import json
+        with open(interface.log_path, 'r') as f:
+            log = json.load(f)
+            types = [e["type"] for e in log]
+            self.assertIn("PURPOSE_ALERT", types)
+            self.assertIn("SPIRITUAL_GUIDANCE", types)
+            self.assertIn("PURPOSE_CHECK", types)
+
+    def test_c_suite(self):
+        suite = VirtualCSuite()
+        report = suite.gather_executive_council({})
+        self.assertIn("CSO", report)
+        self.assertIn("CTO", report)
+
+    def test_coe_manager(self):
+        manager = COEManager()
+        hub = manager.synthesize_strategic_hub_input({})
+        self.assertEqual(hub["inter_coe_synergy"], "HIGH")
+
+    def test_transformation_engine(self):
+        engine = TransformationEngine()
+        res = engine.analyze_structural_efficiency({"tech_debt_index": 0.3})
+        types = [p["type"] for p in res["proposals"]]
+        self.assertIn("VERTICAL_INTEGRATION_AUDIT", types)
+
+    def test_iemf_unified(self):
+        iemf = IEMFIntegrator()
+        audit = iemf.run_unified_audit()
+        self.assertEqual(audit["purpose_alignment_verification"], "PASSED")
+
+    def test_knowledge_ingestion(self):
+        import asyncio
+        ingestor = URLIngestor()
+        res = asyncio.run(ingestor.ingest_urls(["https://chat.deepseek.com/share/123"]))
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["platform"], "DeepSeek")
+
+    def test_insight_extraction(self):
+        extractor = InsightExtractor()
+        convs = [{
+            "source_url": "url1",
+            "transcript": [{"text": "We need better Governance and Purpose alignment."}]
+        }]
+        insights = extractor.extract_insights(convs)
+        self.assertGreater(len(insights), 0)
+        themes = [i["theme"] for i in insights]
+        self.assertIn("Governance", themes)
+        self.assertIn("Purpose", themes)
+
+    def test_cuxad_collaboration(self):
+        team = CUXADTeam()
+        results = team.process_feature_release("UserOnboarding")
+        self.assertEqual(len(results), 6)
+        roles = [r["role"] for r in results]
+        self.assertIn("UXDesigner", roles)
+        self.assertIn("FrontendDeveloper", roles)
+
+    def test_cpo_oversight(self):
+        suite = VirtualCSuite()
+        report = suite.gather_executive_council({"current_focus_feature": "ProfilePage"})
+        cpo_data = report["CPO"]
+        self.assertIn("cuxad_active_release", cpo_data)
+        self.assertEqual(cpo_data["cuxad_active_release"][0]["task"], "Prototype ProfilePage")
+
+    def test_vga_m7(self):
+        vga = VGAEngine()
+        self.assertTrue(vga.validate_action("magnificent_seven", {"operational_profile": "frugal", "resource_waste": 0.02}))
+        self.assertFalse(vga.validate_action("magnificent_seven", {"operational_profile": "frugal", "resource_waste": 0.10}))
 
 if __name__ == "__main__":
     unittest.main()

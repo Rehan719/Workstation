@@ -68,6 +68,19 @@ class PurposeAlignmentPolicy(IGovernancePolicy):
     def attest(self, data: Dict[str, Any]) -> str:
         return "Purpose_Attestation_Foundation_Aligned"
 
+class MagnificentSevenPolicy(IGovernancePolicy):
+    """ARTICLE 341/351: Magnificent Seven Inspired Governance Policy."""
+    def verify(self, intent: Dict[str, Any]) -> bool:
+        logger.info("VGA: Verifying Magnificent Seven operational principles.")
+        # Constraints inspired by M7: Secrecy (Apple), Frugality (Amazon), Automation (Tesla)
+        if intent.get("operational_profile") == "frugal" and intent.get("resource_waste", 0) > 0.05:
+            logger.warning("VGA: Frugality violation (Amazon inspiration).")
+            return False
+        return True
+
+    def attest(self, data: Dict[str, Any]) -> str:
+        return "M7_Operational_Excellence_Attestation"
+
 class VGAEngine:
     """
     ARTICLE 290: Verifiable Governance Architecture Engine.
@@ -78,7 +91,8 @@ class VGAEngine:
             "minimization": DataMinimizationPolicy(),
             "shariah": ShariahCompliancePolicy(),
             "constitutional": ConstitutionalPolicy(),
-            "purpose": PurposeAlignmentPolicy()
+            "purpose": PurposeAlignmentPolicy(),
+            "magnificent_seven": MagnificentSevenPolicy()
         }
 
     def validate_action(self, policy_name: str, data: Dict[str, Any]) -> bool:

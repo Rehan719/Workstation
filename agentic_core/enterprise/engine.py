@@ -2,6 +2,10 @@ import logging
 from typing import Dict, Any, List
 import json
 import os
+from .iemf import IEMFIntegrator
+from .c_suite import VirtualCSuite
+from .coe_manager import COEManager
+from .transformation_engine import TransformationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +21,10 @@ class EnterpriseEvolutionEngine:
         self.registry_path = "agentic_core/registry/capabilities.json"
         self.current_plan = self._load_business_plan()
         self.capabilities = self._load_capabilities()
+        self.iemf = IEMFIntegrator()
+        self.c_suite = VirtualCSuite()
+        self.coe_manager = COEManager()
+        self.transformation_engine = TransformationEngine(self.registry_path)
 
     def _load_business_plan(self) -> Dict[str, Any]:
         """Loads the current living Business Plan."""
@@ -44,28 +52,58 @@ class EnterpriseEvolutionEngine:
 
     def orchestrate_evolution(self, introspection_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Main E3 Orchestration loop:
-        1. Review performance against OKRs.
-        2. Analyze gaps and opportunities.
-        3. Propose updates to BMS/QMS/GOS.
-        4. Trigger Grand Synthesis if needed.
+        Main E3 Orchestration loop (ARTICLE 342/346/344/350/356: C-Suite/IEMF/Transformation/CUXAD/Knowledge enabled):
+        1. Unified Audit across BMS/QMS/UEG.
+        2. C-Suite Council & CoE Hub Reviews (including Product oversight).
+        3. Performance, Structural, and User-Experience Analysis.
+        4. External Knowledge Ingestion Synthesis (Article 356).
+        5. Strategic, Organizational, and Product Proposal Generation.
+        6. Trigger Grand Synthesis if needed.
         """
         logger.info("E3: Starting Enterprise Evolution Orchestration Cycle.")
 
-        # 1. Performance Analysis
+        # 0. IEMF Unified Audit (Article 346)
+        audit_results = self.iemf.run_unified_audit()
+        introspection_data.update(audit_results)
+
+        # 0.1 Executive Guidance (C-Suite & CoE) (Article 343/342)
+        introspection_data["c_suite_guidance"] = self.c_suite.gather_executive_council(introspection_data)
+        introspection_data["coe_strategic_hub"] = self.coe_manager.synthesize_strategic_hub_input(introspection_data)
+
+        # 1. Performance, Structural & UX Analysis (Article 344/350)
         gaps = self._analyze_performance_gaps(introspection_data)
+        struct_health = self.transformation_engine.analyze_structural_efficiency(introspection_data)
 
-        # 2. Strategic Proposal Generation
+        # 1.1 External Knowledge Synthesis (Article 356/357)
+        knowledge_impact = introspection_data.get("external_knowledge_insights", [])
+        if knowledge_impact:
+            logger.info(f"E3: Incorporating {len(knowledge_impact)} external insights into strategy.")
+
+        # 2. Strategic & Organizational Proposal Generation
         proposals = self._generate_strategic_proposals(gaps)
+        proposals.extend(struct_health["proposals"])
 
-        # 3. Simulation & Validation
+        # 3. Simulation & Validation (ESE/Transformation Sandbox)
         validated_proposals = self._simulate_proposals(proposals)
 
+        # 4. Executive Review (C-Suite logic)
+        decision = self._executive_review(validated_proposals)
+
         return {
-            "status": "PROPOSED",
+            "status": decision["status"],
             "proposals": validated_proposals,
             "strategic_alignment": self._calculate_alignment(validated_proposals),
+            "executive_auth": decision["auth_agent"],
             "constitutional_compliance": 1.0
+        }
+
+    def _executive_review(self, proposals: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Simulates C-Suite review process (Article 342)."""
+        # Logic: If high-severity gaps exist, escalate to CEO, else CGO approves
+        high_priority = any(p["priority"] == "HIGH" for p in proposals)
+        return {
+            "status": "APPROVED" if not high_priority else "CEO_REVIEW_REQUIRED",
+            "auth_agent": "ChiefGrowthOfficer" if not high_priority else "AI_CEO"
         }
 
     def _analyze_performance_gaps(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:

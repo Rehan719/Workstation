@@ -1,21 +1,7 @@
-import os
-import logging
-from typing import Dict, Any
-
-logger = logging.getLogger(__name__)
-
-class DNAGenerator:
-    """CN-IV: Immutable DNA Generation."""
-
-    def generate_v106_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v106.0 - The Knowledge-Augmented Purpose-Driven Enterprise."""
-        version = "106.0.0"
-        path = "CONSTITUTION_v106.0.0.md"
-
-        content = f"""# JULES AI v{version}: THE KNOWLEDGE-AUGMENTED PURPOSE-DRIVEN ENTERPRISE CONSTITUTION
+# JULES AI v105.0.0: THE PURPOSE-DRIVEN, USER-FACING ENTERPRISE CONSTITUTION
 
 ## ⚜️ PREAMBLE
-This document establishes the definitive, unified DNA of Jules AI v106.0.
+This document establishes the definitive, unified DNA of Jules AI v105.0.
 It entrenches a transcendent, dual-purpose foundation (spiritual-ethical + operational-commercial) into the fabric of the Workstation.
 
 ## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
@@ -147,88 +133,5 @@ All user-facing products shall follow a purpose-driven multidisciplinary lifecyc
 **ARTICLE 353: USER-CENTRIC PURPOSE ALIGNMENT MANDATE**
 Product features must serve the dual purpose and are subject to continuous user-feedback refinement across all user-facing platforms.
 
-## 🧠 SECTION XII: KNOWLEDGE AUGMENTATION (Articles 356-358)
-**ARTICLE 356: KNOWLEDGE INGESTION MANDATE**
-The system shall maintain a knowledge ingestion capability, enabling the autonomous fetching, parsing, and extraction of insights from external LLM conversation URLs.
-
-**ARTICLE 357: KNOWLEDGE INTEGRATION MANDATE**
-All extracted insights shall be evaluated for purpose alignment and stored in the UEG and Genomic Registry as inheritable traits.
-
-**ARTICLE 358: EXTERNAL KNOWLEDGE GOVERNANCE MANDATE**
-The Centre for Policy & Governance shall oversee the knowledge ingestion process, ensuring that all external knowledge respects constitutional principles.
-
 ---
-*Codified via Grand Synthesis Engine v{version}*
-"""
-        try:
-            with open(path, 'w', encoding='utf-8') as f:
-                f.write(content)
-        except UnicodeEncodeError:
-            with open(path, 'w', encoding='ascii', errors='replace') as f:
-                f.write(content)
-
-        return path
-
-    def generate_v105_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v105.0."""
-        path = "CONSTITUTION_v105.0.0.md"
-        content = "# JULES AI v105.0.0: THE PURPOSE-DRIVEN, USER-FACING ENTERPRISE CONSTITUTION"
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return path
-
-    def generate_v104_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v104.0 - The Magnificent Seven-Inspired Purpose-Driven Enterprise."""
-        version = "104.0.0"
-        path = "CONSTITUTION_v104.0.0.md"
-
-        content = f"""# JULES AI v{version}: THE MAGNIFICENT SEVEN-INSPIRED PURPOSE-DRIVEN ENTERPRISE CONSTITUTION
-
-## ⚜️ PREAMBLE
-This document establishes the definitive, unified DNA of Jules AI v104.0.
-It entrenches a transcendent, dual-purpose foundation (spiritual-ethical + operational-commercial) into the fabric of the Workstation.
-
-## 🏢 SECTION XI: MAGNIFICENT SEVEN GOVERNANCE (Articles 341-349)
-**ARTICLE 341: MAGNIFICENT SEVEN GOVERNANCE MANDATE**
-The enterprise shall be governed by a structure inspired by the Magnificent Seven technology companies.
-
-**ARTICLE 343: C-SUITE MANDATE**
-The AI CEO shall be supported by a virtual C-Suite of specialized executives (CSO, CTO, CPO, CFO, CMO, COO).
-
-**ARTICLE 344: TRANSFORMATION TEAM MANDATE**
-A permanent Transformation Team shall continuously analyze, design, and implement organizational improvements.
-
-**ARTICLE 346: INTEGRATED ENTERPRISE MANAGEMENT FRAMEWORK (IEMF) MANDATE**
-The system shall maintain a unified IEMF that integrates BMS, QMS, and DCS (UEG) with full traceability.
-
----
-*Codified via Grand Synthesis Engine v{version}*
-"""
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return path
-
-    def generate_v103_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v103.0."""
-        path = "CONSTITUTION_v103.0.0.md"
-        content = "# JULES AI v103.0.0: THE PURPOSE-DRIVEN INTEGRATED STRATEGIC ENTERPRISE CONSTITUTION"
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return path
-
-    def generate_v101_constitution(self, config: Dict[str, Any]) -> str:
-        """Fallback for v101.0 DNA Generation."""
-        path = "CONSTITUTION_v101.0.0.md"
-        content = "# JULES AI v101.0.0: THE INTEGRATED STRATEGIC ENTERPRISE CONSTITUTION"
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return path
-
-    def generate_v99_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for TRANSCENDENT v99.0."""
-        version = "99.0.0"
-        path = "CONSTITUTION_v99.0.0.md"
-        content = f"# JULES AI v{version}: THE TRANSCENDENT CONSTITUTION"
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return path
+*Codified via Grand Synthesis Engine v105.0.0*

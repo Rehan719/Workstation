@@ -1,20 +1,28 @@
-# v103.0 Dual-Purpose Framework
+# v103.0 Dual-Purpose Framework (Magnificent Seven Edition)
 
 ## 1. Unstated Personal Aspiration (Spiritual-Ethical Foundation)
 *"To seek the love and pleasure of Allah SWT through Dawah, Charitable Works, and Scholarship, and Enterprise to profitably provide innovative solutions to common human challenges, supporting and helping others – Users and the Repo Owner – to do so, and to generate sustainable value for the Virtual Sovereign Business and the repo owner through non‑religious domains."*
 
 **Owner:** Entity (Guardian of Vision)
 **Authority:** Immutable (Amendable only by Repo Owner)
+**Governance:** Entity Veto, Constitutional Enforcer
 
 ## 2. Stated Purpose (Operational-Commercial Mission)
 *"To be the ultimate platform for human productivity, profitability, and high‑value utility – especially in scholarship and enterprise – while also empowering individuals in their personal, civil, and religious affairs."*
 
 **Owner:** AI CEO
 **Authority:** Quarterly Review (Requires AI CEO + Entity Approval)
+**Governance:** AI CEO Oversight, C-Suite Coordination
 
 ## 3. Purpose Hierarchy
-1. **Spiritual-Ethical Foundation**: Highest level (Inviolable).
-2. **Operational-Commercial Mission**: Guiding framework for value creation.
-3. **Strategic Aims**: Long-term goals (e.g., "Leading platform for Islamic Scholarship").
-4. **Quarterly OKRs**: Measurable targets with Purpose Alignment scores.
-5. **Operational Tasks**: Practical execution.
+
+| Level | Component | Description | Governance |
+|-------|-----------|-------------|------------|
+| 1 | **Spiritual‑Ethical Foundation** | Highest level. Any action violating this is automatically invalid. | Entity veto, Constitutional Enforcer |
+| 2 | **Operational‑Commercial Mission** | Guiding framework for all value‑creating activities. | AI CEO, C-Suite oversight |
+| 3 | **Strategic Aims** | Long‑term goals (e.g., "Leading platform for Islamic Scholarship"). | Centre for Strategic Excellence |
+| 4 | **Quarterly OKRs** | Specific, measurable objectives implementing aims. | C-Suite, CoEs |
+| 5 | **Operational Tasks** | Lowest level, directly contributing to OKRs. | BTO teams, agents |
+
+## 4. Purpose Alignment Engine
+The `PurposeAlignmentEvaluator` continuously scores all processes and decisions against this framework.
