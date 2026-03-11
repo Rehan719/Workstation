@@ -1,19 +1,15 @@
-# QMS-ASSIM-001: Assimilation Process Procedure
+# QMS-ASSIM-001: Zero-Downtime Assimilation Procedure
 
 ## Purpose
-To integrate converged configurations into the live system baseline without operational disruption.
+To ensure system updates are integrated without interruption to the sovereign business operations.
 
-## Responsibilities
-- **Integration Team Lead**: Oversees sandbox assembly and canary rollout.
-- **Rollback Controller**: Responsible for automated revert upon metric violation.
+## Procedure
+1. **Blue Environment**: The current live system.
+2. **Green Environment**: A DRAD-assembled sandbox containing the proposed patches.
+3. **Synchronization**: Align constitutional articles and engine parameters in Green.
+4. **Validation**: Run full test suite against Green.
+5. **Switchover**: Update the API Gateway router to point to Green. Green becomes live Blue.
+6. **Decommissioning**: Disassemble the old environment.
 
-## Process Steps
-1. **Sandbox Assembly**: Use DRAD to spin up a mirroring environment.
-2. **Patching**: Apply code and configuration updates transactional.
-3. **Audit**: Run ConstitutionalEnforcer on the candidate baseline.
-4. **Canary Rollout**: Gradual deployment starting at 1% traffic.
-5. **Final Commit**: Atomic blue-green switchover upon stable metrics.
-
-## Quality Gates
-- **Audit Pass**: Zero constitutional violations tolerated.
-- **Canary Stability**: Latency increase < 5% during rollout.
+## Rollback Plan
+If post-switchover metrics deviate by >5%, the router is immediately pointed back to the old environment.

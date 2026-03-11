@@ -159,9 +159,13 @@ It represents the continuous evolution and optimization of 100 generations of hi
         for i in range(124, 321):
              content += f"**ARTICLE {i}: CONSTITUTIONAL ARTICLE {i}**\nMandate for system excellence.\n\n"
 
-        content += "\n## 🚀 SECTION VII: INFRASTRUCTURE & META-EVOLUTION (Articles 321-322)\n"
-        content += get_article(321, "COLLATION-CONVERGENCE-ASSIMILATION PIPELINE", "The system shall maintain an automated pipeline for collating all source materials, converging to optimal configurations, and assimilating them into the live baseline.")
+        content += "\n## 🚀 SECTION VII: INFRASTRUCTURE & BUSINESS OPERATIONS (Articles 321-326)\n"
+        content += get_article(321, "PIPELINE ORCHESTRATION MANDATE", "The system shall maintain an automated pipeline for collating all source materials, converging to optimal configurations, and assimilating them via blue-green switchover.")
         content += get_article(322, "SYMBIOTIC ENGINE OPERATION", "The four engines shall operate in a closed-loop symbiotic manner, with cross-engine telemetry driving real-time adaptation.")
+        content += get_article(323, "GRAND SYNTHESIS OPERATIONS MANDATE", "The GSE shall support ad-hoc, on-demand, and routine scheduled reruns, with all run histories traceable in the UEG.")
+        content += get_article(324, "VIRTUAL SOVEREIGN BUSINESS GOVERNANCE", "The AI CEO shall lead strategic decisions, delegating operational execution to specialist BTO teams under QMS oversight.")
+        content += get_article(325, "QUALITY MANAGEMENT SYSTEM (QMS) MANDATE", "All business processes shall be documented as SOPs, versioned in the Genomic Registry, and subject to periodic quality audits.")
+        content += get_article(326, "AGENT TEAM CHARTER MANDATE", "Every BTO operational team must operate under a formal charter signed by the AI CEO and stored in the UEG.")
 
         content += "\n---\n*Codified via Grand Synthesis Engine v" + version + " (APOTHEOSIS OPTIMIZED)*"
 

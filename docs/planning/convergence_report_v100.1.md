@@ -1,6 +1,7 @@
-# Convergence Business Report v100.1
+# Convergence Business Report v100.1 (MOO-Driven)
 
-## Workstation Division
-- Selected Config Version: 100.0.0
-- Optimization Strategy: NSGA-II_Optimized
-- Twin Validation Status: stable
+## Workstation Pareto Front Selection
+- Selected Candidate: candidate_01
+- Fidelity Target: 0.995
+- Waste Target: 0.03
+- Twin Prediction: stable

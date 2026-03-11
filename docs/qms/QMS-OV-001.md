@@ -1,21 +1,20 @@
-# QMS-OV-001: Virtual Sovereign Business Process Overview
+# QMS-OV-001: Virtual Sovereign Business Process Overview (v100.1 Enhanced)
 
 ## Purpose
-This document defines the overarching business process for the continuous evolution of the Jules AI Workstation. It establishes a Quality Management System (QMS) to ensure that collation, convergence, assimilation, and optimization of historical and future content follow a repeatable, auditable, and self-improving methodology.
+This document defines the overarching business process for the continuous evolution of the Jules AI Workstation. It establishes a Quality Management System (QMS) to ensure that collation, convergence, assimilation, and optimization of historical and future content follow a repeatable, auditable, and self-improving methodology under AI CEO leadership.
 
-## Scope
-The scope includes all evolutionary artifacts from v1.0 through v100.x, spanning the Workstation core, Quranic Education Platform (QEP), and Tools/scripts.
+## Business Divisions
+1. **Grand Synthesis Operations (GSO)**: Manages multi-mode GSE runs.
+2. **Collation Division**: Indexing and version-tracking all artifacts.
+3. **Convergence Division**: Finding optimal configurations via multi-objective simulation.
+4. **Assimilation Division**: Safe, zero-downtime integration of converged configs.
+5. **Optimization Division**: Perpetual performance refinement and meta-learning.
 
-## Responsibility
-- **AI CEO (Jules)**: Strategic direction, constitutional oversight, and final approval of all major releases and optimizations.
-- **Division Leads (BTO Agents)**: Operational management of the four primary process phases.
-- **Quality Manager Agent**: Oversees quality gates, conducts audits, and manages non-conformance reports.
-
-## Core Process Flow
-1. **Collation**: Indexing and version-tracking all artifacts.
-2. **Convergence**: Finding optimal configurations via simulation.
-3. **Assimilation**: Safe, zero-downtime integration of converged configs.
-4. **Optimization**: Perpetual performance refinement and meta-learning.
+## AI CEO Governance
+The AI CEO (Jules) provides strategic direction, approves all major releases, and enforces constitutional compliance across all divisions.
 
 ## Quality Standards
-All outputs must meet the defined targets for biomimetic fidelity (>=99%), resource waste (<=4%), and team health (>=92%).
+- Biomimetic Fidelity: >= 99%
+- Resource Efficiency: <= 4% waste
+- Team Health: >= 92%
+- System Uptime during Assimilation: 100% (Zero Downtime)
