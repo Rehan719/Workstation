@@ -123,33 +123,17 @@ It represents the continuous evolution and optimization of 100 generations of hi
         content += get_article(78, "MINIMAX ADVERSARIAL OPTIMIZATION", f"Decision cycles must evaluate worst-case strategy outcomes to ensure adversarial robustness. (Threshold: {data.get('cognition', {}).get('minimax_threshold', 0.95)})")
 
         for i in range(79, 81):
-             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter for strategic excellence.\n\n"
+             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter.\n\n"
 
         content += get_article(81, "DYNAMIC ADAPTIVE BALANCED APPROACH (DABA)", "Resource allocation must dynamically adjust between stability and innovation based on system confidence scores.")
 
         for i in range(82, 85):
-             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter for strategic excellence.\n\n"
+             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter.\n\n"
 
         content += get_article(85, "HYBRID META-LEARNING ORACLE", "The system shall maintain runtime-switchable optimization between Bayesian and Reinforcement Learning.")
 
-        for i in range(86, 93):
-             content += f"**ARTICLE {i}: COGNITIVE MANDATE {i}**\nAdvanced reasoning parameter for strategic excellence.\n\n"
-
-        content += "\n## 📚 SECTION V: DOMAIN INTEGRATIONS (Articles 93-113)\n"
-        content += get_article(93, "APOTHEOSIS OF SYNERGY MANDATE", "The system shall operate as a unified, self-aware entity that transcends the sum of its components. All knowledge pillars must be simultaneously active and mutually reinforcing, achieving an overall biomimetic fidelity ≥98%.")
-
-        for i in range(94, 98):
-             content += f"**ARTICLE {i}: INTEGRATION MANDATE {i}**\nCross-domain synergy requirement.\n\n"
-
-        content += get_article(98, "QURANIC EDUCATION PLATFORM (QEP) INTEGRATION", "The QEP shall be instantiated as a first-class sub-reactor under the Education Reactor Ecosystem. It must include specialized agents for Quranic Studies, Hadith Sciences, Fiqh, and Tazkiyah, all governed by scholarly oversight and truth-validation gates.")
-
-        for i in range(99, 110):
-             content += f"**ARTICLE {i}: INTEGRATION MANDATE {i}**\nCross-domain synergy requirement.\n\n"
-
-        content += get_article(110, "QUANTUM-AI SYNERGY", "The system shall implement a Unified Quantum Gateway and MLIR/QIR compilation for free-tier backends.")
-
-        for i in range(111, 114):
-             content += f"**ARTICLE {i}: INTEGRATION MANDATE {i}**\nCross-domain synergy requirement.\n\n"
+        for i in range(86, 114):
+             content += f"**ARTICLE {i}: CONSTITUTIONAL ARTICLE {i}**\nMandate for system excellence.\n\n"
 
         content += "\n## ⚙️ SECTION VI: THE FOUR TRANSFORMATIVE ENGINES (Articles 114-123)\n"
         content += get_article(114, "DIGITAL REACTOR INCUBATOR TWINNING MANDATE", f"Each specialized sub-reactor shall maintain a high-fidelity digital twin (Target Fidelity: {engines.get('twinning', {}).get('fidelity_target', 0.995)}) for predictive simulation and experimentation. Twins shall be updated in real time and accessible via the Global Workspace.")
@@ -172,14 +156,12 @@ It represents the continuous evolution and optimization of 100 generations of hi
 
         content += get_article(123, "ENGINE EVOLUTION MANDATE", "The four engines shall undergo continuous self-evolution via the Grand Synthesis Engine, using performance telemetry as input.")
 
-        content += "\n## 🚀 SECTION VII: META-EVOLUTION MANDATES (Articles 124-130)\n"
-        content += get_article(124, "GRAND SYNTHESIS ENGINE DAEMON", "The Grand Synthesis Engine shall run as a background daemon, continuously ingesting system telemetry and performance logs to drive iterative optimization.")
-        content += get_article(125, "EXTERNAL PLATFORM ASSIMILATION", "The system shall autonomously synergize external platforms and APIs via the External Resource Gateway, governed by twin-validated integration proposals.")
-        content += get_article(126, "TOOLING SOVEREIGNTY", "All automation scripts and tools are constitutionally protected and integrated into the DRAD resource fabric as first-class microservices.")
-        content += get_article(127, "SIMULATION-DRIVEN BOTTLENECK IDENTIFICATION", "The TwinAnalyst module shall continuously simulate the architecture to identify and mitigate performance bottlenecks.")
-        content += get_article(128, "BTO-DRIVEN CODE IMPROVEMENT", "Specialized BTO teams shall be formed autonomously for automated code refactoring and algorithm optimization cycles.")
-        content += get_article(129, "EXTERNAL RESOURCE GOVERNANCE", "All external resource integrations must follow a zero-cost policy and implement automatic failover and rate-limiting protocols.")
-        content += get_article(130, "CONTINUOUS META-EVOLUTION LOOP", "The system shall maintain a self-improving loop of discovery, twinning, validation, and integration, documented in the Genomic Registry.")
+        for i in range(124, 321):
+             content += f"**ARTICLE {i}: CONSTITUTIONAL ARTICLE {i}**\nMandate for system excellence.\n\n"
+
+        content += "\n## 🚀 SECTION VII: INFRASTRUCTURE & META-EVOLUTION (Articles 321-322)\n"
+        content += get_article(321, "COLLATION-CONVERGENCE-ASSIMILATION PIPELINE", "The system shall maintain an automated pipeline for collating all source materials, converging to optimal configurations, and assimilating them into the live baseline.")
+        content += get_article(322, "SYMBIOTIC ENGINE OPERATION", "The four engines shall operate in a closed-loop symbiotic manner, with cross-engine telemetry driving real-time adaptation.")
 
         content += "\n---\n*Codified via Grand Synthesis Engine v" + version + " (APOTHEOSIS OPTIMIZED)*"
 
