@@ -45,7 +45,10 @@ class GrandSynthesisEngine:
         resolved_config = self.resolver.resolve_conflicts(patterns)
 
         version = resolved_config.get("version")
-        if version == "103.0.0":
+        if version == "104.0.0":
+            constitution_path = self.dna_gen.generate_v104_constitution(resolved_config)
+            logger.info(f"v104.0 Constitution generated at {constitution_path}")
+        elif version == "103.0.0":
             constitution_path = self.dna_gen.generate_v103_constitution(resolved_config)
             logger.info(f"v103.0 Constitution generated at {constitution_path}")
         elif version == "101.0.0":

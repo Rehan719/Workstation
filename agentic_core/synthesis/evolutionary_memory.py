@@ -54,11 +54,15 @@ class EvolutionaryMemory:
         # Add synthesis insight node
         if "nodes" not in ueg: ueg["nodes"] = []
 
+        version = results.get("version", "unknown")
+        import datetime
+        timestamp = datetime.datetime.now().isoformat()
+
         ueg["nodes"].append({
-            "id": "v60_grand_synthesis",
+            "id": f"synthesis_{version}_{timestamp}",
             "type": "insight",
             "content": results,
-            "metadata": {"version": "60.0.0", "timestamp": "2024-05-22T10:00:00"}
+            "metadata": {"version": version, "timestamp": timestamp}
         })
 
         with open(self.ueg_path, "w") as f:

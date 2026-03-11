@@ -3,6 +3,9 @@ from typing import Dict, Any, List
 import json
 import os
 from .iemf import IEMFIntegrator
+from .c_suite import VirtualCSuite
+from .coe_manager import COEManager
+from .transformation_engine import TransformationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +22,9 @@ class EnterpriseEvolutionEngine:
         self.current_plan = self._load_business_plan()
         self.capabilities = self._load_capabilities()
         self.iemf = IEMFIntegrator()
+        self.c_suite = VirtualCSuite()
+        self.coe_manager = COEManager()
+        self.transformation_engine = TransformationEngine(self.registry_path)
 
     def _load_business_plan(self) -> Dict[str, Any]:
         """Loads the current living Business Plan."""
@@ -46,24 +52,30 @@ class EnterpriseEvolutionEngine:
 
     def orchestrate_evolution(self, introspection_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Main E3 Orchestration loop (ARTICLE 342/345: C-Suite/IEMF enabled):
+        Main E3 Orchestration loop (ARTICLE 342/346/344: C-Suite/IEMF/Transformation enabled):
         1. Unified Audit across BMS/QMS/UEG.
-        2. Performance Analysis against OKRs.
-        3. Analyze gaps and opportunities (CGO/CTO oversight).
-        4. Propose updates to BMS/QMS/GOS (Transformation Team).
+        2. C-Suite Council & CoE Hub Reviews.
+        3. Performance & Structural Efficiency Analysis.
+        4. Strategic & Organizational Proposal Generation.
         5. Trigger Grand Synthesis if needed.
         """
         logger.info("E3: Starting Enterprise Evolution Orchestration Cycle.")
 
-        # 0. IEMF Unified Audit (Article 345)
+        # 0. IEMF Unified Audit (Article 346)
         audit_results = self.iemf.run_unified_audit()
         introspection_data.update(audit_results)
 
-        # 1. Performance Analysis
-        gaps = self._analyze_performance_gaps(introspection_data)
+        # 0.1 Executive Guidance (C-Suite & CoE) (Article 343/342)
+        introspection_data["c_suite_guidance"] = self.c_suite.gather_executive_council(introspection_data)
+        introspection_data["coe_strategic_hub"] = self.coe_manager.synthesize_strategic_hub_input(introspection_data)
 
-        # 2. Strategic Proposal Generation (Transformation Team Role)
+        # 1. Performance & Structural Analysis (Article 344)
+        gaps = self._analyze_performance_gaps(introspection_data)
+        struct_health = self.transformation_engine.analyze_structural_efficiency(introspection_data)
+
+        # 2. Strategic & Organizational Proposal Generation
         proposals = self._generate_strategic_proposals(gaps)
+        proposals.extend(struct_health["proposals"])
 
         # 3. Simulation & Validation (ESE/Transformation Sandbox)
         validated_proposals = self._simulate_proposals(proposals)
