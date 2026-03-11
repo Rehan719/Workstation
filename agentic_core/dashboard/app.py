@@ -11,10 +11,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="Jules AI v110.0 Transcendent Command Center", layout="wide")
+st.set_page_config(page_title="Jules AI v111.0 Transcendent Command Center", layout="wide")
 
-st.title("🧬 Jules AI v110.0: The Transcendent AI CEO Command Center")
-st.markdown("### The Flawlessly Coordinated, Self-Optimising Grand Synthesis Meta-Pipeline v3.0")
+st.title("🧬 Jules AI v111.0: The Transcendent AI CEO Command Center")
+st.markdown("### The Clean, Consolidated, and Cloud-Expanded Enterprise")
 
 if 'organism' not in st.session_state:
     try:
@@ -83,9 +83,9 @@ with col2:
         st.write(f"Rationale: {latest['mce']['reason']}")
 
 with col3:
-    st.header("📚 Documentation & Onboarding (v110.0)")
+    st.header("📚 Documentation & Onboarding (v111.0)")
 
-    # ARTICLE 365 & 376: Transcendent Onboarding Agent
+    # ARTICLE 365, 376 & 379: Transcendent Onboarding Agent
     st.subheader("🤖 Transcendent Onboarding Agent")
     user_interest = st.selectbox("I want to learn about:", ["Quranic Study", "Development", "Administration"])
     if st.button("Launch Personalized Tour"):
@@ -131,10 +131,10 @@ with col3:
         snn_data = np.random.normal(latest['triad']['p53_level'], 0.1, 12)
         st.plotly_chart(px.bar(snn_data, title="SNN Cortical Spikes"), use_container_width=True)
 
-st.sidebar.header("AI CEO v110.0 Status")
-st.sidebar.write(f"Instance ID: {st.session_state.organism.agent_id if st.session_state.organism else 'v110-TRANSCENDENT'}")
-st.sidebar.write("Governance: CONSTITUTION v110.0.0")
-st.sidebar.write("Status: Transcendent Meta-Cognition Phase")
+st.sidebar.header("AI CEO v111.0 Status")
+st.sidebar.write(f"Instance ID: {st.session_state.organism.agent_id if st.session_state.organism else 'v111-CLEAN'}")
+st.sidebar.write("Governance: CONSTITUTION v111.0.0")
+st.sidebar.write("Status: Clean & Expanded Enterprise Phase")
 
 if st.session_state.history:
     st.header("Global Workspace Event Log")
