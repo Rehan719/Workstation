@@ -17,13 +17,15 @@ class TestV111Release(unittest.TestCase):
                 pass
 
     def test_background_sources_structure(self):
-        self.assertTrue(os.path.isdir("docs/background_sources/archive"))
-        self.assertTrue(os.path.isdir("docs/background_sources/historical_directives"))
-        self.assertTrue(os.path.isdir("docs/background_sources/notes"))
+        base = "docs/background_text_files_sources"
+        self.assertTrue(os.path.isdir(f"{base}/archive"))
+        self.assertTrue(os.path.isdir(f"{base}/historical_directives"))
+        self.assertTrue(os.path.isdir(f"{base}/notes"))
 
     def test_v111_constitution(self):
-        self.assertTrue(os.path.exists("CONSTITUTION_v111.0.0.md"))
-        with open("CONSTITUTION_v111.0.0.md", "r") as f:
+        constitution_path = "agentic_core/constitution/CONSTITUTION_v111.0.0.md"
+        self.assertTrue(os.path.exists(constitution_path))
+        with open(constitution_path, "r") as f:
             content = f.read()
             self.assertIn("v111.0", content)
             self.assertIn("ARTICLE 378: REPOSITORY CLEANLINESS MANDATE", content)

@@ -146,7 +146,7 @@ The system shall maintain a one-button `ultimate-rerun` mode that integrates all
 The system shall ingest and synthesize the entire conversation history to ensure absolute alignment with the repo owner's strategic intent and nuances.
 
 **ARTICLE 378: REPOSITORY CLEANLINESS MANDATE**
-The repository shall be maintained in a sleek, professional state. All non‑essential background and historical text files shall be consolidated in `docs/background_sources/`, with duplicate documents resolved into authoritative versions.
+The repository shall be maintained in a sleek, professional state. All non‑essential background and historical text files shall be consolidated in `docs/background_text_files_sources/`, with duplicate documents resolved into authoritative versions.
 
 **ARTICLE 379: MULTI-CLOUD FREE TIER MANDATE**
 The system shall maintain autonomous deployment capabilities across GCP, AWS, Azure, and Oracle Cloud, leveraging free tiers to minimize operational costs while maximizing capability.

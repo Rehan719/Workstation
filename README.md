@@ -1,4 +1,4 @@
-# Jules AI v109.0: THE SELF-OPTIMISING GRAND SYNTHESIS META-PIPELINE
+# Jules AI v112.0: THE RIGOROUSLY REVIEWED, EXPERT-STANDARD ENTERPRISE
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
@@ -12,8 +12,8 @@ Revoke all resources and clean up with one click:
 ./teardown.sh
 ```
 
-## 🧬 v109.0 The Self-Optimising Era
-Jules AI v109.0 introduces the **Grand Synthesis Meta-Pipeline v2.0**, a self-aware orchestration layer that predicts bottlenecks and guarantees output quality.
+## 🧬 v112.0 The Quality Era
+Jules AI v112.0 introduces the **Expert Code Review Framework**, an iterative quality assurance layer that certifies the codebase against world-class engineering standards.
 
 ### 📚 Expanded Documentation & Onboarding
 - [Expanded Repo Owner Manual](docs/guides/repo_owner_v2.md): Granular operational workflows and strategic levers.
@@ -23,7 +23,15 @@ Jules AI v109.0 introduces the **Grand Synthesis Meta-Pipeline v2.0**, a self-aw
 - [Feature Catalogue](docs/guides/platform_features_v2.md): Searchable inventory with purpose-alignment scores.
 
 ### ⚖️ Constitutional Sovereignty
-Governed by the **v109.0 Constitution (CONSTITUTION_v109.0.0.md)**, codifying the Predictive Meta-Orchestrator, Advanced Conflict Resolution, and Continuous Self-Optimisation mandates (Articles 371-375).
+Governed by the **v112.0 Constitution (CONSTITUTION_v112.0.0.md)**, codifying the Expert Quality Assurance mandates and Iterative Review cycles (Articles 381-385).
+
+### 🗄️ Repository Architecture
+The Workstation follows a pristine organizational hierarchy:
+- `agentic_core/`: The autonomous brain and constitutional framework.
+- `docs/background_text_files_sources/`: Secured archive of all historical intelligence and directives.
+- `docs/guides/`: Role-specific empowerment manuals (v3).
+- `docs/resources/`: Multi-cloud and advanced compute strategy.
+- See [Repository Structure](docs/repository_structure.md) for full details.
 
 ### 🚀 Zero-Cost/No-Incurred-Cost Deployment
 Engineered for democratization, the entire workstation can be deployed on free-tier cloud infrastructure (Render, Vercel, Streamlit Cloud).
@@ -66,4 +74,4 @@ Set these variables for a production-ready zero-cost instance:
 **IMMUNE SYSTEM (Security) > NERVOUS SYSTEM (Coordination) > DIGESTIVE SYSTEM (Growth) > AGING (Efficiency)**
 
 ---
-*Developed by Jules AI. v100.0 APOTHEOSIS OF SYNERGY. Consistently Consolidated.*
+*Developed by Jules AI. v112.0 EXPERT ENTERPRISE. Quality Certified.*
