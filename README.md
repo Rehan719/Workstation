@@ -1,26 +1,29 @@
-# Jules AI v107.0: THE COMPREHENSIVE DOCUMENTATION & USER EMPOWERMENT RELEASE
+# Jules AI v109.0: THE SELF-OPTIMISING GRAND SYNTHESIS META-PIPELINE
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
-## 🚀 One-Button Platform Setup
-Deploy the entire Workstation platform (Backend, Frontend, Cloud, and Mobile) with a single command:
+## 🚀 One-Button Platform Setup & Teardown
+Deploy the entire Workstation ecosystem with a self-diagnosing orchestration engine:
 ```bash
 ./deploy.sh
 ```
-*Note: Ensure you have your API keys ready (OpenAI, Vercel, Render, GCP).*
+Revoke all resources and clean up with one click:
+```bash
+./teardown.sh
+```
 
-## 🧬 v107.0 The Empowerment Era
-Jules AI v107.0 focuses on democratizing the power of the Virtual Sovereign Business through crystal-clear documentation and effortless deployment.
+## 🧬 v109.0 The Self-Optimising Era
+Jules AI v109.0 introduces the **Grand Synthesis Meta-Pipeline v2.0**, a self-aware orchestration layer that predicts bottlenecks and guarantees output quality.
 
-### 📚 Comprehensive Documentation Suite
-- [Repo Owner Guide](docs/guides/repo_owner.md): Strategic vision, governance, and management.
-- [Developer Guide](docs/guides/developer.md): APIs, SDKs, and contribution workflows.
-- [User Guide](docs/guides/user.md): Step-by-step instructions for non-coding users.
-- [Platform Features](docs/guides/platform_features.md): Detailed inventory of all platform capabilities.
-- [Background & Accessibility](docs/guides/background.md): Resource overview and accessibility commitment.
+### 📚 Expanded Documentation & Onboarding
+- [Expanded Repo Owner Manual](docs/guides/repo_owner_v2.md): Granular operational workflows and strategic levers.
+- [Hyper-Detailed Developer Guide](docs/guides/developer_v2.md): Live code samples, API playground, and integration patterns.
+- [Empowered User Experience Guide](docs/guides/user_v2.md): Interactive tutorials and feature walkthroughs.
+- [Technical Whitepaper](docs/guides/technical_whitepaper.md): In-depth analysis of the self-optimising organism.
+- [Feature Catalogue](docs/guides/platform_features_v2.md): Searchable inventory with purpose-alignment scores.
 
 ### ⚖️ Constitutional Sovereignty
-At the core is the **v107.0 Constitution (CONSTITUTION_v107.0.0.md)**. With 362 codified articles, it mandate user empowerment and frictionless deployment as supreme guiding principles.
+Governed by the **v109.0 Constitution (CONSTITUTION_v109.0.0.md)**, codifying the Predictive Meta-Orchestrator, Advanced Conflict Resolution, and Continuous Self-Optimisation mandates (Articles 371-375).
 
 ### 🚀 Zero-Cost/No-Incurred-Cost Deployment
 Engineered for democratization, the entire workstation can be deployed on free-tier cloud infrastructure (Render, Vercel, Streamlit Cloud).
