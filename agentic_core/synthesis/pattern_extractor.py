@@ -5,39 +5,37 @@ from collections import Counter
 logger = logging.getLogger(__name__)
 
 class PatternExtractor:
-    """CN-III: Optimal Pattern Extraction with Engine Awareness."""
+    """CN-III: Optimal Pattern Extraction."""
 
     def extract_patterns(self, raw_insights: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """CN-III: Optimal Pattern Extraction for v100.0 Apotheosis."""
-        logger.info("CN-III: Extracting optimal architectural patterns for v100.0.")
+        """CN-III: Optimal Pattern Extraction for v99.0 Transcendent."""
+        logger.info("CN-III: Extracting optimal architectural patterns.")
 
+        # Comprehensive mapping of mandated design patterns (v1-v99)
         patterns = [
-            {"id": "apotheosis_of_synergy", "confidence": 1.0, "v_range": "v100"},
-            {"id": "quadruple_engine_integration", "confidence": 1.0, "v_range": "v100"},
-            {"id": "twinning_engine", "confidence": 1.0, "article": 114, "v_range": "v100"},
-            {"id": "aro_engine", "confidence": 1.0, "article": 115, "v_range": "v100"},
-            {"id": "bto_engine", "confidence": 1.0, "article": 116, "v_range": "v100"},
-            {"id": "drad_engine", "confidence": 1.0, "article": 117, "v_range": "v100"},
-            {"id": "qep_integration", "confidence": 1.0, "article": 98, "v_range": "v94-v100"},
-            {"id": "minimax_strategy", "confidence": 0.99, "article": 95, "v_range": "v95-v100"},
-            {"id": "cognitive_hierarchy", "confidence": 0.99, "article": 96, "v_range": "v96-v100"},
-            {"id": "retro_causal_processing", "confidence": 0.98, "article": 97, "v_range": "v97-v100"}
+            {"id": "biological_orchestration", "confidence": 0.95, "v_range": "v54-v99"},
+            {"id": "seven_layer_verification", "confidence": 0.99, "v_range": "v99"},
+            {"id": "unified_evidence_graph", "confidence": 0.98, "v_range": "v41-v99"},
+            {"id": "merkle_ledger", "confidence": 0.97, "v_range": "v53-v99"},
+            {"id": "predictive_allostasis", "confidence": 0.98, "v_range": "v70-v99"},
+            {"id": "redox_gated_hsp", "confidence": 0.96, "v_range": "v71-v99"},
+            {"id": "grand_synthesis", "confidence": 1.0, "article": 73, "v_range": "v60-v99"},
+            {"id": "adaptive_incubation", "confidence": 1.0, "article": 74, "v_range": "v60-v99"},
+            {"id": "tiered_parameters", "confidence": 1.0, "article": 75, "v_range": "v60-v99"},
+            {"id": "rl_portfolio", "confidence": 1.0, "article": 76, "v_range": "v60-v99"},
+            {"id": "survival_hierarchy", "confidence": 1.0, "article": 77, "v_range": "v71-v99"},
+            {"id": "behavior_driven_granularity", "confidence": 0.99, "article": 135, "v_range": "v99"},
+            {"id": "recursive_prompt_evolution", "confidence": 1.0, "article": 140, "v_range": "v99"},
+            {"id": "sovereign_business_entity", "confidence": 1.0, "article": 150, "v_range": "v99"}
         ]
 
-        # Extract from raw insights based on engines and key terms
+        # Extract from raw insights
         for insight in raw_insights:
-            if "engines" in insight:
-                for engine in insight["engines"]:
-                    patterns.append({
-                        "id": f"{engine}_pattern",
-                        "confidence": 0.95,
-                        "source": insight["source"],
-                        "domain": insight.get("domain", "core")
-                    })
-
             if "key_terms" in insight:
                 for term in insight["key_terms"]:
                     if term == "Quantum":
-                        patterns.append({"id": "quantum_apotheosis", "confidence": 0.99, "article": 94})
+                        patterns.append({"id": "quantum_ai_synergy", "confidence": 0.99, "article": 110})
+                    elif term == "Transcendent":
+                        patterns.append({"id": "transcendent_integration", "confidence": 1.0})
 
         return patterns

@@ -54,6 +54,7 @@ class EntityCEOInterface:
             "question": question
         }
         self._log_interaction(query)
+        # Mocking the response
         return "Guidance provided: Aligned with Article 77."
 
     def _log_interaction(self, entry: Dict[str, Any]):
