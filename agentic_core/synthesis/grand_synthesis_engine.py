@@ -81,7 +81,8 @@ class GrandSynthesisEngine:
         is_unify = "--unify" in sys.argv
         is_scrape = "--web-scrape" in sys.argv
         is_product = "--product-engineering" in sys.argv
-        target_version = target_version or ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0")))
+        is_delivery = "--product-delivery" in sys.argv
+        target_version = target_version or ("118.0.0" if is_delivery else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))
         logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
@@ -108,8 +109,8 @@ class GrandSynthesisEngine:
             convergence_results = self.feature_converger.converge_all_features()
             self.memory.store_synthesis_results(convergence_results)
 
-        if is_product:
-            logger.info("ARTICLE 401: Initiating Digital Product Engineering for v117.0.")
+        if is_product or is_delivery:
+            logger.info(f"ARTICLE 401: Initiating Digital Product Engineering for {target_version}.")
             from agentic_core.enterprise.cuxad import CoEDPEOrchestrator
             dpe_orchestrator = CoEDPEOrchestrator()
             dpe_results = dpe_orchestrator.execute_product_mission()
@@ -196,7 +197,12 @@ class GrandSynthesisEngine:
             self._generate_unified_manifest(target_version)
 
         version = resolved_config.get("version")
-        if version == "117.0.0":
+        if version == "118.0.0":
+            constitution_path = self.dna_gen.generate_v118_constitution(resolved_config)
+            logger.info(f"v118.0 Constitution generated at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "117.0.0":
             constitution_path = self.dna_gen.generate_v117_constitution(resolved_config)
             logger.info(f"v117.0 Constitution generated at {constitution_path}")
             if is_ultimate or "--generate-docs-v3" in sys.argv:
