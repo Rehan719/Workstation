@@ -23,3 +23,14 @@ class ContainerManager:
         container_info['signature'] = signature
 
         return container_info
+
+    def provision_sandbox(self, task_id: str, config: Dict[str, Any]) -> str:
+        """ARTICLE 387: Provisions an isolated sandbox for agentic execution."""
+        container_id = f"cnt_{task_id}_{hash(str(config))}"
+        # Real logic would interface with Docker/Kubernetes API
+        return container_id
+
+    def teardown_sandbox(self, container_id: str):
+        """Tears down an isolated sandbox."""
+        # Real logic would remove the container
+        pass

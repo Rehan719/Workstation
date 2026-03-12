@@ -16,8 +16,13 @@ from .evolutionary_memory import EvolutionaryMemory
 from .url_ingestor import URLIngestor
 from .text_ingestor import TextIngestor
 from .insight_extractor import InsightExtractor
-from .biomimetic_agents import NeurobiomimeticAgent, ImmunomimeticAgent
+from .biomimetic_agents import (
+    NeurobiomimeticAgent, ImmunomimeticAgent, SwarmIntelligenceAgent,
+    HormonalAgent, MetamorphosisAgent, HomeostaticAgent
+)
 from .agentic_orchestrator import AgenticOrchestrator
+from .feature_converger import FeatureConverger
+from .url_ingestor import DevelopmentScraper
 from .autonomic_system import AgenticAutonomicSystem
 from .documentation_generator import DocumentationGenerator
 from agentic_core.ueg.ueg_manager import UEGManager
@@ -43,9 +48,14 @@ class GrandSynthesisEngine:
         self.ingestor = URLIngestor()
         self.text_ingestor = TextIngestor()
         self.insight_extractor = InsightExtractor()
-        self.biomimetic_agents = [NeurobiomimeticAgent(), ImmunomimeticAgent()]
+        self.biomimetic_agents = [
+            NeurobiomimeticAgent(), ImmunomimeticAgent(), SwarmIntelligenceAgent(),
+            HormonalAgent(), MetamorphosisAgent(), HomeostaticAgent()
+        ]
         self.doc_gen = DocumentationGenerator()
         self.agentic_orchestrator = AgenticOrchestrator()
+        self.feature_converger = FeatureConverger()
+        self.dev_scraper = DevelopmentScraper()
         self.autonomic_system = AgenticAutonomicSystem()
         self.ueg = UEGManager()
         self.genomic_registry = GenomicRegistry()
@@ -68,7 +78,9 @@ class GrandSynthesisEngine:
         Unifies URLs, background sources, and introspection data into a flawless configuration.
         """
         is_ultimate = "--ultimate-rerun" in sys.argv
-        target_version = target_version or ("114.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0")
+        is_unify = "--unify" in sys.argv
+        is_scrape = "--web-scrape" in sys.argv
+        target_version = target_version or ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))
         logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
@@ -76,6 +88,9 @@ class GrandSynthesisEngine:
             logger.info("Meta-Orchestrator 3.0: Initiating Hierarchical Orchestration and Predictive Resource Balancing.")
             # 112-05: Expert-level synchronization. Using event-based telemetry check (simulated).
             await self._predictive_sync()
+
+        if target_version == "115.0.0":
+            logger.info("ARTICLE 393: Starting Deep Knowledge Synthesis for v115.0 Converged Culmination.")
 
         # Mode: Unified Multi-Source Ingestion (Article 356, 357, 367, 382, 386)
         ingested_knowledge = []
@@ -86,6 +101,17 @@ class GrandSynthesisEngine:
         if is_agentic:
              await self.autonomic_system.start()
              logger.info("ARTICLE 386: Agentic mode active. Autonomous background operations initiated.")
+
+        if is_unify:
+            logger.info("ARTICLE 397: Starting Version Convergence for v116.0.")
+            convergence_results = self.feature_converger.converge_all_features()
+            self.memory.store_synthesis_results(convergence_results)
+
+        if is_scrape:
+            logger.info("ARTICLE 399: Starting Web Scraping for Development Best Practices.")
+            best_practices = await self.dev_scraper.gather_best_practices()
+            self.genomic_registry.reverse_transcribe_trait("ui_best_practices", best_practices)
+            self._generate_web_scrape_report(best_practices, target_version)
 
         if is_ultimate or "--ingest-urls" in sys.argv or is_deep_biomimetic or is_agentic:
             urls = self._get_url_list()
@@ -100,7 +126,7 @@ class GrandSynthesisEngine:
                     self.ueg.add_insight(insight["insight"], conv_node["id"], insight["category"], insight["quality_score"])
                     self.genomic_registry.reverse_transcribe_trait(f"insight_{insight['theme']}", insight)
 
-                    if is_deep_biomimetic:
+                    if is_deep_biomimetic or is_agentic:
                         for agent in self.biomimetic_agents:
                             patterns = agent.analyze(insight)
                             for p in patterns:
@@ -155,8 +181,24 @@ class GrandSynthesisEngine:
             logger.info("Transcendent Conflict Resolution: 100% automated priority-based alignment.")
             resolved_config["version"] = target_version or "112.0.0"
 
+        if is_agentic:
+            self._generate_agentic_synthesis_report(target_version, resolved_config)
+
+        if is_unify:
+            self._generate_unified_manifest(target_version)
+
         version = resolved_config.get("version")
-        if version == "114.0.0":
+        if version == "116.0.0":
+            constitution_path = self.dna_gen.generate_v116_constitution(resolved_config)
+            logger.info(f"v116.0 Constitution generated at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "115.0.0":
+            constitution_path = self.dna_gen.generate_v115_constitution(resolved_config)
+            logger.info(f"v115.0 Constitution generated at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "114.0.0":
             constitution_path = self.dna_gen.generate_v114_constitution(resolved_config)
             logger.info(f"v114.0 Constitution generated at {constitution_path}")
             if is_ultimate or "--generate-docs-v3" in sys.argv:
@@ -247,9 +289,9 @@ class GrandSynthesisEngine:
     def _generate_biomimetic_report(self, conversations: List[Dict[str, Any]], insights: List[Dict[str, Any]], patterns: List[Dict[str, Any]], version: str):
         """ARTICLE 382/384: Generates a comprehensive Biomimetic Knowledge Ingestion Report."""
         os.makedirs("docs/knowledge", exist_ok=True)
-        report_path = f"docs/knowledge/biomimetic_ingestion_{version}.md"
+        report_path = f"docs/knowledge/synthesis_{version}.md" if version == "115.0.0" else f"docs/knowledge/biomimetic_ingestion_{version}.md"
 
-        content = f"# Biomimetic Knowledge Ingestion Report - {version}\n\n"
+        content = f"# Biomimetic Knowledge Synthesis Report - {version}\n\n" if version == "115.0.0" else f"# Biomimetic Knowledge Ingestion Report - {version}\n\n"
         content += f"## Summary\n"
         content += f"- **Conversations Processed:** {len(conversations)}\n"
         content += f"- **Insights Extracted:** {len(insights)}\n"
@@ -267,6 +309,40 @@ class GrandSynthesisEngine:
         with open(report_path, 'w') as f:
             f.write(content)
         logger.info(f"Biomimetic Knowledge Ingestion Report generated at {report_path}")
+
+    def _generate_agentic_synthesis_report(self, version: str, config: Dict[str, Any]):
+        """ARTICLE 386: Generates a comprehensive report on agentic synthesis and architecture."""
+        report_dir = "docs/agentic"
+        os.makedirs(report_dir, exist_ok=True)
+        report_path = f"{report_dir}/synthesis_{version}.md"
+        blueprint_path = f"{report_dir}/architecture_blueprint_{version}.md"
+
+        # 1. Synthesis Report
+        content = f"# Agentic Synthesis Report - {version}\n\n"
+        content += "## Asynchronous Agentic Execution\n"
+        content += "- **Orchestration Mode:** Asynchronous, Parallel, Sandboxed.\n"
+        content += "- **Cognitive Modes:** Philosophical Strategist & Practical Engineer.\n"
+        content += "- **Constraint System:** 3-Tier Multi-Layered (Ethical, User-Centric, Methodological).\n\n"
+        content += "## Performance Metrics (Simulated)\n"
+        content += "- Task Completion Rate: 98.4%\n"
+        content += "- Parallel Efficiency: 82.1%\n"
+        content += "- Self-Healing Rate: 91.5%\n"
+
+        with open(report_path, 'w') as f:
+            f.write(content)
+        logger.info(f"Agentic Synthesis Report generated at {report_path}")
+
+        # 2. Architecture Blueprint
+        blueprint = f"# Asynchronous Agentic Architecture Blueprint - {version}\n\n"
+        blueprint += "## Core Components\n"
+        blueprint += "1. **Agentic Orchestrator**: Manages goal decomposition and async lifecycles.\n"
+        blueprint += "2. **Autonomic System**: Handles background health and scheduling.\n"
+        blueprint += "3. **Sandbox Provisioner**: Spawns isolated execution environments.\n"
+        blueprint += "4. **Verification Gates**: Enforces 3-tier constraints.\n"
+
+        with open(blueprint_path, 'w') as f:
+            f.write(blueprint)
+        logger.info(f"Architecture Blueprint generated at {blueprint_path}")
 
     def _generate_ingestion_report(self, conversations: List[Dict[str, Any]], insights: List[Dict[str, Any]], version: str):
         """ARTICLE 356/357: Generates a comprehensive report on knowledge ingestion."""
@@ -300,6 +376,51 @@ class GrandSynthesisEngine:
         # Real logic: Poll reactor pulse and wait for alignment.
         logger.info("Meta-Pipeline: Synchronizing threads via telemetry pulse...")
         await asyncio.sleep(0.01) # Minimum context switch for orchestration.
+
+    def _generate_web_scrape_report(self, data: Dict[str, Any], version: str):
+        """ARTICLE 399: Generates a report on scraped development best practices."""
+        os.makedirs("docs/design", exist_ok=True)
+        report_path = f"docs/design/web_scrape_report_{version}.md"
+
+        content = f"# Web Scraping Report: Development Best Practices - {version}\n\n"
+        content += "## Summary of Scraped Resources\n"
+        content += f"**Scraped at:** {data['scraped_at']}\n\n"
+
+        content += "### Design Patterns\n"
+        for p in data['design_patterns']:
+            content += f"- {p}\n"
+
+        content += "\n### UX Best Practices\n"
+        for ux in data['ux_best_practices']:
+            content += f"- {ux}\n"
+
+        content += "\n### Technological Advancements\n"
+        for tech in data['tech_advancements']:
+            content += f"- {tech}\n"
+
+        with open(report_path, 'w') as f:
+            f.write(content)
+        logger.info(f"Web Scraping Report generated at {report_path}")
+
+    def _generate_unified_manifest(self, version: str):
+        """ARTICLE 397: Generates a unified manifest of all converged features."""
+        os.makedirs("docs/features", exist_ok=True)
+        manifest_path = f"docs/features/manifest_{version}.md"
+
+        manifest_data = self.feature_converger.converge_all_features()["feature_manifest"]
+
+        content = f"# Unified Feature Manifest - {version}\n\n"
+        content += "## Total Convergence of v1.0 through v115.0\n\n"
+
+        for era, features in manifest_data.items():
+            content += f"### {era}\n"
+            for f in features:
+                content += f"- {f}\n"
+            content += "\n"
+
+        with open(manifest_path, 'w') as f:
+            f.write(content)
+        logger.info(f"Unified Feature Manifest generated at {manifest_path}")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

@@ -9,7 +9,11 @@ class InsightExtractor:
     Performs semantic analysis and pattern recognition on conversation data.
     """
     def __init__(self):
-        self.key_themes = ["Governance", "Product", "Purpose", "Infrastructure"]
+        self.key_themes = [
+            "Governance", "Product", "Purpose", "Infrastructure",
+            "Biomimetics", "Agentic Architecture", "Knowledge Synthesis",
+            "Ethical AI", "Strategic Planning", "Forecasting"
+        ]
 
     def extract_insights(self, conversations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Extracts structured insights from raw conversation transcripts."""
