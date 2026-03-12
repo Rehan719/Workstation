@@ -40,3 +40,63 @@ class ImmunomimeticAgent(BiomimeticAgent):
                 "confidence": 0.92
             })
         return patterns
+
+class SwarmIntelligenceAgent(BiomimeticAgent):
+    def __init__(self):
+        super().__init__("Collective Intelligence")
+
+    def analyze(self, insight: Dict[str, Any]) -> List[Dict[str, Any]]:
+        patterns = []
+        if "resource" in insight.get("insight", "").lower() or "optimization" in insight.get("insight", "").lower():
+            patterns.append({
+                "principle": "Ant colony optimization",
+                "analogue": "Distributed resource allocation in ARO",
+                "biological_system": "Social Insects",
+                "confidence": 0.90
+            })
+        return patterns
+
+class HormonalAgent(BiomimeticAgent):
+    def __init__(self):
+        super().__init__("Systems Signaling")
+
+    def analyze(self, insight: Dict[str, Any]) -> List[Dict[str, Any]]:
+        patterns = []
+        if "state" in insight.get("insight", "").lower() or "coordination" in insight.get("insight", "").lower():
+            patterns.append({
+                "principle": "Endocrine regulation",
+                "analogue": "System-wide state propagation in BIL",
+                "biological_system": "Endocrine System",
+                "confidence": 0.85
+            })
+        return patterns
+
+class MetamorphosisAgent(BiomimeticAgent):
+    def __init__(self):
+        super().__init__("Metamorphosis")
+
+    def analyze(self, insight: Dict[str, Any]) -> List[Dict[str, Any]]:
+        patterns = []
+        if "evolution" in insight.get("insight", "").lower() or "transformation" in insight.get("insight", "").lower():
+            patterns.append({
+                "principle": "Developmental remodeling",
+                "analogue": "Architectural refactoring during synthesis",
+                "biological_system": "Lepidoptera Metamorphosis",
+                "confidence": 0.89
+            })
+        return patterns
+
+class HomeostaticAgent(BiomimeticAgent):
+    def __init__(self):
+        super().__init__("Homeostasis")
+
+    def analyze(self, insight: Dict[str, Any]) -> List[Dict[str, Any]]:
+        patterns = []
+        if "stability" in insight.get("insight", "").lower() or "regulation" in insight.get("insight", "").lower():
+            patterns.append({
+                "principle": "Negative feedback loops",
+                "analogue": "Predictive reliability models in ARO",
+                "biological_system": "Physiological Homeostasis",
+                "confidence": 0.94
+            })
+        return patterns

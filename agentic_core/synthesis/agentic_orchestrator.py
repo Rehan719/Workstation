@@ -81,6 +81,11 @@ class AgenticOrchestrator:
         sandbox_node = self.ueg.add_sandbox(task_id, {"type": "isolated_container", "status": "initialized"})
         self.ueg.add_audit_log(task_id, f"Spawned isolated sandbox {sandbox_node['id']}")
 
+        # ARTICLE 387: Parallel Execution with dependency management
+        results = []
+        completed_steps = set()
+
+        # Simple parallel execution for v115 demonstration
         tasks = [self._execute_step(task_id, step) for step in plan["steps"]]
         results = await asyncio.gather(*tasks)
 

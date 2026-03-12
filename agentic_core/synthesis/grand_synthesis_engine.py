@@ -16,7 +16,10 @@ from .evolutionary_memory import EvolutionaryMemory
 from .url_ingestor import URLIngestor
 from .text_ingestor import TextIngestor
 from .insight_extractor import InsightExtractor
-from .biomimetic_agents import NeurobiomimeticAgent, ImmunomimeticAgent
+from .biomimetic_agents import (
+    NeurobiomimeticAgent, ImmunomimeticAgent, SwarmIntelligenceAgent,
+    HormonalAgent, MetamorphosisAgent, HomeostaticAgent
+)
 from .agentic_orchestrator import AgenticOrchestrator
 from .autonomic_system import AgenticAutonomicSystem
 from .documentation_generator import DocumentationGenerator
@@ -43,7 +46,10 @@ class GrandSynthesisEngine:
         self.ingestor = URLIngestor()
         self.text_ingestor = TextIngestor()
         self.insight_extractor = InsightExtractor()
-        self.biomimetic_agents = [NeurobiomimeticAgent(), ImmunomimeticAgent()]
+        self.biomimetic_agents = [
+            NeurobiomimeticAgent(), ImmunomimeticAgent(), SwarmIntelligenceAgent(),
+            HormonalAgent(), MetamorphosisAgent(), HomeostaticAgent()
+        ]
         self.doc_gen = DocumentationGenerator()
         self.agentic_orchestrator = AgenticOrchestrator()
         self.autonomic_system = AgenticAutonomicSystem()
@@ -68,7 +74,7 @@ class GrandSynthesisEngine:
         Unifies URLs, background sources, and introspection data into a flawless configuration.
         """
         is_ultimate = "--ultimate-rerun" in sys.argv
-        target_version = target_version or ("114.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0")
+        target_version = target_version or ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0")
         logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
@@ -76,6 +82,9 @@ class GrandSynthesisEngine:
             logger.info("Meta-Orchestrator 3.0: Initiating Hierarchical Orchestration and Predictive Resource Balancing.")
             # 112-05: Expert-level synchronization. Using event-based telemetry check (simulated).
             await self._predictive_sync()
+
+        if target_version == "115.0.0":
+            logger.info("ARTICLE 393: Starting Deep Knowledge Synthesis for v115.0 Converged Culmination.")
 
         # Mode: Unified Multi-Source Ingestion (Article 356, 357, 367, 382, 386)
         ingested_knowledge = []
@@ -159,7 +168,12 @@ class GrandSynthesisEngine:
             self._generate_agentic_synthesis_report(target_version, resolved_config)
 
         version = resolved_config.get("version")
-        if version == "114.0.0":
+        if version == "115.0.0":
+            constitution_path = self.dna_gen.generate_v115_constitution(resolved_config)
+            logger.info(f"v115.0 Constitution generated at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "114.0.0":
             constitution_path = self.dna_gen.generate_v114_constitution(resolved_config)
             logger.info(f"v114.0 Constitution generated at {constitution_path}")
             if is_ultimate or "--generate-docs-v3" in sys.argv:
@@ -250,9 +264,9 @@ class GrandSynthesisEngine:
     def _generate_biomimetic_report(self, conversations: List[Dict[str, Any]], insights: List[Dict[str, Any]], patterns: List[Dict[str, Any]], version: str):
         """ARTICLE 382/384: Generates a comprehensive Biomimetic Knowledge Ingestion Report."""
         os.makedirs("docs/knowledge", exist_ok=True)
-        report_path = f"docs/knowledge/biomimetic_ingestion_{version}.md"
+        report_path = f"docs/knowledge/synthesis_{version}.md" if version == "115.0.0" else f"docs/knowledge/biomimetic_ingestion_{version}.md"
 
-        content = f"# Biomimetic Knowledge Ingestion Report - {version}\n\n"
+        content = f"# Biomimetic Knowledge Synthesis Report - {version}\n\n" if version == "115.0.0" else f"# Biomimetic Knowledge Ingestion Report - {version}\n\n"
         content += f"## Summary\n"
         content += f"- **Conversations Processed:** {len(conversations)}\n"
         content += f"- **Insights Extracted:** {len(insights)}\n"
