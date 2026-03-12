@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jules AI App | Command Center</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .sidebar { width: 250px; border-right: 1px solid var(--border-color); height: 100vh; position: fixed; left: 0; top: 0; padding: 2rem; }
+        .app-content { margin-left: 280px; padding: 2rem; }
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .stat-card { background: #fff; padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 8px; }
+        .status-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">Jules Dashboard</div>
+        <nav style="margin-top: 2rem;">
+            <p style="font-size: 0.8rem; color: #999; text-transform: uppercase;">Core Systems</p>
+            <a href="#" style="display: block; margin: 1rem 0;">UEG Graph</a>
+            <a href="#" style="display: block; margin: 1rem 0;">Genomic Registry</a>
+            <a href="#" style="display: block; margin: 1rem 0;">Orchestrator</a>
+        </nav>
+    </div>
+
+    <div class="app-content">
+        <h2>System v117.0 Status</h2>
+        <div class="stat-grid">
+            <div class="stat-card">
+                <p style="color: #666; margin: 0;">Survival Index</p>
+                <h3 style="margin: 5px 0;">99.4%</h3>
+            </div>
+            <div class="stat-card">
+                <p style="color: #666; margin: 0;">Code Quality</p>
+                <h3 style="margin: 5px 0;">Expert</h3>
+            </div>
+            <div class="stat-card">
+                <p style="color: #666; margin: 0;">Active Threads</p>
+                <h3 style="margin: 5px 0;">14 Parallel</h3>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 2rem;">
+            <h3>Active Mission: Product Engineering</h3>
+            <p><span class="status-dot"></span> Delivering Unified Mobile Entry Point (v117.0-beta-1)</p>
+            <div style="background: #eee; height: 10px; border-radius: 5px; margin-top: 10px;">
+                <div style="background: var(--primary-color); height: 100%; width: 75%; border-radius: 5px;"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

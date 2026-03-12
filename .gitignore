@@ -1,4 +1,4 @@
-# Jules AI Production v52.0 Gitignore
+# Jules AI Transcendent v117.0 Gitignore
 
 # Python
 __pycache__/
@@ -29,12 +29,14 @@ MANIFEST
 *.log
 logs/
 src/self_improvement/logs/
+npm_output.log
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
 test_results/
+verification/
 
 # Environments
 .env
@@ -42,11 +44,13 @@ test_results/
 venv/
 ENV/
 
-# Data
-chroma_db/
-weaviate_data/
-# *.db
-# *.sqlite
+# Databases & Binary artifacts
+*.db
+*.sqlite
+*.sqlite3
+meta/data/
+workstation.db
+*.pyc
 
 # OS
 .DS_Store

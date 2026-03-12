@@ -6,14 +6,14 @@ logger = logging.getLogger(__name__)
 class ConflictResolver:
     """CN-II: Conflict Resolution via Contextual Evaluation."""
 
-    def resolve_conflicts(self, patterns: List[Dict[str, Any]], target_version: str = "116.0.0") -> Dict[str, Any]:
-        """Resolves architectural and constitutional conflicts for v116.0 Unified Access."""
+    def resolve_conflicts(self, patterns: List[Dict[str, Any]], target_version: str = "117.0.0") -> Dict[str, Any]:
+        """Resolves architectural and constitutional conflicts for v117.0 Product Engineering."""
         logger.info(f"Resolving architectural conflicts for {target_version}...")
 
-        # Final Transcendent Baseline Integration (Article 160/331/336/341/350/356/359/381/382/393/396)
+        # Final Transcendent Baseline Integration (Article 160/331/336/341/350/356/359/381/382/393/396/401)
         resolved = {
             "version": target_version,
-            "orchestration_mode": "unified_accessible_enterprise",
+            "orchestration_mode": "multidisciplinary_product_enterprise",
             "governance_model": "purpose_governed_constitution_v106",
             "survival_instinct_hierarchy": ["Immune", "Nervous", "Digestive", "Aging"],
             "verification_layers": 13,
