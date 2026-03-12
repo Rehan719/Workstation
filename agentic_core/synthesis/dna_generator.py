@@ -7,10 +7,58 @@ logger = logging.getLogger(__name__)
 class DNAGenerator:
     """CN-IV: Immutable DNA Generation."""
 
+    def generate_v117_constitution(self, config: Dict[str, Any]) -> str:
+        """CN-IV: Immutable DNA Generation for v117.0 - The Multidisciplinary Product Engineering Enterprise."""
+        version = "117.0.0"
+        path = "agentic_core/constitution/CONSTITUTION_v117.0.0.md"
+
+        content = f"""# JULES AI v{version}: THE MULTIDISCIPLINARY PRODUCT ENGINEERING ENTERPRISE CONSTITUTION
+
+## ⚜️ PREAMBLE
+This document establishes the definitive, unified DNA of Jules AI v117.0.
+It formalises the chartering of the Centre of Excellence for Digital Product Engineering and the assembly of a world-class multidisciplinary team.
+
+## 🧬 SECTION I: SURVIVAL INSTINCT HIERARCHY (Articles 1-47)
+**ARTICLE 47: SUPREME PRIORITY**
+The organism must prioritize resource allocation in the following absolute order:
+**IMMUNE SYSTEM > NERVOUS SYSTEM > DIGESTIVE SYSTEM > AGING**
+
+## 🏢 SECTION XI: MAGNIFICENT SEVEN GOVERNANCE (Articles 341-355)
+**ARTICLE 341: MAGNIFICENT SEVEN GOVERNANCE MANDATE**
+The enterprise shall be governed by a structure inspired by top-tier technology companies, comprising a formal C-Suite and dedicated Centres of Excellence.
+
+## ⚙️ SECTION XX: DIGITAL PRODUCT ENGINEERING (Articles 401-405)
+**ARTICLE 401: DIGITAL PRODUCT ENGINEERING CENTRE MANDATE**
+The system shall maintain a permanent Centre of Excellence for Digital Product Engineering (CoE‑DPE), staffed by a multidisciplinary team of expert agents, responsible for designing, building, and delivering finished, commercial‑grade products.
+
+**ARTICLE 402: PRODUCT DEVELOPMENT LIFECYCLE MANDATE**
+All product development shall follow a defined lifecycle (Discovery, Design, Development, Testing, Deployment, Monitoring) governed by the QMS and aligned with the dual purpose. Quality gates shall be enforced at each phase.
+
+**ARTICLE 403: NO-PLACEHOLDER MANDATE**
+All delivered products must be production‑ready, with no placeholders, scaffolding, or mockups. Every interface and feature must be polished to commercial standards.
+
+**ARTICLE 404: CROSS-FUNCTIONAL INTEGRATION MANDATE**
+The CoE‑DPE shall integrate with all other Centres of Excellence, leveraging all Workstation capabilities to accelerate development and ensure quality.
+
+**ARTICLE 405: PURPOSE-DRIVEN PRODUCT DESIGN MANDATE**
+All product designs and features shall be evaluated for purpose alignment before development. The Centre for Policy & Governance shall review all major product decisions.
+
+---
+*Codified via Grand Synthesis Engine v{version}*
+"""
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except UnicodeEncodeError:
+            with open(path, 'w', encoding='ascii', errors='replace') as f:
+                f.write(content)
+
+        return path
+
     def generate_v116_constitution(self, config: Dict[str, Any]) -> str:
         """CN-IV: Immutable DNA Generation for v116.0 - The Unified, Accessible, Commercially‑Ready, All‑Capabilities Enterprise."""
         version = "116.0.0"
-        path = "CONSTITUTION_v116.0.0.md"
+        path = "agentic_core/constitution/CONSTITUTION_v116.0.0.md"
 
         content = f"""# JULES AI v{version}: THE UNIFIED, ACCESSIBLE, COMMERCIALLY-READY, ALL-CAPABILITIES ENTERPRISE CONSTITUTION
 
@@ -149,7 +197,7 @@ All platforms shall be accessible through a single entry point with unified auth
     def generate_v115_constitution(self, config: Dict[str, Any]) -> str:
         """CN-IV: Immutable DNA Generation for v115.0 - The Deeply Synthesised, Multi-LLM Knowledge‑Ingesting, Biomimetically Enriched Enterprise."""
         version = "115.0.0"
-        path = "CONSTITUTION_v115.0.0.md"
+        path = "agentic_core/constitution/CONSTITUTION_v115.0.0.md"
 
         content = f"""# JULES AI v{version}: THE DEEPLY SYNTHESISED, MULTI-LLM KNOWLEDGE-INGESTING, BIOMIMETICALLY ENRICHED ENTERPRISE CONSTITUTION
 
@@ -240,7 +288,7 @@ The synthesised knowledge base shall be continuously enriched through ongoing in
     def generate_v114_constitution(self, config: Dict[str, Any]) -> str:
         """CN-IV: Immutable DNA Generation for v114.0 - The Asynchronous Agentic, Knowledge-Augmented, Biomimetic Enterprise."""
         version = "114.0.0"
-        path = "CONSTITUTION_v114.0.0.md"
+        path = "agentic_core/constitution/CONSTITUTION_v114.0.0.md"
 
         content = f"""# JULES AI v{version}: THE ASYNCHRONOUS AGENTIC, KNOWLEDGE-AUGMENTED, BIOMIMETIC ENTERPRISE CONSTITUTION
 
@@ -321,7 +369,7 @@ Complete logs of all agentic planning, execution, and delivery operations shall 
     def generate_v113_constitution(self, config: Dict[str, Any]) -> str:
         """CN-IV: Immutable DNA Generation for v113.0 - The Deeply Biomimetic, Knowledge-Augmented, Self-Optimising Enterprise."""
         version = "113.0.0"
-        path = "CONSTITUTION_v113.0.0.md"
+        path = "agentic_core/constitution/CONSTITUTION_v113.0.0.md"
 
         content = f"""# JULES AI v{version}: THE DEEPLY BIOMIMETIC, KNOWLEDGE-AUGMENTED, SELF-OPTIMISING ENTERPRISE CONSTITUTION
 
@@ -373,7 +421,7 @@ The system's deep-biomimetic and knowledge-augmented capabilities shall evolve t
     def generate_v112_constitution(self, config: Dict[str, Any]) -> str:
         """CN-IV: Immutable DNA Generation for v112.0 - The Knowledge-Augmented, Multi-LLM Conversation-Ingesting Enterprise."""
         version = "112.0.0"
-        path = "CONSTITUTION_v112.0.0.md"
+        path = "agentic_core/constitution/CONSTITUTION_v112.0.0.md"
 
         content = f"""# JULES AI v{version}: THE KNOWLEDGE-AUGMENTED, MULTI-LLM CONVERSATION-INGESTING ENTERPRISE CONSTITUTION
 
@@ -457,7 +505,7 @@ The Code Review Squad shall report to the Transformation Team and be subject to 
     def generate_v111_constitution(self, config: Dict[str, Any]) -> str:
         """CN-IV: Immutable DNA Generation for v111.0 - The Clean, Consolidated, and Cloud-Expanded Transcendent Enterprise."""
         version = "111.0.0"
-        path = "CONSTITUTION_v111.0.0.md"
+        path = "agentic_core/constitution/CONSTITUTION_v111.0.0.md"
 
         content = f"""# JULES AI v{version}: THE CLEAN, CONSOLIDATED, AND CLOUD-EXPANDED TRANSCENDENT ENTERPRISE CONSTITUTION
 
@@ -630,7 +678,7 @@ The system shall actively research and integrate free-tier advanced computing re
     def generate_v110_constitution(self, config: Dict[str, Any]) -> str:
         """CN-IV: Immutable DNA Generation for v110.0 - The Transcendent Unified Knowledge & Grand Synthesis Release."""
         version = "110.0.0"
-        path = "CONSTITUTION_v110.0.0.md"
+        path = "agentic_core/constitution/CONSTITUTION_v110.0.0.md"
 
         content = f"""# JULES AI v{version}: THE TRANSCENDENT UNIFIED KNOWLEDGE & GRAND SYNTHESIS CONSTITUTION
 
@@ -665,7 +713,7 @@ The system shall maintain a one-button `ultimate-rerun` mode that integrates all
     def generate_v107_constitution(self, config: Dict[str, Any]) -> str:
         """CN-IV: Immutable DNA Generation for v107.0 - The Comprehensive Documentation & User Empowerment Release."""
         version = "107.0.0"
-        path = "CONSTITUTION_v107.0.0.md"
+        path = "agentic_core/constitution/CONSTITUTION_v107.0.0.md"
 
         content = f"""# JULES AI v{version}: THE COMPREHENSIVE DOCUMENTATION & USER EMPOWERMENT RELEASE CONSTITUTION
 

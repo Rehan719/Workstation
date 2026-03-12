@@ -2,41 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard | Jules AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jules AI App | Command Center</title>
+    <link rel="stylesheet" href="../style.css">
     <style>
-        body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; }
-        .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; }
-        .main { flex: 1; padding: 40px; background: #ecf0f1; }
-        .actions { display: flex; gap: 10px; margin-bottom: 30px; }
-        .btn { padding: 15px 25px; background: #3498db; color: white; border-radius: 5px; text-decoration: none; }
+        .sidebar { width: 250px; border-right: 1px solid var(--border-color); height: 100vh; position: fixed; left: 0; top: 0; padding: 2rem; }
+        .app-content { margin-left: 280px; padding: 2rem; }
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .stat-card { background: #fff; padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 8px; }
+        .status-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 5px; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h2>Jules AI v116</h2>
-        <p>Era: UNIFIED ACCESS</p>
-        <hr>
-        <nav>
-            <p>Home</p>
-            <p>QEP</p>
-            <p>Tools</p>
-            <p>Business</p>
+        <div class="logo">Jules Dashboard</div>
+        <nav style="margin-top: 2rem;">
+            <p style="font-size: 0.8rem; color: #999; text-transform: uppercase;">Core Systems</p>
+            <a href="#" style="display: block; margin: 1rem 0;">UEG Graph</a>
+            <a href="#" style="display: block; margin: 1rem 0;">Genomic Registry</a>
+            <a href="#" style="display: block; margin: 1rem 0;">Orchestrator</a>
         </nav>
     </div>
-    <div class="main">
-        <h1>Welcome back, User</h1>
-        <div class="actions">
-            <a href="#" class="btn">QEP</a>
-            <a href="#" class="btn">Tools</a>
-            <a href="#" class="btn">Business</a>
-            <a href="#" class="btn">Synthesis</a>
+
+    <div class="app-content">
+        <h2>System v117.0 Status</h2>
+        <div class="stat-grid">
+            <div class="stat-card">
+                <p style="color: #666; margin: 0;">Survival Index</p>
+                <h3 style="margin: 5px 0;">99.4%</h3>
+            </div>
+            <div class="stat-card">
+                <p style="color: #666; margin: 0;">Code Quality</p>
+                <h3 style="margin: 5px 0;">Expert</h3>
+            </div>
+            <div class="stat-card">
+                <p style="color: #666; margin: 0;">Active Threads</p>
+                <h3 style="margin: 5px 0;">14 Parallel</h3>
+            </div>
         </div>
-        <div style="background: white; padding: 20px; border-radius: 8px;">
-            <h3>Recent Activity</h3>
-            <ul>
-                <li>Total convergence achieved - 2m ago</li>
-                <li>Commercial web scraping completed - 1h ago</li>
-            </ul>
+
+        <div class="card" style="margin-top: 2rem;">
+            <h3>Active Mission: Product Engineering</h3>
+            <p><span class="status-dot"></span> Delivering Unified Mobile Entry Point (v117.0-beta-1)</p>
+            <div style="background: #eee; height: 10px; border-radius: 5px; margin-top: 10px;">
+                <div style="background: var(--primary-color); height: 100%; width: 75%; border-radius: 5px;"></div>
+            </div>
         </div>
     </div>
 </body>

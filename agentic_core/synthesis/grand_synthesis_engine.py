@@ -80,7 +80,8 @@ class GrandSynthesisEngine:
         is_ultimate = "--ultimate-rerun" in sys.argv
         is_unify = "--unify" in sys.argv
         is_scrape = "--web-scrape" in sys.argv
-        target_version = target_version or ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))
+        is_product = "--product-engineering" in sys.argv
+        target_version = target_version or ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0")))
         logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
@@ -106,6 +107,13 @@ class GrandSynthesisEngine:
             logger.info("ARTICLE 397: Starting Version Convergence for v116.0.")
             convergence_results = self.feature_converger.converge_all_features()
             self.memory.store_synthesis_results(convergence_results)
+
+        if is_product:
+            logger.info("ARTICLE 401: Initiating Digital Product Engineering for v117.0.")
+            from agentic_core.enterprise.cuxad import CoEDPEOrchestrator
+            dpe_orchestrator = CoEDPEOrchestrator()
+            dpe_results = dpe_orchestrator.execute_product_mission()
+            self.memory.store_synthesis_results(dpe_results)
 
         if is_scrape:
             logger.info("ARTICLE 399: Starting Web Scraping for Development Best Practices.")
@@ -188,7 +196,12 @@ class GrandSynthesisEngine:
             self._generate_unified_manifest(target_version)
 
         version = resolved_config.get("version")
-        if version == "116.0.0":
+        if version == "117.0.0":
+            constitution_path = self.dna_gen.generate_v117_constitution(resolved_config)
+            logger.info(f"v117.0 Constitution generated at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "116.0.0":
             constitution_path = self.dna_gen.generate_v116_constitution(resolved_config)
             logger.info(f"v116.0 Constitution generated at {constitution_path}")
             if is_ultimate or "--generate-docs-v3" in sys.argv:

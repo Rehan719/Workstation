@@ -10,11 +10,11 @@ async def test_grand_synthesis_cycle():
     os.makedirs("meta", exist_ok=True)
 
     engine = GrandSynthesisEngine(["."])
-    results = await engine.run_synthesis()
+    # Target 117.0 for the current era
+    results = await engine.run_synthesis(target_version="117.0.0")
 
-    assert results["orchestration_mode"] == "unified_accessible_enterprise"
-    assert os.path.exists("agentic_core/constitution/CONSTITUTION_v99.0.0.md")
-    assert os.path.exists("meta/ueg_graph.json")
+    assert results["orchestration_mode"] == "multidisciplinary_product_enterprise"
+    assert os.path.exists("agentic_core/constitution/CONSTITUTION_v117.0.0.md")
 
 if __name__ == "__main__":
     asyncio.run(test_grand_synthesis_cycle())

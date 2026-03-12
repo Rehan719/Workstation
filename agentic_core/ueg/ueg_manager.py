@@ -32,6 +32,34 @@ class UEGManager:
         self._save()
         return node
 
+    def add_product_specification(self, product_name: str, specs: Dict[str, Any], trace_id: str):
+        """ARTICLE 401: Adds a Product Specification node to the UEG."""
+        node = {
+            "id": f"spec_{len(self.graph['nodes'])}",
+            "type": "ProductSpecification",
+            "product": product_name,
+            "specifications": specs,
+            "trace_id": trace_id,
+            "timestamp": time.time()
+        }
+        self.graph["nodes"].append(node)
+        self._save()
+        return node
+
+    def add_design_artifact(self, artifact_type: str, metadata: Dict[str, Any], trace_id: str):
+        """ARTICLE 402: Adds a Design Artifact node to the UEG."""
+        node = {
+            "id": f"artifact_{len(self.graph['nodes'])}",
+            "type": "DesignArtifact",
+            "artifact_type": artifact_type,
+            "metadata": metadata,
+            "trace_id": trace_id,
+            "timestamp": time.time()
+        }
+        self.graph["nodes"].append(node)
+        self._save()
+        return node
+
     def add_agent_task(self, goal: str, parent_id: str = None):
         """ARTICLE 386: Adds an Agent Task node to the UEG."""
         node = {

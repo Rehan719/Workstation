@@ -1,0 +1,125 @@
+:root {
+    --primary-color: #0070f3;
+    --secondary-color: #666;
+    --background-color: #fafafa;
+    --text-color: #111;
+    --card-bg: #ffffff;
+    --border-color: #eaeaea;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 3rem;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.05rem;
+}
+
+nav a {
+    margin-left: 2rem;
+    text-decoration: none;
+    color: var(--secondary-color);
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+nav a:hover {
+    color: var(--primary-color);
+}
+
+.hero {
+    text-align: center;
+    padding: 4rem 0;
+}
+
+.hero h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    letter-spacing: -0.2rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(90deg, #0070f3, #f81ce5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+    font-size: 1.25rem;
+    color: var(--secondary-color);
+    margin-bottom: 2rem;
+}
+
+.cta-button {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.8rem 2.5rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px 0 rgba(0, 118, 255, 0.39);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 4rem;
+}
+
+.card {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: border-color 0.2s;
+}
+
+.card:hover {
+    border-color: var(--primary-color);
+}
+
+.card h3 {
+    margin-top: 0;
+    font-size: 1.25rem;
+}
+
+.card p {
+    color: var(--secondary-color);
+    font-size: 0.95rem;
+}
+
+footer {
+    margin-top: 6rem;
+    padding: 2rem 0;
+    border-top: 1px solid var(--border-color);
+    color: var(--secondary-color);
+    font-size: 0.875rem;
+    text-align: center;
+}
