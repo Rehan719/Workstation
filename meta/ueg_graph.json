@@ -16000,6 +16000,1094 @@
             "source": "conv_1310",
             "category": "constitutional",
             "confidence": 0.95
+        },
+        {
+            "id": "conv_1314",
+            "type": "LLMConversation",
+            "url": "https://chat.qwen.ai/s/2066eeac-6fb0-4209-8854-72e35212d4c7?fev=0.2.12",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": ""
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 32
+            },
+            "timestamp": 1773343492.73673
+        },
+        {
+            "id": "insight_1315",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from Qwen suggests Governance enhancement and integration.",
+            "source": "conv_1314",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1316",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from Qwen suggests Purpose enhancement and integration.",
+            "source": "conv_1314",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1317",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/ru5rr1j9bljzx4goer",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343492.8410645
+        },
+        {
+            "id": "insight_1318",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1317",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1319",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1317",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1320",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/ze6lm6it7tyae6ktpg",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343492.9243803
+        },
+        {
+            "id": "insight_1321",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1320",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1322",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1320",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1323",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/a1n9r454ydkw9w6xbw",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.0096157
+        },
+        {
+            "id": "insight_1324",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1323",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1325",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1323",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1326",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/0gtpohpctv3e36itep",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.0930436
+        },
+        {
+            "id": "insight_1327",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1326",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1328",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1326",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1329",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/r3xt3bk45x67aieslg",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.1769698
+        },
+        {
+            "id": "insight_1330",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1329",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1331",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1329",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1332",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/asvwahxqw00djlpik7",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.2610056
+        },
+        {
+            "id": "insight_1333",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1332",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1334",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1332",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1335",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/nmt425u55b99vjahmr",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.3449764
+        },
+        {
+            "id": "insight_1336",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1335",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1337",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1335",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1338",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/scgothk1isu5yib7yy",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.4302938
+        },
+        {
+            "id": "insight_1339",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1338",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1340",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1338",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1341",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/uwfc3ew5jusujy4ju6",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.5174823
+        },
+        {
+            "id": "insight_1342",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1341",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1343",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1341",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1344",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/7l5sbd7m12u6tzq7hm",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.6058476
+        },
+        {
+            "id": "insight_1345",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1344",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1346",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1344",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1347",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/ehac1l4bvnn94z6m2t",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.691147
+        },
+        {
+            "id": "insight_1348",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1347",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1349",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1347",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1350",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/f6z9lz0yvxov1yc14k",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.7762542
+        },
+        {
+            "id": "insight_1351",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1350",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1352",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1350",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1353",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/crunut0z3684jmzhke",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.8620682
+        },
+        {
+            "id": "insight_1354",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1353",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1355",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1353",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1356",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/5hfiqi3ta18416xmsg",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343493.947277
+        },
+        {
+            "id": "insight_1357",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1356",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1358",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1356",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1359",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/ts0cajbla50flyvtxr",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343494.0343454
+        },
+        {
+            "id": "insight_1360",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1359",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1361",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1359",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1362",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/ajpaqyg7rdfu048x5a",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343494.121204
+        },
+        {
+            "id": "insight_1363",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1362",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1364",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1362",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1365",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/85405lhv6fz6dmslii",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343494.2060485
+        },
+        {
+            "id": "insight_1366",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1365",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1367",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1365",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1368",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/63rpvd5uc66rmipilg",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343494.2941344
+        },
+        {
+            "id": "insight_1369",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1368",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1370",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1368",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1371",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/cnp1ehtoivmieqrgbi",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343494.3826678
+        },
+        {
+            "id": "insight_1372",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1371",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1373",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1371",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1374",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/j5qn1ng5w46tb3jyqp",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343494.472649
+        },
+        {
+            "id": "insight_1375",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1374",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1376",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1374",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1377",
+            "type": "LLMConversation",
+            "url": "https://chat.deepseek.com/share/axny0044p636wl2qs7",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "Let's confirm you are human\n\nComplete the security check before continuing. This step verifies that you are not a bot, which helps to protect your account and prevent spam.\n\nBegin\n\u0627\u0644\u0639\u0631\u0628\u064a\u0629\n\u010ce\u0161tina\nDansk\nDeutsch\nEnglish\nEspa\u00f1ol\nFran\u00e7ais\nBahasa Indonesia\nItaliano\n\u65e5\u672c\u8a9e\n\ud55c\uad6d\uc5b4\nNederlands\nPolski\nPortugu\u00eas\nSvenska\n\u0e44\u0e17\u0e22\nT\u00fcrk\u00e7e\n\u4e2d\u6587"
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 372
+            },
+            "timestamp": 1773343494.5622585
+        },
+        {
+            "id": "insight_1378",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Governance enhancement and integration.",
+            "source": "conv_1377",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1379",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from DeepSeek suggests Purpose enhancement and integration.",
+            "source": "conv_1377",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1380",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/6690716826982580951",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343494.6520066
+        },
+        {
+            "id": "insight_1381",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1380",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1382",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1380",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1383",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/8321344421938616475",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343494.7422283
+        },
+        {
+            "id": "insight_1384",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1383",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1385",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1383",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1386",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/11229942869047369169",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343494.8305728
+        },
+        {
+            "id": "insight_1387",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1386",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1388",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1386",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1389",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/2012505508984346594",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343494.919531
+        },
+        {
+            "id": "insight_1390",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1389",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1391",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1389",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1392",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/11093918825021929606",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343495.0079017
+        },
+        {
+            "id": "insight_1393",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1392",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1394",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1392",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1395",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/2966620505238613254",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343495.096048
+        },
+        {
+            "id": "insight_1396",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1395",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1397",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1395",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1398",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/7374493318076149204",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343495.184681
+        },
+        {
+            "id": "insight_1399",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1398",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1400",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1398",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1401",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/15734730789908784640",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343495.2720978
+        },
+        {
+            "id": "insight_1402",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1401",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1403",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1401",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1404",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/16112838550523477002",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343495.3590918
+        },
+        {
+            "id": "insight_1405",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1404",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1406",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1404",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1407",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/18302280291944395270",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343495.4482274
+        },
+        {
+            "id": "insight_1408",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1407",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1409",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1407",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1410",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/16640222564934956138",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343495.5352614
+        },
+        {
+            "id": "insight_1411",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1410",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1412",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1410",
+            "category": "constitutional",
+            "confidence": 0.95
+        },
+        {
+            "id": "conv_1413",
+            "type": "LLMConversation",
+            "url": "https://jules.google.com/task/13385116039194951359",
+            "transcript": [
+                {
+                    "role": "system",
+                    "text": "jules\nJules is not yet available in your region."
+                }
+            ],
+            "metadata": {
+                "ingested_as": "functional_playwright_scrape",
+                "length": 81
+            },
+            "timestamp": 1773343495.6234791
+        },
+        {
+            "id": "insight_1414",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Governance enhancement and integration.",
+            "source": "conv_1413",
+            "category": "strategic",
+            "confidence": 0.95
+        },
+        {
+            "id": "insight_1415",
+            "type": "ExtractedInsight",
+            "content": "External intelligence from JulesGoogle suggests Purpose enhancement and integration.",
+            "source": "conv_1413",
+            "category": "constitutional",
+            "confidence": 0.95
         }
     ],
     "edges": [

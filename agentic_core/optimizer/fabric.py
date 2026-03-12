@@ -11,10 +11,10 @@ class DynamicResourceFabric:
     """
     def __init__(self):
         self.inventory = {
-            "compute": {"total": 100, "available": 100},
-            "memory": {"total": 512, "available": 512},
-            "gpu": {"total": 8, "available": 8},
-            "api_quotas": {"total": 10000, "available": 10000}
+            "compute": {"total": 1000, "available": 1000},
+            "memory": {"total": 8192, "available": 8192},
+            "gpu": {"total": 64, "available": 64},
+            "api_quotas": {"total": 100000, "available": 100000}
         }
         self.active_pools = {}
 

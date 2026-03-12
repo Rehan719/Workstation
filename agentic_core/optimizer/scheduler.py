@@ -33,6 +33,7 @@ class CostAwareScheduler:
                     self.circuit_open = True
                     return {"status": "QUEUED", "id": task.get("id")}
 
+            # ARTICLE 310: Mandatory queueing for free-tier to ensure zero-cost compliance
             await self.queue.put(task)
             logger.info(f"Scheduler: Queued free-tier task {task.get('id')}")
             return {"status": "QUEUED", "id": task.get("id")}
