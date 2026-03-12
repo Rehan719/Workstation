@@ -9,6 +9,7 @@ from agentic_core.optimizer.engine import AdaptiveResourceOptimizer
 from agentic_core.optimizer.fabric import DynamicResourceFabric
 from agentic_core.teams.engine import BiomimeticTeamOrchestrator
 from agentic_core.reactor.ecosystem.registry import ReactorRegistry
+from agentic_core.orchestrator.symbiosis.connectors import SymbiosisManager
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +24,8 @@ class SynergyOrchestrator:
         self.fabric = DynamicResourceFabric()
         self.bto = BiomimeticTeamOrchestrator()
         self.registry = ReactorRegistry()
+        self.symbiosis = SymbiosisManager()
 
-        # ARTICLE 410: Symbiosis Connectors
-        self.connectors = {
-            "quran": "https://api.alquran.cloud/v1",
-            "legal": "https://www.courtlistener.com/api/rest/v3",
-            "linkedin": "https://api.linkedin.com/v2"
-        }
         logger.info("Synergy: Orchestrator Integrated and Ready with Symbiosis Connectors.")
 
     async def execute_mega_twin(self, objective: str, reactors: List[str], user_id: str, domain: str = "general", tier: str = "free") -> Dict[str, Any]:

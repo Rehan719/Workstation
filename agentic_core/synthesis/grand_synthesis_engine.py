@@ -22,7 +22,7 @@ from .biomimetic_agents import (
 )
 from .agentic_orchestrator import AgenticOrchestrator
 from .feature_converger import FeatureConverger
-from .url_ingestor import DevelopmentScraper
+from .web_scraper import WebScraperEngine
 from .autonomic_system import AgenticAutonomicSystem
 from .documentation_generator import DocumentationGenerator
 from agentic_core.ueg.ueg_manager import UEGManager
@@ -55,7 +55,7 @@ class GrandSynthesisEngine:
         self.doc_gen = DocumentationGenerator()
         self.agentic_orchestrator = AgenticOrchestrator()
         self.feature_converger = FeatureConverger()
-        self.dev_scraper = DevelopmentScraper()
+        self.dev_scraper = WebScraperEngine()
         self.autonomic_system = AgenticAutonomicSystem()
         self.ueg = UEGManager()
         self.genomic_registry = GenomicRegistry()

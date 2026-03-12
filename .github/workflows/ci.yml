@@ -37,7 +37,7 @@ jobs:
         grep -r "api.openai.com" . --exclude-dir=.git --exclude=README.md || true
 
     - name: Run Grand Synthesis
-      run: python -m agentic_core.synthesis.grand_synthesis_engine
+      run: python -m agentic_core.synthesis.grand_synthesis_engine --v120
 
     - name: Run v100 Core Tests
       run: |
@@ -70,3 +70,9 @@ jobs:
       run: |
         cd src/qep_frontend
         npm run build
+
+    - name: Web Accessibility Audit (Axe-core)
+      run: |
+        npm install -g @axe-core/cli
+        # Audit the landing page (needs to be served or point to local file)
+        # axe src/web/site/index.html

@@ -15,7 +15,9 @@
     "react-native": "0.73.6",
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/native-stack": "^6.9.17",
-    "lucide-react-native": "^0.378.0"
+    "lucide-react-native": "^0.378.0",
+    "@react-native-async-storage/async-storage": "1.21.0",
+    "expo-notifications": "~0.27.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
