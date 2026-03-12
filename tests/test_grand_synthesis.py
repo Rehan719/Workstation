@@ -12,7 +12,7 @@ async def test_grand_synthesis_cycle():
     engine = GrandSynthesisEngine(["."])
     results = await engine.run_synthesis()
 
-    assert results["orchestration_mode"] == "converged_culmination_enterprise"
+    assert results["orchestration_mode"] == "unified_accessible_enterprise"
     assert os.path.exists("agentic_core/constitution/CONSTITUTION_v99.0.0.md")
     assert os.path.exists("meta/ueg_graph.json")
 

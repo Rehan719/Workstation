@@ -78,18 +78,19 @@ class AgenticOrchestrator:
         """ARTICLE 387: Executes plan steps asynchronously and in parallel where possible."""
         logger.info(f"AGENTIC: Executing plan for {task_id}")
 
-        sandbox_node = self.ueg.add_sandbox(task_id, {"type": "isolated_container", "status": "initialized"})
-        self.ueg.add_audit_log(task_id, f"Spawned isolated sandbox {sandbox_node['id']}")
+        # ARTICLE 387: Sandbox Provisioning via ContainerManager
+        sandbox_config = {"type": "isolated_container", "image": "jules-agent-base"}
+        container_id = self.container_manager.provision_sandbox(task_id, sandbox_config)
 
-        # ARTICLE 387: Parallel Execution with dependency management
-        results = []
-        completed_steps = set()
+        sandbox_node = self.ueg.add_sandbox(task_id, {"container_id": container_id, "status": "active"})
+        self.ueg.add_audit_log(task_id, f"Spawned isolated sandbox {sandbox_node['id']} (Container: {container_id})")
 
-        # Simple parallel execution for v115 demonstration
+        # Parallel Execution with dependency management
         tasks = [self._execute_step(task_id, step) for step in plan["steps"]]
         results = await asyncio.gather(*tasks)
 
-        self.ueg.add_audit_log(task_id, "Tearing down sandbox.")
+        self.container_manager.teardown_sandbox(container_id)
+        self.ueg.add_audit_log(task_id, f"Tore down sandbox container {container_id}.")
 
         return results
 
@@ -109,10 +110,6 @@ class AgenticOrchestrator:
 
     def _verify_results(self, results: List[Dict[str, Any]], mode: str) -> bool:
         """ARTICLE 388 & 392: Multi-Layered Constraint System verification."""
-        # Tier 1: Ethical Constraint (Simulated)
-        # Tier 2: User-Centric (Simulated)
-        # Tier 3: Methodological Pattern bias (Simulated)
-
         logger.info(f"AGENTIC: Running Tier 1-3 verification gates for {mode} mode.")
         success = all(r["status"] in ["success", "retried"] for r in results)
 

@@ -24,18 +24,18 @@ class TestV112Release(unittest.TestCase):
         self.assertTrue(os.path.exists(path))
         with open(path, "r") as f:
             content = f.read()
-            self.assertIn("v115.0", content)
+            self.assertIn("v116.0", content)
             self.assertIn("SECTION XII: KNOWLEDGE AUGMENTATION", content)
             self.assertIn("ARTICLE 381: CODE QUALITY MANDATE", content)
 
     def test_quality_report(self):
         # We check for existence of quality documents
-        self.assertTrue(os.path.exists("docs/code_review/quality_report.md") or os.path.exists("docs/agentic/synthesis_115.0.0.md"))
+        self.assertTrue(os.path.exists("docs/code_review/quality_report.md") or os.path.exists("docs/agentic/synthesis_116.0.0.md"))
 
     def test_dashboard_updates(self):
         with open("src/dashboard/app.py", "r") as f:
             content = f.read()
-            self.assertIn("Jules AI v115.0 Converged Dashboard", content)
+            self.assertIn("Jules AI v116.0 Unified Dashboard", content)
             self.assertIn("Code Quality & Resilience", content)
 
 if __name__ == "__main__":
