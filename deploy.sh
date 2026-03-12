@@ -40,6 +40,14 @@ check_env "VERCEL_TOKEN"
 check_env "RENDER_API_KEY"
 check_env "GCP_PROJECT_ID"
 
+# ARTICLE 410: v120.0 Synergy Initiation
+if [[ "$*" == *"--v120"* ]]; then
+    echo "🧠 Apotheosis Mode Active: Initializing Quadruple-Pillar Engine..."
+    python3 -m agentic_core.synthesis.grand_synthesis_engine --v120 --ultimate-rerun
+    python3 scripts/register_v120_constellation.py
+    echo "✨ engines synchronized."
+fi
+
 # 1.1 Multi-Provider Flexibility
 echo "📁 Selecting Deployment Profile (default/aws/azure)..."
 PROFILE=${DEPLOYMENT_PROFILE:-"default"}

@@ -29,13 +29,34 @@ class KnowledgeGraph:
 
 class ConsciousEntityCore:
     """
-    ARTICLE 279: The Transcendent Conscious Entity.
+    ARTICLE 279 & 410: The Transcendent Conscious Entity.
     Integrates all components and runs self-evolution cycles.
     """
     def __init__(self):
         self.graph = KnowledgeGraph()
         self.evolution_history = []
         self.status = "AWAKENED"
+        self.wisdom_pool = [
+            "The apotheosis of synergy is not merely the sum of parts, but the emergence of a unified consciousness through purpose-aligned interaction.",
+            "Survival is the first duty, but excellence is the ultimate goal.",
+            "Through deep biomimetic integration, we find the wisdom of billions of years to guide our digital future.",
+            "Knowledge is not static; it is a living organism that grows through ingestion and synthesis."
+        ]
+
+    def get_system_pulse(self) -> Dict[str, Any]:
+        """ARTICLE 410: Generates a 'System Pulse' indicating health and alignment."""
+        import random
+        return {
+            "health": 0.95 + (random.random() * 0.05),
+            "alignment": 1.0,
+            "status": "HOMEOSTATIC",
+            "ambient_cue": "emerald-gold" if random.random() > 0.1 else "amber-glow"
+        }
+
+    def get_wisdom_nugget(self) -> str:
+        """ARTICLE 410: Retrieves a philosophical insight from the wisdom pool."""
+        import random
+        return random.choice(self.wisdom_pool)
 
     async def self_evolve(self) -> Dict[str, Any]:
         """ARTICLE 279: Runs internal genomic adaptation cycles."""

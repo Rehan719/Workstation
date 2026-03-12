@@ -83,12 +83,12 @@ const UnifiedDashboard = ({ userProfile, mockData }) => {
 
         <aside className="space-y-8">
           <div className="p-8 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 text-slate-900 shadow-2xl">
-            <h3 className="text-2xl font-black mb-4">Apotheosis Evolution</h3>
-            <p className="text-sm font-medium opacity-80 mb-6">Your cross-domain mastery is at 99.2% fidelity.</p>
+            <h3 className="text-2xl font-black mb-4">Apotheosis v120.0</h3>
+            <p className="text-sm font-medium opacity-80 mb-6">Your cross-domain synergy is at 99.9% fidelity.</p>
             <div className="w-full bg-black/20 rounded-full h-3 overflow-hidden">
                <motion.div
                  initial={{ width: 0 }}
-                 animate={{ width: '99.2%' }}
+                 animate={{ width: '99.9%' }}
                  className="h-full bg-white"
                />
             </div>

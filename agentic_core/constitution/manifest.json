@@ -17,6 +17,10 @@
     "LatencyImmune": "Immune arbitration < 8.3ms",
     "Homeostasis": "±5% firing rate regulation",
     "NoStubs": "Mandatory functional implementation",
-    "ZeroCost": "Use only free and open-source resources"
+    "ZeroCost": "Use only free and open-source resources",
+    "ESE": "Environmental Simulator Engine (Digital Twinning)",
+    "ARO": "Adaptive Resource Optimizer (Resource Balancing)",
+    "BTO": "Biomimetic Team Orchestrator (Autonomous Collaboration)",
+    "DRAD": "Dynamic Resource Fabric (On-demand Provisioning)"
   }
 }
