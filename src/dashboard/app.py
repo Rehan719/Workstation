@@ -86,6 +86,12 @@ with col3:
     for act in activities:
         st.write(f"**{act['time']}**: {act['event']} - `{act['status']}`")
 
+    st.markdown("---")
+    st.subheader("🌐 Unified Entry Points")
+    st.link_button("Official Website", "https://workstation.ai")
+    st.link_button("Web Application", "https://app.workstation.ai")
+    st.link_button("Documentation", "https://workstation.ai/docs")
+
     st.divider()
     st.header("Advanced Resource Intelligence")
     st.write("Centres of Excellence (CoE-ACR): **ACTIVE**")
