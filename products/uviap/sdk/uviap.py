@@ -4,7 +4,6 @@ import datetime
 import subprocess
 import re
 import json
-import uuid
 from typing import List, Dict, Any, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
 from agentic_core.genetics.genomic_registry import GenomicRegistry
@@ -143,3 +142,4 @@ class UVIAP:
         with open("docs/knowledge/last_uviap_run.json", "w") as f:
             json.dump(report_data, f, indent=2)
         logger.info("UVIAP: Report generated in docs/knowledge/last_uviap_run.json")
+import uuid

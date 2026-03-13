@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  gse:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_MODE=COMMERCIAL
+      - PRODUCT_NAME=GSE

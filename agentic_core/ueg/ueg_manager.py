@@ -128,7 +128,7 @@ class UEGManager:
         self._save()
         return node
 
-    def add_insight(self, content: str, source_id: str, category: str = "key_insight", confidence: float = 0.9):
+    def add_insight(self, content: str, source_id: str, category: str = "key_insight", confidence: float = 0.9, metadata: Dict[str, Any] = None):
         """ARTICLE 357: Adds an Extracted Insight node to the UEG."""
         node = {
             "id": f"insight_{len(self.graph['nodes'])}",
@@ -136,7 +136,8 @@ class UEGManager:
             "content": content,
             "source": source_id,
             "category": category,
-            "confidence": confidence
+            "confidence": confidence,
+            "metadata": metadata or {}
         }
         self.graph["nodes"].append(node)
         self._save()

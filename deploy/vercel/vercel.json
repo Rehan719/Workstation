@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "src/web/site/index.html", "use": "@vercel/static" },
+    { "src": "src/web/app/index.html", "use": "@vercel/static" }
+  ],
+  "rewrites": [
+    { "source": "/app/(.*)", "destination": "src/web/app/index.html" },
+    { "source": "/(.*)", "destination": "src/web/site/index.html" }
+  ]
+}

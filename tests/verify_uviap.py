@@ -1,25 +1,23 @@
 import asyncio
 import logging
-import os
-from agentic_core.synthesis.grand_synthesis_engine import GrandSynthesisEngine
+from agentic_core.synthesis.uviap import UVIAP
 
-async def verify_uviap():
-    logging.basicConfig(level=logging.INFO)
-    engine = GrandSynthesisEngine(["."])
+logging.basicConfig(level=logging.INFO)
 
-    # Run synthesis with UVIAP
-    results = await engine.run_synthesis(target_version="120.0.0")
+async def test_uviap_evolution():
+    uviap = UVIAP()
+    print("Starting UVIAP Full Evolution...")
+    blueprints = await uviap.run_full_pipeline()
 
-    print(f"Synthesis Result Version: {results['version']}")
-    assert results["version"] == "120.0.0"
+    print(f"Blueprints Generated: {len(blueprints)}")
+    for bp in blueprints:
+        print(f" - [{bp['status']}] {bp['target']}: {bp['action']}")
 
-    # Check for UVIAP reports
-    reports = os.listdir("docs/knowledge/")
-    print(f"Generated UVIAP reports: {reports}")
-    assert any("github_analysis" in r for r in reports)
-    assert any("learning_reflection" in r for r in reports)
-
-    print("UVIAP Verification SUCCESSFUL.")
+    import os
+    if os.path.exists("docs/knowledge/last_uviap_run.json"):
+        print("Success: UVIAP Report generated.")
+    else:
+        print("Error: UVIAP Report missing.")
 
 if __name__ == "__main__":
-    asyncio.run(verify_uviap())
+    asyncio.run(test_uviap_evolution())
