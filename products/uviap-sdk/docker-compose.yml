@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  uviap:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - ENV=production

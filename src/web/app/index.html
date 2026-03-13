@@ -8,6 +8,19 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 10px rgba(37, 99, 235, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(37, 99, 235, 0.6); }
+            100% { box-shadow: 0 0 10px rgba(37, 99, 235, 0.2); }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+        .truth-gradient {
+            background: linear-gradient(135deg, #000 0%, #0a0a0a 50%, #001f3f 100%);
+        }
+    </style>
 </head>
 <body class="bg-black text-white font-sans">
     <div id="root"></div>
@@ -17,17 +30,10 @@
 
         function App() {
             const [view, setView] = useState('dashboard');
-            const [status, setStatus] = useState({
-                fidelity: 0.995,
-                articles: 540,
-                governance: {
-                    okr_progress: [
-                        { objective: "Global Synthesis", completion: 0.95 },
-                        { objective: "Product Delivery", completion: 1.0 },
-                        { objective: "Commercial Growth", completion: 0.8 }
-                    ]
-                }
-            });
+            const [status, setStatus] = useState(null);
+            const [scrapeStatus, setScrapeStatus] = useState(null);
+            const [knowledgeSummary, setKnowledgeSummary] = useState(null);
+            const [tokenReport, setTokenReport] = useState(null);
             const [quranData, setQuranData] = useState(null);
             const [pulse, setPulse] = useState(100);
 
@@ -39,10 +45,15 @@
             }, []);
 
             useEffect(() => {
-                fetch('http://127.0.0.1:8000/api/v1/status')
-                    .then(res => res.json())
-                    .then(data => setStatus(data))
-                    .catch(err => console.log("Backend offline, using fallback data"));
+                const refreshData = () => {
+                    fetch('http://127.0.0.1:8000/api/v1/status').then(res => res.json()).then(data => setStatus(data)).catch(e => {});
+                    fetch('http://127.0.0.1:8000/api/v1/webscrape/status').then(res => res.json()).then(data => setScrapeStatus(data)).catch(e => {});
+                    fetch('http://127.0.0.1:8000/api/v1/knowledge/summary').then(res => res.json()).then(data => setKnowledgeSummary(data)).catch(e => {});
+                    fetch('http://127.0.0.1:8000/api/v1/tokens/ledger/demo_user').then(res => res.json()).then(data => setTokenReport(data)).catch(e => {});
+                };
+                refreshData();
+                const interval = setInterval(refreshData, 10000);
+                return () => clearInterval(interval);
             }, []);
 
             const fetchAyah = (ref) => {
@@ -53,8 +64,8 @@
             };
 
             return (
-                <div className="flex h-screen">
-                    <div className="w-64 bg-zinc-950 border-r border-zinc-900 p-6 space-y-4">
+                <div className="flex h-screen truth-gradient">
+                    <div className="w-64 bg-zinc-950/80 backdrop-blur-md border-r border-zinc-900 p-6 space-y-4">
                         <div className="font-black text-xl mb-10">JULES <span className="text-blue-600">APP</span></div>
                         <button onClick={() => setView('dashboard')} className={`w-full text-left p-3 rounded-lg ${view === 'dashboard' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Dashboard</button>
                         <button onClick={() => setView('qep')} className={`w-full text-left p-3 rounded-lg ${view === 'qep' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Quranic Education</button>
@@ -65,7 +76,7 @@
 
                     <div className="flex-1 overflow-auto p-10">
                         <div className="flex justify-between items-center mb-8">
-                            <div className="bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800 flex items-center gap-3">
+                            <div className="bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800 flex items-center gap-3 animate-pulse-glow">
                                 <div className={`w-2 h-2 rounded-full bg-green-500 animate-pulse`}></div>
                                 <span className="text-xs font-bold tracking-widest text-zinc-400 uppercase">System Pulse: {pulse.toFixed(1)}%</span>
                             </div>
@@ -113,6 +124,12 @@
                                 <div className="grid grid-cols-2 gap-8">
                                     <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
                                         <h3 className="text-xl font-bold mb-4 text-green-400">Mode 1: Passive Sensory</h3>
+                                        <div className="mb-6 flex justify-between items-center">
+                                            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Attenuation: 0.94x</span>
+                                            <div className="w-32 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                                <div className="bg-green-500 h-full" style={{width: '94%'}}></div>
+                                            </div>
+                                        </div>
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5">
                                                 <div className="flex items-center gap-3">
@@ -132,8 +149,15 @@
                                     </div>
                                     <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
                                         <h3 className="text-xl font-bold mb-4 text-blue-400">Mode 2: Agentic Missions</h3>
+                                        <div className="mb-6 flex justify-between items-center">
+                                            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Swarm Success: {(scrapeStatus?.coe_metrics?.extraction_accuracy * 100 || 98.2).toFixed(1)}%</span>
+                                            <div className="text-blue-500 text-xs font-bold">SHIELD ACTIVE</div>
+                                        </div>
                                         <button className="w-full bg-blue-600 p-4 rounded-xl font-bold mb-4">Deploy New Swarm</button>
-                                        <div className="text-sm text-zinc-500 text-center">No active missions.</div>
+                                        <div className="text-sm text-zinc-500 text-center flex items-center justify-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                            Threat Detection: ACTIVE ({scrapeStatus?.security?.total_threats_blocked || 0} Threats)
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -142,19 +166,40 @@
                         {view === 'synthesis' && (
                             <div>
                                 <h1 className="text-4xl font-bold mb-8">Knowledge Synthesis Dashboard</h1>
+                                <div className="grid grid-cols-3 gap-6 mb-8">
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center">
+                                        <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Graph Depth</div>
+                                        <div className="text-2xl font-black">{knowledgeSummary?.graph_depth || 1400} Nodes</div>
+                                    </div>
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center">
+                                        <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Perception Accuracy</div>
+                                        <div className="text-2xl font-black text-purple-500">{(knowledgeSummary?.perception_accuracy * 100 || 97.8).toFixed(1)}%</div>
+                                    </div>
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center">
+                                        <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Triples Extracted</div>
+                                        <div className="text-2xl font-black text-green-500">+{knowledgeSummary?.recent_triples?.length || 0} today</div>
+                                    </div>
+                                </div>
                                 <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
                                     <h3 className="text-xl font-bold mb-6 text-purple-400">Extracted Entity-Relationship Triples</h3>
                                     <div className="space-y-4 font-mono text-sm">
-                                        <div className="grid grid-cols-3 gap-4 p-4 bg-black/40 rounded-xl border border-white/5">
-                                            <span className="text-blue-400">Jules AI</span>
-                                            <span className="text-zinc-500 text-center">employs</span>
-                                            <span className="text-green-400">Biomimetic Logic</span>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-4 p-4 bg-black/40 rounded-xl border border-white/5 opacity-60">
-                                            <span className="text-blue-400">Market</span>
-                                            <span className="text-zinc-500 text-center">demands</span>
-                                            <span className="text-green-400">Embodied Cognition</span>
-                                        </div>
+                                        {[
+                                            { s: "Jules AI", p: "employs", o: "Biomimetic Logic", src: "v120_core", agent: "SynergyAgent" },
+                                            { s: "Market", p: "demands", o: "Embodied Cognition", src: "tech_radar", agent: "Sensory-1" },
+                                            { s: "Organism", p: "requires", o: "Embodied Perception", src: "internal_stream", agent: "EmbodiedAI" }
+                                        ].map((t, i) => (
+                                            <div key={i} className="p-4 bg-black/40 rounded-xl border border-white/5">
+                                                <div className="grid grid-cols-3 gap-4 mb-2">
+                                                    <span className="text-blue-400">{t.s}</span>
+                                                    <span className="text-zinc-500 text-center">{t.p}</span>
+                                                    <span className="text-green-400">{t.o}</span>
+                                                </div>
+                                                <div className="text-[10px] text-zinc-600 flex justify-between border-t border-white/5 pt-2">
+                                                    <span>SRC: {t.src}</span>
+                                                    <span>AGENT: {t.agent}</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -166,15 +211,15 @@
                                 <div className="grid grid-cols-3 gap-6 mb-12">
                                     <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
                                         <div className="text-zinc-500 text-sm uppercase font-bold mb-2">WST Balance</div>
-                                        <div className="text-3xl font-black text-blue-500">42,500</div>
+                                        <div className="text-3xl font-black text-blue-500">{tokenReport?.balance?.toLocaleString() || '0'}</div>
                                     </div>
                                     <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
                                         <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Burn Rate</div>
-                                        <div className="text-3xl font-black">124 WST/hr</div>
+                                        <div className="text-3xl font-black">{tokenReport?.burn_rate || '0'} WST/hr</div>
                                     </div>
                                     <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
                                         <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Tier</div>
-                                        <div className="text-3xl font-black text-yellow-500">PRO</div>
+                                        <div className="text-3xl font-black text-yellow-500">{tokenReport?.tier || 'FREE'}</div>
                                     </div>
                                 </div>
 

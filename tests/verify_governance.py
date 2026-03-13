@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from agentic_core.governance.policy import PolicyCoE
+from agentic_core.enterprise.policy import PolicyCoE
 
 async def verify_governance_systems():
     logging.basicConfig(level=logging.INFO)
@@ -35,6 +35,13 @@ async def verify_governance_systems():
     evo_report = policy.ems.generate_evolution_report()
     print(f"EMS Status: {evo_report['sustainability_status']}")
     assert evo_report["sustainability_status"] == "OPTIMAL"
+
+    # 5. Verify New CoEs
+    print("Verifying new CoEs...")
+    policy.webscrape_coe.optimize_sensory_gating(98.5)
+    sec_status = policy.agentic_gov_coe.get_security_status()
+    print(f"Security Fidelity: {sec_status['immune_system_fidelity']}")
+    assert sec_status["immune_system_fidelity"] >= 0.99
 
     print("Governance Systems Verification SUCCESSFUL.")
 

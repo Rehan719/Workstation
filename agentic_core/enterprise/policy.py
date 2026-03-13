@@ -5,6 +5,8 @@ from agentic_core.governance.qms import QualityManagementSystem
 from agentic_core.governance.dcs import DocumentControlSystem
 from agentic_core.governance.bms import BusinessManagementSystem
 from agentic_core.governance.ems import EvolutionManagementSystem
+from .webscrape_coe import WebScrapeCoE
+from .agentic_governance_coe import AgenticGovernanceCoE
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,8 @@ class PolicyCoE:
         self.dcs = DocumentControlSystem()
         self.bms = BusinessManagementSystem()
         self.ems = EvolutionManagementSystem()
+        self.webscrape_coe = WebScrapeCoE()
+        self.agentic_gov_coe = AgenticGovernanceCoE()
 
     def store_in_dcs(self, document_name: str, content: str):
         """ARTICLE 359: Stores documentation in the Document Control System (DCS)."""
