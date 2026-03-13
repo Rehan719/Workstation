@@ -40,7 +40,7 @@ class BusinessSimulationIncubator:
                 vetting_passed = False
                 vetting_logs.append(f"VETTING: High risk detected in simulation branch: {res}")
 
-        # Phase 3: Foresight Report Synthesis
+        # Phase 3: Foresight Report Synthesis (Article 611/636)
         report = {
             "simulation_id": sim_id,
             "goal": goal,
@@ -50,8 +50,17 @@ class BusinessSimulationIncubator:
                 "projected_impact": 0.15, # PAS Increase
                 "risk_score": 0.22,
                 "autonomy_calibration": "Level 2 (Semi-Autonomous)",
-                "ari_assessment": self.ari.calculate_ari(f"agent_{sim_id}", 2, 2, 1).name
+                "ari_assessment": self.ari.calculate_ari(f"agent_{sim_id}", 2, 2, 1).name,
+                "end_to_end_pipeline_status": "READY" if vetting_passed else "BLOCKED"
             },
+            "proposals": [
+                {
+                    "id": f"prop_{sim_id[:4]}",
+                    "title": f"Evolutionary Path for {goal}",
+                    "impact": "HIGH",
+                    "requires_hitl": True
+                }
+            ],
             "timestamp": time.time()
         }
 

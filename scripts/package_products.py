@@ -35,6 +35,12 @@ def package_products():
             "source": "agentic_core/incubation/business_incubator.py",
             "tier": "Enterprise",
             "features": ["Strategic Foresight", "Constitutional Vetting", "Co-Evolutionary Simulation"]
+        },
+        "digital_reactor": {
+            "name": "Digital Reactor (Simulation-as-a-Service)",
+            "source": "agentic_core/simulation/engine.py",
+            "tier": "Standard/Pro/Enterprise",
+            "features": ["High-Fidelity Twinning", "ABM/Physics Simulation", "Synthetic Data Generation"]
         }
     }
 

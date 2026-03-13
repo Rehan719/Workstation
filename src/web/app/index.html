@@ -44,7 +44,7 @@
     <aside class="sidebar h-full flex flex-col p-6">
         <div class="text-xl font-bold mb-12 flex items-center gap-3">
             <div class="system-pulse"></div>
-            <span>JULES v121.0</span>
+            <span>JULES v122.0</span>
         </div>
 
         <nav class="flex-1 space-y-2">
@@ -67,6 +67,14 @@
             <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 Co-Evolution
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                GitHub Analysis
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                Runtime Governance
             </a>
         </nav>
 
@@ -98,7 +106,7 @@
         </header>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-10">
             <div class="glass p-6 rounded-2xl">
                 <div class="text-slate-500 text-sm mb-1">Active Swarms</div>
                 <div id="active-swarms" class="text-3xl font-bold">12</div>
@@ -110,19 +118,24 @@
                 <div class="text-sky-400 text-xs mt-2">Gating Active</div>
             </div>
             <div class="glass p-6 rounded-2xl">
-                <div class="text-slate-500 text-sm mb-1">Trust Equilibrium</div>
+                <div class="text-slate-500 text-sm mb-1">Trust Eq.</div>
                 <div id="trust-equilibrium" class="text-3xl font-bold">0.96</div>
-                <div class="text-emerald-400 text-xs mt-2">Calibrated (L3)</div>
+                <div class="text-emerald-400 text-xs mt-2">L3 Calibrated</div>
             </div>
             <div class="glass p-6 rounded-2xl">
-                <div class="text-slate-500 text-sm mb-1">UEG Depth</div>
-                <div id="ueg-depth" class="text-3xl font-bold">1.4M</div>
-                <div class="text-slate-400 text-xs mt-2">Nodes integrated</div>
+                <div class="text-slate-500 text-sm mb-1">Git Commits</div>
+                <div id="git-commits" class="text-3xl font-bold">2.8K</div>
+                <div class="text-sky-400 text-xs mt-2">Analysis Online</div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <div class="text-slate-500 text-sm mb-1">Runtime Auth.</div>
+                <div id="runtime-auth" class="text-3xl font-bold">99.9%</div>
+                <div class="text-emerald-400 text-xs mt-2">Compliance Max</div>
             </div>
             <div class="glass p-6 rounded-2xl">
                 <div class="text-slate-500 text-sm mb-1">UVIAP Status</div>
                 <div id="uviap-status" class="text-3xl font-bold">Stable</div>
-                <div class="text-emerald-400 text-xs mt-2">Rerun Pending Approval</div>
+                <div class="text-emerald-400 text-xs mt-2">Rerun Ready</div>
             </div>
         </div>
 
@@ -150,16 +163,16 @@
                 <h3 class="font-bold mb-6">Pending Approvals</h3>
                 <div class="space-y-4 flex-1">
                     <div class="p-4 rounded-xl bg-white/5 border border-white/10">
-                        <div class="text-sm font-bold mb-1">v121.1-Alpha Co-Evolution</div>
-                        <p class="text-xs text-slate-500 mb-4">Strategic foresight: Integrate Neuromorphic Sensory Gating.</p>
+                        <div class="text-sm font-bold mb-1">v122.1-Alpha Apotheosis</div>
+                        <p class="text-xs text-slate-500 mb-4">Strategic foresight: Scale Co-Evolutionary Engine to 50 domains.</p>
                         <div class="flex gap-2">
                             <button class="flex-1 py-2 bg-emerald-500 rounded-lg text-xs font-bold">Approve</button>
                             <button class="px-3 py-2 bg-white/5 rounded-lg text-xs">Veto</button>
                         </div>
                     </div>
                     <div class="p-4 rounded-xl bg-white/5 border border-white/10">
-                        <div class="text-sm font-bold mb-1">Trust Calibration: L4 Autonomy</div>
-                        <p class="text-xs text-slate-500 mb-4">Requesting full autonomy for Security Swarm 07.</p>
+                        <div class="text-sm font-bold mb-1">ARI Recalibration: T4 Isolation</div>
+                        <p class="text-xs text-slate-500 mb-4">Drift detected in Scraper Swarm 03. Containment suggested.</p>
                         <div class="flex gap-2">
                             <button class="flex-1 py-2 bg-sky-500 rounded-lg text-xs font-bold">Approve</button>
                             <button class="px-3 py-2 bg-white/5 rounded-lg text-xs">Veto</button>
@@ -170,7 +183,7 @@
                 <div class="mt-6 pt-6 border-t border-white/10">
                     <h4 class="text-xs font-bold text-slate-500 mb-4 uppercase tracking-widest">Co-Evolutionary Foresight</h4>
                     <div class="glass p-3 rounded-lg text-[10px] leading-relaxed text-slate-400 italic">
-                        "Simulation sim_a92f0 predicts a 15% increase in PAS by shifting resource allocation to Islamic Finance Legal Reactors."
+                        "Simulation sim_v122 predicts a 30% increase in WNN accuracy by integrating external GitHub commit patterns into the sensory layer."
                     </div>
                 </div>
             </div>
