@@ -6,3 +6,4 @@
 | Grand Synthesis Engine | Enterprise+ | Cross-Version Synthesis, Constitutional Generation, Audit Automation |
 | Dual-Mode Sensory Scraper | Standard/Pro | Passive Sensory Mode, Active Swarm Missions, Reasoning Gate (WST) |
 | Co-Evolutionary Business Incubator | Enterprise | Strategic Foresight, Constitutional Vetting, Co-Evolutionary Simulation |
+| Digital Reactor (Simulation-as-a-Service) | Standard/Pro/Enterprise | High-Fidelity Twinning, ABM/Physics Simulation, Synthetic Data Generation |

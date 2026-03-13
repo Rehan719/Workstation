@@ -26,11 +26,14 @@ class UVIAP:
 
     async def run_full_pipeline(self, repo_url: Optional[str] = None):
         """Executes all stages of the UVIAP (Article 5.3)."""
-        logger.info(f"UVIAP: Starting Full Evolution Pipeline v122.0 (Target: {repo_url or 'Self'})")
+        logger.info(f"UVIAP: Starting Full Evolution Pipeline v123.0 (Target: {repo_url or 'Self'})")
 
         # Stage 1: Multi-Source Ingestion (Article 5.1/621)
         github_data = self._ingest_github(repo_url)
         sensory_data = self._ingest_sensory_signals()
+
+        # ARTICLE 646: Genomic Knowledge Organization (Operons)
+        clustered_insights = self._organize_genomic_knowledge(github_data, sensory_data)
 
         # Stage 2: Biomimetic Pattern Recognition (Article 5.2/621)
         patterns = self._recognize_patterns(github_data)
@@ -227,11 +230,30 @@ class UVIAP:
             })
         return blueprints
 
+    def _organize_genomic_knowledge(self, github_data: List[Any], sensory_data: List[Any]) -> Dict[str, Any]:
+        """ARTICLE 646: Genomic Knowledge Organization into operons and regulons."""
+        logger.info("UVIAP: Organizing knowledge into genomic operons.")
+        operons = {}
+
+        # Cluster GitHub data by category
+        for commit in github_data:
+            cat = commit.get("category", "ANCILLARY")
+            if cat not in operons: operons[cat] = []
+            operons[cat].append(commit["hash"])
+
+        # Cluster Sensory data by topic
+        for signal in sensory_data:
+            topic = signal.get("type", "SIGNAL")
+            if topic not in operons: operons[topic] = []
+            operons[topic].append(signal.get("source"))
+
+        return {"operons": operons, "timestamp": datetime.datetime.now().isoformat()}
+
     def _update_genomic_memory(self, learning: Dict[str, Any]):
         """Learned Traits persistence (Article 5.4)."""
         for trait in learning["suggested_traits"]:
             self.genomic_registry.reverse_transcribe_trait(f"learned_{trait}", {
-                "origin": "UVIAP_v122_Analysis",
+                "origin": "UVIAP_v123_Analysis",
                 "impact_score": 0.99,
                 "timestamp": learning["timestamp"]
             })

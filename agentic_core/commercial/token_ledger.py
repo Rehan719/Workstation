@@ -123,12 +123,49 @@ class TokenLedger:
             "hash": new_hash
         })
 
+    def transfer(self, from_user: str, to_user: str, amount: float, reason: str = "P2P Transfer") -> bool:
+        """ARTICLE 626: Secure token transfer between users."""
+        if from_user not in self.ledgers or to_user not in self.ledgers:
+            return False
+
+        if self.ledgers[from_user]["balance"] < amount:
+            return False
+
+        self.ledgers[from_user]["balance"] -= amount
+        self.ledgers[to_user]["balance"] += amount
+
+        tx_data = {
+            "from": from_user,
+            "to": to_user,
+            "amount": amount,
+            "activity": reason,
+            "timestamp": datetime.datetime.now().isoformat(),
+            "prev_hash": self.last_tx_hash
+        }
+
+        tx_json = json.dumps(tx_data, sort_keys=True).encode()
+        signature = self._system_private_key.sign(tx_json)
+        new_hash = hashlib.sha256(tx_json + signature).hexdigest()
+        self.last_tx_hash = new_hash
+
+        self.transactions.append({
+            "tx_id": str(uuid.uuid4()),
+            "data": tx_data,
+            "signature": signature.hex(),
+            "hash": new_hash
+        })
+        return True
+
     def get_ledger_report(self, user_id: str) -> Dict[str, Any]:
         if user_id not in self.ledgers:
             return {"error": "User not found"}
 
         ledger = self.ledgers[user_id]
-        user_txs = [tx for tx in self.transactions if tx["data"]["user_id"] == user_id]
+        # Transactions where user is sender or receiver
+        user_txs = [
+            tx for tx in self.transactions
+            if tx["data"].get("user_id") == user_id or tx["data"].get("from") == user_id or tx["data"].get("to") == user_id
+        ]
 
         return {
             "user_id": user_id,

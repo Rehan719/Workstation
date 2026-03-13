@@ -26,14 +26,18 @@ class UVIAP:
 
     async def run_full_pipeline(self, repo_url: Optional[str] = None):
         """Executes all stages of the UVIAP (Article 5.3)."""
-        logger.info(f"UVIAP: Starting Full Evolution Pipeline v120.0 (Target: {repo_url or 'Self'})")
+        logger.info(f"UVIAP: Starting Full Evolution Pipeline v123.0 (Target: {repo_url or 'Self'})")
 
-        # Stage 1: Multi-Source Ingestion (Article 5.1)
+        # Stage 1: Multi-Source Ingestion (Article 5.1/621)
         github_data = self._ingest_github(repo_url)
         sensory_data = self._ingest_sensory_signals()
 
-        # Stage 2: Biomimetic Pattern Recognition (Article 5.2)
+        # ARTICLE 646: Genomic Knowledge Organization (Operons)
+        clustered_insights = self._organize_genomic_knowledge(github_data, sensory_data)
+
+        # Stage 2: Biomimetic Pattern Recognition (Article 5.2/621)
         patterns = self._recognize_patterns(github_data)
+        version_graph = self._construct_version_graph(github_data)
 
         # Stage 3: Version Differencing & Convergence
         self.convergence_delta = self._analyze_convergence(github_data, patterns, repo_url)
@@ -132,7 +136,7 @@ class UVIAP:
         return "ANCILLARY"
 
     def _recognize_patterns(self, commits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Biomimetic Pattern Recognition (Article 5.2)."""
+        """ARTICLE 5.2/621: Advanced Semantic Pattern Recognition."""
         patterns = []
         for commit in commits:
             # File Change Correlation
@@ -142,22 +146,35 @@ class UVIAP:
                 if "src/web" in file: impacted_layers.add("USER_ACCESS_LAYER")
                 if "reactor" in file: impacted_layers.add("DOMAIN_REACTORS")
                 if "constitution" in file: impacted_layers.add("GOVERNANCE")
+                if "incubation" in file: impacted_layers.add("COEVOLUTIONARY_STRATEGY")
 
+            # Semantic Analysis
             if commit["category"] == "GOVERNANCE_EVOLUTION":
                 patterns.append({
                     "id": f"gov_pattern_{commit['hash'][:6]}",
                     "type": "CONSTITUTIONAL_INTEGRITY",
                     "impact": list(impacted_layers),
-                    "confidence": 0.98
+                    "confidence": 0.99,
+                    "insight": f"Evolution of governance in {commit['subject']}"
                 })
             elif commit["category"] == "SYNERGY_CONVERGENCE":
                 patterns.append({
                     "id": f"syn_pattern_{commit['hash'][:6]}",
                     "type": "METAMORPHOSIS",
                     "impact": list(impacted_layers),
-                    "confidence": 1.0
+                    "confidence": 1.0,
+                    "insight": "System-wide convergence event detected"
+                })
+            elif commit["category"] == "FEATURE" and "reactor" in impacted_layers:
+                patterns.append({
+                    "id": f"reactor_pattern_{commit['hash'][:6]}",
+                    "type": "DOMAIN_EXPANSION",
+                    "impact": ["DOMAIN_REACTORS"],
+                    "confidence": 0.95,
+                    "insight": f"New reactor capability added: {commit['subject']}"
                 })
 
+        logger.info(f"UVIAP: Extracted {len(patterns)} semantic patterns from history.")
         return patterns
 
     def _analyze_convergence(self, commits: List[Dict[str, Any]], patterns: List[Dict[str, Any]], repo_url: Optional[str]) -> Dict[str, Any]:
@@ -213,15 +230,53 @@ class UVIAP:
             })
         return blueprints
 
+    def _organize_genomic_knowledge(self, github_data: List[Any], sensory_data: List[Any]) -> Dict[str, Any]:
+        """ARTICLE 646: Genomic Knowledge Organization into operons and regulons."""
+        logger.info("UVIAP: Organizing knowledge into genomic operons.")
+        operons = {}
+
+        # Cluster GitHub data by category
+        for commit in github_data:
+            cat = commit.get("category", "ANCILLARY")
+            if cat not in operons: operons[cat] = []
+            operons[cat].append(commit["hash"])
+
+        # Cluster Sensory data by topic
+        for signal in sensory_data:
+            topic = signal.get("type", "SIGNAL")
+            if topic not in operons: operons[topic] = []
+            operons[topic].append(signal.get("source"))
+
+        return {"operons": operons, "timestamp": datetime.datetime.now().isoformat()}
+
     def _update_genomic_memory(self, learning: Dict[str, Any]):
         """Learned Traits persistence (Article 5.4)."""
         for trait in learning["suggested_traits"]:
             self.genomic_registry.reverse_transcribe_trait(f"learned_{trait}", {
-                "origin": "UVIAP_v120_Analysis",
-                "impact_score": 0.98,
+                "origin": "UVIAP_v123_Analysis",
+                "impact_score": 0.99,
                 "timestamp": learning["timestamp"]
             })
         self.genomic_registry.commit_mutations("UVIAP_AUTONOMOUS_LEARNING")
+
+    def _construct_version_graph(self, commits: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """ARTICLE 621: Builds a graph of version relationships based on commit history."""
+        graph = {"nodes": [], "edges": []}
+        version_pattern = re.compile(r"v(\d+\.\d+)")
+
+        last_version = None
+        for commit in reversed(commits):
+            match = version_pattern.search(commit["subject"])
+            if match:
+                version = match.group(1)
+                node = {"id": version, "hash": commit["hash"], "date": commit["date"]}
+                graph["nodes"].append(node)
+                if last_version:
+                    graph["edges"].append({"from": last_version, "to": version, "type": "EVOLUTION"})
+                last_version = version
+
+        logger.info(f"UVIAP: Version graph constructed with {len(graph['nodes'])} nodes.")
+        return graph
 
     def _generate_reports(self, commits: List[Dict[str, Any]], patterns: List[Dict[str, Any]], learning: Dict[str, Any], blueprints: List[Dict[str, Any]]):
         """Unified Assimilation Report Generation (Article 5.5)."""
