@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jules API Portal | Developer Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .code-block { background: #1e293b; border: 1px solid #334155; border-radius: 0.5rem; padding: 1rem; font-family: monospace; color: #38bdf8; }
+        .sidebar { border-right: 1px solid #1e293b; }
+        .accent-gradient { background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 h-full p-6 flex flex-col gap-8">
+        <div class="text-xl font-bold tracking-tighter">JULES <span class="text-sky-400">API</span></div>
+        <nav class="flex-1 space-y-4">
+            <a href="#intro" class="block text-sky-400 font-semibold">Introduction</a>
+            <a href="#auth" class="block text-slate-400 hover:text-white transition">Authentication</a>
+            <a href="#scraping" class="block text-slate-400 hover:text-white transition">Web Scraping API</a>
+            <a href="#reactors" class="block text-slate-400 hover:text-white transition">Reactors API</a>
+            <a href="#tokens" class="block text-slate-400 hover:text-white transition">Token Management</a>
+        </nav>
+        <div class="p-4 bg-sky-500/10 rounded-lg text-xs border border-sky-500/20">
+            <span class="text-sky-400 font-bold">API STATUS:</span> OPERATIONAL
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 h-full overflow-y-auto p-12">
+        <section id="intro" class="mb-16">
+            <h1 class="text-4xl font-extrabold mb-4">Apotheosis Developer Portal</h1>
+            <p class="text-slate-400 max-w-2xl leading-relaxed">
+                Welcome to the Jules AI API documentation. This portal provides everything you need to integrate the Workstation's intelligence into your own platforms, including autonomous scraping, digital twinning, and specialized reactors.
+            </p>
+        </section>
+
+        <section id="auth" class="mb-16">
+            <h2 class="text-2xl font-bold mb-4">Authentication</h2>
+            <p class="text-slate-400 mb-6">All requests must include a Bearer token in the header.</p>
+            <div class="code-block mb-4">
+                Authorization: Bearer YOUR_API_KEY
+            </div>
+            <button class="accent-gradient px-6 py-2 rounded-lg font-bold">Generate API Key</button>
+        </section>
+
+        <section id="scraping" class="mb-16">
+            <h2 class="text-2xl font-bold mb-4">Web Scraping API (Mode 2)</h2>
+            <p class="text-slate-400 mb-6">Execute goal-driven agentic scraping missions.</p>
+            <div class="code-block">
+                POST /api/v1/scraping/mission<br>
+                {<br>
+                &nbsp;&nbsp;"goal": "Analyze competitor pricing for SaaS in EU",<br>
+                &nbsp;&nbsp;"domain": "commercial",<br>
+                &nbsp;&nbsp;"urls": ["https://competitor.com/pricing"]<br>
+                }
+            </div>
+        </section>
+
+        <section id="reactors" class="mb-16">
+            <h2 class="text-2xl font-bold mb-4">Reactors API</h2>
+            <p class="text-slate-400 mb-6">Access 50+ hyper-specialized reactors across domains.</p>
+            <div class="code-block">
+                GET /api/v1/reactors/science/physics?q=quantum_tunneling
+            </div>
+        </section>
+
+        <footer class="mt-20 pt-10 border-t border-slate-800 text-slate-500 text-sm">
+            &copy; 2024 Virtual Sovereign Business. Codified via v120.0 Grand Synthesis.
+        </footer>
+    </main>
+</body>
+</html>
