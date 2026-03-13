@@ -17088,6 +17088,58 @@
             "source": "conv_1413",
             "category": "constitutional",
             "confidence": 0.95
+        },
+        {
+            "id": "audit_1416",
+            "type": "AuditLog",
+            "source": "DCS",
+            "message": "Document Test Document version 1 checked in by Jules",
+            "metadata": {
+                "doc_id": "TEST_DOC",
+                "title": "Test Document",
+                "version": 1,
+                "author": "Jules",
+                "comment": "First commit"
+            },
+            "timestamp": 1773373897.8402312
+        },
+        {
+            "id": "audit_1417",
+            "type": "AuditLog",
+            "source": "UVIAP",
+            "message": "Full evolution cycle completed",
+            "metadata": {
+                "commits_ingested": 1,
+                "patterns_found": 0,
+                "blueprints_generated": 2
+            },
+            "timestamp": 1773373938.0865824
+        },
+        {
+            "id": "audit_1418",
+            "type": "AuditLog",
+            "source": "DCS",
+            "message": "Document Test Document version 1 checked in by Jules",
+            "metadata": {
+                "doc_id": "TEST_DOC",
+                "title": "Test Document",
+                "version": 1,
+                "author": "Jules",
+                "comment": "First commit"
+            },
+            "timestamp": 1773374342.3212154
+        },
+        {
+            "id": "audit_1419",
+            "type": "AuditLog",
+            "source": "UVIAP",
+            "message": "Full evolution cycle completed",
+            "metadata": {
+                "commits_ingested": 1,
+                "patterns_found": 0,
+                "blueprints_generated": 2
+            },
+            "timestamp": 1773374346.371373
         }
     ],
     "edges": [

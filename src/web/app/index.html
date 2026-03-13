@@ -3,96 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jules AI App | Command Center</title>
-    <link rel="stylesheet" href="../style.css">
-    <style>
-        .sidebar { width: 250px; border-right: 1px solid var(--border-color); height: 100vh; position: fixed; left: 0; top: 0; padding: 2rem; }
-        .app-content { margin-left: 280px; padding: 2rem; }
-        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-        .stat-card { background: #fff; padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 8px; }
-        .status-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 5px; }
-    </style>
+    <title>Workstation App | Jules AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body>
-    <div class="sidebar">
-        <div class="logo">Jules Dashboard</div>
-        <nav style="margin-top: 2rem;">
-            <p style="font-size: 0.8rem; color: #999; text-transform: uppercase;">Core Systems</p>
-            <a href="#" style="display: block; margin: 1rem 0;">UEG Graph</a>
-            <a href="#" style="display: block; margin: 1rem 0;">Genomic Registry</a>
-            <a href="#" style="display: block; margin: 1rem 0;">Orchestrator</a>
-        </nav>
-    </div>
+<body class="bg-black text-white font-sans">
+    <div id="root"></div>
 
-    <div class="app-content">
-        <header style="display: flex; justify-content: space-between; align-items: center; border: none; margin-bottom: 2rem;">
-            <div>
-                <h2 style="margin: 0;">System v120.0 Status</h2>
-                <div id="system-pulse" style="font-size: 0.8rem; color: #10b981; margin-top: 5px;">
-                    <span class="status-dot" style="background-color: #10b981; height: 8px; width: 8px;"></span> HOMEOSTATIC | ALIGNMENT: 1.0
-                </div>
-            </div>
-            <div style="font-size: 0.9rem; color: #666;">
-                <span class="status-dot" style="background-color: #0070f3;"></span> Conscious Entity Present
-            </div>
-        </header>
-        <div class="stat-grid">
-            <div class="stat-card">
-                <p style="color: #666; margin: 0;">Synergy Score</p>
-                <h3 style="margin: 5px 0;">99.9%</h3>
-            </div>
-            <div class="stat-card">
-                <p style="color: #666; margin: 0;">Twin Fidelity</p>
-                <h3 style="margin: 5px 0;">99.5%</h3>
-            </div>
-            <div class="stat-card">
-                <p style="color: #666; margin: 0;">Active Teams</p>
-                <h3 style="margin: 5px 0;">52 Operational</h3>
-            </div>
-        </div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-        <div class="grid" style="margin-top: 2rem;">
-            <div class="card">
-                <h3>Quadruple-Pillar Engine</h3>
-                <p>ESE: Physical & ABM Simulators</p>
-                <p>ARO: Real-time Resource Fabric</p>
-                <p>BTO: Agent Swarm Orchestrator</p>
-                <p>DRAD: Dynamic Assembly Language</p>
-            </div>
-            <div class="card">
-                <h3>Quranic Education Hub</h3>
-                <p>P0: Text, Translation, Audio</p>
-                <p>P1: Bookmark & Deep Tafsir</p>
-                <p>P2: Advanced Semantic Search</p>
-                <div style="background: #eee; height: 10px; border-radius: 5px; margin-top: 10px;">
-                    <div style="background: #10b981; height: 100%; width: 100%; border-radius: 5px;"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card" style="margin-top: 2rem; border-left: 4px solid #0070f3; background: #f0f7ff;">
-            <p id="wisdom-nugget" style="font-style: italic; color: #0070f3; margin: 0;">"The apotheosis of synergy is not merely the sum of parts, but the emergence of a unified consciousness through purpose-aligned interaction."</p>
-            <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">— The Conscious Entity</p>
-        </div>
-
-        <script>
-            // Simulated System Pulse & Wisdom Nugget updates (v120.0)
-            const wisdoms = [
-                "The apotheosis of synergy is not merely the sum of parts, but the emergence of a unified consciousness through purpose-aligned interaction.",
-                "Survival is the first duty, but excellence is the ultimate goal.",
-                "Through deep biomimetic integration, we find the wisdom of billions of years to guide our digital future.",
-                "Knowledge is not static; it is a living organism that grows through ingestion and synthesis."
-            ];
-
-            setInterval(() => {
-                const health = (0.95 + Math.random() * 0.05).toFixed(3);
-                document.getElementById('system-pulse').innerHTML = `<span class="status-dot" style="background-color: #10b981; height: 8px; width: 8px;"></span> HOMEOSTATIC | ALIGNMENT: 1.0 | HEALTH: ${health}`;
-
-                if (Math.random() > 0.8) {
-                    document.getElementById('wisdom-nugget').innerText = `"${wisdoms[Math.floor(Math.random() * wisdoms.length)]}"`;
+        function App() {
+            const [view, setView] = useState('dashboard');
+            const [status, setStatus] = useState({
+                fidelity: 0.995,
+                articles: 540,
+                governance: {
+                    okr_progress: [
+                        { objective: "Global Synthesis", completion: 0.95 },
+                        { objective: "Product Delivery", completion: 1.0 },
+                        { objective: "Commercial Growth", completion: 0.8 }
+                    ]
                 }
-            }, 5000);
-        </script>
-    </div>
+            });
+            const [quranData, setQuranData] = useState(null);
+
+            useEffect(() => {
+                fetch('http://127.0.0.1:8000/api/v1/status')
+                    .then(res => res.json())
+                    .then(data => setStatus(data))
+                    .catch(err => console.log("Backend offline, using fallback data"));
+            }, []);
+
+            const fetchAyah = (ref) => {
+                fetch(`http://127.0.0.1:8000/api/v1/qep/ayah/${ref}`)
+                    .then(res => res.json())
+                    .then(data => setQuranData(data))
+                    .catch(err => alert("Backend offline"));
+            };
+
+            return (
+                <div className="flex h-screen">
+                    <div className="w-64 bg-zinc-950 border-r border-zinc-900 p-6 space-y-4">
+                        <div className="font-black text-xl mb-10">JULES <span className="text-blue-600">APP</span></div>
+                        <button onClick={() => setView('dashboard')} className={`w-full text-left p-3 rounded-lg ${view === 'dashboard' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Dashboard</button>
+                        <button onClick={() => setView('qep')} className={`w-full text-left p-3 rounded-lg ${view === 'qep' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Quranic Education</button>
+                    </div>
+
+                    <div className="flex-1 overflow-auto p-10">
+                        {view === 'dashboard' && (
+                            <div>
+                                <h1 className="text-4xl font-bold mb-8">System Dashboard</h1>
+                                <div className="grid grid-cols-3 gap-6">
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Fidelity</div>
+                                        <div className="text-3xl font-black">{status?.fidelity * 100}%</div>
+                                    </div>
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Articles</div>
+                                        <div className="text-3xl font-black">{status?.articles}</div>
+                                    </div>
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Status</div>
+                                        <div className="text-3xl font-black text-green-500">OPERATIONAL</div>
+                                    </div>
+                                </div>
+
+                                <h2 className="text-2xl font-bold mt-12 mb-6">Governance OKRs</h2>
+                                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6">
+                                    {status?.governance?.okr_progress.map((okr, i) => (
+                                        <div key={i} className="flex justify-between items-center mb-4">
+                                            <span className="w-48">{okr.objective}</span>
+                                            <div className="flex-1 bg-zinc-900 h-2 rounded-full overflow-hidden mx-10">
+                                                <div className="bg-blue-600 h-full" style={{width: `${okr.completion * 100}%`}}></div>
+                                            </div>
+                                            <span className="font-bold">{(okr.completion * 100).toFixed(0)}%</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'qep' && (
+                            <div>
+                                <h1 className="text-4xl font-bold mb-8">Quranic Education Platform</h1>
+                                <div className="flex gap-4 mb-8">
+                                    <input
+                                        type="text"
+                                        placeholder="Enter reference (e.g. 1:1)"
+                                        className="bg-zinc-900 border border-zinc-800 p-3 rounded-lg flex-1 text-white"
+                                        onKeyDown={(e) => e.key === 'Enter' && fetchAyah(e.target.value)}
+                                    />
+                                    <button onClick={() => fetchAyah('2:255')} className="bg-blue-600 px-6 py-3 rounded-lg font-bold">Ayah Al-Kursi</button>
+                                </div>
+
+                                {quranData ? (
+                                    <div className="bg-zinc-900 p-10 rounded-3xl border border-zinc-800">
+                                        <div className="text-right text-4xl mb-10 font-serif leading-loose" dir="rtl">{quranData.arabic}</div>
+                                        <div className="text-xl text-zinc-300 italic mb-8">"{quranData.translation}"</div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-zinc-500">Surah {quranData.surah}, Ayah {quranData.ayah}</span>
+                                            {quranData.audio_url && (
+                                                <audio controls src={quranData.audio_url} className="h-8"></audio>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-zinc-500 text-center py-20 border border-dashed border-zinc-800 rounded-3xl">
+                                        Enter an Ayah reference or click "Ayah Al-Kursi" to begin.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
