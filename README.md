@@ -1,9 +1,9 @@
-# Jules AI v120.0: APOTHEOSIS OF SENSORY CONVERGENCE
+# Jules AI v121.0: APOTHEOSIS OF CO-EVOLUTIONARY EQUILIBRIUM
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
 ## 🚀 The Fully Operational Digital Organism
-Jules AI v120.0 represents the "Apotheosis of Eternal Synthesis & Sensory Convergence". It unifies dual-mode web scraping, agentic governance, and real-time knowledge synthesis into a single, eternal digital organism.
+Jules AI v121.0 represents the **"Apotheosis of Co-Evolutionary Equilibrium"**. It unifies a **Co-Evolutionary Business Simulation Incubator** with a **Runtime Constitutional Framework (MI9/arifOS)**, Calibrated Autonomy, and continuous self-evolution into a single, eternal digital organism.
 
 ## ⚙️ One-Button Platform Setup
 Deploy the entire v120.0 ecosystem (Backend, Web, Mobile, Reactors) with a single command:
@@ -11,13 +11,17 @@ Deploy the entire v120.0 ecosystem (Backend, Web, Mobile, Reactors) with a singl
 ./deploy.sh --v120
 ```
 
-## 🧠 Quadruple-Pillar Engine & Sensory Layer
-The workstation is powered by four symbiotic engines enhanced with sensory awareness:
-- **ESE (Environmental Simulator Engine)**: High-fidelity digital twinning and agent-based modeling.
-- **ARO (Adaptive Resource Optimizer)**: Dynamic, cost-aware resource balancing and Tokenisation (WST).
-- **BTO (Biomimetic Team Orchestrator)**: Swarm intelligence and IoA protocol coordination.
+## 🧠 Quadruple-Pillar Engine & Co-Evolutionary Layer
+The workstation is powered by four symbiotic engines enhanced with co-evolutionary equilibrium:
+- **ESE (Environmental Simulator Engine)**: High-fidelity digital twinning and co-evolutionary simulation.
+- **ARO (Adaptive Resource Optimizer)**: Dynamic, cost-aware resource balancing and **Tokenisation (WST)** with tiered pricing.
+- **BTO (Biomimetic Team Orchestrator)**: Swarm intelligence and **Calibrated Autonomy**.
 - **DRAD (Dynamic Resource Fabric)**: On-demand assembly of resource pools via RAL.
-- **UVIAP**: Unified Version Ingestion & Assimilation Pipeline for continuous self-evolution.
+- **Co-Evolution Engine**: Integrated UVIAP, Grand Synthesis, and Business Simulation Incubator.
+
+## ⚖️ Runtime Constitutional Governance
+- **MI9 Framework**: Agency-Risk Index (ARI), Agentic Telemetry Schema (ATS), and Conformance Engines.
+- **arifOS Floors**: 13 immutable constitutional floors with entropy-based verification and 888_HOLD gating.
 
 ## 🧬 50+ Specialized Reactor Constellations
 Hyper-specialized intelligence across five primary domains:
@@ -34,7 +38,7 @@ Hyper-specialized intelligence across five primary domains:
 - [Technical Whitepaper](docs/guides/transcendent_whitepaper.md): The architecture of distributed consciousness.
 
 ### ⚖️ Constitutional Sovereignty
-Governed by the **v120.0 Constitution (CONSTITUTION_v120.0.0.md)**, ensuring absolute fidelity to the Dual-Purpose Foundation across 600+ articles.
+Governed by the **v121.0 Apotheosis Constitution**, ensuring absolute fidelity to the Dual-Purpose Foundation across **615+ articles**, including mandates for runtime governance, calibrated autonomy, and co-evolutionary simulation.
 
 ### 🗄️ Repository Architecture
 The Workstation follows a pristine organizational hierarchy:

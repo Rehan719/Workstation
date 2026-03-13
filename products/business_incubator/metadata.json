@@ -1,0 +1,10 @@
+{
+    "name": "Co-Evolutionary Business Incubator",
+    "source": "agentic_core/incubation/business_incubator.py",
+    "tier": "Enterprise",
+    "features": [
+        "Strategic Foresight",
+        "Constitutional Vetting",
+        "Co-Evolutionary Simulation"
+    ]
+}

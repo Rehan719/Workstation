@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "120.0.0"
+version = "121.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "APOTHEOSIS: Ultimate Transcendent Converged Master Directive – v120.0 Apotheosis of Synergy."
+description = "APOTHEOSIS: Ultimate Transcendent Converged Master Directive – v121.0 Apotheosis of Co-Evolutionary Equilibrium."
 authors = ["Rehan719"]
 readme = "README.md"
 

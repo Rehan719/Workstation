@@ -67,11 +67,20 @@ class UVIAP:
         is_self = repo_url is None or "Workstation" in repo_url or "jules" in repo_url.lower()
         logger.info(f"UVIAP: Ingesting GitHub history (Mode: {'Self-Evolution' if is_self else 'Generalized'})")
 
+        target_path = self.repo_path
+        if repo_url and not is_self:
+            temp_dir = f"/tmp/uviap_{uuid.uuid4().hex[:8]}"
+            logger.info(f"UVIAP: Cloning external repository {repo_url} into {temp_dir}")
+            try:
+                subprocess.run(["git", "clone", "--depth", "50", repo_url, temp_dir], check=True)
+                target_path = temp_dir
+            except subprocess.CalledProcessError as e:
+                logger.error(f"UVIAP: Failed to clone {repo_url}: {e}")
+                return []
+
         try:
-            # Analyze local history for self-evolution or external if cloned
-            # For v120.0, we prioritize the local repo history as the source of truth
             cmd = ["git", "log", "-n", "200", "--pretty=format:%H|%an|%ad|%s", "--date=iso", "--name-only"]
-            result = subprocess.check_output(cmd, cwd=self.repo_path).decode("utf-8")
+            result = subprocess.check_output(cmd, cwd=target_path).decode("utf-8")
 
             commits = []
             current_commit = None

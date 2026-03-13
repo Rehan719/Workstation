@@ -9,6 +9,7 @@ from agentic_core.optimizer.engine import AdaptiveResourceOptimizer
 from agentic_core.optimizer.fabric import DynamicResourceFabric
 from agentic_core.teams.engine import BiomimeticTeamOrchestrator
 from agentic_core.reactor.ecosystem.registry import ReactorRegistry
+from agentic_core.governance.runtime_framework import RuntimeConstitutionalFramework, AgenticTelemetrySchema
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class SynergyOrchestrator:
         self.fabric = DynamicResourceFabric()
         self.bto = BiomimeticTeamOrchestrator()
         self.registry = ReactorRegistry()
+        self.runtime_gov = RuntimeConstitutionalFramework()
 
         # ARTICLE 410: Symbiosis Connectors
         self.connectors = {
@@ -35,8 +37,18 @@ class SynergyOrchestrator:
     async def execute_mega_twin(self, objective: str, reactors: List[str], user_id: str, domain: str = "general", tier: str = "free") -> Dict[str, Any]:
         """
         ARTICLE 309/320 & 410: Executes a multi-domain Mega-Twin workflow with engine symbiosis.
+        ARTICLE 601: Enforces Runtime Constitutional Framework.
         """
         logger.info(f"Synergy: Initiating Mega-Twin for {objective} across {reactors}")
+
+        # ARTICLE 601: Runtime Gating (ATS + arifOS Floors)
+        event = AgenticTelemetrySchema.create_event(
+            agent_id=f"synergy_agent_{user_id}",
+            event_type="mega_twin.start",
+            payload={"objective": objective, "reactors": reactors}
+        )
+        if not self.runtime_gov.check_arifos_floors(event):
+            return {"status": "FAILED", "reason": "Constitutional Floor Violation (arifOS)"}
 
         # 1. Resource Optimization (ARO + DRAD)
         # ARTICLE 311: Predict demand and verify RAL spec
