@@ -17336,6 +17336,20 @@
                 "comment": "First commit"
             },
             "timestamp": 1773380797.2075145
+        },
+        {
+            "id": "audit_1435",
+            "type": "AuditLog",
+            "source": "DCS",
+            "message": "Document Test Document version 1 checked in by Jules",
+            "metadata": {
+                "doc_id": "TEST_DOC",
+                "title": "Test Document",
+                "version": 1,
+                "author": "Jules",
+                "comment": "First commit"
+            },
+            "timestamp": 1773381833.4966123
         }
     ],
     "edges": [

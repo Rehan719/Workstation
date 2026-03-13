@@ -126,3 +126,19 @@ class DualModeScraper:
 
     async def run_active_mission(self, goal: str, targets: List[str]):
         return await self.active.execute_task(goal, targets)
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["passive", "active"], default="passive")
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO)
+    scraper = DualModeScraper()
+
+    if args.mode == "passive":
+        asyncio.run(scraper.start_passive_mode())
+    else:
+        # For active mode as a service, we'd listen to a queue
+        # For now, simulate a sample mission
+        asyncio.run(scraper.run_active_mission("Sample Investigation", ["https://example.com"]))
