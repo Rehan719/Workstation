@@ -74,5 +74,5 @@ jobs:
     - name: Web Accessibility Audit (Axe-core)
       run: |
         npm install -g @axe-core/cli
-        # Audit the landing page (needs to be served or point to local file)
-        # axe src/web/site/index.html
+        # Audit the landing page via file protocol
+        axe src/web/site/index.html --tags wcag2a,wcag2aa

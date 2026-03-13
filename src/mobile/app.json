@@ -2,7 +2,7 @@
   "expo": {
     "name": "Jules AI",
     "slug": "jules-ai",
-    "version": "1.0.0",
+    "version": "120.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",

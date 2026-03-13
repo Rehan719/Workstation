@@ -18,6 +18,7 @@ class NLIEngine:
             "SYNC_DATA": [r"sync", r"synchronize", r"collaboration"],
             "RESEARCH": [r"research", r"paper", r"qa", r"scientific"]
         }
+        self.historical_confidence: Dict[str, List[float]] = {}
 
     def infer_intent(self, text: str) -> Dict[str, Any]:
         """
@@ -34,6 +35,11 @@ class NLIEngine:
         best_score = intent_scores[best_intent]
 
         is_verified = best_score >= self.confidence_threshold
+
+        # Track historical confidence
+        if best_intent not in self.historical_confidence:
+            self.historical_confidence[best_intent] = []
+        self.historical_confidence[best_intent].append(best_score)
 
         logger.info(f"NLIEngine: Inferred intent '{best_intent}' with score {best_score:.2f} (Verified: {is_verified})")
         return {
@@ -69,4 +75,5 @@ class NLIEngine:
         """
         Returns the confidence score for a specific intent ID based on historical results.
         """
-        return 0.85 # Placeholder for historical confidence tracking
+        scores = self.historical_confidence.get(intent_id, [0.85])
+        return sum(scores) / len(scores)
