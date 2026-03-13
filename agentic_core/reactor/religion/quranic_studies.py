@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, Any, List
 from agentic_core.reactor.ecosystem.base import SpecializedReactor
+from agentic_core.orchestrator.symbiosis.connectors import SymbiosisManager
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,7 @@ class QuranicStudiesReactor(SpecializedReactor):
     def __init__(self, config: Dict[str, Any] = None):
         config = config or {"capabilities": ["high_fidelity_simulation", "digital_twinning", "domain_optimization"]}
         super().__init__("religion", "quranic_studies", config)
+        self.symbiosis = SymbiosisManager()
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -23,15 +25,22 @@ class QuranicStudiesReactor(SpecializedReactor):
         task = params.get("task", "search")
 
         if task == "get_ayah":
-            # P0: Text and Translation
-            return {
-                "status": "SUCCESS",
-                "surah": 1,
-                "ayah": 1,
-                "arabic": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                "translation": "In the name of Allah, the Entirely Merciful, the Especially Merciful.",
-                "audio_url": "https://v120.io/audio/quran/001001.mp3"
-            }
+            # P0: Text and Translation via Symbiosis
+            ayah_ref = input_data or "1:1"
+            res = await self.symbiosis.query("alquran", f"ayah/{ayah_ref}/editions/quran-uthmani,en.sahih")
+            if res.get("code") == 200:
+                data = res["data"]
+                arabic = next(e["text"] for e in data if e["edition"]["identifier"] == "quran-uthmani")
+                translation = next(e["text"] for e in data if e["edition"]["identifier"] == "en.sahih")
+                return {
+                    "status": "SUCCESS",
+                    "surah": data[0]["surah"]["number"],
+                    "ayah": data[0]["numberInSurah"],
+                    "arabic": arabic,
+                    "translation": translation,
+                    "audio_url": f"https://v∞.io/audio/quran/{data[0]['number']}.mp3"
+                }
+            return {"status": "FAILED", "message": "Could not retrieve ayah data."}
         elif task == "get_tafsir":
             # P1: Bookmarking & Basic Tafsir
             return {

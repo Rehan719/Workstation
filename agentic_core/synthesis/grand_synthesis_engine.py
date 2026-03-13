@@ -22,7 +22,8 @@ from .biomimetic_agents import (
 )
 from .agentic_orchestrator import AgenticOrchestrator
 from .feature_converger import FeatureConverger
-from .url_ingestor import DevelopmentScraper
+from .web_scraper import WebScraperEngine
+from .uviap import UVIAPEngine
 from .autonomic_system import AgenticAutonomicSystem
 from .documentation_generator import DocumentationGenerator
 from agentic_core.ueg.ueg_manager import UEGManager
@@ -55,7 +56,8 @@ class GrandSynthesisEngine:
         self.doc_gen = DocumentationGenerator()
         self.agentic_orchestrator = AgenticOrchestrator()
         self.feature_converger = FeatureConverger()
-        self.dev_scraper = DevelopmentScraper()
+        self.dev_scraper = WebScraperEngine()
+        self.uviap = UVIAPEngine()
         self.autonomic_system = AgenticAutonomicSystem()
         self.ueg = UEGManager()
         self.genomic_registry = GenomicRegistry()
@@ -81,7 +83,8 @@ class GrandSynthesisEngine:
         is_unify = "--unify" in sys.argv
         is_scrape = "--web-scrape" in sys.argv
         is_product = "--product-engineering" in sys.argv
-        target_version = target_version or ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))
+        is_uviap = "--full-evolution-pipeline" in sys.argv
+        target_version = target_version or ("infinity" if "--infinity" in sys.argv else ("200.0.0" if "--v200" in sys.argv else ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))))
         logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
@@ -107,6 +110,11 @@ class GrandSynthesisEngine:
             logger.info("ARTICLE 397: Starting Version Convergence for v116.0.")
             convergence_results = self.feature_converger.converge_all_features()
             self.memory.store_synthesis_results(convergence_results)
+
+        if is_uviap:
+            logger.info("SECTION XXIII: Initiating Unified Version Ingestion & Assimilation Pipeline.")
+            uviap_results = self.uviap.run_full_pipeline()
+            self.memory.store_synthesis_results(uviap_results)
 
         if is_product:
             logger.info("ARTICLE 401: Initiating Digital Product Engineering for v117.0.")
@@ -196,7 +204,17 @@ class GrandSynthesisEngine:
             self._generate_unified_manifest(target_version)
 
         version = resolved_config.get("version")
-        if version == "120.0.0":
+        if version == "infinity":
+            constitution_path = self.dna_gen.generate_v_infinity_constitution(resolved_config)
+            logger.info(f"v∞.0 Constitution generated at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "200.0.0":
+            constitution_path = self.dna_gen.generate_v200_constitution(resolved_config)
+            logger.info(f"v200.0 Constitution generated at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "120.0.0":
             constitution_path = self.dna_gen.generate_v120_constitution(resolved_config)
             logger.info(f"v120.0 Constitution generated at {constitution_path}")
             if is_ultimate or "--generate-docs-v3" in sys.argv:

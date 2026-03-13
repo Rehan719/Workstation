@@ -49,8 +49,12 @@ class AgenticOrchestrator:
         }
 
     def _determine_mode(self, goal: str) -> str:
-        """ARTICLE 390: Determines if the mode is Philosophical Strategist or Practical Engineer."""
+        """ARTICLE 390: Determines if the mode is Philosophical Strategist, Practical Engineer, or Product Delivery."""
+        product_keywords = ["website", "web app", "mobile app", "ui", "frontend", "design", "product", "delivery"]
         strategist_keywords = ["vision", "ethics", "strategy", "systemic", "alignment", "resilience", "transformation"]
+
+        if any(kw in goal.lower() for kw in product_keywords):
+            return "Product Delivery"
         if any(kw in goal.lower() for kw in strategist_keywords):
             return "Philosophical Strategist"
         return "Practical Engineer"
@@ -63,6 +67,8 @@ class AgenticOrchestrator:
         lens = "Immune Dynamics" if "security" in goal.lower() or "policy" in goal.lower() else "Metamorphosis"
         if mode == "Philosophical Strategist":
             lens = "Hormonal/Circadian Systems"
+        elif mode == "Product Delivery":
+            lens = "Neural Plasticity" # Emphasizing adaptation and user interface fluidity
 
         steps = [
             {"id": "step_1", "action": f"analyze_via_{lens}", "dependencies": []},

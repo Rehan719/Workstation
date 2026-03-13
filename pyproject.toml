@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "120.0.0"
+version = "infinity"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "APOTHEOSIS: Ultimate Transcendent Converged Master Directive – v120.0 Apotheosis of Synergy."
+description = "APOTHEOSIS: The Ultimate Transcendent Converged Master Directive – v∞.0 Eternal Synthesis Apotheosis with Autonomous Version Assimilation & Product Delivery Apotheosis."
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -25,6 +25,9 @@ chromadb = "^1.5.1"
 prefect = "^2.19.0"
 psutil = "^7.2.2"
 openai = "^1.30.1"
+httpx = "^0.27.0"
+playwright = "^1.44.0"
+mesa = "^2.3.1"
 transformers = "^4.41.0"
 torch = "^2.10.0"
 numpy = ">=1.26.4,<2.0.0"

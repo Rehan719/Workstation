@@ -9,6 +9,8 @@ from agentic_core.optimizer.engine import AdaptiveResourceOptimizer
 from agentic_core.optimizer.fabric import DynamicResourceFabric
 from agentic_core.teams.engine import BiomimeticTeamOrchestrator
 from agentic_core.reactor.ecosystem.registry import ReactorRegistry
+from agentic_core.orchestrator.symbiosis.connectors import SymbiosisManager
+from agentic_core.governance.business_systems import IntegratedBusinessSystems
 
 logger = logging.getLogger(__name__)
 
@@ -23,23 +25,19 @@ class SynergyOrchestrator:
         self.fabric = DynamicResourceFabric()
         self.bto = BiomimeticTeamOrchestrator()
         self.registry = ReactorRegistry()
+        self.symbiosis = SymbiosisManager()
+        self.ibs = IntegratedBusinessSystems()
 
-        # ARTICLE 410: Symbiosis Connectors
-        self.connectors = {
-            "quran": "https://api.alquran.cloud/v1",
-            "legal": "https://www.courtlistener.com/api/rest/v3",
-            "linkedin": "https://api.linkedin.com/v2"
-        }
-        logger.info("Synergy: Orchestrator Integrated and Ready with Symbiosis Connectors.")
+        logger.info("Synergy: Orchestrator Integrated and Ready with IBS Governance.")
 
     async def execute_mega_twin(self, objective: str, reactors: List[str], user_id: str, domain: str = "general", tier: str = "free") -> Dict[str, Any]:
         """
-        ARTICLE 309/320 & 410: Executes a multi-domain Mega-Twin workflow with engine symbiosis.
+        ARTICLE 410: Executes a multi-domain Mega-Twin workflow with engine symbiosis (ESE, ARO, BTO, DRAD).
         """
         logger.info(f"Synergy: Initiating Mega-Twin for {objective} across {reactors}")
 
         # 1. Resource Optimization (ARO + DRAD)
-        # ARTICLE 311: Predict demand and verify RAL spec
+        # ARTICLE 407/409: Predict demand and verify RAL spec via ARO/DRAD
         ral_spec = {
             "id": f"ral_{uuid.uuid4().hex[:4]}",
             "domain": domain,
@@ -57,12 +55,12 @@ class SynergyOrchestrator:
         pool_id = aro_res["pool_id"]
 
         # 2. Team Formation (BTO)
-        # ARTICLE 315: Dynamic VTF assembly
+        # ARTICLE 408: Dynamic VTF assembly via Biomimetic Team Orchestrator
         intent_id = uuid.uuid4().hex[:8]
         team_id = await self.bto.form_vtf(intent_id, domain, reactors)
 
         # 3. Simulation Execution (ESE)
-        # ARTICLE 303: Digital Twinning across sub-reactors
+        # ARTICLE 406: Digital Twinning across sub-reactors via Environmental Simulator Engine
         simulation_results = []
         for r_id in reactors:
             # Initialize or get twin for each sub-reactor
@@ -80,11 +78,14 @@ class SynergyOrchestrator:
                 simulation_results.append(res)
 
         # 4. Final Verification & Reporting
-        # ARTICLE 307: Cross-domain validation
+        # ARTICLE 410: Cross-domain synergy validation
         avg_fidelity = sum(r.get("fidelity", 0) for r in simulation_results) / len(simulation_results) if simulation_results else 0.0
 
         # 5. Cleanup (DRAD Disassembly)
         self.aro.release_pool(pool_id)
+
+        # 6. Governance Audit (ARTICLE 531)
+        self.ibs.perform_governance_audit()
 
         return {
             "status": "SUCCESS",
