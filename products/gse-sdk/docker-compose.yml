@@ -1,0 +1,6 @@
+version: '3.8'
+services:
+  gse:
+    build: .
+    ports:
+      - "9090:9090"

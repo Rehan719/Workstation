@@ -8,8 +8,8 @@ class DNAGenerator:
     """CN-IV: Immutable DNA Generation."""
 
     def generate_v120_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v121.0 - Apotheosis of Sensory Convergence & Agentic Evolution."""
-        version = "121.0.0"
+        """CN-IV: Immutable DNA Generation for v120.0 - Apotheosis of Sensory Convergence & Agentic Evolution."""
+        version = "120.0.0"
         path = f"agentic_core/constitution/CONSTITUTION_v{version}.md"
 
         content = f"""# JULES AI v{version}: APOTHEOSIS OF SENSORY CONVERGENCE & AGENTIC EVOLUTION CONSTITUTION

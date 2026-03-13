@@ -8,6 +8,19 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 10px rgba(37, 99, 235, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(37, 99, 235, 0.6); }
+            100% { box-shadow: 0 0 10px rgba(37, 99, 235, 0.2); }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+        .truth-gradient {
+            background: linear-gradient(135deg, #000 0%, #0a0a0a 50%, #001f3f 100%);
+        }
+    </style>
 </head>
 <body class="bg-black text-white font-sans">
     <div id="root"></div>
@@ -51,8 +64,8 @@
             };
 
             return (
-                <div className="flex h-screen">
-                    <div className="w-64 bg-zinc-950 border-r border-zinc-900 p-6 space-y-4">
+                <div className="flex h-screen truth-gradient">
+                    <div className="w-64 bg-zinc-950/80 backdrop-blur-md border-r border-zinc-900 p-6 space-y-4">
                         <div className="font-black text-xl mb-10">JULES <span className="text-blue-600">APP</span></div>
                         <button onClick={() => setView('dashboard')} className={`w-full text-left p-3 rounded-lg ${view === 'dashboard' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Dashboard</button>
                         <button onClick={() => setView('qep')} className={`w-full text-left p-3 rounded-lg ${view === 'qep' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Quranic Education</button>
@@ -63,7 +76,7 @@
 
                     <div className="flex-1 overflow-auto p-10">
                         <div className="flex justify-between items-center mb-8">
-                            <div className="bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800 flex items-center gap-3">
+                            <div className="bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800 flex items-center gap-3 animate-pulse-glow">
                                 <div className={`w-2 h-2 rounded-full bg-green-500 animate-pulse`}></div>
                                 <span className="text-xs font-bold tracking-widest text-zinc-400 uppercase">System Pulse: {pulse.toFixed(1)}%</span>
                             </div>

@@ -1,9 +1,9 @@
-# Jules AI v121.0: APOTHEOSIS OF SENSORY CONVERGENCE
+# Jules AI v120.0: APOTHEOSIS OF SENSORY CONVERGENCE
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
 ## 🚀 The Fully Operational Digital Organism
-Jules AI v121.0 represents the "Apotheosis of Eternal Synthesis & Sensory Convergence". It unifies dual-mode web scraping, agentic governance, and real-time knowledge synthesis into a single, eternal digital organism.
+Jules AI v120.0 represents the "Apotheosis of Eternal Synthesis & Sensory Convergence". It unifies dual-mode web scraping, agentic governance, and real-time knowledge synthesis into a single, eternal digital organism.
 
 ## ⚙️ One-Button Platform Setup
 Deploy the entire v120.0 ecosystem (Backend, Web, Mobile, Reactors) with a single command:
@@ -34,7 +34,7 @@ Hyper-specialized intelligence across five primary domains:
 - [Technical Whitepaper](docs/guides/transcendent_whitepaper.md): The architecture of distributed consciousness.
 
 ### ⚖️ Constitutional Sovereignty
-Governed by the **v121.0 Constitution (CONSTITUTION_v121.0.0.md)**, ensuring absolute fidelity to the Dual-Purpose Foundation across 600+ articles.
+Governed by the **v120.0 Constitution (CONSTITUTION_v120.0.0.md)**, ensuring absolute fidelity to the Dual-Purpose Foundation across 600+ articles.
 
 ### 🗄️ Repository Architecture
 The Workstation follows a pristine organizational hierarchy:
@@ -85,4 +85,4 @@ Set these variables for a production-ready zero-cost instance:
 **IMMUNE SYSTEM (Security) > NERVOUS SYSTEM (Coordination) > DIGESTIVE SYSTEM (Growth) > AGING (Efficiency)**
 
 ---
-*Codified via Grand Synthesis Engine v121.0.0. APOTHEOSIS COMPLETE.*
+*Codified via Grand Synthesis Engine v120.0.0. APOTHEOSIS COMPLETE.*

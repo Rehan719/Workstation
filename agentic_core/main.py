@@ -9,7 +9,7 @@ from agentic_core.commercial.token_ledger import TokenLedger, UserTier
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Jules AI v121.0 Apotheosis of Sensory Convergence Master Backend")
+app = FastAPI(title="Jules AI v120.0 Apotheosis of Sensory Convergence Master Backend")
 
 # Initialize global CoEs and Reactors
 policy = PolicyCoE()
@@ -48,12 +48,12 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "version": "121.0.0", "era": "APOTHEOSIS_OF_SENSORY_CONVERGENCE"}
+    return {"status": "healthy", "version": "120.0.0", "era": "APOTHEOSIS_OF_SENSORY_CONVERGENCE"}
 
 @app.get("/api/v1/status")
 async def get_status():
     return {
-        "organism_id": "JULES-v121-MASTER",
+        "organism_id": "JULES-v120-MASTER",
         "fidelity": 0.998,
         "articles": 600,
         "mode": "APOTHEOSIS-OF-SENSORY-CONVERGENCE",
