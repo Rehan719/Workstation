@@ -88,7 +88,10 @@ The pipeline must incorporate learning from past assimilations and reflect on im
 
 ## 🏛️ SECTION XXIV: INTEGRATED BUSINESS SYSTEMS (Articles 531-535)
 **ARTICLE 531: INTEGRATED BUSINESS SYSTEMS MANDATE**
-QMS, DCS, BMS, and EMS must be unified and governed by the Policy & Governance CoE; all actions shall be traceable through these systems.
+QMS, DCS, BMS, and EMS (Evolution Management System) must be unified and governed by the Policy & Governance CoE; all actions shall be traceable through these systems.
+
+**ARTICLE 535: CONTINUOUS OPERATIONAL EXCELLENCE**
+The system shall leverage IBS data to drive perpetual improvements in engineering, governance, and purpose alignment.
 
 ---
 *Codified via Unified Version Ingestion & Assimilation Pipeline v120.0*
