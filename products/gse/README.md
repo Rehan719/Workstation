@@ -1,3 +1,6 @@
-# Jules AI: GSE Commercial Product
+# GSE Commercial SDK
 
-Production-ready gse engine for enterprise synthesis.
+This is a standalone enterprise-grade module from the Jules AI Workstation.
+
+## Deployment
+`docker-compose up -d`

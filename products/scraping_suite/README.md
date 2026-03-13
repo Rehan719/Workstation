@@ -1,3 +1,6 @@
-# Jules AI: SCRAPING_SUITE Commercial Product
+# SCRAPING_SUITE Commercial SDK
 
-Production-ready scraping_suite engine for enterprise synthesis.
+This is a standalone enterprise-grade module from the Jules AI Workstation.
+
+## Deployment
+`docker-compose up -d`

@@ -1,3 +1,6 @@
-# Jules AI: UVIAP Commercial Product
+# UVIAP Commercial SDK
 
-Production-ready uviap engine for enterprise synthesis.
+This is a standalone enterprise-grade module from the Jules AI Workstation.
+
+## Deployment
+`docker-compose up -d`

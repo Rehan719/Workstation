@@ -1,6 +1,9 @@
 version: '3.8'
 services:
   scraping_suite:
-    image: jules-ai-scraping_suite:latest
+    build: .
     ports:
-      - '8080:8080'
+      - "8080:8080"
+    environment:
+      - APP_MODE=COMMERCIAL
+      - PRODUCT_NAME=SCRAPING_SUITE

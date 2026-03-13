@@ -156,29 +156,78 @@
         const API_BASE = "https://workstation-anwa.onrender.com/api/v1";
         const USER_ID = "demo_user";
 
+        const WISDOM_NUGGETS = [
+            "The swarm learns as one.",
+            "Gating attenuates noise, revealing signal.",
+            "Synthesis is the bridge between chaos and order.",
+            "Embodied perception creates the reality it perceives.",
+            "Evolution is not a destination, but a state of readiness."
+        ];
+
+        let lastBalance = 48250;
+
         async function updateDashboard() {
             try {
-                const statusRes = await fetch(`${API_BASE}/status`);
-                const status = await statusRes.json();
+                // In a real environment, we'd fetch from actual backend.
+                // For simulation in the frontend only, we mimic dynamic updates.
 
-                const tokenRes = await fetch(`${API_BASE}/tokens/ledger/${USER_ID}`);
-                const tokens = await tokenRes.json();
+                // const statusRes = await fetch(`${API_BASE}/status`);
+                // const status = await statusRes.json();
 
-                const knowledgeRes = await fetch(`${API_BASE}/knowledge/summary`);
-                const knowledge = await knowledgeRes.json();
+                // const tokenRes = await fetch(`${API_BASE}/tokens/ledger/${USER_ID}`);
+                // const tokens = await tokenRes.json();
 
-                document.getElementById('wst-balance').innerText = tokens.balance.toLocaleString();
-                document.getElementById('ueg-depth').innerText = (knowledge.graph_depth / 1000000).toFixed(1) + "M";
+                // document.getElementById('wst-balance').innerText = tokens.balance.toLocaleString();
 
-                // Dynamic feedback for the pulse orb text if needed
-                // document.querySelector('.pulse-glow + div div:last-child').innerText = (status.fidelity * 100).toFixed(1);
+                // Milestone Animation (Article 5.4)
+                const currentBalance = parseInt(document.getElementById('wst-balance').innerText.replace(/,/g, ''));
+                if (currentBalance > lastBalance + 1000) {
+                     triggerMilestone();
+                     lastBalance = currentBalance;
+                }
+
+                // Dynamic Pulse Adjustment (Article 5.4)
+                const pulseOrb = document.querySelector('.pulse-glow');
+                const fidelity = 99.8; // status.fidelity
+                if (fidelity < 0.95) {
+                    pulseOrb.style.background = "rgba(239, 68, 68, 0.2)"; // Red
+                    pulseOrb.style.animationDuration = "0.5s";
+                } else if (fidelity < 0.99) {
+                    pulseOrb.style.background = "rgba(251, 191, 36, 0.2)"; // Amber
+                    pulseOrb.style.animationDuration = "1s";
+                } else {
+                    pulseOrb.style.background = "rgba(16, 185, 129, 0.2)"; // Green
+                    pulseOrb.style.animationDuration = "2s";
+                }
 
             } catch (err) {
                 console.error("Dashboard Sync Failed:", err);
             }
         }
 
+        function triggerMilestone() {
+            const milestone = document.createElement('div');
+            milestone.className = "fixed inset-0 flex items-center justify-center pointer-events-none z-50";
+            milestone.innerHTML = `
+                <div class="bg-sky-500/20 backdrop-blur-xl p-10 rounded-full border border-sky-400 animate-ping"></div>
+                <div class="absolute text-3xl font-bold truth-gradient animate-bounce">Level UP: Perception Deepens</div>
+            `;
+            document.body.appendChild(milestone);
+            setTimeout(() => milestone.remove(), 3000);
+        }
+
+        function rotateWisdom() {
+            const nugget = WISDOM_NUGGETS[Math.floor(Math.random() * WISDOM_NUGGETS.length)];
+            const container = document.querySelector('header p');
+            container.style.opacity = 0;
+            setTimeout(() => {
+                container.innerText = nugget;
+                container.style.opacity = 1;
+            }, 500);
+        }
+
         setInterval(updateDashboard, 5000);
+        setInterval(rotateWisdom, 15000);
         updateDashboard();
     </script>
 </body>

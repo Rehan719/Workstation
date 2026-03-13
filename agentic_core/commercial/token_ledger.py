@@ -53,7 +53,7 @@ class TokenLedger:
             }
             logger.info(f"TokenLedger: Initialized user {user_id} with {tier.value} tier and cryptographic identity.")
 
-    def consume_tokens(self, user_id: str, amount: int, activity: str) -> bool:
+    def consume_tokens(self, user_id: str, amount: float, activity: str) -> bool:
         if user_id not in self.ledgers:
             self.initialize_user(user_id)
 
@@ -91,6 +91,37 @@ class TokenLedger:
         self.transactions.append(transaction)
         logger.info(f"TokenLedger: User {user_id} consumed {amount} WST. TX Hash: {new_hash[:10]}...")
         return True
+
+    async def deduct_tokens(self, user_id: str, amount: float, reason: str) -> bool:
+        """Alias for consume_tokens to match ReasoningGate expectations."""
+        return self.consume_tokens(user_id, amount, reason)
+
+    async def credit_tokens(self, user_id: str, amount: float, reason: str):
+        if user_id not in self.ledgers:
+            self.initialize_user(user_id)
+
+        ledger = self.ledgers[user_id]
+        ledger["balance"] += amount
+
+        tx_data = {
+            "user_id": user_id,
+            "amount": amount,
+            "activity": reason,
+            "timestamp": datetime.datetime.now().isoformat(),
+            "prev_hash": self.last_tx_hash
+        }
+
+        tx_json = json.dumps(tx_data, sort_keys=True).encode()
+        signature = self._system_private_key.sign(tx_json)
+        new_hash = hashlib.sha256(tx_json + signature).hexdigest()
+        self.last_tx_hash = new_hash
+
+        self.transactions.append({
+            "tx_id": str(uuid.uuid4()),
+            "data": tx_data,
+            "signature": signature.hex(),
+            "hash": new_hash
+        })
 
     def get_ledger_report(self, user_id: str) -> Dict[str, Any]:
         if user_id not in self.ledgers:

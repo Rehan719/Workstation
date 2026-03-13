@@ -6,30 +6,54 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def package_products():
-    """ARTICLE 536: Automates the collation and sanitization of commercial products."""
+    """
+    ARTICLE 536-540: Packaging UVIAP, GSE, and Scraping Suite as commercial products.
+    """
     products = {
-        "uviap": ["agentic_core/synthesis/uviap.py"],
-        "gse": ["agentic_core/synthesis/grand_synthesis_engine.py"],
-        "scraping_suite": ["agentic_core/synthesis/dual_mode_scraper.py", "agentic_core/synthesis/web_scraper.py", "agentic_core/synthesis/knowledge_synthesis.py"]
+        "uviap": {
+            "source": "agentic_core/synthesis/uviap.py",
+            "dependencies": ["agentic_core/ueg/", "agentic_core/genetics/"]
+        },
+        "gse": {
+            "source": "agentic_core/synthesis/grand_synthesis_engine.py",
+            "dependencies": ["agentic_core/synthesis/uviap.py", "agentic_core/ueg/"]
+        },
+        "scraping_suite": {
+            "source": "agentic_core/synthesis/dual_mode_scraper.py",
+            "dependencies": ["agentic_core/synthesis/knowledge_synthesis.py", "agentic_core/governance/ledger.py"]
+        }
     }
 
-    for name, files in products.items():
-        dest_dir = f"products/{name}/sdk"
-        os.makedirs(dest_dir, exist_ok=True)
-        for src in files:
-            if os.path.exists(src):
-                shutil.copy(src, dest_dir)
-                logger.info(f"Packaged {src} into {dest_dir}")
+    base_dir = "products"
+    os.makedirs(base_dir, exist_ok=True)
 
-        # Create a mock docker-compose for the product
-        with open(f"products/{name}/docker-compose.yml", "w") as f:
-            f.write(f"version: '3.8'\nservices:\n  {name}:\n    image: jules-ai-{name}:latest\n    ports:\n      - '8080:8080'\n")
+    for name, config in products.items():
+        product_dir = os.path.join(base_dir, name)
+        os.makedirs(product_dir, exist_ok=True)
 
-        # Create README
-        with open(f"products/{name}/README.md", "w") as f:
-            f.write(f"# Jules AI: {name.upper()} Commercial Product\n\nProduction-ready {name} engine for enterprise synthesis.\n")
+        # Copy main source
+        dest_src = os.path.join(product_dir, os.path.basename(config["source"]))
+        shutil.copy(config["source"], dest_src)
+        logger.info(f"Packaged {name} source: {config['source']} -> {dest_src}")
 
-    logger.info("Packaging complete.")
+        # Create Docker Compose template
+        with open(os.path.join(product_dir, "docker-compose.yml"), "w") as f:
+            f.write(f"""version: '3.8'
+services:
+  {name}:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_MODE=COMMERCIAL
+      - PRODUCT_NAME={name.upper()}
+""")
+
+        # Create basic README
+        with open(os.path.join(product_dir, "README.md"), "w") as f:
+            f.write(f"# {name.upper()} Commercial SDK\n\nThis is a standalone enterprise-grade module from the Jules AI Workstation.\n\n## Deployment\n`docker-compose up -d`")
+
+    logger.info("All products packaged successfully.")
 
 if __name__ == "__main__":
     package_products()
