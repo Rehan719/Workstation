@@ -3,256 +3,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jules App | Workstation Dashboard</title>
+    <title>Jules Apotheosis | v123.0 Digital Organism</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --sky-primary: #38bdf8;
+            --emerald-primary: #10b981;
+            --slate-bg: #020617;
+        }
         body {
-            background: #020617;
+            background: var(--slate-bg);
             color: white;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
         .glass {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(56, 189, 248, 0.2);
+            transform: translateY(-2px);
         }
         .sidebar {
             width: 280px;
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(2, 6, 23, 0.8);
         }
-        .system-pulse {
-            width: 12px;
-            height: 12px;
+        .system-pulse-orb {
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 10px #10b981;
-            animation: pulse 2s infinite;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, transparent 70%);
+            filter: blur(20px);
+            animation: pulse-glow 4s infinite ease-in-out;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
         }
-        .truth-gradient-bg {
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%);
+        .truth-gradient {
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-link {
+            transition: all 0.2s ease;
+        }
+        .nav-link.active {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--sky-primary);
+            border-left: 3px solid var(--sky-primary);
+        }
+        .wisdom-card {
+            font-family: 'JetBrains Mono', monospace;
+            border-left: 2px solid var(--sky-primary);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.5;
         }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden">
+<body class="flex h-screen overflow-hidden" onclick="createParticle(event)">
     <!-- Sidebar -->
-    <aside class="sidebar h-full flex flex-col p-6">
-        <div class="text-xl font-bold mb-12 flex items-center gap-3">
-            <div class="system-pulse"></div>
-            <span>JULES v121.0</span>
+    <aside class="sidebar h-full flex flex-col p-8 z-10">
+        <div class="mb-12 flex flex-col gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                <span class="font-extrabold tracking-tighter text-xl">JULES APOTHEOSIS</span>
+            </div>
+            <span class="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">v123.0 Digital Organism</span>
         </div>
 
-        <nav class="flex-1 space-y-2">
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg bg-sky-500/10 text-sky-400 font-medium">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                Overview
+        <nav class="flex-1 space-y-1">
+            <a href="#" class="nav-link active flex items-center gap-3 p-3 rounded-lg text-sm font-semibold">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                Core Overview
             </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.618.309a6 6 0 01-3.86.517l-2.388-.477a2 2 0 00-1.022.547l-1.16 1.16a2 2 0 001.414 3.414h15.656a2 2 0 001.414-3.414l-1.16-1.16z"></path></svg>
-                Reactors
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Active Swarms
             </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                UVIAP Insights
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Knowledge Graph
             </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                WST Ledger
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                WST Token Ledger
             </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                Co-Evolution
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.618.309a6 6 0 01-3.86.517l-2.388-.477a2 2 0 00-1.022.547l-1.16 1.16a2 2 0 001.414 3.414h15.656a2 2 0 001.414-3.414l-1.16-1.16z"></path></svg>
+                Co-Evolutionary Engine
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 21a9.994 9.994 0 0010-10V7a2 2 0 00-2-2H4a2 2 0 00-2 2v4a9.99 9.99 0 003.245 7.456l.054.09"></path></svg>
+                Runtime Governance
             </a>
         </nav>
 
-        <div class="mt-auto p-4 glass rounded-xl text-xs space-y-2">
-            <div class="flex justify-between">
-                <span class="text-slate-500">System Fidelity</span>
-                <span class="text-sky-400">99.8%</span>
+        <div class="mt-auto p-6 glass rounded-2xl">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System Fidelity</span>
             </div>
+            <div class="text-2xl font-bold mb-2">99.85%</div>
             <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                <div class="bg-sky-500 h-full" style="width: 99.8%"></div>
+                <div class="bg-emerald-400 h-full" style="width: 99.8%"></div>
             </div>
         </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 h-full overflow-y-auto p-8 truth-gradient-bg">
-        <header class="flex justify-between items-center mb-10">
+    <main class="flex-1 h-full overflow-y-auto p-12 relative">
+        <!-- Floating Background Elements -->
+        <div class="absolute top-20 right-20 system-pulse-orb"></div>
+
+        <header class="flex justify-between items-end mb-16 relative z-10">
             <div>
-                <h2 class="text-3xl font-bold">Apotheosis Dashboard</h2>
-                <p class="text-slate-400">Welcome back, AI CEO. Evolution is at 100%.</p>
+                <h1 class="text-5xl font-extrabold tracking-tight mb-2">The <span class="truth-gradient">Apotheosis</span></h1>
+                <p class="text-slate-400 font-medium">Strategic Command Center | AI CEO Session Active</p>
             </div>
             <div class="flex gap-4">
-                <div class="glass px-4 py-2 rounded-lg flex items-center gap-3">
-                    <span class="text-slate-500 text-sm">WST Balance:</span>
-                    <span id="wst-balance" class="font-bold text-emerald-400">48,250</span>
+                <div class="glass px-6 py-3 rounded-2xl flex flex-col items-end">
+                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Token Reserve</span>
+                    <span id="token-balance" class="text-xl font-bold text-emerald-400">842,500 <span class="text-xs text-slate-500">WST</span></span>
                 </div>
-                <button class="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-slate-200 transition">Action Mission</button>
+                <button class="bg-white text-black px-8 py-4 rounded-2xl font-bold hover:bg-sky-400 hover:text-white transition-all duration-300 shadow-xl">Initiate Swarm</button>
             </div>
         </header>
 
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-10">
-            <div class="glass p-6 rounded-2xl">
-                <div class="text-slate-500 text-sm mb-1">Active Swarms</div>
-                <div id="active-swarms" class="text-3xl font-bold">12</div>
-                <div class="text-emerald-400 text-xs mt-2">↑ 2 from last hour</div>
+        <!-- Dynamic Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 relative z-10">
+            <div class="glass p-8 rounded-3xl col-span-2">
+                <div class="flex justify-between items-start mb-8">
+                    <h3 class="text-lg font-bold">Environmental Awareness</h3>
+                    <span class="text-[10px] bg-sky-500/10 text-sky-400 px-3 py-1 rounded-full font-bold">Passive Mode</span>
+                </div>
+                <div class="h-48 flex items-end gap-2 px-2">
+                    <!-- Simulated Signal Bar Chart -->
+                    <div class="flex-1 bg-sky-500/20 rounded-t-lg transition-all duration-500" style="height: 40%"></div>
+                    <div class="flex-1 bg-sky-500/30 rounded-t-lg transition-all duration-500" style="height: 65%"></div>
+                    <div class="flex-1 bg-sky-500/50 rounded-t-lg transition-all duration-500" style="height: 45%"></div>
+                    <div class="flex-1 bg-sky-400 rounded-t-lg transition-all duration-500" style="height: 90%"></div>
+                    <div class="flex-1 bg-sky-500/40 rounded-t-lg transition-all duration-500" style="height: 60%"></div>
+                    <div class="flex-1 bg-sky-500/20 rounded-t-lg transition-all duration-500" style="height: 30%"></div>
+                    <div class="flex-1 bg-sky-500/60 rounded-t-lg transition-all duration-500" style="height: 75%"></div>
+                </div>
+                <div class="mt-6 flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    <span>Sensory Gating Active</span>
+                    <span>12.4K signals/sec</span>
+                </div>
             </div>
-            <div class="glass p-6 rounded-2xl">
-                <div class="text-slate-500 text-sm mb-1">Sensory Signals</div>
-                <div id="sensory-signals" class="text-3xl font-bold">142K</div>
-                <div class="text-sky-400 text-xs mt-2">Gating Active</div>
+
+            <div class="glass p-8 rounded-3xl">
+                <h3 class="text-lg font-bold mb-6">Decision Intelligence</h3>
+                <div class="space-y-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold">ARI Stability</div>
+                            <div class="text-xs text-slate-500">Tier 1 Compliance</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold">Autonomy L3</div>
+                            <div class="text-xs text-slate-500">Self-Healing Active</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="glass p-6 rounded-2xl">
-                <div class="text-slate-500 text-sm mb-1">Trust Equilibrium</div>
-                <div id="trust-equilibrium" class="text-3xl font-bold">0.96</div>
-                <div class="text-emerald-400 text-xs mt-2">Calibrated (L3)</div>
-            </div>
-            <div class="glass p-6 rounded-2xl">
-                <div class="text-slate-500 text-sm mb-1">UEG Depth</div>
-                <div id="ueg-depth" class="text-3xl font-bold">1.4M</div>
-                <div class="text-slate-400 text-xs mt-2">Nodes integrated</div>
-            </div>
-            <div class="glass p-6 rounded-2xl">
-                <div class="text-slate-500 text-sm mb-1">UVIAP Status</div>
-                <div id="uviap-status" class="text-3xl font-bold">Stable</div>
-                <div class="text-emerald-400 text-xs mt-2">Rerun Pending Approval</div>
+
+            <div class="glass p-8 rounded-3xl flex flex-col justify-center">
+                <div class="text-center">
+                    <div class="text-sm text-slate-500 font-bold uppercase tracking-widest mb-2">Purpose Alignment</div>
+                    <div class="text-5xl font-black truth-gradient">0.98</div>
+                    <div class="mt-4 text-[10px] text-emerald-400 font-bold">+2.4% co-evolutionary boost</div>
+                </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- System Pulse (Visual Aesthetic) -->
-            <div class="col-span-2 glass rounded-2xl p-8 h-[400px] flex flex-col">
-                <h3 class="font-bold mb-6 flex justify-between">
-                    <span>Environmental Awareness (Sensory Feed)</span>
-                    <span class="text-xs text-slate-500">Live Telemetry</span>
-                </h3>
-                <div class="flex-1 flex items-center justify-center relative">
-                    <!-- Biomimetic Pulsing Orb -->
-                    <div class="w-48 h-48 rounded-full bg-sky-500/20 blur-3xl absolute pulse-glow"></div>
-                    <div class="w-32 h-32 rounded-full border-2 border-sky-500/30 flex items-center justify-center relative">
-                         <div class="w-24 h-24 rounded-full border border-sky-400/50 flex items-center justify-center animate-spin" style="animation-duration: 10s">
-                            <div class="w-2 h-2 bg-sky-400 rounded-full absolute top-0"></div>
-                         </div>
-                         <div class="absolute text-sky-400 font-mono text-xl font-bold">99.8</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+            <!-- Interpretability Module -->
+            <div class="col-span-2 glass rounded-3xl p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-xl font-bold">Reasoning Interpretability</h3>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/10 text-slate-400">Visual Tree</button>
+                        <button class="px-3 py-1 rounded-full text-[10px] font-bold bg-sky-500/10 border border-sky-500/20 text-sky-400">Biomimetic Analogy</button>
+                    </div>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-white/5 border border-white/5 mb-6 wisdom-card">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <span class="text-xs font-bold text-sky-400 uppercase tracking-widest">Action Logic</span>
+                    </div>
+                    <p id="analogy-text" class="text-sm text-slate-300 leading-relaxed italic">
+                        "The immune module detected a spike in error rates and dispatched antibody agents to investigate, much like white blood cells swarm an infection."
+                    </p>
+                </div>
+
+                <!-- Visual Decision Tree (Simplified Simulation) -->
+                <div class="flex justify-center items-center h-40 gap-8">
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="w-12 h-12 rounded-xl border border-sky-500/30 flex items-center justify-center bg-sky-500/5">
+                            <span class="text-[10px] font-bold">INIT</span>
+                        </div>
+                        <div class="h-4 w-px bg-white/20"></div>
+                        <div class="flex gap-4">
+                            <div class="flex flex-col items-center gap-2 opacity-40">
+                                <div class="w-12 h-12 rounded-xl border border-white/10 flex items-center justify-center">
+                                    <span class="text-[10px] font-bold">IGNORE</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center gap-2">
+                                <div class="w-12 h-12 rounded-xl border border-emerald-500/50 bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                                    <span class="text-[10px] font-bold">ACT</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Approval Panel -->
-            <div class="glass rounded-2xl p-6 border-sky-500/20 flex flex-col">
-                <h3 class="font-bold mb-6">Pending Approvals</h3>
-                <div class="space-y-4 flex-1">
-                    <div class="p-4 rounded-xl bg-white/5 border border-white/10">
-                        <div class="text-sm font-bold mb-1">v121.1-Alpha Co-Evolution</div>
-                        <p class="text-xs text-slate-500 mb-4">Strategic foresight: Integrate Neuromorphic Sensory Gating.</p>
+            <!-- Co-Evolutionary Foresight -->
+            <div class="glass rounded-3xl p-8 border-sky-500/20">
+                <h3 class="text-xl font-bold mb-8">Strategic Foresight</h3>
+                <div class="space-y-4">
+                    <div class="p-5 rounded-2xl bg-sky-500/5 border border-sky-500/10">
+                        <div class="text-xs font-bold text-sky-400 mb-2">sim_v123_apollo</div>
+                        <p class="text-sm text-slate-300 mb-4">Proposed Article: Sensory gating for religious domain reactors.</p>
                         <div class="flex gap-2">
-                            <button class="flex-1 py-2 bg-emerald-500 rounded-lg text-xs font-bold">Approve</button>
-                            <button class="px-3 py-2 bg-white/5 rounded-lg text-xs">Veto</button>
+                            <button class="flex-1 py-3 bg-white text-black rounded-xl text-xs font-bold hover:bg-emerald-400 hover:text-white transition-colors">Approve</button>
+                            <button class="px-4 py-3 bg-white/5 rounded-xl text-xs">Veto</button>
                         </div>
                     </div>
-                    <div class="p-4 rounded-xl bg-white/5 border border-white/10">
-                        <div class="text-sm font-bold mb-1">Trust Calibration: L4 Autonomy</div>
-                        <p class="text-xs text-slate-500 mb-4">Requesting full autonomy for Security Swarm 07.</p>
-                        <div class="flex gap-2">
-                            <button class="flex-1 py-2 bg-sky-500 rounded-lg text-xs font-bold">Approve</button>
-                            <button class="px-3 py-2 bg-white/5 rounded-lg text-xs">Veto</button>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="mt-6 pt-6 border-t border-white/10">
-                    <h4 class="text-xs font-bold text-slate-500 mb-4 uppercase tracking-widest">Co-Evolutionary Foresight</h4>
-                    <div class="glass p-3 rounded-lg text-[10px] leading-relaxed text-slate-400 italic">
-                        "Simulation sim_a92f0 predicts a 15% increase in PAS by shifting resource allocation to Islamic Finance Legal Reactors."
+                    <div class="p-5 rounded-2xl bg-white/5 border border-white/10">
+                        <div class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Growth Forecast</div>
+                        <div class="flex items-end gap-2">
+                            <span class="text-2xl font-bold">+14%</span>
+                            <span class="text-[10px] text-slate-500 pb-1">Efficiency Delta</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
-    <script>
-        const API_BASE = "https://workstation-anwa.onrender.com/api/v1";
-        const USER_ID = "demo_user";
 
+    <script>
         const WISDOM_NUGGETS = [
             "The swarm learns as one.",
             "Gating attenuates noise, revealing signal.",
             "Synthesis is the bridge between chaos and order.",
             "Embodied perception creates the reality it perceives.",
-            "Evolution is not a destination, but a state of readiness."
+            "Evolution is not a destination, but a state of readiness.",
+            "Peace is the equilibrium of perfectly balanced entropy."
         ];
 
-        let lastBalance = 48250;
+        const BIOMIMETIC_ANALOGIES = [
+            "The immune module detected a spike in error rates and dispatched antibody agents to investigate, much like white blood cells swarm an infection.",
+            "WNN gating prioritized the market signal while suppressing noise, mirroring how the human brain focuses on a single voice in a crowded room.",
+            "The swarm agents are coordinating via stigmergy, leaving digital pheromone trails to guide peer agents to high-value data sites.",
+            "Metamorphosis protocol initiated: the organism is refactoring its core while maintaining homeostasis, similar to a caterpillar's transition."
+        ];
 
-        async function updateDashboard() {
-            try {
-                // In a real environment, we'd fetch from actual backend.
-                // For simulation in the frontend only, we mimic dynamic updates.
+        function createParticle(e) {
+            const container = document.body;
+            for (let i = 0; i < 8; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 4 + 2;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.left = `${e.clientX}px`;
+                p.style.top = `${e.clientY}px`;
 
-                // const statusRes = await fetch(`${API_BASE}/status`);
-                // const status = await statusRes.json();
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * 50 + 20;
+                const tx = Math.cos(angle) * dist;
+                const ty = Math.sin(angle) * dist;
 
-                // const tokenRes = await fetch(`${API_BASE}/tokens/ledger/${USER_ID}`);
-                // const tokens = await tokenRes.json();
+                container.appendChild(p);
 
-                // document.getElementById('wst-balance').innerText = tokens.balance.toLocaleString();
+                p.animate([
+                    { transform: 'translate(0, 0)', opacity: 0.8 },
+                    { transform: `translate(${tx}px, ${ty}px)`, opacity: 0 }
+                ], {
+                    duration: 1000 + Math.random() * 1000,
+                    easing: 'cubic-bezier(0, .9, .57, 1)',
+                    fill: 'forwards'
+                });
 
-                // Milestone Animation (Article 5.4)
-                const currentBalance = parseInt(document.getElementById('wst-balance').innerText.replace(/,/g, ''));
-                if (currentBalance > lastBalance + 1000) {
-                     triggerMilestone();
-                     lastBalance = currentBalance;
-                }
-
-                // Dynamic Pulse Adjustment (Article 5.4)
-                const pulseOrb = document.querySelector('.pulse-glow');
-                const fidelity = 99.8; // status.fidelity
-                if (fidelity < 0.95) {
-                    pulseOrb.style.background = "rgba(239, 68, 68, 0.2)"; // Red
-                    pulseOrb.style.animationDuration = "0.5s";
-                } else if (fidelity < 0.99) {
-                    pulseOrb.style.background = "rgba(251, 191, 36, 0.2)"; // Amber
-                    pulseOrb.style.animationDuration = "1s";
-                } else {
-                    pulseOrb.style.background = "rgba(16, 185, 129, 0.2)"; // Green
-                    pulseOrb.style.animationDuration = "2s";
-                }
-
-            } catch (err) {
-                console.error("Dashboard Sync Failed:", err);
+                setTimeout(() => p.remove(), 2000);
             }
         }
 
-        function triggerMilestone() {
-            const milestone = document.createElement('div');
-            milestone.className = "fixed inset-0 flex items-center justify-center pointer-events-none z-50";
-            milestone.innerHTML = `
-                <div class="bg-sky-500/20 backdrop-blur-xl p-10 rounded-full border border-sky-400 animate-ping"></div>
-                <div class="absolute text-3xl font-bold truth-gradient animate-bounce">Level UP: Perception Deepens</div>
-            `;
-            document.body.appendChild(milestone);
-            setTimeout(() => milestone.remove(), 3000);
-        }
+        function updateDashboard() {
+            // Simulate live balance change
+            const balanceEl = document.getElementById('token-balance');
+            let balance = parseInt(balanceEl.innerText.replace(/,/g, ''));
+            balance += Math.floor(Math.random() * 100) - 20;
+            balanceEl.innerHTML = `${balance.toLocaleString()} <span class="text-xs text-slate-500">WST</span>`;
 
-        function rotateWisdom() {
-            const nugget = WISDOM_NUGGETS[Math.floor(Math.random() * WISDOM_NUGGETS.length)];
-            const container = document.querySelector('header p');
-            container.style.opacity = 0;
+            // Rotate Analogy
+            const analogyEl = document.getElementById('analogy-text');
+            analogyEl.style.opacity = 0;
             setTimeout(() => {
-                container.innerText = nugget;
-                container.style.opacity = 1;
+                analogyEl.innerText = BIOMIMETIC_ANALOGIES[Math.floor(Math.random() * BIOMIMETIC_ANALOGIES.length)];
+                analogyEl.style.opacity = 1;
             }, 500);
         }
 
-        setInterval(updateDashboard, 5000);
-        setInterval(rotateWisdom, 15000);
-        updateDashboard();
+        setInterval(updateDashboard, 10000);
     </script>
 </body>
 </html>

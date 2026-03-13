@@ -1,0 +1,10 @@
+{
+    "name": "Digital Reactor (Simulation-as-a-Service)",
+    "source": "agentic_core/simulation/engine.py",
+    "tier": "Standard/Pro/Enterprise",
+    "features": [
+        "High-Fidelity Twinning",
+        "ABM/Physics Simulation",
+        "Synthetic Data Generation"
+    ]
+}

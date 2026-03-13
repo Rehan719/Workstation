@@ -84,8 +84,8 @@ class GrandSynthesisEngine:
         is_product = "--product-engineering" in sys.argv
         is_full_evolution = "--full-evolution-pipeline" in sys.argv
         is_rerun_uvaip = "--rerun-with-uvaip" in sys.argv
-        target_version = target_version or ("120.0.0" if "--v120" in sys.argv or is_full_evolution or is_rerun_uvaip else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))
-        logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
+        target_version = target_version or ("123.0.0" if "--v123" in sys.argv or is_full_evolution or is_rerun_uvaip else ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0")))))
+        logger.info(f"Starting Grand Synthesis Cycle v3.2 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
         if is_ultimate:
@@ -204,7 +204,13 @@ class GrandSynthesisEngine:
             self._generate_unified_manifest(target_version)
 
         version = resolved_config.get("version")
-        if version == "120.0.0":
+        if version == "123.0.0":
+            # Generate v123 Apotheosis DNA (canonical)
+            constitution_path = "agentic_core/constitution/CONSTITUTION_canonical.md"
+            logger.info(f"v123.0 Constitution codified at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "120.0.0":
             constitution_path = self.dna_gen.generate_v120_constitution(resolved_config)
             logger.info(f"v120.0 Constitution generated at {constitution_path}")
             if is_ultimate or "--generate-docs-v3" in sys.argv:

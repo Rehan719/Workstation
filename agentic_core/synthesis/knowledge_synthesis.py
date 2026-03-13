@@ -1,6 +1,7 @@
 import logging
 import time
 import os
+import uuid
 from typing import List, Dict, Any, Optional
 import numpy as np
 import datetime
@@ -61,14 +62,17 @@ class KnowledgeSynthesisPipeline:
         return []
 
     def _integrate_to_ueg(self, triples: List[Dict[str, str]], metadata: Dict[str, Any]) -> List[str]:
-        """ARTICLE 582: Integration into UEG with full provenance tracking."""
+        """ARTICLE 582 & 646: Integration into UEG with Genomic Organization (Operons)."""
         nodes = []
+        operon_id = f"operon_{uuid.uuid4().hex[:8]}" if triples else None
+
         for t in triples:
             # ARTICLE 582: Full provenance (Source URL, Agent ID, Timestamp)
             provenance = {
                 "source_url": metadata.get("source_url", "internal_stream"),
                 "agent_id": metadata.get("agent_id", "sensory_layer"),
-                "ingested_at": datetime.datetime.now().isoformat()
+                "ingested_at": datetime.datetime.now().isoformat(),
+                "operon_id": operon_id # ARTICLE 646: Genomic clustering
             }
 
             node_id = self.ueg.add_insight(
@@ -79,9 +83,15 @@ class KnowledgeSynthesisPipeline:
             )["id"]
             nodes.append(node_id)
 
-            # Map to Genomic Traits
+            # ARTICLE 646: Map to Genomic Traits as part of an operon
             trait_name = f"knowledge_{t['object'].replace(' ', '_').lower()}"
-            self.genomic_registry.reverse_transcribe_trait(trait_name, {"provenance": provenance})
+            self.genomic_registry.reverse_transcribe_trait(trait_name, {
+                "provenance": provenance,
+                "gene_cluster": operon_id
+            })
+
+        if operon_id:
+            logger.info(f"Synthesis: Clustered {len(triples)} insights into genomic {operon_id}.")
 
         return nodes
 
