@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+import uuid
 from typing import List, Dict, Any, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
 
@@ -22,6 +23,20 @@ class SensoryGating:
         logger.debug(f"SensoryGating: Signal ATTENUATED ({weighted_score:.2f})")
         return None
 
+class AgenticSwarm:
+    """ARTICLE 551: Swarm-coordinated agents for scraping."""
+    def __init__(self, swarm_id: str):
+        self.swarm_id = swarm_id
+        self.queue = asyncio.Queue()
+        self.results = []
+        self.agents = ["NavigatorAgent", "ExtractorAgent", "ValidatorAgent"]
+
+    async def process_target(self, target: str):
+        logger.info(f"Swarm {self.swarm_id}: Agent ExtractorAgent processing {target}")
+        # Simulation of active extraction logic
+        await asyncio.sleep(0.5)
+        return {"target": target, "status": "EXTRACTED", "data": f"High-fidelity insight from {target}"}
+
 class SensoryLayer:
     """Mode 1: Passive Sensory (Environmental Awareness)."""
     def __init__(self):
@@ -32,62 +47,53 @@ class SensoryLayer:
     async def monitor_environment(self):
         """Continuous, lightweight monitoring."""
         logger.info("SensoryLayer: Initiating continuous environmental monitoring.")
-        # Simulated stream
         while True:
+            # Simulated environmental telemetry
             signal = {
                 "type": "EnvironmentalSignal",
                 "source": "web_stream",
                 "relevance": 0.85,
                 "trust_score": 0.9,
-                "content": "New patterns in biomimetic robotics detected.",
+                "content": "Emerging trend: AI CEO governance models.",
                 "timestamp": time.time()
             }
             gated = self.gating.filter_signal(signal)
             if gated:
-                # ARTICLE 586: Proprioceptive feedback
                 adj = self.embodied.perform_environmental_sampling(gated) if self.embodied else 0
-                self.ueg.add_audit_log("SENSORY", f"Gated signal processed (Fidelity Adj: {adj})", gated)
+                self.ueg.add_audit_log("SENSORY", f"Signal Gated (Adj: {adj})", gated)
 
-                # Feed to synthesis (simulated task)
-
-            await asyncio.sleep(60) # Low fidelity frequency
+            await asyncio.sleep(60)
 
 class AgenticLayer:
     """Mode 2: Active Agentic (Goal-Driven Exploration)."""
     def __init__(self):
-        self.swarm_id = "scraping_swarm_v1"
         self.ueg = UEGManager()
 
     async def execute_task(self, goal: str, targets: List[str]) -> Dict[str, Any]:
-        """Swarm-coordinated, goal-driven extraction."""
-        logger.info(f"AgenticLayer: Deploying swarm for goal: {goal}")
+        """Swarm-coordinated, goal-driven extraction with IoA principles."""
+        swarm_id = f"swarm_{uuid.uuid4().hex[:6]}"
+        swarm = AgenticSwarm(swarm_id)
+        logger.info(f"AgenticLayer: Deploying swarm {swarm_id} for goal: {goal}")
 
         results = []
         for target in targets:
-            # Simulate specialized agents (Navigator, Extractor, Validator)
-            results.append({
-                "target": target,
-                "status": "EXTRACTED",
-                "insights": [f"Knowledge chunk from {target}"]
-            })
+            res = await swarm.process_target(target)
+            results.append(res)
 
-        self.ueg.add_audit_log("AGENTIC_SCRAPER", f"Completed goal: {goal}", {"results_count": len(results)})
-        return {"goal": goal, "results": results}
+        self.ueg.add_audit_log("AGENTIC_SCRAPER", f"Swarm {swarm_id} completed goal: {goal}", {"results_count": len(results)})
+        return {"goal": goal, "results": results, "swarm_id": swarm_id}
 
 from .knowledge_synthesis import KnowledgeSynthesisPipeline, EmbodiedAIController
 
 class DualModeScraper:
     """
     ARTICLE 541-545, 586-590: Dual-Mode Web Scraping Architecture.
-    A revolutionary sensory-cognitive convergence with Embodied AI.
     """
     def __init__(self):
         self.passive = SensoryLayer()
         self.active = AgenticLayer()
         self.synthesis = KnowledgeSynthesisPipeline()
         self.embodied = EmbodiedAIController()
-
-        # Link embodied principles
         self.passive.embodied = self.embodied
 
     async def start_passive_mode(self):

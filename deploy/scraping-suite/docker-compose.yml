@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  scraper-sensory:
+    image: jules-ai/scraping-suite:latest
+    command: python -m agentic_core.synthesis.dual_mode_scraper --mode passive
+    environment:
+      - WNN_HOST=backend
+    restart: always
+
+  scraper-agentic:
+    image: jules-ai/scraping-suite:latest
+    command: python -m agentic_core.synthesis.dual_mode_scraper --mode active
+    restart: always
+
+  backend:
+    image: jules-ai/backend:latest
+    ports:
+      - "8000:8000"

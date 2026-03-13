@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  uviap:
+    image: jules-ai/uviap:latest
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    environment:
+      - MODE=FULL_EVOLUTION
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      - .:/app/docs/knowledge
+    restart: always
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
