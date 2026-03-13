@@ -29,6 +29,14 @@
                 }
             });
             const [quranData, setQuranData] = useState(null);
+            const [pulse, setPulse] = useState(100);
+
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setPulse(prev => 95 + Math.random() * 5);
+                }, 3000);
+                return () => clearInterval(interval);
+            }, []);
 
             useEffect(() => {
                 fetch('http://127.0.0.1:8000/api/v1/status')
@@ -53,6 +61,16 @@
                     </div>
 
                     <div className="flex-1 overflow-auto p-10">
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800 flex items-center gap-3">
+                                <div className={`w-2 h-2 rounded-full bg-green-500 animate-pulse`}></div>
+                                <span className="text-xs font-bold tracking-widest text-zinc-400 uppercase">System Pulse: {pulse.toFixed(1)}%</span>
+                            </div>
+                            <div className="bg-blue-600/10 px-4 py-2 rounded-xl border border-blue-600/20 text-blue-400 text-xs font-medium">
+                                ✨ Wisdom: "Innovation is the byproduct of constitutional fidelity."
+                            </div>
+                        </div>
+
                         {view === 'dashboard' && (
                             <div>
                                 <h1 className="text-4xl font-bold mb-8">System Dashboard</h1>
