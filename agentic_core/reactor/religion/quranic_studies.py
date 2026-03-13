@@ -27,7 +27,8 @@ class QuranicStudiesReactor(SpecializedReactor):
         if task == "get_ayah":
             # P0: Text and Translation
             reference = str(input_data) or "1:1"
-            res = await self.quran_api.get_ayah(reference)
+            edition = params.get("edition", "en.sahih")
+            res = await self.quran_api.get_ayah(reference, edition)
             if res.get("status") == "OK":
                 data = res["data"]
                 # Get Arabic text by fetching the ar.alafasy edition which includes audio too

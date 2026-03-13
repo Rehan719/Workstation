@@ -9,9 +9,9 @@ class AlQuranCloudConnector:
     ARTICLE 410: Symbiosis Connector for AlQuran Cloud API.
     Provides production-ready access to Quranic text and audio.
     """
-    def __init__(self):
+    def __init__(self, client: Optional[httpx.AsyncClient] = None):
         self.base_url = "https://api.alquran.cloud/v1"
-        self.client = httpx.AsyncClient(timeout=10.0)
+        self.client = client or httpx.AsyncClient(timeout=10.0)
 
     async def get_ayah(self, reference: str, edition: str = "en.sahih") -> Dict[str, Any]:
         """Fetches a specific ayah with translation."""
