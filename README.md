@@ -1,9 +1,9 @@
-# Jules AI v120.0: APOTHEOSIS OF SENSORY CONVERGENCE
+# Jules AI v120.0: APOTHEOSIS OF ETERNAL SYNTHESIS & SENSORY CONVERGENCE
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
 ## 🚀 The Fully Operational Digital Organism
-Jules AI v120.0 represents the "Apotheosis of Eternal Synthesis & Sensory Convergence". It unifies dual-mode web scraping, agentic governance, and real-time knowledge synthesis into a single, eternal digital organism.
+Jules AI v120.0 represents the **"Apotheosis of Eternal Synthesis & Sensory Convergence"**. It unifies a **Unified Version Ingestion & Assimilation Pipeline (UVIAP)** with **Dual-Mode Web Scraping Architecture**, GitHub Deep Analysis, and Integrated Business Systems (QMS/DCS/BMS/EMS) into a single, eternal digital organism.
 
 ## ⚙️ One-Button Platform Setup
 Deploy the entire v120.0 ecosystem (Backend, Web, Mobile, Reactors) with a single command:
@@ -12,12 +12,12 @@ Deploy the entire v120.0 ecosystem (Backend, Web, Mobile, Reactors) with a singl
 ```
 
 ## 🧠 Quadruple-Pillar Engine & Sensory Layer
-The workstation is powered by four symbiotic engines enhanced with sensory awareness:
+The workstation is powered by four symbiotic engines enhanced with sensory awareness and eternal synthesis:
 - **ESE (Environmental Simulator Engine)**: High-fidelity digital twinning and agent-based modeling.
-- **ARO (Adaptive Resource Optimizer)**: Dynamic, cost-aware resource balancing and Tokenisation (WST).
-- **BTO (Biomimetic Team Orchestrator)**: Swarm intelligence and IoA protocol coordination.
+- **ARO (Adaptive Resource Optimizer)**: Dynamic, cost-aware resource balancing and **Tokenisation (WST)** with tiered pricing (Free, Pro, Enterprise).
+- **BTO (Biomimetic Team Orchestrator)**: Swarm intelligence and IoA protocol coordination (MCP/A2A).
 - **DRAD (Dynamic Resource Fabric)**: On-demand assembly of resource pools via RAL.
-- **UVIAP**: Unified Version Ingestion & Assimilation Pipeline for continuous self-evolution.
+- **UVIAP (Unified Version Ingestion & Assimilation Pipeline)**: Continuous self-evolution via GitHub deep analysis, learning, and reflection.
 
 ## 🧬 50+ Specialized Reactor Constellations
 Hyper-specialized intelligence across five primary domains:
@@ -34,7 +34,7 @@ Hyper-specialized intelligence across five primary domains:
 - [Technical Whitepaper](docs/guides/transcendent_whitepaper.md): The architecture of distributed consciousness.
 
 ### ⚖️ Constitutional Sovereignty
-Governed by the **v120.0 Constitution (CONSTITUTION_v120.0.0.md)**, ensuring absolute fidelity to the Dual-Purpose Foundation across 600+ articles.
+Governed by the **v120.0 Apotheosis Constitution**, ensuring absolute fidelity to the Dual-Purpose Foundation across **600+ articles**, including mandates for sensory gating, agentic governance, and eternal convergence.
 
 ### 🗄️ Repository Architecture
 The Workstation follows a pristine organizational hierarchy:

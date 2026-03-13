@@ -103,5 +103,13 @@ All scraped data must undergo multi‑stage processing (preprocessing → embedd
 **ARTICLE 586: EMBODIED AI MANDATE**
 The system must embody the principles of Embodied AI, where cognition emerges from interaction with the environment.
 
+## 💰 SECTION XXIX: TOKENISATION & TIERED PRICING (Articles 591-595)
+**ARTICLE 591: TOKENISATION MANDATE**
+The Workstation platform shall be tokenised with free, pro, and enterprise tiers; all usage shall be transparently tracked and billed via blockchain‑based tokens (WST).
+
+## 🧬 SECTION XXX: ETERNAL CONVERGENCE (Articles 596-600)
+**ARTICLE 596: RERUN GRAND SYNTHESIS MANDATE**
+After each UVIAP cycle, the Grand Synthesis Engine must be rerun to incorporate assimilated insights and update the constitutional framework, ensuring perpetual convergence.
+
 ---
-*Codified via Grand Synthesis Engine v120.0.0*
+*Codified via Grand Synthesis Engine v120.0.0 "Apotheosis"*
