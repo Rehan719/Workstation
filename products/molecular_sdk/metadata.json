@@ -1,0 +1,10 @@
+{
+    "name": "Molecular Communication SDK",
+    "source": "agentic_core/biochemical/molecular_comm.py",
+    "tier": "Enterprise",
+    "features": [
+        "Neurotransmitter Signaling",
+        "Emotional Interfacing",
+        "Trust Modulation"
+    ]
+}

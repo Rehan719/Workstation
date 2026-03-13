@@ -1,0 +1,34 @@
+[
+    {
+        "id": "op_0e550a21",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.1104,
+        "structure": {
+            "inputs": [
+                "fluctuation_drive"
+            ],
+            "morphism": "ratchet_rectification",
+            "outputs": [
+                "specialized_api_latency"
+            ]
+        },
+        "timestamp": 1773425720.7897465
+    },
+    {
+        "id": "op_68dea32d",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.1104,
+        "structure": {
+            "inputs": [
+                "fluctuation_drive"
+            ],
+            "morphism": "ratchet_rectification",
+            "outputs": [
+                "specialized_api_latency"
+            ]
+        },
+        "timestamp": 1773425846.6899252
+    }
+]

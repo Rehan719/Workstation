@@ -21,6 +21,7 @@
             <a href="#auth" class="block text-slate-400 hover:text-white transition">Authentication</a>
             <a href="#scraping" class="block text-slate-400 hover:text-white transition">Web Scraping API</a>
             <a href="#reactors" class="block text-slate-400 hover:text-white transition">Reactors API</a>
+            <a href="#molecular" class="block text-slate-400 hover:text-white transition">Molecular SDK</a>
             <a href="#tokens" class="block text-slate-400 hover:text-white transition">Token Management</a>
         </nav>
         <div class="p-4 bg-sky-500/10 rounded-lg text-xs border border-sky-500/20">
@@ -64,6 +65,16 @@
             <p class="text-slate-400 mb-6">Access 50+ hyper-specialized reactors across domains.</p>
             <div class="code-block">
                 GET /api/v1/reactors/science/physics?q=quantum_tunneling
+            </div>
+        </section>
+
+        <section id="molecular" class="mb-16">
+            <h2 class="text-2xl font-bold mb-4">Molecular Communication SDK</h2>
+            <p class="text-slate-400 mb-6">Integrate bio-integrated signaling (Oxytocin, Dopamine) into your applications.</p>
+            <div class="code-block">
+                import { MolecularSignaler } from '@jules/molecular-sdk';<br><br>
+                const signaler = new MolecularSignaler({ neurotransmitter: 'oxytocin' });<br>
+                await signaler.emit({ concentration: 0.8, target: 'agent_swarm_7' });
             </div>
         </section>
 

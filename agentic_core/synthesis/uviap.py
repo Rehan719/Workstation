@@ -8,6 +8,8 @@ import uuid
 from typing import List, Dict, Any, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
 from agentic_core.genetics.genomic_registry import GenomicRegistry
+from agentic_core.biochemical.rectification_engine import AsymmetricDriveRectificationEngine
+from agentic_core.simulation.evolutionary_topology import PhylogeneticDiversityTwin
 
 logger = logging.getLogger(__name__)
 
@@ -21,16 +23,24 @@ class UVIAP:
         self.repo_path = os.path.abspath(repo_path)
         self.ueg = UEGManager()
         self.genomic_registry = GenomicRegistry()
+        self.rectification_engine = AsymmetricDriveRectificationEngine()
+        self.phylo_twin = PhylogeneticDiversityTwin()
         self.convergence_delta: Dict[str, Any] = {}
         self.learning_reflection: List[Dict[str, Any]] = []
 
     async def run_full_pipeline(self, repo_url: Optional[str] = None):
         """Executes all stages of the UVIAP (Article 5.3)."""
-        logger.info(f"UVIAP: Starting Full Evolution Pipeline v123.0 (Target: {repo_url or 'Self'})")
+        logger.info(f"UVIAP: Starting Full Evolution Pipeline v124.0 (Target: {repo_url or 'Self'})")
 
         # Stage 1: Multi-Source Ingestion (Article 5.1/621)
         github_data = self._ingest_github(repo_url)
         sensory_data = self._ingest_sensory_signals()
+
+        # ARTICLE 601: Asymmetric-Drive Rectification (Stage 1.5)
+        rectifications = self.rectification_engine.analyze_and_rectify([
+            {"type": "api_latency", "magnitude": 0.92}, # Simulated high variance
+            {"type": "scraping_success", "magnitude": 0.45}
+        ])
 
         # ARTICLE 646: Genomic Knowledge Organization (Operons)
         clustered_insights = self._organize_genomic_knowledge(github_data, sensory_data)
@@ -47,6 +57,13 @@ class UVIAP:
 
         # Stage 5: Assimilation Configuration Generation (Article 521-525)
         blueprints = self._generate_assimilation_blueprints(learning_results)
+
+        # ARTICLE 661: Phylogenetic Diversity Mapping (Stage 5.5)
+        self.phylo_twin.map_evolutionary_topology([
+            {"version": "v1.0", "features": ["core"]},
+            {"version": "v120.0", "features": ["synthesis", "uviap"]},
+            {"version": "v124.0", "features": ["molecular", "nanophotonic", "synaptic"]}
+        ])
 
         # Stage 6: Continuous Evolution Loop (Article 5.1)
         self._generate_reports(github_data, patterns, learning_results, blueprints)

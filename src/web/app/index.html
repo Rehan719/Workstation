@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jules Apotheosis | v120.0 Digital Organism</title>
+    <title>Jules Apotheosis | v124.0 Genomic Organism</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
             --sky-primary: #38bdf8;
             --emerald-primary: #10b981;
+            --serotonin-pink: #f472b6;
+            --dopamine-gold: #fbbf24;
             --slate-bg: #020617;
         }
         body {
@@ -23,11 +26,6 @@
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glass:hover {
-            background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(56, 189, 248, 0.2);
-            transform: translateY(-2px);
         }
         .sidebar {
             width: 280px;
@@ -51,290 +49,262 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .nav-link {
-            transition: all 0.2s ease;
-        }
         .nav-link.active {
             background: rgba(56, 189, 248, 0.1);
             color: var(--sky-primary);
             border-left: 3px solid var(--sky-primary);
         }
-        .wisdom-card {
-            font-family: 'JetBrains Mono', monospace;
-            border-left: 2px solid var(--sky-primary);
+        .synaptic-node {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            background: #1e293b;
+            transition: all 0.1s ease;
         }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-
-        .particle {
-            position: absolute;
-            pointer-events: none;
-            background: white;
-            border-radius: 50%;
-            opacity: 0.5;
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+        }
+        .molecular-line {
+            stroke-dasharray: 5;
+            animation: flow 2s linear infinite;
+        }
+        @keyframes flow {
+            to { stroke-dashoffset: -10; }
         }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden" onclick="createParticle(event)">
+<body class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
     <aside class="sidebar h-full flex flex-col p-8 z-10">
         <div class="mb-12 flex flex-col gap-2">
             <div class="flex items-center gap-3">
                 <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
-                <span class="font-extrabold tracking-tighter text-xl">JULES APOTHEOSIS</span>
+                <span class="font-extrabold tracking-tighter text-xl">JULES v124.0</span>
             </div>
-            <span class="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">v120.0 Digital Organism</span>
+            <span class="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">Genomic Organism</span>
         </div>
 
         <nav class="flex-1 space-y-1">
             <a href="#" class="nav-link active flex items-center gap-3 p-3 rounded-lg text-sm font-semibold">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"></path></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="2"></path></svg>
                 Core Overview
             </a>
             <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                WebScrape Dashboard
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2"></path></svg>
+                Molecular Comm
             </a>
             <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                Knowledge Synthesis
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-width="2"></path></svg>
+                Synaptic Vision
             </a>
             <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                Token Management
-            </a>
-            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                GitHub History
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 21a9.994 9.994 0 0010-10V7a2 2 0 00-2-2H4a2 2 0 00-2 2v4a9.99 9.99 0 003.245 7.456l.054.09" stroke-width="2"></path></svg>
+                Phylogenetic Tree
             </a>
         </nav>
 
         <div class="mt-auto p-6 glass rounded-2xl">
             <div class="flex items-center gap-2 mb-4">
                 <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System Fidelity</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Resonance Fidelity</span>
             </div>
-            <div class="text-2xl font-bold mb-2">99.85%</div>
+            <div class="text-2xl font-bold mb-2">99.92%</div>
             <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                <div class="bg-emerald-400 h-full" style="width: 99.8%"></div>
+                <div class="bg-emerald-400 h-full" style="width: 99.9%"></div>
             </div>
         </div>
     </aside>
 
     <!-- Main Content -->
     <main class="flex-1 h-full overflow-y-auto p-12 relative">
-        <!-- Floating Background Elements -->
         <div class="absolute top-20 right-20 system-pulse-orb"></div>
 
         <header class="flex justify-between items-end mb-16 relative z-10">
             <div>
-                <h1 class="text-5xl font-extrabold tracking-tight mb-2">The <span class="truth-gradient">Apotheosis</span></h1>
-                <p class="text-slate-400 font-medium">Strategic Command Center | AI CEO Session Active</p>
+                <h1 class="text-5xl font-extrabold tracking-tight mb-2">Genomic <span class="truth-gradient">Resonance</span></h1>
+                <p class="text-slate-400 font-medium">Apotheosis v124.0 | Molecular & Synaptic Overlays Active</p>
             </div>
             <div class="flex gap-4">
                 <div class="glass px-6 py-3 rounded-2xl flex flex-col items-end">
-                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Token Reserve</span>
-                    <span id="token-balance" class="text-xl font-bold text-emerald-400">842,500 <span class="text-xs text-slate-500">WST</span></span>
+                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">WST Balance</span>
+                    <span id="token-balance" class="text-xl font-bold text-emerald-400">1,242,500 <span class="text-xs text-slate-500">WST</span></span>
                 </div>
-                <button class="bg-white text-black px-8 py-4 rounded-2xl font-bold hover:bg-sky-400 hover:text-white transition-all duration-300 shadow-xl">Initiate Swarm</button>
             </div>
         </header>
 
-        <!-- Dynamic Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 relative z-10">
-            <div class="glass p-8 rounded-3xl col-span-2">
-                <div class="flex justify-between items-start mb-8">
-                    <h3 class="text-lg font-bold">Environmental Awareness (Mode 1)</h3>
-                    <span class="text-[10px] bg-sky-500/10 text-sky-400 px-3 py-1 rounded-full font-bold">Passive Sensory Gating</span>
-                </div>
-                <div class="h-48 flex items-end gap-2 px-2">
-                    <!-- Simulated Signal Bar Chart -->
-                    <div class="flex-1 bg-sky-500/20 rounded-t-lg transition-all duration-500" style="height: 40%"></div>
-                    <div class="flex-1 bg-sky-500/30 rounded-t-lg transition-all duration-500" style="height: 65%"></div>
-                    <div class="flex-1 bg-sky-500/50 rounded-t-lg transition-all duration-500" style="height: 45%"></div>
-                    <div class="flex-1 bg-sky-400 rounded-t-lg transition-all duration-500" style="height: 90%"></div>
-                    <div class="flex-1 bg-sky-500/40 rounded-t-lg transition-all duration-500" style="height: 60%"></div>
-                    <div class="flex-1 bg-sky-500/20 rounded-t-lg transition-all duration-500" style="height: 30%"></div>
-                    <div class="flex-1 bg-sky-500/60 rounded-t-lg transition-all duration-500" style="height: 75%"></div>
-                </div>
-                <div class="mt-6 flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                    <span>Sensory Signals Active</span>
-                    <span>12.4K signals/sec</span>
-                </div>
-            </div>
-
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 relative z-10">
+            <!-- Molecular Heatmap -->
             <div class="glass p-8 rounded-3xl">
-                <h3 class="text-lg font-bold mb-6">Agentic Missions (Mode 2)</h3>
-                <div class="space-y-6">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </div>
-                        <div>
-                            <div class="text-sm font-bold">Swarm 01</div>
-                            <div class="text-xs text-slate-500">Extraction Active</div>
-                        </div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold">Molecular Signaling</h3>
+                    <div id="mood-meter" class="text-[10px] font-bold text-serotonin-pink uppercase px-2 py-1 bg-pink-500/10 rounded">Stable Mood</div>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1 font-bold"><span>OXYTOCIN (Trust)</span><span class="text-sky-400">0.82</span></div>
+                        <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden"><div id="oxy-bar" class="bg-sky-400 h-full transition-all duration-1000" style="width: 82%"></div></div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        </div>
-                        <div>
-                            <div class="text-sm font-bold">Swarm 02</div>
-                            <div class="text-xs text-slate-500">Navigation Online</div>
-                        </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1 font-bold"><span>SEROTONIN (Stability)</span><span class="text-serotonin-pink">0.65</span></div>
+                        <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden"><div id="sero-bar" class="bg-serotonin-pink h-full transition-all duration-1000" style="width: 65%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1 font-bold"><span>DOPAMINE (Reward)</span><span class="text-dopamine-gold">0.91</span></div>
+                        <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden"><div id="dopa-bar" class="bg-dopamine-gold h-full transition-all duration-1000" style="width: 91%"></div></div>
                     </div>
                 </div>
             </div>
 
-            <div class="glass p-8 rounded-3xl flex flex-col justify-center">
-                <div class="text-center">
-                    <div class="text-sm text-slate-500 font-bold uppercase tracking-widest mb-2">Purpose Alignment</div>
-                    <div class="text-5xl font-black truth-gradient">0.98</div>
-                    <div class="mt-4 text-[10px] text-emerald-400 font-bold">+2.4% synthesis boost</div>
+            <!-- Polarisation Compass (Nanophotonics) -->
+            <div class="glass p-8 rounded-3xl flex flex-col items-center">
+                <h3 class="text-lg font-bold mb-6 w-full">Sky Compass (Nanophotonics)</h3>
+                <div class="relative w-32 h-32 rounded-full border-2 border-sky-500/20 flex items-center justify-center">
+                    <div id="compass-needle" class="w-1 h-20 bg-sky-400 rounded-full transition-transform duration-500" style="transform: rotate(45deg)"></div>
+                    <div class="absolute text-[8px] font-bold text-slate-500 top-2">ZENITH</div>
+                </div>
+                <div class="mt-6 text-center">
+                    <div id="nav-directive" class="text-xs font-bold text-sky-400 uppercase tracking-widest">BREADTH_PRIORITY</div>
+                    <div class="text-[10px] text-slate-500">Angle: 45.2° | Energy: 0.8pJ</div>
+                </div>
+            </div>
+
+            <!-- Synaptic Grid (Mode 4) -->
+            <div class="glass p-8 rounded-3xl">
+                <h3 class="text-lg font-bold mb-6">Synaptic Perceptual Grid</h3>
+                <div id="synaptic-grid" class="heatmap-grid">
+                    <!-- JS populated nodes -->
+                </div>
+                <div class="mt-8 flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                    <span>Latency: 0.42ms</span>
+                    <span>Consolidated Vision</span>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-            <!-- Knowledge Synthesis Pipeline Dashboard -->
-            <div class="col-span-2 glass rounded-3xl p-8">
-                <div class="flex justify-between items-center mb-8">
-                    <h3 class="text-xl font-bold">Knowledge Synthesis Pipeline</h3>
-                    <div class="flex gap-2">
-                        <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/10 text-slate-400">UEG Live</span>
-                        <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-sky-500/10 border border-sky-500/20 text-sky-400">Genomic Registry Sync</span>
-                    </div>
-                </div>
-
-                <div class="p-6 rounded-2xl bg-white/5 border border-white/5 mb-6 wisdom-card">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </div>
-                        <span class="text-xs font-bold text-sky-400 uppercase tracking-widest">Latest Insight</span>
-                    </div>
-                    <p id="insight-text" class="text-sm text-slate-300 leading-relaxed italic">
-                        "The immune module detected a spike in error rates and dispatched antibody agents to investigate, much like white blood cells swarm an infection."
-                    </p>
-                </div>
-
-                <!-- Pipeline Stages visualization -->
-                <div class="flex justify-around items-center h-40">
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="w-12 h-12 rounded-xl border border-sky-500/30 flex items-center justify-center bg-sky-500/5">
-                            <span class="text-[10px] font-bold">RAW</span>
-                        </div>
-                        <span class="text-[8px] text-slate-500 font-bold uppercase">Acquisition</span>
-                    </div>
-                    <div class="w-8 h-px bg-white/10"></div>
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="w-12 h-12 rounded-xl border border-sky-500/30 flex items-center justify-center bg-sky-500/5">
-                            <span class="text-[10px] font-bold">EMB</span>
-                        </div>
-                        <span class="text-[8px] text-slate-500 font-bold uppercase">Embedding</span>
-                    </div>
-                    <div class="w-8 h-px bg-white/10"></div>
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="w-12 h-12 rounded-xl border border-emerald-500/50 bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                            <span class="text-[10px] font-bold">NER</span>
-                        </div>
-                        <span class="text-[8px] text-slate-500 font-bold uppercase">Extraction</span>
-                    </div>
-                    <div class="w-8 h-px bg-white/10"></div>
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="w-12 h-12 rounded-xl border border-sky-500/30 flex items-center justify-center bg-sky-500/5">
-                            <span class="text-[10px] font-bold">UEG</span>
-                        </div>
-                        <span class="text-[8px] text-slate-500 font-bold uppercase">Integration</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Token Management Quick Look -->
-            <div class="glass rounded-3xl p-8 border-sky-500/20">
-                <h3 class="text-xl font-bold mb-8">Token Billing (WST)</h3>
-                <div class="space-y-4">
-                    <div class="p-5 rounded-2xl bg-sky-500/5 border border-sky-500/10">
-                        <div class="text-xs font-bold text-sky-400 mb-2 uppercase tracking-widest">Active Tier</div>
-                        <div class="text-2xl font-extrabold mb-1">PRO SUBSCRIPTION</div>
-                        <p class="text-[10px] text-slate-500">50,000 WST Monthly Allowance</p>
-                    </div>
-
-                    <div class="p-5 rounded-2xl bg-white/5 border border-white/10">
-                        <div class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Usage This Session</div>
-                        <div class="flex items-end gap-2">
-                            <span class="text-2xl font-bold">1,240</span>
-                            <span class="text-[10px] text-slate-500 pb-1">WST consumed</span>
-                        </div>
-                        <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden mt-4">
-                            <div class="bg-sky-400 h-full" style="width: 2.48%"></div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Phylogenetic Tree View (Stage 5.5) -->
+        <div class="glass p-8 rounded-3xl relative z-10 h-[500px]">
+            <h3 class="text-xl font-bold mb-8">Evolutionary Topology (Phylogenetic Tree)</h3>
+            <div id="tree-container" class="w-full h-full flex items-center justify-center">
+                <svg id="evolution-tree" width="800" height="400"></svg>
             </div>
         </div>
     </main>
 
     <script>
-        const INSIGHT_POOL = [
-            "The immune module detected a spike in error rates and dispatched antibody agents to investigate.",
-            "WNN gating prioritized the market signal while suppressing noise.",
-            "The swarm agents are coordinating via stigmergy, leaving digital pheromone trails.",
-            "Metamorphosis protocol initiated: the organism is refactoring its core while maintaining homeostasis.",
-            "New biomimetic pattern extracted: 'Biological Neural Gating' applied to WNN streams."
-        ];
+        const API_BASE = "http://localhost:8000/api/v1";
 
-        function createParticle(e) {
-            const container = document.body;
-            for (let i = 0; i < 8; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                const size = Math.random() * 4 + 2;
-                p.style.width = `${size}px`;
-                p.style.height = `${size}px`;
-                p.style.left = `${e.clientX}px`;
-                p.style.top = `${e.clientY}px`;
+        async function syncBackend() {
+            try {
+                // 1. Status & Fidelity
+                const statusRes = await fetch(`${API_BASE}/status`);
+                const statusData = await statusRes.json();
+                document.querySelector('.text-2xl.font-bold.mb-2').textContent = (statusData.fidelity * 100).toFixed(2) + "%";
+                document.querySelector('.bg-emerald-400.h-full').style.width = (statusData.fidelity * 100) + "%";
 
-                const angle = Math.random() * Math.PI * 2;
-                const dist = Math.random() * 50 + 20;
-                const tx = Math.cos(angle) * dist;
-                const ty = Math.sin(angle) * dist;
+                // 2. Token Balance
+                const tokenRes = await fetch(`${API_BASE}/tokens/ledger/demo_user`);
+                const tokenData = await tokenRes.json();
+                document.getElementById('token-balance').innerHTML = `${tokenData.balance.toLocaleString()} <span class="text-xs text-slate-500">WST</span>`;
 
-                container.appendChild(p);
+                // 3. Knowledge Summary (UEG Nodes)
+                const knowledgeRes = await fetch(`${API_BASE}/knowledge/summary`);
+                const knowledgeData = await knowledgeRes.json();
+                // Find UEG Nodes card - it's a bit tricky without IDs, but let's assume structure
+                // Alternatively, update header subtitle
+                document.querySelector('p.text-slate-400.font-medium').textContent = `Apotheosis v124.0 | UEG Depth: ${(knowledgeData.graph_depth / 1000000).toFixed(1)}M | Molecular & Synaptic Overlays Active`;
 
-                p.animate([
-                    { transform: 'translate(0, 0)', opacity: 0.8 },
-                    { transform: `translate(${tx}px, ${ty}px)`, opacity: 0 }
-                ], {
-                    duration: 1000 + Math.random() * 1000,
-                    easing: 'cubic-bezier(0, .9, .57, 1)',
-                    fill: 'forwards'
-                });
-
-                setTimeout(() => p.remove(), 2000);
+            } catch (err) {
+                console.warn("Backend Sync Failed - using simulation mode", err);
             }
         }
 
-        function updateDashboard() {
-            // Simulate live balance change
-            const balanceEl = document.getElementById('token-balance');
-            let balance = parseInt(balanceEl.innerText.replace(/,/g, ''));
-            balance += Math.floor(Math.random() * 50) - 10;
-            balanceEl.innerHTML = `${balance.toLocaleString()} <span class="text-xs text-slate-500">WST</span>`;
-
-            // Rotate Insight
-            const insightEl = document.getElementById('insight-text');
-            insightEl.style.opacity = 0;
-            setTimeout(() => {
-                insightEl.innerText = INSIGHT_POOL[Math.floor(Math.random() * INSIGHT_POOL.length)];
-                insightEl.style.opacity = 1;
-            }, 500);
+        // Init Synaptic Grid
+        const grid = document.getElementById('synaptic-grid');
+        for(let i=0; i<64; i++) {
+            const node = document.createElement('div');
+            node.className = 'synaptic-node';
+            const initialG = 0.2 + Math.random() * 0.4;
+            node.style.opacity = initialG;
+            node.style.background = `rgba(56, 189, 248, ${initialG})`;
+            grid.appendChild(node);
         }
 
-        setInterval(updateDashboard, 10000);
+        // Simulate Dynamics
+        function updateMolecular() {
+            const oxy = 70 + Math.random() * 20;
+            const sero = 60 + Math.random() * 30;
+            const dopa = 80 + Math.random() * 20;
+
+            document.getElementById('oxy-bar').style.width = oxy + '%';
+            document.getElementById('sero-bar').style.width = sero + '%';
+            document.getElementById('dopa-bar').style.width = dopa + '%';
+
+            // Compass
+            const angle = Math.random() * 180;
+            document.getElementById('compass-needle').style.transform = `rotate(${angle}deg)`;
+
+            // Nodes
+            const nodes = document.querySelectorAll('.synaptic-node');
+            nodes.forEach(n => {
+                if(Math.random() > 0.8) {
+                    n.style.background = '#38bdf8';
+                    n.style.boxShadow = '0 0 10px #38bdf8';
+                    setTimeout(() => {
+                        n.style.background = 'rgba(56, 189, 248, 0.4)';
+                        n.style.boxShadow = 'none';
+                    }, 200);
+                }
+            });
+        }
+
+        // Simplified Tree Data (Mock)
+        const treeData = {
+            nodes: [
+                { id: "v1.0", x: 100, y: 200, label: "Core" },
+                { id: "v120.0", x: 400, y: 150, label: "Apotheosis" },
+                { id: "v124.0", x: 700, y: 200, label: "Resonance" }
+            ],
+            links: [
+                { source: "v1.0", target: "v120.0" },
+                { source: "v120.0", target: "v124.0" }
+            ]
+        };
+
+        const svg = d3.select("#evolution-tree");
+        svg.selectAll("line")
+            .data(treeData.links)
+            .enter().append("line")
+            .attr("x1", d => treeData.nodes.find(n => n.id === d.source).x)
+            .attr("y1", d => treeData.nodes.find(n => n.id === d.source).y)
+            .attr("x2", d => treeData.nodes.find(n => n.id === d.target).x)
+            .attr("y2", d => treeData.nodes.find(n => n.id === d.target).y)
+            .attr("stroke", "rgba(56, 189, 248, 0.3)")
+            .attr("stroke-width", 2);
+
+        svg.selectAll("circle")
+            .data(treeData.nodes)
+            .enter().append("circle")
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
+            .attr("r", 8)
+            .attr("fill", "#38bdf8")
+            .attr("filter", "drop-shadow(0 0 5px #38bdf8)");
+
+        svg.selectAll("text")
+            .data(treeData.nodes)
+            .enter().append("text")
+            .attr("x", d => d.x - 20)
+            .attr("y", d => d.y + 25)
+            .text(d => d.id)
+            .attr("fill", "white")
+            .attr("font-size", "10px")
+            .attr("font-family", "JetBrains Mono");
+
+        setInterval(updateMolecular, 3000);
+        setInterval(syncBackend, 5000);
+        syncBackend();
     </script>
 </body>
 </html>
