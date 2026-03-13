@@ -14,16 +14,20 @@ class UserTier(Enum):
 class TokenLedger:
     """
     ARTICLE 591-595: Tokenisation & Tiered Pricing Infrastructure.
-    Manages Workstation Tokens (WST) and usage tracking.
+    Manages Workstation Tokens (WST) and usage tracking with automated replenishment logic.
     """
     def __init__(self):
-        # In a production environment, this would be a database table
         self.ledgers: Dict[str, Dict[str, Any]] = {}
         self.transactions: List[Dict[str, Any]] = []
         self._default_allowances = {
             UserTier.FREE: 1000,
             UserTier.PRO: 50000,
             UserTier.ENTERPRISE: 1000000
+        }
+        self._hourly_rates = {
+            UserTier.FREE: 1.4, # Burn rate simulation
+            UserTier.PRO: 124.0,
+            UserTier.ENTERPRISE: 850.0
         }
 
     def initialize_user(self, user_id: str, tier: UserTier = UserTier.FREE):
@@ -32,12 +36,12 @@ class TokenLedger:
                 "balance": self._default_allowances[tier],
                 "tier": tier,
                 "total_consumed": 0,
-                "last_refill": datetime.datetime.now().isoformat()
+                "last_refill": datetime.datetime.now().isoformat(),
+                "created_at": datetime.datetime.now().isoformat()
             }
             logger.info(f"TokenLedger: Initialized user {user_id} with {tier.value} tier.")
 
     def consume_tokens(self, user_id: str, amount: int, activity: str) -> bool:
-        """Consumes tokens from the user's ledger."""
         if user_id not in self.ledgers:
             self.initialize_user(user_id)
 
@@ -60,20 +64,25 @@ class TokenLedger:
         logger.info(f"TokenLedger: User {user_id} consumed {amount} WST for {activity}.")
         return True
 
-    def get_balance(self, user_id: str) -> int:
-        return self.ledgers.get(user_id, {}).get("balance", 0)
-
-    def get_tier(self, user_id: str) -> UserTier:
-        return self.ledgers.get(user_id, {}).get("tier", UserTier.FREE)
-
-    def add_tokens(self, user_id: str, amount: int):
+    def simulate_hourly_refill(self, user_id: str):
+        """Simulates automated monthly/periodic replenishment (Article 591)."""
         if user_id in self.ledgers:
-            self.ledgers[user_id]["balance"] += amount
-            logger.info(f"TokenLedger: Added {amount} WST to user {user_id}.")
+            ledger = self.ledgers[user_id]
+            # Simple simulation: partial refill to maintain balance
+            refill = self._default_allowances[ledger["tier"]] * 0.05
+            ledger["balance"] += refill
+            ledger["last_refill"] = datetime.datetime.now().isoformat()
+            logger.info(f"TokenLedger: Simulated refill of {refill} WST for user {user_id}.")
 
-    def upgrade_tier(self, user_id: str, new_tier: UserTier):
-        if user_id in self.ledgers:
-            self.ledgers[user_id]["tier"] = new_tier
-            # Refill to new tier default
-            self.ledgers[user_id]["balance"] = self._default_allowances[new_tier]
-            logger.info(f"TokenLedger: User {user_id} upgraded to {new_tier.value}.")
+    def get_ledger_report(self, user_id: str) -> Dict[str, Any]:
+        if user_id not in self.ledgers:
+            return {"error": "User not found"}
+
+        ledger = self.ledgers[user_id]
+        return {
+            "balance": ledger["balance"],
+            "tier": ledger["tier"].value,
+            "burn_rate": self._hourly_rates[ledger["tier"]],
+            "total_consumed": ledger["total_consumed"],
+            "last_refill": ledger["last_refill"]
+        }

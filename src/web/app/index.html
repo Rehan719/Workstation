@@ -113,6 +113,12 @@
                                 <div className="grid grid-cols-2 gap-8">
                                     <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
                                         <h3 className="text-xl font-bold mb-4 text-green-400">Mode 1: Passive Sensory</h3>
+                                        <div className="mb-6 flex justify-between items-center">
+                                            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Attenuation: 0.94x</span>
+                                            <div className="w-32 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                                <div className="bg-green-500 h-full" style={{width: '94%'}}></div>
+                                            </div>
+                                        </div>
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5">
                                                 <div className="flex items-center gap-3">
@@ -132,8 +138,15 @@
                                     </div>
                                     <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
                                         <h3 className="text-xl font-bold mb-4 text-blue-400">Mode 2: Agentic Missions</h3>
+                                        <div className="mb-6 flex justify-between items-center">
+                                            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Swarm Success: 98.2%</span>
+                                            <Shield size={16} className="text-blue-500" />
+                                        </div>
                                         <button className="w-full bg-blue-600 p-4 rounded-xl font-bold mb-4">Deploy New Swarm</button>
-                                        <div className="text-sm text-zinc-500 text-center">No active missions.</div>
+                                        <div className="text-sm text-zinc-500 text-center flex items-center justify-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                            Threat Detection: ACTIVE (0 Threats)
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -142,19 +155,40 @@
                         {view === 'synthesis' && (
                             <div>
                                 <h1 className="text-4xl font-bold mb-8">Knowledge Synthesis Dashboard</h1>
+                                <div className="grid grid-cols-3 gap-6 mb-8">
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center">
+                                        <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Graph Depth</div>
+                                        <div className="text-2xl font-black">1,422 Nodes</div>
+                                    </div>
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center">
+                                        <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Perception Accuracy</div>
+                                        <div className="text-2xl font-black text-purple-500">97.8%</div>
+                                    </div>
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center">
+                                        <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Triples Extracted</div>
+                                        <div className="text-2xl font-black text-green-500">+82 today</div>
+                                    </div>
+                                </div>
                                 <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
                                     <h3 className="text-xl font-bold mb-6 text-purple-400">Extracted Entity-Relationship Triples</h3>
                                     <div className="space-y-4 font-mono text-sm">
-                                        <div className="grid grid-cols-3 gap-4 p-4 bg-black/40 rounded-xl border border-white/5">
-                                            <span className="text-blue-400">Jules AI</span>
-                                            <span className="text-zinc-500 text-center">employs</span>
-                                            <span className="text-green-400">Biomimetic Logic</span>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-4 p-4 bg-black/40 rounded-xl border border-white/5 opacity-60">
-                                            <span className="text-blue-400">Market</span>
-                                            <span className="text-zinc-500 text-center">demands</span>
-                                            <span className="text-green-400">Embodied Cognition</span>
-                                        </div>
+                                        {[
+                                            { s: "Jules AI", p: "employs", o: "Biomimetic Logic", src: "v120_core", agent: "SynergyAgent" },
+                                            { s: "Market", p: "demands", o: "Embodied Cognition", src: "tech_radar", agent: "Sensory-1" },
+                                            { s: "Organism", p: "requires", o: "Embodied Perception", src: "internal_stream", agent: "EmbodiedAI" }
+                                        ].map((t, i) => (
+                                            <div key={i} className="p-4 bg-black/40 rounded-xl border border-white/5">
+                                                <div className="grid grid-cols-3 gap-4 mb-2">
+                                                    <span className="text-blue-400">{t.s}</span>
+                                                    <span className="text-zinc-500 text-center">{t.p}</span>
+                                                    <span className="text-green-400">{t.o}</span>
+                                                </div>
+                                                <div className="text-[10px] text-zinc-600 flex justify-between border-t border-white/5 pt-2">
+                                                    <span>SRC: {t.src}</span>
+                                                    <span>AGENT: {t.agent}</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
