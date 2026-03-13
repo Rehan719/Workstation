@@ -3,57 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jules AI v120.0 | Apotheosis of Synergy</title>
-    <meta name="description" content="The fully operational, biomimetically-conscious, self-optimizing digital enterprise.">
-    <link rel="stylesheet" href="../style.css">
+    <title>Jules AI | Apotheosis of Eternal Synthesis</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --bg: #000; --text: #fff; --accent: #0070f3; }
-        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .hero-gradient { background: radial-gradient(circle at top, #111 0%, #000 100%); }
+        body {
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        .pulse-glow {
+            animation: pulse 4s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.5); }
+        }
+        .truth-gradient {
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
     </style>
 </head>
-<body class="hero-gradient min-h-screen">
+<body class="min-h-screen">
     <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto">
-        <div class="text-2xl font-black tracking-tighter">JULES AI <span class="text-blue-600">v120.0</span></div>
-        <div class="space-x-8 hidden md:flex font-medium text-sm text-gray-400">
-            <a href="#features" class="hover:text-white transition">Features</a>
-            <a href="#governance" class="hover:text-white transition">Governance</a>
-            <a href="#docs" class="hover:text-white transition">Documentation</a>
-            <a href="/app" class="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition">Open App</a>
+        <div class="text-2xl font-bold truth-gradient pulse-glow p-2 rounded-lg">JULES AI v120.0</div>
+        <div class="space-x-8 hidden md:flex">
+            <a href="#" class="hover:text-sky-400 transition">Reactors</a>
+            <a href="#" class="hover:text-sky-400 transition">UVIAP</a>
+            <a href="#" class="hover:text-sky-400 transition">Pricing</a>
+            <a href="https://workstation-pwa.vercel.app" class="glass px-6 py-2 hover:bg-white/10 transition">Launch App</a>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-6 pt-20 pb-32 text-center">
-        <h1 class="text-6xl md:text-8xl font-black tracking-tight mb-6">Apotheosis of <span class="text-blue-600">Synergy</span></h1>
-        <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10">The world's first fully operational digital organism. Powered by the Quadruple-Pillar Engine and 50+ hyper-specialized reactors.</p>
+    <main class="max-w-7xl mx-auto px-6 pt-20 text-center">
+        <h1 class="text-6xl md:text-8xl font-black mb-6">
+            The Apotheosis of <br/>
+            <span class="truth-gradient">Eternal Synthesis</span>
+        </h1>
+        <p class="text-xl text-slate-400 max-w-3xl mx-auto mb-12">
+            A fully operational, biomimetically-conscious, self-optimising digital enterprise.
+            Converging silicon and carbon intelligence into a single, eternal digital organism.
+        </p>
 
-        <div class="flex flex-col md:flex-row justify-center gap-4 mb-20">
-            <a href="/app" class="px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition">Launch Workstation</a>
-            <a href="#docs" class="px-8 py-4 bg-zinc-900 text-white font-bold rounded-xl border border-zinc-800 hover:bg-zinc-800 transition">Read Constitution</a>
+        <div class="flex flex-wrap justify-center gap-6 mb-24">
+            <button class="bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 px-10 rounded-full transition pulse-glow">
+                Explore the Workstation
+            </button>
+            <button class="glass hover:bg-white/10 text-white font-bold py-4 px-10 rounded-full transition">
+                Read the Constitution
+            </button>
         </div>
 
-        <div id="features" class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left mt-32">
-            <div class="p-8 bg-zinc-900/50 rounded-3xl border border-zinc-800">
-                <div class="w-12 h-12 bg-blue-600 rounded-2xl mb-6 flex items-center justify-center">🧬</div>
-                <h3 class="text-2xl font-bold mb-4">Biomimetic Core</h3>
-                <p class="text-gray-400">Advanced neural processing inspired by biological metamorphosis and immune dynamics.</p>
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left mb-32">
+            <div class="glass p-8">
+                <h3 class="text-2xl font-bold mb-4 truth-gradient">UVIAP</h3>
+                <p class="text-slate-400">Unified Version Ingestion & Assimilation Pipeline. Perpetual self-evolution through GitHub and LLM history analysis.</p>
             </div>
-            <div class="p-8 bg-zinc-900/50 rounded-3xl border border-zinc-800">
-                <div class="w-12 h-12 bg-green-600 rounded-2xl mb-6 flex items-center justify-center">🕋</div>
-                <h3 class="text-2xl font-bold mb-4">Quranic Education</h3>
-                <p class="text-gray-400">Integrated QEP P0-P2 platform with semantic search, tafsir, and audio recitations.</p>
+            <div class="glass p-8">
+                <h3 class="text-2xl font-bold mb-4 truth-gradient">Dual-Mode Scraping</h3>
+                <p class="text-slate-400">Passive sensory awareness meets active swarm intelligence. Embodied AI for the digital world.</p>
             </div>
-            <div class="p-8 bg-zinc-900/50 rounded-3xl border border-zinc-800">
-                <div class="w-12 h-12 bg-purple-600 rounded-2xl mb-6 flex items-center justify-center">⚖️</div>
-                <h3 class="text-2xl font-bold mb-4">Sovereign Business</h3>
-                <p class="text-gray-400">Autonomous governance via QMS, DCS, BMS, and EMS ensuring total fidelity.</p>
+            <div class="glass p-8">
+                <h3 class="text-2xl font-bold mb-4 truth-gradient">50+ Digital Reactors</h3>
+                <p class="text-slate-400">Hyper-specialized engines for Science, Religion, Law, Career, and Education. Production-ready intelligence.</p>
             </div>
-        </div>
+        </section>
+
+        <section class="mb-32">
+            <h2 class="text-4xl font-bold mb-12">Tokenised Economy</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="glass p-8 border-slate-700">
+                    <h4 class="text-xl mb-2">Free</h4>
+                    <p class="text-4xl font-bold mb-6">0 WST</p>
+                    <ul class="text-slate-400 space-y-2 mb-8 text-sm">
+                        <li>Standard Reactor Access</li>
+                        <li>Passive Sensory Layer</li>
+                        <li>1,000 Agentic Tasks/mo</li>
+                    </ul>
+                    <button class="w-full py-3 rounded-lg border border-slate-700 hover:bg-white/5 transition">Get Started</button>
+                </div>
+                <div class="glass p-8 border-sky-500/50 scale-105 bg-sky-500/5">
+                    <h4 class="text-xl mb-2">Pro</h4>
+                    <p class="text-4xl font-bold mb-6">50 WST</p>
+                    <ul class="text-slate-400 space-y-2 mb-8 text-sm">
+                        <li>Priority Reactor Access</li>
+                        <li>UVIAP Commercial SDK</li>
+                        <li>50,000 Agentic Tasks/mo</li>
+                        <li>Priority Support</li>
+                    </ul>
+                    <button class="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 transition font-bold">Upgrade Now</button>
+                </div>
+                <div class="glass p-8 border-slate-700">
+                    <h4 class="text-xl mb-2">Enterprise</h4>
+                    <p class="text-4xl font-bold mb-6">Custom</p>
+                    <ul class="text-slate-400 space-y-2 mb-8 text-sm">
+                        <li>Unlimited Infrastructure</li>
+                        <li>On-Premises Deployment</li>
+                        <li>Dedicated CoE Support</li>
+                        <li>Custom Model Training</li>
+                    </ul>
+                    <button class="w-full py-3 rounded-lg border border-slate-700 hover:bg-white/5 transition">Contact Sales</button>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <footer class="border-t border-zinc-900 p-12 text-center text-gray-600 text-sm">
-        &copy; 2026 Jules AI. v120.0 Eternal Synthesis.
+    <footer class="p-12 text-center text-slate-500 border-t border-slate-800">
+        <p>&copy; 2025 Jules AI v120.0 Apotheosis. Codified via Grand Synthesis Engine.</p>
     </footer>
 </body>
 </html>

@@ -1,235 +1,263 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { Brain, Book, Shield, Zap, Search, Play } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
 
-const API_BASE = "http://127.0.0.1:8000/api/v1";
+const { width } = Dimensions.get('window');
 
-export default function App() {
-  const [view, setView] = useState('dashboard');
-  const [status, setStatus] = useState(null);
-  const [scrapeStatus, setScrapeStatus] = useState(null);
-  const [tokenReport, setTokenReport] = useState(null);
-  const [knowledgeSummary, setKnowledgeSummary] = useState(null);
-  const [quranData, setQuranData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('1:1');
+const SystemPulse = () => {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0.5);
 
   useEffect(() => {
-    fetchStatus();
+    scale.value = withRepeat(withTiming(1.5, { duration: 2000 }), -1, true);
+    opacity.value = withRepeat(withTiming(0.2, { duration: 2000 }), -1, true);
   }, []);
 
-  const fetchStatus = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/status`);
-      const data = await res.json();
-      setStatus(data);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
 
-      const sRes = await fetch(`${API_BASE}/webscrape/status`);
-      setScrapeStatus(await sRes.json());
+  return (
+    <View style={styles.pulseContainer}>
+      <Animated.View style={[styles.pulseCircle, animatedStyle]} />
+      <View style={styles.innerCircle}>
+        <Text style={styles.pulseText}>99.8</Text>
+      </View>
+    </View>
+  );
+};
 
-      const tRes = await fetch(`${API_BASE}/tokens/ledger/demo_user`);
-      setTokenReport(await tRes.json());
+const DashboardCard = ({ title, value, subtext, color = '#38bdf8' }) => (
+  <View style={styles.card}>
+    <Text style={styles.cardLabel}>{title}</Text>
+    <Text style={styles.cardValue}>{value}</Text>
+    <Text style={[styles.cardSubtext, { color }]}>{subtext}</Text>
+  </View>
+);
 
-      const kRes = await fetch(`${API_BASE}/knowledge/summary`);
-      setKnowledgeSummary(await kRes.json());
-    } catch (e) {
-      console.log("Backend offline");
-    }
-  };
+export default function App() {
+  const [data, setData] = useState({ balance: 0, depth: "1.4M", fidelity: 99.8 });
 
-  const fetchAyah = async (ref) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/qep/ayah/${ref}`);
-      const data = await res.json();
-      setQuranData(data);
-    } catch (e) {
-      alert("Error fetching Ayah");
-    }
-    setLoading(false);
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const API_BASE = "https://workstation-anwa.onrender.com/api/v1";
+        const USER_ID = "demo_user";
+
+        const tokenRes = await fetch(`${API_BASE}/tokens/ledger/${USER_ID}`);
+        const tokens = await tokenRes.json();
+
+        const knowledgeRes = await fetch(`${API_BASE}/knowledge/summary`);
+        const knowledge = await knowledgeRes.json();
+
+        setData({
+          balance: tokens.balance,
+          depth: (knowledge.graph_depth / 1000000).toFixed(1) + "M",
+          fidelity: 99.8
+        });
+      } catch (err) {
+        console.error("Mobile Sync Failed", err);
+      }
+    };
+
+    const interval = setInterval(fetchData, 10000);
+    fetchData();
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text style={styles.title}>JULES AI v120.0</Text>
+          <Text style={styles.subtitle}>Apotheosis of Synergy</Text>
+        </View>
 
-      <View style={styles.header}>
-        <Text style={styles.logo}>JULES AI v120.0</Text>
-        <Shield color="#0070f3" size={24} />
-      </View>
+        <SystemPulse />
 
-      <View style={styles.tabs}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: 10}}>
-          <TouchableOpacity onPress={() => setView('dashboard')} style={[styles.tab, view === 'dashboard' && styles.activeTab]}>
-              <Text style={[styles.tabText, view === 'dashboard' && styles.activeTabText]}>System</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setView('qep')} style={[styles.tab, view === 'qep' && styles.activeTab]}>
-              <Text style={[styles.tabText, view === 'qep' && styles.activeTabText]}>QEP</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setView('scrape')} style={[styles.tab, view === 'scrape' && styles.activeTab]}>
-              <Text style={[styles.tabText, view === 'scrape' && styles.activeTabText]}>Scraper</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setView('tokens')} style={[styles.tab, view === 'tokens' && styles.activeTab]}>
-              <Text style={[styles.tabText, view === 'tokens' && styles.activeTabText]}>Tokens</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setView('synthesis')} style={[styles.tab, view === 'synthesis' && styles.activeTab]}>
-              <Text style={[styles.tabText, view === 'synthesis' && styles.activeTabText]}>Graph</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+        <View style={styles.statsGrid}>
+          <DashboardCard title="Active Swarms" value="12" subtext="↑ 2 increased" color="#10b981" />
+          <DashboardCard title="Signals/hr" value="142K" subtext="Gating: ON" />
+          <DashboardCard title="UEG Nodes" value={data.depth} subtext="100% Synced" />
+          <DashboardCard title="WST Tokens" value={(data.balance / 1000).toFixed(1) + "K"} subtext="Tier: PRO" color="#fbbf24" />
+        </View>
 
-      <ScrollView style={styles.content}>
-        {view === 'dashboard' && (
-          <>
-            <View style={styles.hero}>
-              <Text style={styles.heroTitle}>Apotheosis of Synergy</Text>
-              <Text style={styles.heroSubtitle}>Digital Twin Ecosystem v120.0</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Pending Approvals</Text>
+          <View style={styles.approvalItem}>
+            <Text style={styles.approvalTitle}>v120.1-Alpha Assimilation</Text>
+            <Text style={styles.approvalDesc}>Proposed blueprint for multi-modal sensory fusion.</Text>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={styles.approveButton}>
+                <Text style={styles.buttonText}>APPROVE</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.vetoButton}>
+                <Text style={styles.buttonText}>VETO</Text>
+              </TouchableOpacity>
             </View>
-
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Synergy</Text>
-                <Text style={styles.statValue}>99.9%</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Fidelity</Text>
-                <Text style={styles.statValue}>{status?.fidelity * 100 || 99.5}%</Text>
-              </View>
-            </View>
-
-            <Text style={styles.sectionTitle}>Business Governance</Text>
-            {status?.governance?.okr_progress.map((okr, i) => (
-                <View key={i} style={styles.okrCard}>
-                    <Text style={styles.okrTitle}>{okr.objective}</Text>
-                    <View style={styles.progressBar}>
-                        <View style={[styles.progressFill, { width: `${okr.completion * 100}%` }]} />
-                    </View>
-                </View>
-            ))}
-          </>
-        )}
-
-        {view === 'qep' && (
-          <>
-            <Text style={styles.heroTitle}>Quranic Education</Text>
-            <View style={styles.searchBar}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter reference (1:1)"
-                    placeholderTextColor="#666"
-                    value={search}
-                    onChangeText={setSearch}
-                />
-                <TouchableOpacity onPress={() => fetchAyah(search)} style={styles.searchBtn}>
-                    <Search color="white" size={20} />
-                </TouchableOpacity>
-            </View>
-
-            {loading ? <ActivityIndicator size="large" color="#0070f3" /> : (
-                quranData && (
-                    <View style={styles.ayahCard}>
-                        <Text style={styles.arabicText}>{quranData.arabic}</Text>
-                        <Text style={styles.translationText}>"{quranData.translation}"</Text>
-                        <View style={styles.ayahFooter}>
-                            <Text style={styles.refText}>Surah {quranData.surah}, Ayah {quranData.ayah}</Text>
-                            <TouchableOpacity style={styles.playBtn}>
-                                <Play color="white" size={16} fill="white" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                )
-            )}
-          </>
-        )}
-
-        {view === 'scrape' && (
-          <>
-            <Text style={styles.heroTitle}>Swarm Scraper</Text>
-            <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Swarm Success</Text>
-                <Text style={styles.statValue}>{(scrapeStatus?.coe_metrics?.extraction_accuracy * 100 || 98.2).toFixed(1)}%</Text>
-            </View>
-            <TouchableOpacity style={styles.okrCard}>
-                <Text style={styles.okrTitle}>Active Swarms: 1</Text>
-                <Text style={[styles.heroSubtitle, {fontSize: 12}]}>Primary Market Monitor</Text>
-            </TouchableOpacity>
-            <View style={[styles.okrCard, {borderColor: '#0070f3', borderWidth: 1}]}>
-                <Text style={[styles.okrTitle, {color: '#0070f3'}]}>SHIELD: ACTIVE</Text>
-                <Text style={styles.heroSubtitle}>{scrapeStatus?.security?.total_threats_blocked || 0} Threats Blocked</Text>
-            </View>
-          </>
-        )}
-
-        {view === 'tokens' && (
-          <>
-            <Text style={styles.heroTitle}>Tokens</Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Balance</Text>
-                <Text style={styles.statValue}>{tokenReport?.balance || 0}</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Tier</Text>
-                <Text style={styles.statValue}>{tokenReport?.tier || 'FREE'}</Text>
-              </View>
-            </View>
-            <Text style={styles.sectionTitle}>Recent Burn</Text>
-            <View style={styles.okrCard}>
-                <Text style={styles.okrTitle}>GitHub Ingestion</Text>
-                <Text style={styles.heroSubtitle}>-50 WST</Text>
-            </View>
-          </>
-        )}
-
-        {view === 'synthesis' && (
-          <>
-            <Text style={styles.heroTitle}>Knowledge</Text>
-            <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Graph Depth</Text>
-                <Text style={styles.statValue}>{knowledgeSummary?.graph_depth || 1400} Nodes</Text>
-            </View>
-            <Text style={styles.sectionTitle}>Latest Insight</Text>
-            <View style={styles.ayahCard}>
-                <Text style={styles.translationText}>"Innovation is the byproduct of constitutional fidelity."</Text>
-                <Text style={styles.refText}>Source: v120_core</Text>
-            </View>
-          </>
-        )}
+          </View>
+        </View>
       </ScrollView>
+
+      <View style={styles.navBar}>
+        <TouchableOpacity style={styles.navItem}><Text style={styles.navTextActive}>Dashboard</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}><Text style={styles.navText}>Reactors</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}><Text style={styles.navText}>Knowledge</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}><Text style={styles.navText}>Profile</Text></TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000', paddingTop: 50 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-  logo: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: -1 },
-  tabs: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 20, gap: 10 },
-  tab: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#111' },
-  activeTab: { backgroundColor: '#0070f3' },
-  tabText: { color: '#666', fontWeight: 'bold' },
-  activeTabText: { color: '#fff' },
-  content: { flex: 1, paddingHorizontal: 20 },
-  hero: { marginBottom: 30 },
-  heroTitle: { color: '#fff', fontSize: 32, fontWeight: '900', marginBottom: 4 },
-  heroSubtitle: { color: '#666', fontSize: 16 },
-  statsGrid: { flexDirection: 'row', gap: 15, marginBottom: 30 },
-  statCard: { flex: 1, backgroundColor: '#111', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#222' },
-  statLabel: { color: '#999', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
-  statValue: { color: '#fff', fontSize: 24, fontWeight: '900' },
-  sectionTitle: { color: '#fff', fontSize: 18, fontWeight: '800', marginBottom: 15 },
-  okrCard: { backgroundColor: '#111', padding: 15, borderRadius: 12, marginBottom: 10 },
-  okrTitle: { color: '#fff', fontSize: 14, marginBottom: 8 },
-  progressBar: { height: 4, backgroundColor: '#222', borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#0070f3' },
-  searchBar: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  input: { flex: 1, backgroundColor: '#111', color: '#fff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#222' },
-  searchBtn: { backgroundColor: '#0070f3', width: 50, height: 50, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  ayahCard: { backgroundColor: '#111', padding: 20, borderRadius: 20, borderWidth: 1, borderColor: '#222' },
-  arabicText: { color: '#fff', fontSize: 24, textAlign: 'right', lineHeight: 40, marginBottom: 20 },
-  translationText: { color: '#999', fontSize: 16, fontStyle: 'italic', lineHeight: 24, marginBottom: 20 },
-  ayahFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  refText: { color: '#666', fontSize: 12 },
-  playBtn: { backgroundColor: '#0070f3', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' }
+  container: {
+    flex: 1,
+    backgroundColor: '#020617',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: 60,
+    paddingBottom: 100,
+  },
+  header: {
+    marginBottom: 40,
+  },
+  title: {
+    color: '#38bdf8',
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  subtitle: {
+    color: '#64748b',
+    fontSize: 14,
+  },
+  pulseContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
+    marginBottom: 40,
+  },
+  pulseCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#38bdf8',
+    position: 'absolute',
+  },
+  innerCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.5)',
+    backgroundColor: '#020617',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulseText: {
+    color: '#38bdf8',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+  },
+  card: {
+    width: (width - 60) / 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  cardLabel: {
+    color: '#64748b',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  cardValue: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  cardSubtext: {
+    fontSize: 10,
+    marginTop: 4,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  approvalItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.2)',
+  },
+  approvalTitle: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  approvalDesc: {
+    color: '#64748b',
+    fontSize: 12,
+    marginBottom: 16,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  approveButton: {
+    flex: 2,
+    backgroundColor: '#38bdf8',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  vetoButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  navBar: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    height: 80,
+    backgroundColor: 'rgba(2, 6, 23, 0.95)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  navText: {
+    color: '#64748b',
+    fontSize: 12,
+  },
+  navTextActive: {
+    color: '#38bdf8',
+    fontSize: 12,
+    fontWeight: 'bold',
+  }
 });

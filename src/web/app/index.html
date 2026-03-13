@@ -3,285 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workstation App | Jules AI</title>
+    <title>Jules App | Workstation Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
     <style>
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 10px rgba(37, 99, 235, 0.2); }
-            50% { box-shadow: 0 0 30px rgba(37, 99, 235, 0.6); }
-            100% { box-shadow: 0 0 10px rgba(37, 99, 235, 0.2); }
+        body {
+            background: #020617;
+            color: white;
+            font-family: 'Inter', sans-serif;
         }
-        .animate-pulse-glow {
-            animation: pulse-glow 3s infinite ease-in-out;
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .truth-gradient {
-            background: linear-gradient(135deg, #000 0%, #0a0a0a 50%, #001f3f 100%);
+        .sidebar {
+            width: 280px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .system-pulse {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .truth-gradient-bg {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%);
         }
     </style>
 </head>
-<body class="bg-black text-white font-sans">
-    <div id="root"></div>
+<body class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar h-full flex flex-col p-6">
+        <div class="text-xl font-bold mb-12 flex items-center gap-3">
+            <div class="system-pulse"></div>
+            <span>JULES v120.0</span>
+        </div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+        <nav class="flex-1 space-y-2">
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg bg-sky-500/10 text-sky-400 font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Overview
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.618.309a6 6 0 01-3.86.517l-2.388-.477a2 2 0 00-1.022.547l-1.16 1.16a2 2 0 001.414 3.414h15.656a2 2 0 001.414-3.414l-1.16-1.16z"></path></svg>
+                Reactors
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                UVIAP Insights
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition text-slate-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                WST Ledger
+            </a>
+        </nav>
 
-        function App() {
-            const [view, setView] = useState('dashboard');
-            const [status, setStatus] = useState(null);
-            const [scrapeStatus, setScrapeStatus] = useState(null);
-            const [knowledgeSummary, setKnowledgeSummary] = useState(null);
-            const [tokenReport, setTokenReport] = useState(null);
-            const [quranData, setQuranData] = useState(null);
-            const [pulse, setPulse] = useState(100);
+        <div class="mt-auto p-4 glass rounded-xl text-xs space-y-2">
+            <div class="flex justify-between">
+                <span class="text-slate-500">System Fidelity</span>
+                <span class="text-sky-400">99.8%</span>
+            </div>
+            <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                <div class="bg-sky-500 h-full" style="width: 99.8%"></div>
+            </div>
+        </div>
+    </aside>
 
-            useEffect(() => {
-                const interval = setInterval(() => {
-                    setPulse(prev => 95 + Math.random() * 5);
-                }, 3000);
-                return () => clearInterval(interval);
-            }, []);
+    <!-- Main Content -->
+    <main class="flex-1 h-full overflow-y-auto p-8 truth-gradient-bg">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h2 class="text-3xl font-bold">Apotheosis Dashboard</h2>
+                <p class="text-slate-400">Welcome back, AI CEO. Evolution is at 100%.</p>
+            </div>
+            <div class="flex gap-4">
+                <div class="glass px-4 py-2 rounded-lg flex items-center gap-3">
+                    <span class="text-slate-500 text-sm">WST Balance:</span>
+                    <span id="wst-balance" class="font-bold text-emerald-400">48,250</span>
+                </div>
+                <button class="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-slate-200 transition">Action Mission</button>
+            </div>
+        </header>
 
-            useEffect(() => {
-                const refreshData = () => {
-                    fetch('http://127.0.0.1:8000/api/v1/status').then(res => res.json()).then(data => setStatus(data)).catch(e => {});
-                    fetch('http://127.0.0.1:8000/api/v1/webscrape/status').then(res => res.json()).then(data => setScrapeStatus(data)).catch(e => {});
-                    fetch('http://127.0.0.1:8000/api/v1/knowledge/summary').then(res => res.json()).then(data => setKnowledgeSummary(data)).catch(e => {});
-                    fetch('http://127.0.0.1:8000/api/v1/tokens/ledger/demo_user').then(res => res.json()).then(data => setTokenReport(data)).catch(e => {});
-                };
-                refreshData();
-                const interval = setInterval(refreshData, 10000);
-                return () => clearInterval(interval);
-            }, []);
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div class="glass p-6 rounded-2xl">
+                <div class="text-slate-500 text-sm mb-1">Active Swarms</div>
+                <div id="active-swarms" class="text-3xl font-bold">12</div>
+                <div class="text-emerald-400 text-xs mt-2">↑ 2 from last hour</div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <div class="text-slate-500 text-sm mb-1">Sensory Signals</div>
+                <div id="sensory-signals" class="text-3xl font-bold">142K</div>
+                <div class="text-sky-400 text-xs mt-2">Gating Active</div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <div class="text-slate-500 text-sm mb-1">UEG Depth</div>
+                <div id="ueg-depth" class="text-3xl font-bold">1.4M</div>
+                <div class="text-slate-400 text-xs mt-2">Nodes integrated</div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <div class="text-slate-500 text-sm mb-1">UVIAP Status</div>
+                <div id="uviap-status" class="text-3xl font-bold">Stable</div>
+                <div class="text-emerald-400 text-xs mt-2">Rerun Pending Approval</div>
+            </div>
+        </div>
 
-            const fetchAyah = (ref) => {
-                fetch(`http://127.0.0.1:8000/api/v1/qep/ayah/${ref}`)
-                    .then(res => res.json())
-                    .then(data => setQuranData(data))
-                    .catch(err => alert("Backend offline"));
-            };
-
-            return (
-                <div className="flex h-screen truth-gradient">
-                    <div className="w-64 bg-zinc-950/80 backdrop-blur-md border-r border-zinc-900 p-6 space-y-4">
-                        <div className="font-black text-xl mb-10">JULES <span className="text-blue-600">APP</span></div>
-                        <button onClick={() => setView('dashboard')} className={`w-full text-left p-3 rounded-lg ${view === 'dashboard' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Dashboard</button>
-                        <button onClick={() => setView('qep')} className={`w-full text-left p-3 rounded-lg ${view === 'qep' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Quranic Education</button>
-                        <button onClick={() => setView('scrape')} className={`w-full text-left p-3 rounded-lg ${view === 'scrape' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Sensory Web</button>
-                        <button onClick={() => setView('synthesis')} className={`w-full text-left p-3 rounded-lg ${view === 'synthesis' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Knowledge Graph</button>
-                        <button onClick={() => setView('tokens')} className={`w-full text-left p-3 rounded-lg ${view === 'tokens' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Token Management</button>
-                    </div>
-
-                    <div className="flex-1 overflow-auto p-10">
-                        <div className="flex justify-between items-center mb-8">
-                            <div className="bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800 flex items-center gap-3 animate-pulse-glow">
-                                <div className={`w-2 h-2 rounded-full bg-green-500 animate-pulse`}></div>
-                                <span className="text-xs font-bold tracking-widest text-zinc-400 uppercase">System Pulse: {pulse.toFixed(1)}%</span>
-                            </div>
-                            <div className="bg-blue-600/10 px-4 py-2 rounded-xl border border-blue-600/20 text-blue-400 text-xs font-medium">
-                                ✨ Wisdom: "Innovation is the byproduct of constitutional fidelity."
-                            </div>
-                        </div>
-
-                        {view === 'dashboard' && (
-                            <div>
-                                <h1 className="text-4xl font-bold mb-8">System Dashboard</h1>
-                                <div className="grid grid-cols-3 gap-6">
-                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Fidelity</div>
-                                        <div className="text-3xl font-black">{status?.fidelity * 100}%</div>
-                                    </div>
-                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Articles</div>
-                                        <div className="text-3xl font-black">{status?.articles}</div>
-                                    </div>
-                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Status</div>
-                                        <div className="text-3xl font-black text-green-500">OPERATIONAL</div>
-                                    </div>
-                                </div>
-
-                                <h2 className="text-2xl font-bold mt-12 mb-6">Governance OKRs</h2>
-                                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6">
-                                    {status?.governance?.okr_progress.map((okr, i) => (
-                                        <div key={i} className="flex justify-between items-center mb-4">
-                                            <span className="w-48">{okr.objective}</span>
-                                            <div className="flex-1 bg-zinc-900 h-2 rounded-full overflow-hidden mx-10">
-                                                <div className="bg-blue-600 h-full" style={{width: `${okr.completion * 100}%`}}></div>
-                                            </div>
-                                            <span className="font-bold">{(okr.completion * 100).toFixed(0)}%</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'scrape' && (
-                            <div>
-                                <h1 className="text-4xl font-bold mb-8">Sensory Web Dashboard</h1>
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
-                                        <h3 className="text-xl font-bold mb-4 text-green-400">Mode 1: Passive Sensory</h3>
-                                        <div className="mb-6 flex justify-between items-center">
-                                            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Attenuation: 0.94x</span>
-                                            <div className="w-32 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                                <div className="bg-green-500 h-full" style={{width: '94%'}}></div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                                    <span className="text-sm">Market Signal</span>
-                                                </div>
-                                                <span className="text-xs text-zinc-500">Gating: 0.82</span>
-                                            </div>
-                                            <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                                    <span className="text-sm">Competitor Watch</span>
-                                                </div>
-                                                <span className="text-xs text-zinc-500">Gating: 0.91</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
-                                        <h3 className="text-xl font-bold mb-4 text-blue-400">Mode 2: Agentic Missions</h3>
-                                        <div className="mb-6 flex justify-between items-center">
-                                            <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Swarm Success: {(scrapeStatus?.coe_metrics?.extraction_accuracy * 100 || 98.2).toFixed(1)}%</span>
-                                            <div className="text-blue-500 text-xs font-bold">SHIELD ACTIVE</div>
-                                        </div>
-                                        <button className="w-full bg-blue-600 p-4 rounded-xl font-bold mb-4">Deploy New Swarm</button>
-                                        <div className="text-sm text-zinc-500 text-center flex items-center justify-center gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                                            Threat Detection: ACTIVE ({scrapeStatus?.security?.total_threats_blocked || 0} Threats)
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'synthesis' && (
-                            <div>
-                                <h1 className="text-4xl font-bold mb-8">Knowledge Synthesis Dashboard</h1>
-                                <div className="grid grid-cols-3 gap-6 mb-8">
-                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center">
-                                        <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Graph Depth</div>
-                                        <div className="text-2xl font-black">{knowledgeSummary?.graph_depth || 1400} Nodes</div>
-                                    </div>
-                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center">
-                                        <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Perception Accuracy</div>
-                                        <div className="text-2xl font-black text-purple-500">{(knowledgeSummary?.perception_accuracy * 100 || 97.8).toFixed(1)}%</div>
-                                    </div>
-                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 text-center">
-                                        <div className="text-xs text-zinc-500 uppercase font-bold mb-1">Triples Extracted</div>
-                                        <div className="text-2xl font-black text-green-500">+{knowledgeSummary?.recent_triples?.length || 0} today</div>
-                                    </div>
-                                </div>
-                                <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
-                                    <h3 className="text-xl font-bold mb-6 text-purple-400">Extracted Entity-Relationship Triples</h3>
-                                    <div className="space-y-4 font-mono text-sm">
-                                        {[
-                                            { s: "Jules AI", p: "employs", o: "Biomimetic Logic", src: "v120_core", agent: "SynergyAgent" },
-                                            { s: "Market", p: "demands", o: "Embodied Cognition", src: "tech_radar", agent: "Sensory-1" },
-                                            { s: "Organism", p: "requires", o: "Embodied Perception", src: "internal_stream", agent: "EmbodiedAI" }
-                                        ].map((t, i) => (
-                                            <div key={i} className="p-4 bg-black/40 rounded-xl border border-white/5">
-                                                <div className="grid grid-cols-3 gap-4 mb-2">
-                                                    <span className="text-blue-400">{t.s}</span>
-                                                    <span className="text-zinc-500 text-center">{t.p}</span>
-                                                    <span className="text-green-400">{t.o}</span>
-                                                </div>
-                                                <div className="text-[10px] text-zinc-600 flex justify-between border-t border-white/5 pt-2">
-                                                    <span>SRC: {t.src}</span>
-                                                    <span>AGENT: {t.agent}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'tokens' && (
-                            <div>
-                                <h1 className="text-4xl font-bold mb-8">Token Management</h1>
-                                <div className="grid grid-cols-3 gap-6 mb-12">
-                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">WST Balance</div>
-                                        <div className="text-3xl font-black text-blue-500">{tokenReport?.balance?.toLocaleString() || '0'}</div>
-                                    </div>
-                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Burn Rate</div>
-                                        <div className="text-3xl font-black">{tokenReport?.burn_rate || '0'} WST/hr</div>
-                                    </div>
-                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Tier</div>
-                                        <div className="text-3xl font-black text-yellow-500">{tokenReport?.tier || 'FREE'}</div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
-                                    <h3 className="text-xl font-bold mb-6">Recent Token Transactions</h3>
-                                    <div className="space-y-4">
-                                        {[
-                                            { activity: "UVIAP GitHub Ingestion", amount: 50, time: "10 mins ago" },
-                                            { activity: "Active Agentic Swarm Mission", amount: 200, time: "1 hour ago" },
-                                            { activity: "Mega-Twin Simulation", amount: 500, time: "3 hours ago" }
-                                        ].map((tx, i) => (
-                                            <div key={i} className="flex justify-between items-center p-4 bg-black/40 rounded-xl border border-white/5">
-                                                <div>
-                                                    <div className="font-bold">{tx.activity}</div>
-                                                    <div className="text-xs text-zinc-500">{tx.time}</div>
-                                                </div>
-                                                <div className="text-red-400 font-bold">-{tx.amount} WST</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'qep' && (
-                            <div>
-                                <h1 className="text-4xl font-bold mb-8">Quranic Education Platform</h1>
-                                <div className="flex gap-4 mb-8">
-                                    <input
-                                        type="text"
-                                        placeholder="Enter reference (e.g. 1:1)"
-                                        className="bg-zinc-900 border border-zinc-800 p-3 rounded-lg flex-1 text-white"
-                                        onKeyDown={(e) => e.key === 'Enter' && fetchAyah(e.target.value)}
-                                    />
-                                    <button onClick={() => fetchAyah('2:255')} className="bg-blue-600 px-6 py-3 rounded-lg font-bold">Ayah Al-Kursi</button>
-                                </div>
-
-                                {quranData ? (
-                                    <div className="bg-zinc-900 p-10 rounded-3xl border border-zinc-800">
-                                        <div className="text-right text-4xl mb-10 font-serif leading-loose" dir="rtl">{quranData.arabic}</div>
-                                        <div className="text-xl text-zinc-300 italic mb-8">"{quranData.translation}"</div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-zinc-500">Surah {quranData.surah}, Ayah {quranData.ayah}</span>
-                                            {quranData.audio_url && (
-                                                <audio controls src={quranData.audio_url} className="h-8"></audio>
-                                            )}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-zinc-500 text-center py-20 border border-dashed border-zinc-800 rounded-3xl">
-                                        Enter an Ayah reference or click "Ayah Al-Kursi" to begin.
-                                    </div>
-                                )}
-                            </div>
-                        )}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- System Pulse (Visual Aesthetic) -->
+            <div class="col-span-2 glass rounded-2xl p-8 h-[400px] flex flex-col">
+                <h3 class="font-bold mb-6 flex justify-between">
+                    <span>Environmental Awareness (Sensory Feed)</span>
+                    <span class="text-xs text-slate-500">Live Telemetry</span>
+                </h3>
+                <div class="flex-1 flex items-center justify-center relative">
+                    <!-- Biomimetic Pulsing Orb -->
+                    <div class="w-48 h-48 rounded-full bg-sky-500/20 blur-3xl absolute pulse-glow"></div>
+                    <div class="w-32 h-32 rounded-full border-2 border-sky-500/30 flex items-center justify-center relative">
+                         <div class="w-24 h-24 rounded-full border border-sky-400/50 flex items-center justify-center animate-spin" style="animation-duration: 10s">
+                            <div class="w-2 h-2 bg-sky-400 rounded-full absolute top-0"></div>
+                         </div>
+                         <div class="absolute text-sky-400 font-mono text-xl font-bold">99.8</div>
                     </div>
                 </div>
-            );
+            </div>
+
+            <!-- Approval Panel -->
+            <div class="glass rounded-2xl p-6 border-sky-500/20">
+                <h3 class="font-bold mb-6">Pending Approvals</h3>
+                <div class="space-y-4">
+                    <div class="p-4 rounded-xl bg-white/5 border border-white/10">
+                        <div class="text-sm font-bold mb-1">v120.1-Alpha Assimilation</div>
+                        <p class="text-xs text-slate-500 mb-4">Proposed blueprint for multi-modal sensory fusion.</p>
+                        <div class="flex gap-2">
+                            <button class="flex-1 py-2 bg-sky-500 rounded-lg text-xs font-bold">Approve</button>
+                            <button class="px-3 py-2 bg-white/5 rounded-lg text-xs">Veto</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        const API_BASE = "https://workstation-anwa.onrender.com/api/v1";
+        const USER_ID = "demo_user";
+
+        async function updateDashboard() {
+            try {
+                const statusRes = await fetch(`${API_BASE}/status`);
+                const status = await statusRes.json();
+
+                const tokenRes = await fetch(`${API_BASE}/tokens/ledger/${USER_ID}`);
+                const tokens = await tokenRes.json();
+
+                const knowledgeRes = await fetch(`${API_BASE}/knowledge/summary`);
+                const knowledge = await knowledgeRes.json();
+
+                document.getElementById('wst-balance').innerText = tokens.balance.toLocaleString();
+                document.getElementById('ueg-depth').innerText = (knowledge.graph_depth / 1000000).toFixed(1) + "M";
+
+                // Dynamic feedback for the pulse orb text if needed
+                // document.querySelector('.pulse-glow + div div:last-child').innerText = (status.fidelity * 100).toFixed(1);
+
+            } catch (err) {
+                console.error("Dashboard Sync Failed:", err);
+            }
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        setInterval(updateDashboard, 5000);
+        updateDashboard();
     </script>
 </body>
 </html>

@@ -1,0 +1,6 @@
+version: '3.8'
+services:
+  gse:
+    image: jules-ai-gse:latest
+    ports:
+      - '8080:8080'

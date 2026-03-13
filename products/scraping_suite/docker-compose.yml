@@ -1,0 +1,6 @@
+version: '3.8'
+services:
+  scraping_suite:
+    image: jules-ai-scraping_suite:latest
+    ports:
+      - '8080:8080'
