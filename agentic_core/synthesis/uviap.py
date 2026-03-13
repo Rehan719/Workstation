@@ -26,8 +26,9 @@ class UVIAP:
         """Executes all stages of the UVIAP."""
         logger.info("UVIAP: Starting Full Evolution Pipeline v120.0")
 
-        # Stage 1: Multi-Source Ingestion (GitHub focus for this step)
+        # Stage 1: Multi-Source Ingestion (GitHub + Sensory focus)
         github_data = self._ingest_github()
+        sensory_data = self._ingest_sensory_signals()
 
         # Stage 2: Biomimetic Pattern Recognition
         patterns = self._recognize_patterns(github_data)
@@ -45,6 +46,12 @@ class UVIAP:
         self._generate_reports(github_data, patterns, learning_results, blueprints)
 
         logger.info("UVIAP: Full Evolution Pipeline Completed.")
+
+    def _ingest_sensory_signals(self) -> List[Dict[str, Any]]:
+        """ARTICLE 541: Sensory signal ingestion from WNN."""
+        logger.info("UVIAP: Ingesting sensory signals from Workstation Neural Network.")
+        # Simulated sensory log retrieval
+        return [{"type": "EnvironmentalSignal", "source": "market_watch", "content": "Increased demand for biomimetic APIs"}]
 
     def _ingest_github(self) -> List[Dict[str, Any]]:
         """ARTICLE 516: GitHub Ingestion Thread."""

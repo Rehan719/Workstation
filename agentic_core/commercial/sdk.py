@@ -20,3 +20,8 @@ class JulesSDK:
     async def get_insights(self, job_id: str) -> List[Dict[str, Any]]:
         """Retrieves assimilated insights from a completed synthesis job."""
         return [{"principle": "Metamorphosis", "confidence": 0.98}]
+
+    async def run_active_mission(self, goal: str, targets: List[str]) -> Dict[str, Any]:
+        """Triggers an active agentic scraping mission."""
+        logger.info(f"SDK: Starting active mission: {goal}")
+        return {"status": "SUCCESS", "mission_id": "m_98765"}

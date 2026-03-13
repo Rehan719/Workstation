@@ -54,10 +54,13 @@ export default function App() {
         <TouchableOpacity onPress={() => setView('qep')} style={[styles.tab, view === 'qep' && styles.activeTab]}>
             <Text style={[styles.tabText, view === 'qep' && styles.activeTabText]}>QEP</Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => setView('scrape')} style={[styles.tab, view === 'scrape' && styles.activeTab]}>
+            <Text style={[styles.tabText, view === 'scrape' && styles.activeTabText]}>Scraper</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
-        {view === 'dashboard' ? (
+        {view === 'dashboard' && (
           <>
             <View style={styles.hero}>
               <Text style={styles.heroTitle}>Apotheosis of Synergy</Text>
@@ -85,7 +88,9 @@ export default function App() {
                 </View>
             ))}
           </>
-        ) : (
+        )}
+
+        {view === 'qep' && (
           <>
             <Text style={styles.heroTitle}>Quranic Education</Text>
             <View style={styles.searchBar}>
@@ -115,6 +120,19 @@ export default function App() {
                     </View>
                 )
             )}
+          </>
+        )}
+
+        {view === 'scrape' && (
+          <>
+            <Text style={styles.heroTitle}>Swarm Scraper</Text>
+            <TouchableOpacity style={styles.okrCard}>
+                <Text style={styles.okrTitle}>Active Swarms: 1</Text>
+                <Text style={[styles.heroSubtitle, {fontSize: 12}]}>Primary Market Monitor</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.searchBtn, {width: '100%', height: 60}]}>
+                <Text style={{color: 'white', fontWeight: 'bold'}}>Deploy New Agent</Text>
+            </TouchableOpacity>
           </>
         )}
       </ScrollView>

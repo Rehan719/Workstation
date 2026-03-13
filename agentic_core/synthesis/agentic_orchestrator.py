@@ -21,6 +21,9 @@ class AgenticOrchestrator:
         """Entry point for executing a high-level directive autonomously."""
         logger.info(f"AGENTIC: New directive received: {goal}")
 
+        # ARTICLE 561: Reasoning Gate Protocol
+        await self._enforce_reasoning_gate(goal)
+
         # ARTICLE 390: Dual-Priority Framework determination
         mode = self._determine_mode(goal)
         logger.info(f"AGENTIC: Operating in {mode} mode.")
@@ -107,6 +110,16 @@ class AgenticOrchestrator:
 
         self.ueg.add_audit_log(task_id, f"Step {step['id']} {result['status']}")
         return result
+
+    async def _enforce_reasoning_gate(self, goal: str):
+        """ARTICLE 561: Imposes computational cost before granting access to resources."""
+        cost = 0.5 # Base cost
+        if "scrape" in goal.lower() or "ingest" in goal.lower():
+            cost = 2.0 # Higher cost for I/O intensive tasks
+
+        logger.info(f"AGENTIC: Enforcing Reasoning Gate. Computational cost: {cost}")
+        # In a real implementation, this would consume tokens or CPU cycles
+        await asyncio.sleep(cost * 0.1)
 
     def _verify_results(self, results: List[Dict[str, Any]], mode: str) -> bool:
         """ARTICLE 388 & 392: Multi-Layered Constraint System verification."""
