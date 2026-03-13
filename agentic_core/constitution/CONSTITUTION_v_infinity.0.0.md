@@ -10,14 +10,14 @@ The organism must prioritize resource allocation in the following absolute order
 **IMMUNE SYSTEM > NERVOUS SYSTEM > DIGESTIVE SYSTEM > AGING**
 
 ## 🔄 SECTION XXIII: UNIFIED VERSION ASSIMILATION & INTROSPECTION (Articles 500-530)
-**ARTICLE 500: UVAIP MANDATE**
-The system shall maintain a Unified Version Assimilation & Introspection Pipeline (UVAIP) to ensure perpetual convergence toward optimal configuration.
+**ARTICLE 500: UVIAP MANDATE**
+The system shall maintain a Unified Version Assimilation & Introspection Pipeline (UVIAP) to ensure perpetual convergence toward optimal configuration.
 
 **ARTICLE 510: INTROSPECTION COMPARISON MANDATE**
 The system shall compare assimilated insights with real‑time introspection telemetry to prioritise high‑impact improvements.
 
 **ARTICLE 521: GITHUB ANALYSIS MANDATE**
-The UVAIP shall integrate GitHub commit/branch history analysis to extract feature evolution patterns and architectural transitions.
+The UVIAP shall integrate GitHub commit/branch history analysis to extract feature evolution patterns and architectural transitions.
 
 **ARTICLE 526: LEARNING & REFLECTION MANDATE**
 The pipeline must incorporate learning from past assimilations and reflect on improvement effectiveness.

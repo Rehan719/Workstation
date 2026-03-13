@@ -10,6 +10,7 @@ from agentic_core.optimizer.fabric import DynamicResourceFabric
 from agentic_core.teams.engine import BiomimeticTeamOrchestrator
 from agentic_core.reactor.ecosystem.registry import ReactorRegistry
 from agentic_core.orchestrator.symbiosis.connectors import SymbiosisManager
+from agentic_core.governance.business_systems import IntegratedBusinessSystems
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,9 @@ class SynergyOrchestrator:
         self.bto = BiomimeticTeamOrchestrator()
         self.registry = ReactorRegistry()
         self.symbiosis = SymbiosisManager()
+        self.ibs = IntegratedBusinessSystems()
 
-        logger.info("Synergy: Orchestrator Integrated and Ready with Symbiosis Connectors.")
+        logger.info("Synergy: Orchestrator Integrated and Ready with IBS Governance.")
 
     async def execute_mega_twin(self, objective: str, reactors: List[str], user_id: str, domain: str = "general", tier: str = "free") -> Dict[str, Any]:
         """
@@ -81,6 +83,9 @@ class SynergyOrchestrator:
 
         # 5. Cleanup (DRAD Disassembly)
         self.aro.release_pool(pool_id)
+
+        # 6. Governance Audit (ARTICLE 531)
+        self.ibs.perform_governance_audit()
 
         return {
             "status": "SUCCESS",

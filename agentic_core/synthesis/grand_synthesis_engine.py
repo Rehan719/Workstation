@@ -23,7 +23,7 @@ from .biomimetic_agents import (
 from .agentic_orchestrator import AgenticOrchestrator
 from .feature_converger import FeatureConverger
 from .web_scraper import WebScraperEngine
-from .uvaip import UVAIPEngine
+from .uviap import UVIAPEngine
 from .autonomic_system import AgenticAutonomicSystem
 from .documentation_generator import DocumentationGenerator
 from agentic_core.ueg.ueg_manager import UEGManager
@@ -57,7 +57,7 @@ class GrandSynthesisEngine:
         self.agentic_orchestrator = AgenticOrchestrator()
         self.feature_converger = FeatureConverger()
         self.dev_scraper = WebScraperEngine()
-        self.uvaip = UVAIPEngine()
+        self.uviap = UVIAPEngine()
         self.autonomic_system = AgenticAutonomicSystem()
         self.ueg = UEGManager()
         self.genomic_registry = GenomicRegistry()
@@ -83,7 +83,7 @@ class GrandSynthesisEngine:
         is_unify = "--unify" in sys.argv
         is_scrape = "--web-scrape" in sys.argv
         is_product = "--product-engineering" in sys.argv
-        is_uvaip = "--full-evolution-pipeline" in sys.argv
+        is_uviap = "--full-evolution-pipeline" in sys.argv
         target_version = target_version or ("infinity" if "--infinity" in sys.argv else ("200.0.0" if "--v200" in sys.argv else ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))))
         logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
 
@@ -111,10 +111,10 @@ class GrandSynthesisEngine:
             convergence_results = self.feature_converger.converge_all_features()
             self.memory.store_synthesis_results(convergence_results)
 
-        if is_uvaip:
-            logger.info("SECTION XXIII: Initiating Unified Version Assimilation & Introspection Pipeline.")
-            uvaip_results = self.uvaip.run_full_pipeline()
-            self.memory.store_synthesis_results(uvaip_results)
+        if is_uviap:
+            logger.info("SECTION XXIII: Initiating Unified Version Ingestion & Assimilation Pipeline.")
+            uviap_results = self.uviap.run_full_pipeline()
+            self.memory.store_synthesis_results(uviap_results)
 
         if is_product:
             logger.info("ARTICLE 401: Initiating Digital Product Engineering for v117.0.")
