@@ -1,33 +1,38 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import asyncio
+from contextlib import asynccontextmanager
 from typing import Dict, Any, List, Optional
 from agentic_core.reactor.religion.quranic_studies import QuranicStudiesReactor
 from agentic_core.enterprise.policy import PolicyCoE
 from agentic_core.commercial.token_ledger import TokenLedger, UserTier
+from agentic_core.synthesis.dual_mode_scraper import DualModeScraper
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-app = FastAPI(title="Jules AI v120.0 Apotheosis of Sensory Convergence Master Backend")
 
 # Initialize global CoEs and Reactors
 policy = PolicyCoE()
 quran_reactor = QuranicStudiesReactor()
 token_ledger = TokenLedger()
-
-from agentic_core.synthesis.dual_mode_scraper import DualModeScraper
+scraper = DualModeScraper(token_ledger=token_ledger)
 
 # Default user for demo
 token_ledger.initialize_user("demo_user", UserTier.PRO)
 
-# Start Passive Sensory Scraper in background
-scraper = DualModeScraper()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ARTICLE 541: Passive sensory layer as continuous background process
+    logger.info("Apotheosis: Passive Sensory Monitoring Awakening...")
+    asyncio.create_task(scraper.start_passive_mode())
+    yield
+    logger.info("Apotheosis: System Hibernating.")
 
-@app.on_event("startup")
-async def startup_event():
-    await scraper.start_passive_mode()
-    logger.info("Apotheosis: Passive Sensory Monitoring Awakened.")
+app = FastAPI(
+    title="Jules AI v120.0 Apotheosis of Sensory Convergence Master Backend",
+    lifespan=lifespan
+)
 
 # Article 284: Unified Product Interface / CORS Configuration
 app.add_middleware(

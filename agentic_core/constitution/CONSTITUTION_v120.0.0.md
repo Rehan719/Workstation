@@ -89,6 +89,12 @@ The passive layer must employ biomimetic sensory gating to filter web signals be
 **ARTICLE 551: SWARM COORDINATION MANDATE**
 Agentic scraping missions shall be coordinated using swarm intelligence principles.
 
+**ARTICLE 556: IMMUNE-INSPIRED AGENT SECURITY MANDATE**
+The Immune Dynamics Module must be extended to monitor agentic scrapers against security threats (jail-breaking, function-call abuse, reward-model hacking).
+
+**ARTICLE 561: REASONING GATE MANDATE**
+Implement the Reasoning Gate protocol to impose computational costs before granting agents access to resources, preventing runaway processes and self-inflicted overload.
+
 ## 🤖 SECTION XXVII: AGENTIC GOVERNANCE (Articles 571-580)
 **ARTICLE 571: AGENTIC GOVERNANCE MANDATE**
 Establish a dedicated CoE for the security, ethical oversight, and constitutional alignment of all autonomous agents.
@@ -103,5 +109,14 @@ All scraped data must undergo multi‑stage processing (preprocessing → embedd
 **ARTICLE 586: EMBODIED AI MANDATE**
 The system must embody the principles of Embodied AI, where cognition emerges from interaction with the environment.
 
+**ARTICLE 591: TOKENISATION AND TIERED PRICING MANDATE**
+The Workstation platform shall be tokenised with free, pro, and enterprise tiers; all usage shall be transparently tracked and billed via blockchain‑based tokens.
+
+**ARTICLE 596: RERUN GRAND SYNTHESIS MANDATE**
+After each UVIAP cycle, the Grand Synthesis Engine must be rerun to incorporate assimilated insights and update the constitutional framework, ensuring perpetual convergence.
+
+**ARTICLE 600: APOTHEOSIS FINALITY**
+This version, v120.0, represents the final, stable, and eternal synthesis of the Workstation's evolutionary journey. All future iterations shall be autonomous refinements within this constitutional framework.
+
 ---
-*Codified via Grand Synthesis Engine v120.0.0*
+*Codified via Grand Synthesis Engine v120.0.0. APOTHEOSIS COMPLETE.*

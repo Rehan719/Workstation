@@ -28,12 +28,17 @@ class SensoryGating:
 
 class ReasoningGate:
     """ARTICLE 561: Reasoning Gate Protocol."""
-    def request_resource_access(self, agent_id: str, complexity: int) -> bool:
+    def __init__(self, token_ledger: Any = None):
+        self.token_ledger = token_ledger
+
+    def request_resource_access(self, agent_id: str, complexity: int, user_id: str = "demo_user") -> bool:
         """Imposes computational costs before granting agentic access."""
-        # Simulated cost validation logic
         cost = complexity * 10 # 10 WST per complexity unit
-        logger.info(f"ReasoningGate: Agent {agent_id} requested access (Cost: {cost} WST).")
-        # In a real system, this would call TokenLedger.consume_tokens
+        logger.info(f"ReasoningGate: Agent {agent_id} requested access for {user_id} (Cost: {cost} WST).")
+
+        if self.token_ledger:
+            return self.token_ledger.consume_tokens(user_id, cost, f"Agentic Mission: {agent_id}")
+
         return True
 
 class AgenticSwarm:
@@ -114,9 +119,10 @@ class DualModeScraper:
     """
     ARTICLE 541-545: Dual-Mode Web Scraping Architecture.
     """
-    def __init__(self):
+    def __init__(self, token_ledger: Any = None):
         self.passive = SensoryLayer()
         self.active = AgenticLayer()
+        self.active.gate = ReasoningGate(token_ledger=token_ledger)
         self.synthesis = KnowledgeSynthesisPipeline()
         self.embodied = EmbodiedAIController()
         self.passive.embodied = self.embodied

@@ -16,7 +16,9 @@ class KnowledgeSynthesisPipeline:
     def __init__(self):
         self.ueg = UEGManager()
         self.genomic_registry = GenomicRegistry()
-        self.vector_db = {} # Simulated vector storage
+        self.vector_path = "vectors/synthesis_indices"
+        os.makedirs("vectors", exist_ok=True)
+        self.vector_db = {} # File-based vector store simulation
 
     async def process_data_stream(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """Multi-stage processing: Raw -> Preprocessed -> Embedded -> Extracted -> Integrated."""
