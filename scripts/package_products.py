@@ -29,6 +29,12 @@ def package_products():
             "source": "agentic_core/synthesis/dual_mode_scraper.py",
             "tier": "Standard/Pro",
             "features": ["Passive Sensory Mode", "Active Swarm Missions", "Reasoning Gate (WST)"]
+        },
+        "business_incubator": {
+            "name": "Co-Evolutionary Business Incubator",
+            "source": "agentic_core/incubation/business_incubator.py",
+            "tier": "Enterprise",
+            "features": ["Strategic Foresight", "Constitutional Vetting", "Co-Evolutionary Simulation"]
         }
     }
 
@@ -36,16 +42,32 @@ def package_products():
     os.makedirs(base_dir, exist_ok=True)
     os.makedirs("docs/commercial", exist_ok=True)
 
+    # Shared dependencies to copy
+    shared_deps = [
+        "agentic_core/ueg/ueg_manager.py",
+        "agentic_core/genetics/genomic_registry.py",
+        "agentic_core/governance/runtime_framework.py"
+    ]
+
     for name, config in products.items():
         product_dir = os.path.join(base_dir, name)
         os.makedirs(product_dir, exist_ok=True)
 
         # 1. Technical Isolation (Source & Toggles)
-        os.makedirs(os.path.join(product_dir, "sdk"), exist_ok=True)
-        dest_src = os.path.join(product_dir, "sdk", os.path.basename(config["source"]))
+        sdk_dir = os.path.join(product_dir, "sdk")
+        os.makedirs(sdk_dir, exist_ok=True)
+
+        # Copy main source
+        dest_src = os.path.join(sdk_dir, os.path.basename(config["source"]))
         if os.path.exists(config["source"]):
             shutil.copy(config["source"], dest_src)
             logger.info(f"Packaged {name} source: {config['source']} -> {dest_src}")
+
+        # Copy dependencies for standalone functionality
+        for dep in shared_deps:
+            if os.path.exists(dep):
+                dep_dest = os.path.join(sdk_dir, os.path.basename(dep))
+                shutil.copy(dep, dep_dest)
 
         # 2. Dockerization
         with open(os.path.join(product_dir, "Dockerfile"), "w") as f:

@@ -41,6 +41,14 @@ class PolicyCoE:
         self.proposed_blueprints.append(blueprint)
         logger.info(f"Policy: New Assimilation Blueprint proposed: {blueprint.get('id', 'unknown')}")
 
+    def submit_coevolutionary_proposal(self, proposal: Dict[str, Any]):
+        """ARTICLE 611: Incubator triggers this to propose strategic changes."""
+        proposal["type"] = "COEVOLUTIONARY_SIMULATION"
+        proposal["submitted_at"] = datetime.datetime.now().isoformat()
+        proposal["status"] = "PENDING_APPROVAL"
+        self.proposed_blueprints.append(proposal)
+        logger.info(f"Policy: New Co-Evolutionary Proposal proposed: {proposal.get('simulation_id', 'unknown')}")
+
     def approve_blueprint(self, blueprint_id: str) -> bool:
         """Mandatory Entity Approval Step (Article 596)."""
         for bp in self.proposed_blueprints:

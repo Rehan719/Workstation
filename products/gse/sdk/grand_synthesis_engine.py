@@ -83,7 +83,8 @@ class GrandSynthesisEngine:
         is_scrape = "--web-scrape" in sys.argv
         is_product = "--product-engineering" in sys.argv
         is_full_evolution = "--full-evolution-pipeline" in sys.argv
-        target_version = target_version or ("120.0.0" if "--v120" in sys.argv or is_full_evolution else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))
+        is_rerun_uvaip = "--rerun-with-uvaip" in sys.argv
+        target_version = target_version or ("120.0.0" if "--v120" in sys.argv or is_full_evolution or is_rerun_uvaip else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))
         logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
@@ -92,8 +93,8 @@ class GrandSynthesisEngine:
             # 112-05: Expert-level synchronization. Using event-based telemetry check (simulated).
             await self._predictive_sync()
 
-        if is_full_evolution:
-            logger.info("ARTICLE 500: Initiating Unified Version Ingestion & Assimilation Pipeline (UVIAP).")
+        if is_full_evolution or is_rerun_uvaip:
+            logger.info("ARTICLE 500/596: Initiating Unified Version Ingestion & Assimilation Pipeline (UVIAP).")
             uviap = UVIAP()
             await uviap.run_full_pipeline()
 

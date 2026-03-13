@@ -85,5 +85,5 @@ class ReactorFactory:
 
 def get_factory_reactor(domain: str, sub_domain: str, mandate: str):
     """Utility to get an instantiated factory reactor."""
-    ReactorClass = GenericReactorFactory.create_specialized_class(domain, sub_domain, mandate)
+    ReactorClass = ReactorFactory.create_specialized_class(domain, sub_domain, mandate)
     return ReactorClass()
