@@ -1,0 +1,7 @@
+# Jules AI Commercial Product Catalog
+
+| Product | Tier | Features |
+|---|---|---|
+| Unified Version Ingestion & Assimilation Pipeline | Enterprise | GitHub Deep Analysis, Biomimetic Pattern Recognition, Self-Evolution Logic |
+| Grand Synthesis Engine | Enterprise+ | Cross-Version Synthesis, Constitutional Generation, Audit Automation |
+| Dual-Mode Sensory Scraper | Standard/Pro | Passive Sensory Mode, Active Swarm Missions, Reasoning Gate (WST) |

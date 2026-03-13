@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from agentic_core.synthesis.uviap import UVIAP
 
 logging.basicConfig(level=logging.INFO)
@@ -11,10 +12,11 @@ async def test_uviap_evolution():
 
     print(f"Blueprints Generated: {len(blueprints)}")
     for bp in blueprints:
-        print(f" - [{bp['status']}] {bp['target']}: {bp['action']}")
+        # v120.0 blueprints use 'trait' instead of 'target'
+        trait = bp.get('trait') or bp.get('target', 'unknown')
+        print(f" - [{bp['status']}] {trait}: {bp['action']}")
 
-    import os
-    if os.path.exists("docs/knowledge/last_uviap_run.json"):
+    if os.path.exists("docs/knowledge/unified_assimilation_v120.json"):
         print("Success: UVIAP Report generated.")
     else:
         print("Error: UVIAP Report missing.")

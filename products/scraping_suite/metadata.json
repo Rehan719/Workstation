@@ -1,0 +1,10 @@
+{
+    "name": "Dual-Mode Sensory Scraper",
+    "source": "agentic_core/synthesis/dual_mode_scraper.py",
+    "tier": "Standard/Pro",
+    "features": [
+        "Passive Sensory Mode",
+        "Active Swarm Missions",
+        "Reasoning Gate (WST)"
+    ]
+}

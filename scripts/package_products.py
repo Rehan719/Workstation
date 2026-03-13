@@ -1,6 +1,7 @@
 import os
 import shutil
 import logging
+import json
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -8,52 +9,79 @@ logger = logging.getLogger(__name__)
 def package_products():
     """
     ARTICLE 536-540: Packaging UVIAP, GSE, and Scraping Suite as commercial products.
+    Focus on technical isolation, enterprise documentation, and feature toggles.
     """
     products = {
         "uviap": {
+            "name": "Unified Version Ingestion & Assimilation Pipeline",
             "source": "agentic_core/synthesis/uviap.py",
-            "dependencies": ["agentic_core/ueg/", "agentic_core/genetics/"]
+            "tier": "Enterprise",
+            "features": ["GitHub Deep Analysis", "Biomimetic Pattern Recognition", "Self-Evolution Logic"]
         },
         "gse": {
+            "name": "Grand Synthesis Engine",
             "source": "agentic_core/synthesis/grand_synthesis_engine.py",
-            "dependencies": ["agentic_core/synthesis/uviap.py", "agentic_core/ueg/"]
+            "tier": "Enterprise+",
+            "features": ["Cross-Version Synthesis", "Constitutional Generation", "Audit Automation"]
         },
         "scraping_suite": {
+            "name": "Dual-Mode Sensory Scraper",
             "source": "agentic_core/synthesis/dual_mode_scraper.py",
-            "dependencies": ["agentic_core/synthesis/knowledge_synthesis.py", "agentic_core/governance/ledger.py"]
+            "tier": "Standard/Pro",
+            "features": ["Passive Sensory Mode", "Active Swarm Missions", "Reasoning Gate (WST)"]
         }
     }
 
     base_dir = "products"
     os.makedirs(base_dir, exist_ok=True)
+    os.makedirs("docs/commercial", exist_ok=True)
 
     for name, config in products.items():
         product_dir = os.path.join(base_dir, name)
         os.makedirs(product_dir, exist_ok=True)
 
-        # Copy main source
-        dest_src = os.path.join(product_dir, os.path.basename(config["source"]))
-        shutil.copy(config["source"], dest_src)
-        logger.info(f"Packaged {name} source: {config['source']} -> {dest_src}")
+        # 1. Technical Isolation (Source & Toggles)
+        os.makedirs(os.path.join(product_dir, "sdk"), exist_ok=True)
+        dest_src = os.path.join(product_dir, "sdk", os.path.basename(config["source"]))
+        if os.path.exists(config["source"]):
+            shutil.copy(config["source"], dest_src)
+            logger.info(f"Packaged {name} source: {config['source']} -> {dest_src}")
 
-        # Create Docker Compose template
-        with open(os.path.join(product_dir, "docker-compose.yml"), "w") as f:
-            f.write(f"""version: '3.8'
-services:
-  {name}:
-    build: .
-    ports:
-      - "8080:8080"
-    environment:
-      - APP_MODE=COMMERCIAL
-      - PRODUCT_NAME={name.upper()}
+        # 2. Dockerization
+        with open(os.path.join(product_dir, "Dockerfile"), "w") as f:
+            f.write(f"""FROM python:3.12-slim
+WORKDIR /app
+COPY . .
+RUN pip install poetry && poetry install
+ENV APP_MODE=COMMERCIAL
+ENV FEATURE_TOGGLE_ENTERPRISE=true
+CMD ["python", "sdk/{os.path.basename(config['source'])}"]
 """)
 
-        # Create basic README
-        with open(os.path.join(product_dir, "README.md"), "w") as f:
-            f.write(f"# {name.upper()} Commercial SDK\n\nThis is a standalone enterprise-grade module from the Jules AI Workstation.\n\n## Deployment\n`docker-compose up -d`")
+        # 3. Enterprise Documentation
+        doc_path = f"docs/commercial/{name}_enterprise_guide.md"
+        with open(doc_path, "w") as f:
+            f.write(f"# {config['name']} - Enterprise Guide\n\n")
+            f.write(f"**Tier:** {config['tier']}\n\n")
+            f.write("## Features\n")
+            for feat in config["features"]:
+                f.write(f"- {feat}\n")
+            f.write("\n## Enterprise Configuration\n")
+            f.write("Enable high-scale features by setting `FEATURE_TOGGLE_ENTERPRISE=true`.\n")
+            f.write("\n## Deployment\nUse the provided Dockerfile for isolated deployment.")
 
-    logger.info("All products packaged successfully.")
+        # 4. Product Metadata (Catalog)
+        with open(os.path.join(product_dir, "metadata.json"), "w") as f:
+            json.dump(config, f, indent=4)
+
+    # Master Catalog
+    with open("docs/commercial/product_catalog.md", "w") as f:
+        f.write("# Jules AI Commercial Product Catalog\n\n")
+        f.write("| Product | Tier | Features |\n|---|---|---|\n")
+        for name, config in products.items():
+            f.write(f"| {config['name']} | {config['tier']} | {', '.join(config['features'])} |\n")
+
+    logger.info("All commercial products packaged and documented successfully.")
 
 if __name__ == "__main__":
     package_products()
