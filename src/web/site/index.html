@@ -3,121 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jules AI | Apotheosis of Eternal Synthesis</title>
+    <title>Jules | The Eternal Sovereign Business</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap">
     <style>
-        body {
-            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
-            color: white;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; }
+        .hero-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.15) 0%, transparent 50%);
         }
-        .glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
-        }
-        .pulse-glow {
-            animation: pulse 4s infinite ease-in-out;
-        }
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.2); }
-            50% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.5); }
-        }
-        .truth-gradient {
-            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .text-glow { text-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
     </style>
 </head>
-<body class="min-h-screen">
-    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto">
-        <div class="text-2xl font-bold truth-gradient pulse-glow p-2 rounded-lg">JULES AI v120.0</div>
-        <div class="space-x-8 hidden md:flex">
-            <a href="#" class="hover:text-sky-400 transition">Reactors</a>
-            <a href="#" class="hover:text-sky-400 transition">UVIAP</a>
-            <a href="#" class="hover:text-sky-400 transition">Pricing</a>
-            <a href="https://workstation-pwa.vercel.app" class="glass px-6 py-2 hover:bg-white/10 transition">Launch App</a>
+<body class="overflow-x-hidden">
+    <!-- Nav -->
+    <nav class="fixed w-full z-50 glass mt-4 mx-auto max-w-6xl rounded-full px-8 py-4 flex justify-between items-center left-0 right-0">
+        <div class="text-xl font-bold tracking-tighter flex items-center gap-2">
+            <div class="w-2 h-2 bg-sky-400 rounded-full animate-pulse"></div>
+            JULES AI
         </div>
+        <div class="hidden md:flex gap-8 text-sm font-medium text-slate-400">
+            <a href="#" class="hover:text-white transition">Platform</a>
+            <a href="#" class="hover:text-white transition">Reactors</a>
+            <a href="#" class="hover:text-white transition">UVIAP</a>
+            <a href="#" class="hover:text-white transition">Enterprise</a>
+        </div>
+        <a href="app/index.html" class="bg-white text-black px-6 py-2 rounded-full text-sm font-bold hover:bg-slate-200 transition">Launch App</a>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-6 pt-20 text-center">
-        <h1 class="text-6xl md:text-8xl font-black mb-6">
-            The Apotheosis of <br/>
-            <span class="truth-gradient">Eternal Synthesis</span>
+    <!-- Hero -->
+    <section class="h-screen flex flex-col items-center justify-center text-center px-6 hero-gradient pt-20">
+        <span class="px-4 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-bold mb-6 tracking-widest uppercase">v120.0 Apotheosis Release</span>
+        <h1 class="text-5xl md:text-8xl font-bold tracking-tighter mb-8 max-w-5xl leading-tight">
+            The Ultimate <span class="text-sky-400 text-glow">Converged</span> Digital Enterprise
         </h1>
-        <p class="text-xl text-slate-400 max-w-3xl mx-auto mb-12">
-            A fully operational, biomimetically-conscious, self-optimising digital enterprise.
-            Converging silicon and carbon intelligence into a single, eternal digital organism.
+        <p class="text-slate-400 text-lg md:text-xl max-w-2xl mb-12 leading-relaxed">
+            Experience a biomimetically‑conscious, knowledge‑augmented organism. 50+ hyper‑specialized reactors, perpetual UVIAP evolution, and a sovereign constitutional core.
         </p>
-
-        <div class="flex flex-wrap justify-center gap-6 mb-24">
-            <button class="bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 px-10 rounded-full transition pulse-glow">
-                Explore the Workstation
-            </button>
-            <button class="glass hover:bg-white/10 text-white font-bold py-4 px-10 rounded-full transition">
-                Read the Constitution
-            </button>
+        <div class="flex gap-4">
+            <button class="bg-sky-500 text-white px-8 py-4 rounded-2xl font-bold hover:bg-sky-600 transition shadow-lg shadow-sky-500/20">Get Started</button>
+            <button class="glass px-8 py-4 rounded-2xl font-bold hover:bg-white/5 transition">View Documentation</button>
         </div>
+    </section>
 
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left mb-32">
-            <div class="glass p-8">
-                <h3 class="text-2xl font-bold mb-4 truth-gradient">UVIAP</h3>
-                <p class="text-slate-400">Unified Version Ingestion & Assimilation Pipeline. Perpetual self-evolution through GitHub and LLM history analysis.</p>
+    <!-- Features -->
+    <section class="py-24 px-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="glass p-8 rounded-3xl">
+                <div class="w-12 h-12 bg-sky-500/10 rounded-xl flex items-center justify-center mb-6">
+                    <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-4">UVIAP Evolution</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">Perpetual version ingestion and GitHub history analysis for autonomous optimization and self-healing.</p>
             </div>
-            <div class="glass p-8">
-                <h3 class="text-2xl font-bold mb-4 truth-gradient">Dual-Mode Scraping</h3>
-                <p class="text-slate-400">Passive sensory awareness meets active swarm intelligence. Embodied AI for the digital world.</p>
+            <div class="glass p-8 rounded-3xl">
+                <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-6">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-width="2"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-4">Constitutional Core</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">Governance by a 600-article constitution ensuring ethical alignment and survival instinct hierarchy.</p>
             </div>
-            <div class="glass p-8">
-                <h3 class="text-2xl font-bold mb-4 truth-gradient">50+ Digital Reactors</h3>
-                <p class="text-slate-400">Hyper-specialized engines for Science, Religion, Law, Career, and Education. Production-ready intelligence.</p>
+            <div class="glass p-8 rounded-3xl">
+                <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-6">
+                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.618.309a6 6 0 01-3.86.517l-2.388-.477a2 2 0 00-1.022.547l-1.16 1.16a2 2 0 001.414 3.414h15.656a2 2 0 001.414-3.414l-1.16-1.16z" stroke-width="2"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-4">50+ Domain Reactors</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">Specialized engines for Science, Religion, Law, Career, and Education with high-fidelity digital twinning.</p>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section class="mb-32">
-            <h2 class="text-4xl font-bold mb-12">Tokenised Economy</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="glass p-8 border-slate-700">
-                    <h4 class="text-xl mb-2">Free</h4>
-                    <p class="text-4xl font-bold mb-6">0 WST</p>
-                    <ul class="text-slate-400 space-y-2 mb-8 text-sm">
-                        <li>Standard Reactor Access</li>
-                        <li>Passive Sensory Layer</li>
-                        <li>1,000 Agentic Tasks/mo</li>
-                    </ul>
-                    <button class="w-full py-3 rounded-lg border border-slate-700 hover:bg-white/5 transition">Get Started</button>
-                </div>
-                <div class="glass p-8 border-sky-500/50 scale-105 bg-sky-500/5">
-                    <h4 class="text-xl mb-2">Pro</h4>
-                    <p class="text-4xl font-bold mb-6">50 WST</p>
-                    <ul class="text-slate-400 space-y-2 mb-8 text-sm">
-                        <li>Priority Reactor Access</li>
-                        <li>UVIAP Commercial SDK</li>
-                        <li>50,000 Agentic Tasks/mo</li>
-                        <li>Priority Support</li>
-                    </ul>
-                    <button class="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 transition font-bold">Upgrade Now</button>
-                </div>
-                <div class="glass p-8 border-slate-700">
-                    <h4 class="text-xl mb-2">Enterprise</h4>
-                    <p class="text-4xl font-bold mb-6">Custom</p>
-                    <ul class="text-slate-400 space-y-2 mb-8 text-sm">
-                        <li>Unlimited Infrastructure</li>
-                        <li>On-Premises Deployment</li>
-                        <li>Dedicated CoE Support</li>
-                        <li>Custom Model Training</li>
-                    </ul>
-                    <button class="w-full py-3 rounded-lg border border-slate-700 hover:bg-white/5 transition">Contact Sales</button>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer class="p-12 text-center text-slate-500 border-t border-slate-800">
-        <p>&copy; 2025 Jules AI v120.0 Apotheosis. Codified via Grand Synthesis Engine.</p>
+    <!-- Footer -->
+    <footer class="py-12 border-t border-white/5 text-center text-slate-500 text-xs">
+        <p>© 2024 Virtual Sovereign Business | Jules v120.0 Apotheosis</p>
     </footer>
 </body>
 </html>

@@ -4,6 +4,7 @@ import datetime
 import subprocess
 import re
 import json
+import uuid
 from typing import List, Dict, Any, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
 from agentic_core.genetics.genomic_registry import GenomicRegistry
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class UVIAP:
     """
-    ARTICLE 500-530: Unified Version Ingestion & Assimilation Pipeline (UVIAP).
+    ARTICLE 500-530 & 516-525: Unified Version Ingestion & Assimilation Pipeline (UVIAP).
     A biomimetically-inspired pipeline that ingests, synthesises, and applies knowledge
     from all prior versions, external LLM conversations, and GitHub commit/branch history.
     """
@@ -24,27 +25,34 @@ class UVIAP:
         self.learning_reflection: List[Dict[str, Any]] = []
 
     async def run_full_pipeline(self, repo_url: Optional[str] = None):
-        """Executes all stages of the UVIAP."""
+        """Executes all stages of the UVIAP (Article 5.3)."""
         logger.info(f"UVIAP: Starting Full Evolution Pipeline v120.0 (Target: {repo_url or 'Self'})")
 
-        # Stage 1: Multi-Source Ingestion
+        # Stage 1: Multi-Source Ingestion (Article 5.1)
         github_data = self._ingest_github(repo_url)
         sensory_data = self._ingest_sensory_signals()
 
-        # Stage 2: Biomimetic Pattern Recognition
+        # Stage 2: Biomimetic Pattern Recognition (Article 5.2)
         patterns = self._recognize_patterns(github_data)
 
         # Stage 3: Version Differencing & Convergence
-        self.convergence_delta = self._analyze_convergence(github_data, patterns, is_self=(repo_url is None))
+        self.convergence_delta = self._analyze_convergence(github_data, patterns, repo_url)
 
-        # Stage 4: Introspection Comparison & Learning
+        # Stage 4: Introspection Comparison & Learning (Article 510-515)
         learning_results = self._perform_learning_reflection(self.convergence_delta)
 
-        # Stage 5: Assimilation Configuration
+        # Stage 5: Assimilation Configuration Generation (Article 521-525)
         blueprints = self._generate_assimilation_blueprints(learning_results)
 
-        # Stage 6: Evolutionary Loop (Report Generation)
+        # Stage 6: Continuous Evolution Loop (Article 5.1)
         self._generate_reports(github_data, patterns, learning_results, blueprints)
+        self._update_genomic_memory(learning_results)
+
+        # UEG Provenance Logging
+        self.ueg.add_audit_log("UVIAP", "Full Evolution Pipeline execution complete.", {
+            "target": repo_url or "Self",
+            "blueprints_generated": len(blueprints)
+        })
 
         logger.info("UVIAP: Full Evolution Pipeline Completed.")
         return blueprints
@@ -56,25 +64,36 @@ class UVIAP:
 
     def _ingest_github(self, repo_url: Optional[str] = None) -> List[Dict[str, Any]]:
         """ARTICLE 516: GitHub Ingestion Thread with dual-mode heuristics."""
-        is_self = repo_url is None or "Workstation" in repo_url
-        logger.info(f"UVIAP: Ingesting GitHub history (Self-Evolution: {is_self})")
+        is_self = repo_url is None or "Workstation" in repo_url or "jules" in repo_url.lower()
+        logger.info(f"UVIAP: Ingesting GitHub history (Mode: {'Self-Evolution' if is_self else 'Generalized'})")
 
         try:
-            # If external, we'd clone to a temp dir. For now, we assume local or current repo.
-            cmd = ["git", "log", "-n", "100", "--pretty=format:%H|%an|%ad|%s", "--date=iso"]
+            # Analyze local history for self-evolution or external if cloned
+            # For v120.0, we prioritize the local repo history as the source of truth
+            cmd = ["git", "log", "-n", "200", "--pretty=format:%H|%an|%ad|%s", "--date=iso", "--name-only"]
             result = subprocess.check_output(cmd, cwd=self.repo_path).decode("utf-8")
 
             commits = []
+            current_commit = None
+
             for line in result.splitlines():
-                if "|" in line:
+                if "|" in line and len(line.split("|")) >= 4:
+                    if current_commit:
+                        commits.append(current_commit)
                     hash_val, author, date, subject = line.split("|", 3)
-                    commits.append({
+                    current_commit = {
                         "hash": hash_val,
                         "author": author,
                         "date": date,
                         "subject": subject,
+                        "files": [],
                         "category": self._categorize_commit(subject, is_self)
-                    })
+                    }
+                elif line.strip() and current_commit:
+                    current_commit["files"].append(line.strip())
+
+            if current_commit:
+                commits.append(current_commit)
 
             logger.info(f"UVIAP: Successfully ingested {len(commits)} commits.")
             return commits
@@ -83,63 +102,143 @@ class UVIAP:
             return []
 
     def _categorize_commit(self, subject: str, is_self: bool) -> str:
-        subject = subject.lower()
-        if is_self:
-            # Special heuristics for Workstation self-evolution
-            if "constitution" in subject or "article" in subject: return "GOVERNANCE"
-            if "v120" in subject: return "EVOLUTION_TARGET"
+        """Semantic Pattern Analysis on commit messages (Article 5.2)."""
+        subject_lower = subject.lower()
 
-        if "feat" in subject or "add" in subject: return "FEATURE"
-        if "fix" in subject or "bug" in subject: return "FIX"
-        if "refactor" in subject: return "REFACTOR"
-        return "OTHER"
+        # Self-Evolution Heuristics
+        if is_self:
+            if re.search(r"constitution|article|governance|policy", subject_lower):
+                return "GOVERNANCE_EVOLUTION"
+            if re.search(r"v\d+\.\d+", subject_lower):
+                return "VERSION_MILESTONE"
+            if "apotheosis" in subject_lower:
+                return "SYNERGY_CONVERGENCE"
+
+        # General Intent Analysis
+        if re.match(r"feat|add|implement", subject_lower): return "FEATURE"
+        if re.match(r"fix|bug|patch", subject_lower): return "FIX"
+        if re.match(r"refactor|clean|optimize", subject_lower): return "OPTIMIZATION"
+        if re.match(r"docs?|readme", subject_lower): return "DOCUMENTATION"
+
+        return "ANCILLARY"
 
     def _recognize_patterns(self, commits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Biomimetic Pattern Recognition (Article 5.2)."""
         patterns = []
         for commit in commits:
-            if commit["category"] == "GOVERNANCE":
-                patterns.append({"principle": "ConstitutionalIntegrity", "source": commit["hash"]})
-            if commit["category"] == "REFACTOR":
-                patterns.append({"principle": "Metamorphosis", "source": commit["hash"]})
+            # File Change Correlation
+            impacted_layers = set()
+            for file in commit["files"]:
+                if "agentic_core" in file: impacted_layers.add("CORE_COGNITION")
+                if "src/web" in file: impacted_layers.add("USER_ACCESS_LAYER")
+                if "reactor" in file: impacted_layers.add("DOMAIN_REACTORS")
+                if "constitution" in file: impacted_layers.add("GOVERNANCE")
+
+            if commit["category"] == "GOVERNANCE_EVOLUTION":
+                patterns.append({
+                    "id": f"gov_pattern_{commit['hash'][:6]}",
+                    "type": "CONSTITUTIONAL_INTEGRITY",
+                    "impact": list(impacted_layers),
+                    "confidence": 0.98
+                })
+            elif commit["category"] == "SYNERGY_CONVERGENCE":
+                patterns.append({
+                    "id": f"syn_pattern_{commit['hash'][:6]}",
+                    "type": "METAMORPHOSIS",
+                    "impact": list(impacted_layers),
+                    "confidence": 1.0
+                })
+
         return patterns
 
-    def _analyze_convergence(self, commits: List[Dict[str, Any]], patterns: List[Dict[str, Any]], is_self: bool) -> Dict[str, Any]:
+    def _analyze_convergence(self, commits: List[Dict[str, Any]], patterns: List[Dict[str, Any]], repo_url: Optional[str]) -> Dict[str, Any]:
+        """Version Differencing & Convergence Analysis (Stage 3)."""
+        is_self = repo_url is None or "Workstation" in repo_url or "jules" in repo_url.lower()
         has_v120 = any("v120" in c["subject"] for c in commits)
+
+        # Identify gaps (Simplified for v120.0 logic)
+        gaps = []
+        if not has_v120 and is_self:
+            gaps.append("Missing final Apotheosis release markers")
+
+        # Check for reactor diversity
+        reactor_commits = [c for c in commits if any("reactor" in f for f in c["files"])]
+        if len(reactor_commits) < 10 and is_self:
+            gaps.append("Insufficient reactor ecosystem evolution detected in history")
+
         return {
             "v120_alignment": has_v120,
             "is_self": is_self,
-            "identified_gaps": ["Legacy patterns in engine symbiosis"] if not has_v120 and is_self else []
+            "identified_gaps": gaps,
+            "pattern_density": len(patterns) / (len(commits) or 1)
         }
 
     def _perform_learning_reflection(self, delta: Dict[str, Any]) -> Dict[str, Any]:
-        outcome = {
-            "reflection": "The system is converging toward v120.0 apotheosis." if delta["is_self"] else "External repo analysis complete.",
-            "success_probability": 0.99 if delta["v120_alignment"] else 0.70,
-            "suggested_traits": ["high_fidelity_symbiosis", "governance_traceability"] if delta["is_self"] else ["external_pattern_assimilation"]
+        """Introspection Comparison & Learning (Article 510-515)."""
+        reflection_msg = "The system has achieved v120.0 synthesis." if delta["v120_alignment"] else "Convergence in progress."
+
+        # Pattern-Biased Reinforcement
+        suggested_traits = []
+        if delta["is_self"]:
+            suggested_traits = ["high_fidelity_symbiosis", "governance_traceability", "apotheosis_readiness"]
+        else:
+            suggested_traits = ["external_pattern_assimilation", "cross_repo_learning"]
+
+        return {
+            "reflection": reflection_msg,
+            "success_probability": 0.99 if delta["v120_alignment"] else 0.85,
+            "suggested_traits": suggested_traits,
+            "timestamp": datetime.datetime.now().isoformat()
         }
-        for trait in outcome["suggested_traits"]:
-            self.genomic_registry.reverse_transcribe_trait(f"learned_{trait}", {"impact": 0.95})
-        return outcome
 
     def _generate_assimilation_blueprints(self, learning: Dict[str, Any]) -> List[Dict[str, Any]]:
-        return [{
-            "id": str(uuid.uuid4())[:8],
-            "target": f"CoE_{trait.upper()}",
-            "action": f"Integrate {trait}",
-            "status": "PROPOSED",
-            "timestamp": datetime.datetime.now().isoformat()
-        } for trait in learning["suggested_traits"]]
+        """Generation of Actionable Blueprints (Article 521-525)."""
+        blueprints = []
+        for trait in learning["suggested_traits"]:
+            blueprints.append({
+                "id": str(uuid.uuid4())[:8],
+                "trait": trait,
+                "action": f"Synthesize {trait} into core genome",
+                "priority": "HIGH" if "apotheosis" in trait else "MEDIUM",
+                "status": "PROPOSED"
+            })
+        return blueprints
+
+    def _update_genomic_memory(self, learning: Dict[str, Any]):
+        """Learned Traits persistence (Article 5.4)."""
+        for trait in learning["suggested_traits"]:
+            self.genomic_registry.reverse_transcribe_trait(f"learned_{trait}", {
+                "origin": "UVIAP_v120_Analysis",
+                "impact_score": 0.98,
+                "timestamp": learning["timestamp"]
+            })
+        self.genomic_registry.commit_mutations("UVIAP_AUTONOMOUS_LEARNING")
 
     def _generate_reports(self, commits: List[Dict[str, Any]], patterns: List[Dict[str, Any]], learning: Dict[str, Any], blueprints: List[Dict[str, Any]]):
+        """Unified Assimilation Report Generation (Article 5.5)."""
         os.makedirs("docs/knowledge", exist_ok=True)
-        report_data = {
-            "timestamp": datetime.datetime.now().isoformat(),
-            "commits": commits[:10],
-            "patterns": patterns,
-            "learning": learning,
-            "blueprints": blueprints
+        report = {
+            "version": "120.0.0",
+            "summary": "APOTHEOSIS CONVERGENCE REPORT",
+            "metrics": {
+                "total_commits_analyzed": len(commits),
+                "patterns_recognized": len(patterns),
+                "success_probability": learning["success_probability"]
+            },
+            "learning_reflection": learning,
+            "actionable_blueprints": blueprints,
+            "patterns": patterns[:20] # Top 20 patterns
         }
-        with open("docs/knowledge/last_uviap_run.json", "w") as f:
-            json.dump(report_data, f, indent=2)
-        logger.info("UVIAP: Report generated in docs/knowledge/last_uviap_run.json")
-import uuid
+
+        with open("docs/knowledge/unified_assimilation_v120.json", "w") as f:
+            json.dump(report, f, indent=4)
+
+        # Legacy markdown support
+        with open("docs/knowledge/convergence_delta.md", "w") as f:
+            f.write(f"# Convergence Delta Report - {datetime.datetime.now().date()}\n\n")
+            f.write(f"**Status:** {'ALIGNED' if report['metrics']['success_probability'] > 0.9 else 'PENDING'}\n\n")
+            f.write("## Identified Blueprints\n")
+            for bp in blueprints:
+                f.write(f"- {bp['action']} (Priority: {bp['priority']})\n")
+
+        logger.info("UVIAP: Comprehensive reports generated in docs/knowledge/")

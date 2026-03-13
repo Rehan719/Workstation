@@ -1,150 +1,134 @@
-import asyncio
 import logging
-import time
-import uuid
+import asyncio
+import datetime
+import random
 from typing import List, Dict, Any, Optional
+from agentic_core.synthesis.knowledge_synthesis import KnowledgeSynthesisPipeline, EmbodiedAIController
+from agentic_core.commercial.token_ledger import TokenLedger
 from agentic_core.ueg.ueg_manager import UEGManager
 
 logger = logging.getLogger(__name__)
 
-class SensoryGating:
-    """ARTICLE 546: Biomimetic Sensory Gating."""
-    def __init__(self):
-        self.attenuation_factor = 1.0 # 1.0 = Transparent, 0.0 = Blocked
-
-    def filter_signal(self, raw_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Priority-weighted attenuation logic."""
-        relevance = raw_data.get("relevance", 0.5)
-        source_trust = raw_data.get("trust_score", 0.8)
-
-        # ARTICLE 546: Signal/Noise attenuation
-        weighted_score = (relevance * source_trust) * self.attenuation_factor
-        if weighted_score > 0.6:
-            logger.info(f"SensoryGating: Signal PASS ({weighted_score:.2f})")
-            return raw_data
-
-        logger.debug(f"SensoryGating: Signal ATTENUATED ({weighted_score:.2f})")
-        return None
-
 class ReasoningGate:
-    """ARTICLE 561: Reasoning Gate Protocol."""
-    def __init__(self, token_ledger: Any = None):
-        self.token_ledger = token_ledger
-
-    def request_resource_access(self, agent_id: str, complexity: int, user_id: str = "demo_user") -> bool:
-        """Imposes computational costs before granting agentic access."""
-        cost = complexity * 10 # 10 WST per complexity unit
-        logger.info(f"ReasoningGate: Agent {agent_id} requested access for {user_id} (Cost: {cost} WST).")
-
-        if self.token_ledger:
-            return self.token_ledger.consume_tokens(user_id, cost, f"Agentic Mission: {agent_id}")
-
-        return True
-
-class AgenticSwarm:
-    """ARTICLE 551: Swarm-coordinated agents for scraping with IoA headers."""
-    def __init__(self, swarm_id: str):
-        self.swarm_id = swarm_id
-        self.agents = ["NavigatorAgent", "ExtractorAgent", "ValidatorAgent"]
-
-    async def process_target(self, target: str):
-        # Simulated IoA (MCP/A2A) headers
-        ioa_headers = {
-            "X-Protocol": "MCP-1.0",
-            "X-Swarm-ID": self.swarm_id,
-            "X-Agent-ID": "Extractor-1",
-            "X-Intent": "High-Fidelity-Extraction"
+    """
+    ARTICLE 561-565: Reasoning Gate Protocol.
+    Calculates computational cost and enforces resource barriers.
+    """
+    def __init__(self, ledger: 'TokenLedger'):
+        self.ledger = ledger
+        self.base_costs = {
+            "api_call": 1,
+            "scraping_mission": 10,
+            "deep_analysis": 25
         }
-        logger.info(f"Swarm {self.swarm_id}: Sending request with IoA headers to {target}")
-        await asyncio.sleep(0.5)
-        return {"target": target, "status": "EXTRACTED", "data": "Insight", "ioa": ioa_headers}
 
-class SensoryLayer:
-    """Mode 1: Passive Sensory (Environmental Awareness)."""
-    def __init__(self):
-        self.gating = SensoryGating()
-        self.ueg = UEGManager()
-        self.embodied = None
+    def calculate_cost(self, task_type: str, metadata: Dict[str, Any], pas_score: float = 0.5) -> float:
+        """
+        Formula: cost_in_tokens = base_cost * complexity_multiplier * (1 - PAS_boost)
+        """
+        base = self.base_costs.get(task_type, 5)
 
-    async def monitor_environment(self, pulse_provider: Any = None):
-        logger.info("SensoryLayer: Initiating continuous environmental monitoring.")
-        while True:
-            # Dynamically adjust attenuation based on pulse if provider exists
-            if pulse_provider:
-                pulse = pulse_provider.get_current_pulse()
-                self.gating.attenuation_factor = 1.0 if pulse >= 96.0 else 0.5
+        # Complexity multiplier based on URLs and depth
+        urls = metadata.get("urls", [])
+        depth = metadata.get("depth", 1)
+        complexity = (len(urls) * 0.5) + (depth * 1.2)
 
+        # PAS boost (max 0.5)
+        pas_boost = min(pas_score * 0.5, 0.5)
+
+        cost = base * complexity * (1 - pas_boost)
+        return round(cost, 2)
+
+    async def authorize_task(self, user_id: str, task_type: str, metadata: Dict[str, Any], pas_score: float = 0.5) -> bool:
+        cost = self.calculate_cost(task_type, metadata, pas_score)
+        logger.info(f"ReasoningGate: Authorizing {task_type} for {user_id}. Estimated cost: {cost} WST.")
+        return await self.ledger.deduct_tokens(user_id, cost, f"Task: {task_type}")
+
+class PassiveSensory:
+    def __init__(self, scraper: 'DualModeScraper'):
+        self.scraper = scraper
+        self.active = False
+
+    async def monitor_environment(self):
+        """ARTICLE 541: Mode 1 - Passive Sensory Layer."""
+        logger.info("Scraper: Initializing Mode 1 (Passive Sensory Layer).")
+        self.active = True
+        while self.active:
+            # Simulate continuous environmental monitoring
             signal = {
-                "type": "EnvironmentalSignal",
-                "source": "web_stream",
-                "relevance": 0.85,
-                "trust_score": 0.9,
-                "content": "Emerging trend: Embodied AI convergence.",
-                "timestamp": time.time()
+                "source": "digital_stream",
+                "content": random.choice([
+                    "Biomimetic research surges in biotech sector.",
+                    "New advancements in Embodied AI perceived.",
+                    "Market shift detected in sovereign business models."
+                ]),
+                "relevance": random.uniform(0.7, 1.0),
+                "trust_score": 0.95
             }
-            gated = self.gating.filter_signal(signal)
-            if gated:
-                adj = self.embodied.perform_environmental_sampling(gated) if self.embodied else 0
-                self.ueg.add_audit_log("SENSORY", f"Signal Gated (Adj: {adj})", gated)
+
+            # Sensory Gating (Article 546)
+            if signal["relevance"] > 0.8:
+                logger.info(f"Scraper [Passive]: Signal gated - {signal['content'][:50]}...")
+                # Feed to WNN (Embodied AI)
+                adjustment = self.scraper.embodied_ai.perform_environmental_sampling(signal)
+                # Process through synthesis
+                await self.scraper.synthesis_pipeline.process_data_stream({
+                    "source": signal["source"],
+                    "content": signal["content"],
+                    "agent_id": "passive_sensory_01"
+                })
 
             await asyncio.sleep(60)
 
-class AgenticLayer:
-    """Mode 2: Active Agentic (Goal-Driven Exploration)."""
-    def __init__(self):
-        self.ueg = UEGManager()
-        self.gate = ReasoningGate()
-
-    async def execute_task(self, goal: str, targets: List[str]) -> Dict[str, Any]:
-        """Swarm-coordinated extraction with Reasoning Gate checks."""
-        agent_id = "SwarmLead-Alpha"
-        if not self.gate.request_resource_access(agent_id, len(targets)):
-            return {"status": "BLOCKED", "reason": "Reasoning Gate Refusal"}
-
-        swarm_id = f"swarm_{uuid.uuid4().hex[:6]}"
-        swarm = AgenticSwarm(swarm_id)
-        logger.info(f"AgenticLayer: Deploying swarm {swarm_id} for goal: {goal}")
-
-        results = []
-        for target in targets:
-            res = await swarm.process_target(target)
-            results.append(res)
-
-        self.ueg.add_audit_log("AGENTIC_SCRAPER", f"Swarm {swarm_id} completed goal: {goal}", {"results_count": len(results)})
-        return {"goal": goal, "results": results, "swarm_id": swarm_id, "status": "SUCCESS"}
-
-from .knowledge_synthesis import KnowledgeSynthesisPipeline, EmbodiedAIController
-
 class DualModeScraper:
     """
-    ARTICLE 541-545: Dual-Mode Web Scraping Architecture.
+    ARTICLE 541-560: Dual-Mode Web Scraping Architecture.
+    Mode 1: Passive Sensory (Environmental Awareness).
+    Mode 2: Active Agentic (Goal-Driven Exploration).
     """
-    def __init__(self, token_ledger: Any = None):
-        self.passive = SensoryLayer()
-        self.active = AgenticLayer()
-        self.active.gate = ReasoningGate(token_ledger=token_ledger)
-        self.synthesis = KnowledgeSynthesisPipeline()
-        self.embodied = EmbodiedAIController()
-        self.passive.embodied = self.embodied
+    def __init__(self, token_ledger: 'TokenLedger'):
+        self.synthesis_pipeline = KnowledgeSynthesisPipeline()
+        self.embodied_ai = EmbodiedAIController()
+        self.ueg = UEGManager()
+        self.ledger = token_ledger
+        self.reasoning_gate = ReasoningGate(self.ledger)
+        self.passive = PassiveSensory(self)
 
-    async def start_passive_mode(self, pulse_provider: Any = None):
-        asyncio.create_task(self.passive.monitor_environment(pulse_provider))
+    async def execute_active_mission(self, user_id: str, goal: str, domain: str, urls: List[str]):
+        """ARTICLE 551: Mode 2 - Active Agentic Layer (Swarm-Coordinated)."""
+        logger.info(f"Scraper: Executing Active Mission for {user_id}: {goal}")
 
-    async def run_active_mission(self, goal: str, targets: List[str]):
-        return await self.active.execute_task(goal, targets)
+        # Domain-based human-in-the-loop (Article 571)
+        if domain in ["religious", "legal", "ethical"]:
+            logger.warning(f"Scraper: Mission in {domain} domain requires Agentic Governance CoE approval.")
+            # In a real system, this would wait for a webhook/manual approval
+            # For simulation, we assume approval if goal is aligned
+            if "purpose" not in goal.lower():
+                return {"status": "REJECTED", "reason": "Awaiting manual approval from Agentic Governance CoE"}
 
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["passive", "active"], default="passive")
-    args = parser.parse_args()
+        # Reasoning Gate Authorization
+        metadata = {"urls": urls, "depth": 2}
+        authorized = await self.reasoning_gate.authorize_task(user_id, "scraping_mission", metadata)
 
-    logging.basicConfig(level=logging.INFO)
-    scraper = DualModeScraper()
+        if not authorized:
+            return {"status": "FAILED", "reason": "Insufficient WST balance"}
 
-    if args.mode == "passive":
-        asyncio.run(scraper.start_passive_mode())
-    else:
-        # For active mode as a service, we'd listen to a queue
-        # For now, simulate a sample mission
-        asyncio.run(scraper.run_active_mission("Sample Investigation", ["https://example.com"]))
+        # Swarm Coordination (DPDE)
+        logger.info(f"Scraper: Dispatching swarm for goal: {goal}")
+        results = []
+        for url in urls:
+            # Simulate Navigator/Extractor agents
+            agent_result = {
+                "source_url": url,
+                "content": f"Extracted intelligence regarding {goal} from {url}",
+                "agent_id": f"swarm_agent_{random.randint(100, 999)}"
+            }
+            # Knowledge Synthesis
+            synthesis_report = await self.synthesis_pipeline.process_data_stream(agent_result)
+            results.append(synthesis_report)
+
+            # Evolutionary Reward (Article 586)
+            if synthesis_report["triples_extracted"] > 0:
+                await self.ledger.credit_tokens(user_id, 0.5, "Evolutionary Reward: High-fidelity extraction")
+
+        return {"status": "COMPLETED", "mission_results": results}

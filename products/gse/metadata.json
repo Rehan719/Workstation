@@ -1,0 +1,10 @@
+{
+    "name": "Grand Synthesis Engine",
+    "source": "agentic_core/synthesis/grand_synthesis_engine.py",
+    "tier": "Enterprise+",
+    "features": [
+        "Cross-Version Synthesis",
+        "Constitutional Generation",
+        "Audit Automation"
+    ]
+}
