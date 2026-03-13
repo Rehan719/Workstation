@@ -13,6 +13,43 @@ from agentic_core.biochemical.molecular_comm import MolecularSignalingFramework,
 
 logger = logging.getLogger(__name__)
 
+class BiomimeticVisionAgent:
+    """
+    ARTICLE 616-620: Mode 4 - Synaptic Integration.
+    Implements near-sensor computing for real-time page perception.
+    Processes web data directly within its internal memory layer.
+    """
+    def __init__(self, agent_id: str):
+        self.agent_id = agent_id
+        self.synaptic_memory = {}
+        # Simulated weights for CNN-based understanding
+        self._weights = [random.random() for _ in range(10)]
+
+    async def perceive(self, raw_html: str) -> Dict[str, Any]:
+        """Performs real-time understanding without passing through the central bus."""
+        start_time = datetime.datetime.now()
+
+        # Simulated Near-Sensor Computation
+        features = [raw_html.count(tag) for tag in ["<form", "<table", "<button", "price", "login"]]
+        understanding = "GENERIC_PAGE"
+
+        if features[0] > 0 and features[4] > 0: understanding = "LOGIN_FORM"
+        elif features[1] > 0 and features[3] > 0: understanding = "PRICING_TABLE"
+        elif features[2] > 0: understanding = "INTERACTIVE_ACTION_PAGE"
+
+        # Store in synaptic memory (device-level storage)
+        self.synaptic_memory["last_perception"] = understanding
+        self.synaptic_memory["complexity"] = sum(features)
+
+        latency_ms = (datetime.datetime.now() - start_time).total_seconds() * 1000
+
+        return {
+            "understanding": understanding,
+            "latency_ms": latency_ms,
+            "confidence": 0.95,
+            "method": "SYNAPTIC_IN_SENSOR_COMPUTING"
+        }
+
 class ReasoningGate:
     """
     ARTICLE 561-565: Reasoning Gate Protocol.
@@ -212,9 +249,16 @@ class DualModeScraper:
         self.molecular_framework.emit_signal(Neurotransmitter.OXYTOCIN, 0.8, "mission_control")
 
         results = []
+        # ARTICLE 616: Initialize Synaptic Vision Agent (Mode 4)
+        vision_agent = BiomimeticVisionAgent(f"vision_{mission_id}")
+
         for url in urls:
             # Simulate Agent Coordination (Article 551)
             agent_id = f"extractor_agent_{random.randint(100, 999)}"
+
+            # ARTICLE 616: Mode 4 Synaptic Perception (Near-Sensor)
+            perception = await vision_agent.perceive(f"<html>Simulation for {url}</html>")
+            logger.info(f"Scraper: Synaptic Perception - {perception['understanding']} in {perception['latency_ms']:.2f}ms")
 
             # ARTICLE 606: Sky Compass Navigation
             nav_metrics = nav_sensor.sense_polarisation(url, {"link_density": random.random(), "depth": 3})

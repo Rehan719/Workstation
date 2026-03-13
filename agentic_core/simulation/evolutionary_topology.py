@@ -63,6 +63,15 @@ class PhylogeneticDiversityTwin:
         logger.info(f"PHYLOGENETIC: Identified {len(anchors)} immutable anchors.")
         return anchors
 
+    def get_fossil_record(self) -> Dict[str, Any]:
+        """ARTICLE 661: Returns the full evolutionary history as a DAG fossil record."""
+        return {
+            "dag": self.tree,
+            "conserved_lineage": self.identify_immutable_anchors(),
+            "extinct_features": ["placeholder_logic", "manual_deployment_v1", "unstructured_ueg_v0"],
+            "last_common_ancestor": "v1.0"
+        }
+
 class IoBNTIntegration:
     """
     ARTICLE 626: Internet of Bio-Nano Things Integration.

@@ -81,8 +81,18 @@ async def get_knowledge_summary():
 async def get_token_ledger(user_id: str):
     report = token_ledger.get_ledger_report(user_id)
     if "error" in report:
-        raise HTTPException(status_code=404, detail="User not found")
+        # Onboarding trigger: Initialize new user with airdrop
+        token_ledger.initialize_user(user_id, UserTier.FREE)
+        report = token_ledger.get_ledger_report(user_id)
     return report
+
+@app.post("/api/v1/admin/mint")
+async def admin_mint(user_id: str, amount: float, reason: str = "Admin Minting"):
+    """ARTICLE 591: Admin token minting."""
+    success = token_ledger.mint(user_id, amount, reason)
+    if not success:
+        raise HTTPException(status_code=500, detail="Minting failed")
+    return {"status": "SUCCESS", "message": f"Minted {amount} WST for {user_id}"}
 
 # QEP ENDPOINTS
 @app.get("/api/v1/qep/ayah/{reference}")

@@ -30,5 +30,37 @@
             ]
         },
         "timestamp": 1773425846.6899252
+    },
+    {
+        "id": "op_53e2ade9",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.1104,
+        "structure": {
+            "inputs": [
+                "fluctuation_drive"
+            ],
+            "morphism": "ratchet_rectification",
+            "outputs": [
+                "specialized_api_latency"
+            ]
+        },
+        "timestamp": 1773438072.9436438
+    },
+    {
+        "id": "op_d13719ed",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.1104,
+        "structure": {
+            "inputs": [
+                "fluctuation_drive"
+            ],
+            "morphism": "ratchet_rectification",
+            "outputs": [
+                "specialized_api_latency"
+            ]
+        },
+        "timestamp": 1773438204.964572
     }
 ]
