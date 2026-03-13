@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  gse:
+    image: jules-ai/gse:latest
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    command: python -m agentic_core.synthesis.grand_synthesis_engine --rerun-with-uvaip
+    environment:
+      - ENTERPRISE_LICENSE=${LICENSE_KEY}
+    restart: on-failure

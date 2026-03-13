@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from agentic_core.enterprise.policy import PolicyCoE
+from agentic_core.governance.policy import PolicyCoE
 
 async def verify_governance_systems():
     logging.basicConfig(level=logging.INFO)

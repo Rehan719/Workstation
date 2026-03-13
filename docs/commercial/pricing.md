@@ -7,8 +7,8 @@ Jules AI v120.0 offers a tiered commercial model designed to empower both indivi
 | Tier | Target Audience | Features | Price (Monthly) |
 |------|-----------------|----------|-----------------|
 | **Community** | Individuals, OSS Devs | Core Reactors, QEP P0-P1, Basic UVIAP | $0 (Free Tier) |
-| **Professional** | Small Businesses | All 50 Reactors, QEP P2, Full UVIAP, Priority Sync | $99 |
-| **Enterprise** | Large Organizations | Multi-tenant, SSO, Custom SLA, Audit Logs, Dedicated Support | [Contact Sales] |
+| **Professional** | Small Businesses | All 50 Reactors, Business Incubator, QEP P2, Full UVIAP | $99 |
+| **Enterprise** | Large Organizations | Multi-tenant, SSO, HITL Mediation, Audit Logs, Dedicated Support | [Contact Sales] |
 
 ## 🚀 Commercial Engines
 

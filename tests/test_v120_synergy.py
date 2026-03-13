@@ -16,7 +16,7 @@ async def test_synergy():
         reactors=reactors,
         user_id="user_123",
         domain="startup_ecosystem",
-        tier="free"
+        tier="premium"
     )
 
     print("\n--- Synergy Execution Result ---")

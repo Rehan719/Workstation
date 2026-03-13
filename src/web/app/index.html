@@ -29,6 +29,14 @@
                 }
             });
             const [quranData, setQuranData] = useState(null);
+            const [pulse, setPulse] = useState(100);
+
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setPulse(prev => 95 + Math.random() * 5);
+                }, 3000);
+                return () => clearInterval(interval);
+            }, []);
 
             useEffect(() => {
                 fetch('http://127.0.0.1:8000/api/v1/status')
@@ -50,9 +58,22 @@
                         <div className="font-black text-xl mb-10">JULES <span className="text-blue-600">APP</span></div>
                         <button onClick={() => setView('dashboard')} className={`w-full text-left p-3 rounded-lg ${view === 'dashboard' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Dashboard</button>
                         <button onClick={() => setView('qep')} className={`w-full text-left p-3 rounded-lg ${view === 'qep' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Quranic Education</button>
+                        <button onClick={() => setView('scrape')} className={`w-full text-left p-3 rounded-lg ${view === 'scrape' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Sensory Web</button>
+                        <button onClick={() => setView('synthesis')} className={`w-full text-left p-3 rounded-lg ${view === 'synthesis' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Knowledge Graph</button>
+                        <button onClick={() => setView('tokens')} className={`w-full text-left p-3 rounded-lg ${view === 'tokens' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Token Management</button>
                     </div>
 
                     <div className="flex-1 overflow-auto p-10">
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="bg-zinc-900 px-4 py-2 rounded-full border border-zinc-800 flex items-center gap-3">
+                                <div className={`w-2 h-2 rounded-full bg-green-500 animate-pulse`}></div>
+                                <span className="text-xs font-bold tracking-widest text-zinc-400 uppercase">System Pulse: {pulse.toFixed(1)}%</span>
+                            </div>
+                            <div className="bg-blue-600/10 px-4 py-2 rounded-xl border border-blue-600/20 text-blue-400 text-xs font-medium">
+                                ✨ Wisdom: "Innovation is the byproduct of constitutional fidelity."
+                            </div>
+                        </div>
+
                         {view === 'dashboard' && (
                             <div>
                                 <h1 className="text-4xl font-bold mb-8">System Dashboard</h1>
@@ -82,6 +103,98 @@
                                             <span className="font-bold">{(okr.completion * 100).toFixed(0)}%</span>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'scrape' && (
+                            <div>
+                                <h1 className="text-4xl font-bold mb-8">Sensory Web Dashboard</h1>
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
+                                        <h3 className="text-xl font-bold mb-4 text-green-400">Mode 1: Passive Sensory</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                    <span className="text-sm">Market Signal</span>
+                                                </div>
+                                                <span className="text-xs text-zinc-500">Gating: 0.82</span>
+                                            </div>
+                                            <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                    <span className="text-sm">Competitor Watch</span>
+                                                </div>
+                                                <span className="text-xs text-zinc-500">Gating: 0.91</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
+                                        <h3 className="text-xl font-bold mb-4 text-blue-400">Mode 2: Agentic Missions</h3>
+                                        <button className="w-full bg-blue-600 p-4 rounded-xl font-bold mb-4">Deploy New Swarm</button>
+                                        <div className="text-sm text-zinc-500 text-center">No active missions.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'synthesis' && (
+                            <div>
+                                <h1 className="text-4xl font-bold mb-8">Knowledge Synthesis Dashboard</h1>
+                                <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
+                                    <h3 className="text-xl font-bold mb-6 text-purple-400">Extracted Entity-Relationship Triples</h3>
+                                    <div className="space-y-4 font-mono text-sm">
+                                        <div className="grid grid-cols-3 gap-4 p-4 bg-black/40 rounded-xl border border-white/5">
+                                            <span className="text-blue-400">Jules AI</span>
+                                            <span className="text-zinc-500 text-center">employs</span>
+                                            <span className="text-green-400">Biomimetic Logic</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-4 p-4 bg-black/40 rounded-xl border border-white/5 opacity-60">
+                                            <span className="text-blue-400">Market</span>
+                                            <span className="text-zinc-500 text-center">demands</span>
+                                            <span className="text-green-400">Embodied Cognition</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'tokens' && (
+                            <div>
+                                <h1 className="text-4xl font-bold mb-8">Token Management</h1>
+                                <div className="grid grid-cols-3 gap-6 mb-12">
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">WST Balance</div>
+                                        <div className="text-3xl font-black text-blue-500">42,500</div>
+                                    </div>
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Burn Rate</div>
+                                        <div className="text-3xl font-black">124 WST/hr</div>
+                                    </div>
+                                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                                        <div className="text-zinc-500 text-sm uppercase font-bold mb-2">Tier</div>
+                                        <div className="text-3xl font-black text-yellow-500">PRO</div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
+                                    <h3 className="text-xl font-bold mb-6">Recent Token Transactions</h3>
+                                    <div className="space-y-4">
+                                        {[
+                                            { activity: "UVIAP GitHub Ingestion", amount: 50, time: "10 mins ago" },
+                                            { activity: "Active Agentic Swarm Mission", amount: 200, time: "1 hour ago" },
+                                            { activity: "Mega-Twin Simulation", amount: 500, time: "3 hours ago" }
+                                        ].map((tx, i) => (
+                                            <div key={i} className="flex justify-between items-center p-4 bg-black/40 rounded-xl border border-white/5">
+                                                <div>
+                                                    <div className="font-bold">{tx.activity}</div>
+                                                    <div className="text-xs text-zinc-500">{tx.time}</div>
+                                                </div>
+                                                <div className="text-red-400 font-bold">-{tx.amount} WST</div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}

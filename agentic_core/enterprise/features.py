@@ -21,6 +21,9 @@ class EnterpriseFeatures:
             # List of features available in free tier
             free_features = ["core_reactors", "qep_p0", "qep_p1", "basic_uviap"]
             return feature_name in free_features
+
+        # Enterprise-only features
+        enterprise_features = ["multi_tenant", "sso", "advanced_audit", "human_in_the_loop_mediation"]
         return True
 
     def log_enterprise_audit(self, user_id: str, action: str, resource: str):
