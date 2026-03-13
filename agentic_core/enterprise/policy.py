@@ -1,24 +1,31 @@
 import logging
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from agentic_core.governance.qms import QualityManagementSystem
+from agentic_core.governance.dcs import DocumentControlSystem
+from agentic_core.governance.bms import BusinessManagementSystem
+from agentic_core.governance.ems import EvolutionManagementSystem
 
 logger = logging.getLogger(__name__)
 
 class PolicyCoE:
     """
-    ARTICLE 341: Centre for Policy & Governance.
+    ARTICLE 341 & 531: Centre for Policy & Governance.
     Ensures constitutional fidelity and ethical alignment.
+    Unifies QMS, DCS, BMS, and EMS.
     """
     def __init__(self):
         self.dcs_path = "docs/dcs"
         os.makedirs(self.dcs_path, exist_ok=True)
+        self.qms = QualityManagementSystem()
+        self.dcs = DocumentControlSystem()
+        self.bms = BusinessManagementSystem()
+        self.ems = EvolutionManagementSystem()
 
     def store_in_dcs(self, document_name: str, content: str):
         """ARTICLE 359: Stores documentation in the Document Control System (DCS)."""
         logger.info(f"Policy: Storing {document_name} in DCS.")
-        path = os.path.join(self.dcs_path, document_name)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
+        self.dcs.check_in(document_name, document_name, content, "PolicyCoE", "Direct Storage")
 
     def interpret_mandate(self, article_num: int) -> str:
         """Provides scholarly interpretation of constitutional articles."""

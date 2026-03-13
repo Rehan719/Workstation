@@ -25,6 +25,7 @@ from .feature_converger import FeatureConverger
 from .url_ingestor import DevelopmentScraper
 from .autonomic_system import AgenticAutonomicSystem
 from .documentation_generator import DocumentationGenerator
+from .uviap import UVIAP
 from agentic_core.ueg.ueg_manager import UEGManager
 from agentic_core.genetics.genomic_registry import GenomicRegistry
 
@@ -74,14 +75,15 @@ class GrandSynthesisEngine:
 
     async def run_synthesis(self, target_version: Optional[str] = None) -> Dict[str, Any]:
         """
-        ARTICLE 371-391: Executes the full Transcendent Grand Synthesis cycle v3.1.
-        Unifies URLs, background sources, and introspection data into a flawless configuration.
+        ARTICLE 371-391, 500-530: Executes the full Transcendent Grand Synthesis cycle v3.1.
+        Unifies URLs, background sources, introspection data, and GitHub history into a flawless configuration.
         """
         is_ultimate = "--ultimate-rerun" in sys.argv
         is_unify = "--unify" in sys.argv
         is_scrape = "--web-scrape" in sys.argv
         is_product = "--product-engineering" in sys.argv
-        target_version = target_version or ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))
+        is_full_evolution = "--full-evolution-pipeline" in sys.argv
+        target_version = target_version or ("120.0.0" if "--v120" in sys.argv or is_full_evolution else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))
         logger.info(f"Starting Grand Synthesis Cycle v3.1 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
@@ -89,6 +91,11 @@ class GrandSynthesisEngine:
             logger.info("Meta-Orchestrator 3.0: Initiating Hierarchical Orchestration and Predictive Resource Balancing.")
             # 112-05: Expert-level synchronization. Using event-based telemetry check (simulated).
             await self._predictive_sync()
+
+        if is_full_evolution:
+            logger.info("ARTICLE 500: Initiating Unified Version Ingestion & Assimilation Pipeline (UVIAP).")
+            uviap = UVIAP()
+            await uviap.run_full_pipeline()
 
         if target_version == "115.0.0":
             logger.info("ARTICLE 393: Starting Deep Knowledge Synthesis for v115.0 Converged Culmination.")

@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, Any, List
 from agentic_core.reactor.ecosystem.base import SpecializedReactor
+from agentic_core.orchestrator.symbiosis.connectors import AlQuranCloudConnector
 
 logger = logging.getLogger(__name__)
 
@@ -12,44 +13,61 @@ class QuranicStudiesReactor(SpecializedReactor):
     def __init__(self, config: Dict[str, Any] = None):
         config = config or {"capabilities": ["high_fidelity_simulation", "digital_twinning", "domain_optimization"]}
         super().__init__("religion", "quranic_studies", config)
+        self.quran_api = AlQuranCloudConnector()
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        ARTICLE 60 & 401: Quranic Education Platform (QEP) Core Implementation.
+        ARTICLE 60, 401 & 530: Quranic Education Platform (QEP) Core Implementation.
         Provides P0-P2 features: Text retrieval, translation, and advanced search.
         """
         logger.info(f"{self.registry_id}: Processing QEP mission for {input_data}.")
 
-        task = params.get("task", "search")
+        task = params.get("task", "get_ayah")
 
         if task == "get_ayah":
             # P0: Text and Translation
-            return {
-                "status": "SUCCESS",
-                "surah": 1,
-                "ayah": 1,
-                "arabic": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                "translation": "In the name of Allah, the Entirely Merciful, the Especially Merciful.",
-                "audio_url": "https://v120.io/audio/quran/001001.mp3"
-            }
+            reference = str(input_data) or "1:1"
+            res = await self.quran_api.get_ayah(reference)
+            if res.get("status") == "OK":
+                data = res["data"]
+                # Get Arabic text by fetching the ar.alafasy edition which includes audio too
+                ar_res = await self.quran_api.get_ayah(reference, "ar.alafasy")
+                arabic_text = ar_res["data"]["text"] if ar_res.get("status") == "OK" else ""
+                audio_url = ar_res["data"]["audio"] if ar_res.get("status") == "OK" else ""
+
+                return {
+                    "status": "SUCCESS",
+                    "surah": data["surah"]["number"],
+                    "ayah": data["numberInSurah"],
+                    "arabic": arabic_text,
+                    "translation": data["text"],
+                    "audio_url": audio_url,
+                    "reference": data["edition"]["identifier"]
+                }
+            return {"status": "FAILED", "message": res.get("message", "Unknown error")}
+
         elif task == "get_tafsir":
-            # P1: Bookmarking & Basic Tafsir
+            # P1: Bookmarking & Basic Tafsir (Simulated for this release)
             return {
                 "status": "SUCCESS",
                 "content_id": input_data,
-                "tafsir_text": "Comprehensive analysis of linguistic and historical context.",
+                "tafsir_text": "Tafsir Ibn Kathir: This is the opening chapter of the Quran...",
                 "verified_by": "Conscious Entity Board"
             }
 
-        # P2: Advanced Semantic Search
-        return {
-            "status": "SUCCESS",
-            "results": [
-                {"surah": 2, "ayah": 255, "relevance": 0.99},
-                {"surah": 1, "ayah": 1, "relevance": 0.95}
-            ],
-            "mode": "SEMANTIC_ADVANCED"
-        }
+        elif task == "search":
+            # P2: Advanced Semantic Search
+            keyword = str(input_data)
+            res = await self.quran_api.search(keyword)
+            if res.get("status") == "OK":
+                return {
+                    "status": "SUCCESS",
+                    "results": res["data"]["matches"],
+                    "mode": "SEMANTIC_ADVANCED"
+                }
+            return {"status": "FAILED", "message": res.get("message", "Search failed")}
+
+        return {"status": "ERROR", "message": "Unsupported QEP task"}
 
     async def interact(self, state: Any, action: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """ARTICLE 60: Real-time scenario interaction."""

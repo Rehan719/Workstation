@@ -2,7 +2,7 @@
   "expo": {
     "name": "Jules AI",
     "slug": "jules-ai",
-    "version": "1.0.0",
+    "version": "120.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -16,14 +16,22 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ai.jules.app"
+      "bundleIdentifier": "io.jules.ai"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "ai.jules.app"
+      "package": "io.jules.ai"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "jules-ai-v120"
+      }
     }
   }
 }
