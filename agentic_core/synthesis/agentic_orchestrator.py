@@ -115,7 +115,7 @@ class AgenticOrchestrator:
         """ARTICLE 561: Imposes computational cost before granting access to resources."""
         cost = 0.5 # Base cost
         if "scrape" in goal.lower() or "ingest" in goal.lower():
-            cost = 2.0 # Higher cost for I/O intensive tasks
+            cost = 5.0 # ARTICLE 561: Higher asymmetric cost for active missions
 
         logger.info(f"AGENTIC: Enforcing Reasoning Gate. Computational cost: {cost}")
         # In a real implementation, this would consume tokens or CPU cycles

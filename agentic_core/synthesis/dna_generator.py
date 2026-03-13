@@ -8,11 +8,11 @@ class DNAGenerator:
     """CN-IV: Immutable DNA Generation."""
 
     def generate_v120_constitution(self, config: Dict[str, Any]) -> str:
-        """CN-IV: Immutable DNA Generation for v120.1 - Apotheosis of Sensory Convergence."""
-        version = "120.1.0"
+        """CN-IV: Immutable DNA Generation for v121.0 - Apotheosis of Sensory Convergence & Agentic Evolution."""
+        version = "121.0.0"
         path = f"agentic_core/constitution/CONSTITUTION_v{version}.md"
 
-        content = f"""# JULES AI v{version}: APOTHEOSIS OF SENSORY CONVERGENCE CONSTITUTION
+        content = f"""# JULES AI v{version}: APOTHEOSIS OF SENSORY CONVERGENCE & AGENTIC EVOLUTION CONSTITUTION
 
 ## ⚜️ PREAMBLE
 This document establishes the definitive, unified DNA of Jules AI v120.0.
@@ -109,6 +109,13 @@ Establish a dedicated CoE for the security, ethical oversight, and constitutiona
 
 **ARTICLE 576: WEBSCRAPE-COE MANDATE**
 Establish a dedicated CoE for the optimization and evolution of web scraping capabilities.
+
+## 🧬 SECTION XXVIII: KNOWLEDGE SYNTHESIS & EMBODIED AI (Articles 581-600)
+**ARTICLE 581: KNOWLEDGE SYNTHESIS PIPELINE MANDATE**
+All scraped data must undergo multi‑stage processing (preprocessing → embedding → extraction → classification) before integration into UEG and Genomic Registry.
+
+**ARTICLE 586: EMBODIED AI MANDATE**
+The system must embody the principles of Embodied AI, where cognition emerges from interaction with the environment.
 
 ---
 *Codified via Grand Synthesis Engine v{version}*

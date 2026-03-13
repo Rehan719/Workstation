@@ -59,6 +59,7 @@
                         <button onClick={() => setView('dashboard')} className={`w-full text-left p-3 rounded-lg ${view === 'dashboard' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Dashboard</button>
                         <button onClick={() => setView('qep')} className={`w-full text-left p-3 rounded-lg ${view === 'qep' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Quranic Education</button>
                         <button onClick={() => setView('scrape')} className={`w-full text-left p-3 rounded-lg ${view === 'scrape' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Sensory Web</button>
+                        <button onClick={() => setView('synthesis')} className={`w-full text-left p-3 rounded-lg ${view === 'synthesis' ? 'bg-zinc-900 text-blue-500' : 'text-zinc-400'}`}>Knowledge Graph</button>
                     </div>
 
                     <div className="flex-1 overflow-auto p-10">
@@ -113,12 +114,18 @@
                                         <h3 className="text-xl font-bold mb-4 text-green-400">Mode 1: Passive Sensory</h3>
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5">
-                                                <span className="text-sm">Market Signal</span>
-                                                <span className="text-xs bg-green-900/30 text-green-500 px-2 py-1 rounded">Active</span>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                    <span className="text-sm">Market Signal</span>
+                                                </div>
+                                                <span className="text-xs text-zinc-500">Gating: 0.82</span>
                                             </div>
                                             <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5">
-                                                <span className="text-sm">Competitor Watch</span>
-                                                <span className="text-xs bg-green-900/30 text-green-500 px-2 py-1 rounded">Active</span>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                    <span className="text-sm">Competitor Watch</span>
+                                                </div>
+                                                <span className="text-xs text-zinc-500">Gating: 0.91</span>
                                             </div>
                                         </div>
                                     </div>
@@ -126,6 +133,27 @@
                                         <h3 className="text-xl font-bold mb-4 text-blue-400">Mode 2: Agentic Missions</h3>
                                         <button className="w-full bg-blue-600 p-4 rounded-xl font-bold mb-4">Deploy New Swarm</button>
                                         <div className="text-sm text-zinc-500 text-center">No active missions.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'synthesis' && (
+                            <div>
+                                <h1 className="text-4xl font-bold mb-8">Knowledge Synthesis Dashboard</h1>
+                                <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
+                                    <h3 className="text-xl font-bold mb-6 text-purple-400">Extracted Entity-Relationship Triples</h3>
+                                    <div className="space-y-4 font-mono text-sm">
+                                        <div className="grid grid-cols-3 gap-4 p-4 bg-black/40 rounded-xl border border-white/5">
+                                            <span className="text-blue-400">Jules AI</span>
+                                            <span className="text-zinc-500 text-center">employs</span>
+                                            <span className="text-green-400">Biomimetic Logic</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-4 p-4 bg-black/40 rounded-xl border border-white/5 opacity-60">
+                                            <span className="text-blue-400">Market</span>
+                                            <span className="text-zinc-500 text-center">demands</span>
+                                            <span className="text-green-400">Embodied Cognition</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

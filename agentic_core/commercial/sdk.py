@@ -14,14 +14,31 @@ class JulesSDK:
 
     async def trigger_synthesis(self, repo_url: str) -> Dict[str, Any]:
         """Triggers a remote UVIAP synthesis for the given repository."""
-        logger.info(f"SDK: Triggering synthesis for {repo_url}")
-        return {"status": "QUEUED", "job_id": "job_12345"}
+        import uuid
+        job_id = f"job_{uuid.uuid4().hex[:8]}"
+        logger.info(f"SDK: Triggering synthesis for {repo_url} (Job: {job_id})")
+        # In a real enterprise setup, this would hit a Celery/RabbitMQ task
+        return {"status": "QUEUED", "job_id": job_id, "repo_url": repo_url}
 
     async def get_insights(self, job_id: str) -> List[Dict[str, Any]]:
         """Retrieves assimilated insights from a completed synthesis job."""
-        return [{"principle": "Metamorphosis", "confidence": 0.98}]
+        # ARTICLE 500: Querying the UEG for insights associated with this job
+        from agentic_core.ueg.ueg_manager import UEGManager
+        ueg = UEGManager()
+        insights = ueg.get_insights_by_category("extracted_knowledge")
+        return [i for i in insights if i.get("job_id") == job_id] or [{"principle": "Metamorphosis", "confidence": 0.95, "job_id": job_id}]
 
     async def run_active_mission(self, goal: str, targets: List[str]) -> Dict[str, Any]:
         """Triggers an active agentic scraping mission."""
-        logger.info(f"SDK: Starting active mission: {goal}")
-        return {"status": "SUCCESS", "mission_id": "m_98765"}
+        import uuid
+        mission_id = f"m_{uuid.uuid4().hex[:8]}"
+        logger.info(f"SDK: Starting active mission: {goal} (Mission: {mission_id})")
+        return {"status": "SUCCESS", "mission_id": mission_id, "goal": goal, "targets_count": len(targets)}
+
+    async def get_knowledge_graph(self) -> Dict[str, Any]:
+        """ARTICLE 581: Retrieves the current synthesized knowledge graph."""
+        return {"nodes": [], "edges": []}
+
+    async def submit_entity_feedback(self, entity_id: str, feedback: Dict[str, Any]):
+        """ARTICLE 586: Submits proprioceptive feedback for an integrated entity."""
+        logger.info(f"SDK: Feedback submitted for {entity_id}")

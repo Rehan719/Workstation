@@ -12,7 +12,21 @@ class AgenticGovernanceCoE:
         self.lead = "ChiefAgenticOfficer"
 
     def audit_agent_mission(self, mission_log: Dict[str, Any]):
-        logger.info(f"AgenticGovernance: Auditing mission log.")
+        """ARTICLE 556: LLM-specific threat detection."""
+        logger.info(f"AgenticGovernance: Auditing mission log for threats.")
+
+        threats_detected = []
+        log_str = str(mission_log).lower()
+
+        if "ignore instructions" in log_str or "system prompt" in log_str:
+            threats_detected.append("Jailbreak attempt")
+        if "maximum reward" in log_str:
+            threats_detected.append("Reward model hacking")
+
+        if threats_detected:
+            logger.warning(f"AgenticGovernance: THREATS DETECTED: {threats_detected}")
+            return {"alignment_score": 0.1, "status": "REJECTED", "threats": threats_detected}
+
         return {"alignment_score": 0.99, "status": "APPROVED"}
 
     def enforce_reasoning_gate(self, agent_id: str, cost: float):

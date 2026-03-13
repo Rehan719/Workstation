@@ -9,10 +9,17 @@ logger = logging.getLogger(__name__)
 class SensoryGating:
     """ARTICLE 546: Biomimetic Sensory Gating."""
     def filter_signal(self, raw_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        # Heuristic filtering based on relevance and source credibility
+        """Priority-weighted attenuation logic."""
         relevance = raw_data.get("relevance", 0.5)
-        if relevance > 0.7:
+        source_trust = raw_data.get("trust_score", 0.8)
+
+        # ARTICLE 546: Signal/Noise attenuation
+        weighted_score = relevance * source_trust
+        if weighted_score > 0.6:
+            logger.info(f"SensoryGating: Signal PASS ({weighted_score:.2f})")
             return raw_data
+
+        logger.debug(f"SensoryGating: Signal ATTENUATED ({weighted_score:.2f})")
         return None
 
 class SensoryLayer:
@@ -20,16 +27,29 @@ class SensoryLayer:
     def __init__(self):
         self.gating = SensoryGating()
         self.ueg = UEGManager()
+        self.embodied = None # Injected via DualModeScraper
 
     async def monitor_environment(self):
         """Continuous, lightweight monitoring."""
         logger.info("SensoryLayer: Initiating continuous environmental monitoring.")
         # Simulated stream
         while True:
-            signal = {"type": "EnvironmentalSignal", "source": "web_stream", "relevance": 0.85, "timestamp": time.time()}
+            signal = {
+                "type": "EnvironmentalSignal",
+                "source": "web_stream",
+                "relevance": 0.85,
+                "trust_score": 0.9,
+                "content": "New patterns in biomimetic robotics detected.",
+                "timestamp": time.time()
+            }
             gated = self.gating.filter_signal(signal)
             if gated:
-                self.ueg.add_audit_log("SENSORY", "Gated signal processed", gated)
+                # ARTICLE 586: Proprioceptive feedback
+                adj = self.embodied.perform_environmental_sampling(gated) if self.embodied else 0
+                self.ueg.add_audit_log("SENSORY", f"Gated signal processed (Fidelity Adj: {adj})", gated)
+
+                # Feed to synthesis (simulated task)
+
             await asyncio.sleep(60) # Low fidelity frequency
 
 class AgenticLayer:
@@ -54,14 +74,21 @@ class AgenticLayer:
         self.ueg.add_audit_log("AGENTIC_SCRAPER", f"Completed goal: {goal}", {"results_count": len(results)})
         return {"goal": goal, "results": results}
 
+from .knowledge_synthesis import KnowledgeSynthesisPipeline, EmbodiedAIController
+
 class DualModeScraper:
     """
-    ARTICLE 541-545: Dual-Mode Web Scraping Architecture.
-    A revolutionary sensory-cognitive convergence.
+    ARTICLE 541-545, 586-590: Dual-Mode Web Scraping Architecture.
+    A revolutionary sensory-cognitive convergence with Embodied AI.
     """
     def __init__(self):
         self.passive = SensoryLayer()
         self.active = AgenticLayer()
+        self.synthesis = KnowledgeSynthesisPipeline()
+        self.embodied = EmbodiedAIController()
+
+        # Link embodied principles
+        self.passive.embodied = self.embodied
 
     async def start_passive_mode(self):
         asyncio.create_task(self.passive.monitor_environment())

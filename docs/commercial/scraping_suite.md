@@ -10,6 +10,7 @@ The Jules AI Scraping Suite provides a production-ready solution for autonomous 
 | **Active Agentic Mode** | Swarm-coordinated deep investigative extraction. |
 | **Adaptive Parsing** | Immune-inspired parsing that adapts to layout changes. |
 | **Reasoning Gate** | Computational cost enforcement to prevent runaway processes. |
+| **Knowledge Synthesis** | Multi-stage pipeline to transform raw data into graph nodes. |
 
 ## 💰 Pricing & Licensing
 
