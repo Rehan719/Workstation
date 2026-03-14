@@ -26,6 +26,7 @@ from .url_ingestor import DevelopmentScraper
 from .autonomic_system import AgenticAutonomicSystem
 from .documentation_generator import DocumentationGenerator
 from .uviap import UVIAP
+from .introspection_engine import IntrospectionEngine
 from agentic_core.ueg.ueg_manager import UEGManager
 from agentic_core.genetics.genomic_registry import GenomicRegistry
 
@@ -75,7 +76,7 @@ class GrandSynthesisEngine:
 
     async def run_synthesis(self, target_version: Optional[str] = None) -> Dict[str, Any]:
         """
-        ARTICLE 371-391, 500-530, 601-630: Executes the Transcendent Grand Synthesis cycle v3.5.
+        ARTICLE 371-391, 500-530, 601-630, 651-670: Executes the Transcendent Grand Synthesis cycle v4.1.
         Unifies URLs, background sources, introspection data, and GitHub history into a flawless configuration.
         """
         is_ultimate = "--ultimate-rerun" in sys.argv
@@ -84,14 +85,17 @@ class GrandSynthesisEngine:
         is_product = "--product-engineering" in sys.argv
         is_full_evolution = "--full-evolution-pipeline" in sys.argv
         is_rerun_uvaip = "--rerun-with-uvaip" in sys.argv or "--with-uvaip" in sys.argv
+        is_introspect = "--introspect-evolve" in sys.argv
 
-        # v124 Synthesis Modes
-        is_rectify = "--rectify-synthesis" in sys.argv
-        is_phylogenetic = "--phylogenetic-synthesis" in sys.argv
+        # v125 Synthesis Modes
+        is_rectify = "--rectify-synthesis" in sys.argv or "--rectify-qep-insights" in sys.argv
+        is_phylogenetic = "--phylogenetic-synthesis" in sys.argv or "--phylogenetic-map" in sys.argv
         is_molecular = "--molecular-synthesis" in sys.argv
+        is_qep_synthesis = "--qep-synthesis" in sys.argv
+        is_tool_synthesis = "--tool-synthesis" in sys.argv
 
-        target_version = target_version or ("124.0.0" if "--v124" in sys.argv or is_rectify or is_phylogenetic or is_molecular else ("123.0.0" if "--v123" in sys.argv or is_full_evolution or is_rerun_uvaip else ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))))
-        logger.info(f"Starting Grand Synthesis Cycle v3.5 for {target_version}...")
+        target_version = target_version or ("125.1.0" if is_introspect else ("125.0.0" if "--v125" in sys.argv or is_qep_synthesis or is_tool_synthesis else ("124.0.0" if "--v124" in sys.argv or is_rectify or is_phylogenetic or is_molecular else ("123.0.0" if "--v123" in sys.argv or is_full_evolution or is_rerun_uvaip else ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))))))
+        logger.info(f"Starting Grand Synthesis Cycle v4.1 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
         if is_ultimate:
@@ -99,21 +103,58 @@ class GrandSynthesisEngine:
             # 112-05: Expert-level synchronization. Using event-based telemetry check (simulated).
             await self._predictive_sync()
 
-        if is_full_evolution or is_rerun_uvaip or is_rectify or is_phylogenetic or is_molecular or "--cognitive-synthesis" in sys.argv:
+        if is_full_evolution or is_rerun_uvaip or is_rectify or is_phylogenetic or is_molecular or is_qep_synthesis or is_tool_synthesis or "--cognitive-synthesis" in sys.argv:
             logger.info("ARTICLE 500/596: Initiating Unified Version Ingestion & Assimilation Pipeline (UVIAP).")
             uviap = UVIAP()
             modes = []
             if is_full_evolution: modes.append("full")
             if is_rectify: modes.append("rectify")
+            if "--rectify-qep-insights" in sys.argv: modes.append("rectify-qep-insights")
             if is_phylogenetic: modes.append("phylogenetic")
+            if "--phylogenetic-map" in sys.argv: modes.append("phylogenetic-map")
+            if is_qep_synthesis: modes.append("full") # QEP synthesis leverages full ingestion
+            if is_tool_synthesis: modes.append("full")
             if "--cognitive-synthesis" in sys.argv: modes.append("cognitive")
 
             # ARTICLE 124.1: Automated UVIAP Mode Selection
             if is_rerun_uvaip and not modes:
-                modes = ["full", "rectify", "phylogenetic", "cognitive"]
+                modes = ["full", "rectify", "phylogenetic", "cognitive", "rectify-qep-insights", "phylogenetic-map"]
                 logger.info(f"UVIAP Automation: Triggering multi-mode synthesis: {modes}")
 
             await uviap.run_full_pipeline(modes=modes)
+
+        # ARTICLE 500: Continuous Evolution Loop Automation
+        if "--with-uvaip" in sys.argv:
+            logger.info("UVIAP: Automating all evolutionary modes (v125.1).")
+            auto_modes = ["rectify", "phylogenetic", "cognitive", "rectify-qep-insights", "phylogenetic-map"]
+            await uviap.run_full_pipeline(modes=auto_modes)
+
+        if is_introspect:
+            logger.info("ARTICLE 651: Initiating Introspection & Evolution Engine (v125.1).")
+            introspection = IntrospectionEngine(self.ueg, self.genomic_registry)
+
+            # Phase 1: Self-Assessment
+            health_report = await introspection.generate_health_report()
+            atlas = introspection.map_version_convergence_atlas()
+
+            # Phase 2: Autonomous Research (triggered by gaps in health_report)
+            from .cognitive_scraper import CognitiveComputingScraperAgent
+            scraper = CognitiveComputingScraperAgent(self.ueg)
+            for gap in health_report["identified_gaps"]:
+                await scraper.execute_discovery_mission(topic=gap, mode="research")
+
+            # Phase 4: Proposal Generation (Simulated)
+            proposal = {
+                "id": "EVO_125_1_001",
+                "title": "Autonomous RL Mission Planning for Cognitive Scraper",
+                "impact": "Enhance research coverage by 40%",
+                "ari_score": 1,
+                "constitutional_vetting": "PASS"
+            }
+
+            # Phase 3: Simulation
+            sim_result = await introspection.simulate_solution(proposal)
+            logger.info(f"Introspection: Simulation for {proposal['id']} complete. Confidence: {sim_result['confidence']}")
 
         if target_version == "115.0.0":
             logger.info("ARTICLE 393: Starting Deep Knowledge Synthesis for v115.0 Converged Culmination.")
@@ -221,7 +262,19 @@ class GrandSynthesisEngine:
             self._generate_unified_manifest(target_version)
 
         version = resolved_config.get("version")
-        if version == "124.0.0":
+        if version == "125.1.0":
+            # ARTICLE 651-670: v125.1 Apotheosis DNA (Self-Evolution)
+            constitution_path = "agentic_core/constitution/CONSTITUTION_canonical.md"
+            logger.info(f"v125.1 Constitution codified at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "125.0.0":
+            # ARTICLE 636-655: v125.0 Apotheosis DNA
+            constitution_path = "agentic_core/constitution/CONSTITUTION_canonical.md"
+            logger.info(f"v125.0 Constitution codified at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "124.0.0":
             # ARTICLE 601-630: v124.0 Apotheosis DNA
             constitution_path = "agentic_core/constitution/CONSTITUTION_canonical.md"
             logger.info(f"v124.0 Constitution codified at {constitution_path}")

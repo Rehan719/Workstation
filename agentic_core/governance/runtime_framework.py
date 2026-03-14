@@ -43,12 +43,13 @@ class AgenticTelemetrySchema:
     """
     @staticmethod
     def create_event(agent_id: str, event_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """v125.0: ATS captures tool usage and scholarly events."""
         return {
             "agent_id": agent_id,
-            "event_type": event_type, # e.g., plan.start, tool.invoke, action.sensitive
+            "event_type": event_type, # e.g., plan.start, tool.invoke, tool.discover, tool.rate
             "payload": payload,
             "timestamp": time.time(),
-            "schema_version": "1.22.0"
+            "schema_version": "2.0.0"
         }
 
 class RuntimeConstitutionalFramework:

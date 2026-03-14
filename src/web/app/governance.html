@@ -2,62 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>JULES | Runtime Governance Dashboard</title>
+    <title>Jules AI | Runtime Governance</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body { background: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; }
-        .ari-card { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(56, 189, 248, 0.2); }
-        .status-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        body { background: #020617; color: white; font-family: sans-serif; }
+        .glass { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
     </style>
 </head>
 <body class="p-12">
-    <header class="flex justify-between items-center mb-12">
-        <div>
-            <h1 class="text-4xl font-black tracking-tighter text-sky-400">MI9/arifOS Governance</h1>
-            <p class="text-slate-500">Real-time Constitutional Enforcement & Agency-Risk Index (ARI)</p>
-        </div>
-        <div class="px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-bold">
-            <span class="status-pulse inline-block w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
-            RUNTIME ACTIVE
-        </div>
-    </header>
+    <h1 class="text-4xl font-bold mb-12">Runtime <span class="text-sky-400">Governance</span></h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-        <div class="ari-card p-6 rounded-3xl">
-            <h3 class="text-slate-400 text-xs font-bold uppercase mb-4">Average System ARI</h3>
-            <div class="text-5xl font-black">0.042</div>
-            <div class="text-[10px] text-emerald-400 mt-2">SAFE RANGE (0.00 - 0.25)</div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- ARI Scores -->
+        <div class="glass p-8 rounded-3xl">
+            <h3 class="text-xl font-bold mb-6">Agency-Risk Index (ARI)</h3>
+            <div id="ari-list" class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm">UVIAP_Agent</span>
+                    <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] rounded font-bold">L1 - MINIMAL</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm">CognitiveScraper</span>
+                    <span class="px-2 py-1 bg-sky-500/20 text-sky-400 text-[10px] rounded font-bold">L2 - SANDBOX</span>
+                </div>
+            </div>
         </div>
-        <div class="ari-card p-6 rounded-3xl">
-            <h3 class="text-slate-400 text-xs font-bold uppercase mb-4">Active Containment</h3>
-            <div class="text-5xl font-black">0</div>
-            <div class="text-[10px] text-slate-500 mt-2">NO SANDBOXED AGENTS</div>
+
+        <!-- Containment Events -->
+        <div class="glass p-8 rounded-3xl">
+            <h3 class="text-xl font-bold mb-6">Containment Tracker</h3>
+            <div id="containment-log" class="space-y-2">
+                <div class="text-[10px] text-slate-500 font-mono">2024-05-23 10:45:01 -> [INFO] System Nominal</div>
+            </div>
         </div>
-        <div class="ari-card p-6 rounded-3xl">
-            <h3 class="text-slate-400 text-xs font-bold uppercase mb-4">Compliance Events (hr)</h3>
-            <div class="text-5xl font-black">1,420</div>
-            <div class="text-[10px] text-sky-400 mt-2">100% SUCCESS RATE</div>
+
+        <!-- ATS Live Feed -->
+        <div class="glass p-8 rounded-3xl">
+            <h3 class="text-xl font-bold mb-6">Live ATS Telemetry</h3>
+            <div id="ats-feed" class="h-64 overflow-y-auto space-y-2 font-mono text-[8px] text-sky-400">
+                <!-- Live entries -->
+            </div>
         </div>
     </div>
 
-    <section class="ari-card p-8 rounded-3xl">
-        <h2 class="text-xl font-bold mb-6">Live Telemetry (ATS Stream)</h2>
-        <div class="space-y-4 font-mono text-xs">
-            <div class="p-3 bg-white/5 rounded border-l-2 border-emerald-500">
-                <span class="text-slate-500">[14:20:05]</span> <span class="text-sky-400">AGENT_MISSION_AUTH</span>: Extractor_742 authorized. ARI: 0.05. Status: PASSED.
-            </div>
-            <div class="p-3 bg-white/5 rounded border-l-2 border-emerald-500">
-                <span class="text-slate-500">[14:20:12]</span> <span class="text-sky-400">POLICY_VETTING</span>: QEP Search API change approved by arifOS floor.
-            </div>
-            <div class="p-3 bg-white/5 rounded border-l-2 border-amber-500">
-                <span class="text-slate-500">[14:21:44]</span> <span class="text-amber-400">DRIFT_DETECTED</span>: Swarm_Delta drift detected (0.12). Initializing active monitor.
-            </div>
-        </div>
-    </section>
-
-    <footer class="mt-12 text-slate-600 text-[10px] uppercase tracking-widest text-center">
-        Powered by Virtual Sovereign Business Governance Engine v124.1
-    </footer>
+    <script>
+        // Simulation of WebSocket updates
+        function addAtsEvent() {
+            const feed = document.getElementById('ats-feed');
+            const event = document.createElement('div');
+            event.textContent = `[ATS v2.0.0] ${new Date().toLocaleTimeString()} - tool.invoke -> registry_read (id: ${Math.random().toString(36).substr(2, 5)})`;
+            feed.prepend(event);
+            if(feed.children.length > 20) feed.lastChild.remove();
+        }
+        setInterval(addAtsEvent, 2000);
+    </script>
 </body>
 </html>

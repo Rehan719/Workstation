@@ -43,9 +43,11 @@ jobs:
         poetry run python -m agentic_core.synthesis.uviap
         poetry run python -m agentic_core.synthesis.grand_synthesis_engine
 
-    - name: Run v120 Core Tests
+    - name: Run v125 Core QEP Tests
       run: |
         PYTHONPATH=. poetry run pytest tests/test_v120_synergy.py tests/verify_uviap.py
+        # v125.0 Scholarship Audit
+        poetry run python scripts/validate_qep_scholarship.py
 
   deployment-readiness:
     runs-on: ubuntu-latest
