@@ -27,7 +27,7 @@ class CognitiveComputingScraperAgent:
         self.source_weights = {"arxiv": 0.8, "blog": 0.6, "conference": 0.7, "twitter": 0.4}
 
     async def execute_discovery_mission(self, topic: str = "quantum_cognition", autonomous: bool = False, mode: str = "cognitive") -> Dict[str, Any]:
-        """Runs a multi-source sweep for a specific topic (cognitive or qep)."""
+        """Runs a multi-source sweep for a specific topic (cognitive, qep, or research)."""
         mission_id = str(uuid.uuid4())[:8]
         logger.info(f"CognitiveScraper: Starting discovery mission {mission_id} for topic: {topic} (Mode: {mode})")
 
@@ -35,6 +35,9 @@ class CognitiveComputingScraperAgent:
         sources = ["arxiv", "blog", "conference"]
         if mode == "qep":
             sources = ["google_scholar", "academic_journals", "scholarly_portals"]
+        elif mode == "research":
+            # v125.1: Targeted research for self-evolution gaps
+            sources = ["github_repositories", "stack_overflow", "tech_whitepapers"]
 
         for source in sources:
             sub_agent = self.sub_agents.get(source, "ScholarlyExtractionAgent")
@@ -44,7 +47,7 @@ class CognitiveComputingScraperAgent:
             findings = await self._simulate_extraction(source, topic, mode)
             results.append(findings)
 
-            # Integrate into UEG as CognitiveConcept or QEPConcept nodes
+            # Integrate into UEG as CognitiveConcept, QEPConcept, or ResearchFinding nodes
             self._update_concept_graph(findings, mode)
 
         return {
@@ -74,7 +77,12 @@ class CognitiveComputingScraperAgent:
 
     def _update_concept_graph(self, findings: Dict[str, Any], mode: str = "cognitive"):
         """Builds and maintains a graph of concepts in the UEG."""
-        category = "cognitive_concept" if mode == "cognitive" else "qep_concept"
+        category = "cognitive_concept"
+        if mode == "qep":
+            category = "qep_concept"
+        elif mode == "research":
+            category = "research_finding"
+
         self.ueg.add_insight(
             content=findings["summary"],
             source_id=findings["source"],

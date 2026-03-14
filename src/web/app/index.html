@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jules v125.0 | Transcendent QEP & Tool Ecosystem</title>
+    <title>Jules v125.1 | Self-Introspective Evolution</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -45,9 +45,8 @@
             color: var(--serene-gold);
             border-left: 3px solid var(--serene-gold);
         }
-        .scholar-aura {
-            filter: blur(15px);
-            opacity: 0.6;
+        .evolution-node {
+            filter: drop-shadow(0 0 5px var(--sky-primary));
         }
         /* Manuscript Mode Toggle */
         .manuscript-mode body {
@@ -65,28 +64,32 @@
     <aside class="w-72 border-right border-white/5 bg-slate-950/80 p-8 flex flex-col z-20">
         <div class="mb-12">
             <div class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-gold-500 shadow-[0_0_10px_#D4AF37]"></div>
-                <span class="font-extrabold text-xl tracking-tighter">JULES v125.0</span>
+                <div class="w-3 h-3 rounded-full bg-sky-500 shadow-[0_0_10px_#38bdf8]"></div>
+                <span class="font-extrabold text-xl tracking-tighter">JULES v125.1</span>
             </div>
-            <span class="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">Transcendent QEP</span>
+            <span class="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">Self-Evolution Mode</span>
         </div>
 
         <nav class="flex-1 space-y-1">
-            <a href="#" class="nav-link active flex items-center gap-3 p-3 rounded-lg text-sm font-semibold">
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-width="2"></path></svg>
                 QEP Dashboard
             </a>
-            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H7a1 1 0 01-1-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" stroke-width="2"></path></svg>
-                Tool Discovery
+            <a href="#" class="nav-link active flex items-center gap-3 p-3 rounded-lg text-sm font-semibold">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2"></path></svg>
+                Introspection
             </a>
             <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-width="2"></path></svg>
-                Scholar Network
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" stroke-width="2"></path></svg>
+                Incubator
             </a>
         </nav>
 
         <div class="mt-auto">
+             <div class="glass p-4 rounded-xl mb-4">
+                <div class="text-[8px] text-slate-500 uppercase font-bold mb-1">Health Status</div>
+                <div class="text-xs font-bold text-emerald-400">OPTIMAL (98.5%)</div>
+             </div>
             <button id="manuscript-toggle" class="w-full glass p-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all">
                 Toggle Manuscript Mode
             </button>
@@ -97,112 +100,160 @@
     <main class="flex-1 h-full overflow-y-auto p-12 relative z-10">
         <header class="flex justify-between items-end mb-16">
             <div>
-                <h1 class="text-5xl font-extrabold tracking-tight mb-2">Transcendent <span class="text-[#D4AF37] gold-glow">Workstation</span></h1>
-                <p class="text-slate-400 font-medium">Apotheosis v125.0 | QEP & Tool Ecosystem Ingested</p>
+                <h1 class="text-5xl font-extrabold tracking-tight mb-2">Genomic <span class="text-sky-400 gold-glow">Self-Evolution</span></h1>
+                <p class="text-slate-400 font-medium">Apotheosis v125.1 | Introspection Engine & Version Atlas Active</p>
             </div>
-            <div class="glass px-6 py-3 rounded-2xl">
-                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Scholar Rep</span>
-                <div class="text-xl font-bold text-[#D4AF37]">0.985 <span class="text-xs text-slate-500">OXY</span></div>
+            <div class="flex gap-4">
+                <div class="glass px-6 py-3 rounded-2xl">
+                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Evolutionary Fitness</span>
+                    <div class="text-xl font-bold text-sky-400">0.98 <span class="text-xs text-slate-500">SCORE</span></div>
+                </div>
             </div>
         </header>
 
-        <!-- QEP Section -->
+        <!-- Version Convergence Atlas -->
         <section class="mb-12">
             <div class="flex items-center gap-4 mb-8">
-                <h2 class="text-2xl font-bold">Quranic Education Platform</h2>
+                <h2 class="text-2xl font-bold">Version Convergence Atlas</h2>
                 <div class="h-px flex-1 bg-white/5"></div>
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Verse of the Day (Parchment) -->
-                <div class="lg:col-span-2 parchment-card p-10 rounded-3xl relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-4 text-[10px] font-bold text-[#8b7d5b] uppercase">Hafs Recitation</div>
-                    <div class="quran-text text-4xl mb-8 leading-relaxed text-right">
-                        بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-                    </div>
-                    <div class="text-lg font-medium italic text-slate-700 mb-6">
-                        "In the name of Allah, the Entirely Merciful, the Especially Merciful."
-                    </div>
-                    <div class="flex gap-4">
-                        <button class="bg-[#2c2c2c] text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">View Morphology</button>
-                        <button class="border border-[#2c2c2c]/20 px-4 py-2 rounded-lg text-xs font-bold uppercase">Compare Tafsir</button>
-                    </div>
-                </div>
-
-                <!-- Scholar Trust Constellation -->
-                <div class="glass p-8 rounded-3xl relative overflow-hidden h-[350px]">
-                    <h3 class="text-lg font-bold mb-4">Scholar Trust Network</h3>
-                    <div id="scholar-viz" class="w-full h-full"></div>
-                </div>
+            <div class="glass p-10 rounded-3xl h-[400px]">
+                <div id="atlas-viz" class="w-full h-full"></div>
             </div>
         </section>
 
-        <!-- Tool Ecosystem Section -->
-        <section class="mb-12">
-             <div class="flex items-center gap-4 mb-8">
-                <h2 class="text-2xl font-bold">Tool Discovery Constellation</h2>
-                <div class="h-px flex-1 bg-white/5"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <!-- Workstation Health Report -->
+            <div class="glass p-8 rounded-3xl">
+                <h3 class="text-xl font-bold mb-6">Workstation Health Report</h3>
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-400">Constitutional Fidelity</span>
+                        <span class="text-emerald-400 font-bold">100%</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-400">Biomimetic Synergy</span>
+                        <span class="text-sky-400 font-bold">95.8%</span>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-3">Identified Gaps</div>
+                        <div class="space-y-2">
+                             <div class="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                                <div class="w-2 h-2 rounded-full bg-pink-500"></div>
+                                <span class="text-xs">IoBNT integration testing coverage</span>
+                             </div>
+                             <div class="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                                <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                                <span class="text-xs">Mobile dashboard feature parity</span>
+                             </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="glass p-8 rounded-3xl h-[500px]">
-                <div id="tool-constellation" class="w-full h-full"></div>
-            </div>
-        </section>
 
-        <!-- Ingestion Metrics -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="glass p-6 rounded-2xl">
-                <div class="text-[10px] text-slate-500 font-bold uppercase mb-2">Sources Ingested</div>
-                <div class="text-2xl font-bold">62 <span class="text-xs text-emerald-400">+5</span></div>
-            </div>
-            <div class="glass p-6 rounded-2xl">
-                <div class="text-[10px] text-slate-500 font-bold uppercase mb-2">Entity Resolution</div>
-                <div class="text-2xl font-bold">98.2%</div>
-            </div>
-            <div class="glass p-6 rounded-2xl">
-                <div class="text-[10px] text-slate-500 font-bold uppercase mb-2">Rectified operads</div>
-                <div class="text-2xl font-bold">154</div>
-            </div>
-            <div class="glass p-6 rounded-2xl">
-                <div class="text-[10px] text-slate-500 font-bold uppercase mb-2">Zero-Cost Status</div>
-                <div class="text-2xl font-bold text-emerald-400">OPTIMAL</div>
+            <!-- Co-Evolution Incubator -->
+            <div class="glass p-8 rounded-3xl">
+                <h3 class="text-xl font-bold mb-6">Co-Evolution Incubator</h3>
+                <div class="space-y-4">
+                    <div class="p-5 bg-sky-500/10 border border-sky-500/20 rounded-2xl">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="text-xs font-bold text-sky-400 uppercase mb-1">PROPOSAL EVO_125_1_001</div>
+                                <h4 class="font-bold">Autonomous RL Mission Planning</h4>
+                            </div>
+                            <span class="text-[8px] bg-sky-400/20 text-sky-400 px-2 py-1 rounded">SIMULATED</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-4">Enhance Cognitive Scraper mission planning with RL-based source prioritization.</p>
+                        <div class="flex gap-3">
+                            <button class="flex-1 bg-emerald-500 text-white py-2 rounded-lg text-[10px] font-bold uppercase">Approve (888_HOLD)</button>
+                            <button class="flex-1 border border-white/10 py-2 rounded-lg text-[10px] font-bold uppercase text-slate-400">Reject</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Research & Simulation Logs -->
+        <section>
+             <div class="flex items-center gap-4 mb-8">
+                <h2 class="text-2xl font-bold">Research & Simulation Feed</h2>
+                <div class="h-px flex-1 bg-white/5"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass p-6 rounded-2xl border-l-4 border-sky-400">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mb-2">Research Mission</div>
+                    <div class="text-sm font-bold mb-1">Gap: IoBNT Testing</div>
+                    <div class="text-[10px] text-sky-400">Found 12 papers on 6G testbeds.</div>
+                </div>
+                <div class="glass p-6 rounded-2xl border-l-4 border-emerald-400">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mb-2">Reactor Simulation</div>
+                    <div class="text-sm font-bold mb-1">Sim: EVO_125_1_001</div>
+                    <div class="text-[10px] text-emerald-400">Impact: -15ms latency (0.96 confidence).</div>
+                </div>
+                <div class="glass p-6 rounded-2xl border-l-4 border-pink-400">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mb-2">Metamorphosis</div>
+                    <div class="text-sm font-bold mb-1">Canary: v125.1-alpha</div>
+                    <div class="text-[10px] text-pink-400">1% Rollout active | Stability: 1.0</div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <script>
-        // Manuscript Mode Toggle
+        // Manuscript Toggle
         document.getElementById('manuscript-toggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('manuscript-mode');
         });
 
-        // Scholar Network Viz (D3)
-        const scholarSvg = d3.select("#scholar-viz").append("svg").attr("width", "100%").attr("height", "100%");
-        const scholars = [
-            { id: "Scholar_A", oxytocin: 0.9, serotonin: 0.8 },
-            { id: "Scholar_B", oxytocin: 0.7, serotonin: 0.9 },
-            { id: "Scholar_C", oxytocin: 0.85, serotonin: 0.75 }
-        ];
+        // Version Atlas Viz (D3 Tree)
+        const svg = d3.select("#atlas-viz").append("svg").attr("width", "100%").attr("height", "100%");
+        const atlasData = {
+            nodes: [
+                { id: "v1.0", x: 50, y: 150 },
+                { id: "v99.0", x: 150, y: 100 },
+                { id: "v120.0", x: 300, y: 200 },
+                { id: "v124.0", x: 450, y: 150 },
+                { id: "v125.0", x: 600, y: 100 },
+                { id: "v125.1", x: 750, y: 150 }
+            ],
+            links: [
+                { source: "v1.0", target: "v99.0" },
+                { source: "v99.0", target: "v120.0" },
+                { source: "v120.0", target: "v124.0" },
+                { source: "v124.0", target: "v125.0" },
+                { source: "v125.0", target: "v125.1" }
+            ]
+        };
 
-        scholarSvg.selectAll("circle.aura")
-            .data(scholars)
+        svg.selectAll("line")
+            .data(atlasData.links)
+            .enter().append("line")
+            .attr("x1", d => atlasData.nodes.find(n => n.id === d.source).x)
+            .attr("y1", d => atlasData.nodes.find(n => n.id === d.source).y)
+            .attr("x2", d => atlasData.nodes.find(n => n.id === d.target).x)
+            .attr("y2", d => atlasData.nodes.find(n => n.id === d.target).y)
+            .attr("stroke", "rgba(56, 189, 248, 0.3)")
+            .attr("stroke-width", 2);
+
+        svg.selectAll("circle")
+            .data(atlasData.nodes)
             .enter().append("circle")
-            .attr("class", "scholar-aura")
-            .attr("cx", (d, i) => 50 + i * 80)
-            .attr("cy", 150)
-            .attr("r", d => d.oxytocin * 40)
-            .attr("fill", "#D4AF37");
+            .attr("class", "evolution-node")
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
+            .attr("r", 6)
+            .attr("fill", "#38bdf8");
 
-        scholarSvg.selectAll("circle.core")
-            .data(scholars)
-            .enter().append("circle")
-            .attr("cx", (d, i) => 50 + i * 80)
-            .attr("cy", 150)
-            .attr("r", 5)
-            .attr("fill", "white");
+        svg.selectAll("text")
+            .data(atlasData.nodes)
+            .enter().append("text")
+            .attr("x", d => d.x - 20)
+            .attr("y", d => d.y + 20)
+            .text(d => d.id)
+            .attr("fill", "white")
+            .attr("font-size", "10px")
+            .attr("font-family", "JetBrains Mono");
 
-        // Tool Constellation (Force Directed)
-        const toolSvg = d3.select("#tool-constellation").append("svg").attr("width", "100%").attr("height", "100%");
-        // Functional logic to fetch tools and render graph would go here
     </script>
 </body>
 </html>
