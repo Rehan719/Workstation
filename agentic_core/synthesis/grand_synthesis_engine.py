@@ -99,13 +99,19 @@ class GrandSynthesisEngine:
             # 112-05: Expert-level synchronization. Using event-based telemetry check (simulated).
             await self._predictive_sync()
 
-        if is_full_evolution or is_rerun_uvaip or is_rectify or is_phylogenetic or is_molecular:
+        if is_full_evolution or is_rerun_uvaip or is_rectify or is_phylogenetic or is_molecular or "--cognitive-synthesis" in sys.argv:
             logger.info("ARTICLE 500/596: Initiating Unified Version Ingestion & Assimilation Pipeline (UVIAP).")
             uviap = UVIAP()
             modes = []
             if is_full_evolution: modes.append("full")
             if is_rectify: modes.append("rectify")
             if is_phylogenetic: modes.append("phylogenetic")
+            if "--cognitive-synthesis" in sys.argv: modes.append("cognitive")
+
+            # ARTICLE 124.1: Automated UVIAP Mode Selection
+            if is_rerun_uvaip and not modes:
+                modes = ["full", "rectify", "phylogenetic", "cognitive"]
+                logger.info(f"UVIAP Automation: Triggering multi-mode synthesis: {modes}")
 
             await uviap.run_full_pipeline(modes=modes)
 

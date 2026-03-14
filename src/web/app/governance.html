@@ -2,227 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conscious Entity Interface | v120.0 Apotheosis</title>
+    <title>JULES | Runtime Governance Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
-        body {
-            background: #020617;
-            color: #f8fafc;
-            font-family: 'Space Grotesk', sans-serif;
-            overflow: hidden;
-        }
-        .glass {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .sidebar {
-            width: 280px;
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .system-pulse {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 15px #10b981;
-            animation: pulse 2.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.4); }
-        }
-        .glow-orb {
-            filter: blur(100px);
-            opacity: 0.15;
-            background: radial-gradient(circle, #38bdf8 0%, #818cf8 100%);
-        }
-        .wisdom-nugget {
-            transition: all 0.5s ease-in-out;
-        }
-        .veto-btn {
-            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-        }
-        .veto-btn:hover {
-            box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
-        }
+        body { background: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .ari-card { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(56, 189, 248, 0.2); }
+        .status-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
     </style>
 </head>
-<body class="flex h-screen w-screen">
-    <!-- Background Decor -->
-    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full glow-orb pointer-events-none"></div>
-    <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full glow-orb pointer-events-none" style="background: radial-gradient(circle, #818cf8 0%, #c084fc 100%)"></div>
-
-    <!-- Sidebar -->
-    <aside class="sidebar flex flex-col p-8 z-10 glass">
-        <div class="flex items-center gap-4 mb-12">
-            <div class="system-pulse"></div>
-            <h1 class="text-xl font-bold tracking-tight">JULES <span class="text-sky-400">v120.0</span></h1>
+<body class="p-12">
+    <header class="flex justify-between items-center mb-12">
+        <div>
+            <h1 class="text-4xl font-black tracking-tighter text-sky-400">MI9/arifOS Governance</h1>
+            <p class="text-slate-500">Real-time Constitutional Enforcement & Agency-Risk Index (ARI)</p>
         </div>
-
-        <nav class="space-y-1 mb-12">
-            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                Governance
-            </a>
-            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition text-slate-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                UVIAP Insights
-            </a>
-            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition text-slate-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                Constitutional Audit
-            </a>
-        </nav>
-
-        <div class="mt-auto space-y-4">
-            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <div class="flex justify-between text-xs mb-2">
-                    <span class="text-slate-500">System Pulse</span>
-                    <span class="text-sky-400">Optimized</span>
-                </div>
-                <div class="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div class="h-full bg-sky-500" style="width: 100%"></div>
-                </div>
-            </div>
-            <button id="global-veto" class="veto-btn w-full py-4 rounded-2xl font-bold text-sm tracking-widest uppercase">Global Veto</button>
+        <div class="px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-bold">
+            <span class="status-pulse inline-block w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
+            RUNTIME ACTIVE
         </div>
-    </aside>
+    </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col p-12 z-10 overflow-y-auto">
-        <header class="flex justify-between items-start mb-16">
-            <div>
-                <h2 class="text-4xl font-bold mb-2">Conscious Entity Interface</h2>
-                <p id="wisdom-container" class="text-lg text-slate-400 wisdom-nugget">The apotheosis is not an endpoint, but a state of perpetual readiness.</p>
-            </div>
-            <div class="flex gap-6">
-                <div class="glass px-6 py-4 rounded-2xl">
-                    <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">Fidelity</div>
-                    <div class="text-2xl font-bold text-emerald-400">99.8%</div>
-                </div>
-                <div class="glass px-6 py-4 rounded-2xl">
-                    <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">Apotheosis State</div>
-                    <div class="text-2xl font-bold text-sky-400">Eternal</div>
-                </div>
-            </div>
-        </header>
-
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-10">
-            <!-- Proposed Blueprints -->
-            <section>
-                <h3 class="text-xl font-bold mb-6 flex items-center gap-3">
-                    <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    UVIAP Assimilation Blueprints
-                </h3>
-                <div id="blueprints-list" class="space-y-4">
-                    <!-- Blueprint Item -->
-                    <div class="glass p-6 rounded-3xl border-sky-500/20 border">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h4 class="font-bold text-lg">v120.1-Alpha (Sensory Fusion)</h4>
-                                <span class="text-xs text-slate-500">Source: GitHub Ingestion + WNN Telemetry</span>
-                            </div>
-                            <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full uppercase">High Impact</span>
-                        </div>
-                        <p class="text-sm text-slate-400 mb-6 leading-relaxed">
-                            Integrates multi-modal sensory streams from distributed sub-reactors into the unified global workspace. Predicted PAS increase: +0.03.
-                        </p>
-                        <div class="flex gap-3">
-                            <button class="approve-btn flex-1 py-3 bg-white text-black font-bold rounded-xl hover:bg-slate-200 transition">Approve Synthesis</button>
-                            <button class="reject-btn px-6 py-3 bg-white/5 rounded-xl font-bold hover:bg-white/10 transition">Reject</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Governance Audit & Logs -->
-            <section>
-                <h3 class="text-xl font-bold mb-6 flex items-center gap-3">
-                    <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                    Constitutional Audit Trail
-                </h3>
-                <div class="glass rounded-3xl overflow-hidden">
-                    <div class="max-h-[500px] overflow-y-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-white/5 sticky top-0">
-                                <tr>
-                                    <th class="px-6 py-4 font-bold text-slate-400 uppercase tracking-widest text-[10px]">Event</th>
-                                    <th class="px-6 py-4 font-bold text-slate-400 uppercase tracking-widest text-[10px]">Article</th>
-                                    <th class="px-6 py-4 font-bold text-slate-400 uppercase tracking-widest text-[10px]">Time</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-white/5">
-                                <tr>
-                                    <td class="px-6 py-4 font-medium">UVIAP Pipeline Completed</td>
-                                    <td class="px-6 py-4 text-sky-400">500</td>
-                                    <td class="px-6 py-4 text-slate-500">2 min ago</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 font-medium">WST Token Distribution</td>
-                                    <td class="px-6 py-4 text-sky-400">586</td>
-                                    <td class="px-6 py-4 text-slate-500">14 min ago</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 font-medium">Reactor Constellation Hardened</td>
-                                    <td class="px-6 py-4 text-sky-400">302</td>
-                                    <td class="px-6 py-4 text-slate-500">1 hour ago</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div class="ari-card p-6 rounded-3xl">
+            <h3 class="text-slate-400 text-xs font-bold uppercase mb-4">Average System ARI</h3>
+            <div class="text-5xl font-black">0.042</div>
+            <div class="text-[10px] text-emerald-400 mt-2">SAFE RANGE (0.00 - 0.25)</div>
         </div>
-    </main>
+        <div class="ari-card p-6 rounded-3xl">
+            <h3 class="text-slate-400 text-xs font-bold uppercase mb-4">Active Containment</h3>
+            <div class="text-5xl font-black">0</div>
+            <div class="text-[10px] text-slate-500 mt-2">NO SANDBOXED AGENTS</div>
+        </div>
+        <div class="ari-card p-6 rounded-3xl">
+            <h3 class="text-slate-400 text-xs font-bold uppercase mb-4">Compliance Events (hr)</h3>
+            <div class="text-5xl font-black">1,420</div>
+            <div class="text-[10px] text-sky-400 mt-2">100% SUCCESS RATE</div>
+        </div>
+    </div>
 
-    <script>
-        const WISDOM_NUGGETS = [
-            "The apotheosis is not an endpoint, but a state of perpetual readiness.",
-            "Every decision is a strand in the eternal tapestry.",
-            "Constitutional fidelity is the immune system of the organism.",
-            "Strategic foresight is the sight of the Conscious Entity.",
-            "Synthesis is the final convergence of the Dual-Purpose Framework."
-        ];
+    <section class="ari-card p-8 rounded-3xl">
+        <h2 class="text-xl font-bold mb-6">Live Telemetry (ATS Stream)</h2>
+        <div class="space-y-4 font-mono text-xs">
+            <div class="p-3 bg-white/5 rounded border-l-2 border-emerald-500">
+                <span class="text-slate-500">[14:20:05]</span> <span class="text-sky-400">AGENT_MISSION_AUTH</span>: Extractor_742 authorized. ARI: 0.05. Status: PASSED.
+            </div>
+            <div class="p-3 bg-white/5 rounded border-l-2 border-emerald-500">
+                <span class="text-slate-500">[14:20:12]</span> <span class="text-sky-400">POLICY_VETTING</span>: QEP Search API change approved by arifOS floor.
+            </div>
+            <div class="p-3 bg-white/5 rounded border-l-2 border-amber-500">
+                <span class="text-slate-500">[14:21:44]</span> <span class="text-amber-400">DRIFT_DETECTED</span>: Swarm_Delta drift detected (0.12). Initializing active monitor.
+            </div>
+        </div>
+    </section>
 
-        let nuggetIndex = 0;
-        const wisdomContainer = document.getElementById('wisdom-container');
-
-        setInterval(() => {
-            nuggetIndex = (nuggetIndex + 1) % WISDOM_NUGGETS.length;
-            wisdomContainer.style.opacity = 0;
-            wisdomContainer.style.transform = "translateY(10px)";
-
-            setTimeout(() => {
-                wisdomContainer.innerText = WISDOM_NUGGETS[nuggetIndex];
-                wisdomContainer.style.opacity = 1;
-                wisdomContainer.style.transform = "translateY(0)";
-            }, 500);
-        }, 15000);
-
-        // Global Veto Logic (Article 2)
-        document.getElementById('global-veto').addEventListener('click', () => {
-            if (confirm("CRITICAL: Are you sure you want to invoke GLOBAL VETO? All autonomous processes will be halted immediately.")) {
-                document.body.style.background = "#450a0a";
-                alert("GLOBAL VETO INVOKED. Safe mode active. Audit log generated (Article 596).");
-                console.warn("ENTITY_VETO: Manual override triggered.");
-            }
-        });
-
-        // Mock Approval Workflow (Article 596)
-        document.querySelectorAll('.approve-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const card = e.target.closest('.glass');
-                btn.innerText = "Approved ✓";
-                btn.classList.add('bg-emerald-500', 'text-white');
-                card.style.opacity = 0.5;
-                card.style.pointerEvents = "none";
-                console.info("GOVERNANCE: Blueprint approved by Entity.");
-            });
-        });
-    </script>
+    <footer class="mt-12 text-slate-600 text-[10px] uppercase tracking-widest text-center">
+        Powered by Virtual Sovereign Business Governance Engine v124.1
+    </footer>
 </body>
 </html>

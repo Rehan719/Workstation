@@ -132,5 +132,86 @@
             ]
         },
         "timestamp": 1773496481.6646814
+    },
+    {
+        "id": "op_7527a984",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.3352,
+        "topology": "ratchet_operad",
+        "structure": {
+            "morphism": "asymmetric_drive_rectification",
+            "domain": "environmental_telemetry",
+            "codomain": "structural_genomic_memory",
+            "operadic_composition": [
+                {
+                    "layer": "sensing",
+                    "weight": 0.3
+                },
+                {
+                    "layer": "rectification",
+                    "weight": 0.92
+                },
+                {
+                    "layer": "storage",
+                    "weight": 0.07999999999999996
+                }
+            ]
+        },
+        "timestamp": 1773503338.3016727
+    },
+    {
+        "id": "op_90498b94",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.3352,
+        "topology": "ratchet_operad",
+        "structure": {
+            "morphism": "asymmetric_drive_rectification",
+            "domain": "environmental_telemetry",
+            "codomain": "structural_genomic_memory",
+            "operadic_composition": [
+                {
+                    "layer": "sensing",
+                    "weight": 0.3
+                },
+                {
+                    "layer": "rectification",
+                    "weight": 0.92
+                },
+                {
+                    "layer": "storage",
+                    "weight": 0.07999999999999996
+                }
+            ]
+        },
+        "timestamp": 1773503500.0215507
+    },
+    {
+        "id": "op_078bde41",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.3352,
+        "topology": "ratchet_operad",
+        "structure": {
+            "morphism": "asymmetric_drive_rectification",
+            "domain": "environmental_telemetry",
+            "codomain": "structural_genomic_memory",
+            "operadic_composition": [
+                {
+                    "layer": "sensing",
+                    "weight": 0.3
+                },
+                {
+                    "layer": "rectification",
+                    "weight": 0.92
+                },
+                {
+                    "layer": "storage",
+                    "weight": 0.07999999999999996
+                }
+            ]
+        },
+        "timestamp": 1773503975.064068
     }
 ]

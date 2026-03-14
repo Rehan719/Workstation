@@ -75,7 +75,7 @@ class GrandSynthesisEngine:
 
     async def run_synthesis(self, target_version: Optional[str] = None) -> Dict[str, Any]:
         """
-        ARTICLE 371-391, 500-530: Executes the full Transcendent Grand Synthesis cycle v3.1.
+        ARTICLE 371-391, 500-530, 601-630: Executes the Transcendent Grand Synthesis cycle v3.5.
         Unifies URLs, background sources, introspection data, and GitHub history into a flawless configuration.
         """
         is_ultimate = "--ultimate-rerun" in sys.argv
@@ -83,9 +83,15 @@ class GrandSynthesisEngine:
         is_scrape = "--web-scrape" in sys.argv
         is_product = "--product-engineering" in sys.argv
         is_full_evolution = "--full-evolution-pipeline" in sys.argv
-        is_rerun_uvaip = "--rerun-with-uvaip" in sys.argv
-        target_version = target_version or ("123.0.0" if "--v123" in sys.argv or is_full_evolution or is_rerun_uvaip else ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0")))))
-        logger.info(f"Starting Grand Synthesis Cycle v3.2 for {target_version}...")
+        is_rerun_uvaip = "--rerun-with-uvaip" in sys.argv or "--with-uvaip" in sys.argv
+
+        # v124 Synthesis Modes
+        is_rectify = "--rectify-synthesis" in sys.argv
+        is_phylogenetic = "--phylogenetic-synthesis" in sys.argv
+        is_molecular = "--molecular-synthesis" in sys.argv
+
+        target_version = target_version or ("124.0.0" if "--v124" in sys.argv or is_rectify or is_phylogenetic or is_molecular else ("123.0.0" if "--v123" in sys.argv or is_full_evolution or is_rerun_uvaip else ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))))
+        logger.info(f"Starting Grand Synthesis Cycle v3.5 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
         if is_ultimate:
@@ -93,10 +99,21 @@ class GrandSynthesisEngine:
             # 112-05: Expert-level synchronization. Using event-based telemetry check (simulated).
             await self._predictive_sync()
 
-        if is_full_evolution or is_rerun_uvaip:
+        if is_full_evolution or is_rerun_uvaip or is_rectify or is_phylogenetic or is_molecular or "--cognitive-synthesis" in sys.argv:
             logger.info("ARTICLE 500/596: Initiating Unified Version Ingestion & Assimilation Pipeline (UVIAP).")
             uviap = UVIAP()
-            await uviap.run_full_pipeline()
+            modes = []
+            if is_full_evolution: modes.append("full")
+            if is_rectify: modes.append("rectify")
+            if is_phylogenetic: modes.append("phylogenetic")
+            if "--cognitive-synthesis" in sys.argv: modes.append("cognitive")
+
+            # ARTICLE 124.1: Automated UVIAP Mode Selection
+            if is_rerun_uvaip and not modes:
+                modes = ["full", "rectify", "phylogenetic", "cognitive"]
+                logger.info(f"UVIAP Automation: Triggering multi-mode synthesis: {modes}")
+
+            await uviap.run_full_pipeline(modes=modes)
 
         if target_version == "115.0.0":
             logger.info("ARTICLE 393: Starting Deep Knowledge Synthesis for v115.0 Converged Culmination.")
@@ -204,7 +221,13 @@ class GrandSynthesisEngine:
             self._generate_unified_manifest(target_version)
 
         version = resolved_config.get("version")
-        if version == "123.0.0":
+        if version == "124.0.0":
+            # ARTICLE 601-630: v124.0 Apotheosis DNA
+            constitution_path = "agentic_core/constitution/CONSTITUTION_canonical.md"
+            logger.info(f"v124.0 Constitution codified at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "123.0.0":
             # Generate v123 Apotheosis DNA (canonical)
             constitution_path = "agentic_core/constitution/CONSTITUTION_canonical.md"
             logger.info(f"v123.0 Constitution codified at {constitution_path}")
