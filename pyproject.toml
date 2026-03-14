@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "125.1.0"
+version = "126.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "v125.1 Self-Introspective Evolution - Comprehensive QEP & Tool Ecosystem."
+description = "v126.0 Global Ecosystem Convergence & Autonomous Agency."
 authors = ["Rehan719"]
 readme = "README.md"
 
