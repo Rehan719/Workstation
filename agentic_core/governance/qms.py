@@ -54,6 +54,12 @@ class QualityManagementSystem:
         self.gates["NO_STUBS"] = QMSGate("No-Stubs Mandate", "Verification of functional logic (Article 60/403).")
         self.gates["ACCESSIBILITY"] = QMSGate("Accessibility", "WCAG 2.1 AA compliance certification.")
 
+        # ARTICLE 601-616: v124.0 Quality Gates
+        self.gates["RECTIFICATION_STABILITY"] = QMSGate("Rectification Stability", "Verification of topological ratchet persistence.")
+        self.gates["NANOPHOTONIC_EFFICIENCY"] = QMSGate("Nanophotonic Efficiency", "Validation of ≥100× power improvement.")
+        self.gates["MOLECULAR_INTEGRITY"] = QMSGate("Molecular Integrity", "Verification of three-layered signaling protocols.")
+        self.gates["SYNAPTIC_LATENCY"] = QMSGate("Synaptic Latency", "Verification of ≤1 ms processing time.")
+
     def enforce_gate(self, gate_id: str, verifier: str, success: bool, comment: str = ""):
         """Enforces a specific quality gate."""
         if gate_id not in self.gates:

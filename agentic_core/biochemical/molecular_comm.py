@@ -16,23 +16,30 @@ class MolecularSignalingFramework:
     ARTICLE 611: Molecular Communication Architecture.
     Simulates neurotransmitter-mediated signaling pathways between agents.
     Uses fractional-order diffusion approximations for propagation modeling.
+    Three-layered approach: In-body (Simulation), On-chip (Agent Logic), External (API).
     """
     def __init__(self, diffusion_coeff: float = 0.45, decay_rate: float = 0.05):
         self.diffusion_coeff = diffusion_coeff
         self.decay_rate = decay_rate
         self.active_signals: List[Dict[str, Any]] = []
+        self.throughput_events = 0
 
     def emit_signal(self, transmitter: Neurotransmitter, concentration: float, source_agent: str):
-        """Emission of a molecular signal into the shared medium."""
+        """
+        ARTICLE 611: Emission of a molecular signal (e.g., oxytocin, serotonin).
+        Enables emotion-driven agent communication.
+        """
         signal = {
             "type": transmitter.value,
             "initial_concentration": concentration,
             "source": source_agent,
             "emitted_at": time.time(),
-            "decay_factor": self.decay_rate
+            "decay_factor": self.decay_rate,
+            "layer": "on-chip"
         }
         self.active_signals.append(signal)
-        logger.info(f"MOLECULAR: {source_agent} emitted {concentration} units of {transmitter.value}")
+        self.throughput_events += 1
+        logger.info(f"MOLECULAR: {source_agent} emitted {concentration:.2f} units of {transmitter.value}")
 
     def get_local_concentration(self, target_agent: str, current_time: float) -> Dict[str, float]:
         """

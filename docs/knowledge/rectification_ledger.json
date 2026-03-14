@@ -78,5 +78,59 @@
             ]
         },
         "timestamp": 1773490434.2898593
+    },
+    {
+        "id": "op_548ec68b",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.3352,
+        "topology": "ratchet_operad",
+        "structure": {
+            "morphism": "asymmetric_drive_rectification",
+            "domain": "environmental_telemetry",
+            "codomain": "structural_genomic_memory",
+            "operadic_composition": [
+                {
+                    "layer": "sensing",
+                    "weight": 0.3
+                },
+                {
+                    "layer": "rectification",
+                    "weight": 0.92
+                },
+                {
+                    "layer": "storage",
+                    "weight": 0.07999999999999996
+                }
+            ]
+        },
+        "timestamp": 1773496087.4168024
+    },
+    {
+        "id": "op_da511439",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.3352,
+        "topology": "ratchet_operad",
+        "structure": {
+            "morphism": "asymmetric_drive_rectification",
+            "domain": "environmental_telemetry",
+            "codomain": "structural_genomic_memory",
+            "operadic_composition": [
+                {
+                    "layer": "sensing",
+                    "weight": 0.3
+                },
+                {
+                    "layer": "rectification",
+                    "weight": 0.92
+                },
+                {
+                    "layer": "storage",
+                    "weight": 0.07999999999999996
+                }
+            ]
+        },
+        "timestamp": 1773496481.6646814
     }
 ]

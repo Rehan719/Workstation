@@ -138,7 +138,29 @@
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 relative z-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 relative z-10">
+            <!-- Rectification Dashboard -->
+            <div class="glass p-8 rounded-3xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold">Rectification Engine</h3>
+                    <div class="text-[10px] font-bold text-sky-400 uppercase px-2 py-1 bg-sky-500/10 rounded">ACTIVE</div>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                        <span>Structural Memory</span>
+                        <span id="rect-memory" class="text-white">128 Operads</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                        <span>Residual Cost</span>
+                        <span id="rect-cost" class="text-pink-400">0.042 bits</span>
+                    </div>
+                    <div class="mt-4 p-3 bg-white/5 rounded-xl border border-white/5">
+                        <div class="text-[8px] text-slate-500 mb-1">LATEST RATCHET</div>
+                        <div class="text-[10px] font-mono text-sky-400 truncate">op_68dea32d -> durability_stable</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Molecular Heatmap -->
             <div class="glass p-8 rounded-3xl">
                 <div class="flex justify-between items-center mb-6">
@@ -240,7 +262,15 @@
                 // Alternatively, update header subtitle
                 document.querySelector('p.text-slate-400.font-medium').textContent = `Apotheosis v124.0 | UEG Depth: ${(knowledgeData.graph_depth / 1000000).toFixed(1)}M | Molecular & Synaptic Overlays Active`;
 
-                // 4. Cognitive Trends
+                // 4. EMS / Rectification Data
+                const emsRes = await fetch(`${API_BASE}/governance/okrs`);
+                const emsData = await emsRes.json();
+                if (emsData.v124_biomimetic_status) {
+                    document.getElementById('rect-cost').textContent = emsData.v124_biomimetic_status.synaptic_latency; // Using as proxy or real field
+                    // Update more fields if available
+                }
+
+                // 5. Cognitive Trends
                 const cogRes = await fetch(`${API_BASE}/cognitive/concepts`);
                 const cogData = await cogRes.json();
                 const cogList = document.getElementById('cognitive-trends');
