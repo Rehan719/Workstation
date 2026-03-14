@@ -62,5 +62,21 @@
             ]
         },
         "timestamp": 1773438204.964572
+    },
+    {
+        "id": "op_745dc1e7",
+        "type": "durational_memory",
+        "source": "api_latency",
+        "residual_cost": 0.1104,
+        "structure": {
+            "inputs": [
+                "fluctuation_drive"
+            ],
+            "morphism": "ratchet_rectification",
+            "outputs": [
+                "specialized_api_latency"
+            ]
+        },
+        "timestamp": 1773490434.2898593
     }
 ]

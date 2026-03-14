@@ -10,6 +10,7 @@ from agentic_core.commercial.token_ledger import TokenLedger
 from agentic_core.ueg.ueg_manager import UEGManager
 from agentic_core.simulation.nanophotonics import PolarisedLightSensor, NanophotonicTelemetry
 from agentic_core.biochemical.molecular_comm import MolecularSignalingFramework, Neurotransmitter
+from agentic_core.synthesis.cognitive_scraper import CognitiveComputingScraperAgent
 
 logger = logging.getLogger(__name__)
 
@@ -220,6 +221,7 @@ class DualModeScraper:
         self.passive = PassiveSensory(self)
         self.bus = IoAMessageBus()
         self.molecular_framework = MolecularSignalingFramework()
+        self.cognitive_agent = CognitiveComputingScraperAgent(self.ueg)
 
     async def execute_active_mission(self, user_id: str, goal: str, domain: str, urls: List[str]):
         """ARTICLE 551: Mode 2 - Active Agentic Layer (Swarm-Coordinated)."""

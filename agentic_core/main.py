@@ -122,6 +122,11 @@ async def get_governance_okrs():
     """ARTICLE 346: Real-time OKR and PAS monitoring."""
     return policy.bms.generate_performance_report()
 
+@app.get("/api/v1/cognitive/concepts")
+async def get_cognitive_concepts():
+    """ARTICLE 691: Access to the cognitive computing concept graph."""
+    return scraper.cognitive_agent.perform_temporal_analysis()
+
 @app.post("/api/v1/governance/blueprints/{blueprint_id}/approve")
 async def approve_blueprint(blueprint_id: str):
     success = policy.approve_blueprint(blueprint_id)

@@ -103,6 +103,10 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 21a9.994 9.994 0 0010-10V7a2 2 0 00-2-2H4a2 2 0 00-2 2v4a9.99 9.99 0 003.245 7.456l.054.09" stroke-width="2"></path></svg>
                 Phylogenetic Tree
             </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-width="2"></path></svg>
+                Cognitive Trends
+            </a>
         </nav>
 
         <div class="mt-auto p-6 glass rounded-2xl">
@@ -184,7 +188,28 @@
         </div>
 
         <!-- Phylogenetic Tree View (Stage 5.5) -->
-        <div class="glass p-8 rounded-3xl relative z-10 h-[500px]">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 relative z-10">
+            <!-- Cognitive Trends -->
+            <div class="glass p-8 rounded-3xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Cognitive Concept Trends</h3>
+                    <span class="text-[10px] bg-sky-500/10 text-sky-400 px-2 py-1 rounded">FRONTIER AI ACTIVE</span>
+                </div>
+                <div id="cognitive-trends" class="space-y-4">
+                    <!-- JS populated -->
+                </div>
+            </div>
+
+            <!-- Evolutionary Topology -->
+            <div class="glass p-8 rounded-3xl h-[400px]">
+                <h3 class="text-xl font-bold mb-4">Phylogenetic Topology</h3>
+                <div id="tree-container" class="w-full h-full flex items-center justify-center">
+                    <svg id="evolution-tree" width="400" height="250"></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass p-8 rounded-3xl relative z-10 h-[400px] hidden">
             <h3 class="text-xl font-bold mb-8">Evolutionary Topology (Phylogenetic Tree)</h3>
             <div id="tree-container" class="w-full h-full flex items-center justify-center">
                 <svg id="evolution-tree" width="800" height="400"></svg>
@@ -214,6 +239,19 @@
                 // Find UEG Nodes card - it's a bit tricky without IDs, but let's assume structure
                 // Alternatively, update header subtitle
                 document.querySelector('p.text-slate-400.font-medium').textContent = `Apotheosis v124.0 | UEG Depth: ${(knowledgeData.graph_depth / 1000000).toFixed(1)}M | Molecular & Synaptic Overlays Active`;
+
+                // 4. Cognitive Trends
+                const cogRes = await fetch(`${API_BASE}/cognitive/concepts`);
+                const cogData = await cogRes.json();
+                const cogList = document.getElementById('cognitive-trends');
+                cogList.innerHTML = cogData.trending_topics.map(topic => `
+                    <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                        <span class="text-sm font-medium"># ${topic}</span>
+                        <div class="flex gap-2">
+                            <span class="text-[8px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">RISING</span>
+                        </div>
+                    </div>
+                `).join('');
 
             } catch (err) {
                 console.warn("Backend Sync Failed - using simulation mode", err);

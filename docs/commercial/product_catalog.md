@@ -9,3 +9,4 @@
 | Digital Reactor (Simulation-as-a-Service) | Standard/Pro/Enterprise | High-Fidelity Twinning, ABM/Physics Simulation, Synthetic Data Generation |
 | Molecular Communication SDK | Enterprise | Neurotransmitter Signaling, Emotional Interfacing, Trust Modulation |
 | Neuromorphic Nanophotonic Navigator | Enterprise+ | Polarised-Light Sensing, Ultra-Low Power Navigation, Insect-Inspired AI |
+| Cognitive Computing Scraper SDK | Enterprise | Frontier AI Ingestion, Concept Graph Mapping, Temporal Trend Analysis |

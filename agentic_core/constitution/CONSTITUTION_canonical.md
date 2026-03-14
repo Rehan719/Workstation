@@ -47,5 +47,11 @@ The system shall commercialise a Molecular Communication SDK, enabling bio-integ
 **ARTICLE 686: IoBNT INTEGRATION MANDATE**
 The system must integrate with the Internet of Bio-Nano Things (IoBNT) frameworks for precision medicine and microscale industrial applications.
 
+**ARTICLE 691: COGNITIVE COMPUTING SCRAPER MANDATE**
+The system shall maintain an autonomous agent dedicated to the discovery and assimilation of knowledge from the frontier of machine intelligence (arXiv, Twitter, conferences). This agent must build a structured concept graph in the UEG to guide system evolution.
+
+**ARTICLE 696: SYNAPTIC PERCEPTUAL INTELLIGENCE (MODE 4)**
+Mode 4 web scraping shall process visual data (diagrams, equations) directly within the agent's synaptic memory layer, emulating near-sensor computing for <1ms latency.
+
 ---
 *Codified via Grand Synthesis Engine v124.0.0 "Genomic Resonance & Evolutionary Convergence"*

@@ -17578,6 +17578,62 @@
                 "confidence_score": 0.9584416648714703,
                 "topic": "embodied_ai"
             }
+        },
+        {
+            "id": "insight_1456",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_2",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-03-14T12:13:18.716210",
+                "operon_id": "operon_8cab9505"
+            }
+        },
+        {
+            "id": "insight_1457",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-03-14T12:14:28.896792",
+                "operon_id": "operon_5b6a6913"
+            }
+        },
+        {
+            "id": "insight_1458",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-03-14T12:16:19.134047",
+                "operon_id": "operon_f519d72b"
+            }
+        },
+        {
+            "id": "insight_1459",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-03-14T12:16:59.288295",
+                "operon_id": "operon_a65d91ae"
+            }
         }
     ],
     "edges": [

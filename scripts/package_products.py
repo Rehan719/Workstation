@@ -53,6 +53,12 @@ def package_products():
             "source": "agentic_core/simulation/nanophotonics.py",
             "tier": "Enterprise+",
             "features": ["Polarised-Light Sensing", "Ultra-Low Power Navigation", "Insect-Inspired AI"]
+        },
+        "cognitive_scraper": {
+            "name": "Cognitive Computing Scraper SDK",
+            "source": "agentic_core/synthesis/cognitive_scraper.py",
+            "tier": "Enterprise",
+            "features": ["Frontier AI Ingestion", "Concept Graph Mapping", "Temporal Trend Analysis"]
         }
     }
 
