@@ -59,6 +59,18 @@ def package_products():
             "source": "agentic_core/synthesis/cognitive_scraper.py",
             "tier": "Enterprise",
             "features": ["Frontier AI Ingestion", "Concept Graph Mapping", "Temporal Trend Analysis"]
+        },
+        "asymmetric_drive": {
+            "name": "Asymmetric-Drive Rectification SDK",
+            "source": "agentic_core/biochemical/rectification_engine.py",
+            "tier": "Enterprise+",
+            "features": ["Topological Ratchets", "Residual Cost Accounting", "Structural Memory"]
+        },
+        "synaptic_circuits": {
+            "name": "Synaptic Circuit SDK",
+            "source": "agentic_core/simulation/synaptic_circuits.py",
+            "tier": "Enterprise+",
+            "features": ["Near-Sensor Computing", "Memristor Simulation", "Low-Latency Perception"]
         }
     }
 

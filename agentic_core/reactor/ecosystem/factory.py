@@ -26,6 +26,11 @@ class ReactorFactory:
             elif domain == "science" and sub_domain == "cognitive_computing":
                 from agentic_core.reactor.science.cognitive_computing import CognitiveComputingReactor
                 self._cache[key] = CognitiveComputingReactor()
+            elif sub_domain in ["phylogenetic_diversity", "molecular_communication", "nanophotonics", "synaptic_circuit"]:
+                # ARTICLE 10.7-10.10: Instantiate four new twin reactors
+                mandate = f"Specialized v124.0 biomimetic {sub_domain} twin reactor."
+                ReactorClass = self.create_specialized_class(domain, sub_domain, mandate)
+                self._cache[key] = ReactorClass()
             else:
                 # Dynamic generation for all others
                 mandate = f"Autonomous {sub_domain} simulation in {domain} domain."

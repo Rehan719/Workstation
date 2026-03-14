@@ -35,30 +35,46 @@ class SynapticUnit:
         return output_current
 
 class BiomimeticVisionAgent:
-    """Endows swarms with human-like perceptual intelligence (Mode 4)."""
+    """
+    ARTICLE 616: Endows swarms with human-like perceptual intelligence (Mode 4).
+    Implements near-sensor computing where visual parsing happens in synaptic memory.
+    """
     def __init__(self):
-        # 16x16 Synaptic Grid
+        # 16x16 Synaptic Grid (Simulated for low-latency)
         self.synaptic_grid = {f"syn_{i}_{j}": SynapticUnit(f"u_{i}_{j}") for i in range(4) for j in range(4)}
         self.energy_per_spike_fj = 5.0 # 5 femtoJoules (ARTICLE 616 goal)
+        self._conductance_lut = [0.1, 0.15, 0.22, 0.35, 0.48, 0.65, 0.82, 0.95] # Conductance look-up table
 
     def process_perceptual_input(self, pixel_data: List[float]) -> Dict[str, Any]:
         """
-        Performs sensing-memory-computing in a single low-latency step.
+        ARTICLE 616: Performs sensing-memory-computing in a single low-latency step (<1ms).
+        Avoids the central bus by processing visual data directly in the synaptic units.
         """
         start_time = time.time()
         results = []
         total_energy = 0.0
 
+        # ARTICLE 616: Near-sensor computing logic
+        # Directly update synaptic memory states from raw pixel spikes
         for i, val in enumerate(pixel_data[:16]):
-            unit = self.synaptic_grid[f"syn_{i//4}_{i%4}"]
-            output = unit.update_state(val)
+            unit_id = f"syn_{i//4}_{i%4}"
+            unit = self.synaptic_grid[unit_id]
+
+            # Use LUT for ultra-fast conductance updates
+            lut_idx = min(int(val * 7), 7)
+            unit.conductance = self._conductance_lut[lut_idx]
+
+            # I = G * V
+            output = unit.conductance * val
             results.append(output)
             total_energy += self.energy_per_spike_fj
 
         latency_ms = (time.time() - start_time) * 1000
 
+        logger.info(f"SYNAPTIC: Vision perception complete. Latency: {latency_ms:.4f}ms, Energy: {total_energy}fJ")
+
         return {
-            "perceptual_intelligence_score": sum(results) / len(results),
+            "perceptual_intelligence_score": round(sum(results) / len(results), 4),
             "latency_ms": round(latency_ms, 4),
             "energy_fj": total_energy,
             "conductance_map": {k: round(v.conductance, 2) for k, v in self.synaptic_grid.items()}

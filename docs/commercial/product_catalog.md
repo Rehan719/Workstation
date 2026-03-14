@@ -10,3 +10,5 @@
 | Molecular Communication SDK | Enterprise | Neurotransmitter Signaling, Emotional Interfacing, Trust Modulation |
 | Neuromorphic Nanophotonic Navigator | Enterprise+ | Polarised-Light Sensing, Ultra-Low Power Navigation, Insect-Inspired AI |
 | Cognitive Computing Scraper SDK | Enterprise | Frontier AI Ingestion, Concept Graph Mapping, Temporal Trend Analysis |
+| Asymmetric-Drive Rectification SDK | Enterprise+ | Topological Ratchets, Residual Cost Accounting, Structural Memory |
+| Synaptic Circuit SDK | Enterprise+ | Near-Sensor Computing, Memristor Simulation, Low-Latency Perception |

@@ -28,19 +28,21 @@ class UVIAP:
         self.convergence_delta: Dict[str, Any] = {}
         self.learning_reflection: List[Dict[str, Any]] = []
 
-    async def run_full_pipeline(self, repo_url: Optional[str] = None):
+    async def run_full_pipeline(self, repo_url: Optional[str] = None, modes: List[str] = None):
         """Executes all stages of the UVIAP (Article 5.3)."""
-        logger.info(f"UVIAP: Starting Full Evolution Pipeline v124.0 (Target: {repo_url or 'Self'})")
+        modes = modes or ["full"]
+        logger.info(f"UVIAP: Starting Full Evolution Pipeline v124.0 (Target: {repo_url or 'Self'}, Modes: {modes})")
 
         # Stage 1: Multi-Source Ingestion (Article 5.1/621)
         github_data = self._ingest_github(repo_url)
         sensory_data = self._ingest_sensory_signals()
 
         # ARTICLE 601: Asymmetric-Drive Rectification (Stage 1.5)
-        rectifications = self.rectification_engine.analyze_and_rectify([
-            {"type": "api_latency", "magnitude": 0.92}, # Simulated high variance
-            {"type": "scraping_success", "magnitude": 0.45}
-        ])
+        if "rectify" in modes or "full" in modes:
+            rectifications = self.rectification_engine.analyze_and_rectify([
+                {"type": "api_latency", "magnitude": 0.92}, # Simulated high variance
+                {"type": "scraping_success", "magnitude": 0.45}
+            ])
 
         # ARTICLE 646: Genomic Knowledge Organization (Operons)
         clustered_insights = self._organize_genomic_knowledge(github_data, sensory_data)
@@ -59,11 +61,12 @@ class UVIAP:
         blueprints = self._generate_assimilation_blueprints(learning_results)
 
         # ARTICLE 661: Phylogenetic Diversity Mapping (Stage 5.5)
-        self.phylo_twin.map_evolutionary_topology([
-            {"version": "v1.0", "features": ["core"]},
-            {"version": "v120.0", "features": ["synthesis", "uviap"]},
-            {"version": "v124.0", "features": ["molecular", "nanophotonic", "synaptic"]}
-        ])
+        if "phylogenetic" in modes or "full" in modes:
+            # Constructing trees across all versions (simulated mapping)
+            versions_data = [{"version": f"v{v}.0", "features": ["core"]} for v in range(1, 120)]
+            versions_data.append({"version": "v120.0", "features": ["synthesis", "uviap"]})
+            versions_data.append({"version": "v124.0", "features": ["molecular", "nanophotonic", "synaptic", "rectification"]})
+            self.phylo_twin.map_evolutionary_topology(versions_data)
 
         # Stage 6: Continuous Evolution Loop (Article 5.1)
         self._generate_reports(github_data, patterns, learning_results, blueprints)

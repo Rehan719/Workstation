@@ -14,29 +14,35 @@ class PolarisedLightSensor:
     def __init__(self):
         self.energy_per_op_pj = 0.8 # 0.8 picoJoules (ARTICLE 606 goal)
         self.spatial_footprint_um2 = 15.0 # 15 square micrometers
+        self.sensitivity = 0.95
+        self.error_tolerance = 0.05
 
     def sense_polarisation(self, url: str, complexity_metrics: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Computes a simulated polarisation angle (0-180) based on page structure.
-        Link density and sitemap depth act as "light intensity" and "atmospheric scattering".
+        ARTICLE 606: Computes a simulated polarisation angle (0-180) based on page structure.
+        Emulates insect polarized-light sensing for navigation with ultra-low power.
         """
         link_density = complexity_metrics.get("link_density", 0.5)
         depth = complexity_metrics.get("depth", 1)
 
-        # Simulated polarized light pathway logic
-        # Desert ants use the degree and angle of polarization
+        # Simulated polarized light pathway logic (Sky Compass)
+        # Desert ants use the degree and angle of polarization for vector navigation.
         angle = (link_density * 180) % 180
-        degree = min(1.0, 0.2 * depth)
+        # Add simulated noise based on error tolerance
+        angle = (angle + random.uniform(-5, 5) * self.error_tolerance) % 180
+
+        degree = min(1.0, 0.15 * depth * self.sensitivity)
 
         # Power consumption tracking (Article 606)
-        energy_consumed = self.energy_per_op_pj * 1.5 # Basic op
+        # 100x efficiency gain logic: traditionally >100pJ, now <1pJ
+        energy_consumed = self.energy_per_op_pj * (1 + (degree * 0.2))
 
-        logger.debug(f"NANOPHOTONICS: Sensed polarization for {url} - Angle: {angle:.2f}, Degree: {degree:.2f}")
+        logger.info(f"NANOPHOTONICS: Polarised-light sensed for {url} - Angle: {angle:.2f}°, Energy: {energy_consumed:.4f}pJ")
 
         return {
             "angle": round(angle, 2),
             "degree": round(degree, 2),
-            "energy_pj": energy_consumed,
+            "energy_pj": round(energy_consumed, 4),
             "footprint_um2": self.spatial_footprint_um2,
             "nav_heading": self._compute_nav_heading(angle, degree)
         }

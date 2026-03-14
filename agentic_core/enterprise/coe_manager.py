@@ -9,7 +9,8 @@ class COEManager:
     Coordinates Strategic hubs driving elite operational excellence.
     """
     def __init__(self):
-        self.coes = ["Strategy", "Forecasting", "Policy", "Infrastructure", "WebScrape", "AgenticGovernance"]
+        self.coes = ["Strategy", "Forecasting", "Policy", "Infrastructure", "WebScrape", "AgenticGovernance",
+                     "AsymmetricRectification", "NeuromorphicNanophotonics", "MolecularCommunication", "SynapticCircuits"]
 
     def synthesize_strategic_hub_input(self, enterprise_data: Dict[str, Any]) -> Dict[str, Any]:
         """Gathers and synthesizes inputs from all Centres of Excellence."""

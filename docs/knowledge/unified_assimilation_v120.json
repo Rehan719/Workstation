@@ -14,25 +14,25 @@
             "governance_traceability",
             "apotheosis_readiness"
         ],
-        "timestamp": "2026-03-14T12:13:54.305557"
+        "timestamp": "2026-03-14T13:54:41.673394"
     },
     "actionable_blueprints": [
         {
-            "id": "f7c57de3",
+            "id": "c4578bc5",
             "trait": "high_fidelity_symbiosis",
             "action": "Synthesize high_fidelity_symbiosis into core genome",
             "priority": "MEDIUM",
             "status": "PROPOSED"
         },
         {
-            "id": "362f2bb5",
+            "id": "5c261321",
             "trait": "governance_traceability",
             "action": "Synthesize governance_traceability into core genome",
             "priority": "MEDIUM",
             "status": "PROPOSED"
         },
         {
-            "id": "3e8c2ba6",
+            "id": "8cec8eea",
             "trait": "apotheosis_readiness",
             "action": "Synthesize apotheosis_readiness into core genome",
             "priority": "HIGH",

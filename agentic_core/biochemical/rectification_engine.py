@@ -66,21 +66,32 @@ class AsymmetricDriveRectificationEngine:
 
     def _compose_structural_operad(self, signal: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Compositional logic using operadic morphism simulation.
+        ARTICLE 601: Compositional logic using operadic morphism simulation.
+        Implements a topological ratchet that rectifies drives into persistent architectures.
         """
         operad_id = f"op_{uuid.uuid4().hex[:8]}"
-        # Simplified residual cost calculation: entropy of the change
-        residual_cost = signal.get("magnitude", 0.5) * 0.12 # Information processing cost
+        magnitude = signal.get("magnitude", 0.5)
+
+        # ARTICLE 601: Gains in predictive information accompanied by auditable residual costs.
+        # Cost formula: C = -magnitude * log2(1 - magnitude) for non-predictive state tracking.
+        import math
+        residual_cost = -magnitude * math.log2(max(1e-9, 1 - magnitude)) * 0.1
 
         return {
             "id": operad_id,
             "type": "durational_memory",
             "source": signal["type"],
             "residual_cost": round(residual_cost, 4),
+            "topology": "ratchet_operad",
             "structure": {
-                "inputs": ["fluctuation_drive"],
-                "morphism": "ratchet_rectification",
-                "outputs": [f"specialized_{signal['type']}"]
+                "morphism": "asymmetric_drive_rectification",
+                "domain": "environmental_telemetry",
+                "codomain": "structural_genomic_memory",
+                "operadic_composition": [
+                    {"layer": "sensing", "weight": 0.3},
+                    {"layer": "rectification", "weight": magnitude},
+                    {"layer": "storage", "weight": 1 - magnitude}
+                ]
             },
             "timestamp": time.time()
         }
