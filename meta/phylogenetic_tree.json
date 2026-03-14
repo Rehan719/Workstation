@@ -1,0 +1,43 @@
+{
+    "nodes": [
+        {
+            "id": "v1.0",
+            "divergence": 0.0,
+            "conserved_features": [
+                "core"
+            ],
+            "is_anchor": true
+        },
+        {
+            "id": "v120.0",
+            "divergence": 0.05,
+            "conserved_features": [
+                "synthesis",
+                "uviap"
+            ],
+            "is_anchor": true
+        },
+        {
+            "id": "v124.0",
+            "divergence": 0.1,
+            "conserved_features": [
+                "molecular",
+                "nanophotonic",
+                "synaptic"
+            ],
+            "is_anchor": true
+        }
+    ],
+    "edges": [
+        {
+            "source": "v1.0",
+            "target": "v120.0",
+            "distance": 0.12
+        },
+        {
+            "source": "v120.0",
+            "target": "v124.0",
+            "distance": 0.12
+        }
+    ]
+}

@@ -8,8 +8,48 @@ from typing import List, Dict, Any, Optional
 from agentic_core.synthesis.knowledge_synthesis import KnowledgeSynthesisPipeline, EmbodiedAIController
 from agentic_core.commercial.token_ledger import TokenLedger
 from agentic_core.ueg.ueg_manager import UEGManager
+from agentic_core.simulation.nanophotonics import PolarisedLightSensor, NanophotonicTelemetry
+from agentic_core.biochemical.molecular_comm import MolecularSignalingFramework, Neurotransmitter
+from agentic_core.synthesis.cognitive_scraper import CognitiveComputingScraperAgent
 
 logger = logging.getLogger(__name__)
+
+class BiomimeticVisionAgent:
+    """
+    ARTICLE 616-620: Mode 4 - Synaptic Integration.
+    Implements near-sensor computing for real-time page perception.
+    Processes web data directly within its internal memory layer.
+    """
+    def __init__(self, agent_id: str):
+        self.agent_id = agent_id
+        self.synaptic_memory = {}
+        # Simulated weights for CNN-based understanding
+        self._weights = [random.random() for _ in range(10)]
+
+    async def perceive(self, raw_html: str) -> Dict[str, Any]:
+        """Performs real-time understanding without passing through the central bus."""
+        start_time = datetime.datetime.now()
+
+        # Simulated Near-Sensor Computation
+        features = [raw_html.count(tag) for tag in ["<form", "<table", "<button", "price", "login"]]
+        understanding = "GENERIC_PAGE"
+
+        if features[0] > 0 and features[4] > 0: understanding = "LOGIN_FORM"
+        elif features[1] > 0 and features[3] > 0: understanding = "PRICING_TABLE"
+        elif features[2] > 0: understanding = "INTERACTIVE_ACTION_PAGE"
+
+        # Store in synaptic memory (device-level storage)
+        self.synaptic_memory["last_perception"] = understanding
+        self.synaptic_memory["complexity"] = sum(features)
+
+        latency_ms = (datetime.datetime.now() - start_time).total_seconds() * 1000
+
+        return {
+            "understanding": understanding,
+            "latency_ms": latency_ms,
+            "confidence": 0.95,
+            "method": "SYNAPTIC_IN_SENSOR_COMPUTING"
+        }
 
 class ReasoningGate:
     """
@@ -80,6 +120,8 @@ class PassiveSensory:
         self.scraper = scraper
         self.active = False
         self.gating = SensoryGatingModule()
+        self.nanophotonic_sensor = PolarisedLightSensor()
+        self.telemetry = NanophotonicTelemetry()
 
     async def monitor_environment(self):
         """ARTICLE 541: Mode 1 - Passive Sensory Layer."""
@@ -105,6 +147,11 @@ class PassiveSensory:
             # Sensory Gating (Article 546)
             if self.gating.evaluate_signal(signal):
                 logger.info(f"Scraper [Passive]: Signal gated - {signal['content'][:50]}... [Topic: {signal['topic']}]")
+
+                # ARTICLE 606: Insect-Inspired Nanophotonic Sensing
+                nano_metrics = self.nanophotonic_sensor.sense_polarisation(signal["source"], {"link_density": 0.4, "depth": 2})
+                self.telemetry.log_operation(nano_metrics)
+                signal["nanophotonic_metrics"] = nano_metrics
 
                 # Feed to WNN (Embodied AI)
                 adjustment = self.scraper.embodied_ai.perform_environmental_sampling(signal)
@@ -173,9 +220,13 @@ class DualModeScraper:
         self.reasoning_gate = ReasoningGate(self.ledger)
         self.passive = PassiveSensory(self)
         self.bus = IoAMessageBus()
+        self.molecular_framework = MolecularSignalingFramework()
+        self.cognitive_agent = CognitiveComputingScraperAgent(self.ueg)
 
     async def execute_active_mission(self, user_id: str, goal: str, domain: str, urls: List[str]):
         """ARTICLE 551: Mode 2 - Active Agentic Layer (Swarm-Coordinated)."""
+        # ARTICLE 606: Sky Compass for Navigation
+        nav_sensor = PolarisedLightSensor()
         mission_id = str(uuid.uuid4())[:8]
         logger.info(f"Scraper: Executing Active Mission {mission_id} for {user_id}: {goal}")
 
@@ -196,13 +247,27 @@ class DualModeScraper:
         # Swarm Coordination via IoA Protocol
         await self.bus.publish("mission_control", "swarm", "MISSION_START", {"goal": goal, "urls": urls, "mission_id": mission_id})
 
+        # ARTICLE 611: Emit Trust Signal (Oxytocin)
+        self.molecular_framework.emit_signal(Neurotransmitter.OXYTOCIN, 0.8, "mission_control")
+
         results = []
+        # ARTICLE 616: Initialize Synaptic Vision Agent (Mode 4)
+        vision_agent = BiomimeticVisionAgent(f"vision_{mission_id}")
+
         for url in urls:
             # Simulate Agent Coordination (Article 551)
             agent_id = f"extractor_agent_{random.randint(100, 999)}"
 
+            # ARTICLE 616: Mode 4 Synaptic Perception (Near-Sensor)
+            perception = await vision_agent.perceive(f"<html>Simulation for {url}</html>")
+            logger.info(f"Scraper: Synaptic Perception - {perception['understanding']} in {perception['latency_ms']:.2f}ms")
+
+            # ARTICLE 606: Sky Compass Navigation
+            nav_metrics = nav_sensor.sense_polarisation(url, {"link_density": random.random(), "depth": 3})
+            logger.info(f"Scraper: Agent {agent_id} navigating via {nav_metrics['nav_heading']} (Angle: {nav_metrics['angle']})")
+
             # IoA Message: Extractor to mission control
-            await self.bus.publish(agent_id, "mission_control", "DATA_EXTRACTED", {"url": url, "mission_id": mission_id})
+            await self.bus.publish(agent_id, "mission_control", "DATA_EXTRACTED", {"url": url, "mission_id": mission_id, "nav_heading": nav_metrics['nav_heading']})
 
             agent_result = {
                 "source_url": url,
@@ -218,6 +283,8 @@ class DualModeScraper:
             # Evolutionary Reward (Article 586)
             if synthesis_report["triples_extracted"] > 0:
                 await self.ledger.credit_tokens(user_id, 1.0, f"Evolutionary Reward: High-fidelity extraction in mission {mission_id}")
+                # Emit Reward Signal (Dopamine)
+                self.molecular_framework.emit_signal(Neurotransmitter.DOPAMINE, 0.9, agent_id)
 
         await self.bus.publish("mission_control", "user", "MISSION_COMPLETE", {"mission_id": mission_id, "count": len(results)})
 

@@ -1,0 +1,10 @@
+{
+    "name": "Neuromorphic Nanophotonic Navigator",
+    "source": "agentic_core/simulation/nanophotonics.py",
+    "tier": "Enterprise+",
+    "features": [
+        "Polarised-Light Sensing",
+        "Ultra-Low Power Navigation",
+        "Insect-Inspired AI"
+    ]
+}

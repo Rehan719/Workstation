@@ -34,14 +34,16 @@ class TokenLedger:
         self._system_public_key = self._system_private_key.public_key()
         self.last_tx_hash = hashlib.sha256(b"GENESIS").hexdigest()
 
-    def initialize_user(self, user_id: str, tier: UserTier = UserTier.FREE):
+    def initialize_user(self, user_id: str, tier: UserTier = UserTier.FREE, airdrop_bonus: float = 100.0):
         if user_id not in self.ledgers:
             # In a real system, each user would have their own keypair
             user_private_key = ed25519.Ed25519PrivateKey.generate()
             user_public_key = user_private_key.public_key()
 
+            initial_balance = self._default_allowances[tier] + airdrop_bonus
+
             self.ledgers[user_id] = {
-                "balance": self._default_allowances[tier],
+                "balance": initial_balance,
                 "tier": tier,
                 "total_consumed": 0,
                 "last_refill": datetime.datetime.now().isoformat(),
@@ -90,6 +92,36 @@ class TokenLedger:
 
         self.transactions.append(transaction)
         logger.info(f"TokenLedger: User {user_id} consumed {amount} WST. TX Hash: {new_hash[:10]}...")
+        return True
+
+    def mint(self, to_user: str, amount: float, reason: str = "Admin Minting") -> bool:
+        """ARTICLE 591: Administrative minting of tokens."""
+        if to_user not in self.ledgers:
+            self.initialize_user(to_user)
+
+        self.ledgers[to_user]["balance"] += amount
+
+        tx_data = {
+            "to": to_user,
+            "amount": amount,
+            "activity": reason,
+            "timestamp": datetime.datetime.now().isoformat(),
+            "prev_hash": self.last_tx_hash,
+            "type": "mint"
+        }
+
+        tx_json = json.dumps(tx_data, sort_keys=True).encode()
+        signature = self._system_private_key.sign(tx_json)
+        new_hash = hashlib.sha256(tx_json + signature).hexdigest()
+        self.last_tx_hash = new_hash
+
+        self.transactions.append({
+            "tx_id": str(uuid.uuid4()),
+            "data": tx_data,
+            "signature": signature.hex(),
+            "hash": new_hash
+        })
+        logger.info(f"TokenLedger: Minted {amount} WST for {to_user}. Hash: {new_hash[:10]}...")
         return True
 
     async def deduct_tokens(self, user_id: str, amount: float, reason: str) -> bool:

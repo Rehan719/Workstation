@@ -23,6 +23,9 @@ class ReactorFactory:
             if domain == "religion" and sub_domain == "quranic_studies":
                 from agentic_core.reactor.religion.quranic_studies import QuranicStudiesReactor
                 self._cache[key] = QuranicStudiesReactor()
+            elif domain == "science" and sub_domain == "cognitive_computing":
+                from agentic_core.reactor.science.cognitive_computing import CognitiveComputingReactor
+                self._cache[key] = CognitiveComputingReactor()
             else:
                 # Dynamic generation for all others
                 mandate = f"Autonomous {sub_domain} simulation in {domain} domain."

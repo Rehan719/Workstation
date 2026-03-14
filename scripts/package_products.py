@@ -41,6 +41,24 @@ def package_products():
             "source": "agentic_core/simulation/engine.py",
             "tier": "Standard/Pro/Enterprise",
             "features": ["High-Fidelity Twinning", "ABM/Physics Simulation", "Synthetic Data Generation"]
+        },
+        "molecular_sdk": {
+            "name": "Molecular Communication SDK",
+            "source": "agentic_core/biochemical/molecular_comm.py",
+            "tier": "Enterprise",
+            "features": ["Neurotransmitter Signaling", "Emotional Interfacing", "Trust Modulation"]
+        },
+        "nanophotonic_navigation": {
+            "name": "Neuromorphic Nanophotonic Navigator",
+            "source": "agentic_core/simulation/nanophotonics.py",
+            "tier": "Enterprise+",
+            "features": ["Polarised-Light Sensing", "Ultra-Low Power Navigation", "Insect-Inspired AI"]
+        },
+        "cognitive_scraper": {
+            "name": "Cognitive Computing Scraper SDK",
+            "source": "agentic_core/synthesis/cognitive_scraper.py",
+            "tier": "Enterprise",
+            "features": ["Frontier AI Ingestion", "Concept Graph Mapping", "Temporal Trend Analysis"]
         }
     }
 
@@ -54,6 +72,21 @@ def package_products():
         "agentic_core/genetics/genomic_registry.py",
         "agentic_core/governance/runtime_framework.py"
     ]
+
+    # Explicit adjacent dependencies for standalone reactors/simulators
+    adjacent_deps = {
+        "digital_reactor": [
+            "agentic_core/simulation/registry.py",
+            "agentic_core/simulation/physics.py",
+            "agentic_core/simulation/abm.py",
+            "agentic_core/simulation/lifecycle.py",
+            "agentic_core/simulation/fidelity.py"
+        ],
+        "scraping_suite": [
+            "agentic_core/synthesis/agentic_orchestrator.py",
+            "agentic_core/synthesis/insight_extractor.py"
+        ]
+    }
 
     for name, config in products.items():
         product_dir = os.path.join(base_dir, name)
@@ -74,6 +107,13 @@ def package_products():
             if os.path.exists(dep):
                 dep_dest = os.path.join(sdk_dir, os.path.basename(dep))
                 shutil.copy(dep, dep_dest)
+
+        # Copy adjacent dependencies
+        if name in adjacent_deps:
+            for dep in adjacent_deps[name]:
+                if os.path.exists(dep):
+                    dep_dest = os.path.join(sdk_dir, os.path.basename(dep))
+                    shutil.copy(dep, dep_dest)
 
         # 2. Dockerization
         with open(os.path.join(product_dir, "Dockerfile"), "w") as f:

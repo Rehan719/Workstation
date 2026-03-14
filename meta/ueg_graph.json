@@ -17506,6 +17506,134 @@
                 "blueprints_generated": 3
             },
             "timestamp": 1773420435.7812068
+        },
+        {
+            "id": "audit_1450",
+            "type": "AuditLog",
+            "source": "UVIAP",
+            "message": "Full Evolution Pipeline execution complete.",
+            "metadata": {
+                "target": "Self",
+                "blueprints_generated": 3
+            },
+            "timestamp": 1773425720.8105536
+        },
+        {
+            "id": "audit_1451",
+            "type": "AuditLog",
+            "source": "UVIAP",
+            "message": "Full Evolution Pipeline execution complete.",
+            "metadata": {
+                "target": "Self",
+                "blueprints_generated": 3
+            },
+            "timestamp": 1773425846.7041912
+        },
+        {
+            "id": "insight_1452",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-03-13T18:50:33.947817",
+                "confidence_score": 0.95112295916231,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "audit_1453",
+            "type": "AuditLog",
+            "source": "UVIAP",
+            "message": "Full Evolution Pipeline execution complete.",
+            "metadata": {
+                "target": "Self",
+                "blueprints_generated": 3
+            },
+            "timestamp": 1773438072.9679508
+        },
+        {
+            "id": "audit_1454",
+            "type": "AuditLog",
+            "source": "UVIAP",
+            "message": "Full Evolution Pipeline execution complete.",
+            "metadata": {
+                "target": "Self",
+                "blueprints_generated": 3
+            },
+            "timestamp": 1773438204.9792056
+        },
+        {
+            "id": "insight_1455",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-03-13T21:45:53.390661",
+                "confidence_score": 0.9584416648714703,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_1456",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_2",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-03-14T12:13:18.716210",
+                "operon_id": "operon_8cab9505"
+            }
+        },
+        {
+            "id": "insight_1457",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-03-14T12:14:28.896792",
+                "operon_id": "operon_5b6a6913"
+            }
+        },
+        {
+            "id": "insight_1458",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-03-14T12:16:19.134047",
+                "operon_id": "operon_f519d72b"
+            }
+        },
+        {
+            "id": "insight_1459",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-03-14T12:16:59.288295",
+                "operon_id": "operon_a65d91ae"
+            }
         }
     ],
     "edges": [
