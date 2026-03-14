@@ -96,7 +96,17 @@ def package_products():
         ],
         "scraping_suite": [
             "agentic_core/synthesis/agentic_orchestrator.py",
-            "agentic_core/synthesis/insight_extractor.py"
+            "agentic_core/synthesis/insight_extractor.py",
+            "agentic_core/synthesis/knowledge_synthesis.py",
+            "agentic_core/simulation/nanophotonics.py",
+            "agentic_core/biochemical/molecular_comm.py",
+            "agentic_core/synthesis/cognitive_scraper.py"
+        ],
+        "molecular_sdk": [
+            "agentic_core/biochemical/rectification_engine.py"
+        ],
+        "synaptic_circuits": [
+            "agentic_core/biochemical/molecular_comm.py"
         ]
     }
 
