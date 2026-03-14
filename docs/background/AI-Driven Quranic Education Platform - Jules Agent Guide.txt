@@ -1,0 +1,382 @@
+# AI-Driven Quranic Education Platform - Jules Agent Guide
+
+## 0. Introduction, Platform Architecture, and Operational Framework
+
+This section provides AI Agent Jules with a comprehensive operational overview of the AI-Driven Quranic Education Platform. Understanding the platform's core concept, vision, strategic objectives, technology stack, architectural structure (including the 15 Core Features and standardized folder layout), and the mapping of original development phases to these features is crucial for your autonomous tasks in automation, monitoring, content management, and system interaction.
+
+### 0.1 Project Concept, Vision, and Strategic Objectives for Agent Context
+
+**Platform Concept & Vision (for Jules):**
+The AI-Driven Quranic Education Platform is an ecosystem you help manage and enhance. Its goal is to provide a global, immersive, and ethically sound resource for Quranic learning (recitation, memorization, understanding, living by its teachings). Your operations support this by enabling the integration of AI, ML, AR/VR, and collaborative tools. Key operational parameters for you include upholding Sharia compliance in automated data handling, facilitating personalized learning by managing data flows for AI agents, and ensuring system configurations support universal accessibility.
+
+**Strategic Objectives (Implications for Your Tasks):**
+Your automated scripts and monitoring tasks will directly contribute to or be constrained by these objectives:
+1.  **Universal Accessibility:** Your scripts may manage multilingual content deployments (e.g., new language packs for i18n), execute accessibility compliance checks (e.g., via linters or specific test suites), or monitor services critical for low-bandwidth performance and PWA functionality.
+2.  **AI-Powered Personalized Learning:** You will interact with AI microservices, manage data pipelines that feed personalization algorithms (e.g., learning path recommendations, Tajwīd feedback systems), and potentially monitor the performance and output quality of these AI models.
+3.  **Adaptive UI/UX:** You may process user profile update events or emotion data streams (via Kafka topics) that are inputs for UI adaptation logic. Your understanding of these data flows is key.
+4.  **Immersive Education Tools:** Your responsibilities might include monitoring AR/VR asset pipelines, validating asset integrity upon deployment, or tracking usage analytics for these experiences.
+5.  **Connected Global Communities:** You will assist in automated content moderation workflows, manage community event data (scheduling, reminders), and process group interaction metrics for analysis by other systems (e.g., Swarm Intelligence).
+6.  **Sharia & Ethics Compliance:** Your automation scripts handling user data or content must operate within defined ethical boundaries and Sharia guidelines. You might assist in generating logs or flagging data relevant for Sharia compliance audits.
+7.  **Cross-Device Compatibility & Privacy/Security:** You may execute automated tests (e.g., UI tests on different viewports) to ensure compatibility or monitor system logs for security alerts related to data privacy (e.g., unauthorized access attempts).
+
+### 0.2 Proposed Technology Stack (Key Interaction Points & Configs for Jules)
+
+Your operational environment and tasks will interface with the following technologies. Understanding key configuration files and interaction patterns is essential:
+
+*   **Monorepo Management (Yarn Workspaces/Nx):** You may need to execute scripts (e.g., `yarn workspace <service> build`) or access configuration from the root `package.json` or specific workspace `package.json` files.
+*   **Frontend (React/Vite/Next.js, Tailwind CSS):** For UI testing tasks, you'll interact with the build output or a running instance. Localization files for `react-i18next` (e.g., `/public/locales/`) are key for multilingual content management.
+*   **Backend (NestJS - Main Gateway):** This is a primary API interaction point. You will call its documented endpoints (OpenAPI/Swagger specs) for data operations and triggering actions. Monitor its health via `/health` endpoints.
+*   **Microservices (Python/FastAPI, Node.js/Express/NestJS):** Located in `/services`, these are critical interaction points. Each should have an OpenAPI/Swagger definition for its API, a `Dockerfile` for its build process, and an `.env.example` for its configuration variables. You will call their APIs and monitor their individual health.
+*   **Databases (MySQL, MongoDB, Redis):** Direct interaction should be minimized and controlled (e.g., via specific scripts). You might monitor backup scripts, check data integrity via service APIs, or clear Redis caches. Key configs: connection URIs in environment variables.
+*   **AI/ML (LLMs, Speech APIs, Affectiva, Vector DBs):** You will orchestrate calls to these services (often via the `/services/llm-nlp/` or `/services/guidance-assistant/` microservices), manage API keys (from secure environment variables), process their outputs, and monitor their availability/quotas.
+*   **Event-Driven Architecture (Apache Kafka):** Critical for your operations. You will consume events from various topics (e.g., `user_events`, `recitation_analyzed_event`) to trigger actions and may produce events to notify other systems or log activities. Key files: Kafka broker addresses in env vars, topic definitions (e.g., `infra/kafka/topic_definitions.json`).
+*   **DevOps & Cloud (Docker, GitHub Actions, Firebase, GCP/AWS free tiers):** You will operate within CI/CD pipelines (defined in `.github/workflows/*.yml`), potentially triggering deployment scripts (`scripts/deploy_service.sh <service_name> <env>`) or monitoring cloud resource health via cloud provider APIs or CLI commands.
+
+### 0.3 Project Structure for Agent Operations
+
+The platform's monorepo structure is designed for modularity. Understanding this is key for locating resources, logs, configuration files, and defining the scope of your scripts.
+
+#### 0.3.1 The 15 Core Features Model (Agent Task Domains)
+
+Your automated tasks will often be scoped to one or more of these 15 Core Features, which represent the main functional pillars of the platform. This guide will detail your specific interactions and responsibilities within each feature:
+1.  User Authentication & Profile Management
+2.  AI Tajwīd Coach
+3.  Memorization Suite
+4.  Gamified Learning & Competitions
+5.  Learner-Centric Learning Modules
+6.  Educator Platform & Class Management
+7.  Community Engagement Platform
+8.  Video Conferencing & Collaboration
+9.  Immersive AR/VR Experiences
+10. AI Guidance & Fitrah Profiling System (High interaction area for you)
+11. Swarm Intelligence & Collaborative Learning (High interaction with Kafka topics)
+12. Adaptive UI/UX Engine
+13. Platform Settings, Globalization & Accessibility
+14. Secure Billing, Subscriptions & Donations
+15. Admin, Analytics & Platform Governance
+
+#### 0.3.2 Standardized Folder/File Structure (Key Paths for Your Operations)
+
+*   **Root Directory Structure:**
+    ```
+    /
+    ├── features/             # Houses code for the 15 Core Features (less direct interaction for you)
+    ├── shared/               # Common libraries & components (monitor for changes that might affect services)
+    ├── services/             # Your primary interaction targets: standalone microservices
+    │   ├── llm-nlp-service/  # Example: Python/FastAPI service for LLM tasks
+    │   ├── guidance-assistant-service/ # Example: Node.js service for STT/TTS, emotion
+    │   └── ...               # Other microservices (recitation, video, etc.)
+    ├── agents/               # Your dedicated directory
+    │   ├── jules_scripts/    # Your operational Python or Bash scripts
+    │   ├── prompts_library/  # Version-controlled prompts for LLM interactions
+    │   ├── config/           # Your specific configuration files
+    │   └── worklogs/         # Your operational logs and reports
+    ├── infra/                # Infrastructure as Code (Docker, Kafka configs, Terraform)
+    │   ├── docker/           # Dockerfiles and docker-compose files
+    │   ├── kafka/            # Kafka topic definitions, schemas
+    │   └── terraform/        # Terraform scripts for cloud resources
+    ├── docs/                 # All project documentation, including this guide
+    ├── scripts/              # General utility/automation scripts (e.g., `run_ci_checks.sh`, `deploy_all_services.sh`)
+    └── ...
+    ```
+
+*   **Microservice Folder Structure (e.g., `/services/<microservice_name>/`):**
+    These are key for your monitoring and interaction tasks.
+    ```
+    /services/<microservice_name>/
+    ├── app/                  # Service code (e.g., Python/FastAPI or Node/Express)
+    ├── tests/                # Service-specific tests (you might trigger these)
+    ├── Dockerfile            # Used by CI/CD and local Docker Compose
+    ├── requirements.txt or package.json # Dependencies
+    ├── .env.example          # Environment variable template
+    └── openapi.json          # API specification for your interaction
+    ```
+
+*   **Agent Specific Directory (`/agents/`):** This is your primary workspace.
+    *   `/agents/jules_scripts/`: Contains scripts you execute for various tasks (e.g., `monitor_kafka_topics.py`, `generate_usage_report.sh`).
+    *   `/agents/prompts_library/`: Stores version-controlled text files or JSON structures defining prompts used for interacting with LLMs (Feature 10).
+    *   `/agents/config/`: Your specific configuration files (e.g., `jules_config.yaml` defining alert thresholds, API endpoints you use).
+    *   `/agents/worklogs/`: Directory where you should store your operational logs, generated reports, and error logs.
+
+### 0.4 Mapping Original 19 Phases to 15 Core Features (Context for Task Sequencing & Automation)
+
+The platform's development was initially outlined in a 19-phase plan. This has been consolidated into the 15 Core Feature model. This mapping is important for you to understand how different functionalities, which might have been deployed or tested in a certain sequence originally, are now grouped. This can inform your monitoring strategies (e.g., knowing that F10 depends on several earlier "phases" being stable) or how you might sequence automated E2E tests.
+
+*   **Orig. Phase 1 (Project Setup):** Relates to `Shared Area` & `/infra`. Your scripts operate within this established environment. CI/CD setup (GitHub Actions) is key.
+*   **Orig. Phase 2 (User Authentication):** Maps to **F1: User Authentication & Profile Management**. Monitor `user_events` Kafka topic.
+*   **Orig. Phase 3 (Billing):** Maps to **F14: Secure Billing, Subscriptions & Donations**. Monitor `payment_events` Kafka topic.
+*   **Orig. Phase 4 (Recitation Coach):** Maps to **F2: AI Tajwīd Coach**. Monitor health of `recitation-analysis-service`.
+*   **Orig. Phase 5 (Competitions):** Maps to **F4: Gamified Learning & Competitions**. Automate start/end of competitions; monitor `competition_events`.
+*   **Orig. Phase 6 (Memorization):** Maps to **F3: Memorization Suite**. Automate review reminders via `user_memorization_due_event`.
+*   **Orig. Phase 7 (Learning - Learner):** Maps to **F5: Learner-Centric Learning Modules**. Validate new content; monitor `learning_path_recommendation_service`.
+*   **Orig. Phase 8 (Teaching - Educator):** Maps to **F6: Educator Platform & Class Management**. Generate automated reports for teachers.
+*   **Orig. Phase 9 (Community):** Maps to **F7: Community Engagement Platform**. Assist content moderation via `/moderate/content` API; monitor `new_community_post_event`.
+*   **Orig. Phase 10 (Video Conferencing):** Maps to **F8: Video Conferencing & Collaboration**. Manage recordings, process transcriptions via `video_session_events`.
+*   **Orig. Phase 11 (VR/AR):** Maps to **F9: Immersive AR/VR Experiences**. Monitor AR/VR asset integrity and usage.
+*   **Orig. Phase 12 (Settings, i18n, PWA):** Maps to **F13: Platform Settings, Globalization & Accessibility**. Manage localization resources; test PWA functionality.
+*   **Orig. Phase 13 (Admin, Security):** Maps to **F15: Admin, Analytics & Platform Governance**. Assist admin tasks; monitor security alerts.
+*   **Orig. Phase 14 (AI Core Hub):** Maps to **F10: AI Guidance & Fitrah Profiling System**. Key interaction hub for you with LLMs, Affectiva, "Open Computer" agent. Orchestrate via `/services/guidance-assistant-service/`.
+*   **Orig. Phase 15 (Swarm, Accessibility, Adaptive UI):**
+    *   Swarm Intelligence -> **F11: Swarm Intelligence & Collaborative Learning**. Consume `user_interaction_events` from Kafka; trigger `/services/aco-optimizer-service/`.
+    *   Accessibility -> **F13**. Run automated accessibility tests.
+    *   Adaptive UI -> **F12: Adaptive UI/UX Engine**. Process `emotion_data_stream` and `profile_change_events`.
+*   **Orig. Phases 16-19 (Testing, Deployment, Docs, Monitoring):** These are continuous operational concerns.
+    *   Testing (Orig. 16): You execute automated test suites (`scripts/run_all_tests.sh`).
+    *   Deployment (Orig. 17): You may trigger deployment scripts (`scripts/deploy_feature.sh <feature_name>`) and monitor their success.
+    *   Documentation (Orig. 18): You manage and update content in `/docs` as instructed.
+    *   Monitoring (Orig. 19): Central to your role, links to **F15** and involves consuming logs/metrics from all services.
+
+This framework provides context for your operational tasks. Subsequent sections will detail your role within each of the 15 Core Features.
+
+## 1. User Authentication & Profile Management
+*   **Agent Interaction Scope:** Jules may be involved in monitoring user registration events (e.g., via Kafka topic `user_created_event`), flagging suspicious account activities based on patterns (e.g., multiple failed logins from `user_login_failed_event`), ensuring data consistency between the primary user database and any auxiliary auth systems (e.g., Firebase for OAuth), and processing profile update events (`profile_updated_event`) to trigger downstream actions like cache invalidation or learning path recalculations.
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** Kafka topics: `user_events` (includes `user_created`, `user_login_failed`), `profile_change_events`. API access to `/admin/users/` for fetching user details or flagging accounts. User profile data from `/users/profile/{id}` for analysis.
+    *   **Outputs:** Alerts to `security_alerts_topic` or admin notification system. Commands to other services (e.g., clear user cache for Feature X). Reports on registration velocity or anomaly detection, stored in `/agents/worklogs/auth_reports/`.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   Scripts: `/agents/jules_scripts/auth/monitor_failed_logins.py`, `/agents/jules_scripts/profile/process_profile_updates_for_cache.py`.
+    *   APIs: `GET /admin/users?filter=suspicious`, `POST /admin/users/{id}/flag`.
+    *   Config: `/agents/config/auth_monitor_config.yaml` (defining thresholds like `LOGIN_FAILURE_THRESHOLD_PER_HOUR`), `/shared/config/kafka_topics.json`.
+*   **Decision Logic:**
+    *   IF count(consumed_event from `user_login_failed_event` WHERE userId=X) > LOGIN_FAILURE_THRESHOLD_PER_HOUR THEN produce_event(topic=`security_alerts_topic`, {type: "SUSPICIOUS_LOGIN_ACTIVITY", userId: X}).
+    *   ON event(topic=`profile_change_events` WHERE userId=X AND changed_fields CONTAINS 'learning_preferences') DO call_api_to_service('learning-path-service', `/recalculate/{userId}`).
+*   **Original Phase Mapping Relevance:** Corresponds to original Phase 2. Your automation scripts for this feature would be part of your tasks related to user lifecycle management and security monitoring. These scripts should be tested as part of the deployment sequence for F1. You might use scripts in `/scripts/test_auth_apis.sh` for this.
+
+## 2. AI Tajwīd Coach
+*   **Agent Interaction Scope:** Jules could monitor the health and performance of the AI Tajwīd analysis microservice (expected at `/services/recitation-analysis-service/`), manage queues for audio processing if asynchronous (e.g., via a Kafka topic like `recitation_audio_pending_analysis`), aggregate recitation statistics for reporting to F15, and potentially trigger personalized feedback or encouragement based on performance trends by producing events to `user_notification_topic`.
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** Recitation submission events (from `recitation_submitted_event` Kafka topic, including audio metadata, user ID), AI analysis results (from `recitation_analyzed_event` Kafka topic, including feedback JSON, scores), AI service health metrics (from `/services/recitation-analysis-service/health` endpoint or Prometheus/Grafana via F15).
+    *   **Outputs:** Reports on AI service uptime/latency (to `/agents/worklogs/tajwid_service_health/`), aggregated recitation accuracy reports (for F15), events to `user_notification_topic`.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   Scripts: `/agents/jules_scripts/tajwid/monitor_recitation_service_health.sh`, `/agents/jules_scripts/tajwid/generate_recitation_stats_report.py`.
+    *   APIs: `/services/recitation-analysis-service/health`, `/services/recitation-analysis-service/metrics`. Backend APIs like `/admin/recitation/platform-stats`.
+    *   Config: `/services/recitation-analysis-service/.env` (for its endpoint, if called directly), `/agents/config/tajwid_monitor_config.yaml` (alert thresholds).
+    *   Kafka topics: `recitation_submitted_event`, `recitation_analyzed_event`, `user_notification_topic`.
+*   **Decision Logic:**
+    *   IF call_api(`/services/recitation-analysis-service/health`).status == "ERROR" FOR 3_CONSECUTIVE_ATTEMPTS THEN create_alert(ops_team, "Tajwid Service Down").
+    *   IF consumed_event_from(`recitation_analyzed_event` WHERE userId=X AND score < LOW_SCORE_THRESHOLD) AND count_recent_low_scores(X) > 3 THEN produce_event(topic=`user_notification_topic`, {userId:X, type:"ENCOURAGEMENT_Tajwid"}).
+    *   IF new_tajweed_rule_deployed_event received THEN trigger_script(`/agents/jules_scripts/tajwid/request_sample_reprocessing.py`).
+*   **Original Phase Mapping Relevance:** Corresponds to original Phase 4. Your monitoring scripts for the `/services/recitation-analysis-service/` are crucial during and post-deployment of this phase.
+
+## 3. Memorization Suite
+*   **Agent Interaction Scope:** Jules can automate review reminders by querying for users with items due and producing events to the notification system. It can analyze aggregate memorization patterns (e.g., from `ReviewSessionLog` data) to identify commonly difficult verses for reporting to content teams (F5) or for suggesting adjustments to SRS algorithm parameters (managed via F15).
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** User memorization item data (verseKey, SRS state like `nextReviewDate` from `/memorization/items/due`), daily list of users with pending reviews.
+    *   **Outputs:** Events to `user_notification_topic` for review reminders, reports on "most difficult verses" (e.g., stored in `/agents/worklogs/memorization_reports/`), potential alerts if SRS scheduling tasks fail.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/memorization/due-reviews/today`, `/analytics/memorization/verse-difficulty-stats`.
+    *   Scripts: `/agents/jules_scripts/memorization/send_srs_reminders.py`, `/agents/jules_scripts/memorization/analyze_difficult_verses_report.py`.
+    *   Config: `/agents/config/memorization_config.yaml` (reminder schedule).
+    *   Kafka topics: `review_session_completed_event`, `user_notification_topic`.
+*   **Decision Logic:**
+    *   ON schedule (e.g., daily at 7 AM user's local time via F13 settings) FOR EACH user_X in call_api(`/memorization/due-reviews/today`) DO produce_event(topic=`user_notification_topic`, {userId:X, type:"MEMORIZATION_REMINDER"}).
+    *   IF call_script(`/agents/jules_scripts/memorization/analyze_difficult_verses_report.py`).output CONTAINS verse_Y with high_difficulty_score THEN notify_content_team(verse_Y, "High Difficulty Reported").
+*   **Original Phase Mapping Relevance:** Corresponds to original Phase 6 and parts of original Phase 8 (Memorization Trainer). Your reminder scripts are a key part of this feature's success.
+
+## 4. Gamified Learning & Competitions
+*   **Agent Interaction Scope:** Jules can automate the lifecycle of competitions (setup from templates via `/admin/competitions` API, starting/ending based on schedule), update leaderboards in near real-time by consuming score events from Kafka (`recitation_analyzed_event`, `quiz_completed_event`), issue automated rewards or badges via `/users/{id}/grant-badge` API, and monitor for fair play or suspicious activity.
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** Competition templates/parameters (from `/admin/competitions/templates`), user scores/XP (via Kafka topics like `score_updated_event`, `xp_earned_event`), user reports of unsporting behavior.
+    *   **Outputs:** Commands to create/start/end competitions, updated leaderboard data (to Redis cache for F4 UI), events to `user_notification_topic` for achievements/rewards, alerts for fair play violations to admin (F15).
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/admin/competitions` (CRUD), `/leaderboards/recalculate`, `/users/{id}/grant-badge`.
+    *   Scripts: `/agents/jules_scripts/gamification/manage_competition_lifecycle.py`, `/agents/jules_scripts/gamification/monitor_fair_play.py`.
+    *   Config: `/agents/config/gamification_rules.yaml` (badge criteria, XP rules).
+    *   Kafka topics: `competition_lifecycle_event` (e.g., `COMPETITION_START`, `COMPETITION_END`), `user_achievement_unlocked_event`.
+*   **Decision Logic:**
+    *   IF competition_X.startTime <= NOW AND competition_X.status == 'SCHEDULED' THEN call_api(`/admin/competitions/{id}/start`).
+    *   ON event(topic=`score_updated_event` for competition_Y) DO call_api(`/leaderboards/recalculate?competitionId={Y}`).
+    *   IF user_Z.xp_total >= BADGE_BRONZE_THRESHOLD AND NOT user_Z.has_badge(BRONZE) THEN call_api(`/users/{Z}/grant-badge?badge=BRONZE`) AND produce_event(topic=`user_notification_topic`, {userId:Z, type:"ACHIEVEMENT_UNLOCKED", badge:"Bronze"}).
+*   **Original Phase Mapping Relevance:** Corresponds to original Phase 5 and gamification aspects of original Phase 7. Your automation of competition mechanics is central here.
+
+## 5. Learner-Centric Learning Modules
+*   **Agent Interaction Scope:** Jules can assist in automated content ingestion and validation (e.g., checking new lesson markdown for broken links, ensuring quizzes have answer keys via scripts in `/agents/jules_scripts/content_validation/`), monitor the performance of the learning path recommendation AI (likely a microservice in `/services/learning-path-service/`), trigger re-training or parameter adjustments, and analyze user progress data (from `user_progress_event` Kafka topic) to identify popular or problematic content for reporting.
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** New/updated content packages (e.g., from a designated Git LFS location or CMS webhook), `user_progress_event` stream, recommendation engine performance metrics (e.g., from `/services/learning-path-service/metrics`), user feedback on content (`content_feedback_event` topic).
+    *   **Outputs:** Content validation reports (to `/agents/worklogs/content_validation/`), alerts for broken content, commands to update recommendation model parameters (via API to `/services/learning-path-service/admin/`), reports on content engagement for F15.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/admin/learning-modules/validate-content`, `/services/learning-path-service/admin/retrain-model`, `/analytics/content/engagement-report`.
+    *   Scripts: `/agents/jules_scripts/content_validation/validate_lesson_format.py`, `/agents/jules_scripts/ai/tune_learning_path_model.sh`.
+    *   Config: `/agents/config/content_validation_rules.yaml`, `/services/learning-path-service/.env`.
+    *   Kafka topics: `learning_content_updated_event`, `user_progress_event`, `recommendation_feedback_event`.
+*   **Decision Logic:**
+    *   ON new_content_commit_to_cms_branch DO trigger_script(`/agents/jules_scripts/content_validation/validate_new_learning_content.py`).
+    *   IF call_api(`/services/learning-path-service/metrics`).accuracy < TARGET_ACCURACY_THRESHOLD THEN trigger_alert("Learning Path AI low accuracy") AND potentially trigger_script(`/agents/jules_scripts/ai/tune_learning_path_model.sh --default-params`).
+    *   IF lesson_A.completion_rate_from_kafka_analysis < 5% AND lesson_A.views > 1000 THEN flag_for_content_review(lesson_A) for F6/F15.
+*   **Original Phase Mapping Relevance:** Corresponds to original Phase 7 and AI-powered learning path aspects of original Phase 9. Your role in content validation and AI monitoring is key.
+
+## 6. Educator Platform & Class Management
+*   **Agent Interaction Scope:** Jules can automate administrative tasks for educators: generating weekly class progress summary reports (emailed or pushed to F6 UI), flagging students who are falling behind based on predefined criteria (e.g., inactivity, low quiz scores from `student_progress_in_class_event` Kafka topic), and scheduling or reminding about upcoming live class sessions (integrating with F8 Video Conferencing via API calls).
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** Class rosters, student progress data (from `student_progress_in_class_event` topic or `/educator/classes/{id}/analytics` API), module assignment information, teacher-defined alert criteria (e.g., from `/agents/config/educator_alerts_config.yaml`).
+    *   **Outputs:** Automated progress reports (e.g., PDFs stored in `/agents/worklogs/class_reports/` and notification sent), alerts to teachers (via `user_notification_topic`), API calls to F8 to create/schedule video sessions.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/educator/classes/{id}/progress-summary`, `/educator/classes/{id}/students-at-risk`, `/video/sessions/create` (for scheduling).
+    *   Scripts: `/agents/jules_scripts/educator/generate_class_reports.py`, `/agents/jules_scripts/educator/identify_at_risk_students.py`.
+    *   Config: `/agents/config/educator_alerts_config.yaml`.
+    *   Kafka topics: `student_progress_in_class_event`, `class_schedule_updated_event`, `user_notification_topic`.
+*   **Decision Logic:**
+    *   ON schedule (e.g., Monday 8 AM as per `/agents/config/cron_schedules.yaml`) FOR EACH active_class DO call_script(`/agents/jules_scripts/educator/generate_class_reports.py` --classId=X) AND send_report_notification_to_teacher(class.teacherId).
+    *   IF student_Z.last_active_from_event_stream > 7_days AND student_Z.is_in_active_class_X THEN produce_event(topic=`user_notification_topic`, {userId: class_X.teacherId, type:"STUDENT_INACTIVITY_ALERT", studentId: Z}).
+*   **Original Phase Mapping Relevance:** Corresponds to original Phase 8. Automation of reporting and student monitoring are key agent tasks.
+
+## 7. Community Engagement Platform
+*   **Agent Interaction Scope:** Jules plays a significant role in assisting human moderators by performing initial AI-powered content moderation (flagging potentially harmful content from `new_community_post_event` topic and routing to `/services/content-moderation-service/`), routing "Ask a Scholar" questions to available scholars (checking `/scholars/availability` API), managing event suggestions (flagging popular ones from `event_suggestion_created_event` topic), and potentially identifying trending topics or unanswered questions for reporting.
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** `new_community_post_event`, `user_report_content_event`, `event_suggestion_created_event` Kafka topics. Scholar availability status from API.
+    *   **Outputs:** Content moderation flags/actions (e.g., API call to `/admin/community/posts/{id}/flag-for-review` or auto-quarantine), notifications to scholars (via `user_notification_topic`), reports on community trends (to `/agents/worklogs/community_reports/`).
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/services/content-moderation-service/moderate`, `/admin/community/posts/pending-approval`, `/scholars/assign-question`.
+    *   Scripts: `/agents/jules_scripts/community/process_new_content_for_moderation.py`, `/agents/jules_scripts/community/route_ask_scholar_questions.py`.
+    *   Config: `/agents/config/community_moderation_config.yaml` (thresholds for moderation).
+    *   Kafka topics: `new_community_post_event`, `user_report_content_event`, `event_suggestion_created_event`, `user_notification_topic`.
+*   **Decision Logic:**
+    *   ON event(topic=`new_community_post_event`) DO results = call_api(`/services/content-moderation-service/moderate`, post.text); IF results.is_harmful THEN call_api(`/admin/community/posts/{post.id}/quarantine`).
+    *   ON event(topic=`ask_scholar_question_event`) DO available_scholar = call_api(`/scholars/get-available`); IF available_scholar THEN call_api(`/scholars/{scholar.id}/assign-question`, question_event.data).
+*   **Original Phase Mapping Relevance:** Corresponds to original Phase 9 and community safety aspects of original Phase 13. AI-assisted moderation is a key responsibility.
+
+## 8. Video Conferencing & Collaboration
+*   **Agent Interaction Scope:** Jules can monitor video conferencing session health (via `/services/video-conferencing-service/health` or metrics from Kafka like `video_session_quality_event`), manage recordings (archiving to long-term storage like AWS Glacier via scripts based on policies in `/agents/config/retention_policies.yaml`, cleanup), process transcriptions from `/services/speech-to-text-service/` for indexing or summarization, and automate session scheduling based on calendar events or class schedules (from F6).
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** Kafka topics: `video_session_started_event`, `video_session_ended_event`, `recording_ready_event`, `transcription_ready_event`. VC service health metrics.
+    *   **Outputs:** Processed/indexed transcriptions (e.g., to a search index service), alerts for session failures, storage usage reports for recordings, API calls to F6 or calendar system for scheduling.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/services/video-conferencing-service/sessions/{id}/status`, `/admin/recordings/archive`, `/services/search/index-transcription`.
+    *   Scripts: `/agents/jules_scripts/video/monitor_vc_health.sh`, `/agents/jules_scripts/video/archive_old_recordings.py`, `/agents/jules_scripts/video/process_transcriptions.py`.
+    *   Config: `/agents/config/retention_policies.yaml`, `/services/video-conferencing-service/.env`.
+*   **Decision Logic:**
+    *   IF call_api(`/services/video-conferencing-service/health`).status == "ERROR" THEN create_alert(ops_team, "VC Service Error").
+    *   ON event(topic=`recording_ready_event`) DO call_script(`/agents/jules_scripts/video/process_transcriptions.py`, recording_event.data.recording_url).
+    *   IF recording.age_days > getConfigValue("VC_RECORDING_ARCHIVAL_DAYS", from=`/agents/config/retention_policies.yaml`) AND NOT recording.is_archived THEN call_script(`/agents/jules_scripts/video/archive_old_recordings.py`, recording.id).
+*   **Original Phase Mapping Relevance:** Corresponds to original Phase 10. Automation of recording management and transcription processing are key tasks.
+
+## 9. Immersive AR/VR Experiences
+*   **Agent Interaction Scope:** Jules can monitor the AR/VR asset pipeline by validating asset manifests (e.g., from `/infra/assets_pipeline.md` or a CMS), checking for broken links to 3D models/textures in `/frontend/public/assets/ar-vr/`, ensuring assets are optimized (e.g., file size checks), track usage analytics (from `ar_session_started_event`, `vr_session_ended_event` Kafka topics), and assist in deploying new AR/VR content by updating asset lists or CDN caches.
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** AR/VR asset manifests, usage logs (from Kafka), performance metrics from WebXR sessions (if available).
+    *   **Outputs:** Reports on popular AR/VR experiences (to `/agents/worklogs/arvr_reports/`), alerts for broken/oversized assets, commands to update CDN caches (e.g., via `/shared/scripts/clear_cdn.sh`).
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/admin/arvr/assets/validate-manifest`, `/analytics/arvr/usage-summary`.
+    *   Scripts: `/agents/jules_scripts/arvr/check_asset_integrity.py`, `/agents/jules_scripts/arvr/generate_engagement_reports.py`.
+    *   Config: `/agents/config/arvr_asset_specs.yaml` (max file sizes, supported formats).
+    *   Kafka topics: `ar_session_started_event`, `vr_session_ended_event`, `asset_updated_event` (from CMS/git).
+*   **Decision Logic:**
+    *   ON event(topic=`asset_updated_event` WHERE type='ARVR') DO call_script(`/agents/jules_scripts/arvr/check_asset_integrity.py`, asset_event.data.manifest_url).
+    *   IF asset_X.filesize > getConfigValue("MAX_AR_ASSET_MB", from=`/agents/config/arvr_asset_specs.yaml`) * 1024 * 1024 THEN flag_asset_for_optimization(asset_X).
+*   **Original Phase Mapping Relevance:** Corresponds to original Phase 11. Asset pipeline monitoring and usage tracking are key.
+
+## 10. AI Guidance & Fitrah Profiling System
+*   **Agent Interaction Scope:** This is a primary operational domain for Jules. You will manage/version prompts in `/agents/prompts_library/` for LLMs, process data for Fitrah profiling (e.g., consuming `fitrah_assessment_completed_event` and calling `/services/fitrah-profiling-service/analyze`), monitor performance/ethics of guidance responses from `/services/llm-nlp-service/` & `/services/guidance-assistant-service/`, manage "Open Computer" agent command accuracy (via `voice_command_interpreted_event`), and handle feedback loops for AI response improvement (consuming `guidance_feedback_event`).
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** Kafka topics: `user_query_for_guidance_event`, `llm_response_generated_event`, `fitrah_assessment_completed_event`, `voice_command_interpreted_event`, `guidance_feedback_event`. User emotional state from `emotion_data_stream`.
+    *   **Outputs:** Curated/versioned prompts to LLM services. Updated Fitrah profiles (via API to `/fitrah/update-profile`). Alerts for problematic AI responses. Performance metrics reports. Commands to (conceptually) retrain/fine-tune AI sub-models.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/services/llm-nlp-service/generate` (passing managed prompts), `/services/fitrah-profiling-service/analyze`, `/admin/ai-models/log-feedback`.
+    *   Scripts: `/agents/jules_scripts/ai_guidance/update_prompts_from_git.sh`, `/agents/jules_scripts/ai_guidance/analyze_guidance_accuracy_feedback.py`.
+    *   Config: `/agents/prompts_library/`, `/agents/config/ai_guidance_config.yaml` (ethical thresholds, model endpoints).
+*   **Decision Logic:**
+    *   ON event(topic=`guidance_feedback_event` WHERE feedback.rating < 2_STARS) DO flag_interaction_for_review(feedback.interaction_id) AND alert_content_team.
+    *   IF call_api(`/services/guidance-assistant-service/voice-command-metrics`).accuracy < TARGET_VOICE_ACCURACY THEN trigger_alert("Voice Command Accuracy Low").
+    *   ON schedule (e.g., nightly) DO call_script(`/agents/jules_scripts/ai_guidance/analyze_guidance_accuracy_feedback.py`) to identify patterns for prompt refinement.
+*   **Original Phase Mapping Relevance:** This is the core of original Phase 14 and incorporates Fitrah Profiling from original Phase 16. You are central to its operation, prompt management, and performance monitoring.
+
+## 11. Swarm Intelligence & Collaborative Learning
+*   **Agent Interaction Scope:** Jules will monitor the Kafka event bus for `user_interaction_events`, feed this data to `/services/aco-optimizer-service/` (or similar swarm algorithm service), trigger optimization runs, and disseminate insights (e.g., optimized learning paths from `optimized_learning_paths_event`, collective difficulty hotspots from `collective_insights_event`) to F5 (Learner Modules) or F6 (Educator Platform) via Kafka or direct API calls.
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** Kafka topics: `user_interaction_events`, `learning_progress_events`, `content_rating_events`. Configuration for ACO algorithms (e.g., from `/services/aco-optimizer-service/config.yaml`).
+    *   **Outputs:** Processed data batches for ACO. Commands to trigger ACO runs (API call to `/services/aco-optimizer-service/trigger-run`). Generated insights/paths published to `optimized_learning_paths_event` or `collective_insights_event` Kafka topics. Reports on swarm learning trends.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   Kafka Consumer/Producer scripts in `/agents/jules_scripts/swarm/`.
+    *   API calls to: `/services/aco-optimizer-service/trigger-run`, `/services/aco-optimizer-service/get-insights`.
+    *   Scripts: `/agents/jules_scripts/swarm/run_aco_optimization_batch.py`, `/agents/jules_scripts/swarm/publish_swarm_insights_to_dashboard.py`.
+    *   Config: `/agents/config/swarm_config.yaml` (batch sizes, schedules).
+*   **Decision Logic:**
+    *   ON schedule (e.g., daily, from `/agents/config/cron_schedules.yaml`) OR IF count_pending_events(`user_interaction_events`) > ACO_BATCH_SIZE THEN call_script(`/agents/jules_scripts/swarm/run_aco_optimization_batch.py`).
+    *   ON event(topic=`new_collective_insight_from_aco`) DO publish_to_kafka_topic(`collective_insights_event`, insight_data) AND log_insight_to_report.
+    *   IF call_api(`/services/aco-optimizer-service/health`).status == "ERROR" THEN create_alert(ops_team, "ACO Service Down").
+*   **Original Phase Mapping Relevance:** Maps to the Swarm Intelligence part of original Phase 15. Your role involves data pipeline management and triggering the core swarm algorithms.
+
+## 12. Adaptive UI/UX Engine
+*   **Agent Interaction Scope:** Jules can monitor the inputs and outputs of the Adaptive UI/UX Engine. This includes tracking user profile changes, preference updates, and real-time emotion data (from Feature 10) that feed into the engine. It can also log adaptation events and report on the effectiveness or frequency of UI changes.
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** User profile data (age, role, skill, preferences from F1), real-time emotion data streams (e.g., via Kafka topic `emotion_data_stream` from F10), UI adaptation rule sets or configurations (potentially from `/shared/config/adaptive_ui_rules.json`).
+    *   **Outputs:** Logs of UI adaptation events (`ui_adapted_event` Kafka topic or log files in `/agents/worklogs/ui_adaptation/`) with details of change, reports on which adaptation rules are triggered most frequently, alerts if emotion data processing (input to this engine) fails.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/analytics/ui-adaptation/stats` (for reporting), `/admin/adaptive-rules/get` (to understand current rules).
+    *   Scripts: `/agents/jules_scripts/adaptive_ui/monitor_emotion_pipeline_for_ui.sh`, `/agents/jules_scripts/adaptive_ui/generate_adaptation_trigger_report.py`.
+    *   Config: `/shared/config/adaptive_ui_rules.json`, `/agents/config/adaptive_ui_monitor_config.yaml`.
+    *   Kafka topics: `emotion_data_stream`, `user_profile_updated_event`, `ui_adaptation_triggered_event`.
+*   **Decision Logic:**
+    *   IF no_event_on_topic(`emotion_data_stream`) for X_minutes THEN create_alert(system_health, "Emotion Data Pipeline for UI Adaptation is Down").
+    *   ON event(topic=`ui_adaptation_triggered_event`) DO log_event_details_for_analysis(event_data, target_user_segment).
+    *   IF adaptation_rule_Y (from `/shared/config/adaptive_ui_rules.json`) fires > Z_times_per_hour THEN flag_for_review(rule_Y, "High Trigger Frequency for UI Adaptation Rule").
+*   **Original Phase Mapping Relevance:** This is a key part of the original **Phase 15 (Swarm Intelligence / Accessibility, Offline & i18n / Universal Accessibility (WCAG 2.2) & Adaptive UI/UX Engine)**. Jules ensures the data pipelines feeding this engine are active and can report on its operational patterns.
+
+## 13. Platform Settings, Globalization & Accessibility
+*   **Agent Interaction Scope:** Jules can be tasked with managing localization resources (e.g., validating new language file commits in `/frontend/public/locales/`, deploying them, checking for missing translation keys using scripts), monitoring PWA service worker status and cache effectiveness (via browser automation scripts), and running automated accessibility checks (e.g., using axe-core via Playwright scripts in `/agents/jules_scripts/tests/accessibility/`) as part of CI/CD or periodic audits. It can also manage the automated generation and validity checks for user certificates (from F5).
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** Localization files (e.g., JSONs from `/frontend/public/locales/`), PWA service worker logs/status, accessibility scan configurations, certificate generation requests (e.g., via `certificate_request_topic` Kafka topic).
+    *   **Outputs:** Reports on translation coverage/missing keys, PWA caching statistics, accessibility compliance reports (pass/fail, issue lists to `/agents/worklogs/accessibility_reports/`), generated certificate files or links (notifying user via `user_notification_topic`).
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/admin/localization/sync-keys`, `/admin/accessibility/trigger-scan`, `/certificates/issue-certificate`.
+    *   Scripts: `/agents/jules_scripts/localization/deploy_language_pack.sh <lang_code>`, `/agents/jules_scripts/pwa/verify_offline_cache.js` (Playwright), `/agents/jules_scripts/tests/accessibility/run_axe_scan.js`.
+    *   CLI tools: `axe-cli`, `workbox-cli`.
+    *   Config: `/agents/config/accessibility_scan_targets.yaml`.
+*   **Decision Logic:**
+    *   ON git_commit to `/frontend/public/locales/` DO trigger_script(`/agents/jules_scripts/localization/check_missing_keys.py`).
+    *   IF call_script(`/agents/jules_scripts/tests/accessibility/run_axe_scan.js`).errors > 0 THEN create_issue_in_tracker("Accessibility Violations Detected").
+    *   ON event(topic=`certificate_request_topic`) DO call_api(`/certificates/issue-certificate`, event.data) AND produce_event(topic=`user_notification_topic`, {userId: event.data.userId, type: "CERTIFICATE_READY"}).
+*   **Original Phase Mapping Relevance:** This feature consolidates original **Phase 12 (Settings / Globalization, Offline PWA & Core Settings)** and the Universal Accessibility part of original **Phase 15**. Jules plays a key role in automating tests and managing resources for these aspects.
+
+## 14. Secure Billing, Subscriptions & Donations
+*   **Agent Interaction Scope:** Jules can monitor billing and subscription events from Kafka topics (e.g., `payment_succeeded_event`, `subscription_cancelled_event`), generate anonymized financial reports for the admin dashboard (F15), flag suspicious transaction patterns based on predefined rules (in `/agents/config/billing_fraud_rules.yaml`), and monitor the health of webhook listeners (e.g., Stripe webhook endpoint at `/billing/webhook`).
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** Kafka topics: `payment_succeeded_event`, `payment_failed_event`, `subscription_changed_event`, `new_donation_event`. Transaction logs (via read-only DB access or specific API).
+    *   **Outputs:** Financial summary reports (e.g., to `/agents/worklogs/financial_reports/`), alerts for payment failures or potential fraud (to `security_alerts_topic`), notifications for significant donation milestones, status reports on webhook listeners.
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/admin/billing/transaction-logs`, `/admin/donations/periodic-summary`, `/billing/webhook-status`.
+    *   Scripts: `/agents/jules_scripts/billing/monitor_stripe_webhooks.sh`, `/agents/jules_scripts/billing/generate_financial_summary.py`, `/agents/jules_scripts/billing/detect_fraudulent_activity.py`.
+    *   Config: `/agents/config/billing_fraud_rules.yaml`.
+*   **Decision Logic:**
+    *   IF call_api(`/billing/webhook-status`).status == "ERROR" FOR 3_CONSECUTIVE_CHECKS THEN create_alert(ops_team, "Stripe Webhook Processing Error").
+    *   ON event(topic=`payment_failed_event`) DO log_event AND IF payment_failed_event.retries > 2 THEN alert_support_team(user_id, "Recurring Payment Failure").
+    *   IF call_script(`/agents/jules_scripts/billing/detect_fraudulent_activity.py` --transaction_log_period=1H).is_fraud_detected THEN create_alert(security_team, "Potential Billing Fraud").
+*   **Original Phase Mapping Relevance:** Corresponds to original **Phase 3** and financial aspects of original **Phase 18**. Jules' role is key in monitoring, reporting, and fraud detection.
+
+## 15. Admin, Analytics & Platform Governance
+*   **Agent Interaction Scope:** Jules can generate regular platform health reports (from various service metrics), assist in audit log analysis by flagging anomalous admin activities (consuming `admin_action_event` Kafka topic), monitor security configurations (e.g., checking `/shared/config/security_settings.json` for unexpected changes), automate parts of compliance checks (e.g., data retention policy enforcement scripts), and provide data feeds for various analytics dashboards, including the Parental Insights Dashboard.
+*   **Key Data Inputs/Outputs for Agent:**
+    *   **Inputs:** System logs (from `/shared/logging/` or centralized logging system), `admin_action_event` Kafka topic, user activity data (from other feature topics or DB reads), content moderation queues (API to F7), security alerts.
+    *   **Outputs:** Platform health dashboards/reports (to `/agents/worklogs/platform_reports/`), alerts for suspicious admin actions (`security_alerts_topic`), compliance check summaries, data feeds for analytics dashboards (e.g., to a reporting DB or via API).
+*   **Potential Scripts/Commands/APIs & Configs:**
+    *   API calls to: `/admin/audit-logs/query`, `/admin/analytics/platform-metrics`, `/admin/users/activity-summary`.
+    *   Scripts: `/agents/jules_scripts/admin/generate_daily_health_report.py`, `/agents/jules_scripts/admin/scan_audit_logs.py`, `/agents/jules_scripts/admin/enforce_data_retention.sh`.
+    *   Config: `/agents/config/admin_monitor_rules.yaml`, `/shared/config/security_settings.json`.
+*   **Decision Logic:**
+    *   IF event_on_topic(`admin_action_event`) involves high_risk_action (e.g., "delete_all_users") AND event.actor_role NOT IN ["SUPER_ADMIN"] THEN create_critical_security_alert AND notify_security_team.
+    *   ON schedule (e.g., weekly, from `/agents/config/cron_schedules.yaml`) DO call_script(`/agents/jules_scripts/admin/generate_parental_insights_report.py` for_each_linked_parent).
+    *   IF data_record_X.age > getConfigValue("DATA_RETENTION_DAYS_FOR_TYPE_Y", from=`/shared/config/compliance_rules.yaml`) THEN trigger_archival_script(data_record_X).
+*   **Original Phase Mapping Relevance:** This feature consolidates aspects of original **Phase 13 (Admin and Security)**, analytics from original **Phase 17**, Parental Insights from original **Phase 11**, and operational monitoring from original **Phase 19**. Jules is central to automating governance and reporting.
+
+## Shared Area Components
+*   **Agent Interaction Scope:** Jules will interact with and rely on many shared components for its own operations. For example, it will use shared logging utilities for its script outputs, leverage shared auth utilities for making secure API calls to platform services, consume global configurations, and potentially use shared notification utilities to send alerts or reports. Automation scripts in `/agents/jules_scripts/` will frequently import or call utilities from `/shared/`.
+*   **Key Interactions & Dependencies:**
+    *   **UI Component Library (`/shared/ui-components/`):** Not directly used by Jules, but changes here might trigger UI test scripts (e.g., Playwright) located in `/agents/jules_scripts/tests/ui/` that Jules executes.
+    *   **Authentication & Authorization Utilities (`/shared/auth/`):** Jules' scripts that call protected APIs will need to use shared token management (e.g., a script to obtain a service account JWT) or client authentication mechanisms defined here.
+    *   **API Client Services (`/shared/api-clients/`):** Jules might use standardized API clients/SDKs from this area to communicate with platform services and microservices, ensuring consistent communication patterns and error handling.
+    *   **Notification Utilities (`/shared/notifications/`):** Jules will be a heavy user of any shared notification service/client (e.g., an API endpoint `/shared/notifications/send`) to dispatch alerts to admins, operational teams, or users (e.g., memorization reminders).
+    *   **Database/ORM Utilities (`/shared/database/`):** If Jules needs to perform read-only data queries for reporting or analysis (and direct DB access is permitted for it, e.g., to a read-replica), it would use shared DB connection configurations or query builder utilities from here.
+    *   **Logging Service (`/shared/logging/`):** Jules' scripts and automated processes **must** use the shared logging service/wrapper to ensure its operational logs are centralized and formatted consistently with the rest of the platform. This is key for monitoring Jules' own activities. Log destinations might be defined in `/shared/config/logging_config.json`.
+    *   **Constants, Enums & Types (`/shared/constants/`, `/shared/types/`):** Jules' scripts may need to import/use shared constants or enums (e.g., Kafka topic names from `/shared/constants/kafka_topics.js`, event types, user roles) to ensure consistency and avoid hardcoding.
+    *   **Build & Configuration Scripts (`/scripts/`, `/shared/config/`):** Jules might trigger or monitor shared CI/CD scripts located in `/scripts/`. It will rely on global configuration files (e.g., `/shared/config/platform_globals.json` or individual files like `/shared/config/service_endpoints.json`) for parameters like API endpoints of various services, alert thresholds etc. Its own specific configurations will be in `/agents/config/`.
+*   **Folder Structure Relevance for Jules:**
+    *   `/shared/config/`: Critical for Jules to find platform-wide configurations, API endpoints.
+    *   `/shared/utils/`: May contain utilities Jules can leverage in its Python/Bash scripts.
+    *   `/shared/logging/`: Jules will direct its logs here or use clients that interface with this.
+    *   `/agents/config/`: This is Jules' *own* config area, but it might reference master configs in `/shared/config/`.
+    *   `/scripts/`: Location of general purpose scripts Jules might execute as part of its tasks.
+*   **Decision Logic for Shared Components:**
+    *   ALWAYS use `call_shared_script('/shared/logging/log_message.sh', level, message)` for all script output/errors.
+    *   IF making API call to `feature_X_service` THEN use `call_shared_script('/shared/api-clients/call_service.sh', service_name, endpoint, payload)`.
+    *   LOAD `global_platform_config` from `/shared/config/platform_globals.json` and `/agents/config/jules_specific_config.yaml` at script_startup.
+*   **Original Phase Mapping Relevance:** Shared components are developed throughout the lifecycle, but their initial setup and CI/CD integration relate to original **Phase 1 (Project Setup)**. DevOps scripts and configurations in `/scripts/` and `/infra/` relate to original **Phase 17 (Deployment & Optimization)**. Jules relies on these for most of its operations across all features.

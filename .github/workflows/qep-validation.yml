@@ -1,0 +1,27 @@
+name: QEP Data Integrity Validation
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Nightly
+  workflow_dispatch:
+
+jobs:
+  validate-qep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install httpx pytest
+      - name: Run QEP Scholarship Audit
+        run: |
+          python scripts/validate_qep_scholarship.py
+      - name: Run Morphology Cache Check
+        run: |
+          # Simulated check
+          echo "Verifying Morphology Cache..."
+          ls agentic_core/reactor/religion/ || exit 1

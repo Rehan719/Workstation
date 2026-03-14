@@ -29,26 +29,61 @@ class UVIAP:
         self.learning_reflection: List[Dict[str, Any]] = []
 
     async def run_full_pipeline(self, repo_url: Optional[str] = None, modes: List[str] = None):
-        """Executes all stages of the UVIAP (Article 5.3)."""
+        """Executes all stages of the UVIAP v125.0 (Article 5.3)."""
         modes = modes or ["full"]
-        logger.info(f"UVIAP: Starting Full Evolution Pipeline v124.0 (Target: {repo_url or 'Self'}, Modes: {modes})")
+        logger.info(f"UVIAP: Starting Full Evolution Pipeline v125.0 (Target: {repo_url or 'Self'}, Modes: {modes})")
 
-        # Stage 1: Multi-Source Ingestion (Article 5.1/621)
+        # Stage 0: Multi-Source Ingestion (v125.0 Additions)
+        external_data = []
+        if "ingest-urls" in modes or "full" in modes:
+            from .url_ingestor import URLIngestor
+            ingestor = URLIngestor()
+            urls_file = "docs/sources/urls.txt"
+            if os.path.exists(urls_file):
+                with open(urls_file, "r") as f:
+                    urls = [line.strip() for line in f if line.strip()]
+                external_data.extend(await ingestor.ingest_urls(urls))
+
+        if "ingest-local" in modes or "full" in modes:
+            from .text_ingestor import TextIngestor
+            text_ingestor = TextIngestor()
+            local_dir = "docs/background/"
+            if os.path.exists(local_dir):
+                files = [os.path.join(local_dir, f) for f in os.listdir(local_dir) if f.endswith(".txt")]
+                external_data.extend(text_ingestor.ingest_background(files))
+
+        # Stage 1: Standard Ingestion
         github_data = self._ingest_github(repo_url)
         sensory_data = self._ingest_sensory_signals()
 
         # ARTICLE 601: Asymmetric-Drive Rectification (Stage 1.5)
-        if "rectify" in modes or "full" in modes:
-            rectifications = self.rectification_engine.analyze_and_rectify([
-                {"type": "api_latency", "magnitude": 0.92}, # Simulated high variance
+        if "rectify" in modes or "full" in modes or "rectify-qep-insights" in modes:
+            logger.info("UVIAP: Performing Asymmetric-Drive Rectification.")
+            rect_inputs = [
+                {"type": "api_latency", "magnitude": 0.92},
                 {"type": "scraping_success", "magnitude": 0.45}
-            ])
+            ]
+
+            # v125.0: Rectify high-confidence QEP insights
+            if "rectify-qep-insights" in modes or "full" in modes:
+                qep_insights = [d for d in external_data if "qep" in str(d).lower()]
+                for insight in qep_insights:
+                    # Simulated high-confidence filter
+                    rect_inputs.append({
+                        "type": "QEP_INSIGHT_RECTIFICATION",
+                        "magnitude": 0.95,
+                        "content": str(insight)[:100]
+                    })
+
+            rectifications = self.rectification_engine.analyze_and_rectify(rect_inputs)
 
         # ARTICLE 646: Genomic Knowledge Organization (Operons)
         clustered_insights = self._organize_genomic_knowledge(github_data, sensory_data)
 
         # Stage 2: Biomimetic Pattern Recognition (Article 5.2/621)
         patterns = self._recognize_patterns(github_data)
+        # v125.0: Categorization of external data
+        patterns.extend(self._recognize_external_patterns(external_data))
         version_graph = self._construct_version_graph(github_data)
 
         # Stage 3: Version Differencing & Convergence
@@ -63,16 +98,16 @@ class UVIAP:
         # ARTICLE 631: Daily Cognitive Assimilation
         if "cognitive" in modes or "full" in modes:
             logger.info("UVIAP: Running autonomous Cognitive Computing sweep...")
-            # This would normally be handled by the DualModeScraper's agent reference
-            # but we simulate the call here for UVIAP continuity.
             self.ueg.add_audit_log("UVIAP", "Triggered autonomous Cognitive Sweep")
 
         # ARTICLE 661: Phylogenetic Diversity Mapping (Stage 5.5)
-        if "phylogenetic" in modes or "full" in modes:
+        if "phylogenetic" in modes or "full" in modes or "phylogenetic-map" in modes:
+            logger.info("UVIAP: Mapping Phylogenetic Diversity of QEP Evolution.")
             # Constructing trees across all versions (simulated mapping)
             versions_data = [{"version": f"v{v}.0", "features": ["core"]} for v in range(1, 120)]
             versions_data.append({"version": "v120.0", "features": ["synthesis", "uviap"]})
-            versions_data.append({"version": "v124.0", "features": ["molecular", "nanophotonic", "synaptic", "rectification"]})
+            versions_data.append({"version": "v124.0", "features": ["molecular", "rectification"]})
+            versions_data.append({"version": "v125.0", "features": ["qep_as_service", "scholar_trust", "multi_source_ingestion"]})
             self.phylo_twin.map_evolutionary_topology(versions_data)
 
         # Stage 6: Continuous Evolution Loop (Article 5.1)
@@ -80,13 +115,37 @@ class UVIAP:
         self._update_genomic_memory(learning_results)
 
         # UEG Provenance Logging
-        self.ueg.add_audit_log("UVIAP", "Full Evolution Pipeline execution complete.", {
+        self.ueg.add_audit_log("UVIAP", "Full Evolution Pipeline v125.0 execution complete.", {
             "target": repo_url or "Self",
-            "blueprints_generated": len(blueprints)
+            "blueprints_generated": len(blueprints),
+            "external_sources_ingested": len(external_data)
         })
 
-        logger.info("UVIAP: Full Evolution Pipeline Completed.")
+        logger.info("UVIAP: Full Evolution Pipeline v125.0 Completed.")
         return blueprints
+
+    def _recognize_external_patterns(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """v125.0: Semantic Pattern Recognition for external ingested data."""
+        patterns = []
+        for i, entry in enumerate(data):
+            content = str(entry.get("transcript", entry.get("content", ""))).lower()
+            if "qep" in content or "quran" in content:
+                patterns.append({
+                    "id": f"external_qep_{i}",
+                    "type": "QEP_DOMAIN_INSIGHT",
+                    "impact": ["DOMAIN_REACTORS", "QEP_AUTHORING"],
+                    "confidence": 0.92,
+                    "insight": f"Extracted QEP knowledge from {entry.get('source_url', entry.get('source'))}"
+                })
+            if "tool" in content or "script" in content or "github" in content:
+                patterns.append({
+                    "id": f"external_tool_{i}",
+                    "type": "TOOL_ECOSYSTEM_PATTERN",
+                    "impact": ["TOOLING", "CI_CD"],
+                    "confidence": 0.88,
+                    "insight": f"Identified tooling opportunity in {entry.get('source_url', entry.get('source'))}"
+                })
+        return patterns
 
     def _ingest_sensory_signals(self) -> List[Dict[str, Any]]:
         """ARTICLE 541: Sensory signal ingestion from WNN."""

@@ -8,17 +8,21 @@ class TextIngestor:
     """ARTICLE 356: Expanded Knowledge Ingestion (Text & History)."""
 
     def ingest_background(self, paths: List[str]) -> List[Dict[str, Any]]:
-        """Ingests background text files, introspection data, and history."""
+        """Ingests background text files, introspection data, and history for v125.0."""
         logger.info(f"TextIngestor: Ingesting knowledge from {len(paths)} paths.")
         results = []
         for path in paths:
-            if os.path.isfile(path):
+            if os.path.isfile(path) and path.endswith(".txt"):
                 content = self._read_source(path)
                 results.append({
                     "source": path,
                     "type": "background_text",
                     "content": content,
-                    "metadata": {"length": len(content)}
+                    "metadata": {
+                        "length": len(content),
+                        "filename": os.path.basename(path),
+                        "ingested_at": "v125.0_ingestion_pipeline"
+                    }
                 })
         return results
 

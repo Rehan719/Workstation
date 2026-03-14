@@ -45,3 +45,47 @@ class AlQuranCloudConnector:
 
     async def close(self):
         await self.client.aclose()
+
+class QuranComConnector:
+    """
+    ARTICLE 652: Symbiosis Connector for Quran.com API v4.
+    Provides external scholarly API integration for v125.0.
+    """
+    def __init__(self, client: Optional[httpx.AsyncClient] = None):
+        self.base_url = "https://api.quran.com/api/v4"
+        self.client = client or httpx.AsyncClient(timeout=15.0)
+
+    async def get_tafsir(self, tafsir_id: int, ayah_key: str) -> Dict[str, Any]:
+        """Fetches a specific tafsir for an ayah."""
+        url = f"{self.base_url}/quran/tafsirs/{tafsir_id}?verse_key={ayah_key}"
+        try:
+            response = await self.client.get(url)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Symbiosis: QuranCom tafsir fetch failed: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def get_recitations(self) -> Dict[str, Any]:
+        """Fetches available recitations (Qira'at)."""
+        url = f"{self.base_url}/resources/recitations"
+        try:
+            response = await self.client.get(url)
+            return response.json()
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+class AcademicSymbioticConnector:
+    """v125.0: Connector for Academic scholarly repositories (JSTOR, arXiv simulation)."""
+    def __init__(self):
+        self.registry = {
+            "JSTOR": "https://www.jstor.org/api/v1",
+            "arXiv": "http://export.arxiv.org/api/query"
+        }
+
+    async def scholarly_search(self, query: str, source: str = "arXiv") -> List[Dict[str, Any]]:
+        logger.info(f"Symbiosis: Searching {source} for {query}")
+        # Functional simulation of academic search
+        return [
+            {"title": f"Recent Advances in Quranic NLP: A {source} perspective", "link": f"https://{source.lower()}.org/abs/125.0"}
+        ]
