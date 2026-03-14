@@ -70,8 +70,8 @@ export default function App() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>JULES AI v120.0</Text>
-          <Text style={styles.subtitle}>Apotheosis of Synergy</Text>
+          <Text style={styles.title}>JULES AI v125.1</Text>
+          <Text style={styles.subtitle}>Self-Introspective Evolution</Text>
         </View>
 
         <SystemPulse />
@@ -84,20 +84,32 @@ export default function App() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>v124.1 Biomimetic Status</Text>
+          <Text style={styles.sectionTitle}>v125.1 System Resonance</Text>
           <View style={styles.biomimeticRow}>
             <View style={styles.biomimeticItem}>
                <Text style={styles.biomimeticLabel}>Rectification</Text>
-               <Text style={styles.biomimeticValue}>94% Eff.</Text>
+               <Text style={styles.biomimeticValue}>96% Eff.</Text>
             </View>
             <View style={styles.biomimeticItem}>
                <Text style={styles.biomimeticLabel}>Synaptic</Text>
-               <Text style={styles.biomimeticValue}>0.42ms</Text>
+               <Text style={styles.biomimeticValue}>0.38ms</Text>
             </View>
             <View style={styles.biomimeticItem}>
                <Text style={styles.biomimeticLabel}>Molecular</Text>
-               <Text style={styles.biomimeticValue}>1.2K ev/s</Text>
+               <Text style={styles.biomimeticValue}>1.4K ev/s</Text>
             </View>
+            <View style={styles.biomimeticItem}>
+               <Text style={styles.biomimeticLabel}>Cognitive</Text>
+               <Text style={styles.biomimeticValue}>82% Trends</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>QEP Engagement</Text>
+          <View style={styles.qepRow}>
+            <Text style={styles.qepText}>Morphology Cache: 94.2% hit</Text>
+            <Text style={styles.qepText}>Scholar trust: 0.985 OXY</Text>
           </View>
         </View>
 

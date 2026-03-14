@@ -23,8 +23,9 @@ class CognitiveComputingScraperAgent:
             "blog": "BlogPostScraperAgent"
         }
         self.concept_graph = {}
-        # RL Model for mission planning (Source Weighting)
+        # ARTICLE 631: RL Model for mission planning (Source Weighting)
         self.source_weights = {"arxiv": 0.8, "blog": 0.6, "conference": 0.7, "twitter": 0.4}
+        self.mission_history = []
 
     async def execute_discovery_mission(self, topic: str = "quantum_cognition", autonomous: bool = False, mode: str = "cognitive") -> Dict[str, Any]:
         """Runs a multi-source sweep for a specific topic (cognitive, qep, or research)."""
@@ -106,9 +107,18 @@ class CognitiveComputingScraperAgent:
         }
 
     async def plan_autonomous_sweep(self):
-        """ARTICLE 631: Reinforcement Learning mission planning."""
+        """ARTICLE 631: Reinforcement Learning mission planning for v125.1."""
         logger.info("CognitiveScraper: Optimizing mission plan via Reinforcement Learning...")
-        # Prioritize top 3 topics from trend analysis
+
+        # 1. Self-Correction: Adjust weights based on past success (Dopamine reward)
+        for mission in self.mission_history[-5:]:
+            source = mission.get("source")
+            if source in self.source_weights:
+                reward = 0.05 if mission.get("confidence", 0) > 0.95 else -0.02
+                self.source_weights[source] = max(0.1, min(1.0, self.source_weights[source] + reward))
+
+        # 2. Prioritize top 3 topics from trend analysis
         analysis = self.perform_temporal_analysis()
         for topic in analysis["emerging_stars"][:2]:
-            await self.execute_discovery_mission(topic, autonomous=True)
+            result = await self.execute_discovery_mission(topic, autonomous=True)
+            self.mission_history.append(result)

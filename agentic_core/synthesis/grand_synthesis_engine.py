@@ -123,6 +123,12 @@ class GrandSynthesisEngine:
 
             await uviap.run_full_pipeline(modes=modes)
 
+        # ARTICLE 500: Continuous Evolution Loop Automation
+        if "--with-uvaip" in sys.argv:
+            logger.info("UVIAP: Automating all evolutionary modes (v125.1).")
+            auto_modes = ["rectify", "phylogenetic", "cognitive", "rectify-qep-insights", "phylogenetic-map"]
+            await uviap.run_full_pipeline(modes=auto_modes)
+
         if is_introspect:
             logger.info("ARTICLE 651: Initiating Introspection & Evolution Engine (v125.1).")
             introspection = IntrospectionEngine(self.ueg, self.genomic_registry)

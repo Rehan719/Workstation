@@ -124,18 +124,24 @@ def package_products():
             shutil.copy(config["source"], dest_src)
             logger.info(f"Packaged {name} source: {config['source']} -> {dest_src}")
 
-        # Copy dependencies for standalone functionality
+        # Copy dependencies for standalone functionality (v125.1 Recursive Copy)
         for dep in shared_deps:
             if os.path.exists(dep):
                 dep_dest = os.path.join(sdk_dir, os.path.basename(dep))
-                shutil.copy(dep, dep_dest)
+                if os.path.isdir(dep):
+                    shutil.copytree(dep, dep_dest, dirs_exist_ok=True)
+                else:
+                    shutil.copy(dep, dep_dest)
 
         # Copy adjacent dependencies
         if name in adjacent_deps:
             for dep in adjacent_deps[name]:
                 if os.path.exists(dep):
                     dep_dest = os.path.join(sdk_dir, os.path.basename(dep))
-                    shutil.copy(dep, dep_dest)
+                    if os.path.isdir(dep):
+                        shutil.copytree(dep, dep_dest, dirs_exist_ok=True)
+                    else:
+                        shutil.copy(dep, dep_dest)
 
         # 2. Dockerization
         with open(os.path.join(product_dir, "Dockerfile"), "w") as f:
