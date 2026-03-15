@@ -54,11 +54,43 @@ class UnifiedEventGraph:
 
 class EpigeneticEvolutionEngineV3:
     """
-    ARTICLE 1075: Epigenetic Evolution V3 (v136.0).
-    Generative amendments and high-fidelity simulation integration.
+    ARTICLE 1075 & 1084: Epigenetic Evolution V3 (v137.0).
+    Two-layer inheritance model (Genomic constitutional articles + Epigenetic experiential marks).
     """
     def __init__(self, ueg: UnifiedEventGraph):
         self.ueg = ueg
+        self.genomic_articles = list(range(1001, 1096)) # Floors 15-20
+        self.methylation_patterns = {} # article_id -> methylation_strength
+
+    def apply_experiential_marking(self, pattern: Dict[str, Any]):
+        """ARTICLE 1084: Methylate associated genomic regions based on success."""
+        article_id = pattern.get("associated_article", 1071)
+        strength = pattern.get("success_score", 0.0)
+
+        # Cumulative methylation
+        current = self.methylation_patterns.get(article_id, 0.0)
+        self.methylation_patterns[article_id] = min(1.0, current + (strength * 0.1))
+
+        self.ueg.log_event("EPIGENETIC_MARKING", {
+            "article_id": article_id,
+            "new_strength": self.methylation_patterns[article_id]
+        })
+
+    def inherit_to_next_version(self) -> Dict[str, Any]:
+        """Propagates genomic and epigenetic marks with drift reduction."""
+        inherited_epigenetics = {
+            k: v * 0.9 for k, v in self.methylation_patterns.items() if v > 0.1
+        }
+
+        inheritance_package = {
+            "version": "137.0.0",
+            "genomic_base": self.genomic_articles,
+            "epigenetic_inheritance": inherited_epigenetics,
+            "timestamp": time.time()
+        }
+
+        self.ueg.log_event("INHERITANCE_PACK_GENERATED", inheritance_package)
+        return inheritance_package
 
     def propose_generative_amendment(self, success_data: Dict[str, Any]) -> Dict[str, Any]:
         """Uses generative patterns to propose constitutional improvements."""

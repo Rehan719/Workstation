@@ -33,3 +33,17 @@ def test_digital_reactor_simulation():
     result = engine.run_digital_reactor_simulation(proposal)
     # The random seed might affect this, but it should log a SIMULATION_RESULT
     assert ueg.nodes[0]["type"] == "SIMULATION_RESULT"
+
+def test_v137_two_layer_inheritance():
+    ueg = UnifiedEventGraph()
+    engine = EpigeneticEvolutionEngineV3(ueg)
+
+    # Apply marking (Article 1084)
+    engine.apply_experiential_marking({"associated_article": 1086, "success_score": 0.95})
+    assert engine.methylation_patterns[1086] > 0
+
+    # Generate inheritance pack
+    pack = engine.inherit_to_next_version()
+    assert pack["version"] == "137.0.0"
+    assert 1086 in pack["epigenetic_inheritance"]
+    assert pack["epigenetic_inheritance"][1086] < engine.methylation_patterns[1086] # Drift
