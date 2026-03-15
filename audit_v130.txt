@@ -1,0 +1,6 @@
+INFO:ConstitutionalAudit:Auditing 38 articles in agentic_core/constitution/CONSTITUTION_canonical.md...
+--- v128.0 Constitutional Audit Results ---
+Total Articles Found: 38
+Coverage Score: 100.0%
+Traceability Links Verified: 38
+Status: PASS
