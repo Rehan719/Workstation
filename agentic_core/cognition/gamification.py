@@ -10,21 +10,50 @@ class GamificationEngine:
     """
     def __init__(self):
         self.user_stats = {}
+        self.ranks = [
+            (1, "Novice Learner"),
+            (5, "AI Explorer"),
+            (10, "Developer Practitioner"),
+            (15, "AI Orchestrator"),
+            (25, "Strategic Architect"),
+            (50, "Sovereign Master")
+        ]
+        self.platform_quests = {
+            "microsoft": "Copilot Challenge: Complete 5 AI-assisted tasks",
+            "google": "Gemini Quest: Reach 'AI Pro' student status",
+            "amazon": "Bedrock Builder: Optimize 3 non-urgent workloads via Flex",
+            "meta": "Llama Hackathon: Contribute to an open-source model",
+            "apple": "Swift Challenge: Deploy an on-device privacy-first app",
+            "nvidia": "GPU Racing: Optimize a CUDA kernel for 10% gain",
+            "tesla": "FSD Simulation: Achieve zero-intervention drive"
+        }
 
     def award_points(self, user_id: str, points: int, reason: str):
-        """Awards points to a user and checks for level-ups."""
+        """Awards points to a user and checks for level-ups and rank changes."""
         if user_id not in self.user_stats:
-            self.user_stats[user_id] = {"points": 0, "level": 1, "badges": [], "history": []}
+            self.user_stats[user_id] = {
+                "points": 0,
+                "level": 1,
+                "rank": "Novice Learner",
+                "badges": [],
+                "history": [],
+                "retention_score": 100
+            }
 
         stats = self.user_stats[user_id]
         stats["points"] += points
-        stats["history"].append({"points": points, "reason": reason})
+        stats["history"].append({"points": points, "reason": reason, "timestamp": "now"})
 
-        # Simple level up logic
+        # Level up logic
         new_level = (stats["points"] // 1000) + 1
         if new_level > stats["level"]:
             stats["level"] = new_level
-            logger.info(f"Gamification: User {user_id} leveled up to {new_level}!")
+            # Update rank based on level
+            for min_lv, rank_name in reversed(self.ranks):
+                if new_level >= min_lv:
+                    stats["rank"] = rank_name
+                    break
+            logger.info(f"Gamification: User {user_id} reached Level {new_level} ({stats['rank']})!")
 
         logger.info(f"Gamification: Awarded {points} points to {user_id} for {reason}.")
 

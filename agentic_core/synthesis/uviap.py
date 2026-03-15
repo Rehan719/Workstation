@@ -11,31 +11,9 @@ from agentic_core.genetics.genomic_registry import GenomicRegistry
 from agentic_core.biochemical.rectification_engine import AsymmetricDriveRectificationEngine
 from agentic_core.simulation.evolutionary_topology import PhylogeneticDiversityTwin
 from agentic_core.governance.credentials.vault import CredentialVault
+from .mag7_adapter import Magnificent7IngestAdapter
 
 logger = logging.getLogger(__name__)
-
-class Magnificent7IngestAdapter:
-    """
-    ARTICLE 1020: Multi-Platform AI Integration v133.0.
-    Adapts external Magnificent 7 data into the UVIAP pipeline.
-    """
-    def __init__(self, vault: CredentialVault):
-        self.vault = vault
-        self.platforms = ["microsoft", "google", "amazon", "meta", "apple", "nvidia", "tesla"]
-
-    async def ingest_mag7_metadata(self) -> List[Dict[str, Any]]:
-        """Simulates ingestion of platform capabilities and updates."""
-        logger.info("Mag7Adapter: Ingesting Magnificent 7 metadata.")
-        results = []
-        for p in self.platforms:
-            api_key = self.vault.get_secret(f"{p.upper()}_API_KEY", "UVIAP")
-            results.append({
-                "platform": p,
-                "api_active": api_key is not None,
-                "timestamp": datetime.datetime.now().isoformat(),
-                "status": "OPERATIONAL"
-            })
-        return results
 
 class UVIAP:
     """
