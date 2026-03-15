@@ -1,6 +1,7 @@
 import logging
 import datetime
 import uuid
+import hashlib
 from typing import Dict, Any, List, Optional
 from enum import Enum
 
@@ -89,4 +90,3 @@ class PartnershipFramework:
             }
             for p in self.partners.values() if p["status"] == PartnershipStatus.CERTIFIED.value
         ]
-import hashlib

@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "129.2.0"
+version = "130.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "v129.2 The Workstation Convergence Engine."
+description = "v130.0 Sovereign Digital Life."
 authors = ["Rehan719"]
 readme = "README.md"
 
