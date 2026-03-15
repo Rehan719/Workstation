@@ -1,92 +1,63 @@
-# Jules AI v120.0: APOTHEOSIS OF ETERNAL SYNTHESIS & SENSORY CONVERGENCE
+# Jules AI v131.0: THE TRANSCENDENT SOVEREIGN TWIN EPOCH
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
-## 🚀 The Fully Operational Digital Organism
-Jules AI v120.0 represents the **"Apotheosis of Eternal Synthesis & Sensory Convergence"**. It unifies a **Dual-Mode Web Scraping Architecture** with the **Unified Version Ingestion & Assimilation Pipeline (UVIAP)**, GitHub Commit Analysis, and Tokenised Commercialisation into a world-class digital enterprise.
+## 🧬 The Transcendent Sovereign Republic
+Jules AI v131.0 represents the **"Transcendent Sovereign Twin Epoch"**. This release transforms the Workstation from a digital organism into a multi-platform republic, accessible from any device, governed by photorealistic avatars, and secured by an enterprise-grade credential vault.
 
-## ⚙️ One-Button Platform Setup
-Deploy the entire v120.0 ecosystem (Backend, Web, Mobile, Reactors) with a single command:
+## 🌐 WORKSTATION MULTI-PLATFORM ACCESS
+Access your Sovereign Console from anywhere:
+
+| Platform | Access Link | Primary Experience |
+|:---------|:------------|:-------------------|
+| **🌐 Website** | [workstation.ai](https://workstation.ai) | Public Documentation & Community |
+| **💻 Web App** | [app.workstation.ai](https://app.workstation.ai) | Full Interactive Console & Dashboards |
+| **📱 Phone App** | [Mobile Portal](src/mobile) | Native Alerts & Glanceable Metrics |
+
+## 👥 SOVEREIGN AVATAR HUB
+Interact with the Workstation through role-based, photorealistic avatars:
+
+| Avatar | Role | Status | Action |
+|:-------|:-----|:-------|:-------|
+| 👑 **Entity** | Supreme Sovereign | 🟢 Online | `[Sovereign Directive]` |
+| 🤖 **AI CEO Jules** | Executive Strategy | 🟢 Online | `[Strategic Command]` |
+| 🧬 **Digital Twin** | Strategic Proxy | 🟢 Online | `[Proxy Deliberation]` |
+
+## 📁 ENTERPRISE FILE HUB
+Drag-and-drop ingestion with AI-powered file generation.
+- **Upload**: PDF, DOCX, CSV, Code, Media.
+- **Generate**: `AI Generate Reactor Config`, `AI Generate Role Charter`.
+- **Ingestion**: Automatic UVIAP assimilation with metadata hashing.
+
+## 🔐 SECURE CREDENTIAL VAULT
+Bank-level security for your sovereign secrets.
+- **Encrypted Storage**: AES-256-GCM encryption for all keys.
+- **Extended Metadata**: Tracking owner, environment, and last-used timestamps.
+- **Auto-Rotation**: Forced rotation policies for production (30d), staging (60d).
+- **Secret Scanning**: Integrated GitHub secret leak detection.
+
+## 📊 UNIFIED COMMAND DASHBOARDS
+Seven real-time dashboards with a natural-language builder.
+- **AI Builder**: "Show me recitation accuracy vs regional adoption" -> ✨ *Generated*.
+- **Dashboards**: Entity Health, VSB Performance, CEO Strategy, C-Suite Alignment, CoE Operations, BTO Efficiency, Product Lifecycle.
+
+## ⚖️ RUNTIME CONSTITUTIONAL GOVERNANCE
+Governed by the **v131.0 Transcendent Constitution**.
+- **Floor 49 (Articles 1001-1006)**: Codifying multi-platform sovereignty, avatar ethics, and secure credential management.
+- **MI9 Framework**: Live Agentic Telemetry (ATS v2.0) and Agency-Risk Index (ARI).
+
+### 🚀 One-Button Platform Setup
+Deploy the entire v131.0 ecosystem:
 ```bash
-./deploy.sh --v120
+./deploy.sh --v131
 ```
-
-## 🧠 Quadruple-Pillar Engine & Co-Evolutionary Layer
-The workstation is powered by four symbiotic engines enhanced with co-evolutionary equilibrium:
-- **ESE (Environmental Simulator Engine)**: High-fidelity digital twinning and co-evolutionary simulation.
-- **ARO (Adaptive Resource Optimizer)**: Dynamic, cost-aware resource balancing and **Tokenisation (WST)** with tiered pricing.
-- **BTO (Biomimetic Team Orchestrator)**: Swarm intelligence and **Calibrated Autonomy (L0-L4)**.
-- **DRAD (Dynamic Resource Fabric)**: On-demand assembly of resource pools via RAL.
-- **Co-Evolution Engine**: Integrated UVIAP (with **GitHub Commit Analysis**), Grand Synthesis, and Business Simulation Incubator.
-
-## ⚖️ Runtime Constitutional Governance
-- **MI9 Framework**: Agency-Risk Index (ARI), Agentic Telemetry Schema (ATS), and Conformance Engines.
-- **arifOS Floors**: 13 immutable constitutional floors with entropy-based verification and 888_HOLD gating.
-
-## 🧬 50+ Specialized Reactor Constellations
-Hyper-specialized intelligence across five primary domains:
-- **Scientific Research**: Physics to Neuroscience.
-- **Religious Scholarship**: Deep Quranic & Hadith sciences (QEP).
-- **Legal Mastery**: Litigation, Regulatory, and IP Document Reactors.
-- **Career Development**: AI-powered Career Pathing and Market Intelligence.
-- **Education Ecosystem**: K-12 to Lifelong Learning standards.
-
-### 📚 Transcendent Documentation Suite
-- [Repo Owner Manual v3](docs/guides/repo_owner_v3.md): Strategic levers for the sovereign business.
-- [Developer Guide v3](docs/guides/developer_v3.md): Engine APIs, RAL specifications, and Reactor development.
-- [User Guide v3](docs/guides/user_v3.md): Empowering personal and professional productivity.
-- [Technical Whitepaper](docs/guides/transcendent_whitepaper.md): The architecture of distributed consciousness.
-
-### ⚖️ Constitutional Sovereignty
-Governed by the **v120.0 Apotheosis Constitution**, ensuring absolute fidelity to the Dual-Purpose Foundation across **600+ articles**, including mandates for Dual-Mode Scraping, GitHub Analysis, and World-Class Product Excellence.
 
 ### 🗄️ Repository Architecture
-The Workstation follows a pristine organizational hierarchy:
-- `agentic_core/`: The autonomous brain and constitutional framework.
-- `docs/background_text_files_sources/`: Secured archive of all historical intelligence and directives.
-- `docs/guides/`: Role-specific empowerment manuals (v3).
-- `docs/resources/`: Multi-cloud and advanced compute strategy.
-- See [Repository Structure](docs/repository_structure.md) for full details.
-
-### 🚀 Zero-Cost/No-Incurred-Cost Deployment
-Engineered for democratization, the entire workstation can be deployed on free-tier cloud infrastructure (Render, Vercel, Streamlit Cloud).
-
-## 🖱️ One-Click No-Code Deployment
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Rehan719/Workstation)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FRehan719%2FWorkstation)
-[![Deploy to Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/deploy?repository=https://github.com/Rehan719/Workstation&main_module_path=src/dashboard/app.py)
-
-### ☁️ Multi-Cloud Free Tier Guides
-- **Google Cloud (GCP)**: [GCP Free Tier Setup](docs/deployment/gcp-free-tier.md) - Cloud Run, Firebase, BigQuery.
-- **Amazon Web Services (AWS)**: [AWS Free Tier Setup](docs/deployment/aws-free-tier.md) - EC2 t2.micro, Lambda, S3.
-- **Microsoft Azure**: [Azure Free Account Setup](docs/deployment/azure-free-tier.md) - App Service, Functions, CosmosDB.
-- **Oracle Cloud**: [Oracle Always Free](docs/deployment/oracle-free-tier.md) - 4x ARM Ampere A1 Compute, 200GB Block storage.
-
-## 💻 Developer Quick Start
-
-### Setup Ecosystem
-```bash
-# Clone and install
-pip install -e .
-
-# Awaken the v100.0 DNA
-python3 -m agentic_core.synthesis.grand_synthesis_engine
-
-# Generate a new sub-reactor from templates
-python3 scripts/generate_sub_reactor.py --domain science --sub_domain quantum_bio
-```
-
-### Zero-Cost Deployment Environment Variables
-Set these variables for a production-ready zero-cost instance:
-- `DATABASE_URL`: Your Supabase/PostgreSQL connection string.
-- `RENDER_API_KEY`: For autonomous backend scaling.
-- `VERCEL_TOKEN`: For frontend PWA deployment.
-- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`: For AWS Free Tier integration.
-- `AZURE_CREDENTIALS`: For Azure Free Account deployment.
-- `OPENAI_API_KEY`: (Optional) For high-fidelity agent reasoning.
-
-## ⚜️ Core Paradigm: Survival Instinct Hierarchy (SIH)
-**IMMUNE SYSTEM (Security) > NERVOUS SYSTEM (Coordination) > DIGESTIVE SYSTEM (Growth) > AGING (Efficiency)**
+- `agentic_core/avatars/`: Photorealistic persona orchestrator.
+- `agentic_core/governance/credentials/`: Secure encrypted vault.
+- `agentic_core/synthesis/dashboard_builder.py`: Natural language visualization engine.
+- `src/web/app/`: The unified Web App dashboard.
+- `src/mobile/`: The native React Native mobile codebase.
 
 ---
-*Codified via Grand Synthesis Engine v120.0.0. APOTHEOSIS COMPLETE.*
+*Codified via Grand Synthesis Engine v131.0.0. TRANSCENDENCE ACHIEVED.*
