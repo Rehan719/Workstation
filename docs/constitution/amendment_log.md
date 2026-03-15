@@ -9,6 +9,24 @@ This document tracks the mapping of version-specific floors and articles to the 
 | v133.3 | Floor 51/52 | 1020-1038 | 1020-1038 | Universal AI Orchestration Hub & Sovereign Twin |
 | v134.0 | Floor 53 | 1040-1050 | 1040-1050 | Real-Time Sovereign Federation & PQC Agility |
 | v135.0 | Floor 54 | 1051-1065 | 1051-1065 | The Living Ecosystem & Multi-Modal Engagement |
+| v136.0 | Floor 55 | 1071-1085 | 1071-1085 | The Living Ecosystem Core & Homeostatic Governance |
+
+## v136.0 Architectural Detail
+- **1071**: Homeostatic Regulation Mandate (PID Orchestrator)
+- **1072**: Predictive Assimilation & Genetic Recombination
+- **1073**: Semi-Autonomous Realm Governance
+- **1074**: Adaptive Multi-Modal Communication (RL Selector)
+- **1075**: Epigenetic Evolution V3 (Generative Amendments)
+- **1076**: Learner Realm Neuro-Adaptation
+- **1077**: Developer Realm Co-Creation
+- **1078**: Enterprise Realm Market Integrity
+- **1079**: Scholar Realm Research Integrity
+- **1080**: Cross-Realm Experience Continuity
+- **1081**: Emergency Homeostatic Override (888_HOLD)
+- **1082**: Setpoint Audit Trail (UEG)
+- **1083**: Predictive Ecosystem Influence
+- **1084**: Generational Knowledge Transfer
+- **1085**: Ultimate User Delight
 
 ## v135.0 Vitalization Detail
 - **1051**: Homeostatic Regulation Mandate (PID)
