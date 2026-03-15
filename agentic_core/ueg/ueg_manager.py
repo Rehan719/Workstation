@@ -110,6 +110,12 @@ class UEGManager:
             "metadata": metadata or {},
             "timestamp": time.time()
         }
+
+        # v129.0: Federated UEG Shared Memory Protocol
+        if metadata and metadata.get("broadcast_to_federation"):
+            logger.info(f"UEG: Broadcasting audit event to federated partners.")
+            node["federated_status"] = "BROADCAST_PENDING"
+
         self.graph["nodes"].append(node)
         self._save()
         return node

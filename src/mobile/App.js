@@ -70,21 +70,21 @@ export default function App() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>JULES AI v125.1</Text>
-          <Text style={styles.subtitle}>Self-Introspective Evolution</Text>
+          <Text style={styles.title}>JULES AI v128.0</Text>
+          <Text style={styles.subtitle}>Sovereign Integrity & Universal Completion</Text>
         </View>
 
         <SystemPulse />
 
         <View style={styles.statsGrid}>
-          <DashboardCard title="Active Swarms" value="12" subtext="↑ 2 increased" color="#10b981" />
-          <DashboardCard title="Signals/hr" value="142K" subtext="Gating: ON" />
+          <DashboardCard title="Active Swarms" value="24" subtext="↑ 4 increased" color="#10b981" />
+          <DashboardCard title="Signals/hr" value="256K" subtext="Gating: ON" />
           <DashboardCard title="UEG Nodes" value={data.depth} subtext="100% Synced" />
-          <DashboardCard title="WST Tokens" value={(data.balance / 1000).toFixed(1) + "K"} subtext="Tier: PRO" color="#fbbf24" />
+          <DashboardCard title="WST Tokens" value={(data.balance / 1000).toFixed(1) + "K"} subtext="Tier: SOVEREIGN" color="#fbbf24" />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>v125.1 System Resonance</Text>
+          <Text style={styles.sectionTitle}>v128.0 System Resonance</Text>
           <View style={styles.biomimeticRow}>
             <View style={styles.biomimeticItem}>
                <Text style={styles.biomimeticLabel}>Rectification</Text>
@@ -106,18 +106,46 @@ export default function App() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>QEP Engagement</Text>
+          <Text style={styles.sectionTitle}>QEP Analytics</Text>
           <View style={styles.qepRow}>
-            <Text style={styles.qepText}>Morphology Cache: 94.2% hit</Text>
-            <Text style={styles.qepText}>Scholar trust: 0.985 OXY</Text>
+            <Text style={styles.qepText}>Morphology Hit: 99.9%</Text>
+            <Text style={styles.qepText}>Quiz Accuracy: 98%</Text>
+            <Text style={styles.qepText}>Scholar Trust: 0.992 OXY</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Governance & Sovereign Risk</Text>
+          <View style={styles.govRow}>
+            <View style={styles.govItem}>
+              <Text style={styles.govLabel}>ARI</Text>
+              <Text style={[styles.govValue, { color: '#10b981' }]}>0.04</Text>
+            </View>
+            <View style={styles.govItem}>
+              <Text style={styles.govLabel}>ATS</Text>
+              <Text style={styles.govValue}>v2.0.0</Text>
+            </View>
+            <View style={styles.govItem}>
+              <Text style={styles.govLabel}>Compliance</Text>
+              <Text style={styles.govValue}>100%</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Global Impact & Marketplace</Text>
+          <View style={styles.impactCard}>
+             <Text style={styles.impactText}>Revenue: 52,400 WST</Text>
+             <Text style={styles.impactText}>Partnerships: 12 Active</Text>
+             <Text style={styles.impactText}>Scholars: 108 Verified</Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Pending Approvals</Text>
           <View style={styles.approvalItem}>
-            <Text style={styles.approvalTitle}>v120.1-Alpha Assimilation</Text>
-            <Text style={styles.approvalDesc}>Proposed blueprint for multi-modal sensory fusion.</Text>
+            <Text style={styles.approvalTitle}>v128.1-Alpha Evolution</Text>
+            <Text style={styles.approvalDesc}>Proposed blueprint for autonomous ecosystem expansion.</Text>
             <View style={styles.buttonRow}>
               <TouchableOpacity style={styles.approveButton}>
                 <Text style={styles.buttonText}>APPROVE</Text>
@@ -144,6 +172,53 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#020617',
+  },
+  qepRow: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.1)',
+  },
+  qepText: {
+    color: '#38bdf8',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  govRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  govItem: {
+    alignItems: 'center',
+  },
+  govLabel: {
+    color: '#64748b',
+    fontSize: 10,
+    textTransform: 'uppercase',
+  },
+  govValue: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  impactCard: {
+    backgroundColor: 'rgba(251, 191, 36, 0.05)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.2)',
+  },
+  impactText: {
+    color: '#fbbf24',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
   biomimeticRow: {
     flexDirection: 'row',

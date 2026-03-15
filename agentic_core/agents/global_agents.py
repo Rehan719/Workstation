@@ -3,7 +3,7 @@ import asyncio
 import uuid
 import datetime
 from typing import Dict, Any, List
-from agentic_core.molecular.neurotransmitters import MolecularCommunication # Assuming correct path from memory
+from agentic_core.biochemical.molecular_comm import MolecularSignalingFramework # Corrected path
 
 logger = logging.getLogger(__name__)
 

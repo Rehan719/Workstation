@@ -23,6 +23,9 @@ class ReactorFactory:
             if domain == "religion" and sub_domain == "quranic_studies":
                 from agentic_core.reactor.religion.quranic_studies import QuranicStudiesReactor
                 self._cache[key] = QuranicStudiesReactor()
+            elif domain == "religion" and sub_domain == "qep_authoring":
+                from agentic_core.reactor.religion.qep_authoring import QEPAuthoringReactor
+                self._cache[key] = QEPAuthoringReactor()
             elif domain == "science" and sub_domain == "cognitive_computing":
                 from agentic_core.reactor.science.cognitive_computing import CognitiveComputingReactor
                 self._cache[key] = CognitiveComputingReactor()

@@ -1,43 +1,48 @@
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
+from agentic_core.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
 class ToolDiscoveryEngine:
     """
-    ARTICLE 641-645: v125.0 Tool Discovery Engine.
-    Indexes internal reactors and external symbiotic connectors.
+    ARTICLE D4: Tool Discovery Engine v128.0.
+    Unified search and molecular trust ranking for all tools and APIs.
     """
-    def __init__(self):
-        self.tool_registry: Dict[str, Dict[str, Any]] = {}
-        self._initialize_core_tools()
+    def __init__(self, registry: ToolRegistry):
+        self.registry = registry
+        # External API Index (Simulated for v128.0)
+        self.external_apis = [
+            {"name": "Quran.com API", "capabilities": ["text", "audio", "reciters"], "trust": 0.99},
+            {"name": "JSTOR Scholarly API", "capabilities": ["academic_papers", "history"], "trust": 0.95},
+            {"name": "Islamic Heritage Project", "capabilities": ["manuscripts", "archives"], "trust": 0.97},
+            {"name": "Camel-Tools", "capabilities": ["arabic_morphology", "nlp"], "trust": 0.98}
+        ]
 
-    def _initialize_core_tools(self):
-        # Internal Tools
-        self.register_tool("QEP_Study", "Internal", "Full Quranic Study suite with word-by-word analysis.")
-        self.register_tool("Scholar_Authoring", "Internal", "Workflow engine for scholarly annotations.")
-        self.register_tool("Token_Ledger", "Internal", "Cryptographic ledger for WST token management.")
+    def discover_tools(self, query: str) -> List[Dict[str, Any]]:
+        """
+        Searches for tools based on capabilities and keywords.
+        """
+        logger.info(f"ToolDiscovery: Searching for tools matching: {query}")
 
-        # External Tools (ARTICLE 652)
-        self.register_tool("Quran.com_API", "External", "Gateway to global tafsir and recitation resources.")
-        self.register_tool("JSTOR_Academic", "External", "Scholarly search for Islamic Studies papers.")
-
-    def register_tool(self, name: str, category: str, description: str, metadata: Optional[Dict[str, Any]] = None):
-        self.tool_registry[name] = {
-            "name": name,
-            "category": category,
-            "description": description,
-            "metadata": metadata or {}
-        }
-        logger.info(f"ToolDiscovery: Registered {category} tool: {name}")
-
-    def search_tools(self, query: str) -> List[Dict[str, Any]]:
-        query = query.lower()
         results = []
-        for tool in self.tool_registry.values():
-            if query in tool["name"].lower() or query in tool["description"].lower():
-                results.append(tool)
-        return results
 
-    def get_all_tools(self) -> List[Dict[str, Any]]:
-        return list(self.tool_registry.values())
+        # Search internal registry
+        internal_tools = self.registry.list_tools()
+        for tool in internal_tools:
+            if query.lower() in str(tool).lower():
+                tool["origin"] = "INTERNAL"
+                results.append(tool)
+
+        # Search external index
+        for api in self.external_apis:
+            if query.lower() in str(api).lower():
+                api["origin"] = "EXTERNAL"
+                results.append(api)
+
+        # Sort by trust / molecular ranking
+        return sorted(results, key=lambda x: x.get("trust", 0.9), reverse=True)
+
+    def get_integration_guide(self, tool_name: str) -> str:
+        """Returns documented integration examples for a tool."""
+        return f"To integrate {tool_name}, use the SymbioticConnector framework with the provided tool_id."

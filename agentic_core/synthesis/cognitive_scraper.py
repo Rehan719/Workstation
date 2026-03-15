@@ -107,18 +107,30 @@ class CognitiveComputingScraperAgent:
         }
 
     async def plan_autonomous_sweep(self):
-        """ARTICLE 631: Reinforcement Learning mission planning for v125.1."""
-        logger.info("CognitiveScraper: Optimizing mission plan via Reinforcement Learning...")
+        """ARTICLE 631: Mature RL mission planning with self-supervised learning (v128.0)."""
+        logger.info("CognitiveScraper: Optimizing mission plan via RL & Molecular Dopamine (v128.0)...")
 
-        # 1. Self-Correction: Adjust weights based on past success (Dopamine reward)
-        for mission in self.mission_history[-5:]:
+        # 1. Molecular Dopamine Feedback: Adjust weights based on mission ROI and impact
+        for mission in self.mission_history[-10:]:
             source = mission.get("source")
             if source in self.source_weights:
-                reward = 0.05 if mission.get("confidence", 0) > 0.95 else -0.02
-                self.source_weights[source] = max(0.1, min(1.0, self.source_weights[source] + reward))
+                # v128.0: Complex reward function including confidence and node density
+                success_signal = mission.get("confidence", 0) * (mission.get("nodes_added", 1) / 10.0)
+                reward = 0.1 * (success_signal - 0.5) # Centered around 0.5 baseline
 
-        # 2. Prioritize top 3 topics from trend analysis
+                old_weight = self.source_weights[source]
+                self.source_weights[source] = max(0.05, min(1.0, old_weight + reward))
+                logger.info(f"CognitiveScraper: RL update for {source}: {old_weight:.2f} -> {self.source_weights[source]:.2f}")
+
+        # 2. Self-Supervised Topic Prioritization
         analysis = self.perform_temporal_analysis()
-        for topic in analysis["emerging_stars"][:2]:
+        priorities = analysis["emerging_stars"] + analysis["trending_topics"]
+
+        # Autonomous execution of top-priority missions (≥100 concept nodes/week target)
+        for topic in priorities[:5]:
+            # Weight source selection by RL weights
+            best_source = max(self.source_weights, key=self.source_weights.get)
+            logger.info(f"CognitiveScraper: Selected {best_source} for autonomous mission on {topic}")
+
             result = await self.execute_discovery_mission(topic, autonomous=True)
             self.mission_history.append(result)

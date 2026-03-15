@@ -11,7 +11,17 @@
     </style>
 </head>
 <body class="p-12">
-    <h1 class="text-4xl font-bold mb-12">Runtime <span class="text-sky-400">Governance</span></h1>
+    <header class="flex justify-between items-center mb-12">
+        <h1 class="text-4xl font-bold">Runtime <span class="text-sky-400">Governance</span></h1>
+        <div class="glass px-4 py-2 rounded-xl text-[10px] font-bold">
+            CALIBRATION: <span class="text-emerald-400">DYNAMIC_ACTIVE</span>
+        </div>
+    </header>
+
+    <!-- Historical Trend Visualization Placeholder -->
+    <div class="glass p-8 rounded-3xl mb-8 h-48 flex items-center justify-center text-slate-500 font-bold uppercase tracking-widest">
+        ARI Historical Trend (v128.0 Interactive Layer)
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <!-- ARI Scores -->
@@ -29,9 +39,16 @@
             </div>
         </div>
 
-        <!-- Containment Events -->
+        <!-- Containment Events & Dynamic Thresholds -->
         <div class="glass p-8 rounded-3xl">
-            <h3 class="text-xl font-bold mb-6">Containment Tracker</h3>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Containment</h3>
+                <button class="text-[8px] bg-sky-500/20 text-sky-400 p-1 rounded">CALIBRATE</button>
+            </div>
+            <div class="space-y-4 mb-6">
+                 <div class="flex justify-between text-[10px]"><span>L3 Threshold</span><span class="text-sky-400">6.2 (Current)</span></div>
+                 <div class="w-full bg-white/5 h-1 rounded-full"><div class="bg-sky-400 h-full w-[62%]"></div></div>
+            </div>
             <div id="containment-log" class="space-y-2">
                 <div class="text-[10px] text-slate-500 font-mono">2024-05-23 10:45:01 -> [INFO] System Nominal</div>
             </div>

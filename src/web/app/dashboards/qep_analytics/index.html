@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QEP Analytics | Jules AI v128.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #020617;
+            color: white;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="p-12">
+    <header class="mb-12">
+        <h1 class="text-4xl font-extrabold mb-2">QEP <span class="text-sky-400">Analytics Dashboard</span></h1>
+        <p class="text-slate-400">Real-time engagement, scholarship, and pedagogical impact metrics.</p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <div class="glass p-6 rounded-2xl">
+            <div class="text-xs text-slate-500 uppercase font-bold mb-1">Morphology Coverage</div>
+            <div class="text-3xl font-bold text-sky-400">99.9%</div>
+        </div>
+        <div class="glass p-6 rounded-2xl">
+            <div class="text-xs text-slate-500 uppercase font-bold mb-1">Quiz Accuracy</div>
+            <div class="text-3xl font-bold text-emerald-400">98.2%</div>
+        </div>
+        <div class="glass p-6 rounded-2xl">
+            <div class="text-xs text-slate-500 uppercase font-bold mb-1">Active Scholars</div>
+            <div class="text-3xl font-bold text-amber-400">108</div>
+        </div>
+        <div class="glass p-6 rounded-2xl">
+            <div class="text-xs text-slate-500 uppercase font-bold mb-1">Study Groups</div>
+            <div class="text-3xl font-bold text-pink-400">42</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="glass p-8 rounded-3xl">
+            <h3 class="text-xl font-bold mb-6">Engagement Trends</h3>
+            <div class="h-64 flex items-end justify-between gap-2">
+                <div class="bg-sky-500/50 w-full" style="height: 40%"></div>
+                <div class="bg-sky-500/50 w-full" style="height: 60%"></div>
+                <div class="bg-sky-500/50 w-full" style="height: 55%"></div>
+                <div class="bg-sky-500/50 w-full" style="height: 80%"></div>
+                <div class="bg-sky-500/50 w-full" style="height: 95%"></div>
+            </div>
+            <div class="flex justify-between mt-4 text-[10px] text-slate-500 uppercase font-bold">
+                <span>Week 1</span>
+                <span>Week 2</span>
+                <span>Week 3</span>
+                <span>Week 4</span>
+                <span>Current</span>
+            </div>
+        </div>
+
+        <div class="glass p-8 rounded-3xl">
+            <h3 class="text-xl font-bold mb-6">Scholar Trust Network</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-4 bg-white/5 rounded-xl">
+                    <span class="text-sm">Oxytocin (Trust)</span>
+                    <span class="text-emerald-400 font-bold">0.992</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-white/5 rounded-xl">
+                    <span class="text-sm">Serotonin (Stability)</span>
+                    <span class="text-sky-400 font-bold">0.985</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-white/5 rounded-xl">
+                    <span class="text-sm">Dopamine (Engagement)</span>
+                    <span class="text-pink-400 font-bold">0.997</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
