@@ -14,18 +14,24 @@ class ExecutiveAgent:
 
 class BiomimeticCSuite:
     """
-    ARTICLE IV.B: C-Suite - The Executive Agent Collective v129.1.
-    Multi-agent executive council where each agent embodies a biological principle.
+    ARTICLE III.C: C-Suite Agents – Octopus Intelligence + Ant Colony Coordination v129.2.
+    A multi-agent executive council featuring specialized intelligence and quorum-sensing.
     """
     def __init__(self):
         self.council = [
-            ExecutiveAgent("MycelialCEO", 0.9),      # Resilience
-            ExecutiveAgent("AntColonyCOO", 0.85),    # Coordination
-            ExecutiveAgent("OctopusCTO", 0.8),       # Embodied Intelligence
-            ExecutiveAgent("ImmuneCFO", 0.95),       # Adaptive Defense
-            ExecutiveAgent("ParadigmCPO", 0.9)       # Research & Realization
+            ExecutiveAgent("CFO", 0.88),  # Finance/Market Analysis
+            ExecutiveAgent("CTO", 0.92),  # Technology/Architecture
+            ExecutiveAgent("CMO", 0.85),  # Marketing/Brand
+            ExecutiveAgent("CHRO", 0.80), # HR/Culture (Immune Surveillance)
+            ExecutiveAgent("COO", 0.87),  # Operations/Process
+            ExecutiveAgent("CLO", 0.90),  # Legal/Ethical Boundary
+            ExecutiveAgent("CISO", 0.95)  # Security/Immune Synapse
         ]
-        self.quorum_threshold = 0.67
+        self.quorum_thresholds = {
+            "investment": 0.67,
+            "strategy": 0.75,
+            "emergency": 0.51
+        }
 
     def reach_consensus(self, question: str) -> Dict[str, Any]:
         """

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class WorkstationAsymmetricDrive:
     """
-    ARTICLE II.B: Asymmetric-Drive Rectification v129.1.
+    ARTICLE III.F: Products – Asymmetric-Drive Rectification Engines v129.2.
     Converts environmental noise, market stress, and operational friction
     into directed, useful computation and strategic output.
     Based on arXiv:2603.01389v1 theoretical paradigm.
@@ -40,6 +40,29 @@ class WorkstationAsymmetricDrive:
             }
         else:
             return {"status": "BASELINE", "message": "Insufficient entropy gradient."}
+
+    def rectify_market_signals(self, signals: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        ARTICLE III.F: Product-level implementation of Asymmetric-Drive Rectification.
+        Converts market noise/threats into feature candidates and product value.
+        """
+        opps = signals.get("opportunities", 1.0)
+        threats = signals.get("threats", 0.5)
+
+        # Output = f(α·signal_positive) - f((1-α)·signal_negative)
+        positive = self.asymmetry_factor * opps
+        negative = (1 - self.asymmetry_factor) * threats
+
+        value_output = math.tanh(positive - negative)
+
+        logger.info(f"Rectifier: Market signals rectified into value output: {value_output:.4f}")
+
+        return {
+            "status": "VALUE_GENERATED",
+            "value_output": value_output,
+            "feature_candidate": "BOS_ENHANCED_UX" if value_output > 0.5 else "MAINTENANCE",
+            "asymmetry_factor": self.asymmetry_factor
+        }
 
     def _asymmetric_transform(self, signal: float) -> float:
         """
