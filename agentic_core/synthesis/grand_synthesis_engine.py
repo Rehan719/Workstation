@@ -87,16 +87,17 @@ class GrandSynthesisEngine:
         is_rerun_uvaip = "--rerun-with-uvaip" in sys.argv or "--with-uvaip" in sys.argv
         is_introspect = "--introspect-evolve" in sys.argv
         is_global = "--global-convergence" in sys.argv
+        is_mastery = "--ecosystem-mastery" in sys.argv
 
-        # v126 Synthesis Modes
+        # v127 Synthesis Modes
         is_rectify = "--rectify-synthesis" in sys.argv or "--rectify-qep-insights" in sys.argv
         is_phylogenetic = "--phylogenetic-synthesis" in sys.argv or "--phylogenetic-map" in sys.argv
         is_molecular = "--molecular-synthesis" in sys.argv
         is_qep_synthesis = "--qep-synthesis" in sys.argv
         is_tool_synthesis = "--tool-synthesis" in sys.argv
 
-        target_version = target_version or ("126.0.0" if is_global else ("125.1.0" if is_introspect else ("125.0.0" if "--v125" in sys.argv or is_qep_synthesis or is_tool_synthesis else ("124.0.0" if "--v124" in sys.argv or is_rectify or is_phylogenetic or is_molecular else ("123.0.0" if "--v123" in sys.argv or is_full_evolution or is_rerun_uvaip else ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0")))))))))
-        logger.info(f"Starting Grand Synthesis Cycle v4.2 for {target_version}...")
+        target_version = target_version or ("127.0.0" if is_mastery else ("126.0.0" if is_global else ("125.1.0" if is_introspect else ("125.0.0" if "--v125" in sys.argv or is_qep_synthesis or is_tool_synthesis else ("124.0.0" if "--v124" in sys.argv or is_rectify or is_phylogenetic or is_molecular else ("123.0.0" if "--v123" in sys.argv or is_full_evolution or is_rerun_uvaip else ("120.0.0" if "--v120" in sys.argv else ("117.0.0" if is_product else ("116.0.0" if is_unify else ("115.0.0" if "--full-agentic-synthesis" in sys.argv else "112.0.0"))))))))))
+        logger.info(f"Starting Grand Synthesis Cycle v4.3 for {target_version}...")
 
         # ARTICLE 376: Transcendent Meta-Orchestrator 3.0
         if is_ultimate:
@@ -129,6 +130,23 @@ class GrandSynthesisEngine:
             logger.info("UVIAP: Automating all evolutionary modes (v125.1).")
             auto_modes = ["rectify", "phylogenetic", "cognitive", "rectify-qep-insights", "phylogenetic-map"]
             await uviap.run_full_pipeline(modes=auto_modes)
+
+        if is_mastery:
+            logger.info("ARTICLE 726: Initiating Global Ecosystem Mastery (v127.0).")
+            # 1. Real-World Impact Reporting
+            from agentic_core.analytics.impact_tracker import GlobalImpactTracker, ImpactReportGenerator
+            tracker = GlobalImpactTracker()
+            report_gen = ImpactReportGenerator()
+            impact_data = tracker.aggregate_impact()
+            report_md = report_gen.generate_annual_report(impact_data)
+
+            with open("docs/introspection/ecosystem_mastery_v127.0.md", "w") as f:
+                f.write(report_md)
+
+            # 2. Autonomous Expansion Proposal
+            from .expansion_engine import ExpansionEngine
+            engine = ExpansionEngine()
+            await engine.propose_expansion({"high_demand_region": "SEA"})
 
         if is_global:
             logger.info("ARTICLE 671: Initiating Global Ecosystem Convergence (v126.0).")
@@ -294,7 +312,13 @@ class GrandSynthesisEngine:
             self._generate_unified_manifest(target_version)
 
         version = resolved_config.get("version")
-        if version == "126.0.0":
+        if version == "127.0.0":
+            # ARTICLE 696-735: v127.0 Apotheosis DNA (Global Mastery)
+            constitution_path = "agentic_core/constitution/CONSTITUTION_canonical.md"
+            logger.info(f"v127.0 Constitution codified at {constitution_path}")
+            if is_ultimate or "--generate-docs-v3" in sys.argv:
+                self.doc_gen.generate_suite_v3(resolved_config)
+        elif version == "126.0.0":
             # ARTICLE 671-695: v126.0 Apotheosis DNA (Global Convergence)
             constitution_path = "agentic_core/constitution/CONSTITUTION_canonical.md"
             logger.info(f"v126.0 Constitution codified at {constitution_path}")

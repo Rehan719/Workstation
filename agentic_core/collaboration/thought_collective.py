@@ -7,12 +7,19 @@ logger = logging.getLogger(__name__)
 
 class ThoughtCollective:
     """
-    ARTICLE 691: Human-AI Collective Intelligence.
+    ARTICLE 691, 716: Scaled Collective Intelligence v127.0.
     A real-time shared cognitive space for joint knowledge creation.
     """
     def __init__(self):
         self.shared_graph = {"nodes": [], "edges": []}
         self.active_participants = []
+        self.sessions = []
+
+    async def schedule_session(self, theme: str, start_time: str):
+        session_id = f"SESS_{len(self.sessions) + 1}"
+        self.sessions.append({"id": session_id, "theme": theme, "start": start_time})
+        logger.info(f"Collective: Scheduled session '{theme}' for {start_time}")
+        return session_id
 
     async def propose_idea(self, participant_id: str, content: str, resonance: Dict[str, float]) -> Dict[str, Any]:
         """Propose an idea to the collective graph."""
