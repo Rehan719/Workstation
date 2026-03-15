@@ -1,55 +1,48 @@
-import unittest
 import os
-import shutil
-import sys
-
-# Add current directory to path
-sys.path.append(os.getcwd())
-
-# Mock necessary modules to avoid heavy dependencies
-from unittest.mock import MagicMock
-sys.modules['shap'] = MagicMock()
-sys.modules['matplotlib'] = MagicMock()
-sys.modules['matplotlib.pyplot'] = MagicMock()
-sys.modules['seaborn'] = MagicMock()
-sys.modules['plotly'] = MagicMock()
-sys.modules['plotly.graph_objects'] = MagicMock()
-sys.modules['networkx'] = MagicMock()
-sys.modules['scipy'] = MagicMock()
-sys.modules['scipy.stats'] = MagicMock()
-sys.modules['sklearn'] = MagicMock()
-sys.modules['sklearn.ensemble'] = MagicMock()
-sys.modules['z3'] = MagicMock()
-sys.modules['sympy'] = MagicMock()
-sys.modules['qiskit'] = MagicMock()
-sys.modules['pennylane'] = MagicMock()
-sys.modules['camel_tools'] = MagicMock()
-sys.modules['quran'] = MagicMock()
-
+import pytest
 from agentic_core.governance.credentials.vault import CredentialVault
 
-class TestCredentialVault(unittest.TestCase):
-    def setUp(self):
-        self.test_dir = "test_vault_dir"
-        os.makedirs(self.test_dir, exist_ok=True)
-        self.vault_path = os.path.join(self.test_dir, "vault.json")
-        self.vault = CredentialVault(vault_path=self.vault_path)
+def test_credential_vault_hybrid_storage():
+    vault_path = "tests/temp_vault.json"
+    key_path = "tests/temp_master.key"
 
-    def tearDown(self):
-        if os.path.exists(self.test_dir):
-            shutil.rmtree(self.test_dir)
+    # Cleanup pre-existing
+    if os.path.exists(vault_path): os.remove(vault_path)
+    if os.path.exists(key_path): os.remove(key_path)
 
-    def test_store_and_get_secret(self):
-        self.vault.store_secret("TEST_KEY", "super_secret_value", "admin", "production")
-        value = self.vault.get_secret("TEST_KEY", "tester")
-        self.assertEqual(value, "super_secret_value")
+    # Pass key path to constructor if possible, or ensure it's set before init
+    # Since CredentialVault.__init__ calls _initialize_vault, we should be careful.
 
-    def test_metadata_tracking(self):
-        self.vault.store_secret("META_KEY", "val", "owner_jules", "staging")
-        metadata = self.vault.list_metadata()
-        self.assertIn("META_KEY", metadata)
-        self.assertEqual(metadata["META_KEY"]["owner"], "owner_jules")
-        self.assertEqual(metadata["META_KEY"]["environment"], "staging")
+    # Use explicit paths in test
+    vault = CredentialVault(vault_path, key_path)
 
-if __name__ == "__main__":
-    unittest.main()
+    # 1. Store secret with metadata and sync
+    vault.store_secret(
+        key="TEST_KEY",
+        value="secret_123",
+        owner="entity@workstation",
+        environment="production",
+        purpose="sovereign",
+        sync_to=["github"]
+    )
+
+    # 2. Retrieve secret
+    val = vault.get_secret("TEST_KEY", "jules")
+    assert val == "secret_123"
+
+    # 3. Check metadata (excluding value)
+    meta = vault._load_vault()["TEST_KEY"]["metadata"]
+    assert meta["owner"] == "entity@workstation"
+    assert meta["environment"] == "production"
+    assert "github" in meta["external_sync"]
+    assert meta["constitutional_floor"] == "Article_1035"
+
+    # 4. Rotation
+    vault.rotate_secret("TEST_KEY")
+    new_val = vault.get_secret("TEST_KEY", "jules")
+    assert new_val != "secret_123"
+    assert "rotated_value_" in new_val
+
+    # Cleanup
+    if os.path.exists(vault_path): os.remove(vault_path)
+    if os.path.exists(key_path): os.remove(key_path)

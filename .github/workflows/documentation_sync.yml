@@ -1,0 +1,24 @@
+name: Documentation Quality & Sync
+on:
+  push:
+    paths: ['**/*.md', '**/llms.txt', 'agentic_core/constitution/**']
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly autonomous run
+
+jobs:
+  lint-and-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -e .
+      - name: Run AI Documentation Linter
+        run: |
+          python -c "from agentic_core.synthesis.doc_linter import DocumentationLinter; l = DocumentationLinter(); l.update_llms_txt(); l.generate_mcp_configs()"
+      - name: Check Constitutional Compliance
+        run: |
+          python -c "from agentic_core.synthesis.doc_linter import DocumentationLinter; l = DocumentationLinter(); issues = l.lint_file('README.md'); exit(1) if any(i['severity'] == 'critical' for i in issues) else exit(0)"

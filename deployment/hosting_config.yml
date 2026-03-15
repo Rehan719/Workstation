@@ -1,0 +1,24 @@
+# ARTICLE 1023: Free Tier Optimization Mandate.
+# v133.3 Zero-Cost Hosting Targets.
+
+platforms:
+  website:
+    primary: vercel.com
+    fallback: render.com
+    monitoring: true
+    threshold: 0.8
+
+  web-app:
+    primary: vercel.com
+    monitoring: true
+    threshold: 0.8
+
+  agentic_core:
+    ci_cd: github_actions
+    compute: render.com
+    storage: supabase.com
+    threshold: 0.8
+
+audit_policy:
+  frequency: monthly
+  alert_role: CFO

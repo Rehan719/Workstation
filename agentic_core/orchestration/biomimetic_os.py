@@ -51,10 +51,18 @@ class MycelialLayer:
     def setup_p2p_mesh(self):
         return {"type": "P2P_MESH", "status": "CONNECTED"}
 
+    def propagate_threat(self, threat_info: Dict[str, Any]):
+        """Propagates cytokines for rapid response."""
+        return {"action": "CYTOKINE_PROPAGATED", "threat": threat_info}
+
 class AntColonyLayer:
-    """Layer 1: Swarm task delegation."""
+    """Layer 1: Swarm task delegation and strategy reinforcement."""
     def delegate_task(self, agent_card: Dict[str, Any]):
         return {"action": "DELEGATED", "protocol": "A2A"}
+
+    def reinforce_strategy(self, strategy_id: str, success_metric: float):
+        """Releases pheromones to reinforce successful behaviors."""
+        return {"action": "PHEROMONE_RELEASED", "strategy": strategy_id}
 
 class OctopusLayer:
     """Layer 2: High-frequency local intelligence."""
