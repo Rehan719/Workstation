@@ -9,12 +9,12 @@ class DocumentationLinter:
     ARTICLE 1006: AI Documentation Quality & Configuration Management v131.0.
     Enforces constitutional style guides and quality standards for all repository documentation.
     """
-    def __init__(self, constitution_path: str = "agentic_core/constitution/CONSTITUTION_v131.0.0.md"):
+    def __init__(self, constitution_path: str = "agentic_core/constitution/CONSTITUTION_v133.0.0.md"):
         self.constitution_path = constitution_path
         self.rules = [
             {"id": "PAS_CHECK", "pattern": r"Purpose Alignment Score", "required": True},
             {"id": "NO_PLACEHOLDERS", "pattern": r"\[TODO\]|\[STUB\]|\[PLACEHOLDER\]", "forbidden": True},
-            {"id": "V131_MANDATE", "pattern": r"v131\.0|Transcendent", "required": True}
+            {"id": "V133_MANDATE", "pattern": r"v133\.0|Magnificent 7", "required": True}
         ]
 
     def lint_file(self, filepath: str) -> Dict[str, Any]:

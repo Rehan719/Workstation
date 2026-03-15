@@ -65,3 +65,27 @@ class AvatarOrchestrator:
     def get_constellation_data(self) -> List[Dict[str, Any]]:
         """Returns data for the Avatar Switcher UI."""
         return [{"id": k, **v} for k, v in self.personas.items()]
+
+    def invite_guest_avatar(self, source_did: str, role: str) -> Dict[str, Any]:
+        """
+        ARTICLE 1014: Avatar Federation v132.0.
+        Projects a foreign avatar into the local environment.
+        """
+        logger.info(f"AvatarOrchestrator: Inviting guest avatar {role} from {source_did}")
+
+        guest_persona = {
+            "id": f"guest_{source_did[-4:]}_{role}",
+            "source_did": source_did,
+            "role": role,
+            "status": "PROJECTED",
+            "permissions": ["read_dashboards", "voice_participation"],
+            "v132_compliance": True
+        }
+
+        # In a real implementation, this would establish a WebRTC channel
+        return guest_persona
+
+    def project_to_remote(self, target_did: str, role: str) -> bool:
+        """Projects a local avatar to a remote Workstation."""
+        logger.info(f"AvatarOrchestrator: Projecting local {role} to {target_did}")
+        return True

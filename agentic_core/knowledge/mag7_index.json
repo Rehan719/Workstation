@@ -1,0 +1,44 @@
+{
+    "microsoft": {
+        "models": ["Copilot", "Phi-3", "Azure OpenAI"],
+        "apis": ["Azure AI Services", "Copilot Studio"],
+        "free_tier": "Azure Free Account",
+        "integration": "M365, Teams"
+    },
+    "google": {
+        "models": ["Gemini", "NotebookLM"],
+        "apis": ["Gemini API", "Vertex AI"],
+        "free_tier": "Google AI Studio",
+        "integration": "Workspace, Cloud"
+    },
+    "amazon": {
+        "models": ["Titan", "Nova"],
+        "apis": ["Bedrock", "SageMaker"],
+        "free_tier": "AWS Free Tier",
+        "integration": "AWS Ecosystem"
+    },
+    "meta": {
+        "models": ["Llama 3.2"],
+        "apis": ["Llama API"],
+        "free_tier": "Open Weights",
+        "integration": "WhatsApp, Instagram"
+    },
+    "apple": {
+        "models": ["Apple Intelligence"],
+        "apis": ["Core ML", "MLX"],
+        "free_tier": "Xcode Frameworks",
+        "integration": "iOS, macOS"
+    },
+    "nvidia": {
+        "models": ["NIM"],
+        "apis": ["CUDA Toolkit", "NGC"],
+        "free_tier": "Cloud Labs, Free DLI",
+        "integration": "GPU Cloud"
+    },
+    "tesla": {
+        "models": ["FSD", "Dojo"],
+        "apis": ["Limited Fleet API"],
+        "free_tier": "None",
+        "integration": "Vehicle Fleet"
+    }
+}
