@@ -15,11 +15,11 @@ class ResearchOrchestrator:
     def __init__(self, ueg: UEGManager):
         self.ueg = ueg
         self.priority_topics = [
-            "emergent latent language translation 2026",
-            "MCP/A2A protocol convergence 2026",
-            "neuro-symbolic AI agent communication",
-            "biomimetic swarm intelligence LLM",
-            "immune-inspired cybersecurity agents"
+            "biomimetic OS v128.0 theory",
+            "nonequilibrium control theory",
+            "dual-foundation architecture invariants",
+            "asymmetric-drive rectification algorithms",
+            "self-evolution meta-learning controllers"
         ]
         self.hypothesis_queue = []
 
@@ -49,12 +49,12 @@ class ResearchOrchestrator:
         }
 
     def _generate_hypotheses(self, topic: str) -> List[Dict[str, Any]]:
-        """Generates candidate mutations/hypotheses based on research."""
+        """Generates candidate mutations/hypotheses based on BOS v128.0 Paradigm."""
         return [{
             "id": f"HYP_{random.randint(1000, 9999)}",
             "topic": topic,
-            "hypothesis": f"Integrating {topic} into Layer 1 will reduce consensus latency by 15%.",
-            "provenance": "arxiv.org/abs/2603.12345"
+            "hypothesis": f"Applying {topic} enables Asymmetric-Drive Rectification of 0.73.",
+            "provenance": "arXiv:2603.01389v1"
         }]
 
     async def _simulate_research_outcome(self, hypothesis: Dict[str, Any]) -> Dict[str, Any]:

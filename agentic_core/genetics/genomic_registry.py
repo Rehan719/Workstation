@@ -10,16 +10,37 @@ logger = logging.getLogger(__name__)
 
 class GenomicRegistry:
     """
-    ARTICLE DC: Blockchain Genomic Registry.
+    ARTICLE DC / IV.C: Blockchain Genomic Registry & Epigenetic Memory.
     Persistent trait memory for the digital organism.
-    Implements Lamarckian inheritance with heritability >98%.
+    v129.1: Implements Multi-layered Epigenetic Memory (Layer 0-2).
     """
     def __init__(self, persistence_path: str = "meta/genome_ledger.json"):
         self.persistence_path = persistence_path
         self.blocks = []
         self.current_genome = {"traits": {}}
         self.compliance = ISO23053Compliance()
+
+        # v129.1 Epigenetic Layers
+        self.epigenetic_layers = {
+            "layer_0": [], # Short-term (<24h)
+            "layer_1": {}, # Long-term (30-90 days)
+            "layer_2": {}  # Permanent (Epigenetic/Constitutional)
+        }
+
         self._load()
+
+    def store_epigenetic_pattern(self, pattern_id: str, data: Dict[str, Any], layer: int = 0):
+        """ARTICLE IV.C: Distillation of patterns into epigenetic layers."""
+        if layer == 0:
+            self.epigenetic_layers["layer_0"].append({"id": pattern_id, "data": data, "ts": time.time()})
+        elif layer == 1:
+            self.epigenetic_layers["layer_1"][pattern_id] = data
+        elif layer == 2:
+            # Permanent encoding (chromatin-state analog)
+            self.epigenetic_layers["layer_2"][pattern_id] = data
+            self.reverse_transcribe_trait(f"epigenetic_{pattern_id}", data)
+
+        logger.info(f"GenomicRegistry: Pattern {pattern_id} stored in Layer {layer}")
 
     def _load(self):
         """Loads the genome ledger from persistence."""
