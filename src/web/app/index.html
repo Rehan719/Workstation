@@ -65,9 +65,9 @@
         <div class="mb-12">
             <div class="flex items-center gap-3">
                 <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
-                <span class="font-extrabold text-xl tracking-tighter">JULES v131.0</span>
+                <span class="font-extrabold text-xl tracking-tighter">JULES v132.0</span>
             </div>
-            <span class="text-[10px] text-emerald-500 font-mono uppercase tracking-[0.2em]">Transcendent Sovereign Twin</span>
+            <span class="text-[10px] text-emerald-500 font-mono uppercase tracking-[0.2em]">Inter-Republic Epoch</span>
         </div>
 
         <nav class="flex-1 space-y-1">
@@ -91,6 +91,10 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-width="2"></path></svg>
                 File Hub
             </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" stroke-width="2"></path></svg>
+                Federation
+            </a>
         </nav>
 
         <div class="mt-auto">
@@ -108,8 +112,8 @@
     <main class="flex-1 h-full overflow-y-auto p-12 relative z-10">
         <header class="flex justify-between items-end mb-16">
             <div>
-                <h1 class="text-5xl font-extrabold tracking-tight mb-2">Sovereign <span class="text-emerald-400 gold-glow">Digital Twin</span></h1>
-                <p class="text-slate-400 font-medium">v131.0 | Transcendent Sovereign Twin Epoch Active</p>
+                <h1 class="text-5xl font-extrabold tracking-tight mb-2">Sovereign <span class="text-emerald-400 gold-glow">Inter-Republic</span></h1>
+                <p class="text-slate-400 font-medium">v132.0 | Federated Sovereignty Epoch Active</p>
             </div>
             <div class="flex gap-4">
                 <div class="glass px-6 py-3 rounded-2xl">
@@ -127,6 +131,44 @@
             </div>
             <div class="glass p-10 rounded-3xl h-[400px]">
                 <div id="atlas-viz" class="w-full h-full"></div>
+            </div>
+        </section>
+
+        <!-- Inter-Republic Federation Hub -->
+        <section class="mb-12">
+            <div class="flex items-center gap-4 mb-8">
+                <h2 class="text-2xl font-bold">Inter-Republic Federation</h2>
+                <div class="h-px flex-1 bg-white/5"></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- DID & Identity -->
+                <div class="glass p-8 rounded-3xl border border-sky-500/20">
+                    <h3 class="text-lg font-bold mb-4">Cryptographic Identity</h3>
+                    <div class="bg-slate-900/50 p-4 rounded-xl mb-4 font-mono text-[10px] break-all border border-white/5">
+                        did:workstation:a7f2910c...
+                    </div>
+                    <button class="w-full py-2 bg-sky-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest">Share DID</button>
+                </div>
+
+                <!-- Treaty Management -->
+                <div class="glass p-8 rounded-3xl border border-emerald-500/20 col-span-2">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold">Active Treaties</h3>
+                        <button class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest">+ New Treaty</button>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">🤝</div>
+                                <div>
+                                    <div class="text-xs font-bold">Research Republic #1</div>
+                                    <div class="text-[8px] text-slate-500">SCOPE: U-RESEARCH, AGENT_SWARM</div>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-[8px] font-bold">ACTIVE</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -366,7 +408,8 @@
                 { id: "v125.0", x: 400, y: 100 },
                 { id: "v127.0", x: 550, y: 200 },
                 { id: "v128.0", x: 700, y: 150 },
-                { id: "v131.0", x: 850, y: 100 }
+                { id: "v131.0", x: 800, y: 250 },
+                { id: "v132.0", x: 950, y: 150 }
             ],
             links: [
                 { source: "v1.0", target: "v99.0" },
@@ -374,7 +417,8 @@
                 { source: "v120.0", target: "v125.0" },
                 { source: "v125.0", target: "v127.0" },
                 { source: "v127.0", target: "v128.0" },
-                { source: "v128.0", target: "v131.0" }
+                { source: "v128.0", target: "v131.0" },
+                { source: "v131.0", target: "v132.0" }
             ]
         };
 

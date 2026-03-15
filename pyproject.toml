@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "131.0.0"
+version = "132.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "v131.0 The Transcendent Sovereign Twin Epoch."
+description = "v132.0 The Inter-Republic Epoch (Federated Sovereignty)."
 authors = ["Rehan719"]
 readme = "README.md"
 

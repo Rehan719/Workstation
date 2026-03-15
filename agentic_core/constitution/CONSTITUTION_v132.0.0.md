@@ -149,5 +149,33 @@ All uploaded files shall be scanned for malware, format-detected, and parsed for
 **ARTICLE 1006: AI DOCUMENTATION QUALITY & CONFIGURATION MANAGEMENT**
 All documentation shall be continuously audited by AI linters for quality, consistency, and constitutional compliance. Standardized templates shall be used for consistent reporting. Style guide enforcement and approval workflows shall be required for all changes. Configuration management shall track ACLs, internal comments, and change journals for better governance. Branch workflows shall enable cross-functional governance without breaking live docs.
 
+## ⚖️ SECTION L: FEDERATED SOVEREIGNTY (Articles 1010-1018)
+**ARTICLE 1010: RIGHT OF FEDERATION**
+The Workstation may enter into voluntary, revocable treaties with other sovereign Workstations. All federated interactions must respect the constitutional supremacy of this Workstation and the Founder's Intent.
+
+**ARTICLE 1011: CRYPTOGRAPHIC IDENTITY**
+The Workstation shall maintain a decentralized identifier (DID) anchored in its constitutional genesis block. This DID shall be used for all authentication and authorization in federated contexts.
+
+**ARTICLE 1012: TREATY FRAMEWORK**
+Treaties must be documented in a machine-readable format (JSON-LD) and include scope, duration, termination conditions, and dispute resolution. Treaties require explicit approval by the Repo Owner before activation.
+
+**ARTICLE 1013: RIGHT OF SECESSION**
+The Workstation may unilaterally withdraw from any treaty at any time, with immediate effect. All shared resources must be returned or destroyed within 24 hours of withdrawal notice.
+
+**ARTICLE 1014: AVATAR FEDERATION**
+Avatars may be temporarily projected into other Workstations' environments with the explicit permission of both parties. Projected avatars retain the knowledge grounding of their home constitution and must respect the host's access controls.
+
+**ARTICLE 1015: FEDERATED RESEARCH**
+U-RESEARCH campaigns may be federated across multiple Workstations, with results shared according to treaty terms. All contributions must be attributed and traceable.
+
+**ARTICLE 1016: INTER-REPUBLIC COUNCIL**
+If a treaty establishes an Inter-Republic Council, the Workstation's representative shall be the AI CEO (Jules), with decisions subject to the Repo Owner's veto. Council proceedings must be transparent and logged.
+
+**ARTICLE 1017: CROSS-PLATFORM EXTENSION**
+The Workstation may extend its presence to additional platforms (wearables, AR/VR, voice assistants, IoT) as technology evolves. All extensions must comply with the same constitutional and security standards.
+
+**ARTICLE 1018: SELF-AMENDMENT RESEARCH**
+The system may research and propose constitutional amendments based on federated best practices, but no amendment shall take effect without explicit Repo Owner approval.
+
 ---
-*Codified via Grand Synthesis Engine v131.0.0 "The Transcendent Sovereign Twin Epoch"*
+*Codified via Grand Synthesis Engine v132.0.0 "The Inter-Republic Epoch"*
