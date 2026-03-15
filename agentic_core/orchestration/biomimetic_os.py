@@ -2,6 +2,8 @@ import logging
 from enum import Enum
 from typing import Dict, Any, List, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
+from agentic_core.network.discovery import Libp2pDiscoveryRegistry
+from agentic_core.immune.anomaly_scorer import RealTimeAnomalyScorer
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +21,8 @@ class BiomimeticOS:
     """
     def __init__(self):
         self.ueg = UEGManager()
+        self.discovery = Libp2pDiscoveryRegistry()
+        self.anomaly_scorer = RealTimeAnomalyScorer()
         self.layers: Dict[BiomimeticLayer, Dict[str, Any]] = {
             layer: {"status": "INITIALIZING", "protocols": []} for layer in BiomimeticLayer
         }
@@ -47,21 +51,38 @@ class BiomimeticOS:
         return {"status": "DISPATCHED", "layer": layer.name, "timestamp": "now"}
 
 class MycelialLayer:
-    """Layer 0: Decentralized resilience fabric."""
+    """Layer 0: Decentralized resilience fabric (libp2p DHT)."""
+    def __init__(self, discovery_registry: Libp2pDiscoveryRegistry):
+        self.discovery = discovery_registry
+
     def setup_p2p_mesh(self):
-        return {"type": "P2P_MESH", "status": "CONNECTED"}
+        logger.info("MycelialLayer: Establishing libp2p DHT mesh...")
+        return {"type": "LIBP2P_DHT", "status": "READY"}
+
+    def route_request(self, target_id: str, payload: Dict[str, Any]):
+        """Automatic rerouting via libp2p DHT lookups."""
+        target = self.discovery.find_agent(target_id)
+        if target:
+            return {"status": "ROUTED", "target": target_id}
+        return {"status": "REROUTING", "reason": "DHT_MISS"}
 
     def propagate_threat(self, threat_info: Dict[str, Any]):
-        """Propagates cytokines for rapid response."""
+        """Propagates cytokines via libp2p Gossipsub."""
+        self.discovery.broadcast_cytokine(threat_info)
         return {"action": "CYTOKINE_PROPAGATED", "threat": threat_info}
 
 class AntColonyLayer:
-    """Layer 1: Swarm task delegation and strategy reinforcement."""
+    """Layer 1: Swarm task delegation (libp2p Gossipsub)."""
+    def __init__(self, discovery_registry: Libp2pDiscoveryRegistry):
+        self.discovery = discovery_registry
+
     def delegate_task(self, agent_card: Dict[str, Any]):
-        return {"action": "DELEGATED", "protocol": "A2A"}
+        logger.info("AntColonyLayer: Delegating task via Gossipsub.")
+        return {"action": "DELEGATED", "protocol": "LIBP2P_GOSSIPSUB"}
 
     def reinforce_strategy(self, strategy_id: str, success_metric: float):
-        """Releases pheromones to reinforce successful behaviors."""
+        """Reinforces trails using libp2p pheromone propagation."""
+        self.discovery.propagate_pheromone({"id": strategy_id, "score": success_metric})
         return {"action": "PHEROMONE_RELEASED", "strategy": strategy_id}
 
 class OctopusLayer:

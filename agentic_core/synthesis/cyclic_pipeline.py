@@ -76,3 +76,22 @@ class CyclicKnowledgePipeline:
 
     def _deploy_sync(self):
         logger.info("CyclicPipeline: Deploying updates via Bi-Directional Sync.")
+
+    def trigger_autonomous_action(self, action_type: str, details: Dict[str, Any]):
+        """
+        ARTICLE 1042: Autonomous Workflow Soft-Approval.
+        Logs action and starts 10-minute veto window.
+        """
+        action_id = f"AUTO_{int(time.time())}"
+        logger.info(f"CyclicPipeline: TRIGGERING {action_type} (ID: {action_id}). DETAILS: {details}")
+
+        # Log to UEG
+        self.uviap.ueg.add_audit_log("AUTONOMOUS_ACTION", f"Soft-Approval window started for {action_type}", {
+            "action_id": action_id,
+            "details": details,
+            "veto_window_minutes": 10,
+            "status": "PENDING_VETO"
+        })
+
+        # In a real system, a background scheduler would execute this after 10 mins if not vetoed
+        return action_id

@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "133.0.0"
+version = "134.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "v133.0 Magnificent 7 Orchestration (Universal AI Hub)."
+description = "v134.0 Real-Time Sovereign Federation."
 authors = ["Rehan719"]
 readme = "README.md"
 
