@@ -41,6 +41,9 @@ verification/
 # Environments
 .env
 .venv
+# Secure Credential Vault
+agentic_core/governance/credentials/master.key
+agentic_core/governance/credentials/vault.json
 venv/
 ENV/
 

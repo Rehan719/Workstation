@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "130.1.0"
+version = "131.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "v130.0 Sovereign Digital Life."
+description = "v131.0 The Transcendent Sovereign Twin Epoch."
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -48,6 +48,7 @@ qiskit = "^1.1.0"
 pennylane = "^0.36.0"
     camel-tools = "^1.5.2"
     quran-python = "^1.0.1"
+    cryptography = "^42.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
