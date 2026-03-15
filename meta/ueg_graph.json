@@ -22804,6 +22804,46 @@
                 "blueprints_generated": 3
             },
             "timestamp": 1773503975.1310632
+        },
+        {
+            "id": "audit_1831",
+            "type": "AuditLog",
+            "source": "SYMBIOTIC_LAYER",
+            "message": "Partner BioTech_Corp Onboarded",
+            "metadata": {
+                "partner_id": "BioTech_Corp",
+                "status": "CERTIFIED",
+                "did": "did:workstation:partner:BioTech_Corp",
+                "liability_requirement": "10.0%"
+            },
+            "timestamp": 1773588881.2052464
+        },
+        {
+            "id": "audit_1832",
+            "type": "AuditLog",
+            "source": "SYMBIOTIC_LAYER",
+            "message": "Partner EcoNode_DAO Onboarded",
+            "metadata": {
+                "partner_id": "EcoNode_DAO",
+                "status": "CERTIFIED",
+                "did": "did:workstation:partner:EcoNode_DAO",
+                "liability_requirement": "10.0%"
+            },
+            "timestamp": 1773588881.2843218
+        },
+        {
+            "id": "audit_1833",
+            "type": "AuditLog",
+            "source": "VALUE_LEDGER",
+            "message": "Transaction for BioTech_Corp",
+            "metadata": {
+                "partner_id": "BioTech_Corp",
+                "amount": 1000.0,
+                "liability_allocation": 100.0,
+                "description": "API Access Fee",
+                "timestamp": 1773588881.3645267
+            },
+            "timestamp": 1773588881.3645475
         }
     ],
     "edges": [
