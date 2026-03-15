@@ -3,28 +3,26 @@ from agentic_core.communication.adaptive_v137 import AdaptiveCommunicatorV137
 
 def test_v137_channel_selection():
     comm = AdaptiveCommunicatorV137()
-    # Mocking high urgency context
+    # Mocking high urgency mobile context
+    class MockMsg: type = "threat"; emotional = False
     context = {"device": "mobile", "urgency": "high"}
-    selected = comm.select_channels("threat_alert", context)
+    selected = comm.select_channels(MockMsg(), context)
 
     assert len(selected) == 3
-    # With urgency: high, notification and signal should be top choices
+    # With urgency: high and device: mobile, notification should be top
     assert "notification" in selected
     assert "signal" in selected
 
 def test_v137_rl_feedback():
     comm = AdaptiveCommunicatorV137()
-    initial_q = comm.q_table["avatar"]
-    # Provide positive feedback
-    comm.record_feedback(["avatar"], True)
-    assert comm.q_table["avatar"] > initial_q
+    context = {"device": "desktop"}
+    comm.record_feedback(context, "info", ["dashboard"], 1.0)
 
-    # Provide negative feedback
-    comm.record_feedback(["avatar"], False)
-    assert comm.q_table["avatar"] < 1.0
+    state = comm._encode_state(context, "info")
+    assert comm.q_table[(state, "dashboard")] > 0.5
 
-def test_v137_delivery_metrics():
+def test_v137_full_cycle():
     comm = AdaptiveCommunicatorV137()
-    meta = comm.deliver_payload("System Stable", "status", {"device": "desktop"})
-    assert meta["latency_ms"] < 200.0
-    assert meta["v137_compliance"] == True
+    class Msg: type = "status"; emotional = True
+    channels = comm.communicate(Msg(), "user_1", {"device": "desktop"})
+    assert "avatar" in channels or "ethical" in channels

@@ -1,0 +1,22 @@
+{
+    "OPENAI_API_KEY": {
+        "credential_id": "OPENAI_API_KEY",
+        "value": "v137_AES256GCM[sk-12345]",
+        "metadata": {
+            "purpose": "operational",
+            "constitutional_floor": "Article_1094",
+            "rotation_schedule": "30d",
+            "owner": "did:key:jules",
+            "created": "2026-03-15T23:17:51.224958",
+            "last_rotated": "2026-03-15T23:17:51.224972",
+            "rotation_count": 0,
+            "external_sync": [
+                "github",
+                "aws",
+                "polygon"
+            ],
+            "risk_level": "medium",
+            "last_used": "2026-03-15T23:17:51.225561"
+        }
+    }
+}
