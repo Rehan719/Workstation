@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "132.0.0"
+version = "133.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "v132.0 The Inter-Republic Epoch (Federated Sovereignty)."
+description = "v133.0 Magnificent 7 Orchestration (Universal AI Hub)."
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -46,9 +46,9 @@ z3-solver = "^4.13.0.0"
 sympy = "^1.12"
 qiskit = "^1.1.0"
 pennylane = "^0.36.0"
-    camel-tools = "^1.5.2"
-    quran-python = "^1.0.1"
-    cryptography = "^42.0.0"
+camel-tools = "^1.5.2"
+quran-python = "^1.0.1"
+cryptography = "^42.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
