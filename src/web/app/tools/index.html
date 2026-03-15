@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tool Constellation - Unified Discovery Engine</title>
+    <link rel="stylesheet" href="../../css/biophilic.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { background: #000; overflow: hidden; }
+        .node { stroke: #fff; stroke-width: 1.5px; }
+        .link { stroke: rgba(255, 255, 255, 0.2); stroke-opacity: 0.6; }
+        .label { fill: #fff; font-family: 'Amiri', serif; font-size: 12px; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="constellation"></div>
+    <script>
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        const svg = d3.select("#constellation").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Fetch constellation data from DiscoveryEngine API (simulated)
+        const data = {
+            nodes: [
+                {id: "QEP Core", group: "internal", radius: 15},
+                {id: "Quiz Generator", group: "internal", radius: 10},
+                {id: "Morphology Service", group: "internal", radius: 12},
+                {id: "Quran.com", group: "external", radius: 14},
+                {id: "JSTOR", group: "external", radius: 11},
+                {id: "arXiv", group: "external", radius: 11}
+            ],
+            links: [
+                {source: "QEP Core", target: "Quiz Generator"},
+                {source: "QEP Core", target: "Morphology Service"},
+                {source: "QEP Core", target: "Quran.com"},
+                {source: "Quiz Generator", target: "arXiv"}
+            ]
+        };
+
+        const simulation = d3.forceSimulation(data.nodes)
+            .force("link", d3.forceLink(data.links).id(d => d.id).distance(150))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        const link = svg.append("g").attr("class", "links")
+            .selectAll("line").data(data.links).enter().append("line").attr("class", "link");
+
+        const node = svg.append("g").attr("class", "nodes")
+            .selectAll("circle").data(data.nodes).enter().append("circle")
+            .attr("class", "node")
+            .attr("r", d => d.radius)
+            .attr("fill", d => d.group === "internal" ? "#f90" : "#0af");
+
+        const label = svg.append("g").attr("class", "labels")
+            .selectAll("text").data(data.nodes).enter().append("text")
+            .attr("class", "label")
+            .text(d => d.id);
+
+        simulation.on("tick", () => {
+            link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+            node.attr("cx", d => d.x).attr("cy", d => d.y);
+            label.attr("x", d => d.x + 15).attr("y", d => d.y + 5);
+        });
+    </script>
+</body>
+</html>

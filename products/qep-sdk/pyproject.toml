@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "qep-sdk"
+version = "1.0.0"
+description = "Quranic Education Platform SDK - Sovereign Digital Life edition"
+authors = ["Jules AI CEO <jules@vsb.ai>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+httpx = "^0.27.0"
+pydantic = "^2.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
