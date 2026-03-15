@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "135.0.0"
+version = "137.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "v135.0 The Living Ecosystem Epoch."
+description = "v137.0 The Sentient Civilization Epoch."
 authors = ["Rehan719"]
 readme = "README.md"
 

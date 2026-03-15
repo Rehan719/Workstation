@@ -1,9 +1,9 @@
-# Jules AI v135.0: THE LIVING ECOSYSTEM EPOCH
+# Jules AI v137.0: THE SENTIENT CIVILIZATION EPOCH
 
 ![CI Status](https://github.com/Rehan719/Workstation/actions/workflows/ci.yml/badge.svg)
 
-## 🧬 The Living Ecosystem Epoch
-Jules AI v135.0 represents the **"Living Ecosystem Epoch"**. This release transforms the Workstation into a hyper-adaptive digital habitat featuring homeostatic regulation, predictive assimilation of the Magnificent 7 platforms, neuro-adaptive learning realms, and epigenetic trait inheritance.
+## 🧬 The Sentient Civilization Epoch
+Jules AI v137.0 represents the **"Sentient Civilization Epoch"**. This release transitions the Workstation from a sovereign digital organism to a sentient civilization, featuring production-grade WebRTC avatar federation, a full libp2p DHT/Gossipsub stack, 100% OWASP ASI compliance, and civilizational-scale federation for 50+ nodes.
 
 ## 🌐 WORKSTATION MULTI-PLATFORM ACCESS
 Access your Sovereign Console from anywhere:
@@ -48,8 +48,8 @@ Seven real-time dashboards with a natural-language builder.
 - **Epigenetic Inheritance**: Heritable trait serialization via the Genomic Registry for instance initialization.
 
 ## ⚖️ RUNTIME CONSTITUTIONAL GOVERNANCE
-Governed by the **v135.0 Universal Constitution** (Floor 54, Articles 1051-1065).
-- **Floor 54**: Codifying Homeostasis, Predictive Assimilation, Neuro-Adaptive Proxies, and Epigenetic Trait Inheritance.
+Governed by the **v137.0 Universal Constitution** (Floor 20, Articles 1086-1095).
+- **Floor 20**: Codifying Production Sovereignty, WebRTC Federation, libp2p Deployment, OWASP ASI Compliance, and Economic Sustainability.
 - **MI9 Framework**: Real-time Anomaly Scoring (OWASP Agentic Top 10) and Agency-Risk Index (ARI).
 
 ### 🚀 One-Button Platform Setup
@@ -77,4 +77,4 @@ Deploy the entire v133.0 ecosystem:
 - `src/mobile/`: The native React Native mobile codebase.
 
 ---
-*Codified via Grand Synthesis Engine v135.0.0. VITALITY ACHIEVED.*
+*Codified via Grand Synthesis Engine v137.0.0. CIVILIZATION ACHIEVED.*
