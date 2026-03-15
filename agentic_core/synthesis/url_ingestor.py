@@ -111,36 +111,43 @@ class URLIngestor:
             return self._simulate_high_fidelity(url, f"error: {str(e)}")
 
     def _simulate_high_fidelity(self, url: str, reason: str) -> Dict[str, Any]:
-        """v125.0: High-fidelity functional simulation based on URL metadata."""
+        """v130.1.0: High-fidelity functional simulation based on URL metadata per ARTICLE 646."""
         platform = self._detect_platform(url)
 
         # Infer intent from URL
         intent = "General Ecosystem Discussion"
-        if "task" in url or "google" in url.lower():
-            intent = "Workstation Task & Script Development"
-        elif "qep" in url.lower() or "quran" in url.lower():
-            intent = "Quranic Education Platform (QEP) Feature Ingestion"
+        if any(keyword in url.lower() for keyword in ["task", "google", "script", "devtools"]):
+            intent = "Workstation Task & Tooling Ecosystem Mapping"
+        elif any(keyword in url.lower() for keyword in ["qep", "quran", "tafsir", "morphology", "studies"]):
+            intent = "Quranic Education Platform (QEP) Excellence & Scholarly Ingestion"
+        elif any(keyword in url.lower() for keyword in ["evolution", "cognition", "desire", "biomimetic"]):
+            intent = "Sovereign Digital Life & Cognitive Evolution Research"
 
         simulation = {
             "source_url": url,
             "platform": platform,
             "transcript": [
-                {"role": "user", "text": f"Analyze and integrate insights for {intent}."},
-                {"role": "assistant", "text": f"Simulated high-fidelity response for {platform} source. Focus on v125.0 convergence."}
+                {"role": "user", "text": f"Analyze and assimilate strategic insights for {intent} from {platform}."},
+                {"role": "assistant", "text": f"Assimilating high-fidelity simulated insights for {intent}. Mapping entities to UEG v130 and Article 1000 floor."}
             ],
             "metadata": {
                 "ingested_as": "high_fidelity_simulation",
                 "simulation_reason": reason,
-                "inferred_intent": intent
+                "inferred_intent": intent,
+                "v130_alignment": True
             }
         }
 
-        # Log to simulated_sources report
+        # ARTICLE 647: Simulation logging in v130 manifest
         os.makedirs("docs/knowledge", exist_ok=True)
-        report_path = "docs/knowledge/simulated_sources.md"
+        report_path = "docs/knowledge/simulated_sources_v130.md"
+
+        header = "# Simulated Sources Report v130.1.0 (Apotheosis Convergence)\n\n| URL | Platform | Reason | Inferred Intent |\n|---|---|---|---|\n"
+
+        file_exists = os.path.exists(report_path)
         with open(report_path, "a") as f:
-            if os.path.getsize(report_path) == 0:
-                f.write("# Simulated Sources Report v125.0\n\n| URL | Platform | Reason | Inferred Intent |\n|---|---|---|---|\n")
+            if not file_exists or os.path.getsize(report_path) == 0:
+                f.write(header)
             f.write(f"| {url} | {platform} | {reason} | {intent} |\n")
 
         return simulation
