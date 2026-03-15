@@ -36,3 +36,13 @@ class NetworkStack:
         """Desktop-specific SSE stream."""
         logger.info(f"NetworkStack: Streaming SSE event {event_type} to Desktop.")
         return f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+
+    def send_cytokine_alert(self, threat_data: Dict[str, Any]):
+        """Propagates threat alerts across the partner network."""
+        logger.warning(f"NetworkStack: Propagating CYTOKINE alert: {threat_data}")
+        return self.broadcast_ueg_update({"type": "CYTOKINE", "payload": threat_data})
+
+    def release_pheromone(self, strategy_id: str, success_metric: float):
+        """Reinforces successful strategies across the partner network."""
+        logger.info(f"NetworkStack: Releasing PHEROMONE for strategy {strategy_id} (Score: {success_metric})")
+        return self.broadcast_ueg_update({"type": "PHEROMONE", "strategy": strategy_id, "weight": success_metric})

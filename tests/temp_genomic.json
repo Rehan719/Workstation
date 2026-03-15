@@ -1,0 +1,17 @@
+{
+    "traits": [
+        {
+            "trait_id": "T1",
+            "version": "135.0.0",
+            "effectiveness_score": 0.95,
+            "heritability": 0.85,
+            "configuration": {
+                "val": 1
+            },
+            "metadata": {
+                "origin": "sovereign_node_1",
+                "status": "MATURE"
+            }
+        }
+    ]
+}
