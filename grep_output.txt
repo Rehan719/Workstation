@@ -1,0 +1,5 @@
+./products/molecular_sdk/sdk/molecular_comm.py:class MolecularCommunicationSDK:
+grep: ./grep_output.txt: input file is also the output
+./agentic_core/biochemical/molecular_comm.py:class MolecularCommunicationSDK:
+./agentic_core/agents/global_agents.py:from agentic_core.molecular.neurotransmitters import MolecularCommunication # Assuming correct path from memory
+./agentic_core/enterprise/coe_manager.py:                     "AsymmetricRectification", "NeuromorphicNanophotonics", "MolecularCommunication", "SynapticCircuits"]

@@ -71,13 +71,19 @@ class IntrospectionEngine:
         return atlas
 
     async def simulate_solution(self, proposal: Dict[str, Any]) -> Dict[str, Any]:
-        """Phase 3: Digital Reactor Simulation integration."""
-        logger.info(f"Introspection: Simulating solution for {proposal['title']}")
-        # Simulated reactor output
+        """ARTICLE B7: Mandatory Digital Reactor Simulation integration (v128.0)."""
+        logger.info(f"Introspection: Dispatching {proposal.get('title', 'proposal')} to Digital Reactor.")
+        from agentic_core.simulation.digital_reactor import DigitalReactor
+        reactor = DigitalReactor()
+
+        sim_result = await reactor.simulate_change(proposal)
+
         return {
             "proposal_id": proposal.get("id"),
-            "performance_impact": "+12% throughput",
-            "ari_risk": "Low (L1)",
-            "constitutional_alignment": "PASS",
-            "confidence": 0.94
+            "sim_id": sim_result["sim_id"],
+            "performance_impact": sim_result["impact_metrics"]["performance_delta"],
+            "ari_risk": "Low (L1)" if sim_result["risk_assessment"]["ari_impact"] < 0.1 else "Medium (L2)",
+            "constitutional_alignment": "PASS" if sim_result["risk_assessment"]["constitutional_drift"] < 0.05 else "WARN",
+            "verdict": sim_result["verdict"],
+            "confidence": sim_result["impact_metrics"]["stability_score"]
         }

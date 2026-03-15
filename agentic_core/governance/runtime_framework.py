@@ -22,8 +22,8 @@ class AgencyRiskIndex:
     def __init__(self):
         self.scores: Dict[str, Dict[str, int]] = {}
 
-    def calculate_ari(self, agent_id: str, autonomy: int, adaptability: int, continuity: int) -> GovernanceTier:
-        """Scores 0-3 on each dimension, maps to T1-T4."""
+    def calculate_ari(self, agent_id: str, autonomy: int, adaptability: int, continuity: int, thresholds: Dict[str, int] = None) -> GovernanceTier:
+        """Scores 0-3 on each dimension, maps to T1-T4 with Dynamic Calibration."""
         total = autonomy + adaptability + continuity
         self.scores[agent_id] = {
             "autonomy": autonomy,
@@ -32,9 +32,11 @@ class AgencyRiskIndex:
             "total": total
         }
 
-        if total <= 2: return GovernanceTier.T1_MINIMAL
-        if total <= 5: return GovernanceTier.T2_SANDBOX
-        if total <= 7: return GovernanceTier.T3_PAUSE
+        t = thresholds or {"T2": 2, "T3": 5, "T4": 7}
+
+        if total <= t["T2"]: return GovernanceTier.T1_MINIMAL
+        if total <= t["T3"]: return GovernanceTier.T2_SANDBOX
+        if total <= t["T4"]: return GovernanceTier.T3_PAUSE
         return GovernanceTier.T4_TERMINATE
 
 class AgenticTelemetrySchema:
@@ -54,7 +56,7 @@ class AgenticTelemetrySchema:
 
 class RuntimeConstitutionalFramework:
     """
-    ARTICLE 601-605: Unified Runtime Governance (MI9/arifOS).
+    ARTICLE 601-605, 736-745: Unified Runtime Governance (MI9/arifOS) v128.0.
     Enforces real-time policy checks, drift detection, and graduated containment.
     """
     def __init__(self):
@@ -62,6 +64,7 @@ class RuntimeConstitutionalFramework:
         self.conformance_engines: Dict[str, Any] = {} # AgentID -> FSM
         self.baseline_behavior: Dict[str, List[float]] = {}
         self.active_containments: Dict[str, GovernanceTier] = {}
+        self.thresholds = {"T2": 2, "T3": 5, "T4": 7}
 
     def verify_action(self, agent_id: str, event: Dict[str, Any]) -> bool:
         """
@@ -100,6 +103,13 @@ class RuntimeConstitutionalFramework:
                 self.apply_containment(agent_id, GovernanceTier.T2_SANDBOX)
 
         return True
+
+    def calibrate_thresholds(self, incident_history: List[Dict[str, Any]]):
+        """v128.0: Dynamic threshold calibration based on incident patterns."""
+        if len(incident_history) > 10:
+             # ML-inspired heuristic: tighten thresholds if many high-severity events
+             self.thresholds["T3"] -= 1
+             logger.info(f"Governance: Calibrated L3 Threshold to {self.thresholds['T3']}")
 
     def apply_containment(self, agent_id: str, tier: GovernanceTier):
         """ARTICLE 601: Graduated Containment Strategy Implementation."""

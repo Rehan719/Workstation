@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Jules AI | ThoughtCollective</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { background: #020617; color: white; font-family: sans-serif; overflow: hidden; }
+        .collective-node { filter: drop-shadow(0 0 8px #fbbf24); transition: all 0.3s ease; }
+        .glass { background: rgba(255,255,255,0.02); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.05); }
+    </style>
+</head>
+<body class="flex h-screen">
+    <!-- Graph Area -->
+    <main class="flex-1 relative">
+        <div id="collective-graph" class="w-full h-full"></div>
+        <div class="absolute top-12 left-12">
+            <h1 class="text-4xl font-bold mb-2">Thought<span class="text-amber-400">Collective</span></h1>
+            <p class="text-slate-400 text-sm">Human-AI Collective Intelligence Space v126.0</p>
+        </div>
+    </main>
+
+    <!-- Sidebar -->
+    <aside class="w-96 border-l border-white/5 bg-slate-950/50 p-8 flex flex-col">
+        <div class="glass p-6 rounded-2xl mb-8">
+            <h3 class="text-lg font-bold mb-4">Emotional Resonance</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between text-xs"><span>OXYTOCIN (Trust)</span><span class="text-sky-400">0.88</span></div>
+                <div class="w-full bg-white/5 h-1 rounded-full"><div class="bg-sky-400 h-full w-[88%]"></div></div>
+                <div class="flex justify-between text-xs"><span>DOPAMINE (Novelty)</span><span class="text-amber-400">0.92</span></div>
+                <div class="w-full bg-white/5 h-1 rounded-full"><div class="bg-amber-400 h-full w-[92%]"></div></div>
+            </div>
+        </div>
+
+        <div class="flex-1">
+             <h3 class="text-lg font-bold mb-4">Live Proposals</h3>
+             <div id="proposal-list" class="space-y-3">
+                 <div class="p-4 bg-white/5 rounded-xl border border-white/5">
+                     <div class="text-[10px] text-amber-400 font-bold mb-1">IDEA_231011</div>
+                     <p class="text-xs text-slate-300">Bi-directional knowledge flow in federated AI swarms.</p>
+                 </div>
+             </div>
+        </div>
+
+        <div class="mt-auto">
+            <input type="text" placeholder="Propose idea..." class="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-sm mb-3">
+            <button class="w-full bg-amber-500 text-slate-900 font-bold py-3 rounded-xl">SUBMIT TO COLLECTIVE</button>
+        </div>
+    </aside>
+
+    <script>
+        const svg = d3.select("#collective-graph").append("svg").attr("width", "100%").attr("height", "100%");
+        // D3 Force Simulation for Idea Graph would go here
+    </script>
+</body>
+</html>

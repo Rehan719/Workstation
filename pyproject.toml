@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "jules-ai"
-version = "125.1.0"
+version = "129.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "v125.1 Self-Introspective Evolution - Comprehensive QEP & Tool Ecosystem."
+description = "v129.0 Biomimetic Sovereignty & Collective Intelligence."
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -46,6 +46,8 @@ z3-solver = "^4.13.0.0"
 sympy = "^1.12"
 qiskit = "^1.1.0"
 pennylane = "^0.36.0"
+    camel-tools = "^1.5.2"
+    quran-python = "^1.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"

@@ -29,20 +29,27 @@ class UVIAP:
         self.learning_reflection: List[Dict[str, Any]] = []
 
     async def run_full_pipeline(self, repo_url: Optional[str] = None, modes: List[str] = None):
-        """Executes all stages of the UVIAP v125.0 (Article 5.3)."""
+        """Executes all stages of the UVIAP v129.0 (Article III.A)."""
         modes = modes or ["full"]
-        logger.info(f"UVIAP: Starting Full Evolution Pipeline v125.0 (Target: {repo_url or 'Self'}, Modes: {modes})")
+        logger.info(f"UVIAP: Starting Full Evolution Pipeline v129.0 (Target: {repo_url or 'Self'}, Modes: {modes})")
 
-        # Stage 0: Multi-Source Ingestion (v125.0 Additions)
+        # Stage 0: Multi-Source Ingestion (v125.0 / v129.0 Additions)
         external_data = []
         if "ingest-urls" in modes or "full" in modes:
             from .url_ingestor import URLIngestor
             ingestor = URLIngestor()
             urls_file = "docs/sources/urls.txt"
+
+            # v129.0: Targeted ingestion from v129 command URLs
+            urls = []
             if os.path.exists(urls_file):
                 with open(urls_file, "r") as f:
                     urls = [line.strip() for line in f if line.strip()]
-                external_data.extend(await ingestor.ingest_urls(urls))
+
+            # Recursive research challenge: Study the conversation that defined v129.0
+            urls.append("https://chat.deepseek.com/share/7qcbcsuft9uruguzm4")
+
+            external_data.extend(await ingestor.ingest_urls(urls))
 
         if "ingest-local" in modes or "full" in modes:
             from .text_ingestor import TextIngestor
@@ -95,6 +102,13 @@ class UVIAP:
         # Stage 5: Assimilation Configuration Generation (Article 521-525)
         blueprints = self._generate_assimilation_blueprints(learning_results)
 
+        # v129.0: Autonomous Research Loop (Pillar 5)
+        if "research" in modes or "full" in modes:
+            from .research_orchestrator import ResearchOrchestrator
+            researcher = ResearchOrchestrator(self.ueg)
+            research_report = await researcher.run_research_cycle()
+            self.learning_reflection.append(research_report)
+
         # ARTICLE 631: Daily Cognitive Assimilation
         if "cognitive" in modes or "full" in modes:
             logger.info("UVIAP: Running autonomous Cognitive Computing sweep...")
@@ -110,9 +124,17 @@ class UVIAP:
             versions_data.append({"version": "v125.0", "features": ["qep_as_service", "scholar_trust", "multi_source_ingestion"]})
             self.phylo_twin.map_evolutionary_topology(versions_data)
 
-        # Stage 6: Continuous Evolution Loop (Article 5.1)
+        # Stage 6: Continuous Evolution Loop (Article 5.1/128.0)
         self._generate_reports(github_data, patterns, learning_results, blueprints)
         self._update_genomic_memory(learning_results)
+
+        # v128.0: Trigger automated feature pruning
+        import subprocess
+        try:
+            logger.info("UVIAP: Triggering Automated Feature Pruning...")
+            subprocess.run(["python", "scripts/prune_deprecated.py"], check=True)
+        except Exception as e:
+            logger.error(f"UVIAP: Pruning trigger failed: {e}")
 
         # UEG Provenance Logging
         self.ueg.add_audit_log("UVIAP", "Full Evolution Pipeline v125.0 execution complete.", {

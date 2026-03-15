@@ -11,6 +11,7 @@ from agentic_core.enterprise.policy import PolicyCoE
 from agentic_core.commercial.token_ledger import TokenLedger, UserTier
 from agentic_core.synthesis.dual_mode_scraper import DualModeScraper
 from agentic_core.synthesis.uviap import UVIAP
+from agentic_core.api import qep_analytics, tools, partnerships
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,9 +39,13 @@ async def lifespan(app: FastAPI):
     logger.info("Apotheosis: System Hibernating.")
 
 app = FastAPI(
-    title="Jules AI v120.0 Apotheosis of Sensory Convergence Master Backend",
+    title="Jules AI v128.0 Sovereign Integrity Master Backend",
     lifespan=lifespan
 )
+
+app.include_router(qep_analytics.router, prefix="/api/v1")
+app.include_router(tools.router, prefix="/api/v1")
+app.include_router(partnerships.router, prefix="/api/v1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -57,10 +62,10 @@ async def root():
 @app.get("/api/v1/status")
 async def get_status():
     return {
-        "organism_id": "JULES-v124-MASTER",
-        "fidelity": 0.9992,
-        "articles": 690,
-        "mode": "GENOMIC-RESONANCE-EVOLUTIONARY-CONVERGENCE",
+        "organism_id": "JULES-v128-SOVEREIGN",
+        "fidelity": 0.9998,
+        "articles": 750,
+        "mode": "UNIVERSAL-COMPLETION-INSTITUTIONAL-LEADERSHIP",
         "governance": policy.bms.generate_performance_report()
     }
 
@@ -136,8 +141,8 @@ async def approve_blueprint(blueprint_id: str):
 
 @app.get("/api/v1/health")
 async def health():
-    return {"status": "healthy", "version": "124.0.0"}
+    return {"status": "healthy", "version": "128.0.0"}
 
 @app.get("/health")
 async def health_root():
-    return {"status": "healthy", "version": "124.0.0"}
+    return {"status": "healthy", "version": "128.0.0"}

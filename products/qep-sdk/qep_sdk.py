@@ -18,16 +18,25 @@ class QEPClient:
         self.base_url = "https://api.jules-ai.com/v125/qep"
 
     async def get_verse(self, reference: str):
-        print(f"QEP SDK [{self.tier}]: Fetching verse {reference}")
-        # In production, this would be an actual API call
-        return {"reference": reference, "text": "...", "translation": "..."}
+        """v125.0: Direct integration with AlQuranCloudConnector."""
+        from agentic_core.orchestrator.symbiosis.connectors import AlQuranCloudConnector
+        connector = AlQuranCloudConnector()
+        res = await connector.get_ayah(reference)
+        await connector.close()
+        return res
 
     async def get_morphology(self, reference: str):
+        """v125.0: Pro Feature utilizing the local MorphologyService."""
         if self.tier == "Free":
             raise PermissionError("Morphology requires Pro Tier or higher.")
-        return {"reference": reference, "analysis": "..."}
+        from agentic_core.reactor.religion.quranic_studies import MorphologyService
+        svc = MorphologyService()
+        return await svc.get_morphology(reference)
 
     async def generate_quiz(self, reference: str):
+        """v125.0: AI-Generated Quizzes from specialized reactor."""
         if self.tier == "Free":
             raise PermissionError("AI Quizzes require Pro Tier or higher.")
-        return {"quiz": "..."}
+        from agentic_core.reactor.religion.quranic_studies import QuranicStudiesReactor
+        reactor = QuranicStudiesReactor()
+        return await reactor.incubate(reference, {"task": "generate_quiz"})

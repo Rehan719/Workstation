@@ -1,1 +1,1 @@
-from .qep_authoring import QEPAuthoringReactor
+from agentic_core.reactor.religion.qep_authoring.qep_authoring import QEPAuthoringReactor
