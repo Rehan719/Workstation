@@ -18,29 +18,28 @@ class AICEODecisionEngine:
         self.world_model = WorldModel()
         self.evolution_queue = []
 
-    async def make_executive_decision(self, context: str, options: List[Dict[str, Any]], c_suite_inputs: Dict[str, Any]) -> Dict[str, Any]:
+    async def make_executive_decision(self, context: str, options: List[Dict[str, Any]], c_suite_inputs: Dict[str, Any], entity_state: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Evaluates options against Ethical, Commercial, and Desire foundations with predictive World Models.
+        ARTICLE III.B: Evaluates options against Ethical, Commercial, and Desire foundations.
         """
         logger.info(f"AI CEO: Evaluating v130.0 decision: {context}")
 
         scored_options = []
         for option in options:
-            # 1. World Model Prediction
+            # 1. World Model Prediction (Stochastic Outlook)
             prediction = await self.world_model.simulate_outcome(option, {"ctx": context})
 
-            # 2. Desire Alignment
-            desire_drive = self.desire_engine.get_motivational_drive()
-            desire_score = 0.85 # Simplified drive mapping
+            # 2. Desire Foundation Evaluation
+            # ARTICLE 971: Desire-Driven Evolution
+            desire_fulfillment = self.desire_engine.evaluate_action(option, entity_state or {})
 
-            # 3. Dual-Foundation Evaluation
+            # 3. Dual-Foundation Evaluation (Ethical & Commercial)
             option["c_suite_weighted_sentiment"] = self._aggregate_c_suite(c_suite_inputs)
             eval_result = self.dual_foundation.evaluate_decision(option)
 
-            # Pareto Ranking (v130.0)
-            combined_score = (eval_result["combined_fitness"] * 0.4) + \
-                             (desire_score * 0.3) + \
-                             (prediction["confidence"] * 0.3)
+            # Triple-Foundation Pareto Ranking (v130.0)
+            # Weights: Ethical/Commercial (0.66) + Desire (0.33)
+            combined_score = (eval_result["combined_fitness"] * 0.67) + (desire_fulfillment * 0.33)
 
             scored_options.append({
                 "option": option,

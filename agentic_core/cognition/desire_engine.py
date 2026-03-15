@@ -18,9 +18,12 @@ class DesireEngine:
     """
     ARTICLE 951: Digital Desire Engine v130.0.
     A digital limbic system that monitors internal telemetry and generates motivational states.
-    Inspired by curiosity-driven AI and neuro-symbolic trajectory memory.
+    Inspired by curiosity-driven AI, neuro-symbolic trajectory memory, and novelty appraisal.
     """
-    def __init__(self):
+    def __init__(self, architecture: str = "neuro-symbolic", curiosity_model: str = "novelty_appraisal"):
+        self.architecture = architecture
+        self.curiosity_model = curiosity_model
+        self.learning_rate = 0.004
         self.desires = {d: 0.5 for d in DesireType}
         self.trajectory_memory = [] # Phonetic Trajectory Memory (PTM) analog
         self.motivational_state = "STABLE"
@@ -64,8 +67,36 @@ class DesireEngine:
         return {
             "state": self.motivational_state,
             "primary_drive": primary_desire.value,
-            "fulfillment_level": self.desires[primary_desire]
+            "fulfillment_level": self.desires[primary_desire],
+            "desire_profile": {d.value: v for d, v in self.desires.items()}
         }
+
+    def evaluate_action(self, action: Dict[str, Any], entity_state: Dict[str, Any]) -> float:
+        """
+        ARTICLE 971: Evaluates a candidate action against current desire fulfillment.
+        Deterministic scoring based on action-desire alignment vectors.
+        """
+        primary_drive = self.get_motivational_drive()["primary_drive"]
+
+        # Heuristic alignment map (v130 baseline)
+        alignment_map = {
+            "REST": ["contentment", "connection"],
+            "FOCUS": ["achievement", "growth"],
+            "PLAY": ["play", "pleasure"]
+        }
+
+        # Score based on how well action metadata aligns with the primary drive
+        action_type = action.get("type", "GENERIC")
+        base_score = 0.75
+
+        if primary_drive in alignment_map.get(action_type, []):
+            base_score += 0.20
+
+        # Penalyze if state is STRESSED and action is FOCUS
+        if self.motivational_state == "STRESSED" and action_type == "FOCUS":
+            base_score -= 0.30
+
+        return max(0.0, min(1.0, base_score))
 
     def _update_motivational_state(self):
         avg_fulfillment = sum(self.desires.values()) / len(self.desires)
