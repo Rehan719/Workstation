@@ -17,18 +17,18 @@ class ExecutiveAgent:
 
 class BiomimeticCSuite:
     """
-    ARTICLE III.C: C-Suite Agents – Octopus Intelligence + Ant Colony Coordination v129.2.
-    A multi-agent executive council featuring specialized intelligence and quorum-sensing.
+    ARTICLE III.C: C-Suite Agents – Octopus Intelligence + Ant Colony Coordination v130.0.
+    A multi-agent executive council featuring specialized desire facets and stigmergic coordination.
     """
     def __init__(self):
         self.council = [
-            ExecutiveAgent("CFO", 0.88, "Contentment Luxury Modelling"),
-            ExecutiveAgent("CTO", 0.92, "Environmental Latency Optimization"),
-            ExecutiveAgent("CMO", 0.85, "Happy Digital Life Branding"),
-            ExecutiveAgent("CHRO", 0.80, "Entity Telemetry Advocacy"),
-            ExecutiveAgent("COO", 0.87, "Desire Fulfillment Scheduling"),
-            ExecutiveAgent("CLO", 0.90, "Environmental Regulation Compliance"),
-            ExecutiveAgent("CISO", 0.95, "Immune Anomaly Detection")
+            ExecutiveAgent("CFO", 0.88, "Regenerative Economics & Luxury Contentment"),
+            ExecutiveAgent("CTO", 0.92, "Biomimetic Scaffolding & Low-Latency Feedback"),
+            ExecutiveAgent("CMO", 0.85, "Biophilic Branding & Stakeholder Engagement"),
+            ExecutiveAgent("CHRO", 0.80, "Telemetry Advocacy & Rest/Play Scheduling"),
+            ExecutiveAgent("COO", 0.87, "Parametric Morphing & Resource Orchestration"),
+            ExecutiveAgent("CLO", 0.90, "Ethical Boundary Enforcement & Sandboxing"),
+            ExecutiveAgent("CISO", 0.95, "Immune Synapse Fidelity & TRiSM Governance")
         ]
         self.quorum_thresholds = {
             "investment": 0.67,

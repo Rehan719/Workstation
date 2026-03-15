@@ -29,9 +29,9 @@ class UVIAP:
         self.learning_reflection: List[Dict[str, Any]] = []
 
     async def run_full_pipeline(self, repo_url: Optional[str] = None, modes: List[str] = None):
-        """Executes all stages of the UVIAP v129.0 (Article III.A)."""
+        """Executes all stages of the UVIAP v130.0 (Article III.A/V)."""
         modes = modes or ["full"]
-        logger.info(f"UVIAP: Starting Full Evolution Pipeline v129.0 (Target: {repo_url or 'Self'}, Modes: {modes})")
+        logger.info(f"UVIAP: Starting Full Evolution Pipeline v130.0 (Target: {repo_url or 'Self'}, Modes: {modes})")
 
         # Stage 0: Multi-Source Ingestion (v125.0 / v129.0 Additions)
         external_data = []
@@ -137,13 +137,14 @@ class UVIAP:
             logger.error(f"UVIAP: Pruning trigger failed: {e}")
 
         # UEG Provenance Logging
-        self.ueg.add_audit_log("UVIAP", "Full Evolution Pipeline v125.0 execution complete.", {
+        self.ueg.add_audit_log("UVIAP", "Full Evolution Pipeline v130.0 execution complete.", {
             "target": repo_url or "Self",
             "blueprints_generated": len(blueprints),
-            "external_sources_ingested": len(external_data)
+            "external_sources_ingested": len(external_data),
+            "desire_alignment": "ACTIVE"
         })
 
-        logger.info("UVIAP: Full Evolution Pipeline v125.0 Completed.")
+        logger.info("UVIAP: Full Evolution Pipeline v130.0 Completed.")
         return blueprints
 
     def _recognize_external_patterns(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
