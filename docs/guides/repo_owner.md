@@ -5,7 +5,7 @@ The Virtual Sovereign Business is an autonomous digital enterprise guided by a D
 
 ## Governance Structures
 - **Entity**: Supreme Constitutional Guardian.
-- **AI CEO**: Executive leadership.
+- **VSB AI CEO**: Executive leadership.
 - **C-Suite**: CSO, CTO, CPO, CFO, CMO, COO.
 - **Centres of Excellence**: Strategy, Forecasting, Policy, Infrastructure, Product.
 

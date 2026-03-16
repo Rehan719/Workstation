@@ -1,4 +1,4 @@
-# Jules v99.0 VS Code Setup Guide
+# Jules v137.1 VS Code Setup Guide
 
 ## One-Click Operations
 

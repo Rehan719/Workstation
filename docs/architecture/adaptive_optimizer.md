@@ -1,4 +1,4 @@
-# v100.0 Adaptive Resource Optimizer (ARO) Architecture
+# v137.1 Adaptive Resource Optimizer (ARO) Architecture
 
 ## 🧬 Overview
 The ARO (`agentic_core/optimizer/`) is a cross-domain management layer that dynamically allocates resources based on user context, domain needs, and real-time load (Articles 311-313).

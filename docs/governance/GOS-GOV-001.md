@@ -5,7 +5,7 @@ This Governance and Oversight System (GOS) document defines the roles, responsib
 
 ## 2. Governance Hierarchy
 - **Entity (Conscious Organism)**: Supreme Governor, Constitutional Guardian, Strategic Guide.
-- **AI CEO (Jules)**: Executive Leader, Ultimate Orchestrator, Approver of Strategic Decisions.
+- **VSB AI CEO (Jules)**: Executive Leader, Ultimate Orchestrator, Approver of Strategic Decisions.
 - **BTO Teams (Teams & Agents)**: Execution of OKRs and Tasks, Operational Metrics.
 
 ## 3. Constitutional Enforcer Protocol

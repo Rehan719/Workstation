@@ -17,5 +17,5 @@
 - Objective: Maintain Global PAS >= 0.95.
 
 **Inter-CoE Dependencies**:
-- AI CEO (for veto escalations).
+- VSB AI CEO (for veto escalations).
 - All other CoEs (for policy compliance).

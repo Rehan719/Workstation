@@ -1,4 +1,4 @@
-# Jules AI: Creator Persona Guide (v99.0)
+# Jules AI: Creator Persona Guide (v137.1)
 
 Welcome, Creator. You are the visionary behind the applications. Jules AI provides a conversational interface to transform your ideas into production-ready digital organisms.
 

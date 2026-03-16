@@ -1,7 +1,7 @@
-# Jules AI v99.0.0 Deployment Guide
+# Jules AI v137.1.0 Deployment Guide
 
 ## ⚜️ Deployment Topology
-The v99.0.0 Workstation supports flexible deployment models:
+The v137.1.0 Workstation supports flexible deployment models:
 - **Cloud**: Automated provisioning for AWS (EKS), GCP (GKE), Azure (AKS).
 - **On-Premise**: Docker Compose or Kubernetes (Helm charts).
 - **Hybrid**: Strategic distribution of Endoderm (Infrastructure) and Ectoderm (UI) layers.

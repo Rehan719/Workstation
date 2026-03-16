@@ -1,4 +1,4 @@
-# v100.0 Environmental Simulator Engine (ESE) Architecture
+# v137.1 Environmental Simulator Engine (ESE) Architecture
 
 ## 🧬 Overview
 The ESE (`agentic_core/simulation/`) is the foundational engine for creating and managing **Digital Twins** (Articles 306-310). It provides high-fidelity simulations for physical and social systems across all 46 specialized reactors.

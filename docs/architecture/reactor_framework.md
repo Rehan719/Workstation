@@ -1,4 +1,4 @@
-# Architectural Blueprint: Digital Reactor Framework (v99.0)
+# Architectural Blueprint: Digital Reactor Framework (v137.1)
 
 ## 1. Overview
 A Digital Reactor is a three-part sovereign environment for domain-specific evolution.

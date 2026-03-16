@@ -1,54 +1,56 @@
-# Jules AI v99.0: User Guide for Learners & Seekers
+# Workstation User Guide – v137.1
 
-Welcome to your **Digital Sanctuary**. This guide is designed to help you navigate and utilize the AI-Driven Quranic Education Platform with ease, regardless of your technical background.
+Welcome to the **Workstation**, a sentient digital organism designed for sovereign intelligence. This guide helps you navigate the ecosystem across its five primary domains: **Scholarship, Enterprise, Governance, Personal, and Development.**
 
 ## 🌟 Getting Started
 
-### 1. Registration & Track Selection
-When you first log in, the platform will ask you to select a track:
-- **Muslim Track**: Focuses on Tajwid, Hifz (memorization), and spiritual growth (Tazkiyah).
-- **Seeker Track**: Tailored for those exploring Islam, focusing on foundational knowledge and introductory modules.
+### 1. Unified Access
+The Workstation is accessible from any device with consistent synchronization:
+- **Web App**: [app.workstation.ai](https://app.workstation.ai) – Full control and dashboards.
+- **Website**: [workstation.ai](https://workstation.ai) – Public documentation and community.
+- **Mobile**: Available on iOS and Android with biometric security.
 
-### 2. Your Spiritual Dashboard
-Your dashboard is the heart of your experience. Here you can see:
-- **Tazkiyah Score**: A measure of your spiritual purification progress.
-- **Memorization Streak**: How many consecutive days you have engaged with the Quran.
-- **Recommended Lessons**: AI-suggested content based on your current level and goals.
+### 2. Authentication
+Log in securely using **GitHub OAuth** or **Google/Gmail**. Multi-factor authentication (MFA) is recommended for production environments.
 
-## 📖 Key Features
+### 3. Your Realm Selection
+When you first log in, select the realm that matches your objective:
+- **Scholar Realm**: Focused on QEP (Quranic Education Platform), Tajwid coaching, and academic research.
+- **Enterprise Realm**: Manage BTO products, VSB (Virtual Sovereign Business) assets, and commercial reactors.
+- **Governance Realm**: Participate in constitutional voting and view system transparency metrics.
+- **Personal Realm**: Your private digital twin, personal files, and life-management tools.
+- **Developer Realm**: Build agents, extend CoEs, and access the Sandbox.
 
-### 🎙️ AI Tajwīd Coach
-The coach provides real-time feedback on your recitation.
-- **How to use**: Select a verse, click 'Record', and recite.
-- **Feedback**: The AI will highlight areas for improvement in pronunciation (Makharij) and rules (Ahkam).
+## 🛠️ Key Ecosystem Features
 
-### 🧠 Memorization Suite
-Uses a scientific "Spaced Repetition" system to help you memorize the Quran efficiently.
-- **Track Progress**: View your 114-surah progress map.
-- **Review Alerts**: The system will remind you exactly when to review a verse to ensure it stays in your long-term memory.
+### 🧠 VSB AI CEO (Jules)
+Jules is your autonomous executive partner. You can issue high-level directives, and Jules will orchestrate the C-suite and CoEs to execute them within constitutional guardrails.
 
-### 👓 AR/VR Immersive Learning
-Experience Quranic history and Tajwid rules in 3D.
-- **Visual Tajwid**: See 3D mouth articulations to master difficult sounds.
-- **Historical Tours**: Explore virtual recreations of sacred sites.
+### 🎙️ AI Tajwid Coach (Scholar Realm)
+A high-fidelity Quranic Arabic analysis service providing real-time feedback on recitation accuracy using the `MorphologyService`.
 
-## 🛡️ Sharia & Scholar Oversight
-Rest assured that all content is vetted.
-- **Scholar Veto**: A board of qualified scholars has formal veto power over all doctrinal content.
-- **Authenticity**: Every module carries a verified "isnad" (chain of transmission).
+### ⚙️ BTO Product Management (Enterprise Realm)
+Assembles specialized solutions on-demand. Configure and deploy reactors for molecular communication, nanophotonics, or automated market analysis.
 
-## 🌍 Accessibility & Support
+### 🧪 The Sandbox
+*Introduced in v137.1.* A secure environment to test new configurations, agent behaviors, and BTO products without affecting your production environment.
+- **Learn more**: [Sandbox Guide](docs/guides/sandbox.md)
 
-### Low-Bandwidth Mode
-If you are on a slow connection, the platform will automatically switch to low-bandwidth mode, prioritizing audio and text over heavy visuals.
+## ⚖️ Governance & Sovereignty
 
-### Offline Use
-You can download lessons to your device and study without an internet connection. Your progress will sync automatically once you are back online.
+### Constitutional Guardrails
+The Workstation operates under the **Wyoming DAO** framework with **Articles 1-1095** ensuring ethical alignment and sovereign control.
+- **Transparency**: Every executive decision is logged in the **Unified Event Graph (UEG)** for auditability.
+
+## 🌍 Resilience & Support
+
+### Biomimetic Resilience
+The system uses "Mycelial" and "Ant-Colony" logic to self-heal and adapt to network disruptions or resource constraints.
 
 ### Community & Help
-- **Halaqat (Study Circles)**: Join live video sessions with teachers and fellow learners.
-- **Feedback**: Use the in-app feedback form to report issues or suggest new features.
-- **Support**: Join our [Community Forum](https://github.com/Rehan719/Workstation/discussions) for help.
+- **Discord**: [Join our community](https://discord.gg/workstation)
+- **Documentation**: [Full Docs Index](docs/README.md)
+- **Support**: [support@workstation.ai](mailto:support@workstation.ai)
 
 ---
-*May your journey of knowledge be blessed and fruitful.*
+*Codified via Grand Synthesis Engine. v137.1 – Sentient Civilization Epoch.*

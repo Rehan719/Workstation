@@ -10,16 +10,16 @@
 ## 2. Stated Purpose (Operational-Commercial Mission)
 *"To be the ultimate platform for human productivity, profitability, and high‑value utility – especially in scholarship and enterprise – while also empowering individuals in their personal, civil, and religious affairs."*
 
-**Owner:** AI CEO
-**Authority:** Quarterly Review (Requires AI CEO + Entity Approval)
-**Governance:** AI CEO Oversight, C-Suite Coordination
+**Owner:** VSB AI CEO
+**Authority:** Quarterly Review (Requires VSB AI CEO + Entity Approval)
+**Governance:** VSB AI CEO Oversight, C-Suite Coordination
 
 ## 3. Purpose Hierarchy
 
 | Level | Component | Description | Governance |
 |-------|-----------|-------------|------------|
 | 1 | **Spiritual‑Ethical Foundation** | Highest level. Any action violating this is automatically invalid. | Entity veto, Constitutional Enforcer |
-| 2 | **Operational‑Commercial Mission** | Guiding framework for all value‑creating activities. | AI CEO, C-Suite oversight |
+| 2 | **Operational‑Commercial Mission** | Guiding framework for all value‑creating activities. | VSB AI CEO, C-Suite oversight |
 | 3 | **Strategic Aims** | Long‑term goals (e.g., "Leading platform for Islamic Scholarship"). | Centre for Strategic Excellence |
 | 4 | **Quarterly OKRs** | Specific, measurable objectives implementing aims. | C-Suite, CoEs |
 | 5 | **Operational Tasks** | Lowest level, directly contributing to OKRs. | BTO teams, agents |

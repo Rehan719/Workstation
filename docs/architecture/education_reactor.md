@@ -1,4 +1,4 @@
-# Architectural Blueprint: Education Reactor (v99.0)
+# Architectural Blueprint: Education Reactor (v137.1)
 
 ## 1. Scope
 Serves K-12 and Higher-Ed for all subjects, focusing on teacher empowerment and student mastery.
@@ -11,4 +11,4 @@ Serves K-12 and Higher-Ed for all subjects, focusing on teacher empowerment and 
 
 ## 3. Implementation
 *   **Engine:** Uses the Petri Dish to simulate classroom performance under different curriculum variants.
-*   **AI CEO:** Manages district-level onboarding and teacher-tier subscriptions.
+*   **VSB AI CEO:** Manages district-level onboarding and teacher-tier subscriptions.

@@ -1,6 +1,6 @@
 # JULES AI Enterprise Edition: Pricing & Licensing
 
-Jules AI v120.0 offers a tiered commercial model designed to empower both individual sovereign businesses and large-scale enterprises.
+Jules AI v137.1 offers a tiered commercial model designed to empower both individual sovereign businesses and large-scale enterprises.
 
 ## 💎 Licensing Tiers
 

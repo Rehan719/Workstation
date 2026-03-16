@@ -1,4 +1,4 @@
-# v100.0 Adaptive Resource Optimizer (ARO) & Dynamic Resource Fabric (DRAD) Architecture
+# v137.1 Adaptive Resource Optimizer (ARO) & Dynamic Resource Fabric (DRAD) Architecture
 
 ## 🧬 Overview
 The ARO (`agentic_core/optimizer/`) is an intelligent management layer that dynamically allocates resources based on user context, domain needs, and real-time load. The DRAD (`fabric.py`) is the underlying fabric that treats every resource as a composable, interchangeable building block.

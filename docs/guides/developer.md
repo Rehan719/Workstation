@@ -11,4 +11,4 @@ The Workstation provides REST and GraphQL APIs for all core services.
 ## Contribution Workflow
 1. Fork the repository.
 2. Implement features in line with Constitutional Mandates.
-3. Submit PR for AI CEO and Entity review.
+3. Submit PR for VSB AI CEO and Entity review.

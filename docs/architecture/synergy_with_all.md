@@ -1,7 +1,7 @@
-# v100.0 Synergy Orchestrator & Cross-Domain Synergy Architecture
+# v137.1 Synergy Orchestrator & Cross-Domain Synergy Architecture
 
 ## 🧬 Overview
-The Synergy Orchestrator (`agentic_core/orchestrator/synergy.py`) is the strategic brain of the v100.0 release. It integrates the four pillars (ESE, ARO, BTO, DRAD) to coordinate **Virtual Task Forces (VTF)** and **Mega-Twins** across 50+ specialized sub-reactors (Articles 309/315/316).
+The Synergy Orchestrator (`agentic_core/orchestrator/synergy.py`) is the strategic brain of the v137.1 release. It integrates the four pillars (ESE, ARO, BTO, DRAD) to coordinate **Virtual Task Forces (VTF)** and **Mega-Twins** across 50+ specialized sub-reactors (Articles 309/315/316).
 
 ## 🏛️ Core Components
 1. **Goal Decomposer**: Parses complex, multi-domain user intents into a DAG (Directed Acyclic Graph) of sub-tasks.
@@ -31,4 +31,4 @@ A VTF is a transient team of specialized agents assembled for a specific mission
 ## 🛡️ Governance & Safety
 - **Survival Instinct Hierarchy (SIH)**: The orchestrator is subject to real-time preemption by the Immune Layer (Article 47).
 - **Truth-Infused Simulation**: All cross-domain simulations must be vetted by the `TruthValidator` (Article 313).
-- **AI CEO Oversight**: Ultimate authority over all resource assembly and disassembly (Article 319).
+- **VSB AI CEO Oversight**: Ultimate authority over all resource assembly and disassembly (Article 319).

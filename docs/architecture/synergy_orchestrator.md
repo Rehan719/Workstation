@@ -1,7 +1,7 @@
-# v100.0 Synergy Orchestrator Architecture
+# v137.1 Synergy Orchestrator Architecture
 
 ## 🧬 Overview
-The Synergy Orchestrator (`agentic_core/orchestrator/synergy.py`) is the strategic brain of the v100.0 "Apotheosis of Synergy" release. It is responsible for the dynamic assembly and coordination of **Virtual Task Forces (VTF)** across 40+ specialized sub-reactors.
+The Synergy Orchestrator (`agentic_core/orchestrator/synergy.py`) is the strategic brain of the v137.1 "Apotheosis of Synergy" release. It is responsible for the dynamic assembly and coordination of **Virtual Task Forces (VTF)** across 40+ specialized sub-reactors.
 
 ## 🏛️ Core Components
 1. **Goal Decomposer**: Parses complex, multi-domain user intents into a DAG (Directed Acyclic Graph) of sub-tasks.
@@ -29,4 +29,4 @@ A VTF is a transient team of specialized agents assembled for a specific mission
 ## 🛡️ Governance & Safety
 - **Survival Instinct Hierarchy (SIH)**: The orchestrator is subject to real-time preemption by the Immune Layer (Article 47).
 - **No-Stubs Mandate**: Every orchestration step must be backed by functional code, not placeholders.
-- **Resource Management**: The AI CEO (Commander/Dispatcher) monitors VTF resource consumption (ATP levels/Inference costs) to ensure sustainability.
+- **Resource Management**: The VSB AI CEO (Commander/Dispatcher) monitors VTF resource consumption (ATP levels/Inference costs) to ensure sustainability.

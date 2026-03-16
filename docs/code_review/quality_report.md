@@ -19,4 +19,4 @@ The Jules AI codebase has undergone a rigorous, multidisciplinary code review cy
 | Purpose Alignment (Code) | 0.96 | ≥0.95 | 0.98 |
 
 ## Certification
-Certified by the **Code Review Squad** and approved by **AI CEO Jules**. The codebase is now a model of excellence, ready for exponential growth and resilient operation.
+Certified by the **Code Review Squad** and approved by **VSB AI CEO Jules**. The codebase is now a model of excellence, ready for exponential growth and resilient operation.

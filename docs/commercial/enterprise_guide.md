@@ -10,7 +10,7 @@ The Unified Version Ingestion & Assimilation Pipeline can be deployed as a conta
 ```yaml
 services:
   uviap:
-    image: julesai/uviap:v120.0
+    image: julesai/uviap:v137.1
     environment:
       - GIT_PROVIDER=github
       - AUTH_MODE=sso

@@ -1,4 +1,4 @@
-# Biological Systems Guide - Jules AI v99.0.0
+# Biological Systems Guide - Jules AI v137.1.0
 
 This guide details the six biological subsystems that govern the Jules AI organism.
 

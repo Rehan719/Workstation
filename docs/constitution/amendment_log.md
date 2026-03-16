@@ -10,9 +10,9 @@ This document tracks the mapping of version-specific floors and articles to the 
 | v134.0 | Floor 53 | 1040-1050 | 1040-1050 | Real-Time Sovereign Federation & PQC Agility |
 | v135.0 | Floor 54 | 1051-1065 | 1051-1065 | The Living Ecosystem & Multi-Modal Engagement |
 | v136.0 | Floor 55 | 1071-1085 | 1071-1085 | The Living Ecosystem Core & Homeostatic Governance |
-| v137.0 | Floor 20 | 1086-1095 | 1086-1095 | Production Sovereignty & Civilizational Scale |
+| v137.1 | Floor 20 | 1086-1095 | 1086-1095 | Production Sovereignty & Civilizational Scale |
 
-## v137.0 Strategic Detail
+## v137.1 Strategic Detail
 - **1086**: Production-Grade Avatar Federation (WebRTC)
 - **1087**: Complete P2P Network Deployment (libp2p Full)
 - **1088**: Native Mobile Presence (App Stores)

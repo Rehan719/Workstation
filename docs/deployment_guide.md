@@ -1,4 +1,4 @@
-# Jules AI: Deployment Guide (v99.0)
+# Jules AI: Deployment Guide (v137.1)
 
 This guide provides instructions for deploying the Jules AI Workstation in production environments.
 

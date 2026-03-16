@@ -1,4 +1,4 @@
-# v100.0 Biomimetic Team Orchestrator (BTO) Architecture
+# v137.1 Biomimetic Team Orchestrator (BTO) Architecture
 
 ## 🧬 Overview
 The BTO (`agentic_core/teams/`) models human-like team dynamics for **Virtual Task Forces** (VTFs). It enables emergent collaboration and collective intelligence (Articles 314-317).
@@ -8,7 +8,7 @@ The BTO (`agentic_core/teams/`) models human-like team dynamics for **Virtual Ta
 2. **Role Negotiation Protocol** (`negotiation.py`): Facilitates decentralized responsibility assignment among specialized agents.
 3. **Collective Memory** (`memory.py`): Propagates successful strategies and "societal learnings" via the knowledge graph.
 4. **Emergent Behavior Engine** (`emergent.py`): Optimizes team heuristics based on environmental feedback.
-5. **Conflict Resolution Module** (`conflict.py`): Resolves intra-team disagreements via weighted consensus or AI CEO arbitration.
+5. **Conflict Resolution Module** (`conflict.py`): Resolves intra-team disagreements via weighted consensus or VSB AI CEO arbitration.
 6. **Team Formation Optimizer** (`formation.py`): Dynamically matches agent capabilities to task requirements.
 
 ## 🧱 VTF Characteristics

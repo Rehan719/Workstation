@@ -1,4 +1,4 @@
-# Jules AI: Admin Persona Guide (v99.0)
+# Jules AI: Admin Persona Guide (v137.1)
 
 Administrator, you manage the governance, deployment, and operational health of the Workstation.
 
