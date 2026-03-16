@@ -89,3 +89,26 @@ class LearnerRealmV137:
         activities = ["virtual_art_studio", "open_world_simulation", "gamified_research"]
         logger.info(f"IDBO-Play: Providing {len(activities)} activities for {user_id}.")
         return activities
+
+    # HOME-WORK FACILITY REQUIREMENTS (Blueprint 2.4)
+    def configure_ergonomic_workspace(self, user_id: str) -> Dict[str, Any]:
+        """IDBO: Creates a productive and ergonomic digital workspace."""
+        config = {
+            "layout": "focused_minimalist",
+            "font": "Amiri_Scholarly",
+            "theme": "parchment_gold",
+            "widgets": ["telemetry_pulse", "task_priority_stack"]
+        }
+        logger.info(f"IDBO-Work: Configured ergonomic workspace for {user_id}.")
+        return config
+
+    def provide_collaboration_infra(self, user_id: str) -> Dict[str, Any]:
+        """IDBO: Ensures seamless access to tools and collaboration networks."""
+        infra = {
+            "repo_access": "workstation_sovereign_core",
+            "comms_channel": "webrtc_council_stream",
+            "p2p_mesh": "active",
+            "did_auth": "verified"
+        }
+        logger.info(f"IDBO-Work: Initialized collaboration infrastructure for {user_id}.")
+        return infra

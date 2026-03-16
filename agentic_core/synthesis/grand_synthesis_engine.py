@@ -36,6 +36,7 @@ class QuadEngineReactor:
     """
     PART 4: QUAD ENGINE REACTOR & INCUBATOR.
     Dynamically generates new pipelines and modes based on incoming knowledge.
+    Refined for v137.0 with structured Knowledge Graph (Directive 2.2).
     """
     def __init__(self):
         self.discovery_engine = DiscoveryEngine()
@@ -43,13 +44,22 @@ class QuadEngineReactor:
         self.synthesis_engine = SynthesisEngine()
         self.deployment_engine = DeploymentEngine()
 
+        # ARTICLE 1072: Knowledge Graph for civilizational scale
+        self.knowledge_graph = {
+            "pipelines": [],
+            "modes": [],
+            "resources": [],
+            "platforms": ["microsoft", "google", "amazon", "meta", "apple", "nvidia", "tesla"]
+        }
+
     def run_quad_cycle(self, knowledge_input: Any):
         """Executes a full cycle: Discover -> Ingest -> Synthesize -> Deploy."""
         # 1. Discover: Scans for implicit pipeline descriptions
         pipeline_fragments = self.discovery_engine.scan_for_pipelines(knowledge_input)
 
-        # 2. Ingest: Extracts structures using NLP
+        # 2. Ingest: Extracts structures using NLP and populates Graph
         blueprints = self.ingestion_engine.extract_blueprints(pipeline_fragments)
+        self._update_knowledge_graph(blueprints)
 
         # 3. Synthesize: Meta-pipeline synthesis
         custom_pipelines = self.synthesis_engine.meta_synthesis(blueprints)
@@ -58,6 +68,15 @@ class QuadEngineReactor:
         deployment_packages = self.deployment_engine.deploy_custom_environments(custom_pipelines)
 
         return deployment_packages
+
+    def _update_knowledge_graph(self, blueprints: List[Dict[str, Any]]):
+        """Directive 2.2: Updates Knowledge Graph nodes and edges."""
+        for bp in blueprints:
+            self.knowledge_graph["pipelines"].append(bp)
+            # Link to platform if mentioned
+            for platform in self.knowledge_graph["platforms"]:
+                if platform in str(bp).lower():
+                    self.knowledge_graph["resources"].append({"type": "platform_bridge", "target": platform})
 
 class DiscoveryEngine:
     """PART 4: Scans for implicit pipeline descriptions in data streams."""
