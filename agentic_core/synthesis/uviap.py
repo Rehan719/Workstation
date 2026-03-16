@@ -157,6 +157,33 @@ class UVIAP:
         logger.info("UVIAP: Full Evolution Pipeline v130.0 Completed.")
         return blueprints
 
+    def _extract_pipelines(self, text: str) -> List[str]:
+        """PART 1: Jules Ingestion Prompt - Pipeline Extraction."""
+        phases = []
+        phase_keywords = ["discover", "ingest", "assimilate", "reconfigure", "recombine",
+                          "deploy", "evaluate", "repeat", "certify", "optimize", "measure"]
+        for kw in phase_keywords:
+            if kw in text.lower():
+                phases.append(kw)
+        return phases
+
+    def _extract_modes(self, text: str) -> List[str]:
+        """PART 1: Jules Ingestion Prompt - Mode Extraction."""
+        mode_map = {
+            "explorer": ["beginner", "non-technical", "confidence"],
+            "hobbyist": ["personal project", "experiment", "api docs"],
+            "professional": ["enterprise", "roi", "production", "scale"],
+            "educator": ["teach", "curriculum", "classroom"],
+            "researcher": ["publish", "papers", "novel"],
+            "decision-maker": ["vendor", "invest", "compliance"],
+            "community-builder": ["share", "discuss", "forum"]
+        }
+        found_modes = []
+        for mode, keywords in mode_map.items():
+            if any(k in text.lower() for k in keywords):
+                found_modes.append(mode)
+        return found_modes
+
     def _recognize_external_patterns(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """v125.0: Semantic Pattern Recognition for external ingested data."""
         patterns = []
