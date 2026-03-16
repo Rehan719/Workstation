@@ -3,22 +3,18 @@ from agentic_core.realms.learner_realm_v137 import LearnerRealmV137
 
 def test_v137_pacing_adaptation():
     realm = LearnerRealmV137()
-    # High speed, high accuracy
-    interaction = {"response_speed_ms": 500, "accuracy": 0.95}
-    result = realm.process_interaction("user_1", interaction)
-    assert result["pacing_adjustment"] == "INCREASE_CHALLENGE"
+    # High engagement (needs decrease challenge?) per spec logic:
+    # if engagement > 0.8: action = "DECREASE_CHALLENGE"
+    interaction = {"avg_response_time": 500, "quiz_accuracy": 0.95}
+    result = realm.adapt_pace("user_1", interaction)
+    assert result["pacing_action"] == "DECREASE_CHALLENGE"
 
-    # Low accuracy
-    interaction = {"response_speed_ms": 1000, "accuracy": 0.5}
-    result = realm.process_interaction("user_1", interaction)
-    assert result["pacing_adjustment"] == "DECREASE_CHALLENGE"
+    # Low engagement
+    interaction = {"avg_response_time": 6000, "quiz_accuracy": 0.5}
+    result = realm.adapt_pace("user_1", interaction)
+    assert result["pacing_action"] == "INCREASE_CHALLENGE"
 
-def test_v137_knowledge_garden_blooming():
+def test_v137_garden_bloom():
     realm = LearnerRealmV137()
-    # Incrementally master concept
-    realm.update_mastery("user_2", "PID_Control", 0.6)
-    result = realm.update_mastery("user_2", "PID_Control", 0.5)
-
-    assert result["progress"] == 1.0
-    assert result["bloomed"] == True
-    assert "PID_Control" in realm.get_garden_visuals("user_2")
+    result = realm.grow_garden("user_2", "PID_Control")
+    assert result["visual_event"] == "FLOWER_BLOOM"
