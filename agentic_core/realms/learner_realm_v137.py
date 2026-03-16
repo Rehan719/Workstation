@@ -66,3 +66,49 @@ class LearnerRealmV137:
             "garden_update": True,
             "v137_ready": True
         }
+
+    # IDBO NEEDS FRAMEWORK (Blueprint 2.4)
+    def calculate_contentment(self, user_id: str) -> float:
+        """IDBO: Emotional state monitoring and satisfaction scoring."""
+        # Mock calculation based on goal achievement and comfort
+        score = 0.95
+        logger.info(f"IDBO-Contentment: {user_id} score is {score}")
+        return score
+
+    def initiate_rest_protocol(self, user_id: str):
+        """IDBO: Ambient adjustment and notification management."""
+        logger.warning(f"IDBO-Rest: Restricting notifications and dimming UI for {user_id}.")
+        return {
+            "ambient": "low_light",
+            "notifications": "silenced",
+            "resource_allocation": "reduced"
+        }
+
+    def provide_play_activities(self, user_id: str) -> List[str]:
+        """IDBO: Creative expression and exploratory spaces."""
+        activities = ["virtual_art_studio", "open_world_simulation", "gamified_research"]
+        logger.info(f"IDBO-Play: Providing {len(activities)} activities for {user_id}.")
+        return activities
+
+    # HOME-WORK FACILITY REQUIREMENTS (Blueprint 2.4)
+    def configure_ergonomic_workspace(self, user_id: str) -> Dict[str, Any]:
+        """IDBO: Creates a productive and ergonomic digital workspace."""
+        config = {
+            "layout": "focused_minimalist",
+            "font": "Amiri_Scholarly",
+            "theme": "parchment_gold",
+            "widgets": ["telemetry_pulse", "task_priority_stack"]
+        }
+        logger.info(f"IDBO-Work: Configured ergonomic workspace for {user_id}.")
+        return config
+
+    def provide_collaboration_infra(self, user_id: str) -> Dict[str, Any]:
+        """IDBO: Ensures seamless access to tools and collaboration networks."""
+        infra = {
+            "repo_access": "workstation_sovereign_core",
+            "comms_channel": "webrtc_council_stream",
+            "p2p_mesh": "active",
+            "did_auth": "verified"
+        }
+        logger.info(f"IDBO-Work: Initialized collaboration infrastructure for {user_id}.")
+        return infra

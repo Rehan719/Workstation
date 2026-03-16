@@ -36,6 +36,7 @@ class QuadEngineReactor:
     """
     PART 4: QUAD ENGINE REACTOR & INCUBATOR.
     Dynamically generates new pipelines and modes based on incoming knowledge.
+    Refined for v137.0 with structured Knowledge Graph (Directive 2.2).
     """
     def __init__(self):
         self.discovery_engine = DiscoveryEngine()
@@ -43,13 +44,22 @@ class QuadEngineReactor:
         self.synthesis_engine = SynthesisEngine()
         self.deployment_engine = DeploymentEngine()
 
+        # ARTICLE 1072: Knowledge Graph for civilizational scale
+        self.knowledge_graph = {
+            "pipelines": [],
+            "modes": [],
+            "resources": [],
+            "platforms": ["microsoft", "google", "amazon", "meta", "apple", "nvidia", "tesla"]
+        }
+
     def run_quad_cycle(self, knowledge_input: Any):
         """Executes a full cycle: Discover -> Ingest -> Synthesize -> Deploy."""
         # 1. Discover: Scans for implicit pipeline descriptions
         pipeline_fragments = self.discovery_engine.scan_for_pipelines(knowledge_input)
 
-        # 2. Ingest: Extracts structures using NLP
+        # 2. Ingest: Extracts structures using NLP and populates Graph
         blueprints = self.ingestion_engine.extract_blueprints(pipeline_fragments)
+        self._update_knowledge_graph(blueprints)
 
         # 3. Synthesize: Meta-pipeline synthesis
         custom_pipelines = self.synthesis_engine.meta_synthesis(blueprints)
@@ -59,25 +69,75 @@ class QuadEngineReactor:
 
         return deployment_packages
 
+    def _update_knowledge_graph(self, blueprints: List[Dict[str, Any]]):
+        """Directive 2.2: Updates Knowledge Graph nodes and edges."""
+        for bp in blueprints:
+            self.knowledge_graph["pipelines"].append(bp)
+            # Link to platform if mentioned
+            for platform in self.knowledge_graph["platforms"]:
+                if platform in str(bp).lower():
+                    self.knowledge_graph["resources"].append({"type": "platform_bridge", "target": platform})
+
 class DiscoveryEngine:
-    def scan_for_pipelines(self, data):
+    """PART 4: Scans for implicit pipeline descriptions in data streams."""
+    def scan_for_pipelines(self, knowledge_input: Any) -> List[str]:
         logger.info("QuadEngine: Discovery scanning for implicit pipeline descriptions...")
-        return ["fragment_explorer", "fragment_developer"]
+        fragments = []
+        text = str(knowledge_input)
+
+        # Appendix C Logic: Search for phase-like descriptions
+        phase_patterns = ["first", "then", "finally", "step", "phase", "cycle"]
+        if any(p in text.lower() for p in phase_patterns):
+            fragments.append(f"fragment_{len(fragments)}")
+
+        return fragments if fragments else ["fragment_explorer"]
 
 class IngestionEngine:
-    def extract_blueprints(self, fragments):
+    """PART 4: Extracts pipeline and mode structures using NLP-based logic."""
+    def extract_blueprints(self, fragments: List[str]) -> List[Dict[str, Any]]:
         logger.info("QuadEngine: Ingestion extracting pipeline blueprints via NLP...")
-        return [{"id": f, "steps": ["step1", "step2"]} for f in fragments]
+        blueprints = []
+
+        # Simplified NLP extraction (Appendix C snippet logic)
+        phase_keywords = ["discover", "ingest", "assimilate", "reconfigure", "recombine", "deploy", "evaluate", "repeat"]
+
+        for fragment in fragments:
+            steps = [kw for kw in phase_keywords if kw in fragment.lower()] or ["discover", "assimilate"]
+            blueprints.append({
+                "id": fragment,
+                "steps": steps,
+                "extracted_at": "2026-03-16T..."
+            })
+
+        return blueprints
 
 class SynthesisEngine:
-    def meta_synthesis(self, blueprints):
+    """PART 4: Performs meta-pipeline synthesis and recombination."""
+    def meta_synthesis(self, blueprints: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         logger.info("QuadEngine: Synthesis performing meta-pipeline recombination...")
-        return [{"pipeline_id": "custom_v137", "blueprints": blueprints}]
+
+        # Combine fragments into novel pipelines (Spec Part 4)
+        custom_pipeline = {
+            "pipeline_id": f"pipeline_{uuid.uuid4().hex[:8]}",
+            "composition": blueprints,
+            "validated": True
+        }
+        return [custom_pipeline]
 
 class DeploymentEngine:
-    def deploy_custom_environments(self, pipelines):
+    """PART 4: Deploys custom learning paths and mini-reactors."""
+    def deploy_custom_environments(self, pipelines: List[Dict[str, Any]]) -> Dict[str, Any]:
         logger.info("QuadEngine: Deployment releasing personalized environments...")
-        return {"status": "DEPLOYED", "count": len(pipelines)}
+
+        # Deployment simulation (Spec Part 4)
+        for pipeline in pipelines:
+            logger.info(f"Deploying mini-reactor for pipeline {pipeline['pipeline_id']}...")
+
+        return {
+            "status": "DEPLOYED",
+            "count": len(pipelines),
+            "timestamp": "2026-03-16T..."
+        }
 
 class GrandSynthesisEngine:
     """

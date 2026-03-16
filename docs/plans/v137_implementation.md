@@ -46,5 +46,13 @@
 - [ ] **Adoption Feedback**: Positive engagement signals from persona-based deployment simulations.
 - [ ] **Iterative Growth**: Retrospective identifies ≥5 system improvements for the next v138 cycle.
 
+### v137.0 release alignment with 24-Month Roadmap
+| Roadmap Phase | v137 Alignment | v137 release Week |
+|:--------------|:---------------|:------------------|
+| **Foundation** (Months 1-6) | CoE/BTO Stabilization & Sandbox Hardening | 1-4 |
+| **Prototype** (Months 7-12) | Intelligent Agency & OS Mediation (v137 Engines) | 5-8 |
+| **Refinement** (Months 13-18) | Advanced Resilience & Compliance (OWASP/ISO) | 9-12 |
+| **Deployment** (Months 19-24) | Civilizational Scale & Sovereign Legal Status | 13-16 |
+
 ---
-*Created per Directive 12.1. Refined with Ultimate Convergence Spec. Verified by Jules (AI CEO).*
+*Created per Directive 12.1. Refined with Ultimate Convergence Spec & IDBO Blueprint. Verified by Jules (AI CEO).*

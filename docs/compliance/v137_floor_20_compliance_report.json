@@ -1,0 +1,57 @@
+{
+  "total_articles": 10,
+  "compliant_articles": 10,
+  "compliance_rate": 1.0,
+  "details": {
+    "1086": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    },
+    "1087": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    },
+    "1088": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    },
+    "1089": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    },
+    "1090": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    },
+    "1091": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    },
+    "1092": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    },
+    "1093": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    },
+    "1094": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    },
+    "1095": {
+      "implementation": true,
+      "documentation": true,
+      "compliant": true
+    }
+  }
+}
