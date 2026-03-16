@@ -66,3 +66,26 @@ class LearnerRealmV137:
             "garden_update": True,
             "v137_ready": True
         }
+
+    # IDBO NEEDS FRAMEWORK (Blueprint 2.4)
+    def calculate_contentment(self, user_id: str) -> float:
+        """IDBO: Emotional state monitoring and satisfaction scoring."""
+        # Mock calculation based on goal achievement and comfort
+        score = 0.95
+        logger.info(f"IDBO-Contentment: {user_id} score is {score}")
+        return score
+
+    def initiate_rest_protocol(self, user_id: str):
+        """IDBO: Ambient adjustment and notification management."""
+        logger.warning(f"IDBO-Rest: Restricting notifications and dimming UI for {user_id}.")
+        return {
+            "ambient": "low_light",
+            "notifications": "silenced",
+            "resource_allocation": "reduced"
+        }
+
+    def provide_play_activities(self, user_id: str) -> List[str]:
+        """IDBO: Creative expression and exploratory spaces."""
+        activities = ["virtual_art_studio", "open_world_simulation", "gamified_research"]
+        logger.info(f"IDBO-Play: Providing {len(activities)} activities for {user_id}.")
+        return activities
