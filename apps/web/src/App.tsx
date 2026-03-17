@@ -11,6 +11,7 @@ import { Extrospection } from './pages/cognitive/Extrospection';
 import { Evolution } from './pages/cognitive/Evolution';
 import { LearningDashboard } from './pages/evolution/LearningDashboard';
 import { EvolutionProposals } from './pages/evolution/Proposals';
+import { Contribute } from './pages/Contribute';
 
 function App() {
   return (
@@ -37,6 +38,8 @@ function App() {
             return <LearningDashboard />;
           case 'proposals':
             return <EvolutionProposals />;
+          case 'contribute':
+            return <Contribute />;
           default:
             return (
               <div className="flex items-center justify-center h-full">

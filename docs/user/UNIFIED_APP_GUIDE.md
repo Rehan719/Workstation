@@ -25,6 +25,11 @@ The Workstation Unified Application (v138.1) is a living, sentient interface to 
 - **Sovereign Handshake**: Biometric login (FaceID/Fingerprint) integration.
 - **Native Experience**: Shared UI components for a consistent mobile/web journey.
 
+### 6. Contribute & Empower (v140.0)
+- **Feedback**: Submit real-time feedback to the ecosystem's learning pipelines.
+- **Proposals**: Suggest new knowledge sources and architectural ideas.
+- **Voting**: Use your resonance to vote on pending evolution proposals in the Evolution Log.
+
 ## Getting Started
 1. **Authenticated Access**: Sign in via Google OAuth.
 2. **Configure Infrastructure**: Use the BTO Catalog to deploy your first agentic cluster.

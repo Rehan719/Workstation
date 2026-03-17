@@ -2,15 +2,20 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Activity, Brain, ShieldCheck, Zap } from 'lucide-react';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 export const Introspection: React.FC = () => {
+  const liveVitals = useWebSocket('/api/v200/resonance/ws/vitals');
   const [vitals, setVitals] = useState<any>(null);
 
   useEffect(() => {
-    const fetch = () => axios.get('/api/v190/introspection/vitals').then(res => setVitals(res.data));
-    fetch();
-    const interval = setInterval(fetch, 5000);
-    return () => clearInterval(interval);
+    if (liveVitals) setVitals(liveVitals);
+  }, [liveVitals]);
+
+  useEffect(() => {
+    if (!vitals) {
+      axios.get('/api/v190/introspection/vitals').then(res => setVitals(res.data));
+    }
   }, []);
 
   if (!vitals) return <div className="p-8 text-slate-500 animate-pulse">Initializing Introspection...</div>;

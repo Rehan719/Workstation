@@ -14,6 +14,11 @@ export const EvolutionProposals: React.FC = () => {
     setProposals(proposals.filter(p => p.id !== id));
   };
 
+  const handleVote = async (id: string) => {
+    await axios.post(`/api/v200/contribute/vote?proposal_id=${id}`);
+    alert("Resonance Recorded. Your vote has been merged into the Merkle-DAG.");
+  };
+
   return (
     <div className="space-y-10">
       <header>
@@ -38,6 +43,12 @@ export const EvolutionProposals: React.FC = () => {
               <p className="text-sm text-slate-400 max-w-2xl">{p.description}</p>
             </div>
             <div className="flex gap-4 flex-shrink-0">
+              <button
+                onClick={() => handleVote(p.id)}
+                className="px-6 py-4 border border-slate-700 rounded-xl text-xs font-bold uppercase text-slate-400 hover:border-aura hover:text-white transition-all"
+              >
+                Vote
+              </button>
               <button
                 onClick={() => setProposals(proposals.filter(x => x.id !== p.id))}
                 className="p-4 bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"

@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart } from 'lucide-react';
 import { useModeStore } from '../../store/modeStore';
 
 const allNavItems = [
@@ -10,6 +10,7 @@ const allNavItems = [
   { name: 'Mind Forge', icon: ShieldCheck, id: 'evolution' },
   { name: 'Learning Hub', icon: LayoutDashboard, id: 'learning' },
   { name: 'Evolution Log', icon: Sparkles, id: 'proposals' },
+  { name: 'Contribute', icon: Heart, id: 'contribute' },
   { name: 'BTO Catalog', icon: Package, id: 'bto' },
   { name: 'Knowledge CoEs', icon: BookOpen, id: 'coe' },
   { name: 'QEP Engine', icon: ShieldCheck, id: 'qep' },
@@ -37,13 +38,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-aura ${
               activeTab === item.id
                 ? 'bg-aura text-sovereign font-bold shadow-lg shadow-aura/20'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
+            aria-label={item.name}
           >
-            <item.icon size={20} />
+            <item.icon size={20} aria-hidden="true" />
             <span className="text-sm font-semibold">{item.name}</span>
           </button>
         ))}

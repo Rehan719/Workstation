@@ -15,6 +15,7 @@ from agentic_core.api import qep_analytics, tools, partnerships
 from agentic_core.api.v180 import products, user
 from agentic_core.api.v190 import introspection, extrospection, evolution
 from agentic_core.api.v191 import modes, learning, evolution as evolution_v191
+from agentic_core.api.v200 import resonance, contribute
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -57,6 +58,8 @@ app.include_router(evolution.router, prefix="/api/v190")
 app.include_router(modes.router, prefix="/api/v191")
 app.include_router(learning.router, prefix="/api/v191")
 app.include_router(evolution_v191.router, prefix="/api/v191")
+app.include_router(resonance.router, prefix="/api/v200")
+app.include_router(contribute.router, prefix="/api/v200")
 
 app.add_middleware(
     CORSMiddleware,
