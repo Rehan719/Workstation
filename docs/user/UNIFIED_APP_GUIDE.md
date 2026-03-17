@@ -30,6 +30,12 @@ The Workstation Unified Application (v138.1) is a living, sentient interface to 
 - **Proposals**: Suggest new knowledge sources and architectural ideas.
 - **Voting**: Use your resonance to vote on pending evolution proposals in the Evolution Log.
 
+### 7. Autonomous Symbiosis (v141.0)
+- **Epigenetic Garden**: Your votes now reinforce traits, shaping the system's long-term soul.
+- **Constitutional Agent**: Ask the agent to explain articles or use the Wizard to draft amendments.
+- **WS Explorer**: Navigate the global federation of Workstation nodes in an interactive map.
+- **Digital Twins**: Spawn and sync your application state across federated nodes.
+
 ## Getting Started
 1. **Authenticated Access**: Sign in via Google OAuth.
 2. **Configure Infrastructure**: Use the BTO Catalog to deploy your first agentic cluster.
