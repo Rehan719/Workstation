@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { ShoppingBag, Star, UserCheck } from 'lucide-react';
+import { ShoppingBag, Star, UserCheck, Search, Filter, TrendingUp } from 'lucide-react';
+import { useTheme } from '../../theme/ThemeContext';
 
 export const Marketplace: React.FC = () => {
+  const { theme } = useTheme();
+  const isAdvanced = theme === 'advanced';
   const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
@@ -10,13 +13,30 @@ export const Marketplace: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-12">
-      <header>
-        <h1 className="text-4xl font-black mb-2">BTO Marketplace</h1>
-        <p className="text-slate-500">Third-party agentic products and reactors certified by the Workstation CoEs.</p>
+    <div className={`space-y-12 transition-all duration-1000 ${isAdvanced ? 'animate-in fade-in slide-in-from-bottom-4' : ''}`} role="main" aria-label="BTO Marketplace">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-black mb-2 transition-all">BTO Marketplace</h1>
+          <p className="text-slate-500">Third-party agentic products and reactors certified by the Workstation CoEs.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+            isAdvanced ? 'bg-sovereign border-aura/30 focus-within:border-aura' : 'bg-slate-900 border-slate-700'
+          }`}>
+            <Search size={16} className="text-slate-500" />
+            <input placeholder="Search products..." className="bg-transparent border-none outline-none text-xs w-48 font-bold" />
+          </div>
+          <button className={`p-2.5 rounded-xl border transition-all ${
+            isAdvanced ? 'bg-sovereign border-aura/30 hover:border-aura' : 'bg-slate-900 border-slate-700 hover:border-aura'
+          }`} aria-label="Filter products">
+            <Filter size={18} className="text-aura" />
+          </button>
+        </div>
       </header>
 
-      <section className="p-10 rounded-[3rem] bg-gradient-to-br from-aura/20 to-highlight/10 border border-aura/30 relative overflow-hidden">
+      <section className={`p-10 rounded-[3rem] border relative overflow-hidden transition-all duration-700 ${
+        isAdvanced ? 'bg-sovereign border-aura/30 shadow-[0_0_50px_rgba(100,255,218,0.1)]' : 'bg-gradient-to-br from-aura/20 to-highlight/10 border-aura/30'
+      }`}>
          <div className="relative z-10 flex flex-col md:flex-row gap-10 items-center">
             <div className="w-48 h-48 rounded-3xl bg-slate-900 border border-slate-700 flex items-center justify-center text-6xl shadow-2xl">🚀</div>
             <div className="flex-1 space-y-4 text-center md:text-left">
@@ -31,9 +51,13 @@ export const Marketplace: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {products.map(p => (
-          <div key={p.id} className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm group">
+          <div key={p.id} className={`p-8 rounded-3xl border transition-all group backdrop-blur-sm ${
+            isAdvanced ? 'bg-sovereign border-aura/10 hover:border-aura/50 shadow-lg' : 'bg-slate-900/40 border-slate-800 hover:border-aura'
+          }`} role="article" aria-label={`${p.name} by ${p.author}`}>
             <div className="flex justify-between items-start mb-6">
-              <div className="p-3 bg-aura/10 text-aura rounded-xl group-hover:scale-110 transition-transform">
+              <div className={`p-3 rounded-xl group-hover:scale-110 transition-transform ${
+                isAdvanced ? 'bg-aura/10 text-aura shadow-[0_0_15px_rgba(100,255,218,0.2)]' : 'bg-aura/10 text-aura'
+              }`}>
                 <ShoppingBag size={24} />
               </div>
               <div className="flex items-center gap-1 text-highlight">
