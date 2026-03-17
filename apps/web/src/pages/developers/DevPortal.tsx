@@ -50,15 +50,27 @@ export const DevPortal: React.FC = () => {
                 <span className="font-bold">Workstation Python SDK</span>
                 <span className="text-[10px] font-black text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">v0.8.2</span>
              </div>
+             <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl opacity-60">
+                <span className="font-bold">Workstation Rust/Go/Java SDKs</span>
+                <span className="text-[10px] font-black text-aura bg-aura/10 px-2 py-0.5 rounded border border-aura/20">PREVIEW</span>
+             </div>
           </div>
         </section>
       </div>
 
-      <section className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 h-64 flex flex-col items-center justify-center text-center">
-         <BookOpen size={48} className="text-slate-700 mb-4" />
-         <h3 className="text-xl font-bold mb-2">SDK Documentation & Tutorials</h3>
-         <p className="text-slate-500 max-w-md">Learn how to build custom reactors and BTO products using our comprehensive guides.</p>
-      </section>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <section className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 h-64 flex flex-col items-center justify-center text-center">
+          <BookOpen size={48} className="text-slate-700 mb-4" />
+          <h3 className="text-xl font-bold mb-2">SDK Documentation & Tutorials</h3>
+          <p className="text-slate-500 max-w-md">Learn how to build custom reactors and BTO products using our comprehensive guides.</p>
+        </section>
+        <section className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 h-64 flex flex-col items-center justify-center text-center border-dashed border-aura/30 group hover:border-aura transition-all">
+          <Terminal size={48} className="text-aura/50 group-hover:text-aura mb-4 transition-colors" />
+          <h3 className="text-xl font-bold mb-2">Enterprise Developer Program</h3>
+          <p className="text-slate-500 max-w-md">Apply for dedicated support, custom deployment blueprints, and higher marketplace visibility.</p>
+          <button className="mt-4 text-[10px] font-black text-aura uppercase tracking-widest border border-aura/30 px-4 py-2 rounded-lg hover:bg-aura/10">Apply Now</button>
+        </section>
+      </div>
     </div>
   );
 };
