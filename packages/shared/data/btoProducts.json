@@ -1,0 +1,45 @@
+[
+  {
+    "id": "bto-001",
+    "name": "Neural Nexus Sovereign",
+    "description": "A fully autonomous agentic cluster specialized in market synthesis and strategic foresight.",
+    "basePrice": 15000,
+    "category": "Agentic Infrastructure",
+    "options": [
+      {
+        "id": "compute-tier",
+        "name": "Compute Tier",
+        "choices": [
+          {"id": "std", "name": "Standard (8-core)", "price": 0},
+          {"id": "pro", "name": "Pro (32-core)", "price": 5000},
+          {"id": "ultra", "name": "Ultra (128-core Quantum-Hybrid)", "price": 15000}
+        ]
+      },
+      {
+        "id": "memory-resonance",
+        "name": "Memory Resonance",
+        "choices": [
+          {"id": "short", "name": "7-Day Volatile", "price": 0},
+          {"id": "infinite", "name": "Infinite Merkle-DAG History", "price": 2500}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "bto-002",
+    "name": "Biomimetic OS Kernel",
+    "description": "Custom-compiled OS kernel with built-in homeostatic regulation and immune response protocols.",
+    "basePrice": 8500,
+    "category": "Core Systems",
+    "options": [
+      {
+        "id": "safety-level",
+        "name": "Safety Level",
+        "choices": [
+          {"id": "l4", "name": "L4 - Standard Governance", "price": 0},
+          {"id": "l7", "name": "L7 - Full Constitutional Floor 20", "price": 3000}
+        ]
+      }
+    ]
+  }
+]
