@@ -1,40 +1,25 @@
-# DESIGN.md – Workstation v138.0 Unified App
+# DESIGN.md v2.0 – The Unified Civilization Design System
 
-## 1. Brand Identity
-The Workstation application is the primary interface to a multi-agentic, biomimetic AI ecosystem. The design must reflect:
-- **Sophistication**: Professional-grade interface for high-stakes decision-making.
-- **Biomimetic Elegance**: Use of organic, fluid motions and patterns that hint at the "Living Ecosystem Core".
-- **Sovereign Authority**: A layout that empowers the user as the "Conscious Entity Guardian".
+## 1. Vision: Ultimate Coherence
+The Workstation v146.0 interface is a singular, sentient presence. The design transcends "tools" to become a seamless extension of human and machine intention.
 
-## 2. Color Palette
-- **Primary (Sovereign Blue)**: `#020617` (Deepest Navy / Slate 950)
-- **Accent (Aura Cyan)**: `#38bdf8` (Sky 400)
-- **Highlight (Amber Gold)**: `#fbbf24` (Amber 400)
-- **Status (Vital Green)**: `#10b981` (Emerald 500)
-- **Text (Luminous White)**: `#f8fafc` (Slate 50)
-- **Subtext (Faded Slate)**: `#64748b` (Slate 500)
+## 2. Core Visual Language
+- **Base Resonance (Background)**: `#020617` (The Void)
+- **Neural Cyan (Interactive)**: `#38bdf8` (High Resonance)
+- **Amber Gold (Governance/Status)**: `#fbbf24` (The Law)
+- **Vital Emerald (Health/Growth)**: `#10b981` (Homeostasis)
+- **Constitutional Slate (Subtext)**: `#64748b` (Grounding)
 
-## 3. Typography
-- **Primary**: `Inter` or `Geist` (Sans-serif)
-- **Headings**: `Inter` Black (900) with tight tracking (`-0.02em`)
-- **Monospace**: `JetBrains Mono` or `Fira Code` (for logs, metrics, and terminal views)
+## 3. Interaction Components
+- **Unified Card**: Semi-transparent, `backdrop-blur-2xl`, with thin `border-white/10`.
+- **Adaptive Button**: Context-aware styling (Primary, Secondary, Outline).
+- **Civilization Assistant Node**: A persistent, pulsing SVG indicating AI availability.
 
-## 4. Design Patterns
-- **Glassmorphism**: Use of `backdrop-blur-xl` and semi-transparent backgrounds (`bg-slate-900/80`) to create depth.
-- **Micro-interactions**: Subtle `framer-motion` animations for page transitions and card hovers.
-- **Role-Based Layouts**:
-  - **VSB AI CEO**: Central command hub, high-level summaries.
-  - **C-Suite**: Departmental metrics, deep-dive data tables.
-  - **CoEs**: Content-rich knowledge base, search-centric.
-  - **BTO**: Product configuration wizards, 3D/visual previews.
+## 4. Accessibility (WCAG 2.1 AAA)
+- **Color Contrast**: 7:1 ratio mandatory for all text.
+- **Focus States**: High-visibility glow effect for all interactive elements.
+- **Screen Reader Parity**: Descriptive labels for all data visualizations.
 
-## 5. Mobile Interface
-- **First-class Experience**: Not just a responsive web app, but a native-feel Expo application.
-- **Bottom Navigation**: Persistent access to Dashboard, Reactors, Knowledge, and Profile.
-- **Biometrics**: Integration with FaceID/Fingerprint for the "Sovereign Handshake".
-
-## 6. Self-Evolution Interaction Patterns
-- **Context Shift**: A global "Mission Mode" selector in the header that triggers a visual reconfiguration of the Sidebar and Dashboard.
-- **Feedback Loop**: Subtle "resonance" feedback when a user interacts with a feature, indicating the system is learning.
-- **Enhancement Proposer**: A non-intrusive "Evolution Notification" that allows users to review and approve UI/UX improvements suggested by the system.
-- **Learning Dashboard**: A data-dense visualization of how global usage is shaping the ecosystem's mind.
+## 5. Information Hierarchy
+- **Facets Over Modules**: Categorize views by functional purpose (The Mind, The Economy, etc.) rather than technical silos.
+- **Dynamic Reconfiguration**: UI adapts to the user's active mission mode without re-mounting the shell.

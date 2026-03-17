@@ -1,13 +1,28 @@
 import React from 'react';
-import { Terminal, Key, BookOpen, Download } from 'lucide-react';
+import { Terminal, Key, BookOpen, Download, ShoppingBag, ShieldCheck } from 'lucide-react';
 
 export const DevPortal: React.FC = () => {
   return (
     <div className="space-y-12">
       <header>
-        <h1 className="text-4xl font-black mb-2">Developer Portal</h1>
-        <p className="text-slate-500">Everything you need to build on the Workstation civilization.</p>
+        <h1 className="text-4xl font-black mb-2">Unified Developer Portal</h1>
+        <p className="text-slate-500">Build reactors, deploy nodes, and list products in the global marketplace.</p>
       </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+         <section className="lg:col-span-2 p-8 rounded-[2.5rem] bg-gradient-to-br from-aura/10 to-transparent border border-white/10 space-y-6">
+            <h3 className="text-xl font-bold flex items-center gap-2 italic">
+               <ShieldCheck size={20} className="text-aura" />
+               Quantum Security Enforced (PQC-MANDATORY)
+            </h3>
+            <p className="text-sm text-slate-400">All third-party reactors must implement CRYSTALS-Dilithium for instruction signing. Classical fallbacks are disabled federation-wide.</p>
+         </section>
+         <div className="p-8 rounded-[2.5rem] bg-slate-900 border border-slate-800 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-aura transition-all">
+            <ShoppingBag size={32} className="text-highlight mb-4 group-hover:scale-110 transition-transform" />
+            <h4 className="font-bold">Marketplace Console</h4>
+            <p className="text-[10px] text-slate-500 mt-2">Manage your BTO listings and resonance revenue.</p>
+         </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <section className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 space-y-8">
