@@ -42,6 +42,12 @@ The Workstation Unified Application (v138.1) is a living, sentient interface to 
 - **Node Replication**: Replicate entire Workstation ecosystems with full Digital Twin portability.
 - **Public Roadmap**: Influence the civilization's future trajectory through resonance voting.
 
+### 9. Universal Access & Mass Adoption (v143.0)
+- **Marketplace**: Browse and purchase certified BTO products from third-party developers.
+- **Developer Portal**: Access SDKs and API keys to build your own reactors and products.
+- **Your Impact**: Track how your feedback and votes shape the ecosystem's long-term soul.
+- **Join the Fed**: Use the wizard to spawn your own Workstation node and join the global network.
+
 ## Getting Started
 1. **Authenticated Access**: Sign in via Google OAuth.
 2. **Configure Infrastructure**: Use the BTO Catalog to deploy your first agentic cluster.

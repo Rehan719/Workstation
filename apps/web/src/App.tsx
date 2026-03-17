@@ -13,11 +13,18 @@ import { LearningDashboard } from './pages/evolution/LearningDashboard';
 import { EvolutionProposals } from './pages/evolution/Proposals';
 import { Contribute } from './pages/Contribute';
 import { Wallet } from './pages/profile/Wallet';
+import { UserImpact } from './pages/profile/Impact';
 import { FederationGovernance } from './pages/federation/Governance';
+import { JoinFederationWizard } from './pages/federation/JoinWizard';
+import { Marketplace } from './pages/developers/Marketplace';
+import { DevPortal } from './pages/developers/DevPortal';
 import { PublicRoadmap } from './pages/PublicRoadmap';
+import { OnboardingTour } from './components/onboarding/OnboardingTour';
 
 function App() {
   return (
+    <>
+    <OnboardingTour />
     <Shell>
       {(activeTab) => {
         switch (activeTab) {
@@ -55,6 +62,7 @@ function App() {
         }
       }}
     </Shell>
+    </>
   );
 }
 

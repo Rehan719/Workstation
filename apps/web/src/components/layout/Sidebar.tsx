@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart, Zap, Shield, ShoppingBag, Terminal } from 'lucide-react';
 import { useModeStore } from '../../store/modeStore';
 
 const allNavItems = [
@@ -9,11 +9,15 @@ const allNavItems = [
   { name: 'World Mind', icon: BookOpen, id: 'extrospection' },
   { name: 'Mind Forge', icon: ShieldCheck, id: 'evolution' },
   { name: 'Fed Governance', icon: Shield, id: 'fed-gov' },
+  { name: 'Join Fed', icon: Plus, id: 'join-fed' },
   { name: 'Sovereign Wallet', icon: ShieldCheck, id: 'wallet' },
   { name: 'Learning Hub', icon: LayoutDashboard, id: 'learning' },
   { name: 'Evolution Log', icon: Sparkles, id: 'proposals' },
   { name: 'Contribute', icon: Heart, id: 'contribute' },
+  { name: 'Your Impact', icon: Zap, id: 'impact' },
   { name: 'Roadmap', icon: LayoutDashboard, id: 'roadmap' },
+  { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' },
+  { name: 'Dev Portal', icon: Terminal, id: 'dev-portal' },
   { name: 'BTO Catalog', icon: Package, id: 'bto' },
   { name: 'Knowledge CoEs', icon: BookOpen, id: 'coe' },
   { name: 'QEP Engine', icon: ShieldCheck, id: 'qep' },
