@@ -36,6 +36,12 @@ The Workstation Unified Application (v138.1) is a living, sentient interface to 
 - **WS Explorer**: Navigate the global federation of Workstation nodes in an interactive map.
 - **Digital Twins**: Spawn and sync your application state across federated nodes.
 
+### 8. Global Ecosystem Orchestration (v142.0)
+- **Sovereign Wallet**: Track your WST resonance, staked balance, and transaction history.
+- **Federated Governance**: Participate in cross-node constitutional voting and treaty management.
+- **Node Replication**: Replicate entire Workstation ecosystems with full Digital Twin portability.
+- **Public Roadmap**: Influence the civilization's future trajectory through resonance voting.
+
 ## Getting Started
 1. **Authenticated Access**: Sign in via Google OAuth.
 2. **Configure Infrastructure**: Use the BTO Catalog to deploy your first agentic cluster.

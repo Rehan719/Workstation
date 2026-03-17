@@ -16,6 +16,8 @@ from agentic_core.api.v180 import products, user
 from agentic_core.api.v190 import introspection, extrospection, evolution
 from agentic_core.api.v191 import modes, learning, evolution as evolution_v191
 from agentic_core.api.v200 import resonance, contribute
+from agentic_core.api.v210 import epigenetic, homeostasis, improvement, governance, federation
+from agentic_core.api.v220 import federation as federation_v220, economic, twin
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,6 +62,14 @@ app.include_router(learning.router, prefix="/api/v191")
 app.include_router(evolution_v191.router, prefix="/api/v191")
 app.include_router(resonance.router, prefix="/api/v200")
 app.include_router(contribute.router, prefix="/api/v200")
+app.include_router(epigenetic.router, prefix="/api/v210")
+app.include_router(homeostasis.router, prefix="/api/v210")
+app.include_router(improvement.router, prefix="/api/v210")
+app.include_router(governance.router, prefix="/api/v210")
+app.include_router(federation.router, prefix="/api/v210")
+app.include_router(federation_v220.router, prefix="/api/v220")
+app.include_router(economic.router, prefix="/api/v220")
+app.include_router(twin.router, prefix="/api/v220")
 
 app.add_middleware(
     CORSMiddleware,

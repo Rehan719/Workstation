@@ -12,6 +12,9 @@ import { Evolution } from './pages/cognitive/Evolution';
 import { LearningDashboard } from './pages/evolution/LearningDashboard';
 import { EvolutionProposals } from './pages/evolution/Proposals';
 import { Contribute } from './pages/Contribute';
+import { Wallet } from './pages/profile/Wallet';
+import { FederationGovernance } from './pages/federation/Governance';
+import { PublicRoadmap } from './pages/PublicRoadmap';
 
 function App() {
   return (
