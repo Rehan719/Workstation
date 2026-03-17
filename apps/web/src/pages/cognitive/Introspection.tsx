@@ -57,10 +57,14 @@ export const Introspection: React.FC = () => {
 };
 
 const VitalCard = ({ label, value, color }: any) => (
-  <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm">
+  <div
+    className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm"
+    role="region"
+    aria-label={`${label} Resonance level`}
+  >
     <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2">{label} Resonance</p>
-    <div className={`text-5xl font-black ${color}`}>{(value * 100).toFixed(1)}%</div>
-    <div className="mt-4 h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+    <div className={`text-5xl font-black ${color}`} aria-live="polite">{(value * 100).toFixed(1)}%</div>
+    <div className="mt-4 h-1 w-full bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow={value * 100} aria-valuemin={0} aria-valuemax={100}>
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${value * 100}%` }}

@@ -23,10 +23,11 @@ import { Marketplace } from './pages/developers/Marketplace';
 import { DevPortal } from './pages/developers/DevPortal';
 import { PublicRoadmap } from './pages/PublicRoadmap';
 import { OnboardingTour } from './components/onboarding/OnboardingTour';
+import { ThemeProvider } from './theme/ThemeContext';
 
 function App() {
   return (
-    <>
+    <ThemeProvider>
     <OnboardingTour />
     <Shell>
       {(activeTab) => {
@@ -65,7 +66,7 @@ function App() {
         }
       }}
     </Shell>
-    </>
+    </ThemeProvider>
   );
 }
 
