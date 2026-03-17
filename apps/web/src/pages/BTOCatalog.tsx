@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Package, ChevronRight, Settings2 } from 'lucide-react';
+import { BTOConfigurator } from '../components/bto/BTOConfigurator';
 
 export const BTOCatalog: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
   useEffect(() => {
     axios.get('/api/v180/products/')
@@ -22,7 +24,18 @@ export const BTOCatalog: React.FC = () => {
   if (loading) return <div className="animate-pulse flex space-x-4">Loading Catalog...</div>;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 relative">
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-sovereign/80 backdrop-blur-xl">
+          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+            <BTOConfigurator
+              product={selectedProduct}
+              onClose={() => setSelectedProduct(null)}
+            />
+          </div>
+        </div>
+      )}
+
       <header>
         <h1 className="text-4xl font-black mb-2">Build-to-Order Catalog</h1>
         <p className="text-slate-500">Configure and deploy custom agentic infrastructure.</p>
@@ -52,7 +65,10 @@ export const BTOCatalog: React.FC = () => {
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Starting at</p>
                 <p className="text-2xl font-black text-white">{product.basePrice.toLocaleString()} WST</p>
               </div>
-              <button className="flex items-center gap-2 px-6 py-3 bg-aura text-sovereign font-bold rounded-xl hover:scale-105 transition-transform">
+              <button
+                onClick={() => setSelectedProduct(product)}
+                className="flex items-center gap-2 px-6 py-3 bg-aura text-sovereign font-bold rounded-xl hover:scale-105 transition-transform"
+              >
                 <Settings2 size={18} />
                 Configure
                 <ChevronRight size={18} />
