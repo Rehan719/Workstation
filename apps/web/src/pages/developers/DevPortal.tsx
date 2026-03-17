@@ -1,23 +1,31 @@
 import React from 'react';
-import { Terminal, Key, BookOpen, Download, ShoppingBag, ShieldCheck } from 'lucide-react';
+import { Terminal, Key, BookOpen, Download, ShoppingBag, ShieldCheck, Cpu, Database, Server } from 'lucide-react';
+import { useTheme } from '../../theme/ThemeContext';
 
 export const DevPortal: React.FC = () => {
+  const { theme } = useTheme();
+  const isAdvanced = theme === 'advanced';
+
   return (
-    <div className="space-y-12">
+    <div className={`space-y-12 ${isAdvanced ? 'animate-in fade-in slide-in-from-bottom-4 duration-1000' : ''}`}>
       <header>
         <h1 className="text-4xl font-black mb-2">Unified Developer Portal</h1>
         <p className="text-slate-500">Build reactors, deploy nodes, and list products in the global marketplace.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         <section className="lg:col-span-2 p-8 rounded-[2.5rem] bg-gradient-to-br from-aura/10 to-transparent border border-white/10 space-y-6">
+         <section className={`lg:col-span-2 p-8 rounded-[2.5rem] space-y-6 border transition-all duration-700 ${
+           isAdvanced ? 'bg-sovereign border-aura/30 shadow-[0_0_30px_rgba(100,255,218,0.1)]' : 'bg-gradient-to-br from-aura/10 to-transparent border-white/10'
+         }`}>
             <h3 className="text-xl font-bold flex items-center gap-2 italic">
                <ShieldCheck size={20} className="text-aura" />
                Quantum Security Enforced (PQC-MANDATORY)
             </h3>
             <p className="text-sm text-slate-400">All third-party reactors must implement CRYSTALS-Dilithium for instruction signing. Classical fallbacks are disabled federation-wide.</p>
          </section>
-         <div className="p-8 rounded-[2.5rem] bg-slate-900 border border-slate-800 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-aura transition-all">
+         <div className={`p-8 rounded-[2.5rem] border flex flex-col items-center justify-center text-center group cursor-pointer transition-all ${
+           isAdvanced ? 'bg-sovereign border-aura/30 hover:border-aura' : 'bg-slate-900 border-slate-800 hover:border-aura'
+         }`}>
             <ShoppingBag size={32} className="text-highlight mb-4 group-hover:scale-110 transition-transform" />
             <h4 className="font-bold">Marketplace Console</h4>
             <p className="text-[10px] text-slate-500 mt-2">Manage your BTO listings and resonance revenue.</p>
@@ -25,18 +33,24 @@ export const DevPortal: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <section className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 space-y-8">
+        <section className={`p-8 rounded-3xl border space-y-8 transition-all duration-700 ${
+          isAdvanced ? 'bg-sovereign border-aura/30' : 'bg-slate-900/40 border-slate-800'
+        }`}>
           <h3 className="text-xl font-bold flex items-center gap-2">
             <Key size={20} className="text-aura" />
             API Keys
           </h3>
-          <div className="p-6 bg-slate-800/30 rounded-2xl border border-slate-700">
+          <div className={`p-6 rounded-2xl border transition-all ${
+            isAdvanced ? 'bg-sovereign border-aura/20' : 'bg-slate-800/30 border-slate-700'
+          }`}>
              <p className="text-xs text-slate-500 mb-4">Production Key: ws_live_0x42f...88</p>
              <button className="text-xs font-black text-aura uppercase hover:underline">Regenerate Key</button>
           </div>
         </section>
 
-        <section className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 space-y-8">
+        <section className={`p-8 rounded-3xl border space-y-8 transition-all duration-700 ${
+          isAdvanced ? 'bg-sovereign border-aura/30' : 'bg-slate-900/40 border-slate-800'
+        }`}>
           <h3 className="text-xl font-bold flex items-center gap-2">
             <Download size={20} className="text-highlight" />
             Ecosystem SDKs
@@ -50,9 +64,26 @@ export const DevPortal: React.FC = () => {
                 <span className="font-bold">Workstation Python SDK</span>
                 <span className="text-[10px] font-black text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">v0.8.2</span>
              </div>
-             <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl opacity-60">
-                <span className="font-bold">Workstation Rust/Go/Java SDKs</span>
-                <span className="text-[10px] font-black text-aura bg-aura/10 px-2 py-0.5 rounded border border-aura/20">PREVIEW</span>
+             <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl">
+                <div className="flex flex-col gap-1">
+                  <span className="font-bold">Workstation Go SDK</span>
+                  <span className="text-[10px] text-slate-500">Edge Node & Telemetry Ingestion</span>
+                </div>
+                <span className="text-[10px] font-black text-aura bg-aura/10 px-2 py-0.5 rounded border border-aura/20">ALPHA</span>
+             </div>
+             <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl">
+                <div className="flex flex-col gap-1">
+                  <span className="font-bold">Workstation Rust SDK</span>
+                  <span className="text-[10px] text-slate-500">PQC Handshakes & Sovereign Runtimes</span>
+                </div>
+                <span className="text-[10px] font-black text-aura bg-aura/10 px-2 py-0.5 rounded border border-aura/20">ALPHA</span>
+             </div>
+             <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl">
+                <div className="flex flex-col gap-1">
+                  <span className="font-bold">Workstation Java SDK</span>
+                  <span className="text-[10px] text-slate-500">Enterprise Integration (Spring/Kafka)</span>
+                </div>
+                <span className="text-[10px] font-black text-aura bg-aura/10 px-2 py-0.5 rounded border border-aura/20">ALPHA</span>
              </div>
           </div>
         </section>

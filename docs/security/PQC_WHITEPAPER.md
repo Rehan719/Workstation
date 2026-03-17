@@ -9,11 +9,12 @@ The federation utilizes the NIST-standardized CRYSTALS (Cryptographic Suite for 
 - **Key Encapsulation Mechanism (KEM)**: CRYSTALS-Kyber (Kyber768). Used for establishing shared secrets between nodes and between clients and servers.
 - **Digital Signatures**: CRYSTALS-Dilithium (Dilithium3). Used for signing all instructions, code deployments, and transactions within the Merkle-DAG audit trail.
 
-## 2. PQC-Mandatory Enforcement
+## 2. PQC-Mandatory Enforcement & Zero Fallback Policy
+- **Absolute Termination**: Attempting to initiate a session using classical RSA or ECC will result in an immediate connection termination by the Homeostatic OS.
 - **Node Discovery**: Handshakes between nodes in the libp2p DHT now require Kyber-based key exchange.
 - **API Communication**: The `v260` API and beyond enforce Kyber-encrypted sessions.
 - **BTO Deployment**: All BTO product reactors must be signed with Dilithium to be accepted by the federation.
-- **Zero Fallback**: Attempting to initiate a session using classical RSA or ECC will result in an immediate connection termination by the Homeostatic OS.
+- **Handshake Failures**: Any PQC handshake failure triggers an automatic security event log and alerts the node operator.
 
 ## 3. Governance and Compliance
 This security model aligns with **Article 1089** (OWASP ASI Compliance) and **Article 1095** (Civilizational Scale Validation). It ensures that the Workstation's sovereign data remains private and its operations remain untampered even in the post-quantum era.
