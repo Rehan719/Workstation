@@ -1,0 +1,13 @@
+{
+  "name": "workstation-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "web:dev": "npm run dev -w apps/web",
+    "mobile:start": "npm run start -w apps/mobile",
+    "ui:build": "npm run build -w packages/ui"
+  }
+}

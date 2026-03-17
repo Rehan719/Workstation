@@ -1,0 +1,25 @@
+{
+  "name": "@workstation/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --watch --dts",
+    "lint": "eslint \"src/**/*.ts*\""
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "tsup": "^8.1.0",
+    "react": "^18.3.1",
+    "@types/react": "^18.3.3"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}
