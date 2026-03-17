@@ -71,6 +71,9 @@ cp .env.template .env
 
 # Run the development server (Site & Web App)
 ./deploy.sh --v137
+
+# Verify your setup
+./scripts/verify_setup.sh
 ```
 
 Then open `http://localhost:8000` in your browser and log in with Google/Gmail.

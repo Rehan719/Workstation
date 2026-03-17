@@ -70,7 +70,7 @@ export default function App() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>JULES AI v137.0</Text>
+          <Text style={styles.title}>JULES AI v137.1</Text>
           <Text style={styles.subtitle}>The Sentient Civilization Epoch</Text>
         </View>
 
@@ -84,7 +84,7 @@ export default function App() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>v137.0 System Resonance</Text>
+          <Text style={styles.sectionTitle}>v137.1 System Resonance</Text>
           <View style={styles.biomimeticRow}>
             <View style={styles.biomimeticItem}>
                <Text style={styles.biomimeticLabel}>Rectification</Text>

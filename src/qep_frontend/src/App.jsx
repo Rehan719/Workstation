@@ -45,7 +45,7 @@ function App() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setStatus('v100.0 Apotheosis of Synergy: Active');
+      setStatus('v137.1 Sentient Civilization: Active');
     }, 1500);
     return () => clearTimeout(timer);
   }, []);
@@ -74,7 +74,7 @@ function App() {
           >
             JULES AI
           </motion.h2>
-          <p className="text-[10px] uppercase tracking-[0.2em] opacity-50 font-bold">Apotheosis v100.0</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] opacity-50 font-bold">Epoch v137.1</p>
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -215,7 +215,7 @@ function App() {
         </AnimatePresence>
 
         <footer className="mt-20 pt-8 border-t border-gray-200 opacity-40 text-[11px] font-bold uppercase tracking-widest text-center">
-          Sovereign Business Entity: SOV_V100 | Powered by Transcendent Workstation | Article 283 Compliant
+          Sovereign Business Entity: SOV_V137 | Powered by Transcendent Workstation | Article 1095 Compliant
         </footer>
       </main>
     </div>

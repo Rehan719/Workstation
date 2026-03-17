@@ -11,6 +11,9 @@ git clone https://github.com/vsb-ai/workstation.git && cd workstation
 
 # Orchestrate v137.1
 ./deploy.sh --v137
+
+# Verify your setup
+./scripts/verify_setup.sh
 ```
 
 ## 🛠️ Manual Setup
@@ -37,9 +40,12 @@ pip install -r requirements.txt
 ```
 
 ## 🧪 Verification
-Ensure the system is healthy and constitutionally compliant:
+Ensure the system is healthy and environment is ready:
 
 ```bash
+# Verify environment and common issues
+./scripts/verify_setup.sh
+
 # Run the logic verification suite
 python scripts/verify_v137_logic.py
 
