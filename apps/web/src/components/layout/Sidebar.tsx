@@ -4,6 +4,9 @@ import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldChec
 const navItems = [
   { name: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
   { name: 'VSB AI CEO', icon: MessageSquare, id: 'ceo' },
+  { name: 'Self Vision', icon: ShieldCheck, id: 'introspection' },
+  { name: 'World Mind', icon: BookOpen, id: 'extrospection' },
+  { name: 'Mind Forge', icon: ShieldCheck, id: 'evolution' },
   { name: 'BTO Catalog', icon: Package, id: 'bto' },
   { name: 'Knowledge CoEs', icon: BookOpen, id: 'coe' },
   { name: 'QEP Engine', icon: ShieldCheck, id: 'qep' },

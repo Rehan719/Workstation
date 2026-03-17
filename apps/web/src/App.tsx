@@ -6,6 +6,9 @@ import { BTOCatalog } from './pages/BTOCatalog';
 import { CFO } from './pages/c-suite/CFO';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 import { QEPEngine } from './pages/QEPEngine';
+import { Introspection } from './pages/cognitive/Introspection';
+import { Extrospection } from './pages/cognitive/Extrospection';
+import { Evolution } from './pages/cognitive/Evolution';
 
 function App() {
   return (
@@ -22,6 +25,12 @@ function App() {
             return <KnowledgeHub />;
           case 'qep':
             return <QEPEngine />;
+          case 'introspection':
+            return <Introspection />;
+          case 'extrospection':
+            return <Extrospection />;
+          case 'evolution':
+            return <Evolution />;
           default:
             return (
               <div className="flex items-center justify-center h-full">
