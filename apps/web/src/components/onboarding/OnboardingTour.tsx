@@ -8,7 +8,8 @@ export const OnboardingTour: React.FC = () => {
     { title: "Welcome, Guardian", content: "You are now at the heart of the Workstation federation. This tour will guide you through your new sovereign command console." },
     { title: "Cognitive Dashboards", content: "Explore 'Self Vision' for system vitals and 'World Mind' for global research synthesis." },
     { title: "Sovereign Wallet", content: "Manage your WST resonance and stake in the global federation's liability fund." },
-    { title: "Recursive Evolution", content: "Use the 'Enhancement Proposer' to vote on and approve autonomous system improvements." }
+    { title: "Recursive Evolution", content: "Use the 'Enhancement Proposer' to vote on and approve autonomous system improvements." },
+    { title: "World Mind Integration", content: "Directly collaborate with the Workstation's mind through live extrospection feeds." }
   ];
 
   if (!visible) return null;

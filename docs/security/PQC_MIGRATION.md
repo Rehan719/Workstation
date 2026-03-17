@@ -10,10 +10,10 @@ Ensure the Workstation federation is resilient against quantum-scale computing t
 
 ## 3. Migration Roadmap
 - **Phase 1 (v143.0)**: Dual-stack mode. All DIDs are generated with both classical and PQC keys.
-- **Phase 2 (v144.0)**: PQC-mandatory for cross-node heartbeats and treaty signatures.
-- **Phase 3 (v145.0)**: Full deprecation of classical algorithms in the UEG.
+- **Phase 2 (v144.0)**: PQC-MANDATORY for all production connections. No classical fallback.
+- **Phase 3 (v145.0)**: Full hardware-level PQC enforcement in the UEG.
 
 ## 4. Implementation Status
-- [x] v230 PQC API Stubs
-- [ ] liboqs-python integration (agentic_core)
+- [x] v240 PQC Mandatory API
+- [x] Classical Fallback Disabled
 - [ ] Mobile PQC bridge (CryptoKit/Conscrypt)

@@ -15,6 +15,8 @@ import { Contribute } from './pages/Contribute';
 import { Wallet } from './pages/profile/Wallet';
 import { UserImpact } from './pages/profile/Impact';
 import { FederationGovernance } from './pages/federation/Governance';
+import { EvolutionDashboard } from './pages/evolution/Dashboard';
+import { FedPerformance } from './pages/federation/Performance';
 import { JoinFederationWizard } from './pages/federation/JoinWizard';
 import { Marketplace } from './pages/developers/Marketplace';
 import { DevPortal } from './pages/developers/DevPortal';

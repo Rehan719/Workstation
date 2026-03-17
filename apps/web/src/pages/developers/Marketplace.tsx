@@ -10,11 +10,24 @@ export const Marketplace: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       <header>
         <h1 className="text-4xl font-black mb-2">BTO Marketplace</h1>
         <p className="text-slate-500">Third-party agentic products and reactors certified by the Workstation CoEs.</p>
       </header>
+
+      <section className="p-10 rounded-[3rem] bg-gradient-to-br from-aura/20 to-highlight/10 border border-aura/30 relative overflow-hidden">
+         <div className="relative z-10 flex flex-col md:flex-row gap-10 items-center">
+            <div className="w-48 h-48 rounded-3xl bg-slate-900 border border-slate-700 flex items-center justify-center text-6xl shadow-2xl">🚀</div>
+            <div className="flex-1 space-y-4 text-center md:text-left">
+               <span className="px-3 py-1 bg-aura text-sovereign text-[10px] font-black uppercase rounded-full">Developer Spotlight</span>
+               <h2 className="text-4xl font-black italic tracking-tight">NeuroSync Synthesizer</h2>
+               <p className="text-slate-400 max-w-xl">Accelerate your knowledge synthesis by 400% with the new NeuroSync reactor. Optimized for Research Mission Mode.</p>
+               <button className="px-8 py-3 bg-white text-sovereign font-black rounded-xl hover:scale-105 transition-all">Claim 30-Day Resonance Trial</button>
+            </div>
+         </div>
+         <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-aura/20 rounded-full blur-[100px]"></div>
+      </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {products.map(p => (

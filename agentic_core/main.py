@@ -19,6 +19,7 @@ from agentic_core.api.v200 import resonance, contribute
 from agentic_core.api.v210 import epigenetic, homeostasis, improvement, governance, federation
 from agentic_core.api.v220 import federation as federation_v220, economic, twin
 from agentic_core.api.v230 import evolution as evolution_v230, pqc, marketplace
+from agentic_core.api.v240 import evolution as evolution_v240
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -74,6 +75,7 @@ app.include_router(twin.router, prefix="/api/v220")
 app.include_router(evolution_v230.router, prefix="/api/v230")
 app.include_router(pqc.router, prefix="/api/v230")
 app.include_router(marketplace.router, prefix="/api/v230")
+app.include_router(evolution_v240.router, prefix="/api/v240")
 
 app.add_middleware(
     CORSMiddleware,

@@ -6,10 +6,11 @@ router = APIRouter(prefix="/pqc", tags=["Security & PQC"])
 @router.get("/status")
 async def get_pqc_status():
     return {
-        "mode": "dual-stack",
+        "mode": "PQC-MANDATORY",
         "key_exchange": "Kyber-768",
         "signatures": "Dilithium-3",
-        "pqc_enabled": True
+        "pqc_enabled": True,
+        "classical_fallback": False
     }
 
 @router.post("/sign")
