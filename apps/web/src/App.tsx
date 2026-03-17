@@ -14,6 +14,7 @@ import { EvolutionProposals } from './pages/evolution/Proposals';
 import { Contribute } from './pages/Contribute';
 import { Wallet } from './pages/profile/Wallet';
 import { UserImpact } from './pages/profile/Impact';
+import { FederationPortal } from './pages/federation/FederationPortal';
 import { FederationGovernance } from './pages/federation/Governance';
 import { EvolutionDashboard } from './pages/evolution/Dashboard';
 import { FedPerformance } from './pages/federation/Performance';

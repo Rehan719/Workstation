@@ -18,6 +18,7 @@ from agentic_core.api.v191 import modes, learning, evolution as evolution_v191
 from agentic_core.api.v200 import resonance, contribute
 from agentic_core.api.v210 import epigenetic, homeostasis, improvement, governance, federation
 from agentic_core.api.v220 import federation as federation_v220, economic, twin
+from agentic_core.api.v250 import treaties, search
 from agentic_core.api.v230 import evolution as evolution_v230, pqc, marketplace
 from agentic_core.api.v240 import evolution as evolution_v240
 
@@ -72,6 +73,8 @@ app.include_router(federation.router, prefix="/api/v210")
 app.include_router(federation_v220.router, prefix="/api/v220")
 app.include_router(economic.router, prefix="/api/v220")
 app.include_router(twin.router, prefix="/api/v220")
+app.include_router(treaties.router, prefix="/api/v250")
+app.include_router(search.router, prefix="/api/v250")
 app.include_router(evolution_v230.router, prefix="/api/v230")
 app.include_router(pqc.router, prefix="/api/v230")
 app.include_router(marketplace.router, prefix="/api/v230")

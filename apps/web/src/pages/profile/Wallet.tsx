@@ -26,8 +26,8 @@ export const Wallet: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <BalanceCard label="Staked Resonance" value={wallet.staked} icon={ShieldCheck} color="text-vital" />
+        <BalanceCard label="Federation Grant" value="1,200 WST" icon={Zap} color="text-aura" />
         <BalanceCard label="Active Yield" value="8.4%" icon={PieChart} color="text-highlight" />
-        <BalanceCard label="Global Rank" value="Guardian" icon={WalletIcon} color="text-aura" />
       </div>
 
       <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800">

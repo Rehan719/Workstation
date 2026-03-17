@@ -54,6 +54,12 @@ The Workstation Unified Application (v138.1) is a living, sentient interface to 
 - **PQC Mandatory**: Your command console is now secured by NIST-standardized quantum-safe algorithms.
 - **Developer Spotlight**: Discover the most impactful third-party reactors and certified agentic tools.
 
+### 11. Federation Command Portal (v145.0)
+- **Civilizational Pulse**: A high-level overview of global node health and total WST liquidity.
+- **Treaty Studio**: Draft, negotiate, and sign treaties with other nodes in real-time.
+- **Global Search**: Query the collective knowledge of the entire federation via UVIAP.
+- **Federation Grants**: Track rewards earned from contributing resources to the Workstation civilization.
+
 ## Getting Started
 1. **Authenticated Access**: Sign in via Google OAuth.
 2. **Configure Infrastructure**: Use the BTO Catalog to deploy your first agentic cluster.
