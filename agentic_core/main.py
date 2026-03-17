@@ -14,6 +14,7 @@ from agentic_core.synthesis.uviap import UVIAP
 from agentic_core.api import qep_analytics, tools, partnerships
 from agentic_core.api.v180 import products, user
 from agentic_core.api.v190 import introspection, extrospection, evolution
+from agentic_core.api.v191 import modes, learning, evolution as evolution_v191
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,6 +54,9 @@ app.include_router(user.router, prefix="/api/v180")
 app.include_router(introspection.router, prefix="/api/v190")
 app.include_router(extrospection.router, prefix="/api/v190")
 app.include_router(evolution.router, prefix="/api/v190")
+app.include_router(modes.router, prefix="/api/v191")
+app.include_router(learning.router, prefix="/api/v191")
+app.include_router(evolution_v191.router, prefix="/api/v191")
 
 app.add_middleware(
     CORSMiddleware,
