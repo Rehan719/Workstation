@@ -32,3 +32,9 @@ The Workstation application is the primary interface to a multi-agentic, biomime
 - **First-class Experience**: Not just a responsive web app, but a native-feel Expo application.
 - **Bottom Navigation**: Persistent access to Dashboard, Reactors, Knowledge, and Profile.
 - **Biometrics**: Integration with FaceID/Fingerprint for the "Sovereign Handshake".
+
+## 6. Self-Evolution Interaction Patterns
+- **Context Shift**: A global "Mission Mode" selector in the header that triggers a visual reconfiguration of the Sidebar and Dashboard.
+- **Feedback Loop**: Subtle "resonance" feedback when a user interacts with a feature, indicating the system is learning.
+- **Enhancement Proposer**: A non-intrusive "Evolution Notification" that allows users to review and approve UI/UX improvements suggested by the system.
+- **Learning Dashboard**: A data-dense visualization of how global usage is shaping the ecosystem's mind.

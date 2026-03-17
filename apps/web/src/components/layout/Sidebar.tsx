@@ -1,9 +1,23 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart, Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles } from 'lucide-react';
+import { useModeStore } from '../../store/modeStore';
 
-const navItems = [
+const allNavItems = [
   { name: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
   { name: 'VSB AI CEO', icon: MessageSquare, id: 'ceo' },
+  { name: 'Self Vision', icon: ShieldCheck, id: 'introspection' },
+  { name: 'World Mind', icon: BookOpen, id: 'extrospection' },
+  { name: 'Mind Forge', icon: ShieldCheck, id: 'evolution' },
+  { name: 'Fed Portal', icon: Network, id: 'fed-portal' },
+  { name: 'Sovereign Wallet', icon: ShieldCheck, id: 'wallet' },
+  { name: 'Learning Hub', icon: LayoutDashboard, id: 'learning' },
+  { name: 'Evolution Log', icon: Sparkles, id: 'proposals' },
+  { name: 'Contribute', icon: Heart, id: 'contribute' },
+  { name: 'Your Impact', icon: Zap, id: 'impact' },
+  { name: 'Evolution Metrics', icon: Rocket, id: 'evolution-dashboard' },
+  { name: 'Roadmap', icon: LayoutDashboard, id: 'roadmap' },
+  { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' },
+  { name: 'Dev Portal', icon: Terminal, id: 'dev-portal' },
   { name: 'BTO Catalog', icon: Package, id: 'bto' },
   { name: 'Knowledge CoEs', icon: BookOpen, id: 'coe' },
   { name: 'QEP Engine', icon: ShieldCheck, id: 'qep' },
@@ -16,8 +30,11 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+  const { config } = useModeStore();
+  const navItems = config ? allNavItems.filter(item => config.nav.includes(item.id)) : allNavItems;
+
   return (
-    <aside className="w-72 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 flex flex-col p-6 h-screen sticky top-0">
+    <aside className="w-72 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 flex flex-col p-6 h-screen sticky top-0 transition-all duration-500">
       <div className="mb-10">
         <h2 className="text-2xl font-black text-aura tracking-tighter">WORKSTATION</h2>
         <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">v138.0 Unified App</p>
@@ -28,13 +45,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-aura ${
               activeTab === item.id
                 ? 'bg-aura text-sovereign font-bold shadow-lg shadow-aura/20'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
+            aria-label={item.name}
           >
-            <item.icon size={20} />
+            <item.icon size={20} aria-hidden="true" />
             <span className="text-sm font-semibold">{item.name}</span>
           </button>
         ))}

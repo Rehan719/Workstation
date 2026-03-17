@@ -6,9 +6,28 @@ import { BTOCatalog } from './pages/BTOCatalog';
 import { CFO } from './pages/c-suite/CFO';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 import { QEPEngine } from './pages/QEPEngine';
+import { Introspection } from './pages/cognitive/Introspection';
+import { Extrospection } from './pages/cognitive/Extrospection';
+import { Evolution } from './pages/cognitive/Evolution';
+import { LearningDashboard } from './pages/evolution/LearningDashboard';
+import { EvolutionProposals } from './pages/evolution/Proposals';
+import { Contribute } from './pages/Contribute';
+import { Wallet } from './pages/profile/Wallet';
+import { UserImpact } from './pages/profile/Impact';
+import { FederationPortal } from './pages/federation/FederationPortal';
+import { FederationGovernance } from './pages/federation/Governance';
+import { EvolutionDashboard } from './pages/evolution/Dashboard';
+import { FedPerformance } from './pages/federation/Performance';
+import { JoinFederationWizard } from './pages/federation/JoinWizard';
+import { Marketplace } from './pages/developers/Marketplace';
+import { DevPortal } from './pages/developers/DevPortal';
+import { PublicRoadmap } from './pages/PublicRoadmap';
+import { OnboardingTour } from './components/onboarding/OnboardingTour';
 
 function App() {
   return (
+    <>
+    <OnboardingTour />
     <Shell>
       {(activeTab) => {
         switch (activeTab) {
@@ -22,6 +41,18 @@ function App() {
             return <KnowledgeHub />;
           case 'qep':
             return <QEPEngine />;
+          case 'introspection':
+            return <Introspection />;
+          case 'extrospection':
+            return <Extrospection />;
+          case 'evolution':
+            return <Evolution />;
+          case 'learning':
+            return <LearningDashboard />;
+          case 'proposals':
+            return <EvolutionProposals />;
+          case 'contribute':
+            return <Contribute />;
           default:
             return (
               <div className="flex items-center justify-center h-full">
@@ -34,6 +65,7 @@ function App() {
         }
       }}
     </Shell>
+    </>
   );
 }
 
