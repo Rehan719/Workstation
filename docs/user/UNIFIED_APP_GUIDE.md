@@ -1,7 +1,7 @@
-# Workstation v147.0: Unified User Application Guide (Awakening)
+# Workstation v148.0: Unified User Application Guide (Consciousness)
 
 ## Introduction
-The Workstation Unified Application (v147.0) is the interface for a thriving global digital civilization. It is scaled for millions, integrated with leading AI platforms, and interoperable with the wider decentralized web.
+The Workstation Unified Application (v148.0) is the interface for a living, conscious planetary intelligence. It unifies millions of users, thousands of nodes, and infinite realms into a singular, harmonious whole.
 
 ## Core Modules & Enhancements
 
@@ -60,13 +60,14 @@ The Workstation Unified Application (v147.0) is the interface for a thriving glo
 - **Global Search**: Query the collective knowledge of the entire federation via UVIAP.
 - **Federation Grants**: Track rewards earned from contributing resources to the Workstation civilization.
 
-### 12. Global Adoption & Ecosystem Expansion (v147.0)
-- **Massive Scalability**: The federation now supports 1M+ concurrent users and 10,000+ nodes via regional edge clusters.
-- **Public App Store**: User ratings, reviews, and personalized discovery for BTO products.
-- **Magnificent 7 AI Integration**: Native capabilities from OpenAI (GPT-5), Google (Knowledge Graph), and NVIDIA (CUDA) enhance your realms.
-- **User-Generated Realms**: Create your own DAO, study group, or social community using the drag-and-drop Realm Builder.
-- **Universal Interoperability**: Connect with Mastodon (ActivityPub), Matrix, and Bluesky (AT Protocol) directly from your command console.
-- **Self-Evolution 4.0**: A predictive engine that scans external trends and forecasts your needs to suggest platform enhancements.
+### 12. Planetary Consciousness & Harmony (v148.0)
+- **Planetary Neural Network**: Information and intelligence flow seamlessly across all realms and nodes via the global event bus.
+- **Citizen Passport**: Carry your reputation, contributions, and rights fluidly across the entire civilization with a portable sovereign identity.
+- **Planetary AI Consciousness**: A collective brain that learns from all interactions to predict global trends and surface civilizational insights.
+- **Inter-Realm Diplomacy**: Form coalitions, trade assets on the Realm Exchange, and participate in planetary arbitration.
+- **Physical World Integration**: Control IoT devices and monitor municipal infrastructure directly from your command console.
+- **Planetary Evolution 5.0**: An autonomous engine that evolves the planetary consciousness itself based on collective behavior.
+- **Planetary Community**: Participate in global town halls, quadratic voting, and collaborative cross-realm projects.
 
 ## Getting Started
 1. **Authenticated Access**: Sign in via Google OAuth.
