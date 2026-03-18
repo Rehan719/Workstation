@@ -44,8 +44,22 @@ export const Dashboard: React.FC = () => {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <section aria-label="UEG Resonance Map" className="lg:col-span-2 p-8 rounded-3xl bg-slate-900/40 border border-slate-800 h-96 flex flex-col items-center justify-center">
-          <p className="text-slate-600 font-bold uppercase tracking-[0.2em]">UEG Resonance Map Visualization</p>
+        <section aria-label="UEG Resonance Map" className="lg:col-span-2 p-8 rounded-3xl bg-slate-900/40 border border-slate-800 h-96 flex flex-col items-center justify-center overflow-hidden relative">
+          <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
+             <div className="w-[500px] h-[500px] rounded-full border border-aura/30 animate-ping-slow"></div>
+             <div className="absolute w-[300px] h-[300px] rounded-full border border-highlight/20 animate-pulse"></div>
+          </div>
+          <p className="text-aura font-black uppercase tracking-[0.2em] mb-4 z-10">UEG Resonance Map Active</p>
+          <div className="flex gap-12 z-10">
+             {[1, 2, 3].map(i => (
+               <div key={i} className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-aura/10 border border-aura flex items-center justify-center mb-2 animate-bounce" style={{ animationDelay: `${i*0.5}s` }}>
+                     <Zap size={20} className="text-aura" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Node-{i}</span>
+               </div>
+             ))}
+          </div>
           <div className="sr-only">
             This visualization shows the real-time resonance of the Unified Event Graph across the federation.
             All nodes are currently within optimal operational parameters (98%+ fidelity).

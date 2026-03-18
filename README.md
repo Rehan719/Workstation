@@ -69,11 +69,14 @@ pip install -r requirements.txt
 cp .env.template .env
 # Edit .env with your API keys (Firebase, Google OAuth, etc.)
 
-# Run the development server (Site & Web App)
-./deploy.sh --v137
+# Run the setup script to initialize the environment
+./setup.sh  # or `./setup.ps1` on Windows
+
+# Start the full stack (Backend, Web, Mobile)
+npm run web:dev
 ```
 
-Then open `http://localhost:8000` in your browser and log in with Google/Gmail.
+Then open `http://localhost:5174` in your browser for the Unified Web App.
 
 ---
 

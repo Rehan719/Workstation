@@ -1,5 +1,5 @@
-import React from 'react';
-import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle, X } from 'lucide-react';
 import { useModeStore } from '../../store/modeStore';
 
 export const Header: React.FC = () => {
@@ -44,11 +44,17 @@ export const Header: React.FC = () => {
         <button
           onClick={() => setShowAssistant(!showAssistant)}
           className={`p-3 rounded-xl transition-all ${showAssistant ? 'bg-aura text-sovereign' : 'bg-slate-800 text-aura hover:scale-105'}`}
+          aria-label="Toggle Civilization Assistant"
+          title="Civilization Assistant"
         >
           <Sparkles size={20} />
         </button>
 
-        <button className="relative p-2 text-slate-400 hover:text-white transition-colors">
+        <button
+          className="relative p-2 text-slate-400 hover:text-white transition-colors"
+          aria-label="View Notifications"
+          title="Notifications"
+        >
           <Bell size={20} />
           <span className="absolute top-2 right-2 w-2 h-2 bg-highlight rounded-full"></span>
         </button>
@@ -58,7 +64,9 @@ export const Header: React.FC = () => {
         <div className="fixed top-24 right-8 w-96 bg-slate-900 border border-aura/30 rounded-3xl shadow-2xl overflow-hidden z-[100] animate-in slide-in-from-right-4 duration-300">
            <div className="p-6 border-b border-white/10 bg-aura/5 flex justify-between items-center">
               <h3 className="font-black uppercase tracking-widest text-xs text-aura">Civilization Assistant</h3>
-              <button onClick={() => setShowAssistant(false)} className="text-slate-500 hover:text-white">&times;</button>
+              <button onClick={() => setShowAssistant(false)} className="text-slate-500 hover:text-white" aria-label="Close Assistant">
+                <X size={16} />
+              </button>
            </div>
            <div className="p-6 h-80 overflow-y-auto space-y-4">
               <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5 text-xs leading-relaxed text-slate-300">

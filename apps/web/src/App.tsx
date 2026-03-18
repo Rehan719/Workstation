@@ -36,6 +36,8 @@ function App() {
             return <Dashboard />;
           case 'ceo':
             return <CEOChat />;
+          case 'cfo':
+            return <CFO />;
           case 'bto':
             return <BTOCatalog />;
           case 'coe':
@@ -43,6 +45,7 @@ function App() {
           case 'qep':
             return <QEPEngine />;
           case 'introspection':
+          case 'mind':
             return <Introspection />;
           case 'extrospection':
             return <Extrospection />;
@@ -55,10 +58,12 @@ function App() {
           case 'contribute':
             return <Contribute />;
           case 'fed-portal':
+          case 'gov-facet':
             return <FederationPortal />;
           case 'governance':
             return <FederationGovernance />;
           case 'wallet':
+          case 'eco-facet':
             return <Wallet />;
           case 'marketplace':
             return <Marketplace />;

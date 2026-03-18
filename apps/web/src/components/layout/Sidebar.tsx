@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart, Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity, Brain, Network, Palette } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart, Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity, Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign } from 'lucide-react';
 import { useModeStore } from '../../store/modeStore';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -7,22 +7,33 @@ const allNavItems = [
   { name: 'Pulse', icon: Activity, id: 'dashboard' },
   { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
   {
+    name: 'C-Suite',
+    icon: User,
+    id: 'c-suite',
+    subItems: [
+      { name: 'CFO Agent', icon: DollarSign, id: 'cfo' }
+    ]
+  },
+  {
     name: 'The Mind',
     icon: Brain,
     id: 'mind',
     subItems: [
       { name: 'Self Vision', icon: ShieldCheck, id: 'introspection' },
       { name: 'World Mind', icon: BookOpen, id: 'extrospection' },
-      { name: 'Mind Forge', icon: ShieldCheck, id: 'evolution' }
+      { name: 'Mind Forge', icon: ShieldCheck, id: 'evolution' },
+      { name: 'Knowledge Hub', icon: FileText, id: 'coe' }
     ]
   },
   {
-    name: 'Governance',
-    icon: Shield,
+    name: 'Federation',
+    icon: Network,
     id: 'gov-facet',
     subItems: [
       { name: 'Fed Portal', icon: Network, id: 'fed-portal' },
-      { name: 'Constitution', icon: Shield, id: 'governance' }
+      { name: 'Governance', icon: Shield, id: 'governance' },
+      { name: 'Performance', icon: Gauge, id: 'performance' },
+      { name: 'Join Swarm', icon: Plus, id: 'join-fed' }
     ]
   },
   {
@@ -35,7 +46,16 @@ const allNavItems = [
       { name: 'BTO Catalog', icon: Package, id: 'bto' }
     ]
   },
-  { name: 'Evolution', icon: Sparkles, id: 'evolution-facet' },
+  {
+    name: 'Evolution',
+    icon: Sparkles,
+    id: 'evolution-facet',
+    subItems: [
+      { name: 'Public Roadmap', icon: Map, id: 'roadmap' },
+      { name: 'User Impact', icon: Heart, id: 'impact' },
+      { name: 'QEP Engine', icon: Cpu, id: 'qep' }
+    ]
+  },
   { name: 'Settings', icon: Settings, id: 'settings' },
 ];
 
