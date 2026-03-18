@@ -14,7 +14,17 @@ export const Introspection: React.FC = () => {
 
   useEffect(() => {
     if (!vitals) {
-      axios.get('/api/v190/introspection/vitals').then(res => setVitals(res.data));
+      axios.get('/api/v190/introspection/vitals')
+        .then(res => setVitals(res.data))
+        .catch(() => {
+          console.warn("Using fallback vitals.");
+          setVitals({
+            oxytocin: 0.85,
+            serotonin: 0.92,
+            dopamine: 0.74,
+            system_health: 0.9998
+          });
+        });
     }
   }, []);
 

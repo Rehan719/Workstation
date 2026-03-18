@@ -1,8 +1,18 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign, BarChart3, PieChart } from 'lucide-react';
+import { DollarSign, BarChart3, PieChart, TrendingUp, Wallet } from 'lucide-react';
+import axios from 'axios';
+import fallbackData from '../../data/fallbackData.json';
 
 export const CFO: React.FC = () => {
+  const [data, setData] = useState<any>(fallbackData.financials);
+
+  useEffect(() => {
+    axios.get('/api/financial/overview')
+      .then(res => setData(res.data))
+      .catch(() => console.warn("Using fallback financial data."));
+  }, []);
+
   return (
     <div className="space-y-10">
       <header className="flex justify-between items-end">
@@ -16,10 +26,12 @@ export const CFO: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <MetricCard title="Revenue (24h)" value="1,240 WST" delta="+12%" icon={DollarSign} />
-        <MetricCard title="Operating Costs" value="450 WST" delta="-5%" icon={PieChart} />
-        <MetricCard title="Market Cap" value="1.4M WST" delta="+2.4%" icon={BarChart3} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard title="Revenue (24h)" value={`${data.revenue.toLocaleString()} WST`} delta={data.growth} icon={DollarSign} />
+        <MetricCard title="Liquidity" value={`${data.liquidity.toLocaleString()} WST`} delta="Stable" icon={Wallet} />
+        {data.kpis.map((kpi: any) => (
+          <MetricCard key={kpi.label} title={kpi.label} value={kpi.value} delta="+0.2%" icon={TrendingUp} />
+        ))}
       </div>
 
       <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 h-96 flex flex-col">

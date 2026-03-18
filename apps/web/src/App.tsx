@@ -54,6 +54,37 @@ function App() {
             return <EvolutionProposals />;
           case 'contribute':
             return <Contribute />;
+          case 'fed-portal':
+            return <FederationPortal />;
+          case 'governance':
+            return <FederationGovernance />;
+          case 'wallet':
+            return <Wallet />;
+          case 'marketplace':
+            return <Marketplace />;
+          case 'impact':
+            return <UserImpact />;
+          case 'evolution-facet':
+            return <EvolutionDashboard />;
+          case 'performance':
+            return <FedPerformance />;
+          case 'join-fed':
+            return <JoinFederationWizard />;
+          case 'dev-portal':
+            return <DevPortal />;
+          case 'roadmap':
+            return <PublicRoadmap />;
+          case 'settings':
+            return (
+              <div className="space-y-6">
+                <h1 className="text-4xl font-black mb-2">Settings</h1>
+                <p className="text-slate-500">Configure your Workstation preferences and protocol parameters.</p>
+                <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800">
+                  <h3 className="text-xl font-bold mb-4">Identity & Access</h3>
+                  <button className="px-6 py-2 bg-aura text-sovereign font-bold rounded-xl">Refresh Sovereign Handshake</button>
+                </div>
+              </div>
+            );
           default:
             return (
               <div className="flex items-center justify-center h-full">

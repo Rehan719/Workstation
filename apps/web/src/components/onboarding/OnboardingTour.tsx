@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 
 export const OnboardingTour: React.FC = () => {
   const [step, setStep] = useState(0);
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => {
+    return !localStorage.getItem('onboarding-complete');
+  });
 
   const steps = [
     { title: "Welcome, Guardian", content: "You are now at the heart of the Workstation federation. This tour will guide you through your new sovereign command console." },
@@ -30,7 +32,14 @@ export const OnboardingTour: React.FC = () => {
              </button>
            )}
            <button
-             onClick={() => step < steps.length - 1 ? setStep(step + 1) : setVisible(false)}
+             onClick={() => {
+               if (step < steps.length - 1) {
+                 setStep(step + 1);
+               } else {
+                 setVisible(false);
+                 localStorage.setItem('onboarding-complete', 'true');
+               }
+             }}
              className="flex-2 py-4 bg-aura text-sovereign font-black rounded-xl hover:scale-105 transition-all"
            >
              {step === steps.length - 1 ? "Start Command" : "Next Step"}

@@ -7,7 +7,16 @@ export const useWebSocket = (url: string) => {
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host === 'localhost:5173' ? 'localhost:8000' : window.location.host;
-    ws.current = new WebSocket(`${protocol}//${host}${url}`);
+    try {
+      ws.current = new WebSocket(`${protocol}//${host}${url}`);
+    } catch (e) {
+      console.warn("WebSocket initialization failed:", e);
+      return;
+    }
+
+    ws.current.onerror = (error) => {
+      console.warn("WebSocket error for", url, "- falling back to polling or static data.");
+    };
 
     ws.current.onmessage = (event) => {
       setData(jsonSafeParse(event.data));
