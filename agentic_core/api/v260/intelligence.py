@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from typing import Dict, Any, List
+from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/civilization", tags=["Civilization Intelligence"])
 
@@ -13,8 +14,9 @@ async def get_civilization_recommendations(user_id: str):
 
 @router.post("/assistant/query")
 async def assistant_query(query: str):
+    ai_response = await gateway.query(query)
     return {
-        "response": f"I have analyzed the Workstation state regarding '{query}'. Optimal trajectory: Proceed with v146 unification.",
+        "response": ai_response,
         "confidence": 0.99,
         "actions": ["/fed-portal", "/evolution-dashboard"]
     }
