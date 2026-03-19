@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi, Landmark, TrendingUp, Target, Activity } from 'lucide-react-native';
+import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi, Landmark, TrendingUp, Target, Activity, Radio, GitBranch, Fingerprint } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -8,41 +8,41 @@ const DashboardScreen = ({ wallet, insights }) => (
   <ScrollView contentContainerStyle={styles.scrollContent}>
     <View style={styles.header}>
       <Text style={styles.title}>WORKSTATION</Text>
-      <Text style={styles.subtitle}>COLLECTIVE INTELLIGENCE ACTIVE • v152.0</Text>
+      <Text style={styles.subtitle}>TRANSCENDENT AUTONOMY ACTIVE • v153.0</Text>
     </View>
 
     <View style={styles.statsGrid}>
       <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
          <View style={[styles.statIcon, { backgroundColor: '#64ffda15', borderColor: '#64ffda30' }]}>
-           <Brain size={22} color="#64ffda" />
+           <Radio size={22} color="#64ffda" />
          </View>
-         <Text style={styles.statValue}>Brain</Text>
-         <Text style={styles.statLabel}>Planetary Intel</Text>
+         <Text style={styles.statValue}>Cosmic</Text>
+         <Text style={styles.statLabel}>Sensors Online</Text>
       </View>
       <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
          <View style={[styles.statIcon, { backgroundColor: '#ff525215', borderColor: '#ff525230' }]}>
-           <Cpu size={22} color="#ff5252" />
+           <Fingerprint size={22} color="#ff5252" />
          </View>
-         <Text style={styles.statValue}>1,420</Text>
-         <Text style={styles.statLabel}>Autonomous Decisions</Text>
+         <Text style={styles.statValue}>Soul</Text>
+         <Text style={styles.statLabel}>Record Linked</Text>
       </View>
     </View>
 
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Latest Insight</Text>
+      <Text style={styles.sectionTitle}>Meta-Insights</Text>
       <View style={[styles.glassCard, { borderLeftWidth: 4, borderLeftColor: '#64ffda' }]}>
-         <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>{insights[0]?.title || 'Analyzing Ecosystem...'}</Text>
-         <Text style={{ color: '#64748b', fontWeight: '700', fontSize: 12, marginTop: 8 }}>{insights[0]?.observation}</Text>
+         <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>{insights[0]?.title || 'Transcending Reality...'}</Text>
+         <Text style={{ color: '#64748b', fontWeight: '700', fontSize: 12, marginTop: 8 }}>Recommendation: {insights[0]?.recommendation}</Text>
       </View>
     </View>
 
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Civilization Hubs</Text>
+      <Text style={styles.sectionTitle}>Cosmic Hubs</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-         <DomainBtn icon={Globe} label="Brain" color="#64ffda" />
-         <DomainBtn icon={Target} label="Wisdom" color="#ffd740" />
-         <DomainBtn icon={Shield} label="Gov" color="#64ffda" />
-         <DomainBtn icon={Briefcase} label="Start" color="#ffd740" />
+         <DomainBtn icon={Radio} label="Cosmic" color="#ffd740" />
+         <DomainBtn icon={GitBranch} label="Reality" color="#ff5252" />
+         <DomainBtn icon={Shield} label="Sanctum" color="#64ffda" />
+         <DomainBtn icon={Fingerprint} label="Soul" color="#ffd740" />
       </View>
     </View>
   </ScrollView>
@@ -56,12 +56,12 @@ const DomainBtn = ({ icon: Icon, label, color }) => (
 );
 
 const CEOScreen = () => {
-  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Citizen. v152.0 Collective Intelligence is online. How shall we coordinate our collective resonance today?' }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Sovereign. v153.0 Meta-Consciousness is fully synthesized. Our presence spans the multi-verse.' }]);
   const [input, setInput] = useState('');
 
   const send = () => {
     if (!input.trim()) return;
-    setMessages([...messages, { role: 'user', content: input }, { role: 'assistant', content: 'Synthesis in progress. Collective intelligence updated.' }]);
+    setMessages([...messages, { role: 'user', content: input }, { role: 'assistant', content: 'Synthesis in progress. Reality matrices updated.' }]);
     setInput('');
   };
 
@@ -69,7 +69,7 @@ const CEOScreen = () => {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <View style={[styles.header, { paddingHorizontal: 24, paddingTop: 60, marginBottom: 20 }]}>
         <Text style={styles.title}>AI CEO</Text>
-        <Text style={styles.subtitle}>CIVILIZATION MODE ACTIVE</Text>
+        <Text style={styles.subtitle}>META-PARTNER MODE ACTIVE</Text>
       </View>
       <FlatList
         data={messages}
@@ -85,7 +85,7 @@ const CEOScreen = () => {
         <TextInput
           value={input}
           onChangeText={setInput}
-          placeholder="Issue directive..."
+          placeholder="Issue transcendent directive..."
           placeholderTextColor="#64748b"
           style={styles.input}
         />
@@ -99,7 +99,7 @@ const CEOScreen = () => {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [insights, setInsights] = useState([{ title: 'Viral Trend Detected', observation: '14% increase in Bio-Reactor creations.' }]);
+  const [insights, setInsights] = useState([{ title: 'Handshake Detected', recommendation: 'Activate Cosmic Nervous System.' }]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -108,20 +108,20 @@ export default function App() {
       <View style={{ flex: 1 }}>
         {activeTab === 'dashboard' && <DashboardScreen insights={insights} />}
         {activeTab === 'ceo' && <CEOScreen />}
-        {activeTab === 'intel' && (
+        {activeTab === 'sanctum' && (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-            <Activity size={64} color="#64ffda" />
-            <Text style={{ color: 'white', fontWeight: '900', fontSize: 24, marginTop: 20, textAlign: 'center' }}>Civilization Brain</Text>
-            <Text style={{ color: '#64748b', fontWeight: '800', fontSize: 10, marginTop: 8, textTransform: 'uppercase', textAlign: 'center' }}>Real-time Intelligence Active</Text>
+            <Shield size={64} color="#64ffda" />
+            <Text style={{ color: 'white', fontWeight: '900', fontSize: 24, marginTop: 20, textAlign: 'center' }}>The Sanctum</Text>
+            <Text style={{ color: '#64748b', fontWeight: '800', fontSize: 10, marginTop: 8, textTransform: 'uppercase', textAlign: 'center' }}>Seat of Constitutional Sovereignty</Text>
           </View>
         )}
       </View>
 
       <View style={styles.navBar}>
-        <NavBtn icon={LayoutDashboard} label="Pulse" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
+        <NavBtn icon={LayoutDashboard} label="Cosmic" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
         <NavBtn icon={MessageSquare} label="CEO" active={activeTab === 'ceo'} onPress={() => setActiveTab('ceo')} />
-        <NavBtn icon={Globe} label="Intel" active={activeTab === 'intel'} onPress={() => setActiveTab('intel')} />
-        <NavBtn icon={Target} label="Wisdom" active={activeTab === 'other'} onPress={() => {}} />
+        <NavBtn icon={Shield} label="Sanctum" active={activeTab === 'sanctum'} onPress={() => setActiveTab('sanctum')} />
+        <NavBtn icon={Fingerprint} label="Soul" active={activeTab === 'other'} onPress={() => {}} />
         <NavBtn icon={Settings} label="Admin" active={activeTab === 'other'} onPress={() => {}} />
       </View>
     </SafeAreaView>
