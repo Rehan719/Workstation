@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
-import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle, X, Shield, Star, Award } from 'lucide-react';
 import { useModeStore } from '../../store/modeStore';
+import { useGamificationStore } from '../../store/gamificationStore';
 
 export const Header: React.FC = () => {
+  const { stats, fetchStats } = useGamificationStore();
   const { currentMode, setMode } = useModeStore();
   const [showAssistant, setShowAssistant] = useState(false);
+  const [showGovernance, setShowGovernance] = useState(false);
+
+  useEffect(() => {
+    fetchStats('guardian');
+  }, []);
 
   return (
     <header className="h-20 border-b border-slate-800 px-8 flex items-center justify-between bg-sovereign/50 backdrop-blur-md sticky top-0 z-20">
@@ -23,6 +30,77 @@ export const Header: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-6">
+        <div
+          className="relative group cursor-pointer"
+          onMouseEnter={() => setShowGovernance(true)}
+          onMouseLeave={() => setShowGovernance(false)}
+        >
+          <div className="flex items-center gap-2 p-3 bg-sovereign/40 border border-aura/30 rounded-xl hover:border-aura/60 transition-all shadow-lg shadow-aura/5">
+             <Shield size={18} className="text-aura" />
+             <span className="text-[10px] font-black uppercase tracking-widest text-aura">VSB</span>
+          </div>
+          {showGovernance && (
+            <div className="absolute top-full left-0 mt-4 w-72 p-6 glass-card bg-sovereign/95 backdrop-blur-2xl border-aura/30 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-300">
+               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-6">Governance Hierarchy</h4>
+               <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                     <div className="w-8 h-8 rounded-lg bg-aura/20 border border-aura/40 flex items-center justify-center text-aura font-black text-xs shadow-[0_0_15px_rgba(100,255,218,0.2)]">E</div>
+                     <div>
+                        <p className="text-xs font-black text-white uppercase tracking-wider">The Entity</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Supervision Layer</p>
+                     </div>
+                  </div>
+                  <div className="ml-4 h-6 border-l border-aura/20"></div>
+                  <div className="flex items-center gap-4">
+                     <div className="w-8 h-8 rounded-lg bg-vital/20 border border-vital/40 flex items-center justify-center text-vital font-black text-xs shadow-[0_0_15px_rgba(255,82,82,0.2)]">V</div>
+                     <div>
+                        <p className="text-xs font-black text-white uppercase tracking-wider">Virtual Sovereign Business</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ownership & Assets</p>
+                     </div>
+                  </div>
+                  <div className="ml-4 h-6 border-l border-vital/20"></div>
+                  <div className="flex items-center gap-4">
+                     <div className="w-8 h-8 rounded-lg bg-highlight/20 border border-highlight/40 flex items-center justify-center text-highlight font-black text-xs shadow-[0_0_15px_rgba(255,215,64,0.2)]">CEO</div>
+                     <div>
+                        <p className="text-xs font-black text-white uppercase tracking-wider">AI CEO & C-Suite</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Leadership & Strategy</p>
+                     </div>
+                  </div>
+                  <div className="ml-4 h-6 border-l border-highlight/20"></div>
+                  <div className="flex items-center gap-4">
+                     <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-slate-400 font-black text-xs shadow-[0_0_15px_rgba(255,255,255,0.1)]">CoE</div>
+                     <div>
+                        <p className="text-xs font-black text-white uppercase tracking-wider">Centers of Excellence</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sovereign Support</p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-6 px-4 py-2 bg-slate-900/60 border border-slate-700/50 rounded-2xl shadow-inner">
+           <div className="flex items-center gap-3">
+              <div className="p-2 bg-aura/20 rounded-lg text-aura">
+                <Star size={16} fill="currentColor" />
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Level {stats.level}</p>
+                <div className="w-24 h-1.5 bg-slate-800 rounded-full mt-1 overflow-hidden border border-white/5">
+                   <div className="h-full bg-aura shadow-[0_0_10px_rgba(100,255,218,0.5)]" style={{ width: `${(stats.xp % 100)}%` }}></div>
+                </div>
+              </div>
+           </div>
+
+           <div className="flex gap-2">
+              {stats.badges.map((b: string) => (
+                <div key={b} className="p-2 bg-vital/20 rounded-lg text-vital border border-vital/30 hover:scale-110 transition-transform cursor-help" title={`Badge Earned: ${b}`}>
+                   <Award size={16} />
+                </div>
+              ))}
+           </div>
+        </div>
+
         <div className="flex items-center gap-3 bg-slate-900 border border-slate-700 px-4 py-2 rounded-xl group cursor-pointer relative">
           <Zap size={14} className="text-highlight" />
           <span className="text-xs font-bold uppercase tracking-widest">{currentMode} Mode</span>

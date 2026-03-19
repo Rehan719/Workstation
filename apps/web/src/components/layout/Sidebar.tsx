@@ -56,6 +56,18 @@ const allNavItems = [
       { name: 'QEP Engine', icon: Cpu, id: 'qep' }
     ]
   },
+  {
+    name: 'Domains',
+    icon: Globe,
+    id: 'domain-facet',
+    subItems: [
+      { name: 'Religion', icon: Book, id: 'religion' },
+      { name: 'Science', icon: Zap, id: 'science' },
+      { name: 'Law', icon: Scale, id: 'law' },
+      { name: 'Employment', icon: Briefcase, id: 'employment' },
+      { name: 'Education', icon: GraduationCap, id: 'education' }
+    ]
+  },
   { name: 'Settings', icon: Settings, id: 'settings' },
   { name: 'Admin', icon: Shield, id: 'admin' },
 ];

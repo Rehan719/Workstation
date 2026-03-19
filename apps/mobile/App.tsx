@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu } from 'lucide-react-native';
+import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
-const DashboardScreen = ({ mode }) => (
+const DashboardScreen = ({ stats }) => (
   <ScrollView contentContainerStyle={styles.scrollContent}>
     <View style={styles.header}>
       <Text style={styles.title}>WORKSTATION</Text>
-      <Text style={styles.subtitle}>{mode.toUpperCase()} MISSION ACTIVE • v148.0</Text>
+      <Text style={styles.subtitle}>UNIVERSAL EMPOWERMENT ACTIVE • v149.0</Text>
     </View>
 
     <View style={styles.statsGrid}>
-      <StatCard label="Fidelity" value="99.9%" icon={Zap} color="#64ffda" />
-      <StatCard label="Resonance" value="0.98" icon={Brain} color="#ff5252" />
+      <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
+         <View style={[styles.statIcon, { backgroundColor: '#64ffda15', borderColor: '#64ffda30' }]}>
+           <Star size={22} color="#64ffda" fill="#64ffda" />
+         </View>
+         <Text style={styles.statValue}>Lvl {stats.level}</Text>
+         <Text style={styles.statLabel}>Evolution Stage</Text>
+      </View>
+      <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
+         <View style={[styles.statIcon, { backgroundColor: '#ff525215', borderColor: '#ff525230' }]}>
+           <Brain size={22} color="#ff5252" />
+         </View>
+         <Text style={styles.statValue}>{stats.xp}</Text>
+         <Text style={styles.statLabel}>Resonance XP</Text>
+      </View>
+    </View>
+
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Domain Hubs</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+         <DomainBtn icon={Book} label="Religion" color="#ffd740" />
+         <DomainBtn icon={FlaskConical} label="Science" color="#ff5252" />
+         <DomainBtn icon={Scale} label="Law" color="#64ffda" />
+         <DomainBtn icon={Briefcase} label="Career" color="#ffd740" />
+         <DomainBtn icon={GraduationCap} label="Mastery" color="#64ffda" />
+      </View>
     </View>
 
     <View style={styles.section}>
@@ -24,27 +47,18 @@ const DashboardScreen = ({ mode }) => (
          <ResonanceItem label="Dopamine" value="74%" color="#ff5252" />
       </View>
     </View>
-
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Recent Activity</Text>
-      {[
-        { t: 'PQC Handshake Successful', m: 'Security' },
-        { t: 'Protocol v148.0 Sync', m: 'Core' }
-      ].map((act, i) => (
-        <View key={i} style={[styles.glassCard, { marginBottom: 12, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#64ffda' }} />
-          <View>
-            <Text style={{ color: 'white', fontWeight: '900', fontSize: 14 }}>{act.t}</Text>
-            <Text style={{ color: '#64748b', fontWeight: '800', fontSize: 10, textTransform: 'uppercase', marginTop: 2 }}>{act.m} • JUST NOW</Text>
-          </View>
-        </View>
-      ))}
-    </View>
   </ScrollView>
 );
 
+const DomainBtn = ({ icon: Icon, label, color }) => (
+  <TouchableOpacity style={[styles.glassCard, { width: (width - 76) / 3, alignItems: 'center', padding: 12 }]}>
+     <Icon size={20} color={color} />
+     <Text style={[styles.statLabel, { fontSize: 8, marginTop: 8 }]}>{label}</Text>
+  </TouchableOpacity>
+);
+
 const CEOScreen = () => {
-  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Guardian. How shall we direct the evolution of the workstation today?' }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Guardian. Welcome to the v149.0 digital playground. How shall we empower humanity today?' }]);
   const [input, setInput] = useState('');
 
   const send = () => {
@@ -85,16 +99,6 @@ const CEOScreen = () => {
   );
 };
 
-const StatCard = ({ label, value, icon: Icon, color }) => (
-  <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
-    <View style={[styles.statIcon, { backgroundColor: color + '15', borderColor: color + '30' }]}>
-      <Icon size={22} color={color} />
-    </View>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
-
 const ResonanceItem = ({ label, value, color }) => (
   <View style={styles.resRow}>
     <Text style={styles.resLabel}>{label}</Text>
@@ -107,17 +111,17 @@ const ResonanceItem = ({ label, value, color }) => (
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [mode, setMode] = useState('strategic');
+  const [stats, setStats] = useState({ xp: 1420, level: 12, badges: ['Sovereign', 'Polymath'] });
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       <View style={{ flex: 1 }}>
-        {activeTab === 'dashboard' && <DashboardScreen mode={mode} />}
+        {activeTab === 'dashboard' && <DashboardScreen stats={stats} />}
         {activeTab === 'ceo' && <CEOScreen />}
         {activeTab === 'other' && (
-          <View style={{ flex: 1, alignItems: 'center', justify: 'center' }}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ color: 'white', fontWeight: '900', fontSize: 24 }}>Under Construction</Text>
           </View>
         )}
@@ -126,8 +130,8 @@ export default function App() {
       <View style={styles.navBar}>
         <NavBtn icon={LayoutDashboard} label="Pulse" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
         <NavBtn icon={MessageSquare} label="CEO" active={activeTab === 'ceo'} onPress={() => setActiveTab('ceo')} />
-        <NavBtn icon={ShoppingBag} label="Economy" active={activeTab === 'other'} onPress={() => setActiveTab('other')} />
-        <NavBtn icon={Cpu} label="QEP" active={activeTab === 'other'} onPress={() => setActiveTab('other')} />
+        <NavBtn icon={Globe} label="Domains" active={activeTab === 'other'} onPress={() => setActiveTab('other')} />
+        <NavBtn icon={Award} label="Badges" active={activeTab === 'other'} onPress={() => setActiveTab('other')} />
         <NavBtn icon={Settings} label="Admin" active={activeTab === 'other'} onPress={() => setActiveTab('other')} />
       </View>
     </SafeAreaView>

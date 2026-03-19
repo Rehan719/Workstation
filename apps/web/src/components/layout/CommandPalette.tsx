@@ -44,6 +44,14 @@ export const CommandPalette = ({ open, setOpen, setActiveTab }: any) => {
                 <Item icon={Cpu} label="QEP Engine" onSelect={() => { setActiveTab('qep'); setOpen(false); }} />
               </Command.Group>
 
+              <Command.Group heading="Domains" className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mt-4 mb-2 px-2">
+                <Item icon={Globe} label="Religion Hub" onSelect={() => { setActiveTab('religion'); setOpen(false); }} />
+                <Item icon={Zap} label="Science Hub" onSelect={() => { setActiveTab('science'); setOpen(false); }} />
+                <Item icon={Settings} label="Law Hub" onSelect={() => { setActiveTab('law'); setOpen(false); }} />
+                <Item icon={Globe} label="Employment Hub" onSelect={() => { setActiveTab('employment'); setOpen(false); }} />
+                <Item icon={Globe} label="Education Hub" onSelect={() => { setActiveTab('education'); setOpen(false); }} />
+              </Command.Group>
+
               <Command.Group heading="Settings" className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mt-4 mb-2 px-2">
                 <Item icon={Settings} label="System Settings" onSelect={() => { setActiveTab('settings'); setOpen(false); }} />
                 <Item icon={Globe} label="Admin Console" onSelect={() => { setActiveTab('admin'); setOpen(false); }} />

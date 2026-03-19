@@ -4,6 +4,11 @@ import { Dashboard } from './pages/Dashboard';
 import { CEOChat } from './pages/CEOChat';
 import { BTOCatalog } from './pages/BTOCatalog';
 import { AdminPanel } from './pages/AdminPanel';
+import { ReligionHub } from './pages/domains/ReligionHub';
+import { ScienceHub } from './pages/domains/ScienceHub';
+import { LawHub } from './pages/domains/LawHub';
+import { EmploymentHub } from './pages/domains/EmploymentHub';
+import { EducationHub } from './pages/domains/EducationHub';
 import { CFO } from './pages/c-suite/CFO';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 import { QEPEngine } from './pages/QEPEngine';
@@ -25,6 +30,7 @@ import { DevPortal } from './pages/developers/DevPortal';
 import { PublicRoadmap } from './pages/PublicRoadmap';
 import { OnboardingTour } from './components/onboarding/OnboardingTour';
 import { ThemeProvider } from './theme/ThemeContext';
+import { ModelManager } from './components/settings/ModelManager';
 
 function App() {
   return (
@@ -82,17 +88,33 @@ function App() {
             return <PublicRoadmap />;
           case 'settings':
             return (
-              <div className="space-y-6">
-                <h1 className="text-4xl font-black mb-2">Settings</h1>
-                <p className="text-slate-500">Configure your Workstation preferences and protocol parameters.</p>
-                <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800">
-                  <h3 className="text-xl font-bold mb-4">Identity & Access</h3>
-                  <button className="px-6 py-2 bg-aura text-sovereign font-bold rounded-xl">Refresh Sovereign Handshake</button>
+              <div className="space-y-12">
+                <header>
+                  <h1 className="text-5xl font-black mb-2 tracking-tight">System Settings</h1>
+                  <p className="text-slate-500 font-bold text-lg">Configure your Workstation preferences and sovereign protocol parameters.</p>
+                </header>
+
+                <ModelManager />
+
+                <div className="p-12 rounded-3xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm">
+                  <h3 className="text-2xl font-black mb-6">Identity & Access</h3>
+                  <p className="text-slate-400 font-bold mb-8 max-w-xl leading-relaxed">Refresh your sovereign handshake with the global federation to re-sync Citizen Passport credentials.</p>
+                  <button className="px-10 py-5 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-lg shadow-aura/20 uppercase tracking-widest text-sm">Refresh Sovereign Handshake</button>
                 </div>
               </div>
             );
           case 'admin':
             return <AdminPanel />;
+          case 'religion':
+            return <ReligionHub />;
+          case 'science':
+            return <ScienceHub />;
+          case 'law':
+            return <LawHub />;
+          case 'employment':
+            return <EmploymentHub />;
+          case 'education':
+            return <EducationHub />;
           default:
             return (
               <div className="flex items-center justify-center h-full">

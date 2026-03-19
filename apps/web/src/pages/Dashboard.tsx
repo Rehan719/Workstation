@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useGamificationStore } from '../store/gamificationStore';
 import { TrendingUp, Users, Cpu, Zap, ArrowUpRight } from 'lucide-react';
 import { ResonanceMap } from '../components/federation/ResonanceMap';
 
@@ -11,6 +12,12 @@ const stats = [
 ];
 
 export const Dashboard: React.FC = () => {
+  const { completeQuest } = useGamificationStore();
+
+  useEffect(() => {
+    completeQuest('guardian', 'q-001');
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
