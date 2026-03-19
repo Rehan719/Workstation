@@ -1,0 +1,31 @@
+{
+  "categories": [
+    {
+      "id": "ingestors",
+      "name": "Data Ingestors",
+      "components": [
+        {"id": "api-poller", "name": "REST API Poller", "icon": "Globe", "schema": {"url": "string", "interval": "number"}},
+        {"id": "arxiv-scraper", "name": "ArXiv Scraper", "icon": "Book", "schema": {"query": "string"}},
+        {"id": "mqtt-sub", "name": "MQTT Subscriber", "icon": "Zap", "schema": {"topic": "string", "broker": "string"}}
+      ]
+    },
+    {
+      "id": "reactors",
+      "name": "Logic Reactors",
+      "components": [
+        {"id": "llm-query", "name": "AI Synthesis", "icon": "Brain", "schema": {"prompt": "string", "model": "string"}},
+        {"id": "sentiment", "name": "Sentiment Analyzer", "icon": "Activity", "schema": {}},
+        {"id": "summarizer", "name": "Text Summarizer", "icon": "FileText", "schema": {"length": "number"}}
+      ]
+    },
+    {
+      "id": "widgets",
+      "name": "UI Widgets",
+      "components": [
+        {"id": "line-chart", "name": "Line Chart", "icon": "TrendingUp", "schema": {"title": "string"}},
+        {"id": "gauge", "name": "Digital Gauge", "icon": "Gauge", "schema": {"max": "number"}},
+        {"id": "data-table", "name": "Data Table", "icon": "Table", "schema": {}}
+      ]
+    }
+  ]
+}

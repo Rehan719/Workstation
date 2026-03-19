@@ -1,0 +1,8 @@
+{
+  "name": "@workstation/auth",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "firebase": "^10.0.0"
+  }
+}

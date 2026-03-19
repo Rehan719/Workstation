@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('workstation-theme');
-    return (saved as Theme) || 'legacy';
+    return (saved as Theme) || 'advanced';
   });
 
   const setTheme = (newTheme: Theme) => {

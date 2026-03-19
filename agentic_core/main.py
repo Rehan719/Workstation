@@ -13,7 +13,8 @@ from agentic_core.synthesis.dual_mode_scraper import DualModeScraper
 from agentic_core.synthesis.uviap import UVIAP
 from agentic_core.api import qep_analytics, tools, partnerships
 from agentic_core.api.v180 import products, user
-from agentic_core.api.v190 import introspection, extrospection, evolution
+from agentic_core.api.v190 import introspection as introspection_v190
+from agentic_core.api.v190 import extrospection, evolution
 from agentic_core.api.v191 import modes, learning, evolution as evolution_v191
 from agentic_core.api.v200 import resonance, contribute
 from agentic_core.api.v210 import epigenetic, homeostasis, improvement, governance, federation
@@ -22,6 +23,12 @@ from agentic_core.api.v250 import treaties, search
 from agentic_core.api.v260 import intelligence
 from agentic_core.api.v230 import evolution as evolution_v230, pqc, marketplace
 from agentic_core.api.v240 import evolution as evolution_v240
+from agentic_core.api.v270 import infrastructure as infra_v270
+from agentic_core.api import ai_orchestration, csuite
+from agentic_core.api.v280 import csuite_enhanced, gamification
+from agentic_core.api.v290 import realms as realms_v290, ceo_generate, marketplace as marketplace_v290, iot
+from agentic_core.api.v310 import payments, governance as gov_v310, business, commerce, fund
+from agentic_core.api.v320 import intelligence as intel_v320, governance_autonomous, treasury_intelligent, markets
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -58,7 +65,7 @@ app.include_router(tools.router, prefix="/api/v1")
 app.include_router(partnerships.router, prefix="/api/v1")
 app.include_router(products.router, prefix="/api/v180")
 app.include_router(user.router, prefix="/api/v180")
-app.include_router(introspection.router, prefix="/api/v190")
+app.include_router(introspection_v190.router, prefix="/api/v190")
 app.include_router(extrospection.router, prefix="/api/v190")
 app.include_router(evolution.router, prefix="/api/v190")
 app.include_router(modes.router, prefix="/api/v191")
@@ -81,6 +88,24 @@ app.include_router(evolution_v230.router, prefix="/api/v230")
 app.include_router(pqc.router, prefix="/api/v230")
 app.include_router(marketplace.router, prefix="/api/v230")
 app.include_router(evolution_v240.router, prefix="/api/v240")
+app.include_router(infra_v270.router, prefix="/api/v270")
+app.include_router(ai_orchestration.router, prefix="/api")
+app.include_router(csuite.router, prefix="/api")
+app.include_router(csuite_enhanced.router, prefix="/api/v280")
+app.include_router(gamification.router, prefix="/api/v280")
+app.include_router(realms_v290.router, prefix="/api/v290")
+app.include_router(ceo_generate.router, prefix="/api/v290")
+app.include_router(marketplace_v290.router, prefix="/api/v290")
+app.include_router(iot.router, prefix="/api/v290")
+app.include_router(payments.router, prefix="/api/v310")
+app.include_router(gov_v310.router, prefix="/api/v310")
+app.include_router(business.router, prefix="/api/v310")
+app.include_router(commerce.router, prefix="/api/v310")
+app.include_router(fund.router, prefix="/api/v310")
+app.include_router(intel_v320.router, prefix="/api/v320")
+app.include_router(governance_autonomous.router, prefix="/api/v320")
+app.include_router(treasury_intelligent.router, prefix="/api/v320")
+app.include_router(markets.router, prefix="/api/v320")
 
 app.add_middleware(
     CORSMiddleware,

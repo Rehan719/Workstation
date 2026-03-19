@@ -1,23 +1,14 @@
 from fastapi import APIRouter
-import random
+import sqlite3
 
-router = APIRouter(prefix="/introspection", tags=["Cognitive Introspection"])
+router = APIRouter(prefix="/introspection", tags=["v190"])
 
-@router.get("/vitals")
-async def get_vitals():
-    return {
-        "oxytocin": 0.95 + random.uniform(-0.02, 0.02),
-        "serotonin": 0.92 + random.uniform(-0.03, 0.03),
-        "dopamine": 0.98 + random.uniform(-0.01, 0.01),
-        "system_health": 0.9998,
-        "mode": "STRATEGIC-SYNTHESIS"
-    }
-
-@router.get("/telemetry")
-async def get_telemetry():
-    return {
-        "cpu_usage": "14.2%",
-        "memory_resonance": "92%",
-        "active_swarms": 42,
-        "anomalies": []
-    }
+@router.get("/decision-logs")
+async def get_decision_logs():
+    db_path = "agentic_core/data/interactions.db"
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute("SELECT * FROM logs ORDER BY timestamp DESC LIMIT 50")
+    logs = c.fetchall()
+    conn.close()
+    return [{"timestamp": l[0], "agent": l[1], "query": l[2], "response": l[3], "feedback": l[4]} for l in logs]

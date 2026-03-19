@@ -3,20 +3,23 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Package, ChevronRight, Settings2 } from 'lucide-react';
 import { BTOConfigurator } from '../components/bto/BTOConfigurator';
+import fallbackData from '../data/fallbackData.json';
 
 export const BTOCatalog: React.FC = () => {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>(fallbackData.products);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
   useEffect(() => {
     axios.get('/api/v180/products/')
       .then(res => {
-        setProducts(res.data);
+        if (res.data && res.data.length > 0) {
+          setProducts(res.data);
+        }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Failed to fetch products", err);
+        console.warn("Using fallback product data.");
         setLoading(false);
       });
   }, []);

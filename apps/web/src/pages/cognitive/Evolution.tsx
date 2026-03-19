@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { GitBranch, History, Layers, Zap } from 'lucide-react';
+import fallbackData from '../../data/fallbackData.json';
 
 export const Evolution: React.FC = () => {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<any>(fallbackData.evolution);
 
   useEffect(() => {
-    axios.get('/api/v190/evolution/trajectories').then(res => setData(res.data));
+    axios.get('/api/v190/evolution/trajectories')
+      .then(res => setData(res.data))
+      .catch(() => console.warn("Using fallback evolution data."));
   }, []);
 
   if (!data) return <div className="p-8 text-slate-500 animate-pulse">Mapping Evolution...</div>;

@@ -1,89 +1,135 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Sparkles, ThumbsUp, ThumbsDown, MoreHorizontal, X } from 'lucide-react';
 
 export const CEOChat: React.FC = () => {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Greeting, Guardian. I am the VSB AI CEO. How shall we direct the evolution of the workstation today?' }
   ]);
   const [input, setInput] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    setMessages([...messages, { role: 'user', content: input }]);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isThinking]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isThinking) return;
+
+    const userMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setIsThinking(true);
 
-    // Simulate response
-    setTimeout(() => {
+    try {
+      const response = await fetch(`/api/v260/civilization/assistant/query?query=${encodeURIComponent(input)}`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `I have analyzed your request regarding "${input}". Aligning C-Suite resources for synthesis...`
+        content: data.response || "Synthesis complete. Alignment maintained."
       }]);
-    }, 1000);
+    } catch (error) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "I am currently out of resonance. Please verify local Ollama connectivity."
+      }]);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] max-w-4xl mx-auto bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden backdrop-blur-md">
-      <header className="px-8 py-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/60">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-aura/20 rounded-2xl text-aura">
-            <Bot size={24} />
+    <div className="flex flex-col h-[calc(100vh-14rem)] max-w-5xl mx-auto glass-card overflow-hidden">
+      <header className="px-10 py-8 border-b border-white/5 flex justify-between items-center bg-surface/60 backdrop-blur-3xl">
+        <div className="flex items-center gap-5">
+          <div className="p-4 bg-aura/20 rounded-2xl text-aura shadow-[0_0_20px_rgba(100,255,218,0.2)]">
+            <Bot size={28} />
           </div>
           <div>
-            <h2 className="text-xl font-bold">VSB AI CEO</h2>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-vital animate-pulse"></span>
-              <span className="text-[10px] font-black text-slate-500 uppercase">Strategic Mode Active</span>
+            <h2 className="text-2xl font-black tracking-tight uppercase">VSB AI CEO</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="w-2 h-2 rounded-full bg-aura animate-pulse"></span>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Planetary Strategy Active</span>
             </div>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors">
-          <Sparkles size={14} className="text-highlight" />
-          Strategic Report
-        </button>
+        <div className="flex gap-3">
+          <button className="p-3 bg-surface/80 border border-white/10 rounded-xl hover:border-aura/50 transition-colors text-slate-400 hover:text-aura">
+             <MoreHorizontal size={20} />
+          </button>
+        </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-8 space-y-6 scroll-smooth">
-        <AnimatePresence>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-8 custom-scrollbar">
+        <AnimatePresence initial={false}>
           {messages.map((m, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex gap-4 max-w-[80%] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  m.role === 'user' ? 'bg-highlight/20 text-highlight' : 'bg-aura/20 text-aura'
+              <div className={`flex gap-6 max-w-[80%] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ${
+                  m.role === 'user' ? 'bg-highlight/20 text-highlight' : 'bg-surface border border-white/5 text-aura'
                 }`}>
-                  {m.role === 'user' ? <User size={20} /> : <Bot size={20} />}
+                  {m.role === 'user' ? <User size={24} /> : <Bot size={24} />}
                 </div>
-                <div className={`p-4 rounded-2xl text-sm leading-relaxed ${
-                  m.role === 'user' ? 'bg-highlight/10 border border-highlight/20' : 'bg-slate-800/50 border border-slate-700'
-                }`}>
-                  {m.content}
+                <div className="space-y-3">
+                   <div className={`p-6 rounded-[2rem] text-sm font-bold leading-relaxed shadow-xl ${
+                     m.role === 'user'
+                       ? 'bg-highlight/10 border border-highlight/20 text-white rounded-tr-none'
+                       : 'bg-surface/80 border border-white/10 text-slate-200 rounded-tl-none'
+                   }`}>
+                     {m.content}
+                   </div>
+                   {m.role === 'assistant' && (
+                     <div className="flex gap-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button className="p-2 hover:text-aura transition-colors"><ThumbsUp size={14} /></button>
+                        <button className="p-2 hover:text-vital transition-colors"><ThumbsDown size={14} /></button>
+                     </div>
+                   )}
                 </div>
               </div>
             </motion.div>
           ))}
+          {isThinking && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+               <div className="flex gap-4 items-center p-6 bg-aura/5 border border-aura/10 rounded-[2rem] rounded-tl-none">
+                  <div className="flex gap-1">
+                     <div className="w-1.5 h-1.5 bg-aura rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                     <div className="w-1.5 h-1.5 bg-aura rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                     <div className="w-1.5 h-1.5 bg-aura rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                  <span className="text-[10px] font-black text-aura uppercase tracking-widest">Synthesis in progress...</span>
+               </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
-      <div className="p-6 bg-slate-900/60 border-t border-slate-800">
-        <div className="relative">
+      <div className="p-8 bg-surface/60 border-t border-white/5 backdrop-blur-3xl">
+        <div className="relative max-w-4xl mx-auto">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Issue a command or ask for strategic guidance..."
-            className="w-full bg-sovereign border border-slate-700 rounded-2xl py-4 pl-6 pr-16 text-sm focus:outline-none focus:border-aura transition-all"
+            placeholder="Issue a planetary directive..."
+            className="w-full bg-sovereign/80 border border-white/10 rounded-[2rem] py-6 pl-8 pr-20 text-lg focus:outline-none focus:border-aura/50 transition-all shadow-2xl font-bold"
           />
           <button
             onClick={handleSend}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-aura text-sovereign rounded-xl hover:scale-105 transition-transform"
+            disabled={isThinking}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-4 bg-aura text-sovereign rounded-2xl hover:scale-105 transition-all shadow-lg"
           >
-            <Send size={18} />
+            <Send size={22} />
           </button>
         </div>
       </div>

@@ -23,7 +23,8 @@ Workstation is not just a platform; it is a **living digital ecosystem**—an **
 - **🧠 VSB AI CEO** – Autonomous executive decision‑making with constitutional guardrails.
 - **👥 C‑Suite Agents** – CFO, CMO, CTO, CHO, COO – each specialized and collaboratively evolving.
 - **🏛️ Centers of Excellence (CoEs)** – Federated knowledge hubs (Data Science, UX, Security, AI Ethics, DevOps).
-- **⚙️ BTO Products** – Customer‑configurable solutions assembled on‑demand.
+- **⚙️ BTO Products** – Customer‑configurable solutions with an interactive **Multi‑Step Wizard**.
+- **🛡️ Admin Command Console** – High‑level oversight and system governance at `/admin`.
 - **🌀 Quad Engine Reactor** – Discovery, Ingestion, Synthesis, Deployment – continuously generating new capabilities.
 - **🧬 Biomimetic OS** – Mycelial resilience, ant‑colony coordination, octopus‑like embodiment, immune learning.
 - **⚖️ Constitutional Governance** – Wyoming DAO, Articles 1‑1095, ISO 42001, EU AI Act compliant.
@@ -69,11 +70,14 @@ pip install -r requirements.txt
 cp .env.template .env
 # Edit .env with your API keys (Firebase, Google OAuth, etc.)
 
-# Run the development server (Site & Web App)
-./deploy.sh --v137
+# Run the setup script to initialize the environment
+./setup.sh  # or `./setup.ps1` on Windows
+
+# Start the full stack (Backend, Web, Mobile)
+npm run web:dev
 ```
 
-Then open `http://localhost:8000` in your browser and log in with Google/Gmail.
+Then open `http://localhost:5174` in your browser for the Unified Web App.
 
 ---
 
@@ -125,8 +129,8 @@ This project is licensed under the Apache 2.0 License – see the [LICENSE](LICE
 
 ## ⚡ Status
 
-**Current Version:** v137.0 – “Sentient Civilization Epoch”
-**Next Release:** v138.0 – “Sovereign Intelligence” (Q3 2026)
+**Current Version:** v152.0 – “Collective Intelligence”
+**Next Release:** v153.0 – “The Transcendent Singularity”
 **Production Readiness:** ✅ 100% – Zero‑Placeholder Certified
 
 ---
