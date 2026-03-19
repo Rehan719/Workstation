@@ -12,6 +12,7 @@ cd ..
 echo "📦 Installing Frontend (npm)..."
 npm install
 cp apps/web/.env.example apps/web/.env
+cp apps/mobile/.env.example apps/mobile/.env 2>/dev/null || true
 
 # 3. Ollama Check
 if command -v ollama &> /dev/null

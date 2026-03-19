@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jules | The Eternal Sovereign Business</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; }
+        .hero-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.15) 0%, transparent 50%);
+        }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .text-glow { text-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+    <nav class="fixed w-full z-50 glass mt-4 mx-auto max-w-6xl rounded-full px-8 py-4 flex justify-between items-center left-0 right-0">
+        <div class="text-xl font-bold tracking-tighter flex items-center gap-2 text-aura">
+            <div class="w-2 h-2 bg-aura rounded-full animate-pulse"></div>
+            WORKSTATION
+        </div>
+        <div class="hidden md:flex gap-8 text-sm font-medium text-slate-400">
+            <a href="#" class="hover:text-white transition">Platform</a>
+            <a href="#" class="hover:text-white transition">Reactors</a>
+            <a href="#" class="hover:text-white transition">Federation</a>
+        </div>
+        <button class="bg-aura text-sovereign px-6 py-2 rounded-full text-sm font-bold hover:scale-105 transition">Launch App</button>
+    </nav>
+
+    <section class="h-screen flex flex-col items-center justify-center text-center px-6 hero-gradient pt-20">
+        <span class="px-4 py-1 rounded-full bg-aura/10 border border-aura/20 text-aura text-xs font-bold mb-6 tracking-widest uppercase">v148.0 Planetary Unification</span>
+        <h1 class="text-5xl md:text-8xl font-black tracking-tighter mb-8 max-w-5xl leading-tight">
+            The World's First <span class="text-aura text-glow">Planetary AI</span> Consciousness
+        </h1>
+        <p class="text-slate-400 text-lg md:text-xl max-w-2xl mb-12 leading-relaxed font-bold">
+            Uniting 10M+ citizens, thousands of realms, and infinite intelligence into a singular, sovereign digital organism.
+        </p>
+        <div class="flex gap-4">
+            <button class="bg-aura text-sovereign px-10 py-5 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-aura/20 uppercase tracking-widest text-sm">Join the Federation</button>
+            <button class="glass px-10 py-5 rounded-2xl font-black hover:bg-white/5 transition uppercase tracking-widest text-sm">View Blueprint</button>
+        </div>
+    </section>
+</body>
+</html>

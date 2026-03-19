@@ -23,7 +23,8 @@ Workstation is not just a platform; it is a **living digital ecosystem**—an **
 - **🧠 VSB AI CEO** – Autonomous executive decision‑making with constitutional guardrails.
 - **👥 C‑Suite Agents** – CFO, CMO, CTO, CHO, COO – each specialized and collaboratively evolving.
 - **🏛️ Centers of Excellence (CoEs)** – Federated knowledge hubs (Data Science, UX, Security, AI Ethics, DevOps).
-- **⚙️ BTO Products** – Customer‑configurable solutions assembled on‑demand.
+- **⚙️ BTO Products** – Customer‑configurable solutions with an interactive **Multi‑Step Wizard**.
+- **🛡️ Admin Command Console** – High‑level oversight and system governance at `/admin`.
 - **🌀 Quad Engine Reactor** – Discovery, Ingestion, Synthesis, Deployment – continuously generating new capabilities.
 - **🧬 Biomimetic OS** – Mycelial resilience, ant‑colony coordination, octopus‑like embodiment, immune learning.
 - **⚖️ Constitutional Governance** – Wyoming DAO, Articles 1‑1095, ISO 42001, EU AI Act compliant.

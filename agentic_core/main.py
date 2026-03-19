@@ -24,7 +24,8 @@ from agentic_core.api.v260 import intelligence
 from agentic_core.api.v230 import evolution as evolution_v230, pqc, marketplace
 from agentic_core.api.v240 import evolution as evolution_v240
 from agentic_core.api.v270 import infrastructure as infra_v270
-from agentic_core.api import ai_orchestration
+from agentic_core.api import ai_orchestration, csuite
+from agentic_core.api.v280 import csuite_enhanced
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -86,6 +87,8 @@ app.include_router(marketplace.router, prefix="/api/v230")
 app.include_router(evolution_v240.router, prefix="/api/v240")
 app.include_router(infra_v270.router, prefix="/api/v270")
 app.include_router(ai_orchestration.router, prefix="/api")
+app.include_router(csuite.router, prefix="/api")
+app.include_router(csuite_enhanced.router, prefix="/api/v280")
 
 app.add_middleware(
     CORSMiddleware,

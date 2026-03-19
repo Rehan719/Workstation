@@ -13,8 +13,13 @@ export const Header: React.FC = () => {
         <input
           type="text"
           placeholder="Search ecosystem..."
-          className="w-full bg-slate-900/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-aura transition-colors"
+          aria-label="Search ecosystem"
+          className="w-full bg-slate-900/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-aura transition-colors font-bold"
         />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50">
+           <span className="text-[10px] font-black border border-white/20 px-1 rounded">⌘</span>
+           <span className="text-[10px] font-black border border-white/20 px-1 rounded">K</span>
+        </div>
       </div>
 
       <div className="flex items-center gap-6">
@@ -43,9 +48,9 @@ export const Header: React.FC = () => {
 
         <button
           onClick={() => setShowAssistant(!showAssistant)}
-          className={`p-3 rounded-xl transition-all ${showAssistant ? 'bg-aura text-sovereign' : 'bg-slate-800 text-aura hover:scale-105'}`}
           aria-label="Toggle Civilization Assistant"
           title="Civilization Assistant"
+          className={`p-3 rounded-xl transition-all ${showAssistant ? 'bg-aura text-sovereign' : 'bg-slate-800 text-aura hover:scale-105'}`}
         >
           <Sparkles size={20} />
         </button>
@@ -68,14 +73,18 @@ export const Header: React.FC = () => {
                 <X size={16} />
               </button>
            </div>
-           <div className="p-6 h-80 overflow-y-auto space-y-4">
+           <div className="p-6 h-80 overflow-y-auto space-y-4 custom-scrollbar">
               <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5 text-xs leading-relaxed text-slate-300">
                 Greetings, Guardian. I am the Civilization Intelligence layer. I recommend voting on **AMD-146** to optimize node resonance.
               </div>
            </div>
            <div className="p-4 border-t border-white/10 bg-slate-950 flex gap-2">
-              <input placeholder="Ask the civilization..." className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs" />
-              <button className="p-2 bg-aura text-sovereign rounded-lg"><MessageCircle size={16} /></button>
+              <input
+                placeholder="Ask the civilization..."
+                aria-label="Message Assistant"
+                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs"
+              />
+              <button className="p-2 bg-aura text-sovereign rounded-lg" aria-label="Send Message"><MessageCircle size={16} /></button>
            </div>
         </div>
       )}

@@ -8,7 +8,7 @@ export const CFO: React.FC = () => {
   const [data, setData] = useState<any>(fallbackData.financials);
 
   useEffect(() => {
-    axios.get('/api/financial/overview')
+    axios.get('/api/csuite/cfo/metrics')
       .then(res => setData(res.data))
       .catch(() => console.warn("Using fallback financial data."));
   }, []);
@@ -26,8 +26,9 @@ export const CFO: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <MetricCard title="Revenue (24h)" value={`${data.revenue.toLocaleString()} WST`} delta={data.growth} icon={DollarSign} />
+        <MetricCard title="Operating Costs" value={`${data.operating_costs.toLocaleString()} WST`} delta="-4.2%" icon={PieChart} />
         <MetricCard title="Liquidity" value={`${data.liquidity.toLocaleString()} WST`} delta="Stable" icon={Wallet} />
         {data.kpis.map((kpi: any) => (
           <MetricCard key={kpi.label} title={kpi.label} value={kpi.value} delta="+0.2%" icon={TrendingUp} />

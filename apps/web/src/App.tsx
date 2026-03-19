@@ -3,6 +3,7 @@ import { Shell } from './components/layout/Shell';
 import { Dashboard } from './pages/Dashboard';
 import { CEOChat } from './pages/CEOChat';
 import { BTOCatalog } from './pages/BTOCatalog';
+import { AdminPanel } from './pages/AdminPanel';
 import { CFO } from './pages/c-suite/CFO';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 import { QEPEngine } from './pages/QEPEngine';
@@ -90,6 +91,8 @@ function App() {
                 </div>
               </div>
             );
+          case 'admin':
+            return <AdminPanel />;
           default:
             return (
               <div className="flex items-center justify-center h-full">

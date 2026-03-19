@@ -1,85 +1,106 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Users, Cpu, Zap } from 'lucide-react';
+import { TrendingUp, Users, Cpu, Zap, ArrowUpRight } from 'lucide-react';
+import { ResonanceMap } from '../components/federation/ResonanceMap';
 
 const stats = [
   { label: 'System Fidelity', value: '99.98%', delta: '+0.02%', icon: Zap, color: 'text-aura' },
   { label: 'Active Agents', value: '42', delta: '+4 today', icon: Cpu, color: 'text-vital' },
   { label: 'Network Depth', value: '1.42M', delta: '+12k/hr', icon: TrendingUp, color: 'text-highlight' },
-  { label: 'Global Nodes', value: '108', delta: 'Stable', icon: Users, color: 'text-slate-400' },
+  { label: 'Global Nodes', value: '10,242', delta: 'Stable', icon: Users, color: 'text-slate-400' },
 ];
 
 export const Dashboard: React.FC = () => {
   return (
-    <div className="space-y-10" role="main" aria-label="Workstation Dashboard">
-      <header>
-        <h1 className="text-4xl font-black mb-2 focus:outline-none" tabIndex={-1}>Welcome back, Guardian</h1>
-        <p className="text-slate-500">The Workstation ecosystem is resonating at optimal frequencies.</p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="space-y-12"
+      role="main"
+      aria-label="Workstation Dashboard"
+    >
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+           <h1 className="text-6xl font-black tracking-tighter mb-3 neon-text">
+             Welcome back, <span className="text-white">Guardian</span>
+           </h1>
+           <p className="text-slate-500 font-bold text-lg max-w-2xl leading-relaxed">
+             The Workstation ecosystem is resonating at <span className="text-aura font-black">optimal frequencies</span> across the planetary network.
+           </p>
+        </div>
+        <div className="flex gap-4">
+           <button className="interactive-button py-4 px-8 text-xs">Synchronize Vitals</button>
+        </div>
       </header>
 
-      <section aria-label="System Overview Stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section aria-label="System Overview Stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm focus-within:ring-2 focus-within:ring-aura"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.1, duration: 0.5 }}
+            className="p-8 glass-card group cursor-pointer"
             tabIndex={0}
             role="article"
-            aria-labelledby={`stat-label-${i}`}
           >
-            <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-xl bg-slate-800/50 ${stat.color}`} aria-hidden="true">
-                <stat.icon size={24} />
+            <div className="flex justify-between items-start mb-8">
+              <div className={`p-4 rounded-2xl bg-surface/80 border border-white/5 ${stat.color} shadow-inner group-hover:scale-110 transition-transform duration-500`} aria-hidden="true">
+                <stat.icon size={28} />
               </div>
-              <span className="text-[10px] font-black px-2 py-1 rounded bg-slate-800 text-slate-400" aria-label={`Change: ${stat.delta}`}>
+              <span className="text-[10px] font-black px-3 py-1.5 rounded-full bg-surface border border-white/5 text-slate-400 uppercase tracking-widest" aria-label={`Change: ${stat.delta}`}>
                 {stat.delta}
               </span>
             </div>
-            <div className="text-3xl font-black mb-1" aria-label={`${stat.label} value is ${stat.value}`}>{stat.value}</div>
-            <div id={`stat-label-${i}`} className="text-xs font-bold uppercase tracking-widest text-slate-500">{stat.label}</div>
+            <div className="text-4xl font-black mb-1 tracking-tight" aria-label={`${stat.label} value is ${stat.value}`}>{stat.value}</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{stat.label}</div>
           </motion.div>
         ))}
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <section aria-label="UEG Resonance Map" className="lg:col-span-2 p-8 rounded-3xl bg-slate-900/40 border border-slate-800 h-96 flex flex-col items-center justify-center overflow-hidden relative">
-          <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
-             <div className="w-[500px] h-[500px] rounded-full border border-aura/30 animate-ping-slow"></div>
-             <div className="absolute w-[300px] h-[300px] rounded-full border border-highlight/20 animate-pulse"></div>
-          </div>
-          <p className="text-aura font-black uppercase tracking-[0.2em] mb-4 z-10">UEG Resonance Map Active</p>
-          <div className="flex gap-12 z-10">
-             {[1, 2, 3].map(i => (
-               <div key={i} className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-aura/10 border border-aura flex items-center justify-center mb-2 animate-bounce" style={{ animationDelay: `${i*0.5}s` }}>
-                     <Zap size={20} className="text-aura" />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Node-{i}</span>
-               </div>
-             ))}
-          </div>
-          <div className="sr-only">
-            This visualization shows the real-time resonance of the Unified Event Graph across the federation.
-            All nodes are currently within optimal operational parameters (98%+ fidelity).
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <section aria-label="UEG Resonance Map" className="lg:col-span-2 glass-card h-[550px] overflow-hidden relative group">
+           <div className="absolute top-8 left-8 z-10">
+              <h3 className="text-2xl font-black tracking-tight mb-1">Planetary Resonance</h3>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">UEG Unified State Graph</p>
+           </div>
+           <ResonanceMap />
+           <div className="absolute top-8 right-8 z-10">
+              <button className="p-3 bg-surface/80 border border-white/10 rounded-xl hover:border-aura/50 transition-colors">
+                 <ArrowUpRight size={20} className="text-aura" />
+              </button>
+           </div>
         </section>
-        <section aria-label="Recent Activity Log" className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 h-96 flex flex-col">
-          <h3 className="text-xl font-bold mb-6">Recent Activity</h3>
-          <div className="space-y-4 overflow-y-auto custom-scrollbar pr-2" aria-live="polite">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex gap-4 p-4 rounded-xl bg-slate-800/30 border border-slate-700/50 focus-within:ring-1 focus-within:ring-aura" tabIndex={0}>
-                <div className="w-2 h-2 rounded-full bg-aura mt-1.5 shadow-[0_0_8px_rgba(56,189,248,0.5)]"></div>
+
+        <section aria-label="Recent Activity Log" className="p-12 glass-card h-[550px] flex flex-col">
+          <h3 className="text-2xl font-black mb-8 tracking-tight">Recent Activity</h3>
+          <div className="space-y-6 overflow-y-auto custom-scrollbar pr-2 flex-1" aria-live="polite">
+            {[
+              { t: 'Protocol v148.0 Synchronized', m: 'Planetary', c: 'aura' },
+              { t: 'PQC Handshake Successful', m: 'Security', c: 'vital' },
+              { t: 'Marketplace Deployment', m: 'Economy', c: 'highlight' },
+              { t: 'Guardian Vote Recorded', m: 'Governance', c: 'aura' },
+              { t: 'Neural Operon Mutation', m: 'Evolution', c: 'vital' }
+            ].map((act, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + (i * 0.1) }}
+                className="flex gap-5 p-5 rounded-[1.5rem] bg-surface/30 border border-white/5 hover:bg-surface/50 transition-colors cursor-pointer group"
+                tabIndex={0}
+              >
+                <div className={`w-2 h-2 rounded-full bg-${act.c} mt-2 shadow-[0_0_12px_rgba(100,255,218,0.5)] group-hover:scale-125 transition-transform`}></div>
                 <div>
-                  <p className="text-sm font-bold">Protocol v138.0 Synchronized</p>
-                  <p className="text-[10px] text-slate-500">2 minutes ago • System</p>
+                  <p className="text-sm font-black group-hover:text-aura transition-colors">{act.t}</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-1">{act.m} • JUST NOW</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </motion.div>
   );
 };

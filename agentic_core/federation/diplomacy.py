@@ -26,7 +26,3 @@ async def get_realm_exchange():
 async def get_arbitration_status():
     """Planetary arbitration system for resolving cross-realm conflicts."""
     return {"active_disputes": 2, "consensus_reached": True, "resolution_strategy": "Quadratic Mediation"}
- Greenland. (Reflecting on memory: Goal is inter-realm trade and coalitions.)
-<<<<<<< SEARCH
-=======
->>>>>>> REPLACE

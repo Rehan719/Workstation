@@ -57,6 +57,7 @@ const allNavItems = [
     ]
   },
   { name: 'Settings', icon: Settings, id: 'settings' },
+  { name: 'Admin', icon: Shield, id: 'admin' },
 ];
 
 interface SidebarProps {
