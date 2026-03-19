@@ -53,7 +53,8 @@ const allNavItems = [
     subItems: [
       { name: 'Public Roadmap', icon: Map, id: 'roadmap' },
       { name: 'User Impact', icon: Heart, id: 'impact' },
-      { name: 'QEP Engine', icon: Cpu, id: 'qep' }
+      { name: 'QEP Engine', icon: Cpu, id: 'qep' },
+      { name: 'UVAID / GSE', icon: BarChart3, id: 'uvaid' }
     ]
   },
   {
@@ -69,6 +70,7 @@ const allNavItems = [
     ]
   },
   { name: 'Settings', icon: Settings, id: 'settings' },
+  { name: 'Quests', icon: Trophy, id: 'quests' },
   { name: 'Admin', icon: Shield, id: 'admin' },
 ];
 

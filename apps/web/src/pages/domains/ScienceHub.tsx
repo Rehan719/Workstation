@@ -46,8 +46,9 @@ export const ScienceHub: React.FC = () => {
           </p>
           <button className="px-8 py-3 bg-vital text-white font-black rounded-2xl hover:scale-105 transition-all shadow-lg shadow-vital/20 uppercase tracking-widest text-sm">Contribute Data</button>
         </div>
-        <div className="w-64 h-64 bg-sovereign rounded-full border-4 border-vital/20 border-t-vital animate-spin-slow flex items-center justify-center shadow-[0_0_50px_rgba(255,82,82,0.2)]">
-           <FlaskConical size={48} className="text-vital" />
+        <div className="w-64 h-64 bg-sovereign rounded-full border-4 border-vital/20 border-t-vital animate-spin-slow flex items-center justify-center shadow-[0_0_50px_rgba(255,82,82,0.2)] group relative">
+           <FlaskConical size={48} className="text-vital group-hover:scale-125 transition-transform duration-700" />
+           <div className="absolute inset-0 bg-vital/5 rounded-full scale-0 group-hover:scale-100 transition-transform duration-700"></div>
         </div>
       </section>
     </motion.div>

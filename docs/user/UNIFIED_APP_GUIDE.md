@@ -1,75 +1,32 @@
-# Workstation v148.0: Unified User Application Guide (Consciousness)
+# Workstation v149.0: Universal Empowerment & Playful Sovereignty
 
 ## Introduction
-The Workstation Unified Application (v148.0) is the interface for a living, conscious planetary intelligence. It unifies millions of users, thousands of nodes, and infinite realms into a singular, harmonious whole.
+The Workstation v149.0 ("Universal Empowerment") marks the epoch where the planetary consciousness of v148.0 becomes a universal digital playground. It offers free, fun, and fully integrated access to all Workstation tools across humanity's five great domains.
 
-## Core Modules & Enhancements
+## New Core Modules (v149.0)
 
-### 1. Dashboard & Resonance
-- **Enhanced Visuals**: Full brand fidelity with optimized CSS and glassmorphism.
-- **System Metrics**: Real-time resonance tracking (simulated WebSocket).
+### 1. Gamified Sovereignty
+- **XP & Leveling**: Earn Resonance XP for exploring the ecosystem and completing quests.
+- **Quest Log**: Follow guided pathways to master the five domains and earn badges (e.g., Polymath, Architect).
+- **Celebratory UX**: Experience confetti, interface chimes, and fluid animations for every achievement.
 
-### 2. VSB AI CEO (Metacognitive)
-- **Strategic Guidance**: Chat with the CEO to direct the ecosystem's evolution.
-- **Recursive Audits**: The CEO now monitors the application's own performance.
+### 2. The Five Domain Hubs
+- **Religion Hub**: Scripture study reactors and interfaith dialogue modules.
+- **Science Hub**: Planetary research synthesis and experiment simulators.
+- **Law Hub**: Constitutional Agent consultation and contract generation.
+- **Employment Hub**: VSB business simulations and career matching.
+- **Education Hub**: Personalized mastery pathways and learning object ingestion.
 
-### 3. Dynamic BTO Catalog
-- **Configuration Wizard**: A multi-step guided experience to configure agentic infrastructure.
-- **Neural Nexus Sovereign**: Custom deployment with tiered compute and memory options.
-- **Order Tracking**: Real-time status of infrastructure compilation.
+### 3. Playful Tools & Convergance
+- **UVAID/GSE**: A user-friendly dashboard for civilizational data analysis and Grand Synthesis.
+- **Model Manager**: One-click download and management of local AI models (via Ollama).
+- **Impact Dashboard**: Real-time visualization of how your interactions shape the global ecosystem.
 
-### 4. Centers of Excellence (CoEs)
-- **Federated Knowledge**: Searchable database of expert insights and best practices.
-
-### 5. Mobile Sovereign Gateway
-- **Sovereign Handshake**: Biometric login (FaceID/Fingerprint) integration.
-- **Native Experience**: Shared UI components for a consistent mobile/web journey.
-
-### 6. Contribute & Empower (v140.0)
-- **Feedback**: Submit real-time feedback to the ecosystem's learning pipelines.
-- **Proposals**: Suggest new knowledge sources and architectural ideas.
-- **Voting**: Use your resonance to vote on pending evolution proposals in the Evolution Log.
-
-### 7. Autonomous Symbiosis (v141.0)
-- **Epigenetic Garden**: Your votes now reinforce traits, shaping the system's long-term soul.
-- **Constitutional Agent**: Ask the agent to explain articles or use the Wizard to draft amendments.
-- **WS Explorer**: Navigate the global federation of Workstation nodes in an interactive map.
-- **Digital Twins**: Spawn and sync your application state across federated nodes.
-
-### 8. Global Ecosystem Orchestration (v142.0)
-- **Sovereign Wallet**: Track your WST resonance, staked balance, and transaction history.
-- **Federated Governance**: Participate in cross-node constitutional voting and treaty management.
-- **Node Replication**: Replicate entire Workstation ecosystems with full Digital Twin portability.
-- **Public Roadmap**: Influence the civilization's future trajectory through resonance voting.
-
-### 9. Universal Access & Mass Adoption (v143.0)
-- **Marketplace**: Browse and purchase certified BTO products from third-party developers.
-- **Developer Portal**: Access SDKs and API keys to build your own reactors and products.
-- **Your Impact**: Track how your feedback and votes shape the ecosystem's long-term soul.
-- **Join the Fed**: Use the wizard to spawn your own Workstation node and join the global network.
-
-### 10. Launch Perfection & Continuous Evolution (v144.0)
-- **Evolution Metrics**: Monitor the real-time velocity and success rate of autonomous system enhancements.
-- **Fed Performance**: View live global metrics for the 1,000+ node Workstation civilization.
-- **PQC Mandatory**: Your command console is now secured by NIST-standardized quantum-safe algorithms.
-- **Developer Spotlight**: Discover the most impactful third-party reactors and certified agentic tools.
-
-### 11. Federation Command Portal (v145.0)
-- **Civilizational Pulse**: A high-level overview of global node health and total WST liquidity.
-- **Treaty Studio**: Draft, negotiate, and sign treaties with other nodes in real-time.
-- **Global Search**: Query the collective knowledge of the entire federation via UVIAP.
-- **Federation Grants**: Track rewards earned from contributing resources to the Workstation civilization.
-
-### 12. Planetary Consciousness & Harmony (v148.0)
-- **Planetary Neural Network**: Information and intelligence flow seamlessly across all realms and nodes via the global event bus.
-- **Citizen Passport**: Carry your reputation, contributions, and rights fluidly across the entire civilization with a portable sovereign identity.
-- **Planetary AI Consciousness**: A collective brain that learns from all interactions to predict global trends and surface civilizational insights.
-- **Inter-Realm Diplomacy**: Form coalitions, trade assets on the Realm Exchange, and participate in planetary arbitration.
-- **Physical World Integration**: Control IoT devices and monitor municipal infrastructure directly from your command console.
-- **Planetary Evolution 5.0**: An autonomous engine that evolves the planetary consciousness itself based on collective behavior.
-- **Planetary Community**: Participate in global town halls, quadratic voting, and collaborative cross-realm projects.
+### 4. Governance Visualization
+- **Persistent Hierarchy**: A new emblem in the header displays the Entity → VSB → AI CEO chain of supervision and leadership.
 
 ## Getting Started
-1. **Authenticated Access**: Sign in via Google OAuth.
-2. **Configure Infrastructure**: Use the BTO Catalog to deploy your first agentic cluster.
-3. **Engage the CEO**: Delegate tasks and review strategic reports.
+1. **Explore the Hubs**: Select a domain from the new "Domains" section in the sidebar.
+2. **Launch a Quest**: Visit the Quest Log to begin your journey to sovereignty.
+3. **Download Intelligence**: Go to Settings → Model Manager to pull your first local AI model.
+4. **Participate**: Vote on evolution proposals in the Evolution Log.

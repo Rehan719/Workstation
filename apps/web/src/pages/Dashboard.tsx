@@ -14,11 +14,24 @@ const stats = [
 export const Dashboard: React.FC = () => {
   const { completeQuest } = useGamificationStore();
 
+  const { fetchQuests } = useGamificationStore();
+
   useEffect(() => {
+    fetchQuests('guardian');
     completeQuest('guardian', 'q-001');
   }, []);
 
   return (
+    <div className="space-y-6">
+      <div className="p-4 bg-highlight/10 border border-highlight/30 rounded-2xl flex items-center justify-between">
+         <div className="flex items-center gap-4">
+            <div className="p-2 bg-highlight/20 rounded-lg text-highlight">
+               <Heart size={16} fill="currentColor" />
+            </div>
+            <p className="text-xs font-bold text-highlight uppercase tracking-wider">Playful Sovereignty Manifesto: The Workstation is now free for all humanity.</p>
+         </div>
+         <button className="px-4 py-1.5 bg-highlight text-sovereign font-black rounded-lg text-[10px] uppercase hover:scale-105 transition-all">Support on Open Collective</button>
+      </div>
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -109,5 +122,6 @@ export const Dashboard: React.FC = () => {
         </section>
       </div>
     </motion.div>
+    </div>
   );
 };

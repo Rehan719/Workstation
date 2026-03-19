@@ -9,6 +9,7 @@ import { ScienceHub } from './pages/domains/ScienceHub';
 import { LawHub } from './pages/domains/LawHub';
 import { EmploymentHub } from './pages/domains/EmploymentHub';
 import { EducationHub } from './pages/domains/EducationHub';
+import { UVAIDDashboard } from './pages/tools/UVAIDDashboard';
 import { CFO } from './pages/c-suite/CFO';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 import { QEPEngine } from './pages/QEPEngine';
@@ -31,10 +32,13 @@ import { PublicRoadmap } from './pages/PublicRoadmap';
 import { OnboardingTour } from './components/onboarding/OnboardingTour';
 import { ThemeProvider } from './theme/ThemeContext';
 import { ModelManager } from './components/settings/ModelManager';
+import { QuestLog } from './components/gamification/QuestLog';
+import { PlayfulEffectsManager } from './components/gamification/PlayfulEffectsManager';
 
 function App() {
   return (
     <ThemeProvider>
+    <PlayfulEffectsManager />
     <OnboardingTour />
     <Shell>
       {(activeTab) => {
@@ -105,6 +109,8 @@ function App() {
             );
           case 'admin':
             return <AdminPanel />;
+          case 'quests':
+            return <QuestLog />;
           case 'religion':
             return <ReligionHub />;
           case 'science':
@@ -115,6 +121,8 @@ function App() {
             return <EmploymentHub />;
           case 'education':
             return <EducationHub />;
+          case 'uvaid':
+            return <UVAIDDashboard />;
           default:
             return (
               <div className="flex items-center justify-center h-full">
