@@ -1,66 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi, Landmark, TrendingUp } from 'lucide-react-native';
+import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi, Landmark, TrendingUp, Target, Activity } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
-const DashboardScreen = ({ stats, wallet }) => (
+const DashboardScreen = ({ wallet, insights }) => (
   <ScrollView contentContainerStyle={styles.scrollContent}>
     <View style={styles.header}>
       <Text style={styles.title}>WORKSTATION</Text>
-      <Text style={styles.subtitle}>ECONOMIC SOVEREIGNTY ACTIVE • v151.0</Text>
+      <Text style={styles.subtitle}>COLLECTIVE INTELLIGENCE ACTIVE • v152.0</Text>
     </View>
 
     <View style={styles.statsGrid}>
       <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
          <View style={[styles.statIcon, { backgroundColor: '#64ffda15', borderColor: '#64ffda30' }]}>
-           <TrendingUp size={22} color="#64ffda" />
+           <Brain size={22} color="#64ffda" />
          </View>
-         <Text style={styles.statValue}>{wallet.wst.toLocaleString()}</Text>
-         <Text style={styles.statLabel}>WST Resonance</Text>
+         <Text style={styles.statValue}>Brain</Text>
+         <Text style={styles.statLabel}>Planetary Intel</Text>
       </View>
       <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
          <View style={[styles.statIcon, { backgroundColor: '#ff525215', borderColor: '#ff525230' }]}>
-           <Landmark size={22} color="#ff5252" />
+           <Cpu size={22} color="#ff5252" />
          </View>
-         <Text style={styles.statValue}>$450.00</Text>
-         <Text style={styles.statLabel}>Pending USD</Text>
+         <Text style={styles.statValue}>1,420</Text>
+         <Text style={styles.statLabel}>Autonomous Decisions</Text>
       </View>
     </View>
 
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Economic Engine</Text>
+      <Text style={styles.sectionTitle}>Latest Insight</Text>
+      <View style={[styles.glassCard, { borderLeftWidth: 4, borderLeftColor: '#64ffda' }]}>
+         <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>{insights[0]?.title || 'Analyzing Ecosystem...'}</Text>
+         <Text style={{ color: '#64748b', fontWeight: '700', fontSize: 12, marginTop: 8 }}>{insights[0]?.observation}</Text>
+      </View>
+    </View>
+
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Civilization Hubs</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-         <DomainBtn icon={Shield} label="Creator DAO" color="#64ffda" />
-         <DomainBtn icon={Briefcase} label="Start Hub" color="#ffd740" />
-         <DomainBtn icon={ShoppingBag} label="Syndicate" color="#ff5252" />
-      </View>
-    </View>
-
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>System Vitals</Text>
-      <View style={styles.glassCard}>
-         <ResonanceItem label="Market Health" value="94%" color="#64ffda" />
-         <ResonanceItem label="Creator Yield" value="8.4%" color="#ffd740" />
+         <DomainBtn icon={Globe} label="Brain" color="#64ffda" />
+         <DomainBtn icon={Target} label="Wisdom" color="#ffd740" />
+         <DomainBtn icon={Shield} label="Gov" color="#64ffda" />
+         <DomainBtn icon={Briefcase} label="Start" color="#ffd740" />
       </View>
     </View>
   </ScrollView>
 );
 
 const DomainBtn = ({ icon: Icon, label, color }) => (
-  <TouchableOpacity style={[styles.glassCard, { width: (width - 76) / 3, alignItems: 'center', padding: 12 }]}>
-     <Icon size={20} color={color} />
+  <TouchableOpacity style={[styles.glassCard, { width: (width - 76) / 4, alignItems: 'center', padding: 12 }]}>
+     <Icon size={18} color={color} />
      <Text style={[styles.statLabel, { fontSize: 8, marginTop: 8 }]}>{label}</Text>
   </TouchableOpacity>
 );
 
 const CEOScreen = () => {
-  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Entrepreneur. v151.0 Economic Sovereignty is active. How shall we expand your digital footprint today?' }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Citizen. v152.0 Collective Intelligence is online. How shall we coordinate our collective resonance today?' }]);
   const [input, setInput] = useState('');
 
   const send = () => {
     if (!input.trim()) return;
-    setMessages([...messages, { role: 'user', content: input }, { role: 'assistant', content: 'Synthesis in progress. Market analysis updated.' }]);
+    setMessages([...messages, { role: 'user', content: input }, { role: 'assistant', content: 'Synthesis in progress. Collective intelligence updated.' }]);
     setInput('');
   };
 
@@ -68,7 +69,7 @@ const CEOScreen = () => {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <View style={[styles.header, { paddingHorizontal: 24, paddingTop: 60, marginBottom: 20 }]}>
         <Text style={styles.title}>AI CEO</Text>
-        <Text style={styles.subtitle}>ENTREPRENEUR MODE ACTIVE</Text>
+        <Text style={styles.subtitle}>CIVILIZATION MODE ACTIVE</Text>
       </View>
       <FlatList
         data={messages}
@@ -84,7 +85,7 @@ const CEOScreen = () => {
         <TextInput
           value={input}
           onChangeText={setInput}
-          placeholder="Issue market directive..."
+          placeholder="Issue directive..."
           placeholderTextColor="#64748b"
           style={styles.input}
         />
@@ -96,44 +97,31 @@ const CEOScreen = () => {
   );
 };
 
-const ResonanceItem = ({ label, value, color }) => (
-  <View style={styles.resRow}>
-    <Text style={styles.resLabel}>{label}</Text>
-    <View style={styles.resBarBg}>
-       <View style={[styles.resBarFill, { width: value, backgroundColor: color }]} />
-    </View>
-    <Text style={[styles.resValue, { color }]}>{value}</Text>
-  </View>
-);
-
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [wallet, setWallet] = useState({ wst: 14205, usd: 450 });
+  const [insights, setInsights] = useState([{ title: 'Viral Trend Detected', observation: '14% increase in Bio-Reactor creations.' }]);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       <View style={{ flex: 1 }}>
-        {activeTab === 'dashboard' && <DashboardScreen wallet={wallet} />}
+        {activeTab === 'dashboard' && <DashboardScreen insights={insights} />}
         {activeTab === 'ceo' && <CEOScreen />}
-        {activeTab === 'dao' && (
+        {activeTab === 'intel' && (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-            <Shield size={64} color="#64ffda" />
-            <Text style={{ color: 'white', fontWeight: '900', fontSize: 24, marginTop: 20, textAlign: 'center' }}>Creator DAO</Text>
-            <Text style={{ color: '#64748b', fontWeight: '800', fontSize: 10, marginTop: 8, textTransform: 'uppercase', textAlign: 'center' }}>Decentralized Governance Active</Text>
-            <TouchableOpacity style={{ marginTop: 40, backgroundColor: '#64ffda', paddingHorizontal: 30, paddingVertical: 15, borderRadius: 20 }}>
-               <Text style={{ color: '#020617', fontWeight: '900', fontSize: 12, textTransform: 'uppercase' }}>View Proposals</Text>
-            </TouchableOpacity>
+            <Activity size={64} color="#64ffda" />
+            <Text style={{ color: 'white', fontWeight: '900', fontSize: 24, marginTop: 20, textAlign: 'center' }}>Civilization Brain</Text>
+            <Text style={{ color: '#64748b', fontWeight: '800', fontSize: 10, marginTop: 8, textTransform: 'uppercase', textAlign: 'center' }}>Real-time Intelligence Active</Text>
           </View>
         )}
       </View>
 
       <View style={styles.navBar}>
-        <NavBtn icon={LayoutDashboard} label="Economy" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
+        <NavBtn icon={LayoutDashboard} label="Pulse" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
         <NavBtn icon={MessageSquare} label="CEO" active={activeTab === 'ceo'} onPress={() => setActiveTab('ceo')} />
-        <NavBtn icon={Shield} label="DAO" active={activeTab === 'dao'} onPress={() => setActiveTab('dao')} />
-        <NavBtn icon={Briefcase} label="Launch" active={activeTab === 'other'} onPress={() => {}} />
+        <NavBtn icon={Globe} label="Intel" active={activeTab === 'intel'} onPress={() => setActiveTab('intel')} />
+        <NavBtn icon={Target} label="Wisdom" active={activeTab === 'other'} onPress={() => {}} />
         <NavBtn icon={Settings} label="Admin" active={activeTab === 'other'} onPress={() => {}} />
       </View>
     </SafeAreaView>

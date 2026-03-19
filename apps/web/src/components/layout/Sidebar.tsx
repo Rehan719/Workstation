@@ -5,7 +5,9 @@ import { useTheme } from '../../theme/ThemeContext';
 
 const allNavItems = [
   { name: 'Pulse', icon: Activity, id: 'dashboard' },
+  { name: 'Civilization', icon: Globe, id: 'civilization' },
   { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
+  { name: 'Wisdom Hub', icon: Target, id: 'wisdom' },
   { name: 'Creator Studio', icon: Plus, id: 'create' },
   { name: 'Realm Foundry', icon: Globe, id: 'realm-foundry' },
   {
@@ -34,6 +36,7 @@ const allNavItems = [
     subItems: [
       { name: 'Fed Portal', icon: Network, id: 'fed-portal' },
       { name: 'Governance', icon: Shield, id: 'governance' },
+      { name: 'AI Delegation', icon: Cpu, id: 'delegation' },
       { name: 'Performance', icon: Gauge, id: 'performance' },
       { name: 'Join Swarm', icon: Plus, id: 'join-fed' }
     ]

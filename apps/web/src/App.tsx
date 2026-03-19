@@ -15,6 +15,9 @@ import { RealmEditor } from './pages/realms/RealmEditor';
 import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
 import { PhysicalSymbiosis } from './pages/physical/PhysicalSymbiosis';
 import { DAODashboard } from './pages/governance/DAODashboard';
+import { DelegationDashboard } from './pages/governance/DelegationDashboard';
+import { PredictionMarket } from './pages/markets/PredictionMarket';
+import { CivilizationDashboard } from './pages/civilization/CivilizationDashboard';
 import { BusinessPlanWizard } from './pages/entrepreneur/BusinessPlanWizard';
 import { CFO } from './pages/c-suite/CFO';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
@@ -79,6 +82,12 @@ function App() {
             return <FederationPortal />;
           case 'governance':
             return <DAODashboard />;
+          case 'delegation':
+            return <DelegationDashboard />;
+          case 'wisdom':
+            return <PredictionMarket />;
+          case 'civilization':
+            return <CivilizationDashboard />;
           case 'wallet':
           case 'eco-facet':
             return <Wallet />;
