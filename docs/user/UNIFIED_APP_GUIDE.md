@@ -1,32 +1,30 @@
-# Workstation v149.0: Universal Empowerment & Playful Sovereignty
+# Workstation v150.0: Symbiotic Creation & The Creative Foundry
 
 ## Introduction
-The Workstation v149.0 ("Universal Empowerment") marks the epoch where the planetary consciousness of v148.0 becomes a universal digital playground. It offers free, fun, and fully integrated access to all Workstation tools across humanity's five great domains.
+The Workstation v150.0 ("Symbiotic Creation") transforms every citizen into a creator. It introduces a visual, no-code environment for building agentic tools and realms, fueled by a collaborative creator economy.
 
-## New Core Modules (v149.0)
+## New Core Modules (v150.0)
 
-### 1. Gamified Sovereignty
-- **XP & Leveling**: Earn Resonance XP for exploring the ecosystem and completing quests.
-- **Quest Log**: Follow guided pathways to master the five domains and earn badges (e.g., Polymath, Architect).
-- **Celebratory UX**: Experience confetti, interface chimes, and fluid animations for every achievement.
+### 1. Creator Studio
+- **Visual Canvas**: Assemble reactors and pipelines using a drag-and-drop interface powered by React Flow.
+- **Component Palette**: Choose from Data Ingestors, Logic Reactors, Outcome Hooks, and UI Widgets.
+- **Sandbox Mode**: Test your creations in a secure, isolated environment before publishing.
 
-### 2. The Five Domain Hubs
-- **Religion Hub**: Scripture study reactors and interfaith dialogue modules.
-- **Science Hub**: Planetary research synthesis and experiment simulators.
-- **Law Hub**: Constitutional Agent consultation and contract generation.
-- **Employment Hub**: VSB business simulations and career matching.
-- **Education Hub**: Personalized mastery pathways and learning object ingestion.
+### 2. AI as Co-Creator
+- **Intelligent Synthesis**: Use natural language to describe your intent and have the AI CEO generate a full reactor blueprint for you.
+- **Debug Assistant**: Get real-time optimization suggestions for your visual workflows.
 
-### 3. Playful Tools & Convergance
-- **UVAID/GSE**: A user-friendly dashboard for civilizational data analysis and Grand Synthesis.
-- **Model Manager**: One-click download and management of local AI models (via Ollama).
-- **Impact Dashboard**: Real-time visualization of how your interactions shape the global ecosystem.
+### 3. Living Marketplace
+- **User Listings**: Discover, rate, and license creations from the global community.
+- **Remixing (Hard Fork)**: Fork any existing creation to use as a template for your own innovations.
+- **Creator Wallet**: Track your simulated revenue and sales performance in the community exchange.
 
-### 4. Governance Visualization
-- **Persistent Hierarchy**: A new emblem in the header displays the Entity → VSB → AI CEO chain of supervision and leadership.
+### 4. Physical-Digital Symbiosis
+- **IoT Bridge**: Connect your digital reactors to real-world devices via MQTT and CoAP protocols.
+- **Live Telemetry**: Visualize environmental data and control physical assets directly from your command console.
 
 ## Getting Started
-1. **Explore the Hubs**: Select a domain from the new "Domains" section in the sidebar.
-2. **Launch a Quest**: Visit the Quest Log to begin your journey to sovereignty.
-3. **Download Intelligence**: Go to Settings → Model Manager to pull your first local AI model.
-4. **Participate**: Vote on evolution proposals in the Evolution Log.
+1. **Launch Studio**: Select "Creator Studio" from the sidebar to begin your first build.
+2. **Consult the CEO**: Use the AI command bar in the Studio to generate a blueprint from your idea.
+3. **Explore the Market**: Visit the Living Marketplace to see what other creators have built.
+4. **Link the Physical**: Register a device in the Physical World dashboard to start planetary stewardship.

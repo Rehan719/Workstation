@@ -6,6 +6,8 @@ import { useTheme } from '../../theme/ThemeContext';
 const allNavItems = [
   { name: 'Pulse', icon: Activity, id: 'dashboard' },
   { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
+  { name: 'Creator Studio', icon: Plus, id: 'create' },
+  { name: 'Realm Foundry', icon: Globe, id: 'realm-foundry' },
   {
     name: 'C-Suite',
     icon: User,
@@ -71,6 +73,7 @@ const allNavItems = [
   },
   { name: 'Settings', icon: Settings, id: 'settings' },
   { name: 'Quests', icon: Trophy, id: 'quests' },
+  { name: 'Physical World', icon: Wifi, id: 'iot' },
   { name: 'Admin', icon: Shield, id: 'admin' },
 ];
 

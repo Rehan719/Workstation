@@ -10,6 +10,10 @@ import { LawHub } from './pages/domains/LawHub';
 import { EmploymentHub } from './pages/domains/EmploymentHub';
 import { EducationHub } from './pages/domains/EducationHub';
 import { UVAIDDashboard } from './pages/tools/UVAIDDashboard';
+import { CreatorStudio } from './pages/create/CreatorStudio';
+import { RealmEditor } from './pages/realms/RealmEditor';
+import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
+import { PhysicalSymbiosis } from './pages/physical/PhysicalSymbiosis';
 import { CFO } from './pages/c-suite/CFO';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 import { QEPEngine } from './pages/QEPEngine';
@@ -77,7 +81,9 @@ function App() {
           case 'eco-facet':
             return <Wallet />;
           case 'marketplace':
-            return <Marketplace />;
+            return <LivingMarketplace />;
+          case 'iot':
+            return <PhysicalSymbiosis />;
           case 'impact':
             return <UserImpact />;
           case 'evolution-facet':
@@ -123,6 +129,10 @@ function App() {
             return <EducationHub />;
           case 'uvaid':
             return <UVAIDDashboard />;
+          case 'create':
+            return <CreatorStudio />;
+          case 'realm-foundry':
+            return <RealmEditor />;
           default:
             return (
               <div className="flex items-center justify-center h-full">

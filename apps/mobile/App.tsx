@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award } from 'lucide-react-native';
+import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -8,7 +8,7 @@ const DashboardScreen = ({ stats }) => (
   <ScrollView contentContainerStyle={styles.scrollContent}>
     <View style={styles.header}>
       <Text style={styles.title}>WORKSTATION</Text>
-      <Text style={styles.subtitle}>UNIVERSAL EMPOWERMENT ACTIVE • v149.0</Text>
+      <Text style={styles.subtitle}>SYMBIOTIC CREATION ACTIVE • v150.0</Text>
     </View>
 
     <View style={styles.statsGrid}>
@@ -21,10 +21,10 @@ const DashboardScreen = ({ stats }) => (
       </View>
       <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
          <View style={[styles.statIcon, { backgroundColor: '#ff525215', borderColor: '#ff525230' }]}>
-           <Brain size={22} color="#ff5252" />
+           <Plus size={22} color="#ff5252" />
          </View>
-         <Text style={styles.statValue}>{stats.xp}</Text>
-         <Text style={styles.statLabel}>Resonance XP</Text>
+         <Text style={styles.statValue}>Foundry</Text>
+         <Text style={styles.statLabel}>Creator Studio</Text>
       </View>
     </View>
 
@@ -36,6 +36,7 @@ const DashboardScreen = ({ stats }) => (
          <DomainBtn icon={Scale} label="Law" color="#64ffda" />
          <DomainBtn icon={Briefcase} label="Career" color="#ffd740" />
          <DomainBtn icon={GraduationCap} label="Mastery" color="#64ffda" />
+         <DomainBtn icon={Wifi} label="Physical" color="#ff5252" />
       </View>
     </View>
 
@@ -58,12 +59,12 @@ const DomainBtn = ({ icon: Icon, label, color }) => (
 );
 
 const CEOScreen = () => {
-  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Guardian. Welcome to the v149.0 digital playground. How shall we empower humanity today?' }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Creator. v150.0 Symbiotic Creation is active. How shall we co-evolve the foundry today?' }]);
   const [input, setInput] = useState('');
 
   const send = () => {
     if (!input.trim()) return;
-    setMessages([...messages, { role: 'user', content: input }, { role: 'assistant', content: 'Synthesis in progress. Resonance maintained.' }]);
+    setMessages([...messages, { role: 'user', content: input }, { role: 'assistant', content: 'Synthesis in progress. Blueprints updated.' }]);
     setInput('');
   };
 
@@ -71,7 +72,7 @@ const CEOScreen = () => {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <View style={[styles.header, { paddingHorizontal: 24, paddingTop: 60, marginBottom: 20 }]}>
         <Text style={styles.title}>AI CEO</Text>
-        <Text style={styles.subtitle}>PLANETARY STRATEGY ACTIVE</Text>
+        <Text style={styles.subtitle}>CO-CREATOR MODE ACTIVE</Text>
       </View>
       <FlatList
         data={messages}
@@ -87,7 +88,7 @@ const CEOScreen = () => {
         <TextInput
           value={input}
           onChangeText={setInput}
-          placeholder="Issue directive..."
+          placeholder="Issue creative directive..."
           placeholderTextColor="#64748b"
           style={styles.input}
         />
@@ -111,7 +112,7 @@ const ResonanceItem = ({ label, value, color }) => (
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [stats, setStats] = useState({ xp: 1420, level: 12, badges: ['Sovereign', 'Polymath'] });
+  const [stats, setStats] = useState({ xp: 2840, level: 24, badges: ['Sovereign', 'Polymath', 'FoundryMaster'] });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -120,9 +121,11 @@ export default function App() {
       <View style={{ flex: 1 }}>
         {activeTab === 'dashboard' && <DashboardScreen stats={stats} />}
         {activeTab === 'ceo' && <CEOScreen />}
-        {activeTab === 'other' && (
+        {activeTab === 'marketplace' && (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: 'white', fontWeight: '900', fontSize: 24 }}>Under Construction</Text>
+            <ShoppingBag size={48} color="#64ffda" />
+            <Text style={{ color: 'white', fontWeight: '900', fontSize: 24, marginTop: 20 }}>Living Marketplace</Text>
+            <Text style={{ color: '#64748b', fontWeight: '800', fontSize: 10, marginTop: 8, textTransform: 'uppercase' }}>User Creations Available</Text>
           </View>
         )}
       </View>
@@ -130,9 +133,9 @@ export default function App() {
       <View style={styles.navBar}>
         <NavBtn icon={LayoutDashboard} label="Pulse" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
         <NavBtn icon={MessageSquare} label="CEO" active={activeTab === 'ceo'} onPress={() => setActiveTab('ceo')} />
-        <NavBtn icon={Globe} label="Domains" active={activeTab === 'other'} onPress={() => setActiveTab('other')} />
-        <NavBtn icon={Award} label="Badges" active={activeTab === 'other'} onPress={() => setActiveTab('other')} />
-        <NavBtn icon={Settings} label="Admin" active={activeTab === 'other'} onPress={() => setActiveTab('other')} />
+        <NavBtn icon={Plus} label="Studio" active={activeTab === 'other'} onPress={() => {}} />
+        <NavBtn icon={ShoppingBag} label="Market" active={activeTab === 'marketplace'} onPress={() => setActiveTab('marketplace')} />
+        <NavBtn icon={Settings} label="Admin" active={activeTab === 'other'} onPress={() => {}} />
       </View>
     </SafeAreaView>
   );
