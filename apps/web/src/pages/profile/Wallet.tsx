@@ -2,32 +2,55 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, ShieldCheck, PieChart } from 'lucide-react';
 
+import { Shield, CreditCard, Landmark, ArrowUpRight, DollarSign } from 'lucide-react';
+
 export const Wallet: React.FC = () => {
   const [wallet, setWallet] = useState<any>(null);
 
   useEffect(() => {
-    axios.get('/api/v220/economic/wallet/demo_user').then(res => setWallet(res.data));
+    axios.get('/api/v310/payments/wallet/demo_user/v2').then(res => setWallet(res.data));
   }, []);
 
   if (!wallet) return <div className="p-8 text-slate-500 animate-pulse">Accessing Secure Vault...</div>;
 
   return (
-    <div className="space-y-10">
-      <header className="flex justify-between items-end">
+    <div className="space-y-12 animate-in fade-in duration-1000">
+      <header className="flex justify-between items-end border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-4xl font-black mb-2">Sovereign Wallet</h1>
-          <p className="text-slate-500">Manage your WST resonance and participation in the Liability Fund.</p>
+          <h1 className="text-5xl font-black tracking-tight neon-text">Sovereign Economy</h1>
+          <p className="text-slate-500 font-bold text-lg mt-2">Manage your creator earnings, WST liquidity, and fiat payouts.</p>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] font-black text-slate-500 uppercase">Available Resonance</p>
-          <p className="text-4xl font-black text-aura">{wallet.balance.toLocaleString()} {wallet.currency}</p>
+        <div className="text-right flex items-center gap-6">
+           <div>
+             <p className="text-[10px] font-black text-slate-500 uppercase">WST Resonance</p>
+             <p className="text-4xl font-black text-aura">{wallet.balances.wst.toLocaleString()}</p>
+           </div>
+           <div className="h-10 w-[1px] bg-white/10"></div>
+           <div>
+             <p className="text-[10px] font-black text-slate-500 uppercase">Pending Fiat</p>
+             <p className="text-4xl font-black text-white">${wallet.balances.fiat_pending_usd.toFixed(2)}</p>
+           </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <BalanceCard label="Staked Resonance" value={wallet.staked} icon={ShieldCheck} color="text-vital" />
-        <BalanceCard label="Federation Grant" value="1,200 WST" icon={Zap} color="text-aura" />
-        <BalanceCard label="Active Yield" value="8.4%" icon={PieChart} color="text-highlight" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <BalanceCard label="Staked WST" value="8,400" icon={Shield} color="text-vital" />
+        <BalanceCard label="Fiat Connected" value={wallet.stripe_connected ? "STRIPE ACTIVE" : "NOT LINKED"} icon={CreditCard} color="text-aura" />
+        <BalanceCard label="Polygon Node" value="SYNCED" icon={Activity} color="text-highlight" />
+        <BalanceCard label="Creator Score" value="A+" icon={Star} color="text-aura" />
+      </div>
+
+      <div className="p-12 glass-card bg-aura/5 border-aura/20 flex items-center justify-between">
+         <div className="flex items-center gap-6">
+            <div className="p-4 bg-aura/20 rounded-2xl text-aura">
+               <Landmark size={32} />
+            </div>
+            <div>
+               <h3 className="text-2xl font-black">Withdraw to Bank</h3>
+               <p className="text-slate-400 font-bold">Transfer your pending USD balance to your linked Stripe account.</p>
+            </div>
+         </div>
+         <button className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all">Initiate Payout</button>
       </div>
 
       <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800">

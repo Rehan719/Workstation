@@ -27,6 +27,7 @@ from agentic_core.api.v270 import infrastructure as infra_v270
 from agentic_core.api import ai_orchestration, csuite
 from agentic_core.api.v280 import csuite_enhanced, gamification
 from agentic_core.api.v290 import realms as realms_v290, ceo_generate, marketplace as marketplace_v290, iot
+from agentic_core.api.v310 import payments, governance as gov_v310, business, commerce, fund
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -95,6 +96,11 @@ app.include_router(realms_v290.router, prefix="/api/v290")
 app.include_router(ceo_generate.router, prefix="/api/v290")
 app.include_router(marketplace_v290.router, prefix="/api/v290")
 app.include_router(iot.router, prefix="/api/v290")
+app.include_router(payments.router, prefix="/api/v310")
+app.include_router(gov_v310.router, prefix="/api/v310")
+app.include_router(business.router, prefix="/api/v310")
+app.include_router(commerce.router, prefix="/api/v310")
+app.include_router(fund.router, prefix="/api/v310")
 
 app.add_middleware(
     CORSMiddleware,

@@ -14,7 +14,16 @@ npm install
 cp apps/web/.env.example apps/web/.env
 cp apps/mobile/.env.example apps/mobile/.env 2>/dev/null || true
 
-# 3. Ollama Check
+# 3. Blockchain (Polygon/WST) Setup
+echo "⛓️ Preparing Local Blockchain (Hardhat)..."
+if command -v npx &> /dev/null
+then
+    echo "✅ npx detected. Hardhat environment ready for 'npx hardhat node'."
+else
+    echo "⚠️ npx not found. Blockchain simulation may be limited."
+fi
+
+# 4. Ollama Check
 if command -v ollama &> /dev/null
 then
     echo "✅ Ollama detected."

@@ -1,51 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi } from 'lucide-react-native';
+import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi, Landmark, TrendingUp } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
-const DashboardScreen = ({ stats }) => (
+const DashboardScreen = ({ stats, wallet }) => (
   <ScrollView contentContainerStyle={styles.scrollContent}>
     <View style={styles.header}>
       <Text style={styles.title}>WORKSTATION</Text>
-      <Text style={styles.subtitle}>SYMBIOTIC CREATION ACTIVE • v150.0</Text>
+      <Text style={styles.subtitle}>ECONOMIC SOVEREIGNTY ACTIVE • v151.0</Text>
     </View>
 
     <View style={styles.statsGrid}>
       <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
          <View style={[styles.statIcon, { backgroundColor: '#64ffda15', borderColor: '#64ffda30' }]}>
-           <Star size={22} color="#64ffda" fill="#64ffda" />
+           <TrendingUp size={22} color="#64ffda" />
          </View>
-         <Text style={styles.statValue}>Lvl {stats.level}</Text>
-         <Text style={styles.statLabel}>Evolution Stage</Text>
+         <Text style={styles.statValue}>{wallet.wst.toLocaleString()}</Text>
+         <Text style={styles.statLabel}>WST Resonance</Text>
       </View>
       <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
          <View style={[styles.statIcon, { backgroundColor: '#ff525215', borderColor: '#ff525230' }]}>
-           <Plus size={22} color="#ff5252" />
+           <Landmark size={22} color="#ff5252" />
          </View>
-         <Text style={styles.statValue}>Foundry</Text>
-         <Text style={styles.statLabel}>Creator Studio</Text>
+         <Text style={styles.statValue}>$450.00</Text>
+         <Text style={styles.statLabel}>Pending USD</Text>
       </View>
     </View>
 
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Domain Hubs</Text>
+      <Text style={styles.sectionTitle}>Economic Engine</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-         <DomainBtn icon={Book} label="Religion" color="#ffd740" />
-         <DomainBtn icon={FlaskConical} label="Science" color="#ff5252" />
-         <DomainBtn icon={Scale} label="Law" color="#64ffda" />
-         <DomainBtn icon={Briefcase} label="Career" color="#ffd740" />
-         <DomainBtn icon={GraduationCap} label="Mastery" color="#64ffda" />
-         <DomainBtn icon={Wifi} label="Physical" color="#ff5252" />
+         <DomainBtn icon={Shield} label="Creator DAO" color="#64ffda" />
+         <DomainBtn icon={Briefcase} label="Start Hub" color="#ffd740" />
+         <DomainBtn icon={ShoppingBag} label="Syndicate" color="#ff5252" />
       </View>
     </View>
 
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>System Vitals</Text>
       <View style={styles.glassCard}>
-         <ResonanceItem label="Oxytocin" value="85%" color="#64ffda" />
-         <ResonanceItem label="Serotonin" value="92%" color="#ffd740" />
-         <ResonanceItem label="Dopamine" value="74%" color="#ff5252" />
+         <ResonanceItem label="Market Health" value="94%" color="#64ffda" />
+         <ResonanceItem label="Creator Yield" value="8.4%" color="#ffd740" />
       </View>
     </View>
   </ScrollView>
@@ -59,12 +55,12 @@ const DomainBtn = ({ icon: Icon, label, color }) => (
 );
 
 const CEOScreen = () => {
-  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Creator. v150.0 Symbiotic Creation is active. How shall we co-evolve the foundry today?' }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Entrepreneur. v151.0 Economic Sovereignty is active. How shall we expand your digital footprint today?' }]);
   const [input, setInput] = useState('');
 
   const send = () => {
     if (!input.trim()) return;
-    setMessages([...messages, { role: 'user', content: input }, { role: 'assistant', content: 'Synthesis in progress. Blueprints updated.' }]);
+    setMessages([...messages, { role: 'user', content: input }, { role: 'assistant', content: 'Synthesis in progress. Market analysis updated.' }]);
     setInput('');
   };
 
@@ -72,7 +68,7 @@ const CEOScreen = () => {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <View style={[styles.header, { paddingHorizontal: 24, paddingTop: 60, marginBottom: 20 }]}>
         <Text style={styles.title}>AI CEO</Text>
-        <Text style={styles.subtitle}>CO-CREATOR MODE ACTIVE</Text>
+        <Text style={styles.subtitle}>ENTREPRENEUR MODE ACTIVE</Text>
       </View>
       <FlatList
         data={messages}
@@ -88,7 +84,7 @@ const CEOScreen = () => {
         <TextInput
           value={input}
           onChangeText={setInput}
-          placeholder="Issue creative directive..."
+          placeholder="Issue market directive..."
           placeholderTextColor="#64748b"
           style={styles.input}
         />
@@ -112,29 +108,32 @@ const ResonanceItem = ({ label, value, color }) => (
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [stats, setStats] = useState({ xp: 2840, level: 24, badges: ['Sovereign', 'Polymath', 'FoundryMaster'] });
+  const [wallet, setWallet] = useState({ wst: 14205, usd: 450 });
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       <View style={{ flex: 1 }}>
-        {activeTab === 'dashboard' && <DashboardScreen stats={stats} />}
+        {activeTab === 'dashboard' && <DashboardScreen wallet={wallet} />}
         {activeTab === 'ceo' && <CEOScreen />}
-        {activeTab === 'marketplace' && (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ShoppingBag size={48} color="#64ffda" />
-            <Text style={{ color: 'white', fontWeight: '900', fontSize: 24, marginTop: 20 }}>Living Marketplace</Text>
-            <Text style={{ color: '#64748b', fontWeight: '800', fontSize: 10, marginTop: 8, textTransform: 'uppercase' }}>User Creations Available</Text>
+        {activeTab === 'dao' && (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+            <Shield size={64} color="#64ffda" />
+            <Text style={{ color: 'white', fontWeight: '900', fontSize: 24, marginTop: 20, textAlign: 'center' }}>Creator DAO</Text>
+            <Text style={{ color: '#64748b', fontWeight: '800', fontSize: 10, marginTop: 8, textTransform: 'uppercase', textAlign: 'center' }}>Decentralized Governance Active</Text>
+            <TouchableOpacity style={{ marginTop: 40, backgroundColor: '#64ffda', paddingHorizontal: 30, paddingVertical: 15, borderRadius: 20 }}>
+               <Text style={{ color: '#020617', fontWeight: '900', fontSize: 12, textTransform: 'uppercase' }}>View Proposals</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
 
       <View style={styles.navBar}>
-        <NavBtn icon={LayoutDashboard} label="Pulse" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
+        <NavBtn icon={LayoutDashboard} label="Economy" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
         <NavBtn icon={MessageSquare} label="CEO" active={activeTab === 'ceo'} onPress={() => setActiveTab('ceo')} />
-        <NavBtn icon={Plus} label="Studio" active={activeTab === 'other'} onPress={() => {}} />
-        <NavBtn icon={ShoppingBag} label="Market" active={activeTab === 'marketplace'} onPress={() => setActiveTab('marketplace')} />
+        <NavBtn icon={Shield} label="DAO" active={activeTab === 'dao'} onPress={() => setActiveTab('dao')} />
+        <NavBtn icon={Briefcase} label="Launch" active={activeTab === 'other'} onPress={() => {}} />
         <NavBtn icon={Settings} label="Admin" active={activeTab === 'other'} onPress={() => {}} />
       </View>
     </SafeAreaView>
@@ -162,7 +161,7 @@ const styles = StyleSheet.create({
   section: { marginTop: 40 },
   sectionTitle: { color: 'white', fontSize: 20, fontWeight: '900', marginBottom: 20 },
   resRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  resLabel: { color: '#64748b', fontSize: 10, fontWeight: '800', width: 60 },
+  resLabel: { color: '#64748b', fontSize: 10, fontWeight: '800', width: 80 },
   resBarBg: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 2 },
   resBarFill: { height: '100%', borderRadius: 2 },
   resValue: { color: 'white', fontSize: 12, fontWeight: '900', width: 40, textAlign: 'right' },

@@ -14,6 +14,8 @@ import { CreatorStudio } from './pages/create/CreatorStudio';
 import { RealmEditor } from './pages/realms/RealmEditor';
 import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
 import { PhysicalSymbiosis } from './pages/physical/PhysicalSymbiosis';
+import { DAODashboard } from './pages/governance/DAODashboard';
+import { BusinessPlanWizard } from './pages/entrepreneur/BusinessPlanWizard';
 import { CFO } from './pages/c-suite/CFO';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 import { QEPEngine } from './pages/QEPEngine';
@@ -76,7 +78,7 @@ function App() {
           case 'gov-facet':
             return <FederationPortal />;
           case 'governance':
-            return <FederationGovernance />;
+            return <DAODashboard />;
           case 'wallet':
           case 'eco-facet':
             return <Wallet />;
@@ -124,7 +126,7 @@ function App() {
           case 'law':
             return <LawHub />;
           case 'employment':
-            return <EmploymentHub />;
+            return <BusinessPlanWizard />;
           case 'education':
             return <EducationHub />;
           case 'uvaid':
