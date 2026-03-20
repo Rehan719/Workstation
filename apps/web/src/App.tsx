@@ -41,6 +41,7 @@ import { FedPerformance } from './pages/federation/Performance';
 import { JoinFederationWizard } from './pages/federation/JoinWizard';
 import { Marketplace } from './pages/developers/Marketplace';
 import { DevPortal } from './pages/developers/DevPortal';
+import { Forge } from './pages/developers/Forge';
 import { PublicRoadmap } from './pages/PublicRoadmap';
 import { OnboardingTour } from './components/onboarding/OnboardingTour';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -116,6 +117,8 @@ function App() {
             return <JoinFederationWizard />;
           case 'dev-portal':
             return <DevPortal />;
+          case 'forge':
+            return <Forge />;
           case 'roadmap':
             return <PublicRoadmap />;
           case 'settings':

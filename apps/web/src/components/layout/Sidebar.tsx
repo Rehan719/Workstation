@@ -11,6 +11,7 @@ const allNavItems = [
   { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
   { name: 'Wisdom Hub', icon: Target, id: 'wisdom' },
   { name: 'Creator Studio', icon: Plus, id: 'create' },
+  { name: 'The Forge', icon: Terminal, id: 'forge' },
   { name: 'Realm Foundry', icon: Globe, id: 'realm-foundry' },
   {
     name: 'C-Suite',
