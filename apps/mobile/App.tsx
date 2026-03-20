@@ -8,7 +8,7 @@ const DashboardScreen = ({ stats }) => (
   <ScrollView contentContainerStyle={styles.scrollContent}>
     <View style={styles.header}>
       <Text style={styles.title}>WORKSTATION</Text>
-      <Text style={styles.subtitle}>GENESIS v200.0 • LAYER STATUS: 7/7 ACTIVE</Text>
+      <Text style={styles.subtitle}>v3.0 RECOMBINANT • SOVEREIGN GENESIS</Text>
     </View>
 
     <View style={styles.statsGrid}>
@@ -59,7 +59,7 @@ const ForgeScreen = () => {
   return (
     <View style={{ flex: 1, padding: 24, paddingTop: 60 }}>
       <Text style={styles.title}>THE FORGE</Text>
-      <Text style={styles.subtitle}>DEVELOPER REALM • L7 UNIVERSE</Text>
+      <Text style={styles.subtitle}>DEVELOPER REALM • L6 CONSCIOUSNESS</Text>
 
       <View style={[styles.glassCard, { marginTop: 40, height: 300, justifyContent: 'center', alignItems: 'center' }]}>
          <Terminal size={64} color="#64ffda" />

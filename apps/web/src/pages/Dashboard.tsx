@@ -5,10 +5,10 @@ import { TrendingUp, Users, Cpu, Zap, ArrowUpRight, ShieldCheck, Activity, Globe
 import { ResonanceMap } from '../components/federation/ResonanceMap';
 
 const stats = [
-  { label: 'Layer Status', value: '7/7 Active', delta: 'v200.0', icon: ShieldCheck, color: 'text-aura' },
-  { label: 'System Fidelity', value: '99.98%', delta: 'Optimal', icon: Zap, color: 'text-aura' },
-  { label: 'Planetary Nodes', value: '14,205', delta: '+142/hr', icon: Globe, color: 'text-highlight' },
-  { label: 'Recombinations', value: '1,420', delta: '+12 today', icon: Activity, color: 'text-vital' },
+  { label: 'Entity Status', value: 'v3.0 Sovereign', delta: 'Unified', icon: ShieldCheck, color: 'text-aura' },
+  { label: 'Resonance', value: '99.98%', delta: 'Optimal', icon: Zap, color: 'text-aura' },
+  { label: 'Mesh Depth', value: '1.42M', delta: '+142k/hr', icon: Globe, color: 'text-highlight' },
+  { label: 'Autopoiesis', value: 'Active', delta: 'Self-Evolving', icon: Activity, color: 'text-vital' },
 ];
 
 export const Dashboard: React.FC = () => {

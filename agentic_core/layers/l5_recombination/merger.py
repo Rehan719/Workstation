@@ -1,31 +1,21 @@
 from typing import List, Dict, Any
 
-class ModelMergerL5:
+class RecombinationEngineL5:
     """
-    LAYER 5: RECOMBINATION ENGINE - Genetic Workshop.
-    Implements advanced model merging and adapter grafting.
+    LAYER 4 (Blueprint) / L5 (Directory): RECOMBINATION ENGINE (v3.0).
+    The genetic workshop for model merging and adapter grafting.
     """
     def __init__(self):
-        self.active_recombinations = []
+        self.strategies = ["TIES", "DARE", "FISHER"]
 
-    def ties_merge(self, model_ids: List[str], weights: List[float]) -> Dict[str, Any]:
-        """TIES-Merging (Resolving sign conflicts) simulation."""
-        # Simulation: Merging dummy tensors
-        print(f"L5 Recombination: Performing TIES-Merge on {model_ids}...")
+    def execute_merging(self, parent_ids: List[str], strategy: str = "TIES") -> Dict[str, Any]:
+        """v3.0 Autopoietic Recombination."""
+        print(f"L5 Recombination: Weaving traits from {parent_ids} via {strategy}...")
         return {
-            "new_model_id": f"merged-{'-'.join(model_ids)}",
-            "merge_strategy": "TIES",
-            "fidelity_score": 0.98,
-            "hash": "sha256:merged_hash_stub"
+            "result_hash": f"sha256:{strategy.lower()}_merged_dna_stub",
+            "lineage": parent_ids,
+            "recombinant_fidelity": 0.95,
+            "strategy_used": strategy
         }
 
-    def dare_merge(self, model_ids: List[str]) -> Dict[str, Any]:
-        """DARE (Drop And REscale) simulation."""
-        print(f"L5 Recombination: Performing DARE-Merge on {model_ids}...")
-        return {
-            "new_model_id": f"dare-{'-'.join(model_ids)}",
-            "merge_strategy": "DARE",
-            "hash": "sha256:dare_hash_stub"
-        }
-
-model_merger = ModelMergerL5()
+recombination_engine = RecombinationEngineL5()

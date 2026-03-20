@@ -20,7 +20,7 @@ export const Forge: React.FC = () => {
     }
     setIsRecombining(true);
     try {
-       const res = await axios.post('/api/v154/forge/recombine', { model_ids: selectedModels, strategy: 'TIES' });
+       const res = await axios.post('/api/v200/recombine', { parent_ids: selectedModels, strategy: 'TIES' });
        setOutput(res.data);
     } catch (err) {
        console.error("Forge Recombination Failed.");
@@ -34,7 +34,7 @@ export const Forge: React.FC = () => {
       <header className="flex justify-between items-end border-b border-white/5 pb-8">
         <div>
           <h1 className="text-5xl font-black mb-1 neon-text !text-aura">The Forge</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">Developer Realm • Layer 7 Universe</p>
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">Developer Realm • Layer 6 Consciousness (v3.0)</p>
         </div>
         <div className="flex gap-4">
            <div className="px-6 py-3 bg-aura/10 border border-aura/30 rounded-xl flex items-center gap-3">
