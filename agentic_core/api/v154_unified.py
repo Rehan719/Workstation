@@ -11,8 +11,9 @@ from agentic_core.layers.l7_module_library.registry import module_registry
 from agentic_core.layers.l8_recombination.merger import model_merger
 from agentic_core.layers.l9_orchestration.orchestrator import swarm_orchestrator
 from agentic_core.layers.ueg import ueg
+from agentic_core.governance.dao import dao_framework
 
-router = APIRouter(prefix="/v154", tags=["Genesis API"])
+router = APIRouter(prefix="/v154", tags=["Sovereign Genesis API"])
 
 class ConnectionManager:
     def __init__(self):
@@ -36,12 +37,13 @@ manager = ConnectionManager()
 
 @router.get("/status")
 async def get_genesis_status():
-    """LAYER 12: UX - Real-time system vitals from v3.0 12-Layer Stack."""
-    ueg.log_event("L12", "API", "STATUS_REQUEST", {"entity": "Workstation v3.0"})
+    """LAYER 12: UX - v3.0 Sovereign Genesis Status Report."""
+    ueg.log_event("L12", "API", "STATUS_REQUEST", {"entity": "Workstation v3.0 Sovereign"})
     return {
         "entity": "Workstation Sovereign v3.0",
         "epoch": "Genesis (v154.0)",
-        "layers": {f"L{i}": "Active" for i in range(1, 13)},
+        "layers": {f"L{i}": "Active (High Fidelity)" for i in range(1, 13)},
+        "governance": dao_framework.legal_status,
         "merkle_root": validator_l1.merkle_root,
         "ueg_root": ueg.merkle_root
     }
@@ -51,14 +53,15 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            # Simulate real-time stream data from v3.0 agentic core
+            # Simulate real-time stream data from v3.0 Sovereign Core
             data = {
                 "type": "SYSTEM_VITALS",
                 "payload": {
                     "cpu": random.uniform(20, 80),
                     "memory": random.uniform(10, 30),
                     "swarm_health": random.uniform(0.9, 1.0),
-                    "active_agents": len(module_registry.registry)
+                    "active_agents": len(module_registry.registry),
+                    "v3_status": "SOVEREIGN"
                 }
             }
             await websocket.send_text(json.dumps(data))
@@ -70,7 +73,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     "payload": {
                         "agent_id": f"agent_{random.randint(1,5)}",
                         "signal_type": random.choice(["discovery", "synthesis", "optimization"]),
-                        "strength": random.random()
+                        "strength": random.random(),
+                        "layer": "L6"
                     }
                 }
                 await websocket.send_text(json.dumps(signal))
@@ -81,12 +85,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @router.post("/forge/recombine")
 async def trigger_recombination(model_ids: List[str], strategy: str = "TIES"):
-    """LAYER 8: RECOMBINATION ENGINE - Trigger model recombination."""
-    # Constitutional check (L1)
-    context = {"models": model_ids, "fitness": 0.9} # Simulated fitness for validation
-    if not validator_l1.validate_action("recombine", context):
-        ueg.log_event("L1", "Validator", "ACTION_BLOCKED", {"action": "recombine", "context": context}, ["audit-required"])
-        raise HTTPException(status_code=403, detail="Recombination blocked by Article 1095.")
+    """LAYER 8: RECOMBINATION ENGINE - Article 1095 Recombination."""
+    # GaaS Validation (L1)
+    context = {"models": model_ids, "fitness": 0.9}
+    validation = validator_l1.validate_action("recombine", context)
+    if not validation["valid"]:
+        ueg.log_event("L1", "GaaS", "ACTION_BLOCKED", {"action": "recombine", "validation": validation}, ["audit-required"])
+        raise HTTPException(status_code=403, detail=validation["reason"])
 
     if strategy == "TIES":
         res = model_merger.ties_merge(model_ids, [0.5] * len(model_ids))
@@ -96,7 +101,7 @@ async def trigger_recombination(model_ids: List[str], strategy: str = "TIES"):
     # Register result in L7
     new_agent_did = module_registry.register_composite(res)
 
-    ueg.log_event("L8", "Merger", "RECOMBINATION_COMPLETE", {"agent_did": new_agent_did})
+    ueg.log_event("L8", "Merger", "RECOMBINATION_COMPLETE", {"agent_did": new_agent_did, "mode": validation["mode"]})
 
     # Notify connected clients via WebSocket
     await manager.broadcast(json.dumps({
@@ -104,7 +109,7 @@ async def trigger_recombination(model_ids: List[str], strategy: str = "TIES"):
         "payload": {"event": "recombination_complete", "agent_did": new_agent_did}
     }))
 
-    return {"status": "recombined", "agent_did": new_agent_did, "metadata": res}
+    return {"status": "recombined_sovereign", "agent_did": new_agent_did, "metadata": res}
 
 @router.get("/library/models")
 async def list_models():
@@ -116,7 +121,7 @@ async def list_articles():
 
 @router.post("/orchestration/swarm")
 async def start_swarm(goal: str):
-    """LAYER 9: ORCHESTRATION - Initiate a specialized agent swarm."""
+    """LAYER 9: ORCHESTRATION - Initiate a v3.0 Swarm."""
     swarm_id = swarm_orchestrator.form_swarm(goal)
     ueg.log_event("L9", "Orchestrator", "SWARM_INITIATED", {"swarm_id": swarm_id, "goal": goal})
-    return {"status": "success", "swarm_id": swarm_id}
+    return {"status": "sovereign_swarm_launched", "swarm_id": swarm_id}

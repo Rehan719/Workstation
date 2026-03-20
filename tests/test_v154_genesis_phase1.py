@@ -5,11 +5,13 @@ from agentic_core.layers.l9_orchestration.orchestrator import swarm_orchestrator
 from agentic_core.layers.ueg import ueg
 
 def test_l1_validation():
-    print("Testing L1 Validation...")
+    print("Testing L1 GaaS Validation...")
     # Valid action
-    assert validator_l1.validate_action("recombine", {"models": ["m1"], "fitness": 0.95}) == True
+    res = validator_l1.validate_action("recombine", {"models": ["m1"], "fitness": 0.95})
+    assert res["valid"] == True
     # Invalid action (Article 1095)
-    assert validator_l1.validate_action("recombine", {"models": ["m1"]}) == False
+    res = validator_l1.validate_action("recombine", {"models": ["m1"]})
+    assert res["valid"] == False
     print("L1 Validation passed.")
 
 def test_l2_cl1_simulation():
