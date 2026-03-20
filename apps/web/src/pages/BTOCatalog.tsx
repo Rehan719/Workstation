@@ -1,84 +1,81 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Package, ChevronRight, Settings2 } from 'lucide-react';
-import { BTOConfigurator } from '../components/bto/BTOConfigurator';
-import fallbackData from '../data/fallbackData.json';
+import { Package, ChevronRight, Settings2, Box, Cpu, Network } from 'lucide-react';
+import { Card } from '@workstation/ui';
+import { useStore } from '@workstation/shared';
 
 export const BTOCatalog: React.FC = () => {
-  const [products, setProducts] = useState<any[]>(fallbackData.products);
-  const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const { products } = useStore();
 
-  useEffect(() => {
-    axios.get('/api/v180/products/')
-      .then(res => {
-        if (res.data && res.data.length > 0) {
-          setProducts(res.data);
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.warn("Using fallback product data.");
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) return <div className="animate-pulse flex space-x-4">Loading Catalog...</div>;
+  const getIcon = (category: string) => {
+    switch (category) {
+      case 'AGENT': return <Box size={32} />;
+      case 'REACTOR': return <Cpu size={32} />;
+      case 'REALM': return <Network size={32} />;
+      default: return <Package size={32} />;
+    }
+  };
 
   return (
-    <div className="space-y-10 relative">
-      {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-sovereign/80 backdrop-blur-xl">
-          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
-            <BTOConfigurator
-              product={selectedProduct}
-              onClose={() => setSelectedProduct(null)}
-            />
-          </div>
-        </div>
-      )}
-
+    <div className="space-y-12 pb-24">
       <header>
-        <h1 className="text-4xl font-black mb-2">Build-to-Order Catalog</h1>
-        <p className="text-slate-500">Configure and deploy custom agentic infrastructure.</p>
+        <h1 className="text-5xl font-black mb-3 tracking-tight">Build-to-Order Catalog</h1>
+        <p className="text-slate-400 font-bold text-lg max-w-2xl leading-relaxed">
+          Configure and deploy custom agentic infrastructure across the <span className="text-aura">Sovereign Mesh</span>.
+        </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {products.map((product) => (
           <motion.div
             key={product.id}
-            whileHover={{ y: -5 }}
-            className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm flex flex-col"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
           >
-            <div className="flex justify-between items-start mb-6">
-              <div className="p-4 rounded-2xl bg-highlight/10 text-highlight">
-                <Package size={32} />
+            <Card className="h-full flex flex-col group hover:border-aura/50 transition-all">
+              <div className="flex justify-between items-start mb-8">
+                <div className="p-4 rounded-2xl bg-slate-800/50 text-aura group-hover:scale-110 transition-transform">
+                  {getIcon(product.category)}
+                </div>
+                <span className="text-[10px] font-black px-3 py-1.5 rounded-full bg-slate-950 text-slate-500 border border-slate-900 uppercase tracking-widest">
+                  {product.category}
+                </span>
               </div>
-              <span className="text-[10px] font-black px-3 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-widest">
-                {product.category}
-              </span>
-            </div>
 
-            <h3 className="text-2xl font-black mb-3">{product.name}</h3>
-            <p className="text-slate-400 text-sm mb-8 flex-1">{product.description}</p>
+              <h3 className="text-2xl font-black mb-3 text-white">{product.name}</h3>
+              <p className="text-slate-500 font-bold text-sm mb-8 flex-1 leading-relaxed">
+                {product.description}
+              </p>
 
-            <div className="flex items-center justify-between mt-auto">
-              <div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Starting at</p>
-                <p className="text-2xl font-black text-white">{product.basePrice.toLocaleString()} WST</p>
+              <div className="space-y-4 mb-8">
+                 {Object.entries(product.specs).map(([k, v]) => (
+                   <div key={k} className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-600">
+                      <span>{k}</span>
+                      <span className="text-slate-400">{v}</span>
+                   </div>
+                 ))}
               </div>
-              <button
-                onClick={() => setSelectedProduct(product)}
-                className="flex items-center gap-2 px-6 py-3 bg-aura text-sovereign font-bold rounded-xl hover:scale-105 transition-transform"
-              >
-                <Settings2 size={18} />
-                Configure
-                <ChevronRight size={18} />
-              </button>
-            </div>
+
+              <div className="flex items-end justify-between mt-auto pt-6 border-t border-slate-800/50">
+                <div>
+                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Cost</p>
+                  <p className="text-2xl font-black text-white">{product.price}</p>
+                </div>
+                <button className="flex items-center gap-2 px-6 py-3 bg-aura text-sovereign font-black rounded-xl hover:scale-105 transition-all text-xs uppercase tracking-widest shadow-lg shadow-aura/10">
+                  <Settings2 size={16} />
+                  Configure
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </Card>
           </motion.div>
         ))}
+      </div>
+
+      <div className="p-12 rounded-3xl bg-aura/5 border border-aura/20 backdrop-blur-sm text-center">
+         <h3 className="text-2xl font-black mb-4">Need a custom solution?</h3>
+         <p className="text-slate-400 font-bold mb-8 max-w-xl mx-auto">Our C-Suite agents can assist in architecting specialized reactors for high-throughput enterprise swarm coordination.</p>
+         <button className="px-10 py-5 bg-white text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase tracking-widest text-sm">Consult VSB AI CEO</button>
       </div>
     </div>
   );

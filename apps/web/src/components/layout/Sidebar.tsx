@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart, Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity, Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart, Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity, Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe, GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase, GraduationCap, Trophy, Wifi } from 'lucide-react';
 import { useModeStore } from '../../store/modeStore';
 import { useTheme } from '../../theme/ThemeContext';
 
