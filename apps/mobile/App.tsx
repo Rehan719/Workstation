@@ -1,88 +1,80 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi, Landmark, TrendingUp, Target, Activity, Radio, GitBranch, Fingerprint, Terminal, Layers } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, Platform } from 'react-native';
+import { LayoutDashboard, Terminal, Globe, Fingerprint, Settings, Shield, Activity, GraduationCap, Code, Building2, BookOpen, Zap, Cpu, Users } from 'lucide-react-native';
+import { useStore } from './src/store/mobileStore';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-const DashboardScreen = ({ stats }) => (
-  <ScrollView contentContainerStyle={styles.scrollContent}>
-    <View style={styles.header}>
-      <Text style={styles.title}>WORKSTATION</Text>
-      <Text style={styles.subtitle}>v3.0 RECOMBINANT • SOVEREIGN GENESIS</Text>
-    </View>
+const DashboardScreen = () => {
+  const { systemVitals, currentRealm, user } = useStore();
 
-    <View style={styles.statsGrid}>
-      <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
-         <View style={[styles.statIcon, { backgroundColor: '#64ffda15', borderColor: '#64ffda30' }]}>
-           <Shield size={22} color="#64ffda" />
-         </View>
-         <Text style={styles.statValue}>Genome</Text>
-         <Text style={styles.statLabel}>v200.0 Certified</Text>
-      </View>
-      <View style={[styles.glassCard, { width: (width - 64) / 2 }]}>
-         <View style={[styles.statIcon, { backgroundColor: '#ff525215', borderColor: '#ff525230' }]}>
-           <Activity size={22} color="#ff5252" />
-         </View>
-         <Text style={styles.statValue}>1,420</Text>
-         <Text style={styles.statLabel}>Recombinations</Text>
-      </View>
-    </View>
+  const stats = [
+    { label: 'Resonance', value: `${(systemVitals.swarmHealth * 100).toFixed(1)}%`, icon: Zap, color: '#64ffda' },
+    { label: 'CPU Load', value: `${systemVitals.cpu.toFixed(1)}%`, icon: Cpu, color: '#38bdf8' },
+    { label: 'Agents', value: systemVitals.activeAgents.toString(), icon: Users, color: '#ff5252' },
+    { label: 'Status', value: 'Sovereign', icon: Shield, color: '#64ffda' },
+  ];
 
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Realms of Light</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-         <DomainBtn icon={Terminal} label="Forge" color="#64ffda" />
-         <DomainBtn icon={Book} label="Learner" color="#ffd740" />
-         <DomainBtn icon={Briefcase} label="Enterprise" color="#ff5252" />
-         <DomainBtn icon={FlaskConical} label="Scholar" color="#64ffda" />
-      </View>
-    </View>
+  const realms = [
+    { id: 'LEARNER', name: 'Learner', icon: GraduationCap, color: '#ffd740' },
+    { id: 'DEVELOPER', name: 'Forge', icon: Code, color: '#64ffda' },
+    { id: 'ENTERPRISE', name: 'Market', icon: Building2, color: '#ff5252' },
+    { id: 'SCHOLAR', name: 'Scholar', icon: BookOpen, color: '#38bdf8' },
+  ];
 
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>System Vitals</Text>
-      <View style={styles.glassCard}>
-         <ResonanceItem label="Fidelity" value="99.9%" color="#64ffda" />
-         <ResonanceItem label="PQC Strength" value="1024-bit" color="#ffd740" />
-      </View>
-    </View>
-  </ScrollView>
-);
-
-const DomainBtn = ({ icon: Icon, label, color }) => (
-  <TouchableOpacity style={[styles.glassCard, { width: (width - 76) / 4, alignItems: 'center', padding: 12 }]}>
-     <Icon size={18} color={color} />
-     <Text style={[styles.statLabel, { fontSize: 8, marginTop: 8 }]}>{label}</Text>
-  </TouchableOpacity>
-);
-
-const ForgeScreen = () => {
   return (
-    <View style={{ flex: 1, padding: 24, paddingTop: 60 }}>
-      <Text style={styles.title}>THE FORGE</Text>
-      <Text style={styles.subtitle}>DEVELOPER REALM • L6 CONSCIOUSNESS</Text>
-
-      <View style={[styles.glassCard, { marginTop: 40, height: 300, justifyContent: 'center', alignItems: 'center' }]}>
-         <Terminal size={64} color="#64ffda" />
-         <Text style={{ color: 'white', fontWeight: '900', fontSize: 18, marginTop: 20 }}>Visual Agent Composer</Text>
-         <Text style={{ color: '#64748b', fontWeight: '800', fontSize: 10, marginTop: 8, textTransform: 'uppercase' }}>Composition Stub for Mobile</Text>
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.header}>
+        <Text style={styles.title}>WORKSTATION <Text style={{color: '#64ffda'}}>v3.0</Text></Text>
+        <Text style={styles.subtitle}>GENESIS EPOCH • SOVEREIGN INTERFACE</Text>
       </View>
 
-      <TouchableOpacity style={{ marginTop: 24, backgroundColor: '#64ffda', padding: 20, borderRadius: 20, alignItems: 'center' }}>
-         <Text style={{ color: '#020617', fontWeight: '900', textTransform: 'uppercase' }}>Initiate Recombination</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.welcomeSection}>
+        <Text style={styles.welcomeText}>Welcome, <Text style={{color: 'white'}}>{user?.displayName || 'Guardian'}</Text></Text>
+        <View style={styles.badgeRow}>
+           <View style={styles.statusBadge}><View style={styles.pulseDot}/><Text style={styles.badgeText}>Live Resonance</Text></View>
+        </View>
+      </View>
+
+      <View style={styles.statsGrid}>
+        {stats.map((stat, i) => (
+          <View key={i} style={[styles.glassCard, { width: (width - 60) / 2, marginBottom: 12 }]}>
+             <View style={[styles.statIcon, { backgroundColor: `${stat.color}15`, borderColor: `${stat.color}30` }]}>
+               <stat.icon size={20} color={stat.color} />
+             </View>
+             <Text style={styles.statValue}>{stat.value}</Text>
+             <Text style={styles.statLabel}>{stat.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Audience Realms</Text>
+        <View style={styles.realmGrid}>
+           {realms.map((realm) => (
+             <TouchableOpacity
+               key={realm.id}
+               style={[styles.realmCard, currentRealm === realm.id && { borderColor: realm.color, backgroundColor: `${realm.color}10` }]}
+             >
+                <realm.icon size={24} color={currentRealm === realm.id ? realm.color : '#64748b'} />
+                <Text style={[styles.realmLabel, currentRealm === realm.id && { color: 'white' }]}>{realm.name}</Text>
+             </TouchableOpacity>
+           ))}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Command Center</Text>
+        <View style={styles.glassCard}>
+           <Text style={styles.placeholderText}>Multi-modal HUD channels active on sidebar (Desktop) / bottom sheet (Mobile)</Text>
+           <TouchableOpacity style={styles.actionBtn}>
+              <Text style={styles.actionBtnText}>Open HUD</Text>
+           </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
-
-const ResonanceItem = ({ label, value, color }) => (
-  <View style={styles.resRow}>
-    <Text style={styles.resLabel}>{label}</Text>
-    <View style={styles.resBarBg}>
-       <View style={[styles.resBarFill, { width: '90%', backgroundColor: color }]} />
-    </View>
-    <Text style={[styles.resValue, { color }]}>{value}</Text>
-  </View>
-);
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -93,7 +85,7 @@ export default function App() {
 
       <View style={{ flex: 1 }}>
         {activeTab === 'dashboard' && <DashboardScreen />}
-        {activeTab === 'forge' && <ForgeScreen />}
+        {activeTab === 'forge' && <View style={styles.centered}><Text style={styles.title}>FORGE</Text></View>}
       </View>
 
       <View style={styles.navBar}>
@@ -109,30 +101,38 @@ export default function App() {
 
 const NavBtn = ({ icon: Icon, label, active, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.navItem}>
-    <Icon size={24} color={active ? '#64ffda' : '#64748b'} />
+    <Icon size={22} color={active ? '#64ffda' : '#64748b'} />
     <Text style={[styles.navText, active && { color: '#64ffda' }]}>{label}</Text>
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#020617' },
-  scrollContent: { padding: 24, paddingTop: 40, paddingBottom: 120 },
-  header: { marginBottom: 40 },
-  title: { color: '#64ffda', fontSize: 32, fontWeight: '900', letterSpacing: 4, textAlign: 'center' },
-  subtitle: { color: '#64748b', fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 8, letterSpacing: 1 },
-  statsGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  glassCard: { backgroundColor: '#0f172a80', padding: 20, borderRadius: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  statIcon: { width: 48, height: 48, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  statValue: { color: 'white', fontSize: 24, fontWeight: '900' },
-  statLabel: { color: '#64748b', fontSize: 10, fontWeight: '800', textTransform: 'uppercase', marginTop: 4 },
-  section: { marginTop: 40 },
-  sectionTitle: { color: 'white', fontSize: 20, fontWeight: '900', marginBottom: 20 },
-  resRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  resLabel: { color: '#64748b', fontSize: 10, fontWeight: '800', width: 80 },
-  resBarBg: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 2 },
-  resBarFill: { height: '100%', borderRadius: 2 },
-  resValue: { color: 'white', fontSize: 12, fontWeight: '900', width: 60, textAlign: 'right' },
-  navBar: { position: 'absolute', bottom: 0, width: '100%', height: 100, backgroundColor: '#020617f0', flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingBottom: 30, paddingHorizontal: 12 },
+  scrollContent: { padding: 20, paddingTop: 30, paddingBottom: 120 },
+  header: { marginBottom: 32 },
+  title: { color: 'white', fontSize: 28, fontWeight: '900', letterSpacing: 2, textAlign: 'center' },
+  subtitle: { color: '#64748b', fontSize: 9, fontWeight: '800', textAlign: 'center', marginTop: 6, letterSpacing: 1 },
+  welcomeSection: { marginBottom: 32 },
+  welcomeText: { color: '#64748b', fontSize: 18, fontWeight: '800' },
+  badgeRow: { flexDirection: 'row', marginTop: 12 },
+  statusBadge: { backgroundColor: '#0f172a', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#1e293b' },
+  pulseDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981', marginRight: 8 },
+  badgeText: { color: '#64748b', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  glassCard: { backgroundColor: '#0f172a80', padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  statIcon: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  statValue: { color: 'white', fontSize: 20, fontWeight: '900' },
+  statLabel: { color: '#64748b', fontSize: 9, fontWeight: '800', textTransform: 'uppercase', marginTop: 2 },
+  section: { marginTop: 32 },
+  sectionTitle: { color: 'white', fontSize: 18, fontWeight: '900', marginBottom: 16 },
+  realmGrid: { flexDirection: 'row', justifyContent: 'space-between' },
+  realmCard: { width: (width - 76) / 4, height: 80, backgroundColor: '#0f172a', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
+  realmLabel: { color: '#64748b', fontSize: 8, fontWeight: '800', marginTop: 8, textTransform: 'uppercase' },
+  placeholderText: { color: '#64748b', fontSize: 12, fontWeight: '700', lineHeight: 18, marginBottom: 16 },
+  actionBtn: { backgroundColor: '#1e293b', paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
+  actionBtnText: { color: 'white', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  navBar: { position: 'absolute', bottom: 0, width: '100%', height: 90, backgroundColor: '#020617', flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingBottom: 25, paddingHorizontal: 10 },
   navItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  navText: { color: '#64748b', fontSize: 9, marginTop: 6, fontWeight: '800', textTransform: 'uppercase' }
+  navText: { color: '#64748b', fontSize: 8, marginTop: 4, fontWeight: '800', textTransform: 'uppercase' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' }
 });

@@ -69,3 +69,10 @@ src/qep_frontend/.vercel/
 src/qep_frontend/node_modules/
 src/qep_frontend/dist/
 *.log
+
+# Monorepo Node Modules & Build Artifacts
+node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
+apps/*/dist/
+packages/*/dist/
