@@ -47,4 +47,3 @@ async def discover_realms_v2():
             "governance": "Meritocratic"
         }
     ]
- Greenland. (Reflecting on memory: v147 basic, v150 deep governance.)
