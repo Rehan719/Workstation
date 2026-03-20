@@ -12,7 +12,7 @@ export const DAODashboard: React.FC = () => {
     axios.get('/api/v310/governance/treasury').then(res => setTreasury(res.data));
   }, []);
 
-  const handleVote = async (id: string, support: bool) => {
+  const handleVote = async (id: string, support: boolean) => {
     await axios.post(`/api/v310/governance/vote?proposal_id=${id}&user_id=guardian&weight=100&support=${support}`);
     alert(`Vote recorded: ${support ? 'FOR' : 'AGAINST'}. System resonance updated.`);
   };

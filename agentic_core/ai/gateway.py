@@ -1,5 +1,5 @@
 import os
-import requests
+import httpx
 from typing import Dict, Any
 from agentic_core.ai.guardrails import validate_response
 from agentic_core.ai.logger import interaction_logger
@@ -21,12 +21,13 @@ class ModelGateway:
             response = "OpenAI response simulation for: " + prompt
         else:
             try:
-                res = requests.post(self.ollama_url, json={
-                    "model": self.model,
-                    "prompt": augmented_prompt,
-                    "stream": False
-                }, timeout=10)
-                response = res.json().get("response", "No response from model.")
+                async with httpx.AsyncClient() as client:
+                    res = await client.post(self.ollama_url, json={
+                        "model": self.model,
+                        "prompt": augmented_prompt,
+                        "stream": False
+                    }, timeout=10)
+                    response = res.json().get("response", "No response from model.")
             except Exception as e:
                 response = f"AI Offline (Ollama connection error: {str(e)})"
 

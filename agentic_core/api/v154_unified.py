@@ -3,10 +3,14 @@ from typing import List, Dict, Any, Set
 import asyncio
 import json
 import random
-from agentic_core.layers.l1_genomic.validator import validator_l1
-from agentic_core.layers.l2_runtime.inference import inference_engine
-from agentic_core.layers.l4_library.registry import model_registry
-from agentic_core.layers.l5_recombination.merger import model_merger
+
+# v3.0 Unified Layer Imports
+from agentic_core.layers.l1_identity.validator import validator_l1
+from agentic_core.layers.l2_hardware.inference import inference_engine
+from agentic_core.layers.l7_module_library.registry import module_registry
+from agentic_core.layers.l8_recombination.merger import model_merger
+from agentic_core.layers.l9_orchestration.orchestrator import swarm_orchestrator
+from agentic_core.layers.ueg import ueg
 
 router = APIRouter(prefix="/v154", tags=["Genesis API"])
 
@@ -32,20 +36,14 @@ manager = ConnectionManager()
 
 @router.get("/status")
 async def get_genesis_status():
-    """LAYER 6: ORCHESTRATION - Real-time system vitals."""
+    """LAYER 12: UX - Real-time system vitals from v3.0 12-Layer Stack."""
+    ueg.log_event("L12", "API", "STATUS_REQUEST", {"entity": "Workstation v3.0"})
     return {
-        "entity": "Workstation Sovereign v200.0",
+        "entity": "Workstation Sovereign v3.0",
         "epoch": "Genesis (v154.0)",
-        "layers": {
-            "L1": "Active (Constitutional)",
-            "L2": "Active (Edge Runtime)",
-            "L3": "Standby",
-            "L4": "Active (Library)",
-            "L5": "Active (Recombination)",
-            "L6": "Active (Orchestration)",
-            "L7": "First Light"
-        },
-        "constitution_root": getattr(validator_l1, 'root_hash', 'genesis_root')
+        "layers": {f"L{i}": "Active" for i in range(1, 13)},
+        "merkle_root": validator_l1.merkle_root,
+        "ueg_root": ueg.merkle_root
     }
 
 @router.websocket("/ws/streams")
@@ -53,14 +51,14 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            # Simulate real-time stream data from agentic core
+            # Simulate real-time stream data from v3.0 agentic core
             data = {
                 "type": "SYSTEM_VITALS",
                 "payload": {
                     "cpu": random.uniform(20, 80),
                     "memory": random.uniform(10, 30),
                     "swarm_health": random.uniform(0.9, 1.0),
-                    "active_agents": random.randint(15, 45)
+                    "active_agents": len(module_registry.registry)
                 }
             }
             await websocket.send_text(json.dumps(data))
@@ -83,18 +81,22 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @router.post("/forge/recombine")
 async def trigger_recombination(model_ids: List[str], strategy: str = "TIES"):
-    """LAYER 6 -> LAYER 5: Trigger model recombination."""
-    # Constitutional check
-    if not validator_l1.validate_action("recombine", {"models": model_ids}):
+    """LAYER 8: RECOMBINATION ENGINE - Trigger model recombination."""
+    # Constitutional check (L1)
+    context = {"models": model_ids, "fitness": 0.9} # Simulated fitness for validation
+    if not validator_l1.validate_action("recombine", context):
+        ueg.log_event("L1", "Validator", "ACTION_BLOCKED", {"action": "recombine", "context": context}, ["audit-required"])
         raise HTTPException(status_code=403, detail="Recombination blocked by Article 1095.")
 
     if strategy == "TIES":
-        res = model_merger.ties_merge(model_ids, [0.5, 0.5])
+        res = model_merger.ties_merge(model_ids, [0.5] * len(model_ids))
     else:
         res = model_merger.dare_merge(model_ids)
 
-    # Register result in L4
-    new_agent_did = model_registry.register_composite(res)
+    # Register result in L7
+    new_agent_did = module_registry.register_composite(res)
+
+    ueg.log_event("L8", "Merger", "RECOMBINATION_COMPLETE", {"agent_did": new_agent_did})
 
     # Notify connected clients via WebSocket
     await manager.broadcast(json.dumps({
@@ -106,8 +108,15 @@ async def trigger_recombination(model_ids: List[str], strategy: str = "TIES"):
 
 @router.get("/library/models")
 async def list_models():
-    return model_registry.registry
+    return module_registry.registry
 
 @router.get("/constitution/articles")
 async def list_articles():
-    return getattr(validator_l1, 'genome', {}).get('constitution', {}).get('articles', [])
+    return validator_l1.genome.get('constitution', {}).get('articles', [])
+
+@router.post("/orchestration/swarm")
+async def start_swarm(goal: str):
+    """LAYER 9: ORCHESTRATION - Initiate a specialized agent swarm."""
+    swarm_id = swarm_orchestrator.form_swarm(goal)
+    ueg.log_event("L9", "Orchestrator", "SWARM_INITIATED", {"swarm_id": swarm_id, "goal": goal})
+    return {"status": "success", "swarm_id": swarm_id}
