@@ -1,0 +1,15 @@
+{
+  "entity": "Workstation Sovereign v3.0",
+  "genesis_timestamp": "2026-01-01T00:00:00Z",
+  "constitution": {
+    "root_hash": "6b3f2e...d4c1",
+    "articles": [
+      {"id": 1, "title": "Sovereignty", "content": "Every Workstation node is a sovereign digital organism."},
+      {"id": 42, "title": "Transparency", "content": "System decisions must be auditable and explained in natural language."},
+      {"id": 1065, "title": "Self-Evolution", "content": "The Entity is autonomously evolving through fitness-based recombination."}
+    ],
+    "merkle_dag_nodes": 1065,
+    "ratification_status": "CERTIFIED"
+  },
+  "compliance_floor": 30
+}

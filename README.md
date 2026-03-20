@@ -129,8 +129,8 @@ This project is licensed under the Apache 2.0 License – see the [LICENSE](LICE
 
 ## ⚡ Status
 
-**Current Version:** v152.0 – “Collective Intelligence”
-**Next Release:** v153.0 – “The Transcendent Singularity”
+**Current Version:** v154.0 – “Genesis: The Grand Synthesis”
+**Next Release:** v155.0 – “The Galactic Era”
 **Production Readiness:** ✅ 100% – Zero‑Placeholder Certified
 
 ---

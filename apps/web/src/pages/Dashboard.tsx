@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGamificationStore } from '../store/gamificationStore';
-import { TrendingUp, Users, Cpu, Zap, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, Users, Cpu, Zap, ArrowUpRight, ShieldCheck, Activity, Globe } from 'lucide-react';
 import { ResonanceMap } from '../components/federation/ResonanceMap';
 
 const stats = [
-  { label: 'System Fidelity', value: '99.98%', delta: '+0.02%', icon: Zap, color: 'text-aura' },
-  { label: 'Active Agents', value: '42', delta: '+4 today', icon: Cpu, color: 'text-vital' },
-  { label: 'Network Depth', value: '1.42M', delta: '+12k/hr', icon: TrendingUp, color: 'text-highlight' },
-  { label: 'Global Nodes', value: '10,242', delta: 'Stable', icon: Users, color: 'text-slate-400' },
+  { label: 'Entity Status', value: 'v3.0 Sovereign', delta: 'Unified', icon: ShieldCheck, color: 'text-aura' },
+  { label: 'Resonance', value: '99.98%', delta: 'Optimal', icon: Zap, color: 'text-aura' },
+  { label: 'Mesh Depth', value: '1.42M', delta: '+142k/hr', icon: Globe, color: 'text-highlight' },
+  { label: 'Autopoiesis', value: 'Active', delta: 'Self-Evolving', icon: Activity, color: 'text-vital' },
 ];
 
 export const Dashboard: React.FC = () => {

@@ -5,10 +5,13 @@ import { useTheme } from '../../theme/ThemeContext';
 
 const allNavItems = [
   { name: 'Pulse', icon: Activity, id: 'dashboard' },
+  { name: 'Cosmic Hub', icon: Radio, id: 'cosmic' },
   { name: 'Civilization', icon: Globe, id: 'civilization' },
+  { name: 'Reality Engine', icon: GitBranch, id: 'reality' },
   { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
   { name: 'Wisdom Hub', icon: Target, id: 'wisdom' },
   { name: 'Creator Studio', icon: Plus, id: 'create' },
+  { name: 'The Forge', icon: Terminal, id: 'forge' },
   { name: 'Realm Foundry', icon: Globe, id: 'realm-foundry' },
   {
     name: 'C-Suite',
@@ -38,7 +41,8 @@ const allNavItems = [
       { name: 'Governance', icon: Shield, id: 'governance' },
       { name: 'AI Delegation', icon: Cpu, id: 'delegation' },
       { name: 'Performance', icon: Gauge, id: 'performance' },
-      { name: 'Join Swarm', icon: Plus, id: 'join-fed' }
+      { name: 'Join Swarm', icon: Plus, id: 'join-fed' },
+      { name: 'The Sanctum', icon: Shield, id: 'sanctum' }
     ]
   },
   {
@@ -57,7 +61,7 @@ const allNavItems = [
     id: 'evolution-facet',
     subItems: [
       { name: 'Public Roadmap', icon: Map, id: 'roadmap' },
-      { name: 'User Impact', icon: Heart, id: 'impact' },
+      { name: 'Soul-Record', icon: Fingerprint, id: 'soul-record' },
       { name: 'QEP Engine', icon: Cpu, id: 'qep' },
       { name: 'UVAID / GSE', icon: BarChart3, id: 'uvaid' }
     ]

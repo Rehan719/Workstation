@@ -4,10 +4,11 @@ import { Send, Bot, User, Sparkles, ThumbsUp, ThumbsDown, MoreHorizontal, X } fr
 
 export const CEOChat: React.FC = () => {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Greeting, Guardian. I am the VSB AI CEO. How shall we direct the evolution of the workstation today?' }
+    { role: 'assistant', content: 'Greeting, Guardian. I am the VSB AI CEO. Our collective resonance is reaching multi-dimensional thresholds.' }
   ]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [sentiment, setSentiment] = useState('analytical');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,8 +49,17 @@ export const CEOChat: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-14rem)] max-w-5xl mx-auto glass-card overflow-hidden">
       <header className="px-10 py-8 border-b border-white/5 flex justify-between items-center bg-surface/60 backdrop-blur-3xl">
         <div className="flex items-center gap-5">
-          <div className="p-4 bg-aura/20 rounded-2xl text-aura shadow-[0_0_20px_rgba(100,255,218,0.2)]">
-            <Bot size={28} />
+          <div className={`p-1 rounded-2xl transition-all duration-700 relative group bg-aura/20 shadow-[0_0_20px_rgba(100,255,218,0.2)] overflow-hidden`}>
+            {/* Visual Avatar Channel Simulation */}
+            <div className="w-16 h-16 bg-slate-950 rounded-xl flex items-center justify-center relative">
+               <Bot size={32} className="text-aura relative z-10" />
+               <motion.div
+                 animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
+                 transition={{ duration: 4, repeat: Infinity }}
+                 className="absolute inset-0 bg-aura rounded-full blur-xl"
+               ></motion.div>
+            </div>
+            <div className={`absolute -inset-1 rounded-2xl border-2 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity border-aura`}></div>
           </div>
           <div>
             <h2 className="text-2xl font-black tracking-tight uppercase">VSB AI CEO</h2>

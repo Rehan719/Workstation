@@ -16,8 +16,12 @@ import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
 import { PhysicalSymbiosis } from './pages/physical/PhysicalSymbiosis';
 import { DAODashboard } from './pages/governance/DAODashboard';
 import { DelegationDashboard } from './pages/governance/DelegationDashboard';
+import { Sanctum } from './pages/governance/Sanctum';
 import { PredictionMarket } from './pages/markets/PredictionMarket';
 import { CivilizationDashboard } from './pages/civilization/CivilizationDashboard';
+import { RealityDashboard } from './pages/civilization/RealityDashboard';
+import { SoulRecordExplorer } from './pages/profile/SoulRecordExplorer';
+import { CosmicNervousSystem } from './pages/cosmic/CosmicNervousSystem';
 import { BusinessPlanWizard } from './pages/entrepreneur/BusinessPlanWizard';
 import { CFO } from './pages/c-suite/CFO';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
@@ -37,6 +41,7 @@ import { FedPerformance } from './pages/federation/Performance';
 import { JoinFederationWizard } from './pages/federation/JoinWizard';
 import { Marketplace } from './pages/developers/Marketplace';
 import { DevPortal } from './pages/developers/DevPortal';
+import { Forge } from './pages/developers/Forge';
 import { PublicRoadmap } from './pages/PublicRoadmap';
 import { OnboardingTour } from './components/onboarding/OnboardingTour';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -84,10 +89,16 @@ function App() {
             return <DAODashboard />;
           case 'delegation':
             return <DelegationDashboard />;
+          case 'sanctum':
+            return <Sanctum />;
           case 'wisdom':
             return <PredictionMarket />;
           case 'civilization':
             return <CivilizationDashboard />;
+          case 'cosmic':
+            return <CosmicNervousSystem />;
+          case 'reality':
+            return <RealityDashboard />;
           case 'wallet':
           case 'eco-facet':
             return <Wallet />;
@@ -96,7 +107,8 @@ function App() {
           case 'iot':
             return <PhysicalSymbiosis />;
           case 'impact':
-            return <UserImpact />;
+          case 'soul-record':
+            return <SoulRecordExplorer />;
           case 'evolution-facet':
             return <EvolutionDashboard />;
           case 'performance':
@@ -105,6 +117,8 @@ function App() {
             return <JoinFederationWizard />;
           case 'dev-portal':
             return <DevPortal />;
+          case 'forge':
+            return <Forge />;
           case 'roadmap':
             return <PublicRoadmap />;
           case 'settings':

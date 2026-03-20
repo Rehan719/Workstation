@@ -14,7 +14,16 @@ npm install
 cp apps/web/.env.example apps/web/.env
 cp apps/mobile/.env.example apps/mobile/.env 2>/dev/null || true
 
-# 3. Blockchain (Polygon/WST) Setup
+# 3. Transcendent Simulation (Celery/Redis) Setup
+echo "🌌 Preparing Simulation Infrastructure (Celery/Redis)..."
+if command -v redis-server &> /dev/null
+then
+    echo "✅ Redis detected. Ready for Celery tasks."
+else
+    echo "⚠️ Redis not found. Reality simulation may be limited to local synchronous stubs."
+fi
+
+# 4. Blockchain (Polygon/WST) Setup
 echo "⛓️ Preparing Local Blockchain (Hardhat)..."
 if command -v npx &> /dev/null
 then

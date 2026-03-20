@@ -44,8 +44,8 @@ export const CreatorStudio: React.FC = () => {
     <div className="h-[calc(100vh-10rem)] flex flex-col gap-6">
       <header className="flex justify-between items-center">
         <div>
-          <h1 className="text-4xl font-black mb-1 neon-text">Creator Studio</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Visual Reactor Foundry v150.0</p>
+          <h1 className="text-4xl font-black mb-1 neon-text">Reality Forge</h1>
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-highlight">Universe Scale Creation v153.0</p>
         </div>
         <div className="flex gap-4">
            <button className="px-6 py-3 border border-slate-800 rounded-xl font-bold flex items-center gap-2 text-slate-400 hover:text-white transition-all">
@@ -61,7 +61,16 @@ export const CreatorStudio: React.FC = () => {
 
       <div className="flex-1 flex gap-8 min-h-0">
         {/* Component Palette */}
-        <aside className="w-80 flex flex-col gap-8">
+        <aside className="w-80 flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
+           <section className="p-6 bg-highlight/5 border border-highlight/20 rounded-2xl space-y-6 mb-4">
+              <h3 className="text-[10px] font-black uppercase text-highlight tracking-[0.2em]">Universal Parameters</h3>
+              <div className="space-y-4">
+                 <ParamSlider label="Resource Scarcity" value={0.4} color="aura" />
+                 <ParamSlider label="Collective Empathy" value={0.8} color="vital" />
+                 <ParamSlider label="Intelligence Scaling" value={0.6} color="highlight" />
+              </div>
+           </section>
+
            {componentRegistry.categories.map(cat => (
              <div key={cat.id} className="space-y-4">
                 <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">{cat.name}</h3>
@@ -161,3 +170,15 @@ export const CreatorStudio: React.FC = () => {
     </div>
   );
 };
+
+const ParamSlider = ({ label, value, color }: any) => (
+  <div className="space-y-2">
+     <div className="flex justify-between text-[10px] font-black uppercase text-slate-500">
+        <span>{label}</span>
+        <span className={`text-${color}`}>{(value * 100).toFixed(0)}%</span>
+     </div>
+     <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
+        <div className={`h-full bg-${color}`} style={{ width: `${value * 100}%` }}></div>
+     </div>
+  </div>
+);
