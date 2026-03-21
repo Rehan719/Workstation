@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, Platform } from 'react-native';
-import { LayoutDashboard, Terminal, Globe, Fingerprint, Settings, Shield, Activity, GraduationCap, Code, Building2, BookOpen, Zap, Cpu, Users } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi, Landmark, TrendingUp, Target, Activity, Radio, GitBranch, Fingerprint, Terminal, Layers } from 'lucide-react-native';
 import { useStore } from './src/store/mobileStore';
+import { useBiometrics } from './src/hooks/useBiometrics';
+import { MessageItem } from './src/components/MessageItem';
 
 const { width } = Dimensions.get('window');
 
@@ -13,13 +15,6 @@ const DashboardScreen = () => {
     { label: 'CPU Load', value: `${systemVitals.cpu.toFixed(1)}%`, icon: Cpu, color: '#38bdf8' },
     { label: 'Agents', value: systemVitals.activeAgents.toString(), icon: Users, color: '#ff5252' },
     { label: 'Status', value: 'Sovereign', icon: Shield, color: '#64ffda' },
-  ];
-
-  const realms = [
-    { id: 'LEARNER', name: 'Learner', icon: GraduationCap, color: '#ffd740' },
-    { id: 'DEVELOPER', name: 'Forge', icon: Code, color: '#64ffda' },
-    { id: 'ENTERPRISE', name: 'Market', icon: Building2, color: '#ff5252' },
-    { id: 'SCHOLAR', name: 'Scholar', icon: BookOpen, color: '#38bdf8' },
   ];
 
   return (
@@ -49,35 +44,75 @@ const DashboardScreen = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Audience Realms</Text>
-        <View style={styles.realmGrid}>
-           {realms.map((realm) => (
-             <TouchableOpacity
-               key={realm.id}
-               style={[styles.realmCard, currentRealm === realm.id && { borderColor: realm.color, backgroundColor: `${realm.color}10` }]}
-             >
-                <realm.icon size={24} color={currentRealm === realm.id ? realm.color : '#64748b'} />
-                <Text style={[styles.realmLabel, currentRealm === realm.id && { color: 'white' }]}>{realm.name}</Text>
-             </TouchableOpacity>
-           ))}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Command Center</Text>
+        <Text style={styles.sectionTitle}>System Vitals</Text>
         <View style={styles.glassCard}>
-           <Text style={styles.placeholderText}>Multi-modal HUD channels active on sidebar (Desktop) / bottom sheet (Mobile)</Text>
-           <TouchableOpacity style={styles.actionBtn}>
-              <Text style={styles.actionBtnText}>Open HUD</Text>
-           </TouchableOpacity>
+           <ResonanceItem label="PQC Strength" value="1024-bit" color="#ffd740" />
+           <ResonanceItem label="UEG Sync" value="Verified" color="#64ffda" />
         </View>
       </View>
     </ScrollView>
   );
 };
 
+const CEOChatScreen = () => {
+  const [msg, setMsg] = useState('');
+  const [messages, setMessages] = useState([
+    { id: '1', role: 'assistant', content: 'I am the VSB AI CEO. How can I assist with your sovereign operation?' }
+  ]);
+
+  const send = () => {
+    if (!msg.trim()) return;
+    setMessages([...messages, { id: Date.now().toString(), role: 'user', content: msg }]);
+    setMsg('');
+    setTimeout(() => {
+       setMessages(prev => [...prev, { id: 'bot-'+Date.now(), role: 'assistant', content: 'Directive received. Analysis in progress...' }]);
+    }, 1000);
+  };
+
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+       <View style={{ flex: 1, padding: 20, paddingTop: 40 }}>
+          <Text style={styles.sectionTitle}>VSB AI CEO Consultation</Text>
+          <FlatList
+            data={messages}
+            keyExtractor={m => m.id}
+            renderItem={({item}) => <MessageItem message={item} />}
+            contentContainerStyle={{ paddingBottom: 20 }}
+          />
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 20 }}>
+             <TextInput
+               value={msg}
+               onChangeText={setMsg}
+               placeholder="Enter directive..."
+               placeholderTextColor="#475569"
+               style={{ flex: 1, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b', borderRadius: 15, padding: 15, color: 'white', fontWeight: 'bold' }}
+             />
+             <TouchableOpacity onPress={send} style={{ backgroundColor: '#64ffda', width: 50, height: 50, borderRadius: 25, items: 'center', justifyContent: 'center', alignItems: 'center' }}>
+                <Send size={20} color="#020617" />
+             </TouchableOpacity>
+          </View>
+       </View>
+    </KeyboardAvoidingView>
+  );
+};
+
+const ResonanceItem = ({ label, value, color }) => (
+  <View style={styles.resRow}>
+    <Text style={styles.resLabel}>{label}</Text>
+    <View style={styles.resBarBg}>
+       <View style={[styles.resBarFill, { width: '90%', backgroundColor: color }]} />
+    </View>
+    <Text style={[styles.resValue, { color }]}>{value}</Text>
+  </View>
+);
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { authenticate } = useBiometrics();
+
+  useEffect(() => {
+    authenticate();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -85,13 +120,14 @@ export default function App() {
 
       <View style={{ flex: 1 }}>
         {activeTab === 'dashboard' && <DashboardScreen />}
+        {activeTab === 'ceo' && <CEOChatScreen />}
         {activeTab === 'forge' && <View style={styles.centered}><Text style={styles.title}>FORGE</Text></View>}
       </View>
 
       <View style={styles.navBar}>
         <NavBtn icon={LayoutDashboard} label="Pulse" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
+        <NavBtn icon={MessageSquare} label="CEO" active={activeTab === 'ceo'} onPress={() => setActiveTab('ceo')} />
         <NavBtn icon={Terminal} label="Forge" active={activeTab === 'forge'} onPress={() => setActiveTab('forge')} />
-        <NavBtn icon={Globe} label="Civil" active={activeTab === 'other'} onPress={() => {}} />
         <NavBtn icon={Fingerprint} label="Soul" active={activeTab === 'other'} onPress={() => {}} />
         <NavBtn icon={Settings} label="Admin" active={activeTab === 'other'} onPress={() => {}} />
       </View>
@@ -125,12 +161,11 @@ const styles = StyleSheet.create({
   statLabel: { color: '#64748b', fontSize: 9, fontWeight: '800', textTransform: 'uppercase', marginTop: 2 },
   section: { marginTop: 32 },
   sectionTitle: { color: 'white', fontSize: 18, fontWeight: '900', marginBottom: 16 },
-  realmGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  realmCard: { width: (width - 76) / 4, height: 80, backgroundColor: '#0f172a', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
-  realmLabel: { color: '#64748b', fontSize: 8, fontWeight: '800', marginTop: 8, textTransform: 'uppercase' },
-  placeholderText: { color: '#64748b', fontSize: 12, fontWeight: '700', lineHeight: 18, marginBottom: 16 },
-  actionBtn: { backgroundColor: '#1e293b', paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  actionBtnText: { color: 'white', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  resRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  resLabel: { color: '#64748b', fontSize: 9, fontWeight: '800', width: 100 },
+  resBarBg: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 2 },
+  resBarFill: { height: '100%', borderRadius: 2 },
+  resValue: { color: 'white', fontSize: 10, fontWeight: '900', width: 60, textAlign: 'right' },
   navBar: { position: 'absolute', bottom: 0, width: '100%', height: 90, backgroundColor: '#020617', flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingBottom: 25, paddingHorizontal: 10 },
   navItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   navText: { color: '#64748b', fontSize: 8, marginTop: 4, fontWeight: '800', textTransform: 'uppercase' },
