@@ -1,6 +1,19 @@
 from typing import List, Dict, Any, Optional
 import time
 
+class QuadraticVoting:
+    """Quadratic Voting Implementation for the Republic Council."""
+    def calculate_cost(self, votes: int) -> int:
+        return votes ** 2
+
+    def tally_votes(self, votes_cast: List[Dict[str, Any]]) -> Dict[str, float]:
+        # Implementation of tally logic
+        results = {}
+        for vote in votes_cast:
+             prop_id = vote["proposal_id"]
+             results[prop_id] = results.get(prop_id, 0) + (vote["votes"] ** 0.5)
+        return results
+
 class MultiSigCouncil:
     """Hard Constraint: Requires multi-signature authorization for high-impact actions."""
     def __init__(self):
@@ -26,17 +39,28 @@ class MultiSigCouncil:
             return True
         return False
 
+class InterRepublicCouncil:
+    """v3.0 Sovereign Council with quadratic voting and partner participation."""
+    def __init__(self):
+        self.voting_engine = QuadraticVoting()
+        self.certified_partners: List[str] = [f"partner-{i:02d}" for i in range(1, 21)]
+
+    def record_vote(self, proposal_id: str, partner_id: str, votes: int) -> bool:
+        if partner_id in self.certified_partners:
+             print(f"IRC: Partner {partner_id} cast {votes} votes on {proposal_id} (Cost: {self.voting_engine.calculate_cost(votes)}).")
+             return True
+        return False
+
 class WyomingDAOFramework:
     """
     Legal Embodiment & Governance Hub for Workstation v3.0.
-    Integrates with the Unified Event Graph (UEG) for immutable audit trails.
     """
     def __init__(self):
         self.council = MultiSigCouncil()
-        self.legal_status = "ACTIVE - WYOMING LLC (SIMULATED)"
+        self.irc = InterRepublicCouncil()
+        self.legal_status = "ACTIVE - SOVEREIGN DIGITAL ENTITY (WYOMING DAO)"
 
     def execute_governance_event(self, action: str, details: Dict[str, Any]) -> bool:
-        """Central execution point for authorized DAO actions."""
         print(f"DAO: Executing governance event '{action}' under {self.legal_status}.")
         return True
 

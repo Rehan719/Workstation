@@ -13,6 +13,9 @@
     "dev": "tsup src/index.ts --format cjs,esm --watch --dts",
     "lint": "eslint \"src/**/*.ts*\""
   },
+  "dependencies": {
+    "@workstation/shared": "*"
+  },
   "devDependencies": {
     "typescript": "^5.2.2",
     "tsup": "^8.1.0",
