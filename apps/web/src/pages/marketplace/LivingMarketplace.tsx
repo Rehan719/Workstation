@@ -1,84 +1,82 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ShoppingBag, Star, RefreshCw, Download, Zap, Heart, User, Filter, CreditCard, History } from 'lucide-react';
+import { ShoppingBag, Star, ShieldCheck, TrendingUp, Search, Tag, ArrowUpRight } from 'lucide-react';
+import { Card, Button } from '@workstation/ui';
 
-export const LivingMarketplace: React.FC = () => {
+export const AgentMarketplace: React.FC = () => {
   const [listings, setListings] = useState<any[]>([]);
-  const [wallet, setWallet] = useState<any>(null);
 
   useEffect(() => {
-    axios.get('/api/v290/marketplace/v2/listings').then(res => setListings(res.data));
-    axios.get('/api/v290/marketplace/v2/wallet/guardian').then(res => setWallet(res.data));
+    // Simulated fetch of 100+ listings
+    const mock = Array.from({ length: 12 }).map((_, i) => ({
+      id: `list-${i+1}`,
+      name: `Specialized Agent v${i}.0`,
+      author: 'Node-Omega',
+      price: (0.5 + i * 0.2).toFixed(1),
+      rating: 4.8,
+      sales: 142 + i * 5
+    }));
+    setListings(mock);
   }, []);
 
-  const handleRemix = async (id: string) => {
-    const res = await axios.post(`/api/v290/marketplace/v2/remix?listing_id=${id}&user_id=guardian`);
-    if (res.data.status === 'remixed') {
-      alert("Creation Remixed! A hard-fork has been added to your Creator Studio.");
-    }
-  };
-
   return (
-    <div className="space-y-12">
+    <div className="space-y-12 pb-24">
       <header className="flex justify-between items-end border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-4xl font-black mb-2">Living Marketplace</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Community Forge & Exchange v150.0</p>
+          <h1 className="text-5xl font-black mb-1 text-aura">Agent Marketplace</h1>
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">Global Sovereign Economy • L11 Civilisation</p>
         </div>
-
-        {wallet && (
-           <div className="flex items-center gap-4 bg-vital/10 border border-vital/30 px-6 py-3 rounded-2xl">
-              <div className="text-right">
-                 <p className="text-[10px] font-black text-vital uppercase">Creator Balance</p>
-                 <p className="text-xl font-black">{wallet.balance_wst.toLocaleString()} WST</p>
-              </div>
-              <div className="p-2 bg-vital/20 rounded-lg text-vital">
-                 <CreditCard size={20} />
-              </div>
-           </div>
-        )}
+        <div className="flex gap-4">
+           <Card className="px-6 py-2 bg-aura/5 border-aura/20">
+              <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Monthly TX</p>
+              <p className="text-xl font-black text-aura">1,240+</p>
+           </Card>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {listings.map(item => (
-          <div key={item.id} className="glass-card p-8 group border-white/5 hover:border-aura/30 flex flex-col">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {listings.map((item) => (
+          <Card key={item.id} className="group hover:border-aura/50 transition-all flex flex-col">
              <div className="flex justify-between items-start mb-6">
-                <div className="p-4 bg-surface rounded-2xl text-slate-500 group-hover:text-aura transition-colors">
-                   <Zap size={24} />
+                <div className="p-3 bg-slate-900 rounded-xl text-aura">
+                   <ShoppingBag size={24} />
                 </div>
-                <div className="flex items-center gap-1 bg-sovereign px-3 py-1 rounded-full border border-white/5 text-[10px] font-black text-highlight">
+                <div className="flex items-center gap-1 text-amber-500">
                    <Star size={12} fill="currentColor" />
-                   {item.rating}
+                   <span className="text-[10px] font-black">{item.rating}</span>
                 </div>
              </div>
 
-             <h3 className="text-2xl font-black mb-1">{item.name}</h3>
-             <div className="flex items-center gap-2 mb-6">
-                <User size={12} className="text-slate-500" />
-                <span className="text-xs font-bold text-slate-500">by @{item.creator_id}</span>
-             </div>
+             <h3 className="text-lg font-bold mb-1 text-white">{item.name}</h3>
+             <p className="text-[10px] font-black text-slate-600 uppercase mb-6">Author: {item.author}</p>
 
-             <div className="mt-auto space-y-4 pt-6 border-t border-white/5">
+             <div className="mt-auto space-y-4">
                 <div className="flex justify-between items-end">
                    <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase">License Fee</p>
-                      <p className="text-xl font-black">{item.price_wst === 0 ? 'FREE' : `${item.price_wst} WST`}</p>
+                      <p className="text-[10px] font-black text-slate-700 uppercase mb-1">Price</p>
+                      <p className="text-xl font-black text-white">{item.price} WST</p>
                    </div>
-                   <button
-                     onClick={() => handleRemix(item.id)}
-                     className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-aura hover:text-aura transition-all"
-                   >
-                     <RefreshCw size={14} />
-                     Remix
-                   </button>
+                   <div className="text-right">
+                      <p className="text-[10px] font-black text-slate-700 uppercase mb-1">Deployments</p>
+                      <p className="text-sm font-bold text-slate-400">{item.sales}</p>
+                   </div>
                 </div>
-                <button className="w-full py-4 bg-aura text-sovereign font-black rounded-xl hover:scale-105 transition-all shadow-lg shadow-aura/10 uppercase tracking-widest text-xs">
-                  {item.price_wst === 0 ? 'Install Creation' : 'Purchase License'}
-                </button>
+                <Button className="w-full text-[10px] uppercase tracking-widest">Acquire Instance</Button>
              </div>
-          </div>
+          </Card>
         ))}
-      </div>
+      </section>
+
+      <Card className="bg-slate-900/40 p-10 border-dashed border-slate-800">
+         <div className="flex flex-col items-center text-center gap-6">
+            <TrendingUp size={48} className="text-slate-700" />
+            <div className="space-y-2">
+               <h3 className="text-xl font-black text-slate-400">Expand Your Reach</h3>
+               <p className="text-sm text-slate-600 font-bold max-w-md">Publish your high-fitness recombinants to the global mesh and earn WST rewards from 100+ sovereign nodes.</p>
+            </div>
+            <Button variant="secondary">Access Publisher Portal</Button>
+         </div>
+      </Card>
     </div>
   );
 };
