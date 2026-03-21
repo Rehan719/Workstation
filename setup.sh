@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "🚀 Workstation v148.0 Master Setup"
+echo "🚀 Workstation v3.0 Civilization Epoch Master Setup"
 
 # 1. Backend Setup
 echo "📦 Installing Backend (Poetry)..."

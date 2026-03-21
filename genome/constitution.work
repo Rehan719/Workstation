@@ -2,7 +2,7 @@
   "entity": "Workstation Sovereign v3.0",
   "genesis_timestamp": "2026-01-01T00:00:00Z",
   "constitution": {
-    "root_hash": "0xcivilizational_scale_v3",
+    "root_hash": "0xcivilizational_epoch_v3",
     "articles": [
       {"id": 1, "title": "Sovereignty", "content": "Every Workstation node is a sovereign digital organism."},
       {"id": 42, "title": "Transparency", "content": "System decisions must be auditable and explained in natural language."},
@@ -11,11 +11,12 @@
       {"id": 1101, "title": "Autonomous Workflow Execution", "content": "Low-risk workflows execute autonomously; high-risk require 10-minute veto window."},
       {"id": 1104, "title": "Federated Intelligence Mandate", "content": "Workstation must support ≥50 concurrent nodes and ε≤0.1 differential privacy."},
       {"id": 1105, "title": "Audience Realm Parity", "content": "Learner, Developer, Enterprise, and Scholar realms shall achieve feature and KPI parity."},
-      {"id": 1106, "title": "Economic Sustainability", "content": "Liability Fund shall maintain ≥100,000 WST; circulation must exceed 1M WST/month."},
-      {"id": 1107, "title": "Post-Quantum Readiness", "content": "All 12 layers shall be fully PQC-compliant (Kyber-1024, Dilithium-5)."}
+      {"id": 1106, "title": "CL1 Production Integration", "content": "CL1 biological compute shall be deployed in production with ≥10× energy efficiency."},
+      {"id": 1107, "title": "Post-Quantum Cryptography Full Transition", "content": "All operations shall use NIST PQC standards; legacy algorithms shall be disabled."},
+      {"id": 1108, "title": "Economic Sustainability", "content": "Liability Fund shall maintain ≥100,000 WST with quarterly governance audits."}
     ],
-    "merkle_dag_nodes": 1107,
-    "ratification_status": "RATIFIED_FLOOR_22"
+    "merkle_dag_nodes": 1108,
+    "ratification_status": "RATIFIED_CIVILIZATION_EPOCH"
   },
   "compliance_floor": 22
 }
