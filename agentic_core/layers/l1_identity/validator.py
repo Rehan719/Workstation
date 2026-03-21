@@ -11,7 +11,7 @@ class EnforcementMode(enum.Enum):
 class ConstitutionalValidatorL1:
     """
     LAYER 1: IDENTITY - Immutable Genome Core.
-    Enforces Articles 1-1107 (Floor 22) with GaaS Enforcement Modes and Trust Factor (T Fa).
+    Enforces Articles 1-1108 (Floor 22) with Civilizational Scale GaaS logic.
     """
     def __init__(self, constitution_path: str = "genome/constitution.work"):
         try:
@@ -20,53 +20,37 @@ class ConstitutionalValidatorL1:
         except (FileNotFoundError, json.JSONDecodeError):
             self.genome = {
                 "entity": "Workstation Sovereign v3.0",
-                "identity": {"did": "did:vsb:sovereign-v3", "merkle_root": "0xcivilizational_scale_v3"},
-                "constitution": {"articles": [{"id": 1104, "content": "All actions must pass Floor 22 validation."}]}
+                "identity": {"did": "did:vsb:sovereign-v3", "merkle_root": "0xcivilizational_epoch_v3"},
+                "constitution": {"articles": [{"id": 1104, "content": "All actions must pass Civilization Epoch validation."}]}
             }
 
-        self.merkle_root = self.genome.get('identity', {}).get('merkle_root', '0xcivilizational_scale_v3')
+        self.merkle_root = self.genome.get('identity', {}).get('merkle_root', '0xcivilizational_epoch_v3')
         self.trust_factors: Dict[str, float] = {"default": 0.8} # T Fa score
-
-    def get_enforcement_mode(self, action: str, trust_score: float) -> EnforcementMode:
-        """Determines enforcement severity based on risk and trust."""
-        high_risk_actions = ["financial_transfer", "genome_amendment", "pqc_disable", "treaty_termination"]
-
-        if action in high_risk_actions or trust_score < 0.4:
-            return EnforcementMode.COERCIVE
-        if trust_score < 0.7:
-            return EnforcementMode.NORMATIVE
-        return EnforcementMode.ADAPTIVE
 
     def validate_action(self, action: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """
-        GaaS Middleware: Natural Language Interpretation & Floor 22 Enforcement.
+        GaaS Middleware: Production-Grade Floor 22 Enforcement.
         """
         user_id = context.get("user_id", "default")
         trust_score = self.trust_factors.get(user_id, 0.8)
-        mode = self.get_enforcement_mode(action, trust_score)
 
-        print(f"GaaS [L1]: Validating '{action}' (T Fa: {trust_score}) in {mode.value} mode.")
+        # Article 1107: Mandatory PQC
+        if not context.get("pqc_active") and action != "pqc_enable":
+             return {"valid": False, "reason": "Article 1107 violation: PQC is mandatory in Phase 2."}
 
-        # Article 1095: Recombination requires fitness
-        if action == "recombine" and "fitness" not in context:
-            if mode == EnforcementMode.COERCIVE:
-                return {"valid": False, "reason": "Article 1095 violation: Fitness required.", "mode": mode.name}
-            print("GaaS Warning: Article 1095 violation.")
+        # Article 1106: CL1 Energy Check (Simulation of live check)
+        if action == "cl1_inference" and context.get("energy_gain", 0) < 10:
+             print("GaaS Warning: Article 1106 violation: Energy efficiency below 10x target.")
 
-        # Article 1101: Autonomous veto window (10m)
-        if action == "execute_workflow" and context.get("high_risk"):
-            if not context.get("veto_window") or context.get("veto_window") < 10:
-                return {"valid": False, "reason": "Article 1101 violation: 10m veto required.", "mode": mode.name}
+        # Article 1101: 10m Veto for high risk
+        if context.get("risk") == "high" and context.get("veto_window", 0) < 10:
+             return {"valid": False, "reason": "Article 1101 violation: 10-minute veto required."}
 
-        # Article 1104: Federated Privacy (ε≤0.1)
-        if action == "federated_learning" and context.get("epsilon", 1.0) > 0.1:
-             return {"valid": False, "reason": "Article 1104 violation: Privacy budget ε > 0.1.", "mode": mode.name}
+        # Article 1104: Federated Privacy
+        if action == "federated_sync" and context.get("epsilon", 1.0) > 0.1:
+             return {"valid": False, "reason": "Article 1104 violation: ε > 0.1 privacy budget."}
 
-        # Article 1107: PQC Compliance
-        if action == "inter_node_comm" and not context.get("pqc_active"):
-             return {"valid": False, "reason": "Article 1107 violation: Non-PQC communication blocked.", "mode": mode.name}
-
-        return {"valid": True, "trust_score": trust_score, "mode": mode.name}
+        return {"valid": True, "trust_score": trust_score, "mode": "PRODUCTION"}
 
     def update_trust(self, user_id: str, delta: float):
         self.trust_factors[user_id] = max(0.0, min(1.0, self.trust_factors.get(user_id, 0.8) + delta))

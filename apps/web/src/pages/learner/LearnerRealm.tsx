@@ -2,15 +2,16 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, RealmSelector } from '@workstation/ui';
 import { useStore } from '@workstation/shared';
-import { Book, Compass, Star, Users, ArrowRight, Flower2 } from 'lucide-react';
+import { Book, Compass, Star, Users, ArrowRight, Flower2, Activity } from 'lucide-react';
 
 export const LearnerRealm: React.FC = () => {
   const { user } = useStore();
 
   const gardens = [
-    { name: 'Quantum Mechanics', progress: 85, flowers: 3 },
-    { name: 'Systems Biology', progress: 42, flowers: 1 },
-    { name: 'Agentic Ethics', progress: 95, flowers: 4 },
+    { name: 'Quantum Mechanics', progress: 88, flowers: 3, level: 'Advanced' },
+    { name: 'Systems Biology', progress: 45, flowers: 1, level: 'Intermediate' },
+    { name: 'Agentic Ethics', progress: 95, flowers: 4, level: 'Master' },
+    { name: 'PQC Foundations', progress: 12, flowers: 0, level: 'Beginner' },
   ];
 
   return (
@@ -19,34 +20,39 @@ export const LearnerRealm: React.FC = () => {
         <div>
           <h1 className="text-6xl font-black tracking-tighter mb-4 text-aura">Garden of Curiosity</h1>
           <p className="text-slate-400 font-bold text-xl max-w-2xl leading-relaxed">
-            Welcome back, <span className="text-white">{user?.displayName}</span>. Your knowledge gardens are blooming with <span className="text-vital">neuro-adaptive pacing</span>.
+            Nurture your intellect. <span className="text-white">{user?.displayName}</span>, your knowledge gardens are bloom-synchronized with <span className="text-vital">Layer 12 adaptivity</span>.
           </p>
         </div>
         <RealmSelector />
       </header>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {gardens.map((garden) => (
-          <Card key={garden.name} className="group hover:border-aura/50 transition-all cursor-pointer overflow-hidden">
+          <Card key={garden.name} className="group hover:border-aura/50 transition-all cursor-pointer overflow-hidden flex flex-col h-full">
              <div className="flex justify-between items-start mb-6">
-                <div className="p-4 rounded-2xl bg-slate-800/50 text-vital group-hover:scale-110 transition-transform">
-                   <Book size={32} />
+                <div className="p-4 rounded-2xl bg-slate-800/50 text-vital group-hover:scale-110 transition-transform border border-slate-800">
+                   <Book size={28} />
                 </div>
-                <div className="flex gap-1">
-                   {Array.from({ length: garden.flowers }).map((_, i) => (
-                     <Flower2 key={i} size={16} className="text-vital animate-pulse" />
-                   ))}
+                <div className="flex gap-1 bg-slate-900/80 px-2 py-1 rounded-lg">
+                   {garden.flowers > 0 ? (
+                     Array.from({ length: garden.flowers }).map((_, i) => (
+                       <Flower2 key={i} size={14} className="text-vital animate-pulse" />
+                     ))
+                   ) : (
+                     <div className="w-14 h-3.5 bg-slate-800 rounded-full animate-pulse" />
+                   )}
                 </div>
              </div>
 
-             <h3 className="text-2xl font-black mb-4">{garden.name}</h3>
+             <h3 className="text-xl font-black mb-1 text-white">{garden.name}</h3>
+             <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-6">{garden.level}</p>
 
-             <div className="space-y-2 mb-8">
+             <div className="space-y-2 mt-auto">
                 <div className="flex justify-between text-[10px] font-black uppercase text-slate-500">
-                   <span>Mastery</span>
+                   <span>Synergy</span>
                    <span>{garden.progress}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
                    <motion.div
                      initial={{ width: 0 }}
                      animate={{ width: `${garden.progress}%` }}
@@ -54,41 +60,46 @@ export const LearnerRealm: React.FC = () => {
                    />
                 </div>
              </div>
-
-             <button className="w-full py-4 rounded-xl bg-slate-800 font-black text-xs uppercase tracking-widest hover:bg-vital hover:text-white transition-all flex items-center justify-center gap-2">
-                Continue Exploration <ArrowRight size={14} />
-             </button>
           </Card>
         ))}
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-         <Card className="bg-aura/5 border-aura/20">
-            <h4 className="text-xl font-black mb-4 flex items-center gap-3">
-               <Compass size={24} className="text-aura" />
-               Peer Discovery
-            </h4>
-            <p className="text-sm text-slate-400 font-bold mb-8">Flocking algorithms have identified 3 learners with complementary interests in 'Biomimetic Systems'.</p>
-            <div className="flex -space-x-4">
-               {[1, 2, 3].map(i => (
-                 <div key={i} className="w-12 h-12 rounded-full bg-slate-800 border-2 border-sovereign flex items-center justify-center font-bold text-xs text-aura">
-                    P{i}
-                 </div>
-               ))}
-            </div>
-         </Card>
-
-         <Card className="bg-vital/5 border-vital/20">
-            <h4 className="text-xl font-black mb-4 flex items-center gap-3">
-               <Star size={24} className="text-vital" />
-               Adaptive Difficulty
-            </h4>
-            <p className="text-sm text-slate-400 font-bold mb-4">Neural sensors indicate optimal engagement. Increasing abstraction level for next module.</p>
-            <div className="flex items-center gap-2">
-               <div className="px-3 py-1 rounded-lg bg-slate-900 text-[10px] font-black text-vital uppercase">Lvl: Expert</div>
-               <div className="w-32 h-1 bg-slate-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-vital w-4/5" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+         <div className="lg:col-span-2 space-y-8">
+            <Card className="p-10 bg-aura/5 border-aura/20 overflow-hidden relative">
+               <div className="absolute -bottom-10 -right-10 opacity-5 rotate-12">
+                  <Activity size={300} className="text-aura" />
                </div>
+               <h4 className="text-2xl font-black mb-6 flex items-center gap-3">
+                  <Compass size={32} className="text-aura" />
+                  Peer Discovery Mesh
+               </h4>
+               <p className="text-lg text-slate-400 font-bold mb-10 max-w-xl leading-relaxed">
+                  The Mycelial layer has identified a cluster of 8 learners exploring 'TIES-Merging Architecture'. Synergy potential: <span className="text-aura">92%</span>.
+               </p>
+               <div className="flex items-center gap-6">
+                  <div className="flex -space-x-4">
+                     {[1, 2, 3, 4].map(i => (
+                       <div key={i} className="w-14 h-14 rounded-full bg-slate-800 border-4 border-sovereign flex items-center justify-center font-black text-sm text-aura shadow-xl">
+                          S{i}
+                       </div>
+                     ))}
+                  </div>
+                  <button className="px-8 py-3 bg-white text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Join Sync Session</button>
+               </div>
+            </Card>
+         </div>
+
+         <Card className="bg-vital/5 border-vital/20 py-12 flex flex-col items-center text-center">
+            <div className="w-20 h-20 rounded-full bg-vital/10 text-vital flex items-center justify-center mb-8 border border-vital/20 animate-pulse-slow">
+               <Star size={40} />
+            </div>
+            <h4 className="text-xl font-black mb-4">Mastery Progression</h4>
+            <p className="text-sm text-slate-500 font-bold mb-10 px-6">
+               Neural sensors confirm mastery of 'Phase 1 Recombination'. Your garden has bloomed with a new <span className="text-vital">Sovereign Flower</span>.
+            </p>
+            <div className="px-6 py-2 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+               Rank: Guardian Initiate
             </div>
          </Card>
       </div>
