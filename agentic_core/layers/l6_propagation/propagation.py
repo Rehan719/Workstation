@@ -1,113 +1,57 @@
-import hashlib
 import json
 import time
-from typing import Dict, Any, List, Optional, Set
-from abc import ABC, abstractmethod
+import hashlib
+from typing import Dict, Any, List, Optional
+from agentic_core.layers.ueg import ueg
+from agentic_core.layers.l1_identity.validator import validator_l1
 
-class PropagationTransport(ABC):
-    """Abstract Transport for NANITE-inspired Distributed Evolution."""
-    @abstractmethod
-    def broadcast(self, message: str) -> bool:
-        pass
+class ReplicationManagerL6:
+    """
+    LAYER 6: PROPAGATION - Autonomous Replication Engine.
+    Enables a node to spawn independent sovereign offspring instances.
+    """
+    def __init__(self, current_genome: Dict[str, Any]):
+        self.genome = current_genome
+        self.offspring_registry: List[Dict[str, Any]] = []
 
-    @abstractmethod
-    def receive(self) -> Optional[str]:
-        pass
+    def spawn_offspring(self, target_hardware_id: str) -> Optional[str]:
+        """Creates a full copy of the node's state for deployment."""
+        print(f"L6 Replication: Spawning offspring instance for hardware '{target_hardware_id}'.")
 
-class MemoryTransport(PropagationTransport):
-    """L6 Propagation: In-memory transport stub for Phase 1."""
-    def __init__(self):
-        self.queue: List[str] = []
+        offspring_id = f"did:vsb:offspring-{hashlib.sha256(target_hardware_id.encode()).hexdigest()[:12]}"
 
-    def broadcast(self, message: str) -> bool:
-        print(f"L6 Propagation: Broadcasting message via MemoryTransport ({len(message)} bytes)...")
-        self.queue.append(message)
-        return True
+        # 1. Inherit Genome
+        offspring_genome = self.genome.copy()
+        offspring_genome["identity"]["did"] = offspring_id
+        offspring_genome["identity"]["parent_did"] = self.genome["identity"]["did"]
 
-    def receive(self) -> Optional[str]:
-        if self.queue:
-            return self.queue.pop(0)
-        return None
+        # 2. Constitutional Check (Article 1115)
+        context = {"lineage_registered": True, "offspring_id": offspring_id}
+        if not validator_l1.validate_action("spawn_offspring", context)["valid"]:
+             return None
 
-class SecureEnvelope:
-    """L6 Propagation: Secure update envelope using Ed25519 and AES-256."""
-    def __init__(self, node_id: str):
-        self.node_id = node_id
-        # In Phase 1, we simulate key management
-        self.private_key = f"sk-{node_id}"
-        self.public_key = f"pk-{node_id}"
-
-    def seal(self, patch: Dict[str, Any]) -> str:
-        """Signs and encrypts a genome patch."""
-        payload = json.dumps(patch)
-        signature = hashlib.sha256((payload + self.private_key).encode()).hexdigest()
-        envelope = {
-            "node_id": self.node_id,
-            "signature": signature,
-            "payload": payload,
+        # 3. Register Lineage in UEG
+        self.offspring_registry.append({
+            "id": offspring_id,
+            "parent": self.genome["identity"]["did"],
             "timestamp": time.time(),
-            "algo": "Ed25519+AES-256"
-        }
-        return json.dumps(envelope)
+            "status": "PROVISIONING"
+        })
 
-    def unseal(self, envelope_str: str) -> Optional[Dict[str, Any]]:
-        """Verifies signature and decrypts the envelope."""
-        envelope = json.loads(envelope_str)
-        payload = envelope["payload"]
-        expected_signature = hashlib.sha256((payload + f"sk-{envelope['node_id']}").encode()).hexdigest()
+        ueg.log_event("L6", "Replication", "OFFSPRING_SPAWNED", {
+            "offspring_id": offspring_id,
+            "parent_did": self.genome["identity"]["did"]
+        })
 
-        if envelope["signature"] == expected_signature:
-            print(f"L6 Propagation: Secure envelope unsealed. Signature verified (v3.0).")
-            return json.loads(payload)
+        return offspring_id
 
-        print("L6 Propagation: Secure envelope verification FAILED.")
-        return None
-
-class RaftConsensusL6:
-    """L6 Propagation: Lightweight Raft consensus mechanism stub."""
-    def __init__(self, node_id: str):
-        self.node_id = node_id
-        self.term = 1
-        self.voted_for: Optional[str] = None
-        self.peers: Set[str] = set()
-        self.committed_logs: List[Dict[str, Any]] = []
-
-    def propose_update(self, patch_hash: str) -> bool:
-        """Proposes a genome update to the cluster."""
-        print(f"L6 Propagation: Proposing genome update {patch_hash[:8]} via Raft Term {self.term}...")
-        # In Phase 1, we simulate a consensus agreement
-        self.committed_logs.append({"term": self.term, "patch": patch_hash})
+    def certify_offspring(self, offspring_id: str) -> bool:
+        """Automated validation pipeline for new nodes."""
+        print(f"L6 Replication: Certifying offspring {offspring_id}...")
+        # Simulation: Integrity checks, PQC status, constitutional alignment
         return True
 
-class PropagationManagerL6:
-    """
-    LAYER 6: PROPAGATION - NANITE-Inspired Distributed Evolution.
-    Coordinates secure updates and consensus across the federation.
-    """
-    def __init__(self, node_id: str):
-        self.node_id = node_id
-        self.envelope = SecureEnvelope(node_id)
-        self.transport = MemoryTransport()
-        self.raft = RaftConsensusL6(node_id)
-
-    def propagate_edit(self, patch: Dict[str, Any]) -> bool:
-        """Seals, proposes, and broadcasts a genome edit."""
-        # 1. Consensus check
-        patch_hash = hashlib.sha256(json.dumps(patch).encode()).hexdigest()
-        if not self.raft.propose_update(patch_hash):
-             return False
-
-        # 2. Seal envelope
-        sealed_update = self.envelope.seal(patch)
-
-        # 3. Broadcast update
-        return self.transport.broadcast(sealed_update)
-
-    def receive_and_validate(self) -> Optional[Dict[str, Any]]:
-        """Receives and unseals an update from a peer."""
-        sealed_update = self.transport.receive()
-        if sealed_update:
-            return self.envelope.unseal(sealed_update)
-        return None
-
-propagation_manager = PropagationManagerL6("node-01")
+# Initialize Replication Manager
+with open("genome/constitution.work", "r") as f:
+    current_genome = json.load(f)
+replication_engine = ReplicationManagerL6(current_genome)
