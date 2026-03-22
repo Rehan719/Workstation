@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore, gaas } from '@workstation/shared';
-import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, MessageCircle, Heart } from 'lucide-react';
+import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, MessageCircle, Heart, Brain, Zap, Clock, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const CommandCenter = () => {
@@ -53,7 +53,7 @@ export const CommandCenter = () => {
                initial={{ opacity: 0, scale: 0.9, x: -50 }}
                animate={{ opacity: 1, scale: 1, x: 0 }}
                exit={{ opacity: 0, scale: 0.9, x: -50 }}
-               className="w-[420px] bg-slate-950/90 border border-aura/20 rounded-[3rem] shadow-2xl pointer-events-auto overflow-hidden backdrop-blur-3xl ml-24"
+               className="w-[480px] bg-slate-950/90 border border-aura/20 rounded-[3rem] shadow-2xl pointer-events-auto overflow-hidden backdrop-blur-3xl ml-24"
             >
                <div className="p-8 border-b border-white/5 bg-aura/5 flex justify-between items-center">
                   <div className="flex items-center gap-4">
@@ -70,7 +70,7 @@ export const CommandCenter = () => {
                   </button>
                </div>
 
-               <div className="p-8 max-h-[500px] overflow-y-auto custom-scrollbar space-y-6">
+               <div className="p-8 max-h-[600px] overflow-y-auto custom-scrollbar space-y-6">
                   <ChannelContent id={activeChannel} />
                </div>
 
@@ -89,66 +89,117 @@ export const CommandCenter = () => {
 };
 
 const ChannelContent = ({ id }: { id: string }) => {
-   const { currentRealm } = useStore();
+   const { currentRealm, currentMode } = useStore();
 
    const contents: Record<string, any> = {
       avatar: (
-         <div className="space-y-4 text-center">
-            <div className="w-32 h-32 rounded-full bg-slate-900 border-2 border-aura mx-auto flex items-center justify-center">
-               <User size={64} className="text-aura opacity-20" />
+         <div className="space-y-6 text-center">
+            <div className="relative mx-auto w-40 h-40">
+               <div className="absolute inset-0 rounded-full border-4 border-aura/20 animate-pulse-slow" />
+               <div className="w-full h-full rounded-full bg-slate-900 border-2 border-aura flex items-center justify-center overflow-hidden">
+                  <User size={80} className="text-aura opacity-30" />
+               </div>
+               <div className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-emerald-500 border-4 border-slate-950 flex items-center justify-center">
+                  <Activity size={14} className="text-white" />
+               </div>
             </div>
-            <p className="text-sm text-slate-400 font-bold leading-relaxed px-4">
-               Avatar streaming is active for the <span className="text-aura">{currentRealm}</span> persona. Latency &lt;200ms verified.
-            </p>
-            <div className="flex gap-2 justify-center">
-               <Badge color="emerald-500">LiveKit Connected</Badge>
-               <Badge color="aura">High Fidelity</Badge>
+            <div className="space-y-2">
+               <h4 className="text-lg font-black text-white">Sovereign Avatar Active</h4>
+               <p className="text-xs text-slate-400 font-bold leading-relaxed px-6">
+                  WebRTC stream synchronized. Current Persona: <span className="text-aura uppercase tracking-widest">{currentRealm}</span>.
+                  <br/>Latency: <span className="text-emerald-500">18ms</span>
+               </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+               <Button variant="outline" className="text-[9px]">Switch Persona</Button>
+               <Button variant="outline" className="text-[9px]">Calibrate Voice</Button>
             </div>
          </div>
       ),
       predictive: (
          <div className="space-y-6">
-            <div className="p-6 rounded-2xl bg-slate-900/50 border border-white/5">
-               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Domain Insights</p>
+            <div className="p-6 rounded-3xl bg-slate-900/50 border border-white/5 space-y-6">
+               <div className="flex justify-between items-center">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Time-Series Forecast</p>
+                  <TrendingUp size={16} className="text-aura" />
+               </div>
+               <div className="h-24 flex items-end gap-1 px-2">
+                  {[40, 65, 35, 80, 50, 90, 70, 45, 85, 60, 35, 75].map((h, i) => (
+                    <div key={i} className="flex-1 bg-aura/20 rounded-t-sm" style={{ height: `${h}%` }} />
+                  ))}
+               </div>
                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-900">
                      <Activity size={18} className="text-vital" />
-                     <p className="text-xs font-bold text-slate-300">Predicted system resonance drop in 2h.</p>
+                     <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Resonance drop predicted at 14:00Z.</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                     <Heart size={18} className="text-emerald-500" />
-                     <p className="text-xs font-bold text-slate-300">Learner mastery bloom expected for "Genomics".</p>
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-900">
+                     <Zap size={18} className="text-aura" />
+                     <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Energy surplus detected in L2 CL1 nodes.</p>
                   </div>
                </div>
             </div>
-            <Button variant="outline" className="w-full">Export Forecast Trace</Button>
+
+            {/* Proactive Suggestions Section */}
+            <div className="space-y-4">
+               <div className="flex items-center gap-3">
+                  <Brain size={18} className="text-aura" />
+                  <h4 className="text-sm font-black text-white uppercase tracking-widest">RL-Powered Suggestions</h4>
+               </div>
+               <div className="p-6 rounded-3xl bg-aura/5 border border-aura/10 border-dashed space-y-4">
+                  <p className="text-xs text-slate-400 font-bold leading-relaxed italic">
+                     "You've been in WORK mode for 4 hours. Suggesting a transition to REST to optimize cognitive durability."
+                  </p>
+                  <div className="flex gap-3">
+                     <Button className="flex-1 text-[9px] py-2">Apply REST Mode</Button>
+                     <Button variant="ghost" className="text-[9px] py-2">Dismiss</Button>
+                  </div>
+               </div>
+            </div>
          </div>
       ),
       ethical: (
          <div className="space-y-6">
-            <div className="p-6 rounded-2xl bg-aura/5 border border-aura/20 border-dashed">
-               <p className="text-[10px] font-black text-aura uppercase tracking-widest mb-2">Article 1126 Compliance</p>
-               <p className="text-xs text-slate-400 font-bold leading-relaxed">
-                  "AI agents in Care realm trained on care ethics... provide empathetic responses."
+            <div className="p-8 rounded-3xl bg-aura/5 border border-aura/20 relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <ShieldCheck size={60} className="text-aura" />
+               </div>
+               <p className="text-[10px] font-black text-aura uppercase tracking-widest mb-4">Constitutional Alignment</p>
+               <p className="text-sm text-white font-bold leading-relaxed relative z-10">
+                  Current session conforms to <span className="text-aura">Floor 24</span> mandates. Article 1126 (Care Ethics) is actively enforcing compassionate guardrails.
                </p>
             </div>
+
             <div className="space-y-3">
-               <div className="flex justify-between items-center p-3 rounded-xl bg-slate-900 border border-slate-800">
-                  <span className="text-[10px] font-black text-slate-300">Audit Status</span>
-                  <Badge color="emerald-500">PASSING</Badge>
+               <div className="flex justify-between items-center p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                  <div className="flex items-center gap-3">
+                     <Clock size={16} className="text-slate-500" />
+                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Veto Window Status</span>
+                  </div>
+                  <Badge color="emerald-500">IDLE</Badge>
                </div>
-               <div className="flex justify-between items-center p-3 rounded-xl bg-slate-900 border border-slate-800">
-                  <span className="text-[10px] font-black text-slate-300">Risk Mitigation</span>
-                  <span className="text-[10px] font-black text-white">ACTIVE</span>
+               <div className="flex justify-between items-center p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                  <div className="flex items-center gap-3">
+                     <Activity size={16} className="text-slate-500" />
+                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Privacy ε Budget</span>
+                  </div>
+                  <span className="text-xs font-black text-white">0.08 / 0.1</span>
                </div>
             </div>
+
+            <Button variant="outline" className="w-full">View Full Ethical Audit</Button>
          </div>
       )
    };
 
    return contents[id] || (
-      <div className="p-10 text-center text-slate-600 font-black uppercase tracking-widest text-xs">
-         Real-time stream initializing...
+      <div className="p-20 text-center space-y-6">
+         <div className="w-16 h-16 rounded-2xl bg-slate-900 mx-auto flex items-center justify-center text-slate-700 animate-pulse">
+            <Radio size={32} />
+         </div>
+         <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">
+            Real-time stream initializing via libp2p...
+         </p>
       </div>
    );
 };

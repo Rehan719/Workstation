@@ -4,25 +4,90 @@ import {
   Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
   Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
-  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History
+  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch
 } from 'lucide-react';
-import { useModeStore } from '../../store/modeStore';
-import { useTheme } from '../../theme/ThemeContext';
+import { useStore, RealmType } from '@workstation/shared';
 
-const allNavItems = [
-  { name: 'Pulse', icon: Activity, id: 'dashboard' },
-  { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
+interface NavItem {
+  name: string;
+  icon: any;
+  id: string;
+  subItems?: NavItem[];
+  realms?: RealmType[];
+}
+
+const allNavItems: NavItem[] = [
+  { name: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
+  { name: 'VSB AI CEO', icon: MessageSquare, id: 'ceo', realms: ['ENTERPRISE', 'UNIFIED'] },
+
+  {
+    name: 'Sovereign Domains',
+    icon: Globe,
+    id: 'domain-facet',
+    subItems: [
+      { name: 'Religion', icon: Heart, id: 'religion' },
+      { name: 'Science', icon: Microscope, id: 'science' },
+      { name: 'Law', icon: Gavel, id: 'law' },
+      { name: 'Employment', icon: Briefcase, id: 'employment' },
+      { name: 'Education', icon: GraduationCap, id: 'education' },
+      { name: 'Care', icon: HeartPulse, id: 'care' }
+    ]
+  },
+
   {
     name: 'Development',
     icon: Terminal,
     id: 'dev-facet',
+    realms: ['DEVELOPER', 'UNIFIED'],
     subItems: [
       { name: 'The Forge', icon: Terminal, id: 'forge' },
       { name: 'Digital Reactor', icon: Zap, id: 'reactor' },
       { name: 'Incubator', icon: Beaker, id: 'incubator' },
-      { name: 'QEP Reactor', icon: Cpu, id: 'qep' }
+      { name: 'Petri Dish', icon: FlaskConical, id: 'petri' },
+      { name: 'QEP Reactor', icon: Cpu, id: 'qep' },
+      { name: 'Factory', icon: Database, id: 'factory' },
+      { name: 'Pipelines', icon: Workflow, id: 'pipelines' }
     ]
   },
+
+  {
+    name: 'Civilisation',
+    icon: Network,
+    id: 'civ-facet',
+    subItems: [
+      { name: 'Federation Map', icon: Map, id: 'fed-map' },
+      { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' },
+      { name: 'Treaty Dashboard', icon: FileText, id: 'treaties' },
+      { name: 'Offspring Mgmt', icon: GitBranch, id: 'offspring' },
+      { name: 'Alliance UI', icon: Globe, id: 'alliance' }
+    ]
+  },
+
+  {
+    name: 'Platforms',
+    icon: Smartphone,
+    id: 'plat-facet',
+    subItems: [
+      { name: 'AR/VR Lab', icon: Camera, id: 'ar-vr' },
+      { name: 'Wearable Sync', icon: Watch, id: 'wearables' },
+      { name: 'Voice Control', icon: Radio, id: 'voice' }
+    ]
+  },
+
+  {
+    name: 'Genomic Core',
+    icon: Binary,
+    id: 'genomic-facet',
+    realms: ['DEVELOPER', 'SCHOLAR', 'UNIFIED'],
+    subItems: [
+      { name: 'Genome Explorer', icon: Search, id: 'genome-explorer' },
+      { name: 'GRN Dashboard', icon: Network, id: 'grn-dashboard' },
+      { name: 'Methylation', icon: Fingerprint, id: 'methylation' },
+      { name: 'Transcriptional', icon: Radio, id: 'transcriptional' },
+      { name: 'Phenotype Preview', icon: Eye, id: 'phenotype' }
+    ]
+  },
+
   {
     name: 'Governance',
     icon: Shield,
@@ -30,23 +95,15 @@ const allNavItems = [
     subItems: [
       { name: 'Constitution', icon: FileText, id: 'constitution' },
       { name: 'Republic Council', icon: Gavel, id: 'council' },
-      { name: 'Entity Control', icon: ShieldCheck, id: 'admin' }
+      { name: 'Entity Control', icon: ShieldCheck, id: 'admin' },
+      { name: 'Transparency', icon: History, id: 'transparency' }
     ]
   },
-  {
-    name: 'Economy',
-    icon: ShoppingBag,
-    id: 'eco-facet',
-    subItems: [
-      { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' },
-      { name: 'BTO Catalog', icon: Package, id: 'bto' },
-      { name: 'Offspring Mgmt', icon: GitBranch, id: 'offspring' }
-    ]
-  },
-  { name: 'Settings', icon: Settings, id: 'settings' },
+
+  { name: 'System Settings', icon: Settings, id: 'settings' },
 ];
 
-import { Gavel } from 'lucide-react';
+import { HeartPulse, Workflow, Search, Eye, Smartphone } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -54,46 +111,53 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-  const { theme, toggleTheme } = useTheme();
-  const navItems = allNavItems;
+  const { currentRealm, currentMode, user } = useStore();
+
+  const filteredNavItems = allNavItems.filter(item => {
+    if (currentRealm === 'UNIFIED') return true;
+    if (!item.realms) return true;
+    return item.realms.includes(currentRealm);
+  });
 
   return (
-    <aside className={`w-72 flex flex-col p-6 h-screen sticky top-0 transition-all duration-500 border-r ${
-      theme === 'advanced'
-        ? 'bg-sovereign border-aura/30 shadow-[0_0_50px_-12px_rgba(100,255,218,0.15)]'
-        : 'bg-slate-900/50 backdrop-blur-xl border-slate-800'
-    }`}>
+    <aside className={`w-72 flex flex-col p-6 h-screen sticky top-0 transition-all duration-700 border-r bg-slate-950/80 backdrop-blur-3xl border-slate-900 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
       <div className="mb-10 relative">
-        <h2 className="text-2xl font-black tracking-tighter text-aura">WORKSTATION</h2>
-        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Epoch: Eternal Synthesis</p>
-
-        <button onClick={toggleTheme} className="absolute -top-2 -right-2 p-2 rounded-full hover:bg-slate-800/50 text-slate-500 hover:text-aura">
-          <Palette size={14} />
-        </button>
+        <div className="flex items-center gap-3">
+           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-aura to-highlight flex items-center justify-center text-sovereign shadow-lg shadow-aura/10 animate-pulse">
+              <Zap size={24} />
+           </div>
+           <div>
+              <h2 className="text-xl font-black tracking-tighter text-white uppercase">Workstation</h2>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-aura font-black">v3.0 Sovereign</p>
+           </div>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-        {navItems.map((item: any) => (
+        {filteredNavItems.map((item: any) => (
           <div key={item.id} className="space-y-1">
             <button
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all focus:outline-none ${
-                activeTab === item.id ? 'bg-aura text-sovereign font-bold shadow-lg shadow-aura/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+              onClick={() => {
+                if (!item.subItems) setActiveTab(item.id);
+              }}
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all focus:outline-none group ${
+                activeTab === item.id ? 'bg-aura text-sovereign font-black shadow-xl shadow-aura/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-slate-900/50'
               }`}
             >
-              <item.icon size={20} />
-              <span className="text-sm font-semibold">{item.name}</span>
+              <item.icon size={18} className={`transition-transform group-hover:scale-110 ${activeTab === item.id ? 'text-sovereign' : 'text-aura/70'}`} />
+              <span className="text-xs font-black uppercase tracking-widest">{item.name}</span>
             </button>
             {item.subItems && (
-              <div className="ml-10 space-y-1 border-l border-slate-800 pl-4">
+              <div className="ml-6 space-y-1 border-l border-slate-900 pl-4 py-1">
                 {item.subItems.map((sub: any) => (
                   <button
                     key={sub.id}
                     onClick={() => setActiveTab(sub.id)}
-                    className={`w-full text-left py-2 text-xs font-bold transition-colors ${
-                      activeTab === sub.id ? 'text-aura' : 'text-slate-500 hover:text-white'
+                    className={`w-full flex items-center gap-3 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all group ${
+                      activeTab === sub.id ? 'text-aura' : 'text-slate-600 hover:text-slate-300'
                     }`}
                   >
+                    <sub.icon size={14} className={`transition-opacity ${activeTab === sub.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`} />
                     {sub.name}
                   </button>
                 ))}
@@ -103,13 +167,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         ))}
       </nav>
 
-      <div className="pt-6 border-t border-slate-800 flex items-center gap-3 px-2">
-         <div className="w-10 h-10 rounded-full bg-aura/20 flex items-center justify-center font-bold text-xs text-aura">AD</div>
+      <div className="pt-6 border-t border-slate-900 flex items-center gap-4 px-2">
+         <div className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center font-black text-[10px] text-aura uppercase tracking-widest">
+            {user?.displayName?.substring(0, 2) || 'VSB'}
+         </div>
          <div>
-            <p className="text-xs font-bold text-white">Abdullah</p>
-            <p className="text-[10px] text-slate-500 uppercase font-bold">Guardian</p>
+            <p className="text-xs font-black text-white uppercase tracking-wider">{user?.displayName || 'Sovereign'}</p>
+            <p className="text-[9px] text-aura/50 uppercase font-black tracking-[0.2em]">{user?.role || 'Guest'}</p>
          </div>
       </div>
     </aside>
   );
 };
+
+import { Database } from 'lucide-react';
