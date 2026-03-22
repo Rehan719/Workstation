@@ -4,7 +4,7 @@ import {
   Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
   Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
-  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch
+  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -56,10 +56,10 @@ const allNavItems: NavItem[] = [
     id: 'civ-facet',
     subItems: [
       { name: 'Federation Map', icon: Map, id: 'fed-map' },
+      { name: 'Orbital Command', icon: Satellite, id: 'orbital' },
       { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' },
       { name: 'Treaty Dashboard', icon: FileText, id: 'treaties' },
-      { name: 'Offspring Mgmt', icon: GitBranch, id: 'offspring' },
-      { name: 'Alliance UI', icon: Globe, id: 'alliance' }
+      { name: 'Offspring Mgmt', icon: GitBranch, id: 'offspring' }
     ]
   },
 
@@ -100,10 +100,11 @@ const allNavItems: NavItem[] = [
     ]
   },
 
+  { name: 'Contributor Portal', icon: Code2, id: 'contribute' },
   { name: 'System Settings', icon: Settings, id: 'settings' },
 ];
 
-import { HeartPulse, Workflow, Search, Eye, Smartphone } from 'lucide-react';
+import { HeartPulse, Workflow, Search, Eye, Smartphone, Satellite } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;

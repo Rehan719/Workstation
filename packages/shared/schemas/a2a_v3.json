@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent-to-Agent Protocol v3.0",
+  "type": "object",
+  "properties": {
+    "version": { "type": "string", "const": "3.0.0" },
+    "session_id": { "type": "string" },
+    "handshake": {
+      "type": "object",
+      "properties": {
+        "did": { "type": "string" },
+        "kyber_pubkey": { "type": "string" },
+        "dilithium_signature": { "type": "string" }
+      }
+    },
+    "protocol": { "enum": ["libp2p", "webrtc", "grpc"] },
+    "ueg_sync": { "type": "boolean", "const": true }
+  },
+  "required": ["version", "session_id", "handshake", "protocol", "ueg_sync"]
+}

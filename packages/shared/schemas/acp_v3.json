@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Communication Protocol v3.0",
+  "type": "object",
+  "properties": {
+    "version": { "type": "string", "const": "3.0.0" },
+    "id": { "type": "string" },
+    "sender": { "type": "string" },
+    "recipient": { "type": "string" },
+    "type": { "enum": ["QUERY", "COMMAND", "SIGNAL", "METRIC"] },
+    "payload": { "type": "object" },
+    "signature": { "type": "string" },
+    "pqc_enabled": { "type": "boolean", "const": true },
+    "gaas_article_ref": { "type": "string" }
+  },
+  "required": ["version", "id", "sender", "recipient", "type", "payload", "signature", "pqc_enabled"]
+}

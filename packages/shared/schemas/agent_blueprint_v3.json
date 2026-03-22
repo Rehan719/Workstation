@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Blueprint Standard v3.0",
+  "type": "object",
+  "properties": {
+    "version": { "type": "string", "const": "3.0.0" },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "author": { "type": "string" },
+        "fitness_score": { "type": "number" },
+        "hash": { "type": "string" }
+      }
+    },
+    "architecture": {
+      "type": "object",
+      "properties": {
+        "nodes": { "type": "array" },
+        "edges": { "type": "array" }
+      }
+    },
+    "genome_refs": { "type": "array", "items": { "type": "string" } },
+    "regulatory_markers": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["version", "metadata", "architecture"]
+}
