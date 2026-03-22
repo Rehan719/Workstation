@@ -3,7 +3,7 @@ import axios from 'axios';
 import { ShoppingBag, Star, ShieldCheck, TrendingUp, Search, Tag, ArrowUpRight } from 'lucide-react';
 import { Card, Button } from '@workstation/ui';
 
-export const LivingMarketplace: React.FC = () => {
+export const AgentMarketplace: React.FC = () => {
   const [listings, setListings] = useState<any[]>([]);
 
   useEffect(() => {

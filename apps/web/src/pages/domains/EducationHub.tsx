@@ -1,78 +1,154 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { GraduationCap, BookOpen, Presentation, CheckCircle, Star, Brain, Play } from 'lucide-react';
+import React, { useState } from 'react';
+import { Card, Badge, Button } from '@workstation/ui';
+import { GraduationCap, BookOpen, HeartPulse, Trophy, Activity, Rocket, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Network, Binary, Sparkles } from 'lucide-react';
+import { useStore, gaas } from '@workstation/shared';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const EducationHub: React.FC = () => {
+  const { user } = useStore();
+  const [activeTab, setActiveTab] = useState('curriculum');
+
+  const subjects = [
+    { id: 's-1', title: 'Sovereign Genomics v3', mastery: 0.94, status: 'Mastered', flowers: 42 },
+    { id: 's-2', title: 'L11 Mesh Orchestration', mastery: 0.82, status: 'In-Progress', flowers: 12 },
+    { id: 's-3', title: 'Ethical Recombination', mastery: 0.45, status: 'Active', flowers: 0 },
+  ];
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-      <header className="flex flex-col gap-4 border-b border-white/5 pb-8">
-        <div className="flex items-center gap-4">
-          <div className="p-4 bg-aura/20 rounded-2xl text-aura shadow-[0_0_20px_rgba(100,255,218,0.2)]">
-            <GraduationCap size={32} />
-          </div>
-          <div>
-            <h1 className="text-5xl font-black tracking-tight neon-text !text-aura">Education & Mastery</h1>
-            <p className="text-slate-500 font-bold text-lg mt-2">Personalized learning paths, interactive lessons, and digital reactors.</p>
-          </div>
+    <div className="space-y-12 pb-24">
+      <header className="flex justify-between items-end">
+        <div>
+          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Academy of Becoming</h1>
+          <p className="text-emerald-500 font-black uppercase text-[10px] tracking-[0.3em]">Garden of Curiosity • Personal Growth & Knowledge Transfer • Education Hub</p>
+        </div>
+        <div className="flex gap-4">
+           <Button variant="outline"><History size={18} /> Transcript</Button>
+           <Button className="bg-emerald-500 text-sovereign shadow-xl shadow-emerald-500/20">
+              <Plus size={18} /> Start New Lesson
+           </Button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <HubCard
-          title="Education Reactor"
-          description="Personalized learning engine with pre-loaded curricula."
-          icon={Brain}
-          action="Start Lesson"
-        />
-        <HubCard
-          title="Knowledge Ingestion"
-          description="Synthesize any data source into a learning object."
-          icon={BookOpen}
-          action="Ingest Data"
-        />
-        <HubCard
-          title="Mastery Tracking"
-          description="Real-time progress and skill certification."
-          icon={CheckCircle}
-          action="View Stats"
-        />
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+         <div className="lg:col-span-8 space-y-10">
+            <Card className="h-[500px] flex flex-col justify-center items-center relative overflow-hidden bg-emerald-500/5 border-emerald-500/10 group">
+               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.05)_0%,transparent_70%)]"></div>
+               <div className="absolute top-10 left-10 z-10 space-y-2">
+                  <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tight">
+                     Knowledge Garden Visualiser
+                     <Badge color="emerald-500">GraphRAG</Badge>
+                  </h3>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Neuro-Adaptive Pacing • 1.4M Knowledge Nodes</p>
+               </div>
 
-      <section className="p-12 glass-card border-aura/30 bg-aura/5 flex items-center justify-between gap-12">
-        <div className="flex-1">
-          <h3 className="text-2xl font-black mb-4">Your Mastery Pathway</h3>
-          <p className="text-slate-400 font-bold leading-relaxed mb-8">
-             Based on your interactions, the Education Reactor has prepared a **Recursive Learning Path** on Neural Architectures. 12 lessons ready to launch.
-          </p>
-          <button className="flex items-center gap-4 px-8 py-4 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-lg shadow-aura/20 uppercase tracking-widest text-sm">
-            <Play size={18} fill="currentColor" />
-            Resume Pathway
-          </button>
-        </div>
-        <div className="w-80 h-48 bg-sovereign rounded-3xl border border-aura/20 overflow-hidden shadow-2xl relative group">
-           <div className="absolute inset-0 bg-gradient-to-br from-aura/10 to-transparent"></div>
-           <div className="p-8">
-              <div className="flex justify-between items-center mb-6">
-                 <p className="text-[10px] font-black uppercase text-aura tracking-widest">Progress</p>
-                 <p className="text-lg font-black">74%</p>
-              </div>
-              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                 <div className="h-full bg-aura" style={{ width: '74%' }}></div>
-              </div>
-           </div>
-        </div>
-      </section>
-    </motion.div>
+               <div className="relative z-10 scale-125">
+                  <Network size={200} className="text-emerald-500 opacity-20 animate-pulse-slow" />
+               </div>
+
+               <div className="absolute bottom-10 right-10 flex gap-10 text-right">
+                  <div>
+                     <p className="text-[10px] font-black text-slate-700 uppercase mb-1">Flowers Mastered</p>
+                     <p className="text-2xl font-black text-emerald-500">142</p>
+                  </div>
+                  <div>
+                     <p className="text-[10px] font-black text-slate-700 uppercase mb-1">Knowledge Density</p>
+                     <p className="text-2xl font-black text-emerald-500">0.88</p>
+                  </div>
+               </div>
+            </Card>
+
+            <Card className="p-10 space-y-10">
+               <div className="flex justify-between items-center">
+                  <h3 className="text-2xl font-black text-white flex items-center gap-4 uppercase tracking-tight">
+                     <GraduationCap size={24} className="text-emerald-500" />
+                     Mastery Curriculum
+                  </h3>
+                  <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
+                     <button onClick={() => setActiveTab('curriculum')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'curriculum' ? 'bg-slate-800 text-emerald-500 shadow-lg' : 'text-slate-500 hover:text-white'}`}>Active</button>
+                     <button onClick={() => setActiveTab('mastery')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'mastery' ? 'bg-slate-800 text-emerald-500 shadow-lg' : 'text-slate-500 hover:text-white'}`}>Mastery</button>
+                  </div>
+               </div>
+
+               <div className="space-y-4">
+                  <AnimatePresence mode="wait">
+                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                        {subjects.map((subject, i) => (
+                          <div key={subject.id} className="p-8 rounded-[2.5rem] bg-slate-950 border border-slate-900 flex items-center justify-between group hover:border-emerald-500/30 transition-all cursor-pointer">
+                             <div className="flex items-center gap-8">
+                                <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-sovereign transition-all">
+                                   <Binary size={24} />
+                                </div>
+                                <div>
+                                   <p className="text-lg font-black text-white mb-1 uppercase tracking-widest">{subject.title}</p>
+                                   <div className="flex items-center gap-4">
+                                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mastery: {subject.mastery * 100}%</span>
+                                      <Badge color={subject.status === 'Mastered' ? 'emerald-500' : 'aura'}>{subject.status}</Badge>
+                                   </div>
+                                </div>
+                             </div>
+                             <div className="flex items-center gap-8">
+                                <div className="text-right">
+                                   <p className="text-[10px] font-black text-slate-700 uppercase mb-1">Flowers</p>
+                                   <p className="text-xl font-black text-emerald-500">{subject.flowers}</p>
+                                </div>
+                                <button className="p-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 hover:text-emerald-500 transition-all"><ChevronRight size={20} /></button>
+                             </div>
+                          </div>
+                        ))}
+                     </motion.div>
+                  </AnimatePresence>
+               </div>
+            </Card>
+         </div>
+
+         <div className="lg:col-span-4 space-y-10">
+            <Card className="p-10 space-y-10 bg-emerald-500/5 border-emerald-500/20">
+               <div className="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center text-sovereign shadow-xl shadow-emerald-500/20">
+                  <Activity size={32} />
+               </div>
+               <div>
+                  <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Neuro-Adaptive Pacing</h3>
+                  <p className="text-sm text-slate-400 font-bold leading-relaxed">
+                     L4 regulation loops optimize learning intensity based on your cognitive resonance.
+                  </p>
+               </div>
+               <div className="space-y-4 pt-6 border-t border-emerald-500/10">
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
+                     <span>Focus Level</span>
+                     <span className="text-white">High</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
+                     <span>Retention Rate</span>
+                     <span className="text-emerald-500">94.2%</span>
+                  </div>
+               </div>
+               <Button className="w-full bg-emerald-500 text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20">Enter Focus Mode</Button>
+            </Card>
+
+            <Card className="p-10 bg-slate-950 border-slate-900 space-y-6">
+               <div className="flex items-center gap-4 text-emerald-500">
+                  <Sparkles size={24} />
+                  <h4 className="text-xl font-black uppercase tracking-tight">Curriculum Composer</h4>
+               </div>
+               <p className="text-xs text-slate-400 font-bold leading-relaxed">
+                  Synthesize a personalized curriculum using the Quad Engine Discovery phase.
+               </p>
+               <Button variant="outline" className="w-full text-[9px] py-2">Launch Composer</Button>
+            </Card>
+
+            <Card className="p-8 border-slate-800">
+               <div className="flex items-center gap-6">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-500">
+                     <Trophy size={24} />
+                  </div>
+                  <div>
+                     <h4 className="text-lg font-black text-white mb-1">Mastery Rewards</h4>
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">142 WST Earned</p>
+                  </div>
+               </div>
+            </Card>
+         </div>
+      </div>
+    </div>
   );
 };
-
-const HubCard = ({ title, description, icon: Icon, action }: any) => (
-  <div className="p-8 glass-card group border-white/5 hover:border-aura/30">
-    <div className="w-12 h-12 rounded-xl bg-surface border border-white/5 flex items-center justify-center mb-6 group-hover:bg-aura group-hover:text-sovereign transition-all">
-      <Icon size={24} />
-    </div>
-    <h3 className="text-xl font-bold mb-2">{title}</h3>
-    <p className="text-xs text-slate-500 font-bold mb-6">{description}</p>
-    <button className="text-xs font-black uppercase text-aura tracking-widest hover:underline">{action}</button>
-  </div>
-);
