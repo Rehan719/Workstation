@@ -9,6 +9,9 @@ from agentic_core.layers.l1_identity.genome_engine import genome_engine
 def test_l4_adaptive_optimization():
     # Trigger fatigue-stress to get RECUPERATE
     metrics = {"interaction_speed": 2.0, "accuracy_rate": 0.5}
+    # Reset deficit for consistent test
+    grn_engine.optimizer.rest_deficit = 0.0
+    plan = None
     for _ in range(10): # Build up deficit even more
         plan = grn_engine.run_learner_optimization(metrics)
     assert plan["recommended_state"] == "RECUPERATE"
@@ -28,20 +31,11 @@ def test_l1_live_validator_checks():
 
 def test_genome_self_healing_cycle():
     # Ensure the validator will allow the amendment
-    # ConstitutionalAI generates LOW impact amendments
-    # validator_l1.validate_action("amend_constitution", {"impact": "LOW"}) returns valid if PQC is active
-
-    initial_count = len(genome_engine.genome["constitution"]["articles"])
-    # We need to mock the validator or provide the right context in the engine if it used context
-    # But genome_engine.run_self_healing_cycle calls validator_l1.validate_action("amend_constitution", context)
-    # and context is {"self_healing_trigger": True, "impact": "LOW"}
-    # validator_l1 needs pqc_active: True in context to return valid: True
-
-    # Let's monkeypatch the validator for the test
     original_validate = validator_l1.validate_action
     validator_l1.validate_action = lambda action, context: {"valid": True}
 
     try:
+        initial_count = len(genome_engine.genome["constitution"]["articles"])
         genome_engine.run_self_healing_cycle("latency_spike")
         assert len(genome_engine.genome["constitution"]["articles"]) > initial_count
     finally:

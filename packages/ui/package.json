@@ -9,9 +9,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.tsx --format cjs,esm --dts",
-    "dev": "tsup src/index.tsx --format cjs,esm --watch --dts",
-    "lint": "eslint \"src/**/*.tsx*\""
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --watch --dts",
+    "lint": "eslint \"src/**/*.ts*\""
   },
   "dependencies": {
     "@workstation/shared": "*"

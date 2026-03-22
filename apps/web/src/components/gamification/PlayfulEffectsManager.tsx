@@ -1,8 +1,11 @@
 import React, { useEffect } from 'react';
-import { useStore } from '@workstation/shared';
+import { useGamificationStore } from '../store/gamificationStore';
+
+// In a real environment, we'd import { Howl } from 'howler';
+// For this environment, we'll simulate the audio triggers
 
 export const PlayfulEffectsManager: React.FC = () => {
-  const { currentMode } = useStore();
+  const { stats } = useGamificationStore();
 
   useEffect(() => {
     const handleXPGain = () => {
@@ -10,11 +13,12 @@ export const PlayfulEffectsManager: React.FC = () => {
     };
 
     const handleLevelUp = (e: any) => {
-       console.log(`🎉 Level Up! Playing 'celebration' fanfare.`);
+       console.log(`🎉 Level Up to ${e.detail.level}! Playing 'celebration' fanfare.`);
+       // Trigger Confetti (simulated)
     };
 
     const handleQuestComplete = (e: any) => {
-       console.log(`🏆 Quest Complete! Playing 'achievement' sound.`);
+       console.log(`🏆 Quest Complete! Badge Earned: ${e.detail.badge || 'None'}. Playing 'achievement' sound.`);
     };
 
     window.addEventListener('workstation-xp-gain', handleXPGain);
@@ -28,5 +32,5 @@ export const PlayfulEffectsManager: React.FC = () => {
     };
   }, []);
 
-  return null;
+  return null; // Side-effect only component
 };
