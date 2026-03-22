@@ -1,44 +1,61 @@
 from typing import Dict, Any, List, Optional
 import json
 
+class AdaptiveOptimizationEngine:
+    """
+    Pillar 1: Core Validation - Learner Realm Hardening.
+    Balances 'learning intensity' vs 'rest needs' using the Clownfish Protocol roles.
+    """
+    def __init__(self):
+        self.learning_intensity = 0.5
+        self.rest_deficit = 0.0
+
+    def optimize_learner_state(self, engagement_metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """Clownfish Editor logic: Adjusts intensity to maximize retention while minimizing stress."""
+        speed = engagement_metrics.get("interaction_speed", 1.0)
+        accuracy = engagement_metrics.get("accuracy_rate", 0.8)
+
+        # Heuristic: If speed is high but accuracy is dropping, user is fatigue-stressed.
+        if speed > 1.5 and accuracy < 0.7:
+             self.learning_intensity -= 0.1
+             self.rest_deficit += 0.2
+        elif speed < 0.8: # Under-stimulated
+             self.learning_intensity += 0.1
+
+        self.learning_intensity = max(0.1, min(1.0, self.learning_intensity))
+
+        return {
+            "target_intensity": self.learning_intensity,
+            "recommended_state": "RECUPERATE" if self.rest_deficit > 0.8 else "WORK",
+            "clownfish_role": "EDITOR"
+        }
+
 class GRNEngineL4:
     """
     LAYER 4: REGULATION - Gene Regulatory Networks & Epigenetics.
-    Controls computational processes and resource allocation using GNN-inferred GRNs.
     """
-    def __init__(self, regulon_path: str = "agentic_core/layers/l4_regulation/regulons.json"):
-        # Placeholder for GNN-based regulatory edge inference
-        self.regulon_path = regulon_path
+    def __init__(self):
         self.states = ["REST", "WORK", "PLAY", "RECUPERATE"]
         self.current_state = "REST"
+        self.optimizer = AdaptiveOptimizationEngine()
 
-        # Load pre-defined regulons (Simulated Phase 1)
         self.regulons = {
-            "REST": {"tf_id": "tf-001", "targets": ["L2_HSP", "L5_REPAIR"], "active": True},
-            "WORK": {"tf_id": "tf-002", "targets": ["L2_INFERENCE", "L8_RECOMBINATION"], "active": True},
-            "PLAY": {"tf_id": "tf-003", "targets": ["L10_EVOLUTION", "L12_GAMIFICATION"], "active": True}
+            "REST": {"tf_id": "tf-001", "targets": ["L2_HSP", "L5_REPAIR"]},
+            "WORK": {"tf_id": "tf-002", "targets": ["L2_INFERENCE", "L8_RECOMBINATION"]},
+            "RECUPERATE": {"tf_id": "tf-004", "targets": ["L4_ADAPTATION", "L5_HDR"]}
         }
-        print(f"L4 Regulation: GNN-based GRN Engine initialized with {len(self.regulons)} regulons.")
-
-    def infer_network(self, accessibility: Any, transcriptomics: Any) -> Dict[str, Any]:
-        """Infers regulatory edges from chromatin/expression data."""
-        # Simulated GNN inference logic for Phase 1
-        print("L4 Regulation: Inferring regulatory edges using Graph Neural Network...")
-        return self.regulons
 
     def update_epigenetic_state(self, state: str) -> bool:
-        """Sets the current epigenetic state (REST/WORK/PLAY)."""
         if state in self.states:
             self.current_state = state
-            print(f"L4 Regulation: Epigenetic state updated to {self.current_state}.")
             return True
         return False
 
-    def activate_regulon(self, context: Dict[str, Any]) -> List[str]:
-        """Activates regulons based on current state and context."""
-        active_regulon = self.regulons.get(self.current_state, {})
-        targets = active_regulon.get("targets", [])
-        print(f"L4 Regulation: Activating {len(targets)} targets for regulon {active_regulon.get('tf_id', 'none')}.")
-        return targets
+    def run_learner_optimization(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """Pillar 1: Validate core optimization in Learner Realm."""
+        plan = self.optimizer.optimize_learner_state(metrics)
+        if plan["recommended_state"] != self.current_state:
+             self.update_epigenetic_state(plan["recommended_state"])
+        return plan
 
 grn_engine = GRNEngineL4()

@@ -1,48 +1,36 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart, Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity, Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe, GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase, GraduationCap, Trophy, Wifi } from 'lucide-react';
+import {
+  LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart,
+  Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
+  Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
+  GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
+  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History
+} from 'lucide-react';
 import { useModeStore } from '../../store/modeStore';
 import { useTheme } from '../../theme/ThemeContext';
 
 const allNavItems = [
   { name: 'Pulse', icon: Activity, id: 'dashboard' },
-  { name: 'Cosmic Hub', icon: Radio, id: 'cosmic' },
-  { name: 'Civilization', icon: Globe, id: 'civilization' },
-  { name: 'Reality Engine', icon: GitBranch, id: 'reality' },
   { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
-  { name: 'Wisdom Hub', icon: Target, id: 'wisdom' },
-  { name: 'Creator Studio', icon: Plus, id: 'create' },
-  { name: 'The Forge', icon: Terminal, id: 'forge' },
-  { name: 'Realm Foundry', icon: Globe, id: 'realm-foundry' },
   {
-    name: 'C-Suite',
-    icon: User,
-    id: 'c-suite',
+    name: 'Development',
+    icon: Terminal,
+    id: 'dev-facet',
     subItems: [
-      { name: 'CFO Agent', icon: DollarSign, id: 'cfo' }
+      { name: 'The Forge', icon: Terminal, id: 'forge' },
+      { name: 'Digital Reactor', icon: Zap, id: 'reactor' },
+      { name: 'Incubator', icon: Beaker, id: 'incubator' },
+      { name: 'QEP Reactor', icon: Cpu, id: 'qep' }
     ]
   },
   {
-    name: 'The Mind',
-    icon: Brain,
-    id: 'mind',
-    subItems: [
-      { name: 'Self Vision', icon: ShieldCheck, id: 'introspection' },
-      { name: 'World Mind', icon: BookOpen, id: 'extrospection' },
-      { name: 'Mind Forge', icon: ShieldCheck, id: 'evolution' },
-      { name: 'Knowledge Hub', icon: FileText, id: 'coe' }
-    ]
-  },
-  {
-    name: 'Federation',
-    icon: Network,
+    name: 'Governance',
+    icon: Shield,
     id: 'gov-facet',
     subItems: [
-      { name: 'Fed Portal', icon: Network, id: 'fed-portal' },
-      { name: 'Governance', icon: Shield, id: 'governance' },
-      { name: 'AI Delegation', icon: Cpu, id: 'delegation' },
-      { name: 'Performance', icon: Gauge, id: 'performance' },
-      { name: 'Join Swarm', icon: Plus, id: 'join-fed' },
-      { name: 'The Sanctum', icon: Shield, id: 'sanctum' }
+      { name: 'Constitution', icon: FileText, id: 'constitution' },
+      { name: 'Republic Council', icon: Gavel, id: 'council' },
+      { name: 'Entity Control', icon: ShieldCheck, id: 'admin' }
     ]
   },
   {
@@ -50,39 +38,15 @@ const allNavItems = [
     icon: ShoppingBag,
     id: 'eco-facet',
     subItems: [
-      { name: 'Wallet', icon: ShieldCheck, id: 'wallet' },
       { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' },
-      { name: 'BTO Catalog', icon: Package, id: 'bto' }
-    ]
-  },
-  {
-    name: 'Evolution',
-    icon: Sparkles,
-    id: 'evolution-facet',
-    subItems: [
-      { name: 'Public Roadmap', icon: Map, id: 'roadmap' },
-      { name: 'Soul-Record', icon: Fingerprint, id: 'soul-record' },
-      { name: 'QEP Engine', icon: Cpu, id: 'qep' },
-      { name: 'UVAID / GSE', icon: BarChart3, id: 'uvaid' }
-    ]
-  },
-  {
-    name: 'Domains',
-    icon: Globe,
-    id: 'domain-facet',
-    subItems: [
-      { name: 'Religion', icon: Book, id: 'religion' },
-      { name: 'Science', icon: Zap, id: 'science' },
-      { name: 'Law', icon: Scale, id: 'law' },
-      { name: 'Employment', icon: Briefcase, id: 'employment' },
-      { name: 'Education', icon: GraduationCap, id: 'education' }
+      { name: 'BTO Catalog', icon: Package, id: 'bto' },
+      { name: 'Offspring Mgmt', icon: GitBranch, id: 'offspring' }
     ]
   },
   { name: 'Settings', icon: Settings, id: 'settings' },
-  { name: 'Quests', icon: Trophy, id: 'quests' },
-  { name: 'Physical World', icon: Wifi, id: 'iot' },
-  { name: 'Admin', icon: Shield, id: 'admin' },
 ];
+
+import { Gavel } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -90,9 +54,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-  const { config } = useModeStore();
   const { theme, toggleTheme } = useTheme();
-  const navItems = config ? allNavItems.filter(item => config.nav.includes(item.id)) : allNavItems;
+  const navItems = allNavItems;
 
   return (
     <aside className={`w-72 flex flex-col p-6 h-screen sticky top-0 transition-all duration-500 border-r ${
@@ -101,17 +64,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         : 'bg-slate-900/50 backdrop-blur-xl border-slate-800'
     }`}>
       <div className="mb-10 relative">
-        <h2 className={`text-2xl font-black tracking-tighter transition-all ${
-          theme === 'advanced' ? 'text-aura drop-shadow-[0_0_10px_rgba(100,255,218,0.5)]' : 'text-aura'
-        }`}>WORKSTATION</h2>
-        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold text-center">Civilization v146.0</p>
+        <h2 className="text-2xl font-black tracking-tighter text-aura">WORKSTATION</h2>
+        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Epoch: Eternal Synthesis</p>
 
-        <button
-          onClick={toggleTheme}
-          className="absolute -top-2 -right-2 p-2 rounded-full hover:bg-slate-800/50 transition-colors text-slate-500 hover:text-aura"
-          title="Toggle UI Theme"
-          aria-label="Toggle UI Theme"
-        >
+        <button onClick={toggleTheme} className="absolute -top-2 -right-2 p-2 rounded-full hover:bg-slate-800/50 text-slate-500 hover:text-aura">
           <Palette size={14} />
         </button>
       </div>
@@ -121,16 +77,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           <div key={item.id} className="space-y-1">
             <button
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-aura ${
-                activeTab === item.id
-                  ? theme === 'advanced'
-                    ? 'bg-aura text-sovereign font-bold shadow-[0_0_20px_rgba(100,255,218,0.4)] scale-[1.02]'
-                    : 'bg-aura text-sovereign font-bold shadow-lg shadow-aura/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all focus:outline-none ${
+                activeTab === item.id ? 'bg-aura text-sovereign font-bold shadow-lg shadow-aura/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
               }`}
-              aria-label={item.name}
             >
-              <item.icon size={20} aria-hidden="true" />
+              <item.icon size={20} />
               <span className="text-sm font-semibold">{item.name}</span>
             </button>
             {item.subItems && (
@@ -152,18 +103,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         ))}
       </nav>
 
-      <div className="pt-6 border-t border-slate-800">
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-aura to-highlight p-[2px]">
-            <div className="w-full h-full rounded-full bg-sovereign flex items-center justify-center font-bold text-xs">
-              AD
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-bold">Abdullah</p>
-            <p className="text-[10px] text-slate-500 uppercase font-bold">Admin</p>
-          </div>
-        </div>
+      <div className="pt-6 border-t border-slate-800 flex items-center gap-3 px-2">
+         <div className="w-10 h-10 rounded-full bg-aura/20 flex items-center justify-center font-bold text-xs text-aura">AD</div>
+         <div>
+            <p className="text-xs font-bold text-white">Abdullah</p>
+            <p className="text-[10px] text-slate-500 uppercase font-bold">Guardian</p>
+         </div>
       </div>
     </aside>
   );
