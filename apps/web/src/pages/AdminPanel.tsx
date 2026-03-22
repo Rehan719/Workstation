@@ -1,85 +1,77 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { ShieldAlert, Settings, Users, Activity, Lock } from 'lucide-react';
+import { Card, RealmSelector, Button } from '@workstation/ui';
+import { useStore } from '@workstation/shared';
+import { Shield, Settings, Activity, Database, Cpu, Globe, Key, AlertTriangle } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
+  const { systemVitals } = useStore();
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-12 max-w-6xl mx-auto"
-    >
-      <header className="flex flex-col gap-4 border-b border-white/5 pb-8">
-        <div className="flex items-center gap-4">
-          <div className="p-4 bg-vital/20 rounded-2xl text-vital shadow-[0_0_20px_rgba(255,82,82,0.2)]">
-            <Lock size={32} />
-          </div>
-          <div>
-            <h1 className="text-5xl font-black tracking-tight neon-text !text-vital drop-shadow-[0_0_12px_rgba(255,82,82,0.6)]">
-              Sovereign Command Console
-            </h1>
-            <p className="text-slate-500 font-bold text-lg mt-2">
-              System-level governance and administrative protocols.
-            </p>
-          </div>
+    <div className="space-y-12 pb-24">
+      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+        <div>
+          <h1 className="text-5xl font-black mb-1">Entity Control</h1>
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">Homeostatic Orchestrator • Layer 5 Hardening</p>
+        </div>
+        <div className="flex gap-4">
+           <Button variant="outline">Export UEG Logs</Button>
+           <Button className="bg-vital text-white">Emergency 888_HOLD</Button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <AdminCard
-          title="User Management"
-          description="Provision identities and manage realm permissions."
-          icon={Users}
-          status="Restricted"
-        />
-        <AdminCard
-          title="System Config"
-          description="Adjust core reactor setpoints and PID parameters."
-          icon={Settings}
-          status="Restricted"
-        />
-        <AdminCard
-          title="Security Audits"
-          description="View PQC handshake logs and node defense vitals."
-          icon={ShieldAlert}
-          status="Restricted"
-        />
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+         <Card className="p-10 lg:col-span-2">
+            <h3 className="text-2xl font-black mb-10 flex items-center gap-3">
+               <Shield size={28} className="text-aura" />
+               Security Posture (OWASP ASI)
+            </h3>
+            <div className="space-y-6">
+               {[
+                 { id: 'ASI-01', name: 'Goal Hijacking', status: 'Mitigated', color: 'text-emerald-500' },
+                 { id: 'ASI-02', name: 'Tool Misuse', status: 'Mitigated', color: 'text-emerald-500' },
+                 { id: 'ASI-04', name: 'Supply Chain', status: 'Hardened', color: 'text-aura' },
+                 { id: 'ASI-06', name: 'Adversarial Negotiation', status: 'Active Monitoring', color: 'text-yellow-500' },
+               ].map((asi) => (
+                 <div key={asi.id} className="p-6 rounded-2xl bg-slate-950 border border-slate-900 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                       <span className="text-xs font-black text-slate-700">{asi.id}</span>
+                       <span className="font-bold text-white">{asi.name}</span>
+                    </div>
+                    <span className={`text-[10px] font-black uppercase ${asi.color}`}>{asi.status}</span>
+                 </div>
+               ))}
+            </div>
+         </Card>
 
-      <section className="p-12 glass-card border-vital/20 bg-vital/5 text-center flex flex-col items-center justify-center gap-6 min-h-[400px]">
-        <div className="w-20 h-20 rounded-full bg-vital/10 flex items-center justify-center text-vital animate-pulse">
-           <Activity size={40} />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-3xl font-black text-white">Console Under Synchronization</h2>
-          <p className="text-slate-400 font-bold max-w-md mx-auto leading-relaxed">
-            The Sovereign Command Console is currently undergoing v148.0 protocol integration. Functional admin tools will be available upon full planetary synchronization.
-          </p>
-        </div>
-        <div className="flex gap-4 mt-4">
-           <button className="px-8 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl cursor-not-allowed border border-slate-700">
-             Authorize Override
-           </button>
-           <button className="px-8 py-3 bg-vital/20 text-vital font-bold rounded-xl border border-vital/30 hover:bg-vital/30 transition-all">
-             View Audit Logs
-           </button>
-        </div>
-      </section>
-    </motion.div>
+         <aside className="space-y-8">
+            <Card>
+               <h4 className="text-xs font-black uppercase text-slate-500 tracking-widest mb-8">CL1 Efficiency</h4>
+               <div className="flex flex-col items-center gap-6">
+                  <div className="w-32 h-32 rounded-full border-8 border-slate-900 border-t-aura flex items-center justify-center relative">
+                     <span className="text-2xl font-black text-white">12.5x</span>
+                     <p className="absolute -bottom-6 text-[8px] font-black text-slate-500 uppercase">vs GPU baseline</p>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-600 text-center uppercase leading-relaxed">20% of total inference offloaded to parallel biological units.</p>
+               </div>
+            </Card>
+
+            <Card className="bg-aura/5 border-aura/20">
+               <h4 className="text-xs font-black uppercase text-aura tracking-widest mb-6 flex items-center gap-2">
+                  <Key size={14} /> PQC Finality
+               </h4>
+               <div className="space-y-4">
+                  <div className="flex justify-between text-[10px] font-bold">
+                     <span className="text-slate-500 uppercase">Algorithm</span>
+                     <span className="text-white">Kyber-1024</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] font-bold">
+                     <span className="text-slate-500 uppercase">Signature</span>
+                     <span className="text-white">Dilithium-5</span>
+                  </div>
+               </div>
+            </Card>
+         </aside>
+      </div>
+    </div>
   );
 };
-
-const AdminCard = ({ title, description, icon: Icon, status }: any) => (
-  <div className="p-8 glass-card group border-white/5 hover:border-vital/30">
-    <div className="flex justify-between items-start mb-6">
-      <div className="p-4 bg-surface rounded-2xl text-slate-500 group-hover:text-vital transition-colors">
-        <Icon size={24} />
-      </div>
-      <span className="text-[10px] font-black px-3 py-1.5 rounded-full bg-vital/10 text-vital border border-vital/20 uppercase tracking-widest">
-        {status}
-      </span>
-    </div>
-    <h3 className="text-xl font-bold mb-2">{title}</h3>
-    <p className="text-xs text-slate-500 font-bold leading-relaxed">{description}</p>
-  </div>
-);

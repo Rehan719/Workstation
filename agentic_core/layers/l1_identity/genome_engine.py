@@ -55,6 +55,8 @@ class GenomeMutationWorkflow:
         })
 
         self.genome["constitution"]["articles"].append(patch)
+        if "identity" not in self.genome:
+            self.genome["identity"] = {}
         self.genome["identity"]["merkle_root"] = hashlib.sha256(str(self.genome).encode()).hexdigest()
 
         ueg.log_event("L1", "Genome", "AMENDMENT_RATIFIED", {"id": patch["id"], "type": "AUTONOMOUS"})
