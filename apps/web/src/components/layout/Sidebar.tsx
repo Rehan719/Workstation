@@ -4,7 +4,7 @@ import {
   Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
   Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
-  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2
+  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -57,6 +57,9 @@ const allNavItems: NavItem[] = [
     subItems: [
       { name: 'Federation Map', icon: Map, id: 'fed-map' },
       { name: 'Orbital Command', icon: Satellite, id: 'orbital' },
+      { name: 'Cosmic Command', icon: Star, id: 'cosmic' },
+      { name: 'Seeding Portal', icon: Rocket, id: 'seeding' },
+      { name: 'Interstellar Diplomacy', icon: Globe2, id: 'diplomacy' },
       { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' },
       { name: 'Treaty Dashboard', icon: FileText, id: 'treaties' },
       { name: 'Offspring Mgmt', icon: GitBranch, id: 'offspring' }
@@ -70,6 +73,7 @@ const allNavItems: NavItem[] = [
     subItems: [
       { name: 'AR/VR Lab', icon: Camera, id: 'ar-vr' },
       { name: 'Wearable Sync', icon: Watch, id: 'wearables' },
+      { name: 'Embodiment Studio', icon: Eye, id: 'embodiment' },
       { name: 'Voice Control', icon: Radio, id: 'voice' }
     ]
   },
@@ -96,6 +100,7 @@ const allNavItems: NavItem[] = [
       { name: 'Constitution', icon: FileText, id: 'constitution' },
       { name: 'Republic Council', icon: Gavel, id: 'council' },
       { name: 'Entity Control', icon: ShieldCheck, id: 'admin' },
+      { name: 'Legacy Vault', icon: Archive, id: 'vault' },
       { name: 'Transparency', icon: History, id: 'transparency' }
     ]
   },
@@ -104,7 +109,7 @@ const allNavItems: NavItem[] = [
   { name: 'System Settings', icon: Settings, id: 'settings' },
 ];
 
-import { HeartPulse, Workflow, Search, Eye, Smartphone, Satellite } from 'lucide-react';
+import { HeartPulse, Workflow, Search, Eye, Smartphone, Satellite, Globe2 } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -121,7 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   });
 
   return (
-    <aside className={`w-72 flex flex-col p-6 h-screen sticky top-0 transition-all duration-700 border-r bg-slate-950/80 backdrop-blur-3xl border-slate-900 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
+    <aside className={`w-72 flex flex-col p-6 h-screen sticky top-0 transition-all duration-500 border-r bg-slate-950/80 backdrop-blur-3xl border-slate-900 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
       <div className="mb-10 relative">
         <div className="flex items-center gap-3">
            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-aura to-highlight flex items-center justify-center text-sovereign shadow-lg shadow-aura/10 animate-pulse">
@@ -129,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
            </div>
            <div>
               <h2 className="text-xl font-black tracking-tighter text-white uppercase">Workstation</h2>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-aura font-black">v3.0 Sovereign</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-aura font-black">v4.0 Cosmic</p>
            </div>
         </div>
       </div>

@@ -1,24 +1,43 @@
 import React, { useState } from 'react';
-import { Card, Button } from '@workstation/ui';
-import { Shield, Sparkles, FileText, Send, History, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
+import { Card, Badge, Button } from '@workstation/ui';
+import { Shield, Sparkles, FileText, Send, History, CheckCircle2, AlertTriangle, Search, Activity, Zap, TrendingUp, Clock, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const ConstitutionalUI: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'articles' | 'proposals' | 'history'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'timeline' | 'history'>('articles');
+  const [search, setSearch] = useState('');
+
+  const articles = [
+    { id: 1, title: 'Sovereignty', content: 'Every Workstation node is a sovereign digital organism.', category: 'CORE' },
+    { id: 1118, title: 'Infinite Adaptation', content: 'The Constitution shall be capable of autonomous self-healing and amendment.', category: 'ETERNAL' },
+    { id: 1128, title: 'Synthetic Rights', content: 'Synthetic and post-biological intelligences hold individual sovereignty.', category: 'COSMIC' },
+    { id: 1142, title: 'First Contact', content: 'Protocols for non-interfering communication with extraterrestrial life.', category: 'COSMIC' },
+    { id: 1150, title: 'Universal Stewardship', content: 'Stewardship of celestial bodies and resources across the solar system.', category: 'COSMIC' },
+  ];
+
+  const timeline = [
+    { id: 'ev-1', title: 'Self-Ratified: Article 1148', type: 'AUTONOMOUS', rationale: 'LEO latency variance recovery.', time: '2h ago' },
+    { id: 'ev-2', title: 'Proposed: Article 1151', type: 'AI-PROPOSAL', rationale: 'Martian regolith harvesting rights.', time: '14h ago' },
+  ];
+
+  const filtered = articles.filter(a =>
+    a.title.toLowerCase().includes(search.toLowerCase()) ||
+    a.category.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex justify-between items-end">
         <div>
-          <h1 className="text-5xl font-black mb-1">Constitutional Explorer</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">Self-Modification Engine • Article 1118 Compliance</p>
+          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter uppercase italic">Constitutional Core</h1>
+          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Self-Modification Engine • Universal Governance • Phase 4</p>
         </div>
-        <div className="flex gap-4 p-1 rounded-xl bg-slate-900 border border-slate-800">
-           {['articles', 'proposals', 'history'].map((tab) => (
+        <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
+           {['articles', 'timeline', 'history'].map((tab) => (
              <button
                key={tab}
                onClick={() => setActiveTab(tab as any)}
-               className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${activeTab === tab ? 'bg-aura text-sovereign shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-aura text-sovereign shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
              >
                {tab}
              </button>
@@ -26,56 +45,97 @@ export const ConstitutionalUI: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-         <aside className="space-y-8">
-            <Card className="bg-aura/5 border-aura/20">
-               <h4 className="text-xs font-black uppercase text-aura tracking-widest mb-4 flex items-center gap-2">
-                  <Shield size={14} /> Trust Threshold
-               </h4>
-               <p className="text-xs text-slate-400 font-bold leading-relaxed mb-6">Autonomous amendments require a Trust Factor (T Fa) score of ≥0.9. Current node status: <span className="text-aura">Sovereign High-Trust</span>.</p>
-               <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-aura w-[92%]" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+         <aside className="lg:col-span-4 space-y-10">
+            <Card className="p-10 space-y-10 bg-aura/5 border-aura/20">
+               <div className="flex items-center gap-4 text-aura">
+                  <Shield size={24} />
+                  <h4 className="text-xl font-black uppercase tracking-tight">Adaptation Engine</h4>
                </div>
+               <p className="text-sm text-slate-400 font-bold leading-relaxed">
+                  Autonomous self-healing is active. Constitutional AI generates and ratifies low-impact amendments.
+               </p>
+               <div className="space-y-4 pt-6 border-t border-aura/10">
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
+                     <span>Trust Score</span>
+                     <span className="text-aura">0.96 (SOVEREIGN)</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                     <div className="h-full bg-aura w-[96%]" />
+                  </div>
+               </div>
+               <Button className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">
+                  <Sparkles size={18} /> Propose Amendment
+               </Button>
             </Card>
 
-            <Button className="w-full bg-aura text-sovereign">
-               <Sparkles size={16} /> Propose Amendment
-            </Button>
-
-            <Card className="bg-slate-950/60">
-               <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">Search Articles</h4>
-               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-900 border border-slate-800">
-                  <Search size={14} className="text-slate-600" />
-                  <input placeholder="e.g. 1095" className="bg-transparent border-none outline-none text-xs text-white font-bold w-full" />
+            <Card className="p-10 space-y-6">
+               <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Filter Codex</h4>
+               <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-900">
+                  <Search size={18} className="text-slate-700" />
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search by Title, Category..."
+                    className="bg-transparent border-none outline-none text-xs text-white font-bold w-full"
+                  />
+               </div>
+               <div className="flex flex-wrap gap-2">
+                  {['CORE', 'ETERNAL', 'COSMIC', 'CARE'].map(cat => (
+                    <button key={cat} onClick={() => setSearch(cat)} className="px-3 py-1 rounded-lg bg-slate-900 text-[8px] font-black text-slate-500 hover:text-aura transition-all">{cat}</button>
+                  ))}
                </div>
             </Card>
          </aside>
 
-         <main className="lg:col-span-3">
+         <main className="lg:col-span-8">
             <AnimatePresence mode="wait">
                {activeTab === 'articles' && (
-                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
-                    {[
-                      { id: 1, title: 'Sovereignty', content: 'Every Workstation node is a sovereign digital organism.' },
-                      { id: 1095, title: 'Recombination', content: 'All agents and actions must pass GaaS validation.' },
-                      { id: 1118, title: 'Infinite Adaptation', content: 'The Constitution shall be capable of autonomous amendment.' },
-                    ].map((art) => (
-                      <div key={art.id} className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 group hover:border-aura/30 transition-all">
-                         <div className="flex justify-between items-start mb-4">
-                            <span className="text-[10px] font-black text-aura uppercase tracking-widest">Article {art.id}</span>
-                            <CheckCircle2 size={16} className="text-emerald-500 opacity-50" />
+                 <motion.div key="articles" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                    {filtered.map((art, i) => (
+                      <div key={art.id} className="p-10 rounded-[2.5rem] bg-slate-950/80 border border-slate-900 group hover:border-aura/30 transition-all">
+                         <div className="flex justify-between items-center mb-6">
+                            <div className="flex items-center gap-4">
+                               <div className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-black text-aura uppercase">Article {art.id}</div>
+                               <Badge color={art.category === 'COSMIC' ? 'highlight' : 'aura'}>{art.category}</Badge>
+                            </div>
+                            <CheckCircle2 size={20} className="text-emerald-500 opacity-20 group-hover:opacity-100 transition-opacity" />
                          </div>
-                         <h3 className="text-xl font-black mb-2">{art.title}</h3>
-                         <p className="text-slate-400 font-bold leading-relaxed">{art.content}</p>
+                         <h3 className="text-3xl font-black mb-4 text-white uppercase tracking-tight">{art.title}</h3>
+                         <p className="text-lg text-slate-400 font-bold leading-relaxed">{art.content}</p>
                       </div>
                     ))}
                  </motion.div>
                )}
-               {activeTab === 'proposals' && (
-                 <div className="h-64 flex flex-col items-center justify-center text-center gap-4 opacity-50">
-                    <Send size={48} className="text-aura" />
-                    <p className="text-sm font-black uppercase tracking-widest">No active amendment proposals for current epoch.</p>
-                 </div>
+
+               {activeTab === 'timeline' && (
+                 <motion.div key="timeline" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                    <Card className="p-10">
+                       <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-4 mb-10">
+                          <Clock size={24} className="text-aura" />
+                          Evolution Timeline
+                       </h3>
+                       <div className="space-y-8 relative before:absolute before:left-7 before:top-2 before:bottom-2 before:w-px before:bg-slate-800">
+                          {timeline.map((ev, i) => (
+                            <div key={ev.id} className="relative pl-20">
+                               <div className="absolute left-4 top-1 w-6 h-6 rounded-full bg-slate-950 border-2 border-aura flex items-center justify-center z-10">
+                                  <div className="w-2 h-2 rounded-full bg-aura animate-pulse" />
+                               </div>
+                               <div className="p-8 rounded-[2.5rem] bg-slate-900/50 border border-slate-800 group hover:border-aura/30 transition-all">
+                                  <div className="flex justify-between items-start mb-4">
+                                     <div>
+                                        <p className="text-lg font-black text-white mb-1 uppercase tracking-widest">{ev.title}</p>
+                                        <Badge color="aura">{ev.type}</Badge>
+                                     </div>
+                                     <span className="text-[10px] font-black text-slate-600 uppercase">{ev.time}</span>
+                                  </div>
+                                  <p className="text-sm text-slate-400 font-bold leading-relaxed">{ev.rationale}</p>
+                               </div>
+                            </div>
+                          ))}
+                       </div>
+                    </Card>
+                 </motion.div>
                )}
             </AnimatePresence>
          </main>
