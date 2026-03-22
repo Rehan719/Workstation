@@ -2,15 +2,26 @@
 
 ## Supported Versions
 
-We offer security support for the latest released version of this project.
+| Version | Supported |
+| ------- | --------- |
+| v3.0.x  | ✅        |
+| v154.x  | ✅        |
+| < v1.0  | ❌        |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within this project, please report it responsibly. You can email security@example.com.
+We take the security of the Workstation Entity seriously. If you discover a vulnerability, please report it privately via the following channels:
 
-## Data Privacy and RAG Safety
+1.  **Email:** security@workstation.ai
+2.  **DID encrypted message:** `did:vsb:security-vault`
 
-Jules AI v10.0 utilizes Retrieval-Augmented Generation (RAG) to ground AI responses in provided documents.
-- **Local Isolation**: By default, models and vector databases run locally or within isolated Docker networks to prevent data leakage to external providers.
-- **Content Sensitivity**: Users should be aware that uploaded documents are indexed in the `SemanticMemory` (ChromaDB/Weaviate). We recommend avoiding the ingestion of highly confidential or personally identifiable information (PII) unless the environment is fully air-gapped.
-- **LLM API Security**: The Ollama service is configured to be network-isolated. Ensure that ports are not exposed to the public internet without an authentication proxy.
+Do not open a public issue for security vulnerabilities.
+
+## ASI & PQC Compliance
+
+Workstation Sovereign v3.0 adheres to:
+- **OWASP Agentic Top 10 (ASI01-ASI10)**
+- **NIST Post-Quantum Cryptography Standards (Kyber-1024 / Dilithium-5)**
+
+---
+*Enforced by GaaS & Layer 5 Resilience.*
