@@ -13,7 +13,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Plus, Save, Play, Rocket, Layers, Wand2, ShieldCheck, Terminal, Cpu, Database, Sparkles, Box, Info, Trash2, Download, FileJson } from 'lucide-react';
-import { Button, Card, ModuleNode, RecombinerNode } from '@workstation/ui';
+import { Button, Card, Badge, ModuleNode, RecombinerNode } from '@workstation/ui';
 import { useStore, gaas } from '@workstation/shared';
 
 const nodeTypes = {

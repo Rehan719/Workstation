@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useGamificationStore } from '../store/gamificationStore';
+import { useGamificationStore } from '../../store/gamificationStore';
 
 // In a real environment, we'd import { Howl } from 'howler';
 // For this environment, we'll simulate the audio triggers

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
-import { Globe, FileText, Send, ShieldCheck, History, Info, ChevronRight, Zap, Globe2, AlertCircle, Plus, Network, Balance, Gavel } from 'lucide-react';
+import { Globe, FileText, Send, ShieldCheck, History, Info, ChevronRight, Zap, Globe2, AlertCircle, Plus, Network, Gavel, Scale } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
 
@@ -144,7 +144,7 @@ export const TreatyDashboard: React.FC = () => {
             <Card className="p-8 border-slate-800">
                <div className="flex items-center gap-6">
                   <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-aura">
-                     <Balance size={24} />
+                     <Scale size={24} />
                   </div>
                   <div>
                      <h4 className="text-lg font-black text-white mb-1">Smart Enforcement</h4>

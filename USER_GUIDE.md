@@ -1,4 +1,4 @@
-# Jules AI v99.0: User Guide for Learners & Seekers
+# Workstation v138.0: Unified Application User Guide
 
 Welcome to your **Digital Sanctuary**. This guide is designed to help you navigate and utilize the AI-Driven Quranic Education Platform with ease, regardless of your technical background.
 

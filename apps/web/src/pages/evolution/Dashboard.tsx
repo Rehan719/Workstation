@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Rocket, Zap, History, Globe, Accessibility, Layers, Target, ShieldCheck } from 'lucide-react';
+import { Rocket, Zap, History, Globe, Accessibility, Layers, Target, ShieldCheck, TrendingUp } from 'lucide-react';
 import { ABTestingPanel } from './ABTesting';
 
 export const EvolutionDashboard: React.FC = () => {

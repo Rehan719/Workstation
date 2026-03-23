@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
-import { Briefcase, Activity, Rocket, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, LayoutGrid, Terminal, Database, TrendingUp, DollarSign, Hammer, TooltipIcon } from 'lucide-react';
+import { Briefcase, Activity, Rocket, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, LayoutGrid, Terminal, Database, TrendingUp, DollarSign, Hammer } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 

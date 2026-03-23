@@ -8,7 +8,7 @@ import uuid
 from typing import List, Dict, Any, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
 from agentic_core.genetics.genomic_registry import GenomicRegistry
-from agentic_core.biochemical.rectification_engine import AsymmetricDriveRectificationEngine
+from agentic_core.biochemical.rectification_engine import WorkstationAsymmetricDrive
 from agentic_core.simulation.evolutionary_topology import PhylogeneticDiversityTwin
 from agentic_core.governance.credentials.vault import CredentialVault
 from .mag7_adapter import Magnificent7IngestAdapter
@@ -25,7 +25,7 @@ class UVIAP:
         self.repo_path = os.path.abspath(repo_path)
         self.ueg = UEGManager()
         self.genomic_registry = GenomicRegistry()
-        self.rectification_engine = AsymmetricDriveRectificationEngine()
+        self.rectification_engine = WorkstationAsymmetricDrive()
         self.phylo_twin = PhylogeneticDiversityTwin()
         self.vault = CredentialVault()
         self.mag7_adapter = Magnificent7IngestAdapter(self.vault)
@@ -92,7 +92,8 @@ class UVIAP:
                         "content": str(insight)[:100]
                     })
 
-            rectifications = self.rectification_engine.analyze_and_rectify(rect_inputs)
+            # Process signals through rectification engine
+            rectifications = [self.rectification_engine.rectify_signal({"noise": r["magnitude"]}) for r in rect_inputs]
 
         # ARTICLE 646: Genomic Knowledge Organization (Operons)
         clustered_insights = self._organize_genomic_knowledge(github_data, sensory_data)

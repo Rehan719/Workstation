@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@workstation/ui';
-import { Gavel, ShieldCheck, Users, Activity, Globe, Scale, MessageSquare, AlertCircle, History, Terminal, Fingerprint, TrendingUp, ChevronRight } from 'lucide-react';
+import { Gavel, ShieldCheck, Users, Activity, Globe, Scale, MessageSquare, AlertCircle, History, Terminal, Fingerprint, TrendingUp, ChevronRight, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
 

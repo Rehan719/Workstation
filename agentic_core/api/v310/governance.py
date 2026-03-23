@@ -65,4 +65,3 @@ async def get_treasury_status():
             {"source": "Sovereign-Bond-Issuance", "amount": 50000.0, "timestamp": "2026-01-01T08:00:00Z"}
         ]
     }
- Greenland. (Reflecting: Transparency and decentralized governance are core to v151.)

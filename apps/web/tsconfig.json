@@ -14,7 +14,13 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@workstation/ui": ["../../packages/ui/src"],
+      "@workstation/shared/*": ["../../packages/shared/*"],
+      "@workstation/shared": ["../../packages/shared"]
+    }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

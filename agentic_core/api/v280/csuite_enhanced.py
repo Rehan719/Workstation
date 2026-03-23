@@ -23,7 +23,7 @@ async def get_enhanced_financials():
     }
 
 @router.get("/strategy")
-async def get_c-suite_strategy():
+async def get_csuite_strategy():
     return {
         "current_mission": "Planetary Consciousness Unification",
         "next_milestone": "Global Interoperability Benchmark",
