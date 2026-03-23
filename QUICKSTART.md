@@ -1,4 +1,4 @@
-# Jules AI v100.0 APOTHEOSIS OF SYNERGY: Quick Start Guide
+# Workstation v138.0: Quick Start Guide
 
 ## 🚀 One-Click Setup (All-in-One)
 Run the following command to install dependencies, synthesize the v100 DNA baseline, run verification tests, and launch the dashboard:

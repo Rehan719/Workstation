@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
-import { Gavel, Scale, FileText, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Send, Terminal, Database, Balance, Fingerprint } from 'lucide-react';
+import { Gavel, Scale, FileText, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Send, Terminal, Database, Fingerprint } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -101,8 +101,8 @@ export const LawHub: React.FC = () => {
             </Card>
 
             <Card className="p-10 bg-blue-500/5 border-blue-500/20 flex flex-col items-center text-center gap-6 relative overflow-hidden">
-               <div className="absolute top-0 left-0 p-10 opacity-5">
-                  <Balance size={120} className="text-blue-500" />
+               <div className="absolute top-0 left-0 p-10 opacity-5 text-blue-500">
+                  <Scale size={120} />
                </div>
                <div className="w-20 h-20 rounded-3xl bg-blue-500 flex items-center justify-center text-sovereign shadow-2xl shadow-blue-500/20 relative z-10">
                   <ShieldCheck size={40} />
@@ -153,7 +153,7 @@ export const LawHub: React.FC = () => {
             <Card className="p-8 border-slate-800">
                <div className="flex items-center gap-6">
                   <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-blue-500">
-                     <Balance size={24} />
+                     <Scale size={24} />
                   </div>
                   <div>
                      <h4 className="text-lg font-black text-white mb-1">Compliance</h4>

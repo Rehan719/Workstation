@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Rocket, Target, DollarSign, LineChart, FileText, ChevronRight, CheckCircle2, TrendingUp, Users, ShieldCheck } from 'lucide-react';
+import { Rocket, Target, DollarSign, LineChart, FileText, ChevronRight, CheckCircle2, TrendingUp, Users, ShieldCheck, Sparkles } from 'lucide-react';
 import axios from 'axios';
 
 export const BusinessPlanWizard: React.FC = () => {

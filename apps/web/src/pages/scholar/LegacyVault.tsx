@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
-import { Database, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Archive, Network, Binary, Clock, Server } from 'lucide-react';
+import { Database, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Archive, Network, Binary, Clock, Server, Activity } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -84,7 +84,7 @@ export const LegacyVault: React.FC = () => {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-vital/10">
                   <div className="p-5 rounded-2xl bg-slate-950 border border-slate-900">
                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Trigger Condition</p>
-                     <p className="text-xs font-black text-white uppercase">Sync-Loss > 14 Days</p>
+                     <p className="text-xs font-black text-white uppercase">Sync-Loss &gt; 14 Days</p>
                   </div>
                   <div className="p-5 rounded-2xl bg-slate-950 border border-slate-900">
                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Target</p>
@@ -102,7 +102,7 @@ export const LegacyVault: React.FC = () => {
                <div>
                   <h4 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Eternity Sync</h4>
                   <p className="text-sm text-slate-400 font-bold leading-relaxed">
-                     Synchronizing local state to off-world archival nodes via DTN. Verified durable for &ge;1,000 years.
+                     Synchronizing local state to off-world archival nodes via DTN. Verified durable for &gt;= 1,000 years.
                   </p>
                </div>
                <div className="space-y-4 pt-6 border-t border-aura/10 text-[10px] font-black uppercase text-slate-500">

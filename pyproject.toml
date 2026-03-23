@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "jules-ai"
-version = "137.1.0"
+name = "workstation-sovereign"
+version = "138.0.0"
 packages = [
     { include = "agentic_core" },
     { include = "src" },
 ]
-description = "v137.1 Documentation Sanitation & UI Verification."
+description = "v138.0 Sovereign Synthesis – Unified Digital Organism Dashboard."
 authors = ["Rehan719"]
 readme = "README.md"
 
@@ -47,7 +47,6 @@ sympy = "^1.12"
 qiskit = "^1.1.0"
 pennylane = "^0.36.0"
 camel-tools = "^1.5.2"
-quran-python = "^1.0.1"
 cryptography = "^42.0.0"
 
 [tool.poetry.group.dev.dependencies]

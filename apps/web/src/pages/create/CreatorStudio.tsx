@@ -14,7 +14,7 @@ import 'reactflow/dist/style.css';
 import axios from 'axios';
 import { Wand2, ShieldCheck, Terminal, Cpu, Database, Plus, Save, Play, Sparkles, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import componentRegistry from '../../../../packages/shared/data/component_registry.json';
+import componentRegistry from '@workstation/shared/data/component_registry.json';
 
 export const CreatorStudio: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -77,7 +77,7 @@ export const CreatorStudio: React.FC = () => {
              Save Blueprint
            </button>
            <button className="px-6 py-3 bg-aura text-sovereign font-black rounded-xl flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-aura/20">
-             <Rocket size={18} />
+             <Database size={18} />
              Publish to Marketplace
            </button>
         </div>

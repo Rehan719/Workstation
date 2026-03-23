@@ -1,0 +1,78 @@
+{
+  "did:vsb:module-5200cdb7a416": {
+    "name": "Llama-3.2-3B-Instruct",
+    "type": "model",
+    "format": "GGUF",
+    "capabilities": [
+      "text-generation"
+    ],
+    "id": "did:vsb:module-5200cdb7a416",
+    "status": "CERTIFIED",
+    "provenance": {
+      "author": "VSB-Foundry",
+      "created": 1774197812.5974572,
+      "pqc_signed": true
+    },
+    "performance": {
+      "base_fitness": 0.85,
+      "avg_latency_ms": 42.0
+    }
+  },
+  "did:vsb:module-1c31c1dd3b57": {
+    "name": "Phi-3-Mini-4K",
+    "type": "model",
+    "format": "ONNX",
+    "capabilities": [
+      "reasoning"
+    ],
+    "id": "did:vsb:module-1c31c1dd3b57",
+    "status": "CERTIFIED",
+    "provenance": {
+      "author": "VSB-Foundry",
+      "created": 1774197812.5978212,
+      "pqc_signed": true
+    },
+    "performance": {
+      "base_fitness": 0.85,
+      "avg_latency_ms": 42.0
+    }
+  },
+  "did:vsb:module-69484a6d73cb": {
+    "name": "Gemma-2B",
+    "type": "model",
+    "format": "GGUF",
+    "capabilities": [
+      "summarization"
+    ],
+    "id": "did:vsb:module-69484a6d73cb",
+    "status": "CERTIFIED",
+    "provenance": {
+      "author": "VSB-Foundry",
+      "created": 1774197812.5981011,
+      "pqc_signed": true
+    },
+    "performance": {
+      "base_fitness": 0.85,
+      "avg_latency_ms": 42.0
+    }
+  },
+  "did:vsb:module-7af0ce03f3f0": {
+    "name": "Mistral-7B-v0.3",
+    "type": "model",
+    "format": "GGUF",
+    "capabilities": [
+      "code-generation"
+    ],
+    "id": "did:vsb:module-7af0ce03f3f0",
+    "status": "CERTIFIED",
+    "provenance": {
+      "author": "VSB-Foundry",
+      "created": 1774197812.5988317,
+      "pqc_signed": true
+    },
+    "performance": {
+      "base_fitness": 0.85,
+      "avg_latency_ms": 42.0
+    }
+  }
+}

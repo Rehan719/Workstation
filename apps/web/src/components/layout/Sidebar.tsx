@@ -4,7 +4,8 @@ import {
   Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
   Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
-  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye
+  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye,
+  HeartPulse, Workflow, Search, Smartphone, Globe2, Database
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -109,8 +110,6 @@ const allNavItems: NavItem[] = [
   { name: 'System Settings', icon: Settings, id: 'settings' },
 ];
 
-import { HeartPulse, Workflow, Search, Eye, Smartphone, Satellite, Globe2 } from 'lucide-react';
-
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -134,7 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
            </div>
            <div>
               <h2 className="text-xl font-black tracking-tighter text-white uppercase">Workstation</h2>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-aura font-black">v4.0 Cosmic</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-aura font-black">v3.0 Ultimate</p>
            </div>
         </div>
       </div>
@@ -185,5 +184,3 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     </aside>
   );
 };
-
-import { Database } from 'lucide-react';

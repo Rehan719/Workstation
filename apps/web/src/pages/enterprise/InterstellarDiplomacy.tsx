@@ -115,7 +115,7 @@ export const InterstellarDiplomacy: React.FC = () => {
                   <Button variant="outline" className="w-full text-left py-3 text-[9px] px-4 justify-start">Knowledge Exchange Treaty</Button>
                </div>
             </Card>
-         </div>
+         </aside>
       </div>
     </div>
   );

@@ -100,8 +100,8 @@ Workstation provides a **secure sandbox** for experimenting with VSBs, agents, a
 
 - **[IDBO Blueprint](docs/knowledge/blueprint_concept_to_consciousness.md)** – The complete philosophical and architectural foundation.
 - **[Technical Compliance Matrix](docs/knowledge/v137_technical_compliance.md)** – Article‑by‑article implementation verification.
-- **[Implementation Plan v137.0](docs/plans/v137_implementation.md)** – Roadmap and phased deliverables.
-- **[Sovereign Civilization Epoch Specification](docs/knowledge/v137_blueprint.md)** - Ultimate production-ready spec.
+- **[Implementation Plan v138.0](docs/plans/v138_implementation.md)** – Roadmap and phased deliverables.
+- **[Sovereign Civilization Epoch Specification](docs/knowledge/v138_blueprint.md)** - Ultimate production-ready spec.
 - **[User Guide](USER_GUIDE.md)** – Detailed instructions for all audience realms.
 
 ---
@@ -129,9 +129,9 @@ This project is licensed under the Apache 2.0 License – see the [LICENSE](LICE
 
 ## ⚡ Status
 
-**Current Version:** v154.0 – “Genesis: The Grand Synthesis”
-**Next Release:** v155.0 – “The Galactic Era”
+**Current Version:** v138.0 – “Sovereign Synthesis”
+**Next Release:** v139.0 – “The Galactic Era”
 **Production Readiness:** ✅ 100% – Zero‑Placeholder Certified
 
 ---
-*Codified via Grand Synthesis Engine v137.1.0. CIVILIZATION ACHIEVED.*
+*Codified via Grand Synthesis Engine v138.0.0. CIVILIZATION ACHIEVED.*

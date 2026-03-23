@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, ShieldCheck, PieChart } from 'lucide-react';
-
-import { Shield, CreditCard, Landmark, ArrowUpRight, DollarSign } from 'lucide-react';
+import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, ShieldCheck, PieChart, Activity, Star, Shield, CreditCard, Landmark, DollarSign } from 'lucide-react';
 
 export const Wallet: React.FC = () => {
   const [wallet, setWallet] = useState<any>(null);
