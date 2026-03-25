@@ -1,57 +1,42 @@
-# Workstation v138.0: Galactic Era Quick Start Guide
+# Workstation vFinal.0.0: The Unified Digital Organism
 
-## 🌌 Prerequisites
-- **Ollama** installed and running on `http://localhost:11434` (default model `llama3.2`).
-- **Python 3.12** and **Node.js 18+**.
-- **Poetry** for backend dependency management.
+## 🚀 One-Click Global Launch
+To initialize the consolidated vFinal stack across all platforms, run:
 
-
-## 🚀 One-Click Setup (All-in-One)
-Run the following command to install dependencies, synthesize the v100 DNA baseline, run verification tests, and launch the dashboard:
-
-### 🪟 Windows (PowerShell)
+### Windows (PowerShell)
 ```powershell
-powershell -ExecutionPolicy Bypass -c "pip install -e .; python -m agentic_core.synthesis.grand_synthesis_engine; python -m pytest tests/v100/; streamlit run src/dashboard/app.py"
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+.\setup.ps1
 ```
 
-### 🍎 macOS / 🐧 Linux
+### macOS / Linux
 ```bash
-# Setup Backend
-cd agentic_core && poetry install && poetry run python main.py
-
-# Setup Web Frontend
-cd apps/web && npm install && npm run dev
-
-# Setup Mobile App
-cd apps/mobile && npm install && npx expo start
+chmod +x setup.sh && ./setup.sh
 ```
 
 ---
 
-## 🛠️ Verification & Audits
-To manually verify the environment integrity and constitutional adherence:
+## 🏗️ Architectural State
+- **Backend**: Python 3.12 (Poetry) + FastAPI v138.0 Core
+- **Web**: React 18 + Vite + Three.js + ReactFlow
+- **Mobile**: React Native + Expo + Biometrics
+- **Governance**: Articles 1-1127 (Kyber/Dilithium Secured)
+
+---
+
+## 🛠️ Verification
+Verify your node's alignment with the sovereign core:
 ```bash
-# Environment Verification
-python3 scripts/verify_environment.py
+# Run backend tests
+cd agentic_core && poetry run pytest
 
-# Constitutional Audit (312+ Articles)
-python3 scripts/audit_constitution_v100.py
-
-# Biomimetic Fidelity Score (v100 Target: 0.995)
-python3 -m agentic_core.validation.biomimetic_fidelity
+# Run frontend linting
+cd apps/web && npm run lint
 ```
 
 ---
 
-## 🌐 Deployment
-Deploy the workstation for free using the following targets:
-- **Frontend (Vercel)**: `cd src/qep_frontend && npm install && npm run build` -> Deploy `dist/`
-- **Backend (Render)**: Connect repo, set build command `pip install -r requirements.txt`, start command `uvicorn agentic_core.main:app --host 0.0.0.0 --port $PORT`
-- **Dashboard (Streamlit)**: Deploy `src/dashboard/app.py` directly to Streamlit Cloud.
-
----
-
-## 📜 Documentation Reference
-- [User Guide (Non-Technical)](USER_GUIDE.md)
-- [Architecture Deep Dive](ARCHITECTURE.md)
-- [Apotheosis Constitution](CONSTITUTION_v100.0.0.md)
+## 📜 Documentation
+- **[CONSTITUTION_final.md](CONSTITUTION_final.md)**: The supreme legal mandate.
+- **[USER_GUIDE.md](USER_GUIDE.md)**: Navigating the 5 Audience Realms.
+- **[WINDOWS_SETUP.md](WINDOWS_SETUP.md)**: Detailed VS Code instructions.

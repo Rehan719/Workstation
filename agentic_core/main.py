@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import asyncio
 import os
+import random
 from contextlib import asynccontextmanager
 from typing import Dict, Any, List, Optional
 from agentic_core.reactor.religion.quranic_studies import QuranicStudiesReactor
@@ -53,9 +54,12 @@ async def lifespan(app: FastAPI):
 
     # Start the scraper's passive mode
     task = asyncio.create_task(scraper.passive.monitor_environment())
+    # Start WebSocket broadcast task
+    ws_task = asyncio.create_task(broadcast_vitals_background())
 
     yield
     task.cancel()
+    ws_task.cancel()
     logger.info("Apotheosis: System Hibernating.")
 
 app = FastAPI(
@@ -79,7 +83,6 @@ class ConnectionManager:
             logger.info(f"WebSocket Client Disconnected. Active: {len(self.active_connections)}")
 
     async def broadcast_vitals(self):
-        import random
         vitals = {
             "type": "SYSTEM_VITALS",
             "payload": {
@@ -98,20 +101,20 @@ class ConnectionManager:
 
 ws_manager = ConnectionManager()
 
+async def broadcast_vitals_background():
+    """Background task to broadcast vitals once per interval."""
+    while True:
+        await ws_manager.broadcast_vitals()
+        await asyncio.sleep(5)
+
 @app.websocket("/api/v154/ws/streams")
 async def websocket_streams(websocket: WebSocket):
     """v138.0 Sovereign Stream: Direct WebSocket connection."""
     await ws_manager.connect(websocket)
     try:
         while True:
-            # Heartbeat and periodic vitals broadcast
-            await ws_manager.broadcast_vitals()
-            # Wait for any incoming messages (or just keep connection open)
-            try:
-                # Set a timeout so we can broadcast regularly
-                await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
-            except asyncio.TimeoutError:
-                continue
+            # Keep connection open and wait for messages
+            await websocket.receive_text()
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
     except Exception as e:

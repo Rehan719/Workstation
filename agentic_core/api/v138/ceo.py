@@ -42,15 +42,34 @@ class ToolRegistry:
 tool_registry = ToolRegistry()
 
 class SimpleVectorStore:
-    """Mock ChromaDB for conversation memory."""
+    """Mock ChromaDB for conversation memory with persistent JSON backend."""
     def __init__(self):
-        self.memory = []
+        self.file_path = "agentic_core/data/memory.json"
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        self.memory = self._load_memory()
+
+    def _load_memory(self):
+        if os.path.exists(self.file_path):
+            try:
+                with open(self.file_path, 'r') as f:
+                    data = json.load(f)
+                    return data if isinstance(data, list) else []
+            except:
+                return []
+        return []
+
+    def _save_memory(self):
+        with open(self.file_path, 'w') as f:
+            json.dump(self.memory, f, indent=2)
 
     def add_exchange(self, user_msg: str, ai_msg: str):
-        self.memory.append({"user": user_msg, "ai": ai_msg})
+        self.memory.append({"user": user_msg, "ai": ai_msg, "timestamp": str(asyncio.get_event_loop().time())})
+        # Keep last 50 exchanges
+        self.memory = self.memory[-50:]
+        self._save_memory()
 
     def query(self, query: str):
-        # Very simple 'search'
+        # Keyword based retrieval
         relevant = [m for m in self.memory if any(word in (m['user'] + m['ai']).lower() for word in query.lower().split())]
         return relevant[-2:] # Return last 2 relevant exchanges
 
