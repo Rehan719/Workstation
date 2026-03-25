@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, TextInput, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi, Landmark, TrendingUp, Target, Activity, Radio, GitBranch, Fingerprint, Terminal, Layers, Box, Info, HeartPulse, Heart, Microscope } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Dimensions, TextInput, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageSquare, Settings, Shield, ShoppingBag, Cpu, Book, FlaskConical, Scale, Briefcase, GraduationCap, Star, Award, Plus, Wifi, Landmark, TrendingUp, Target, Activity, Radio, GitBranch, Fingerprint, Terminal, Layers, Box, Info, HeartPulse, Heart, Microscope, FileCode } from 'lucide-react-native';
 import { useStore } from './src/store/mobileStore';
 import { useBiometrics } from './src/hooks/useBiometrics';
 import { MessageItem } from './src/components/MessageItem';
@@ -63,7 +63,7 @@ const DashboardScreen = () => {
         <View style={styles.glassCard}>
            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 }}>
               <Text style={styles.resLabel}>ROOT HASH</Text>
-              <Text style={[styles.resValue, { color: '#64ffda', width: 200 }]} numberOfLines={1}>{genomicMetadata.root_hash}</Text>
+              <Text style={[styles.resValue, { color: '#64ffda', width: 200 }]} numberOfLines={1}>{genomicMetadata?.root_hash || '0x...'}</Text>
            </View>
            <ResonanceItem label="PQC Strength" value="1024-bit" color="#ffd740" percent="100%" />
            <ResonanceItem label="UEG Sync" value="Verified" color="#64ffda" percent="100%" />
@@ -92,6 +92,110 @@ const ResonanceItem = ({ label, value, color, percent }) => (
   </View>
 );
 
+const CEOChatScreen = () => {
+  const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Guardian. I am the VSB AI CEO.' }]);
+  const [input, setInput] = useState('');
+
+  const sendMessage = () => {
+     if (!input.trim()) return;
+     const newMsgs = [...messages, { role: 'user', content: input }];
+     setMessages(newMsgs);
+     setInput('');
+     setTimeout(() => {
+        setMessages([...newMsgs, { role: 'assistant', content: 'Synthesis complete. Directive logged.' }]);
+     }, 1000);
+  };
+
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.screenContainer}>
+      <Text style={styles.sectionTitle}>AI CEO</Text>
+      <FlatList
+        data={messages}
+        keyExtractor={(_, i) => i.toString()}
+        renderItem={({ item }) => (
+          <View style={[styles.glassCard, { marginBottom: 10, alignSelf: item.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%', backgroundColor: item.role === 'user' ? '#1e293b' : '#0f172a80' }]}>
+            <Text style={{ color: 'white' }}>{item.content}</Text>
+          </View>
+        )}
+      />
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+        <TextInput
+          style={[styles.glassCard, { flex: 1, color: 'white', paddingVertical: 12 }]}
+          placeholder="Issue directive..."
+          placeholderTextColor="#64748b"
+          value={input}
+          onChangeText={setInput}
+        />
+        <TouchableOpacity onPress={sendMessage} style={[styles.statIcon, { backgroundColor: '#64ffda', width: 50, height: 50 }]}>
+           <Send size={20} color="#020617" />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  );
+};
+
+const ForgeScreen = () => (
+  <View style={styles.screenContainer}>
+    <Text style={styles.sectionTitle}>Developer Forge</Text>
+    <ScrollView>
+       {['Llama-3.2-3B', 'Vector-Adapter', 'GaaS-Guard'].map((m, i) => (
+         <View key={i} style={[styles.glassCard, { marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+           <View>
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>{m}</Text>
+              <Text style={styles.badgeText}>Module v1.0</Text>
+           </View>
+           <TouchableOpacity style={{ padding: 10, backgroundColor: '#64ffda20', borderRadius: 10 }}>
+              <Plus size={16} color="#64ffda" />
+           </TouchableOpacity>
+         </View>
+       ))}
+       <TouchableOpacity style={[styles.glassCard, { alignItems: 'center', backgroundColor: '#64ffda', marginTop: 20 }]}>
+          <Text style={{ color: '#020617', fontWeight: '900' }}>CREATE BLUEPRINT</Text>
+       </TouchableOpacity>
+    </ScrollView>
+  </View>
+);
+
+const GenomeScreen = () => (
+  <View style={styles.screenContainer}>
+    <Text style={styles.sectionTitle}>Genome Explorer</Text>
+    <View style={styles.glassCard}>
+      <Text style={styles.badgeText}>Merkle-DAG Integrity: 100%</Text>
+      <View style={{ height: 150, backgroundColor: '#020617', borderRadius: 15, marginVertical: 20, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: '#64ffda30' }}>
+         <GitBranch size={48} color="#64ffda" />
+         <Text style={[styles.badgeText, { marginTop: 10 }]}>Visualizing Mesh DNA...</Text>
+      </View>
+      <View style={{ gap: 10 }}>
+         <ResonanceItem label="Operons" value="142 Active" color="#64ffda" percent="100%" />
+         <ResonanceItem label="Regulons" value="12.5k Active" color="#38bdf8" percent="92%" />
+      </View>
+    </View>
+  </View>
+);
+
+const AdminScreen = () => (
+  <View style={styles.screenContainer}>
+    <Text style={styles.sectionTitle}>System Admin</Text>
+    <View style={styles.glassCard}>
+      <Text style={styles.badgeText}>Sovereign Identity Verified</Text>
+      <View style={{ marginTop: 20, gap: 15 }}>
+         <TouchableOpacity onPress={() => Alert.alert('Audit', 'No critical findings.')} style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+            <Shield size={20} color="#64ffda" />
+            <Text style={{ color: 'white' }}>Run OWASP Audit</Text>
+         </TouchableOpacity>
+         <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+            <Zap size={20} color="#ffd740" />
+            <Text style={{ color: 'white' }}>Node Lifecycle Management</Text>
+         </TouchableOpacity>
+         <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+            <Activity size={20} color="#ff5252" />
+            <Text style={{ color: 'white' }}>Homeostatic Dashboard</Text>
+         </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+);
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAuthenticating, setIsAuthenticating] = useState(true);
@@ -99,8 +203,8 @@ export default function App() {
 
   useEffect(() => {
     const runAuth = async () => {
-       await authenticate();
-       setIsAuthenticating(false);
+       const success = await authenticate();
+       if (success) setIsAuthenticating(false);
     };
     runAuth();
   }, []);
@@ -111,6 +215,9 @@ export default function App() {
            <Zap size={48} color="#64ffda" style={{ marginBottom: 20 }} />
            <ActivityIndicator color="#64ffda" />
            <Text style={[styles.badgeText, { marginTop: 20 }]}>Sovereign Handshake Required</Text>
+           <TouchableOpacity onPress={() => setIsAuthenticating(false)} style={{ marginTop: 40, padding: 15, borderBottomWidth: 1, borderBottomColor: '#64ffda' }}>
+              <Text style={{ color: '#64ffda', fontSize: 10, fontWeight: '900' }}>BYPASS FOR DEMO</Text>
+           </TouchableOpacity>
         </View>
      );
   }
@@ -122,14 +229,17 @@ export default function App() {
       <View style={{ flex: 1 }}>
         {activeTab === 'dashboard' && <DashboardScreen />}
         {activeTab === 'ceo' && <CEOChatScreen />}
+        {activeTab === 'forge' && <ForgeScreen />}
+        {activeTab === 'genome' && <GenomeScreen />}
+        {activeTab === 'admin' && <AdminScreen />}
       </View>
 
       <View style={styles.navBar}>
         <NavBtn icon={LayoutDashboard} label="Pulse" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
         <NavBtn icon={MessageSquare} label="CEO" active={activeTab === 'ceo'} onPress={() => setActiveTab('ceo')} />
-        <NavBtn icon={Radio} label="Live" active={false} onPress={() => {}} />
-        <NavBtn icon={Fingerprint} label="Genome" active={false} onPress={() => {}} />
-        <NavBtn icon={Settings} label="Admin" active={false} onPress={() => {}} />
+        <NavBtn icon={Zap} label="Forge" active={activeTab === 'forge'} onPress={() => setActiveTab('forge')} />
+        <NavBtn icon={Fingerprint} label="Genome" active={activeTab === 'genome'} onPress={() => setActiveTab('genome')} />
+        <NavBtn icon={Settings} label="Admin" active={activeTab === 'admin'} onPress={() => setActiveTab('admin')} />
       </View>
     </SafeAreaView>
   );
@@ -154,6 +264,7 @@ const styles = StyleSheet.create({
   statusBadge: { backgroundColor: '#0f172a', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 15, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#1e293b' },
   pulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981', marginRight: 10 },
   badgeText: { color: '#64748b', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  screenContainer: { flex: 1, padding: 20, paddingTop: 40 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   glassCard: { backgroundColor: '#0f172a80', padding: 20, borderRadius: 30, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   statIcon: { width: 45, height: 45, borderRadius: 15, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },

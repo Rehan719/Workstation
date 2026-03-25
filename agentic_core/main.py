@@ -30,6 +30,7 @@ from agentic_core.api.v290 import realms as realms_v290, ceo_generate, marketpla
 from agentic_core.api.v310 import payments, governance as gov_v310, business, commerce, fund
 from agentic_core.api.v320 import intelligence as intel_v320, governance_autonomous, treasury_intelligent, markets
 from agentic_core.api.v340 import consciousness, soul_record
+from agentic_core.api.v138 import ceo as ceo_v138
 from agentic_core.api import v154_unified, v200_unified
 
 logging.basicConfig(level=logging.INFO)
@@ -110,6 +111,7 @@ app.include_router(treasury_intelligent.router, prefix="/api/v320")
 app.include_router(markets.router, prefix="/api/v320")
 app.include_router(consciousness.router, prefix="/api/v340")
 app.include_router(soul_record.router, prefix="/api/v340")
+app.include_router(ceo_v138.router, prefix="/api/v138")
 app.include_router(v154_unified.router, prefix="/api")
 app.include_router(v200_unified.router, prefix="/api")
 

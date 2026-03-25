@@ -26,15 +26,44 @@ export const CEOChat: React.FC = () => {
     setIsThinking(true);
 
     try {
-      const response = await fetch(`/api/v260/civilization/assistant/query?query=${encodeURIComponent(input)}`, {
-        method: 'POST'
+      const response = await fetch('/api/v138/ceo/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input, context: messages })
       });
-      const data = await response.json();
 
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.response || "Synthesis complete. Alignment maintained."
-      }]);
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = { role: 'assistant', content: '' };
+
+      setMessages(prev => [...prev, assistantMessage]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              assistantMessage.content += data.content;
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { ...assistantMessage };
+                return updated;
+              });
+              if (data.done) break;
+            } catch (e) {
+              console.error('Error parsing SSE data', e);
+            }
+          }
+        }
+      }
     } catch (error) {
       setMessages(prev => [...prev, {
         role: 'assistant',

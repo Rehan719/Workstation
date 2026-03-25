@@ -32,16 +32,24 @@ export const KnowledgeGarden: React.FC = () => {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[1, 2, 3, 4].map((i) => (
+                  {[
+                    { name: 'Sovereign Architecture', level: 100, icon: Flower },
+                    { name: 'PQC Protocol', level: 85, icon: Flower },
+                    { name: 'Mycelial Mesh', level: 42, icon: Flower },
+                    { name: 'GaaS Validation', level: 100, icon: Flower }
+                  ].map((f, i) => (
                     <div
                       key={i}
                       className="p-8 rounded-[2.5rem] bg-slate-950 border border-slate-900 flex flex-col items-center justify-center group hover:border-highlight/30 transition-all cursor-pointer text-center"
                     >
                        <div className={`w-20 h-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-highlight group-hover:bg-highlight group-hover:text-sovereign transition-all mb-4`}>
-                          <Flower size={40} className="animate-pulse" />
+                          <f.icon size={40} className={f.level === 100 ? "animate-pulse" : ""} />
                        </div>
-                       <p className="text-lg font-black text-white mb-1 uppercase tracking-widest">Flower-Knowledge-{i}</p>
-                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mastery Level: 100%</p>
+                       <p className="text-lg font-black text-white mb-1 uppercase tracking-widest">{f.name}</p>
+                       <div className="w-32 h-1 bg-slate-900 rounded-full mt-2 overflow-hidden">
+                          <div className="h-full bg-highlight" style={{ width: `${f.level}%` }} />
+                       </div>
+                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Mastery: {f.level}%</p>
                     </div>
                   ))}
                </div>
