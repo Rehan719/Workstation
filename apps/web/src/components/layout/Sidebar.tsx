@@ -102,11 +102,14 @@ const allNavItems: NavItem[] = [
       { name: 'Constitution', icon: FileText, id: 'constitution' },
       { name: 'Republic Council', icon: Gavel, id: 'council' },
       { name: 'Entity Control', icon: ShieldCheck, id: 'admin' },
-      { name: 'Legacy Vault', icon: Archive, id: 'vault' },
+      { name: 'Sovereign Vault', icon: Archive, id: 'vault' },
+      { name: 'Realm Foundry', icon: Globe, id: 'realm-editor' },
       { name: 'Transparency', icon: History, id: 'transparency' }
     ]
   },
 
+  { name: 'File Hub', icon: Package, id: 'file-hub' },
+  { name: 'UVAID / GSE', icon: Sparkles, id: 'uvaid' },
   { name: 'Contributor Portal', icon: Code2, id: 'contribute' },
   { name: 'System Settings', icon: Settings, id: 'settings' },
 ];

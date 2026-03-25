@@ -38,7 +38,11 @@ const ThreeGenomeVisualizer: React.FC = () => {
     const nodesGroup = new THREE.Group();
     const spheres: THREE.Mesh[] = [];
 
-    GENOME_DATA.nodes.forEach((node) => {
+    // Merkle-DAG Tree Structure Logic
+    const depthSpacing = 3;
+    const siblingSpacing = 2;
+
+    GENOME_DATA.nodes.forEach((node, i) => {
       const geometry = new THREE.SphereGeometry(0.2, 16, 16);
       const material = new THREE.MeshPhongMaterial({
         color: node.type === 'OPERON' ? 0x64ffda : node.type === 'REGULON' ? 0x38bdf8 : 0x94a3b8,
@@ -46,9 +50,32 @@ const ThreeGenomeVisualizer: React.FC = () => {
         emissiveIntensity: 0.2
       });
       const sphere = new THREE.Mesh(geometry, material);
-      sphere.position.set((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
+
+      // Arrange in levels for Merkle-DAG tree look
+      const level = node.type === 'OPERON' ? 0 : node.type === 'REGULON' ? 1 : 2;
+      const xOffset = (i % 10) * siblingSpacing - 10;
+      sphere.position.set(xOffset, -level * depthSpacing, 0);
+
       spheres.push(sphere);
       nodesGroup.add(sphere);
+    });
+
+    // Connections: Merkle-DAG Hierarchy
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.4 });
+    spheres.forEach((s, i) => {
+       const node = GENOME_DATA.nodes[i];
+       if (node.type === 'REGULON') {
+          // Connect to parent OPERON (index 0 for demo)
+          const points = [spheres[0].position, s.position];
+          const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          nodesGroup.add(new THREE.Line(geometry, lineMaterial));
+       } else if (node.type === 'GENE') {
+          // Connect to random REGULON
+          const parentIdx = GENOME_DATA.nodes.findIndex(n => n.type === 'REGULON');
+          const points = [spheres[parentIdx].position, s.position];
+          const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          nodesGroup.add(new THREE.Line(geometry, lineMaterial));
+       }
     });
 
     scene.add(nodesGroup);

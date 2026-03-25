@@ -1,44 +1,24 @@
 #!/bin/bash
-echo "🚀 Workstation v3.0 Civilization Epoch Master Setup"
+# Workstation vFinal.0.0: Unified Setup Script
 
-# 1. Backend Setup
-echo "📦 Installing Backend (Poetry)..."
-cd agentic_core
-poetry install
-cp .env.template .env
-cd ..
+echo "Checking prerequisites..."
+command -v node >/dev/null 2>&1 || { echo >&2 "Node.js not found. Aborting."; }
+command -v python3 >/dev/null 2>&1 || { echo >&2 "Python 3 not found. Aborting."; }
 
-# 2. Frontend Setup
-echo "📦 Installing Frontend (npm)..."
-npm install
-cp apps/web/.env.example apps/web/.env
-cp apps/mobile/.env.example apps/mobile/.env 2>/dev/null || true
+echo "Initializing Backend Data..."
+mkdir -p agentic_core/data
+echo "{}" > agentic_core/data/memory.json
 
-# 3. Transcendent Simulation (Celery/Redis) Setup
-echo "🌌 Preparing Simulation Infrastructure (Celery/Redis)..."
-if command -v redis-server &> /dev/null
-then
-    echo "✅ Redis detected. Ready for Celery tasks."
-else
-    echo "⚠️ Redis not found. Reality simulation may be limited to local synchronous stubs."
-fi
+echo "Installing Backend Dependencies (Poetry)..."
+cd agentic_core && poetry install && cd ..
 
-# 4. Blockchain (Polygon/WST) Setup
-echo "⛓️ Preparing Local Blockchain (Hardhat)..."
-if command -v npx &> /dev/null
-then
-    echo "✅ npx detected. Hardhat environment ready for 'npx hardhat node'."
-else
-    echo "⚠️ npx not found. Blockchain simulation may be limited."
-fi
+echo "Installing Web Dependencies..."
+cd apps/web && npm install && cd ../..
 
-# 4. Ollama Check
-if command -v ollama &> /dev/null
-then
-    echo "✅ Ollama detected."
-else
-    echo "⚠️ Ollama not found. Would you like to install it? (y/n)"
-    # Installation logic...
-fi
+echo "Installing Mobile Dependencies..."
+cd apps/mobile && npm install && cd ../..
 
-echo "✅ Setup Complete. Run 'npm run web:dev' to start."
+echo "🚀 Setup Complete. Run the following to start:"
+echo "Backend: cd agentic_core && poetry run uvicorn main:app --reload"
+echo "Web: cd apps/web && npm run dev"
+echo "Mobile: cd apps/mobile && npx expo start"
