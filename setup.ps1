@@ -24,22 +24,28 @@ if (Get-Command poetry -ErrorAction SilentlyContinue) {
 
 # 2. Setup Backend
 Write-Host "`nSetting up backend..." -ForegroundColor Cyan
-cd agentic_core
+
+# Ensure data directory and memory.json exist to prevent SQLite errors
+if (!(Test-Path "agentic_core/data")) {
+    New-Item -ItemType Directory -Path "agentic_core/data" | Out-Null
+}
+if (!(Test-Path "agentic_core/data/memory.json")) {
+    Set-Content -Path "agentic_core/data/memory.json" -Value "{}"
+}
+
 poetry install
-poetry run python -m agentic_core.main --help # Verify load
-cd ..
 
 # 3. Setup Web Frontend
 Write-Host "`nSetting up web frontend..." -ForegroundColor Cyan
 cd apps/web
 npm install
-cd ..
+cd ../..
 
 # 4. Setup Mobile App
 Write-Host "`nSetting up mobile app..." -ForegroundColor Cyan
 cd apps/mobile
 npm install
-cd ..
+cd ../..
 
 Write-Host "`n🚀 Setup Complete! Run the following to start:" -ForegroundColor Green
 Write-Host "Backend: cd agentic_core; poetry run uvicorn main:app --reload"
