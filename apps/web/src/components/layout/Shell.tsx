@@ -4,6 +4,7 @@ import { Header } from './Header';
 import { CommandPalette } from './CommandPalette';
 import { CommandCenter } from '@workstation/ui';
 import { useStore } from '@workstation/shared';
+import { useResilientWebSocket } from '../../hooks/useResilientWebSocket';
 
 interface ShellProps {
   children: (activeTab: string) => React.ReactNode;
@@ -14,25 +15,13 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
   const [commandOpen, setCommandOpen] = useState(false);
   const { updateSystemVitals, updateAgentVitals } = useStore();
 
-  useEffect(() => {
-    // Connect to WebSocket Gateway
-    const ws = new WebSocket('ws://localhost:8000/api/v154/ws/streams');
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'SYSTEM_VITALS') {
-        updateSystemVitals(data.payload);
-      } else if (data.type === 'AGENT_SIGNAL') {
-        console.log('Agent Signal Received:', data.payload);
-        // Could update agent vitals or trigger UI effects
-      }
-    };
-
-    ws.onopen = () => console.log('Sovereign Stream Connected');
-    ws.onclose = () => console.log('Sovereign Stream Disconnected');
-
-    return () => ws.close();
-  }, [updateSystemVitals, updateAgentVitals]);
+  useResilientWebSocket('ws://localhost:8000/api/v154/ws/streams', (data) => {
+    if (data.type === 'SYSTEM_VITALS') {
+      updateSystemVitals(data.payload);
+    } else if (data.type === 'AGENT_SIGNAL') {
+      console.log('Agent Signal Received:', data.payload);
+    }
+  });
 
   return (
     <div className="flex min-h-screen bg-sovereign text-white font-inter">

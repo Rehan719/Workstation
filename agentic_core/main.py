@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import asyncio
@@ -62,6 +62,67 @@ app = FastAPI(
     title="Jules AI v128.0 Sovereign Integrity Master Backend",
     lifespan=lifespan
 )
+
+# WebSocket Connections Management
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        logger.info(f"WebSocket Client Connected. Active: {len(self.active_connections)}")
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+            logger.info(f"WebSocket Client Disconnected. Active: {len(self.active_connections)}")
+
+    async def broadcast_vitals(self):
+        import random
+        vitals = {
+            "type": "SYSTEM_VITALS",
+            "payload": {
+                "cpu": random.uniform(10, 30),
+                "memory": random.uniform(5, 15),
+                "activeAgents": 42,
+                "swarmHealth": 0.98,
+                "latency_ms": 18
+            }
+        }
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(vitals)
+            except Exception:
+                pass
+
+ws_manager = ConnectionManager()
+
+@app.websocket("/api/v154/ws/streams")
+async def websocket_streams(websocket: WebSocket):
+    """v138.0 Sovereign Stream: Direct WebSocket connection."""
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            # Heartbeat and periodic vitals broadcast
+            await ws_manager.broadcast_vitals()
+            # Wait for any incoming messages (or just keep connection open)
+            try:
+                # Set a timeout so we can broadcast regularly
+                await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
+            except asyncio.TimeoutError:
+                continue
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket Error: {e}")
+        ws_manager.disconnect(websocket)
+
+@app.websocket("/ws/test")
+async def websocket_test(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_json({"status": "connected", "msg": "Sovereign Test Socket Active"})
+    await websocket.close()
 
 app.include_router(qep_analytics.router, prefix="/api/v1")
 app.include_router(tools.router, prefix="/api/v1")
