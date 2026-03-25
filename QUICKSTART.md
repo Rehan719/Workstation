@@ -1,4 +1,10 @@
-# Workstation v138.0: Quick Start Guide
+# Workstation v138.0: Galactic Era Quick Start Guide
+
+## 🌌 Prerequisites
+- **Ollama** installed and running on `http://localhost:11434` (default model `llama3.2`).
+- **Python 3.12** and **Node.js 18+**.
+- **Poetry** for backend dependency management.
+
 
 ## 🚀 One-Click Setup (All-in-One)
 Run the following command to install dependencies, synthesize the v100 DNA baseline, run verification tests, and launch the dashboard:
@@ -10,7 +16,14 @@ powershell -ExecutionPolicy Bypass -c "pip install -e .; python -m agentic_core.
 
 ### 🍎 macOS / 🐧 Linux
 ```bash
-pip install -e . && python3 -m agentic_core.synthesis.grand_synthesis_engine && python3 -m pytest tests/v100/ && streamlit run src/dashboard/app.py
+# Setup Backend
+cd agentic_core && poetry install && poetry run python main.py
+
+# Setup Web Frontend
+cd apps/web && npm install && npm run dev
+
+# Setup Mobile App
+cd apps/mobile && npm install && npx expo start
 ```
 
 ---

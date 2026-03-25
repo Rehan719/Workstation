@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle, X, Shield, Star, Award, Moon, Sun, Play } from 'lucide-react';
+import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle, X, Shield, Star, Award, Moon, Sun, Play, GraduationCap, Terminal, Briefcase, Microscope, Binary, LayoutDashboard } from 'lucide-react';
 import { useModeStore } from '../../store/modeStore';
 import { useStore } from '@workstation/shared';
 
@@ -7,6 +7,15 @@ export const Header: React.FC = () => {
   const { currentRealm, setCurrentRealm } = useStore();
   const [showAssistant, setShowAssistant] = useState(false);
   const [activeMode, setActiveMode] = useState('WORK');
+
+  const realms: { id: typeof currentRealm; label: string; icon: any }[] = [
+    { id: 'LEARNER', label: 'Learner', icon: GraduationCap },
+    { id: 'DEVELOPER', label: 'Developer', icon: Terminal },
+    { id: 'ENTERPRISE', label: 'Enterprise', icon: Briefcase },
+    { id: 'SCHOLAR', label: 'Scholar', icon: Microscope },
+    { id: 'GENOME', label: 'Genome', icon: Binary },
+    { id: 'UNIFIED', label: 'Unified', icon: LayoutDashboard },
+  ];
 
   const modes = [
     { id: 'WORK', icon: Zap, color: 'text-aura' },
@@ -16,13 +25,29 @@ export const Header: React.FC = () => {
 
   return (
     <header className="h-20 border-b border-slate-800 px-8 flex items-center justify-between bg-sovereign/50 backdrop-blur-md sticky top-0 z-20">
-      <div className="relative w-96">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-        <input
-          type="text"
-          placeholder="Query Planetary Mesh..."
-          className="w-full bg-slate-900/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-aura transition-colors font-bold text-white"
-        />
+      <div className="flex items-center gap-4">
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+          <input
+            type="text"
+            placeholder="Query Planetary Mesh..."
+            className="w-full bg-slate-900/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-aura transition-colors font-bold text-white"
+          />
+        </div>
+
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800 shadow-inner">
+          {realms.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => setCurrentRealm(r.id)}
+              className={`p-2 rounded-lg transition-all flex items-center gap-2 ${currentRealm === r.id ? 'bg-slate-800 shadow-lg border border-white/5' : 'opacity-40 hover:opacity-100'}`}
+              title={`${r.label} Realm`}
+            >
+              <r.icon size={16} className={currentRealm === r.id ? 'text-aura' : 'text-slate-400'} />
+              {currentRealm === r.id && <span className="text-[10px] font-black uppercase tracking-widest text-aura">{r.label}</span>}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-6">

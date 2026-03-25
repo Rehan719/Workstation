@@ -1,4 +1,4 @@
-export type RealmType = 'LEARNER' | 'DEVELOPER' | 'ENTERPRISE' | 'SCHOLAR' | 'UNIFIED';
+export type RealmType = 'LEARNER' | 'DEVELOPER' | 'ENTERPRISE' | 'SCHOLAR' | 'GENOME' | 'UNIFIED';
 export type ModeType = 'ACTIVE' | 'REST' | 'EVOLUTION' | 'EMERGENCY';
 
 export interface AgentVitals {

@@ -19,7 +19,7 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { name: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
-  { name: 'VSB AI CEO', icon: MessageSquare, id: 'ceo', realms: ['ENTERPRISE', 'UNIFIED'] },
+  { name: 'VSB AI CEO', icon: MessageSquare, id: 'ceo', realms: ['ENTERPRISE', 'GENOME', 'UNIFIED'] },
 
   {
     name: 'Sovereign Domains',
@@ -57,6 +57,7 @@ const allNavItems: NavItem[] = [
     id: 'civ-facet',
     subItems: [
       { name: 'Federation Map', icon: Map, id: 'fed-map' },
+      { name: 'Homeostasis', icon: HeartPulse, id: 'orchestrator' },
       { name: 'Orbital Command', icon: Satellite, id: 'orbital' },
       { name: 'Cosmic Command', icon: Star, id: 'cosmic' },
       { name: 'Seeding Portal', icon: Rocket, id: 'seeding' },

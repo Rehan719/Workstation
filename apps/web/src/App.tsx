@@ -30,6 +30,7 @@ import { InterstellarDiplomacy } from './pages/enterprise/InterstellarDiplomacy'
 import { GlobalFederationMap } from './pages/federation/GlobalFederationMap';
 import { OrbitalDashboard } from './pages/federation/OrbitalDashboard';
 import { CosmicMeshDashboard } from './pages/federation/CosmicMeshDashboard';
+import { HomeostaticOrchestrator } from './pages/federation/Performance';
 import { Observatory } from './pages/scholar/Observatory';
 import { LegacyVault } from './pages/scholar/LegacyVault';
 import { ConstitutionalUI } from './pages/governance/ConstitutionalUI';
@@ -59,6 +60,7 @@ function App() {
             case 'DEVELOPER': return <Forge />;
             case 'ENTERPRISE': return <EnterpriseRealm />;
             case 'SCHOLAR': return <Observatory />;
+            case 'GENOME': return <GenomeExplorer />;
             default: return <Dashboard />;
           }
         }
@@ -91,6 +93,7 @@ function App() {
           case 'fed-map': return <GlobalFederationMap />;
           case 'orbital': return <OrbitalDashboard />;
           case 'cosmic': return <CosmicMeshDashboard />;
+          case 'orchestrator': return <HomeostaticOrchestrator />;
           case 'observatory': return <Observatory />;
           case 'vault': return <LegacyVault />;
           case 'contribute': return <Contribute />;
