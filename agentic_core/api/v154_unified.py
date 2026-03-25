@@ -48,40 +48,7 @@ async def get_genesis_status():
         "ueg_root": ueg.merkle_root
     }
 
-@router.websocket("/ws/streams")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            # Simulate real-time stream data from v3.0 Sovereign Core
-            data = {
-                "type": "SYSTEM_VITALS",
-                "payload": {
-                    "cpu": random.uniform(20, 80),
-                    "memory": random.uniform(10, 30),
-                    "swarm_health": random.uniform(0.9, 1.0),
-                    "active_agents": len(module_registry.registry),
-                    "v3_status": "SOVEREIGN"
-                }
-            }
-            await websocket.send_text(json.dumps(data))
-
-            # Simulate agent pheromone signals (Signal Channel)
-            if random.random() > 0.7:
-                signal = {
-                    "type": "AGENT_SIGNAL",
-                    "payload": {
-                        "agent_id": f"agent_{random.randint(1,5)}",
-                        "signal_type": random.choice(["discovery", "synthesis", "optimization"]),
-                        "strength": random.random(),
-                        "layer": "L6"
-                    }
-                }
-                await websocket.send_text(json.dumps(signal))
-
-            await asyncio.sleep(2)
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+# WebSocket moved to main.py to avoid router prefixing issues
 
 @router.post("/forge/recombine")
 async def trigger_recombination(model_ids: List[str], strategy: str = "TIES"):
