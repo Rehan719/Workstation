@@ -10,7 +10,7 @@ authors = ["Rehan719"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.11,<3.13"
 langchain = "^0.2.0"
 langchain-community = "^0.2.0"
 autogen = "^0.9.10"
