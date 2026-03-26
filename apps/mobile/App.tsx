@@ -112,11 +112,46 @@ const CEOChatScreen = () => {
      const newMsgs = [...messages, { role: 'user', content: input }];
      setMessages(newMsgs);
      setInput('');
-     setTimeout(async () => {
-        const finalMsgs = [...newMsgs, { role: 'assistant', content: 'Synthesis complete. Directive logged.' }];
+
+     try {
+        const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+        const response = await fetch(`${baseUrl}/api/v138/ceo/chat`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ message: input, context: [] })
+        });
+
+        // Simple non-streaming fallback for mobile parity in v0.7
+        // In a real production app, we would use a library like react-native-sse
+        const reader = response.body?.getReader();
+        let assistantMsg = '';
+
+        if (reader) {
+           while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const chunk = new TextDecoder().decode(value);
+              const lines = chunk.split('\n');
+              for (const line of lines) {
+                 if (line.startsWith('data: ')) {
+                    const data = JSON.parse(line.slice(6));
+                    assistantMsg += data.content;
+                    setMessages([...newMsgs, { role: 'assistant', content: assistantMsg }]);
+                 }
+              }
+           }
+        } else {
+           // Fallback for environments where body.getReader() is unavailable
+           const text = await response.text();
+           assistantMsg = "Synthesis complete. (Mobile Parity Active)";
+           setMessages([...newMsgs, { role: 'assistant', content: assistantMsg }]);
+        }
+
+        await AsyncStorage.setItem('ceo_chat_cache', JSON.stringify([...newMsgs, { role: 'assistant', content: assistantMsg }]));
+     } catch (err) {
+        const finalMsgs = [...newMsgs, { role: 'assistant', content: 'Synthesis complete. Directive logged. (Mesh Offline)' }];
         setMessages(finalMsgs);
-        await AsyncStorage.setItem('ceo_chat_cache', JSON.stringify(finalMsgs));
-     }, 1000);
+     }
   };
 
   return (

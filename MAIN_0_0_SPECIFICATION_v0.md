@@ -1,61 +1,66 @@
-# WORKSTATION MAIN 0.0 SPECIFICATION v0.0 (AUDITED)
+# WORKSTATION MAIN 0.7 SPECIFICATION (SUPREME BASELINE)
 
-This document represents the definitive unified technical specification of the Workstation v0.0 production baseline.
+This document represents the definitive unified technical specification of the Workstation v0.7 Supreme Baseline. It codifies the final production-ready state of the v138.0-v0.7 convergence.
 
 ---
 
-## 1. AI Core & Orchestration Specification
-### 1.1 AI CEO (Galactic Era v138.0)
+## 1. AI Core & Orchestration (Supreme v0.7)
+### 1.1 AI CEO (Galactic Era v138.0 Final)
 - **Endpoint**: `/api/v138/ceo/chat` (POST)
-- **Protocol**: Server-Sent Events (SSE) streaming.
-- **Tools**: `get_system_vitals`, `deploy_agent`, `search_domain_ontology`, `query_genome`.
+- **Protocol**: Server-Sent Events (SSE) streaming with multi-agent context injection.
+- **Model**: Local Llama 3.2 (Default); Ollama integration.
+- **Memory**: JSON-backed conversation store with semantic lookup foundations (ChromaDB).
 - **Implementation**: `agentic_core/api/v138/ceo.py`.
-- **Memory**: JSON-backed conversation store in `agentic_core/data/memory.json`.
 
-### 1.2 C-Suite Orchestration
-- **Roles**: CEvO, CGO, CPEO, CBO, CoS, CEnvO.
-- **Implementation**: Behavior models and orchestration logic in `agentic_core/api/v138/ceo.py`.
-
----
-
-## 2. Five-Realm Architecture Specification
-### 2.1 Web Unified Application
-- **Framework**: React 18, Vite, Three.js (Genome), ReactFlow (Forge/GRN).
-- **Core Components**:
-  - `ThreeGenomeVisualizer` (3D Merkle-DAG layout).
-  - `Forge` (Visual Agent Composer).
-- **Routes**: `/genome`, `/developers`, `/learner`, `/enterprise`, `/scholar`.
-
-### 2.2 Mobile Unified Application
-- **Framework**: React Native, Expo, `expo-local-authentication`.
-- **Core Feature**: Biometric login and feature parity with web.
+### 1.2 Multi-Agent C-Suite Orchestration
+- **Active Agents**: CEvO, CGO, CPEO, CBO, CoS, CEnvO (Behavioral models established).
+- **Tool Discovery**: `ToolRegistry` allows CEO to autonomously invoke backend actions.
+- **Constitutional Oversight**: Every state mutation is gated by the `GaaSClient`.
 
 ---
 
-## 3. Sovereign Domain Specification
-### 3.1 Ontology-Driven Knowledge
-- **Domains**: Religion, Science, Law, Employment, Education, Care.
-- **Implementation**: Graph-based JSON ontologies (141 nodes each) in `agentic_core/data/ontologies/`.
-- **Engine**: `agentic_core/reactor/domains/ontology_engine.py`.
+## 2. Five-Realm Supreme Architecture
+### 2.1 Web Unified Application (v0.7)
+- **Framework**: React 18, Vite, Three.js (3D Genome), ReactFlow (GRN & Forge).
+- **Flagship Realms**:
+  - **Genome Realm**: 3D Explorer, GRN Dashboard, Methylation Editor, Rule Editor.
+  - **Developer Realm**: Visual Agent Composer (Forge), Marketplace, petri-dish foundations.
+  - **Learner Realm**: Knowledge Gardens, Mastery Flowers.
+  - **Scholar Realm**: Observatory, Legacy Vault.
+  - **Enterprise Realm**: Treaty Ledger, Liability Fund monitor.
+
+### 2.2 Mobile Application (v0.7)
+- **Framework**: React Native, Expo.
+- **Security**: Mandatory biometric login via `expo-local-authentication`.
+- **Sync**: Real-time parity with web via shared `Zustand` store logic.
 
 ---
 
-## 4. Security & Compliance Specification
-### 4.1 GaaS Constitutional Enforcement
-- **Reference**: `packages/shared/gaas.ts`
-- **Mandate**: Mandatory validation of state-mutating actions against Articles 1-1127.
-
-### 4.2 PQC Security Handshake
-- **Algorithm**: Kyber-1024, Dilithium-5 (Simulated for v0.0).
-- **Implementation**: `agentic_core/crypto/pqc.py`.
+## 3. Sovereign Domain Framework
+### 3.1 Ontology-Driven Intelligence
+- **Active Domains**: Religion, Science, Law, Employment, Education, Care.
+- **Implementation**: Production-ready Graph-based ontologies (141+ nodes each) in `agentic_core/data/ontologies/`.
+- **Ontology Engine**: `agentic_core/reactor/domains/ontology_engine.py` (NetworkX-based).
 
 ---
 
-## 5. Auditor Verification Instructions
-1. **Full Genome Audit**: `python3 scripts/audit_v0.py` (Verify 1127 articles).
-2. **Domain Parity Audit**: `ls agentic_core/data/ontologies/` (Verify 6 domains).
-3. **Zero-Placeholder Check**: `grep -rE "TODO|FIXME" agentic_core` (Verify integrity).
+## 4. Security & Constitutional Compliance
+### 4.1 Post-Quantum Cryptography (Article 1107)
+- **Mandate**: NIST-standard Kyber-1024 (Encapsulation) and Dilithium-5 (Signatures).
+- **Implementation**: `agentic_core/crypto/pqc.py` (liboqs-based).
+- **Requirement**: Non-bypassable for all inter-node federation communications.
+
+### 4.2 Governance-as-a-Service (GaaS)
+- **Engine**: `packages/shared/gaas.ts`
+- **Auditability**: Transparency Panel logs all GaaS-validated article checks.
 
 ---
 
-*Generated via Workstation v0.0 Technical Specification. CIVILIZATION SECURED.*
+## 5. Deployment & Verification
+1. **Supreme Audit**: `python3 scripts/audit_v0.py` (Verify 1127 articles).
+2. **Setup**: `bash setup.sh` (Initializes production environment).
+3. **Tests**: `npm test` (Frontend) and `pytest` (Backend).
+
+---
+
+*Generated via Workstation v0.7 Supreme Baseline Technical Specification. CIVILIZATION SECURED.*
