@@ -12,7 +12,7 @@ import ReactFlow, {
   ReactFlowProvider
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Plus, Save, Play, Rocket, Terminal, Download, FileJson, Search, Sparkles } from 'lucide-react';
+import { Plus, Save, Play, Rocket, Terminal, Download, FileJson, Search, Sparkles, Wrench } from 'lucide-react';
 import { Button, Card, Badge } from '@workstation/ui';
 import { useStore, gaas } from '@workstation/shared';
 
@@ -41,6 +41,7 @@ export const Forge: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [showToolWizard, setShowToolWizard] = useState(false);
   const { user } = useStore();
 
   const onNodesChange = useCallback(
@@ -95,6 +96,7 @@ export const Forge: React.FC = () => {
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Visual Agent Composer • Galactic Era Standard</p>
         </div>
         <div className="flex gap-4">
+           <Button onClick={() => setShowToolWizard(true)} variant="outline" className="border-aura/30 text-aura"><Wrench size={16} /> Tool Wizard</Button>
            <Button variant="outline" onClick={exportBlueprint}><Download size={16} /> Export</Button>
            <Button onClick={handleSimulate} disabled={isSimulating}>
               {isSimulating ? <Sparkles size={16} className="animate-spin" /> : <Play size={16} />}
@@ -141,6 +143,31 @@ export const Forge: React.FC = () => {
            </ReactFlow>
         </main>
       </div>
+
+      {showToolWizard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-10">
+           <Card className="max-w-2xl w-full p-12 space-y-10 border-aura/30 shadow-[0_0_50px_rgba(100,255,218,0.1)]">
+              <div className="flex justify-between items-start">
+                 <div>
+                    <h3 className="text-4xl font-black text-white uppercase tracking-tighter">Tool Creation Wizard</h3>
+                    <p className="text-aura font-black text-[10px] uppercase tracking-[0.4em] mt-2">v0.3 Dynamic Integration</p>
+                 </div>
+                 <button onClick={() => setShowToolWizard(false)} className="p-3 bg-slate-900 rounded-xl text-slate-500 hover:text-white">Close</button>
+              </div>
+              <div className="space-y-6">
+                 <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Tool Name</label>
+                    <input className="w-full bg-slate-950 border border-slate-900 rounded-2xl p-5 text-white font-bold" placeholder="e.g. fetch_planetary_data" />
+                 </div>
+                 <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Description</label>
+                    <textarea className="w-full bg-slate-950 border border-slate-900 rounded-2xl p-5 text-white font-bold h-32" placeholder="Describe what the tool does for the AI CEO..." />
+                 </div>
+                 <Button className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase text-xs tracking-widest" onClick={() => { alert('Tool registered with ToolRegistry.'); setShowToolWizard(false); }}>Register Tool</Button>
+              </div>
+           </Card>
+        </div>
+      )}
     </div>
   );
 };

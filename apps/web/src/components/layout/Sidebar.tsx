@@ -118,6 +118,7 @@ const allNavItems: NavItem[] = [
   },
 
   { name: 'File Hub', icon: Package, id: 'file-hub' },
+  { name: 'GaaS Audit', icon: ShieldCheck, id: 'audit' },
   { name: 'UVAID / GSE', icon: Sparkles, id: 'uvaid' },
   { name: 'Text Index', icon: FileText, id: 'text-index' },
   { name: 'Contributor Portal', icon: Code2, id: 'contribute' },

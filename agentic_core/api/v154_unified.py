@@ -107,3 +107,17 @@ async def publish_agent(blueprint: Dict[str, Any], creator: str = "anonymous"):
 
     agent_id = marketplace.publish_agent(blueprint, creator)
     return {"status": "PUBLISHED", "id": agent_id}
+
+@router.delete("/marketplace/agents/{agent_id}")
+async def delete_marketplace_agent(agent_id: str):
+    """v0.3: Marketplace deletion endpoint."""
+    res = marketplace.delete_agent(agent_id)
+    if not res: raise HTTPException(status_code=404, detail="Agent not found.")
+    return {"status": "DELETED"}
+
+@router.post("/marketplace/agents/{agent_id}/rate")
+async def rate_marketplace_agent(agent_id: str, rating: int):
+    """v0.3: Marketplace rating endpoint."""
+    res = marketplace.rate_agent(agent_id, rating)
+    if not res: raise HTTPException(status_code=404, detail="Agent not found.")
+    return {"status": "RATED"}

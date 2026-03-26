@@ -52,6 +52,13 @@ class ToolRegistry:
     async def check_gaas_compliance(self, action: str):
         return {"compliant": True, "score": 0.99, "justification": "Action aligns with Article 1127 (Autonomous Evolution)."}
 
+    async def register_custom_tool(self, name: str, description: str, parameters: Dict[str, Any]):
+        """v0.3: Dynamic tool registration via Wizard."""
+        if name in self.tools: return {"error": "Tool already exists."}
+        # Simulated dynamic tool registration
+        self.tools[name] = lambda **k: {"status": "CUSTOM_TOOL_EXECUTED", "params": k}
+        return {"status": "REGISTERED", "tool": name}
+
     async def call_tool(self, tool_name: str, **kwargs):
         if tool_name in self.tools:
             return await self.tools[tool_name](**kwargs)
@@ -172,6 +179,11 @@ async def get_meeting_minutes():
 async def ceo_chat(req: ChatRequest):
     """Galactic Era AI CEO Chat with SSE streaming, Memory, and Tool Use."""
     return StreamingResponse(generate_ollama_stream(req.message, req.context), media_type="text/event-stream")
+
+@router.post("/tools/register")
+async def register_tool(name: str, description: str, parameters: Dict[str, Any]):
+    """v0.3: Wizard-based tool registration."""
+    return await tool_registry.register_custom_tool(name, description, parameters)
 
 @router.get("/vitals")
 async def get_vitals():

@@ -65,4 +65,14 @@ class AgentMarketplace:
                 return True
         return False
 
+    def delete_agent(self, agent_id: str):
+        """v0.3: Delete an agent from the marketplace."""
+        with Session(self.engine) as session:
+            record = session.get(AgentRecord, agent_id)
+            if record:
+                session.delete(record)
+                session.commit()
+                return True
+        return False
+
 marketplace = AgentMarketplace()
