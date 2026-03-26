@@ -52,6 +52,7 @@ import { WearableSync } from './pages/platforms/WearableSync';
 import { EmbodimentStudio } from './pages/platforms/EmbodimentStudio';
 import { useStore } from '@workstation/shared';
 import { ThemeProvider } from './theme/ThemeContext';
+import { AdaptiveUIProvider } from './components/AdaptiveUIProvider';
 import { PlayfulEffectsManager } from './components/gamification/PlayfulEffectsManager';
 import Joyride from 'react-joyride';
 
@@ -70,13 +71,16 @@ function App() {
   if (isQEPStandalone) {
     return (
       <ThemeProvider>
-        <QEPLanding />
+        <AdaptiveUIProvider>
+           <QEPLanding />
+        </AdaptiveUIProvider>
       </ThemeProvider>
     );
   }
 
   return (
     <ThemeProvider>
+    <AdaptiveUIProvider>
     <PlayfulEffectsManager />
     <Joyride steps={steps} run={runTutorial} continuous showProgress showSkipButton />
     <Shell>
@@ -152,6 +156,7 @@ function App() {
         }
       }}
     </Shell>
+    </AdaptiveUIProvider>
     </ThemeProvider>
   );
 }

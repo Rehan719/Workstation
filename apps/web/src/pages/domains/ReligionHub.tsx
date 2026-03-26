@@ -5,8 +5,11 @@ import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';
 import { QEPFlagshipFeatures } from '../../components/QEPFlagshipFeatures';
+import { LearnTeachModule } from '../../components/LearnTeachModule';
+import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 
 export const ReligionHub: React.FC = () => {
+   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const { user } = useStore();
   const [activeTab, setActiveTab] = useState('wisdom');
 
@@ -21,7 +24,11 @@ export const ReligionHub: React.FC = () => {
       <header className="flex justify-between items-end">
         <div>
           <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Spire of Inquiry</h1>
-          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Spiritual Inquiry • Ethical Guidance Channel • Religion Hub</p>
+          <div className="flex items-center gap-4">
+             <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Spiritual Inquiry • Ethical Guidance Channel • Religion Hub</p>
+             <Badge color="highlight" className="text-[8px]">{layout} MODE</Badge>
+             <Badge color="aura" className="text-[8px]">{emotionalAdjustment} TONE</Badge>
+          </div>
         </div>
         <div className="flex gap-4">
            <Button variant="outline"><History size={18} /> Tradition</Button>
@@ -79,6 +86,15 @@ export const ReligionHub: React.FC = () => {
                   {activeTab === 'qep' ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
                        <QEPDashboard />
+
+                       <div className="pt-12 border-t border-white/5">
+                          <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tighter mb-10">
+                             <GraduationCap size={28} className="text-highlight" />
+                             Learn-Teach Ecosystem
+                          </h3>
+                          <LearnTeachModule />
+                       </div>
+
                        <div className="pt-12 border-t border-white/5">
                           <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tighter mb-10">
                              <Sparkles size={28} className="text-aura shadow-2xl shadow-aura/20" />
