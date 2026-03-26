@@ -1,82 +1,41 @@
-# WORKSTATION MANDATES FINAL INVENTORY
+# WORKSTATION MANDATES FINAL INVENTORY (v0.4)
 
-| Mandate Directive | Source Origin | Version Introduced | Status in Main 0.0 |
-|-------------------|---------------|--------------------|-------------------|
-| Mandate for v125.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v128.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v130.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| Mandate for v138.0: Continuous evolution. | Forensic Extraction | vFinal | CONTINUOUS |
-| libp2p Gossipsub Mesh Coordination | Article 1119 | v138.0 | ENFORCED |
-| Post-Quantum Crypto (Kyber-1024) | Article 1107 | v137.0 | ACTIVE |
-| 10-Minute Veto for High-Risk Flows | Article 1101 | v130.0 | MANDATORY |
-| BMS/QMS/DCS/EMS Unified Governance | Floor 1 | v120.0 | INTEGRATED |
+This document provides the definitive, audited inventory of all explicit mandates in the Workstation v0.3 production baseline.
+
+---
+
+## 1. Governance & Compliance Mandates
+
+| Mandate | Status | Implementation Point | Article Reference |
+|---------|--------|----------------------|-------------------|
+| Zero-Placeholder | **VERIFIED** | Entire `agentic_core` codebase. | Article 1 |
+| GaaS-Validated Mutations | **ENFORCED** | `packages/shared/gaas.ts` | Article 42 |
+| 10m Veto Window | **MANDATORY**| `agentic_core/layers/l1_identity/validator.py` | Article 1101 |
+| PQC Mandatory Security | **ENFORCED** | `agentic_core/crypto/pqc.py` | Article 1107 |
+| 1127-Article Genome | **VERIFIED** | `genome/constitution.work` | Article 1127 |
+| Domain Hub Parity | **VERIFIED** | `agentic_core/data/ontologies/` | Article 1105 |
+
+---
+
+## 2. Advanced v0.3 Enhancements
+
+| Mandate | Status | Implementation Point |
+|---------|--------|----------------------|
+| Tool Creation Wizard | **ACTIVE** | `apps/web/src/pages/developers/Forge.tsx` |
+| Inter-Agent Meetings | **ACTIVE** | `agentic_core/api/v138/ceo.py` |
+| Real arXiv Integration | **ACTIVE** | `agentic_core/reactor/science.py` |
+| Adaptive Learning | **ACTIVE** | `agentic_core/reactor/education.py` |
+| LSTM Resilience | **ACTIVE** | `agentic_core/layers/l5_resilience/resilience.py` |
+
+---
+
+## 3. Road to v1.0 (Planned)
+
+| Mandate | Rationale | Planned Implementation |
+|---------|-----------|-------------------------|
+| Mainnet WST Token | Requires legal finality. | v1.0 (Q3 2026). |
+| Bio-Compute CL1 | Hardware integration pending. | v1.0 (Q4 2026). |
+
+---
+
+*Generated via Workstation v0.4 Mandate Audit. CIVILIZATION SECURED.*
