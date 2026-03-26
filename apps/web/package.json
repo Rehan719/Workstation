@@ -21,6 +21,7 @@
     "reactflow": "^11.11.3",
     "recharts": "^2.15.4",
     "three": "^0.166.1",
+    "@noble/post-quantum": "^0.2.0",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

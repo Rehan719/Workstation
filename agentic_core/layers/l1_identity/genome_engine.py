@@ -70,7 +70,24 @@ class GenomeMutationWorkflow:
         print("Genome: Rollback executed.")
         return True
 
+    def get_behavioral_params(self) -> Dict[str, Any]:
+        """v0.1: Dynamic Behavioral Mapping from Articles."""
+        params = {"temperature": 0.7, "system_prompt": "Standard AI CEO"}
+        articles = self.genome.get("constitution", {}).get("articles", [])
+        for a in articles:
+            content = a.get("content", "").lower()
+            if "article 42" in content or "transparency" in content:
+                params["temperature"] = 0.4
+                params["system_prompt"] += " (Transparent & Rigid Mode)"
+            if "evolution" in content:
+                params["temperature"] = 0.9
+        return params
+
 # Initialize Engine
-with open("genome/constitution.work", "r") as f:
-    initial_genome = json.load(f)
+try:
+    with open("genome/constitution.work", "r") as f:
+        initial_genome = json.load(f)
+except:
+    initial_genome = {"constitution": {"articles": []}}
+
 genome_engine = GenomeMutationWorkflow(initial_genome)

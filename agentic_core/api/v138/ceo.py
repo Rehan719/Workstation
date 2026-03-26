@@ -7,11 +7,14 @@ import os
 import logging
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
+from agentic_core.ai_ceo.memory_v01 import memory_v01, meeting_log
 
 router = APIRouter(prefix="/ceo", tags=["AI CEO Galactic Era"])
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 DEFAULT_MODEL = "llama3.2"
+
+from agentic_core.layers.l1_identity.genome_engine import genome_engine
 
 class ChatRequest(BaseModel):
     message: str
@@ -22,8 +25,23 @@ class ToolRegistry:
         self.tools = {
             "get_system_vitals": self.get_system_vitals,
             "deploy_agent": self.deploy_agent,
-            "check_gaas_compliance": self.check_gaas_compliance
+            "check_gaas_compliance": self.check_gaas_compliance,
+            "call_meeting": self.call_meeting,
+            "discover_tools": self.discover_tools
         }
+
+    async def discover_tools(self):
+        """v0.1: Tool Discovery logic."""
+        available = list(self.tools.keys())
+        return {"available_tools": available, "message": "New tools can be registered in the ToolRegistry class."}
+
+    async def call_meeting(self, agenda: str):
+        """v0.1: Trigger C-Suite Debate."""
+        agents = ["CEvO", "CGO", "CPEO", "CBO", "CoS", "CEnvO"]
+        for agent in agents:
+            # Simulated Agent Debate logic based on agenda
+            meeting_log.post_argument(agent, f"Synthesized position on {agenda} from {agent} perspective.", "APPROVE")
+        return {"status": "MEETING_COMPLETE", "log_updated": True}
 
     async def get_system_vitals(self):
         return {"status": "OPTIMAL", "cpu_load": "12%", "memory_usage": "4.2GB", "latency": "18ms"}
@@ -37,6 +55,9 @@ class ToolRegistry:
     async def call_tool(self, tool_name: str, **kwargs):
         if tool_name in self.tools:
             return await self.tools[tool_name](**kwargs)
+        if tool_name == "domain_weaver":
+             from agentic_core.reactor.domains.weaver import domain_weaver
+             return await domain_weaver.synthesize(kwargs.get("query", ""), kwargs.get("domains", ["science", "law"]))
         return {"error": f"Tool {tool_name} not found."}
 
 tool_registry = ToolRegistry()
@@ -78,26 +99,51 @@ vector_store = SimpleVectorStore()
 async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
     """Streams responses from Ollama or falls back to simulation, using memory and tools."""
 
-    # 1. Memory Retrieval
-    past_exchanges = vector_store.query(prompt)
-    context_str = "\n".join([f"User: {m['user']}\nAI: {m['ai']}" for m in past_exchanges])
+    # 0. Genome-Based Parameter Tuning (v0.1)
+    behavioral_params = genome_engine.get_behavioral_params()
 
-    # 2. Tool Detection (Simple Keyword-based for now)
+    # 1. Semantic Memory Retrieval (v0.1 Upgrade)
+    past_exchanges = memory_v01.query(prompt)
+    context_str = "\n".join(past_exchanges)
+
+    # 2. Constitutional Context (v0.1 Upgrade)
+    from agentic_core.layers.l1_identity.validator import validator_l1
+    relevant_articles = validator_l1.genome.get('constitution', {}).get('articles', [])[:5] # Sample for context
+    constitution_context = "\n".join([f"Article {a['id']}: {a['title']}" for a in relevant_articles])
+
+    # 3. Meeting Log Context
+    debate_context = meeting_log.get_recent_debate()
+
+    # 4. Tool Detection (v0.1 Discovery)
     tool_output = None
     if "vitals" in prompt.lower():
         tool_output = await tool_registry.call_tool("get_system_vitals")
-    elif "deploy" in prompt.lower():
-        tool_output = await tool_registry.call_tool("deploy_agent", agent_type="general")
+    elif "meeting" in prompt.lower() or "debate" in prompt.lower():
+        tool_output = await tool_registry.call_tool("call_meeting", agenda=prompt)
+    elif "discover" in prompt.lower():
+        tool_output = await tool_registry.call_tool("discover_tools")
+    elif "weave" in prompt.lower() or "combine" in prompt.lower():
+        tool_output = await tool_registry.call_tool("domain_weaver", query=prompt, domains=["science", "religion", "care"])
 
-    enhanced_prompt = f"Context from memory:\n{context_str}\n\nTool Output: {json.dumps(tool_output) if tool_output else 'None'}\n\nUser Question: {prompt}\n\nPlease respond as the AI CEO of the Galactic Era."
+    enhanced_prompt = (
+        f"Constitutional Framework:\n{constitution_context}\n\n"
+        f"Recent C-Suite Debate:\n{debate_context}\n\n"
+        f"Context from memory:\n{context_str}\n\n"
+        f"Tool Output: {json.dumps(tool_output) if tool_output else 'None'}\n\n"
+        f"User Question: {prompt}\n\n"
+        "Please respond as the AI CEO of the Galactic Era. Cite relevant constitutional articles and recent C-Suite debates if applicable."
+    )
 
     full_response = ""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             payload = {
                 "model": DEFAULT_MODEL,
-                "prompt": enhanced_prompt,
-                "stream": True
+                "prompt": f"SYSTEM: {behavioral_params['system_prompt']}\n\n{enhanced_prompt}",
+                "stream": True,
+                "options": {
+                    "temperature": behavioral_params['temperature']
+                }
             }
             async with client.stream("POST", f"{OLLAMA_BASE_URL}/api/generate", json=payload) as response:
                 if response.status_code != 200:
@@ -117,8 +163,12 @@ async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
             await asyncio.sleep(0.01)
         yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
 
-    # 3. Memory Storage
-    vector_store.add_exchange(prompt, full_response)
+    # 3. Semantic Memory Storage (v0.1)
+    memory_v01.add_exchange(prompt, full_response)
+
+@router.get("/meeting/log")
+async def get_meeting_log():
+    return meeting_log.log
 
 @router.post("/chat")
 async def ceo_chat(req: ChatRequest):

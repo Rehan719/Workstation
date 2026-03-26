@@ -19,7 +19,16 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { name: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
-  { name: 'VSB AI CEO', icon: MessageSquare, id: 'ceo', realms: ['ENTERPRISE', 'GENOME', 'UNIFIED'] },
+  {
+    name: 'VSB AI CEO',
+    icon: MessageSquare,
+    id: 'ceo-facet',
+    realms: ['ENTERPRISE', 'GENOME', 'UNIFIED'],
+    subItems: [
+      { name: 'Direct Chat', icon: MessageSquare, id: 'ceo' },
+      { name: 'Debate Log', icon: History, id: 'debate' }
+    ]
+  },
 
   {
     name: 'Sovereign Domains',

@@ -40,6 +40,7 @@ import { Observatory } from './pages/scholar/Observatory';
 import { LegacyVault } from './pages/scholar/LegacyVault';
 import { ConstitutionalUI } from './pages/governance/ConstitutionalUI';
 import { CouncilInterface } from './pages/governance/CouncilInterface';
+import { DebateLog } from './pages/c-suite/DebateLog';
 import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
 import { Contribute } from './pages/Contribute';
 import { QEPEngine } from './pages/QEPEngine';
@@ -112,6 +113,7 @@ function App() {
           case 'qep': return <QEPEngine />;
           case 'constitution': return <ConstitutionalUI />;
           case 'council': return <CouncilInterface />;
+          case 'debate': return <DebateLog />;
           case 'marketplace': return <LivingMarketplace />;
           case 'admin': return <AdminPanel />;
           default:

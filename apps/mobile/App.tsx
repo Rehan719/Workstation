@@ -156,22 +156,48 @@ const ForgeScreen = () => (
   </View>
 );
 
-const GenomeScreen = () => (
-  <View style={styles.screenContainer}>
-    <Text style={styles.sectionTitle}>Genome Explorer</Text>
-    <View style={styles.glassCard}>
-      <Text style={styles.badgeText}>Merkle-DAG Integrity: 100%</Text>
-      <View style={{ height: 150, backgroundColor: '#020617', borderRadius: 15, marginVertical: 20, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: '#64ffda30' }}>
-         <GitBranch size={48} color="#64ffda" />
-         <Text style={[styles.badgeText, { marginTop: 10 }]}>Visualizing Mesh DNA...</Text>
-      </View>
-      <View style={{ gap: 10 }}>
-         <ResonanceItem label="Operons" value="142 Active" color="#64ffda" percent="100%" />
-         <ResonanceItem label="Regulons" value="12.5k Active" color="#38bdf8" percent="92%" />
+const GenomeScreen = () => {
+  const [articles, setArticles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // v0.1: Fetch actual articles for mobile explorer
+    fetch('http://localhost:8000/api/v154/constitution/articles')
+      .then(res => res.json())
+      .then(data => {
+        setArticles(data.slice(0, 50)); // Display top 50 for performance
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
+  }, []);
+
+  return (
+    <View style={styles.screenContainer}>
+      <Text style={styles.sectionTitle}>Genome Explorer</Text>
+      <View style={[styles.glassCard, { flex: 1 }]}>
+        <Text style={styles.badgeText}>Nodes Seeded: {articles.length}</Text>
+
+        {isLoading ? (
+          <ActivityIndicator color="#64ffda" style={{ marginVertical: 40 }} />
+        ) : (
+          <ScrollView style={{ marginTop: 20 }}>
+             {articles.map((a, i) => (
+               <TouchableOpacity key={i} style={{ padding: 15, backgroundColor: '#020617', borderRadius: 15, marginBottom: 10, borderWidth: 1, borderColor: '#64ffda20' }}>
+                  <Text style={{ color: '#64ffda', fontWeight: 'bold', fontSize: 12 }}>ARTICLE {a.id}</Text>
+                  <Text style={{ color: 'white', marginTop: 5 }}>{a.title}</Text>
+               </TouchableOpacity>
+             ))}
+          </ScrollView>
+        )}
+
+        <View style={{ marginTop: 20, gap: 10 }}>
+           <ResonanceItem label="Operons" value="142 Active" color="#64ffda" percent="100%" />
+           <ResonanceItem label="Regulons" value="12.5k Active" color="#38bdf8" percent="92%" />
+        </View>
       </View>
     </View>
-  </View>
-);
+  );
+};
 
 const AdminScreen = () => (
   <View style={styles.screenContainer}>
