@@ -99,6 +99,18 @@ class GenomeMutationWorkflow:
         print("Genome: Rollback executed.")
         return True
 
+    def propose_autonomous_evolution(self, metrics: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """v0.5: Autonomous Constitutional Amendment proposals based on system vitals."""
+        # Article 1118: Self-Healing / Self-Evolution
+        if metrics.get("latency_ms", 0) > 200:
+             return {
+                 "id": 1100 + int(time.time()) % 100,
+                 "title": "Autonomous Latency Optimization",
+                 "content": "The system shall prioritize compute allocation to the C-Suite during high load.",
+                 "rationale": f"System latency detected at {metrics['latency_ms']}ms."
+             }
+        return None
+
     def get_behavioral_params(self) -> Dict[str, Any]:
         """v0.1: Dynamic Behavioral Mapping from Articles."""
         params = {"temperature": 0.7, "system_prompt": "Standard AI CEO"}

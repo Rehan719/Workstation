@@ -4,6 +4,8 @@ import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageS
 import { useStore } from './src/store/mobileStore';
 import { useBiometrics } from './src/hooks/useBiometrics';
 import { MessageItem } from './src/components/MessageItem';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 
 const { width } = Dimensions.get('window');
 
@@ -96,13 +98,24 @@ const CEOChatScreen = () => {
   const [messages, setMessages] = useState([{ role: 'assistant', content: 'Greeting, Guardian. I am the VSB AI CEO.' }]);
   const [input, setInput] = useState('');
 
-  const sendMessage = () => {
+  useEffect(() => {
+     // v0.5: Offline Cache Initialization
+     const loadCache = async () => {
+        const cached = await AsyncStorage.getItem('ceo_chat_cache');
+        if (cached) setMessages(JSON.parse(cached));
+     };
+     loadCache();
+  }, []);
+
+  const sendMessage = async () => {
      if (!input.trim()) return;
      const newMsgs = [...messages, { role: 'user', content: input }];
      setMessages(newMsgs);
      setInput('');
-     setTimeout(() => {
-        setMessages([...newMsgs, { role: 'assistant', content: 'Synthesis complete. Directive logged.' }]);
+     setTimeout(async () => {
+        const finalMsgs = [...newMsgs, { role: 'assistant', content: 'Synthesis complete. Directive logged.' }];
+        setMessages(finalMsgs);
+        await AsyncStorage.setItem('ceo_chat_cache', JSON.stringify(finalMsgs));
      }, 1000);
   };
 

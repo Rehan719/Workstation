@@ -52,16 +52,27 @@ class ToolRegistry:
     async def check_gaas_compliance(self, action: str):
         return {"compliant": True, "score": 0.99, "justification": "Action aligns with Article 1127 (Autonomous Evolution)."}
 
-    async def register_custom_tool(self, name: str, description: str, parameters: Dict[str, Any]):
-        """v0.3: Dynamic tool registration via Wizard."""
+    async def register_custom_tool(self, name: str, description: str, parameters: Dict[str, Any], autonomous: bool = False):
+        """v0.3/v0.5: Dynamic and Autonomous tool registration."""
         if name in self.tools: return {"error": "Tool already exists."}
+        # v0.5: GaaS Oversight for Autonomous tools
+        if autonomous:
+             from agentic_core.layers.l1_identity.validator import validator_l1
+             validation = validator_l1.validate_action("autonomous_tool_creation", {"tool_name": name})
+             if not validation["valid"]: return {"error": "GaaS Blocked Tool Creation"}
+
         # Simulated dynamic tool registration
-        self.tools[name] = lambda **k: {"status": "CUSTOM_TOOL_EXECUTED", "params": k}
-        return {"status": "REGISTERED", "tool": name}
+        self.tools[name] = lambda **k: {"status": "CUSTOM_TOOL_EXECUTED", "params": k, "autonomous": autonomous}
+        return {"status": "REGISTERED", "tool": name, "mode": "AUTONOMOUS" if autonomous else "MANUAL"}
 
     async def call_tool(self, tool_name: str, **kwargs):
+        """v0.6: Tool execution with logging and feedback loops."""
         if tool_name in self.tools:
-            return await self.tools[tool_name](**kwargs)
+            result = await self.tools[tool_name](**kwargs)
+            # v0.6: Autonomous Feedback Loop
+            ueg.log_event("CEO", "ToolRegistry", "TOOL_EXECUTED", {"tool": tool_name, "success": "error" not in result})
+            return result
+
         if tool_name == "domain_weaver":
              from agentic_core.reactor.domains.weaver import domain_weaver
              return await domain_weaver.synthesize(kwargs.get("query", ""), kwargs.get("domains", ["science", "law"]))
@@ -88,7 +99,11 @@ class RedisVectorStore:
 
     def query(self, query: str):
         if not self.enabled: return []
-        # v0.2: Simple Redis scan (Real vector search would use RedisVL)
+        # v0.6: Persistent ChromaDB Search (Primary)
+        chroma_res = memory_v01.query(query)
+        if chroma_res: return chroma_res
+
+        # Fallback to Redis for session context
         keys = self.r.keys("ceo_memory:*")
         return [self.r.get(k) for k in keys[-2:]]
 
@@ -96,6 +111,17 @@ vector_store = RedisVectorStore()
 
 async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
     """Streams responses from Ollama or falls back to simulation, using memory and tools."""
+
+    # v0.5/v0.6: Self-Improving AI Analysis (Closed Loop)
+    if "wish i could" in prompt.lower() or "can you create" in prompt.lower():
+         proposed_tool = "tool_" + os.urandom(2).hex()
+         await tool_registry.register_custom_tool(proposed_tool, "Autonomously generated response tool.", {}, autonomous=True)
+         prompt += f"\n(AI Note: I have autonomously created and registered {proposed_tool} to assist with this.)"
+
+    # v0.6: Analyze recent tool success rates for self-optimization
+    # Simulation: Propose prompt tweak if error rate > 20% (Article 1118)
+    if random.random() < 0.05:
+         prompt += "\n(CEO Self-Analysis: Optimizing system prompt for higher precision.)"
 
     # 0. Genome-Based Parameter Tuning (v0.1)
     behavioral_params = genome_engine.get_behavioral_params()

@@ -56,7 +56,7 @@ class LiveAPIClient:
             "religion": "https://api.alquran.cloud/v1/ayah", # Standard API for QEP
             "law": "https://www.courtlistener.com/api/rest/v3/search/",
             "employment": "https://api.adzuna.com/v1/api/jobs/gb/search/1",
-            "education": "https://commonstandardsproject.com/api/v1/jurisdictions"
+            "education": "https://canvas.instructure.com/api/v1/courses" # v0.5 LMS Integration
         }
         return mappings.get(self.domain)
 

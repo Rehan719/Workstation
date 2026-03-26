@@ -13,6 +13,7 @@ from agentic_core.layers.l9_orchestration.orchestrator import swarm_orchestrator
 from agentic_core.layers.ueg import ueg
 from agentic_core.governance.dao import dao_framework
 from agentic_core.reactor.ecosystem.marketplace import marketplace
+from agentic_core.governance.security_v3 import security_v3
 
 router = APIRouter(prefix="/v154", tags=["Sovereign Genesis API"])
 
@@ -121,3 +122,8 @@ async def rate_marketplace_agent(agent_id: str, rating: int):
     res = marketplace.rate_agent(agent_id, rating)
     if not res: raise HTTPException(status_code=404, detail="Agent not found.")
     return {"status": "RATED"}
+
+@router.get("/security/status")
+async def get_security_status():
+    """v0.6: PQC Security Status."""
+    return security_v3.get_security_status()
