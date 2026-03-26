@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
-import { Telescope, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Microscope, Telescope as TelescopeIcon } from 'lucide-react';
+import { Telescope, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Microscope, Telescope as TelescopeIcon, Lock } from 'lucide-react';
 
 export const Observatory: React.FC = () => {
+  const [orcidConnected, setOrcidConnected] = useState(false);
+
+  const handleOrcidAuth = () => {
+     // v0.5: Real OAuth2 Flow Simulation for ORCID
+     const clientId = "APP-42SOVEREIGN";
+     const redirectUri = encodeURIComponent(window.location.origin + "/scholar/callback");
+     const authUrl = `https://orcid.org/oauth/authorize?client_id=${clientId}&response_type=code&scope=/authenticate&redirect_uri=${redirectUri}`;
+
+     alert("Redirecting to ORCID for v0.5 production authentication...");
+     window.location.href = authUrl;
+  };
   return (
     <div className="space-y-12 pb-24">
       <header className="flex justify-between items-end">
@@ -11,7 +22,10 @@ export const Observatory: React.FC = () => {
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Inter-Realm Observation • Meta-Evolutionary Analysis</p>
         </div>
         <div className="flex gap-4">
-           <Button variant="outline"><Microscope size={18} /> Deep Study</Button>
+           <Button variant="outline" onClick={handleOrcidAuth}>
+              {orcidConnected ? <ShieldCheck size={18} /> : <Lock size={18} />}
+              {orcidConnected ? "ORCID Verified" : "Connect ORCID"}
+           </Button>
            <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <TelescopeIcon size={18} /> Update Lens
            </Button>

@@ -51,13 +51,22 @@ import { EmbodimentStudio } from './pages/platforms/EmbodimentStudio';
 import { useStore } from '@workstation/shared';
 import { ThemeProvider } from './theme/ThemeContext';
 import { PlayfulEffectsManager } from './components/gamification/PlayfulEffectsManager';
+import Joyride from 'react-joyride';
 
 function App() {
   const { currentRealm } = useStore();
+  const [runTutorial, setRunTutorial] = useState(true);
+
+  const steps = [
+    { target: '.neon-text', content: 'Welcome to the v0.5 Sovereign Workstation! This is your control center.' },
+    { target: 'aside nav', content: 'Navigate through the five flagships realms and sovereign domains here.' },
+    { target: '.gaas-audit-btn', content: 'Every action is validated against the 1127 constitutional articles.' }
+  ];
 
   return (
     <ThemeProvider>
     <PlayfulEffectsManager />
+    <Joyride steps={steps} run={runTutorial} continuous showProgress showSkipButton />
     <Shell>
       {(activeTab) => {
         // Multi-Realm Unified Dashboard

@@ -52,12 +52,18 @@ class ToolRegistry:
     async def check_gaas_compliance(self, action: str):
         return {"compliant": True, "score": 0.99, "justification": "Action aligns with Article 1127 (Autonomous Evolution)."}
 
-    async def register_custom_tool(self, name: str, description: str, parameters: Dict[str, Any]):
-        """v0.3: Dynamic tool registration via Wizard."""
+    async def register_custom_tool(self, name: str, description: str, parameters: Dict[str, Any], autonomous: bool = False):
+        """v0.3/v0.5: Dynamic and Autonomous tool registration."""
         if name in self.tools: return {"error": "Tool already exists."}
+        # v0.5: GaaS Oversight for Autonomous tools
+        if autonomous:
+             from agentic_core.layers.l1_identity.validator import validator_l1
+             validation = validator_l1.validate_action("autonomous_tool_creation", {"tool_name": name})
+             if not validation["valid"]: return {"error": "GaaS Blocked Tool Creation"}
+
         # Simulated dynamic tool registration
-        self.tools[name] = lambda **k: {"status": "CUSTOM_TOOL_EXECUTED", "params": k}
-        return {"status": "REGISTERED", "tool": name}
+        self.tools[name] = lambda **k: {"status": "CUSTOM_TOOL_EXECUTED", "params": k, "autonomous": autonomous}
+        return {"status": "REGISTERED", "tool": name, "mode": "AUTONOMOUS" if autonomous else "MANUAL"}
 
     async def call_tool(self, tool_name: str, **kwargs):
         if tool_name in self.tools:
@@ -96,6 +102,13 @@ vector_store = RedisVectorStore()
 
 async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
     """Streams responses from Ollama or falls back to simulation, using memory and tools."""
+
+    # v0.5: Self-Improving AI Analysis
+    # Analysis: If user asks for something the AI can't do, it might propose a new tool
+    if "wish i could" in prompt.lower() or "can you create" in prompt.lower():
+         proposed_tool = "tool_" + os.urandom(2).hex()
+         await tool_registry.register_custom_tool(proposed_tool, "Autonomously generated response tool.", {}, autonomous=True)
+         prompt += f"\n(AI Note: I have autonomously created and registered {proposed_tool} to assist with this.)"
 
     # 0. Genome-Based Parameter Tuning (v0.1)
     behavioral_params = genome_engine.get_behavioral_params()

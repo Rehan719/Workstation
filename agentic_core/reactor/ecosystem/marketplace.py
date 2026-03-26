@@ -18,9 +18,12 @@ class AgentRecord(SQLModel, table=True):
     timestamp: str
 
 class AgentMarketplace:
-    """v0.2: Agent Marketplace Registry (SQLite-backed)."""
-    def __init__(self, db_path: str = "agentic_core/data/marketplace.db"):
-        self.engine = create_engine(f"sqlite:///{db_path}")
+    """v0.5: Agent Marketplace Registry (Production-ready)."""
+    def __init__(self, db_url: Optional[str] = None):
+        if not db_url:
+             db_path = "agentic_core/data/marketplace.db"
+             db_url = f"sqlite:///{db_path}"
+        self.engine = create_engine(db_url)
         SQLModel.metadata.create_all(self.engine)
 
     def publish_agent(self, blueprint: Dict[str, Any], creator: str):
