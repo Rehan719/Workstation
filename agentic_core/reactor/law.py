@@ -46,17 +46,26 @@ class LawReactor(DigitalReactor):
         }
 
     def _run_compliance_engine(self, text: str) -> Dict[str, Any]:
-        """ARTICLE 60: Logic for cross-border regulation checking."""
+        """v0.2: Enhanced Compliance Engine with Constitutional Checking."""
         regulations = ["GDPR", "CCPA", "Article_254_Sovereign_Law"]
         violations = []
-        if "data" in text.lower():
+        if "data" in text.lower() and "consent" not in text.lower():
             violations.append("GDPR_DATA_CONSENT_MISSING")
+
+        # Constitutional Check (v0.2)
+        from agentic_core.layers.l1_identity.validator import validator_l1
+        articles = validator_l1.genome.get("constitution", {}).get("articles", [])
+        const_violations = []
+        for a in articles:
+             if a.get("id") == 1107 and "pqc" not in text.lower():
+                  const_violations.append("Article 1107: PQC Mandate missing in security clause.")
 
         return {
             "regulations_checked": regulations,
             "violations": violations,
-            "risk_index": 0.05 if not violations else 0.45,
-            "audit_trail": "COMPLIANCE_ENGINE_v99"
+            "constitutional_integrity": const_violations,
+            "risk_index": 0.05 if not (violations or const_violations) else 0.45,
+            "audit_trail": "COMPLIANCE_ENGINE_v0.2"
         }
 
     async def interact(self, state: Any, action: str, context: Dict[str, Any]) -> Dict[str, Any]:

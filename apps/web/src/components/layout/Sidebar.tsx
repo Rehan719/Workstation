@@ -19,7 +19,16 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { name: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
-  { name: 'VSB AI CEO', icon: MessageSquare, id: 'ceo', realms: ['ENTERPRISE', 'GENOME', 'UNIFIED'] },
+  {
+    name: 'VSB AI CEO',
+    icon: MessageSquare,
+    id: 'ceo-facet',
+    realms: ['ENTERPRISE', 'GENOME', 'UNIFIED'],
+    subItems: [
+      { name: 'Direct Chat', icon: MessageSquare, id: 'ceo' },
+      { name: 'Debate Log', icon: History, id: 'debate' }
+    ]
+  },
 
   {
     name: 'Sovereign Domains',
@@ -109,6 +118,7 @@ const allNavItems: NavItem[] = [
   },
 
   { name: 'File Hub', icon: Package, id: 'file-hub' },
+  { name: 'GaaS Audit', icon: ShieldCheck, id: 'audit' },
   { name: 'UVAID / GSE', icon: Sparkles, id: 'uvaid' },
   { name: 'Text Index', icon: FileText, id: 'text-index' },
   { name: 'Contributor Portal', icon: Code2, id: 'contribute' },

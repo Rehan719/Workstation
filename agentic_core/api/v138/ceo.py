@@ -7,11 +7,14 @@ import os
 import logging
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
+from agentic_core.ai_ceo.memory_v01 import memory_v01, meeting_log
 
 router = APIRouter(prefix="/ceo", tags=["AI CEO Galactic Era"])
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 DEFAULT_MODEL = "llama3.2"
+
+from agentic_core.layers.l1_identity.genome_engine import genome_engine
 
 class ChatRequest(BaseModel):
     message: str
@@ -22,8 +25,23 @@ class ToolRegistry:
         self.tools = {
             "get_system_vitals": self.get_system_vitals,
             "deploy_agent": self.deploy_agent,
-            "check_gaas_compliance": self.check_gaas_compliance
+            "check_gaas_compliance": self.check_gaas_compliance,
+            "call_meeting": self.call_meeting,
+            "discover_tools": self.discover_tools
         }
+
+    async def discover_tools(self):
+        """v0.1: Tool Discovery logic."""
+        available = list(self.tools.keys())
+        return {"available_tools": available, "message": "New tools can be registered in the ToolRegistry class."}
+
+    async def call_meeting(self, agenda: str):
+        """v0.1: Trigger C-Suite Debate."""
+        agents = ["CEvO", "CGO", "CPEO", "CBO", "CoS", "CEnvO"]
+        for agent in agents:
+            # Simulated Agent Debate logic based on agenda
+            meeting_log.post_argument(agent, f"Synthesized position on {agenda} from {agent} perspective.", "APPROVE")
+        return {"status": "MEETING_COMPLETE", "log_updated": True}
 
     async def get_system_vitals(self):
         return {"status": "OPTIMAL", "cpu_load": "12%", "memory_usage": "4.2GB", "latency": "18ms"}
@@ -34,70 +52,96 @@ class ToolRegistry:
     async def check_gaas_compliance(self, action: str):
         return {"compliant": True, "score": 0.99, "justification": "Action aligns with Article 1127 (Autonomous Evolution)."}
 
+    async def register_custom_tool(self, name: str, description: str, parameters: Dict[str, Any]):
+        """v0.3: Dynamic tool registration via Wizard."""
+        if name in self.tools: return {"error": "Tool already exists."}
+        # Simulated dynamic tool registration
+        self.tools[name] = lambda **k: {"status": "CUSTOM_TOOL_EXECUTED", "params": k}
+        return {"status": "REGISTERED", "tool": name}
+
     async def call_tool(self, tool_name: str, **kwargs):
         if tool_name in self.tools:
             return await self.tools[tool_name](**kwargs)
+        if tool_name == "domain_weaver":
+             from agentic_core.reactor.domains.weaver import domain_weaver
+             return await domain_weaver.synthesize(kwargs.get("query", ""), kwargs.get("domains", ["science", "law"]))
         return {"error": f"Tool {tool_name} not found."}
 
 tool_registry = ToolRegistry()
 
-class SimpleVectorStore:
-    """Mock ChromaDB for conversation memory with persistent JSON backend."""
+class RedisVectorStore:
+    """v0.2: Stateless Redis-backed conversation memory for horizontal scaling."""
     def __init__(self):
-        self.file_path = "agentic_core/data/memory.json"
-        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-        self.memory = self._load_memory()
-
-    def _load_memory(self):
-        if os.path.exists(self.file_path):
-            try:
-                with open(self.file_path, 'r') as f:
-                    data = json.load(f)
-                    return data if isinstance(data, list) else []
-            except:
-                return []
-        return []
-
-    def _save_memory(self):
-        with open(self.file_path, 'w') as f:
-            json.dump(self.memory, f, indent=2)
+        import redis
+        try:
+            self.r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+            self.r.ping()
+            self.enabled = True
+        except:
+            self.enabled = False
+            logger.warning("Redis not available, falling back to local stateless mock.")
 
     def add_exchange(self, user_msg: str, ai_msg: str):
-        self.memory.append({"user": user_msg, "ai": ai_msg, "timestamp": str(asyncio.get_event_loop().time())})
-        # Keep last 50 exchanges
-        self.memory = self.memory[-50:]
-        self._save_memory()
+        if not self.enabled: return
+        key = f"ceo_memory:{datetime.utcnow().timestamp()}"
+        self.r.set(key, json.dumps({"user": user_msg, "ai": ai_msg}), ex=3600*24)
 
     def query(self, query: str):
-        # Keyword based retrieval
-        relevant = [m for m in self.memory if any(word in (m['user'] + m['ai']).lower() for word in query.lower().split())]
-        return relevant[-2:] # Return last 2 relevant exchanges
+        if not self.enabled: return []
+        # v0.2: Simple Redis scan (Real vector search would use RedisVL)
+        keys = self.r.keys("ceo_memory:*")
+        return [self.r.get(k) for k in keys[-2:]]
 
-vector_store = SimpleVectorStore()
+vector_store = RedisVectorStore()
 
 async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
     """Streams responses from Ollama or falls back to simulation, using memory and tools."""
 
-    # 1. Memory Retrieval
-    past_exchanges = vector_store.query(prompt)
-    context_str = "\n".join([f"User: {m['user']}\nAI: {m['ai']}" for m in past_exchanges])
+    # 0. Genome-Based Parameter Tuning (v0.1)
+    behavioral_params = genome_engine.get_behavioral_params()
 
-    # 2. Tool Detection (Simple Keyword-based for now)
+    # 1. Stateless Redis Memory Retrieval (v0.2 Upgrade)
+    past_exchanges = vector_store.query(prompt)
+    context_str = "\n".join(past_exchanges)
+
+    # 2. Constitutional Context (v0.1 Upgrade)
+    from agentic_core.layers.l1_identity.validator import validator_l1
+    relevant_articles = validator_l1.genome.get('constitution', {}).get('articles', [])[:5] # Sample for context
+    constitution_context = "\n".join([f"Article {a['id']}: {a['title']}" for a in relevant_articles])
+
+    # 3. Meeting Log Context
+    debate_context = meeting_log.get_recent_debate()
+
+    # 4. Tool Detection (v0.1 Discovery)
     tool_output = None
     if "vitals" in prompt.lower():
         tool_output = await tool_registry.call_tool("get_system_vitals")
-    elif "deploy" in prompt.lower():
-        tool_output = await tool_registry.call_tool("deploy_agent", agent_type="general")
+    elif "meeting" in prompt.lower() or "debate" in prompt.lower():
+        tool_output = await tool_registry.call_tool("call_meeting", agenda=prompt)
+    elif "discover" in prompt.lower():
+        tool_output = await tool_registry.call_tool("discover_tools")
+    elif "weave" in prompt.lower() or "combine" in prompt.lower():
+        tool_output = await tool_registry.call_tool("domain_weaver", query=prompt, domains=["science", "religion", "care"])
 
-    enhanced_prompt = f"Context from memory:\n{context_str}\n\nTool Output: {json.dumps(tool_output) if tool_output else 'None'}\n\nUser Question: {prompt}\n\nPlease respond as the AI CEO of the Galactic Era."
+    enhanced_prompt = (
+        f"Constitutional Framework:\n{constitution_context}\n\n"
+        f"Recent C-Suite Debate:\n{debate_context}\n\n"
+        f"Context from memory:\n{context_str}\n\n"
+        f"Tool Output: {json.dumps(tool_output) if tool_output else 'None'}\n\n"
+        f"User Question: {prompt}\n\n"
+        "Please respond as the AI CEO of the Galactic Era. Cite relevant constitutional articles and recent C-Suite debates if applicable."
+    )
 
     full_response = ""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             payload = {
                 "model": DEFAULT_MODEL,
-                "prompt": enhanced_prompt,
-                "stream": True
+                "prompt": f"SYSTEM: {behavioral_params['system_prompt']}\n\n{enhanced_prompt}",
+                "stream": True,
+                "options": {
+                    "temperature": behavioral_params['temperature']
+                }
             }
             async with client.stream("POST", f"{OLLAMA_BASE_URL}/api/generate", json=payload) as response:
                 if response.status_code != 200:
@@ -117,13 +161,29 @@ async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
             await asyncio.sleep(0.01)
         yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
 
-    # 3. Memory Storage
+    # 3. Stateless Redis Memory Storage (v0.2)
     vector_store.add_exchange(prompt, full_response)
+
+@router.get("/meeting/log")
+async def get_meeting_log():
+    return meeting_log.log
+
+@router.get("/meeting/minutes")
+async def get_meeting_minutes():
+    """v0.2: Export meeting minutes as Markdown."""
+    from fastapi.responses import Response
+    content = meeting_log.export_minutes()
+    return Response(content=content, media_type="text/markdown")
 
 @router.post("/chat")
 async def ceo_chat(req: ChatRequest):
     """Galactic Era AI CEO Chat with SSE streaming, Memory, and Tool Use."""
     return StreamingResponse(generate_ollama_stream(req.message, req.context), media_type="text/event-stream")
+
+@router.post("/tools/register")
+async def register_tool(name: str, description: str, parameters: Dict[str, Any]):
+    """v0.3: Wizard-based tool registration."""
+    return await tool_registry.register_custom_tool(name, description, parameters)
 
 @router.get("/vitals")
 async def get_vitals():

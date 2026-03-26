@@ -44,7 +44,7 @@ class GenomeMutationWorkflow:
                   self.apply_mutation(f"healing-{int(time.time())}", amendment, authorized=True)
 
     def apply_mutation(self, proposal_id: str, patch: Dict[str, Any], authorized: bool) -> bool:
-        """Applies a constitutional patch with rollback checkpointing."""
+        """v0.2: Applies a constitutional mutation with Merkle-DAG re-hashing."""
         if not authorized: return False
 
         # Checkpoint for Rollback (Article 1111)
@@ -54,13 +54,42 @@ class GenomeMutationWorkflow:
             "data": json.dumps(self.genome)
         })
 
-        self.genome["constitution"]["articles"].append(patch)
+        # CRUD: Handle additions or modifications
+        existing_index = -1
+        for i, a in enumerate(self.genome["constitution"]["articles"]):
+            if a["id"] == patch["id"]:
+                existing_index = i
+                break
+
+        if existing_index >= 0:
+            self.genome["constitution"]["articles"][existing_index].update(patch)
+        else:
+            self.genome["constitution"]["articles"].append(patch)
+
+        # Merkle-DAG Re-hashing (v0.2 Hardening)
+        self.genome["constitution"]["root_hash"] = "0x" + hashlib.sha256(json.dumps(self.genome["constitution"]["articles"], sort_keys=True).encode()).hexdigest()[:16]
+
         if "identity" not in self.genome:
             self.genome["identity"] = {}
         self.genome["identity"]["merkle_root"] = hashlib.sha256(str(self.genome).encode()).hexdigest()
 
-        ueg.log_event("L1", "Genome", "AMENDMENT_RATIFIED", {"id": patch["id"], "type": "AUTONOMOUS"})
-        print(f"Genome: Amendment {patch['id']} autonomously ratified.")
+        ueg.log_event("L1", "Genome", "AMENDMENT_RATIFIED", {"id": patch.get("id"), "type": "AUTONOMOUS"})
+        print(f"Genome: Amendment {patch.get('id')} ratified. Root Hash: {self.genome['constitution']['root_hash']}")
+        return True
+
+    def delete_article(self, article_id: int, authorized: bool) -> bool:
+        """v0.2: Interactive deletion of constitutional articles."""
+        if not authorized: return False
+
+        # Checkpoint
+        self.history.append({"proposal_id": f"del-{article_id}", "timestamp": time.time(), "data": json.dumps(self.genome)})
+
+        articles = self.genome["constitution"]["articles"]
+        self.genome["constitution"]["articles"] = [a for a in articles if a["id"] != article_id]
+
+        # Re-hash
+        self.genome["constitution"]["root_hash"] = "0x" + hashlib.sha256(json.dumps(self.genome["constitution"]["articles"], sort_keys=True).encode()).hexdigest()[:16]
+        print(f"Genome: Article {article_id} deleted. Root Hash: {self.genome['constitution']['root_hash']}")
         return True
 
     def rollback(self) -> bool:
@@ -70,7 +99,24 @@ class GenomeMutationWorkflow:
         print("Genome: Rollback executed.")
         return True
 
+    def get_behavioral_params(self) -> Dict[str, Any]:
+        """v0.1: Dynamic Behavioral Mapping from Articles."""
+        params = {"temperature": 0.7, "system_prompt": "Standard AI CEO"}
+        articles = self.genome.get("constitution", {}).get("articles", [])
+        for a in articles:
+            content = a.get("content", "").lower()
+            if "article 42" in content or "transparency" in content:
+                params["temperature"] = 0.4
+                params["system_prompt"] += " (Transparent & Rigid Mode)"
+            if "evolution" in content:
+                params["temperature"] = 0.9
+        return params
+
 # Initialize Engine
-with open("genome/constitution.work", "r") as f:
-    initial_genome = json.load(f)
+try:
+    with open("genome/constitution.work", "r") as f:
+        initial_genome = json.load(f)
+except:
+    initial_genome = {"constitution": {"articles": []}}
+
 genome_engine = GenomeMutationWorkflow(initial_genome)

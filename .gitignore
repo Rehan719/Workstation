@@ -76,3 +76,9 @@ apps/*/node_modules/
 packages/*/node_modules/
 apps/*/dist/
 packages/*/dist/
+
+# Database & Vector Store data
+agentic_core/data/chroma/
+agentic_core/data/memory.json
+agentic_core/data/meeting_log.json
+agentic_core/data/marketplace.json

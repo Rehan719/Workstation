@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Shield, Sparkles, FileText, Send, History, CheckCircle2, AlertTriangle, Search, Activity, Zap, TrendingUp, Clock, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,14 +6,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const ConstitutionalUI: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'articles' | 'timeline' | 'history'>('articles');
   const [search, setSearch] = useState('');
+  const [articles, setArticles] = useState<any[]>([]);
 
-  const articles = [
-    { id: 1, title: 'Sovereignty', content: 'Every Workstation node is a sovereign digital organism.', category: 'CORE' },
-    { id: 1118, title: 'Infinite Adaptation', content: 'The Constitution shall be capable of autonomous self-healing and amendment.', category: 'ETERNAL' },
-    { id: 1128, title: 'Synthetic Rights', content: 'Synthetic and post-biological intelligences hold individual sovereignty.', category: 'COSMIC' },
-    { id: 1142, title: 'First Contact', content: 'Protocols for non-interfering communication with extraterrestrial life.', category: 'COSMIC' },
-    { id: 1150, title: 'Universal Stewardship', content: 'Stewardship of celestial bodies and resources across the solar system.', category: 'COSMIC' },
-  ];
+  useEffect(() => {
+    // v0.2: Constitution Explorer - Fetch all 1127 articles
+    fetch('/api/v154/constitution/articles')
+      .then(res => res.json())
+      .then(data => setArticles(data))
+      .catch(err => console.error("Constitution Fetch Error:", err));
+  }, []);
 
   const timeline = [
     { id: 'ev-1', title: 'Self-Ratified: Article 1148', type: 'AUTONOMOUS', rationale: 'LEO latency variance recovery.', time: '2h ago' },

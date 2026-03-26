@@ -3,6 +3,7 @@ import { Card, Badge, Button } from '@workstation/ui';
 import { Globe, FileText, Send, ShieldCheck, History, Info, ChevronRight, Zap, Globe2, AlertCircle, Plus, Network, Gavel, Scale } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
+import { ethers } from 'ethers';
 
 export const TreatyDashboard: React.FC = () => {
   const { user } = useStore();
@@ -14,10 +15,37 @@ export const TreatyDashboard: React.FC = () => {
     { id: 'al-3', name: 'Research-Guild-X', status: 'Active', members: 8, trust: 0.99, type: 'Scholarship' },
   ];
 
-  const treaties = [
+   const [treaties, setTreaties] = useState([
     { id: 'tr-142', name: 'L11-Mesh-Syndication', status: 'Ratified', hash: 'e8a9b1c2...', date: '2026-03-20', network: 'Polygon' },
     { id: 'tr-219', name: 'Sovereign-Data-Handshake', status: 'Review', hash: 'd4f5g6h7...', date: '2026-03-21', network: 'Polygon' },
-  ];
+  ]);
+
+  const handleProposeTreaty = async () => {
+     try {
+        // v0.2: Real Ethereum Testnet Integration Simulation (Article 1108)
+        const provider = new ethers.BrowserProvider((window as any).ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+
+        const validation = await gaas.validateAction('TREATY_PROPOSAL', user?.did || 'anon', { wallet: address });
+        if (!validation.valid) return alert("GaaS blocked treaty proposal.");
+
+        const newTreaty = {
+           id: `tr-${Math.floor(Math.random()*1000)}`,
+           name: 'New Federated Treaty',
+           status: 'Pending',
+           hash: '0x' + Math.random().toString(16).slice(2, 10),
+           date: new Date().toISOString().split('T')[0],
+           network: 'Ethereum-Sepolia'
+        };
+
+        setTreaties([newTreaty, ...treaties]);
+        alert(`Treaty proposed by ${address}. Article 1108 compliance verified.`);
+     } catch (err) {
+        console.error("Blockchain error:", err);
+        alert("Wallet connection required for v0.2 production treaties.");
+     }
+  };
 
   return (
     <div className="space-y-12 pb-24">
@@ -28,7 +56,7 @@ export const TreatyDashboard: React.FC = () => {
         </div>
         <div className="flex gap-4">
            <Button variant="outline"><History size={18} /> Archive</Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+           <Button onClick={handleProposeTreaty} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Plus size={18} /> Propose Treaty
            </Button>
         </div>

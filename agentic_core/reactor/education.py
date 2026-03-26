@@ -55,7 +55,23 @@ class EducationReactor(DigitalReactor):
         return {"visualization": "mastery_heatmap", "subjects": ["Math", "Physics", "Ethics"], "data": [0.9, 0.85, 0.98]}
 
     async def analyze(self, data: Any) -> Dict[str, Any]:
-        return {"skill_gaps": ["Critical Thinking", "Applied Ethics"], "recommendations": ["Introduce peer-review module"]}
+        """v0.3: Adaptive learning path generation."""
+        from agentic_core.reactor.domains.ontology_engine import ontology_engine
+        concepts = ontology_engine.search_ontology("education", str(data))
+
+        path = []
+        for i, c in enumerate(concepts[:5]):
+            path.append({
+                "step": i + 1,
+                "concept": c["id"],
+                "activity": f"Master {c['id']} via digital twin simulation."
+            })
+
+        return {
+            "adaptive_path": path,
+            "skill_gaps": ["Critical Thinking", "Applied Ethics"],
+            "recommendations": ["Introduce peer-review module"]
+        }
 
     async def validate_truth(self, *args, **kwargs) -> Dict[str, Any]:
         """ARTICLE 60: Automated functional logic for validate_truth."""

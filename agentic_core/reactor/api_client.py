@@ -53,7 +53,7 @@ class LiveAPIClient:
         """Mapping logic for real-world free APIs (Article 273)."""
         mappings = {
             "science": "http://export.arxiv.org/api/query",
-            "religion": "https://api.sunnah.com/v1/hadiths", # Requires key in real prod
+            "religion": "https://api.alquran.cloud/v1/ayah", # Standard API for QEP
             "law": "https://www.courtlistener.com/api/rest/v3/search/",
             "employment": "https://api.adzuna.com/v1/api/jobs/gb/search/1",
             "education": "https://commonstandardsproject.com/api/v1/jurisdictions"

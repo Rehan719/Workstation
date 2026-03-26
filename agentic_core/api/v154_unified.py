@@ -12,6 +12,7 @@ from agentic_core.layers.l8_recombination.merger import model_merger
 from agentic_core.layers.l9_orchestration.orchestrator import swarm_orchestrator
 from agentic_core.layers.ueg import ueg
 from agentic_core.governance.dao import dao_framework
+from agentic_core.reactor.ecosystem.marketplace import marketplace
 
 router = APIRouter(prefix="/v154", tags=["Sovereign Genesis API"])
 
@@ -92,3 +93,31 @@ async def start_swarm(goal: str):
     swarm_id = swarm_orchestrator.form_swarm(goal)
     ueg.log_event("L9", "Orchestrator", "SWARM_INITIATED", {"swarm_id": swarm_id, "goal": goal})
     return {"status": "sovereign_swarm_launched", "swarm_id": swarm_id}
+
+@router.get("/marketplace/agents")
+async def list_marketplace():
+    return marketplace.list_agents()
+
+@router.post("/marketplace/publish")
+async def publish_agent(blueprint: Dict[str, Any], creator: str = "anonymous"):
+    # GaaS Validation for publishing
+    validation = validator_l1.validate_action("marketplace_publish", {"creator": creator})
+    if not validation["valid"]:
+         raise HTTPException(status_code=403, detail="GaaS: Publication blocked.")
+
+    agent_id = marketplace.publish_agent(blueprint, creator)
+    return {"status": "PUBLISHED", "id": agent_id}
+
+@router.delete("/marketplace/agents/{agent_id}")
+async def delete_marketplace_agent(agent_id: str):
+    """v0.3: Marketplace deletion endpoint."""
+    res = marketplace.delete_agent(agent_id)
+    if not res: raise HTTPException(status_code=404, detail="Agent not found.")
+    return {"status": "DELETED"}
+
+@router.post("/marketplace/agents/{agent_id}/rate")
+async def rate_marketplace_agent(agent_id: str, rating: int):
+    """v0.3: Marketplace rating endpoint."""
+    res = marketplace.rate_agent(agent_id, rating)
+    if not res: raise HTTPException(status_code=404, detail="Agent not found.")
+    return {"status": "RATED"}
