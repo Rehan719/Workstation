@@ -33,6 +33,8 @@ from agentic_core.api.v320 import intelligence as intel_v320, governance_autonom
 from agentic_core.api.v340 import consciousness, soul_record
 from agentic_core.api.v138 import ceo as ceo_v138
 from agentic_core.api import v154_unified, v200_unified
+from prometheus_client import make_asgi_app, Counter, Histogram
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -63,9 +65,28 @@ async def lifespan(app: FastAPI):
     logger.info("Apotheosis: System Hibernating.")
 
 app = FastAPI(
-    title="Jules AI v128.0 Sovereign Integrity Master Backend",
+    title="Workstation v1.0 Global Launch - Sovereign AI Core",
     lifespan=lifespan
 )
+
+# Prometheus Metrics
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
+
+REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP Requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('http_request_latency_seconds', 'HTTP Request Latency', ['endpoint'])
+
+@app.middleware("http")
+async def prometheus_middleware(request: Request, call_next):
+    start_time = time.time()
+    endpoint = request.url.path
+    response = await call_next(request)
+
+    latency = time.time() - start_time
+    REQUEST_COUNT.labels(method=request.method, endpoint=endpoint, http_status=response.status_code).inc()
+    REQUEST_LATENCY.labels(endpoint=endpoint).observe(latency)
+
+    return response
 
 # WebSocket Connections Management
 class ConnectionManager:
