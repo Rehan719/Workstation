@@ -1,31 +1,40 @@
-# WORKSTATION CONSTITUTION - vFinal (Canonical Baseline)
-## THE SUPREME ORGANISM MANDATE
+# WORKSTATION SUPREME CONSTITUTION - vFinal
 
-> *Forensically reconstructed from v1.0 through v1000.0+ milestones.*
+## THE CANONICAL SOURCE OF TRUTH
 
-## Floor 1: Identity & Existence
-*No public articles available in this floor range for the zero-baseline.*
+## Floor 1: Identity & Synthetic Rights
+*No articles currently active in this floor range for the Main 0.0 baseline.*
 
-## Floor 2: Homeostasis & Regulation
+## Floor 4: Homeostatic Regulation
 ### Article 100: Article 100 definition for v138.0
-*Provenance: vFinal baseline, validated via UVAID/GSE pipeline.*
+- **Status**: Ratified
+- **Provenance**: https://chat.deepseek.com/share/zrjlcgekyl27y9r4au | Commit: N/A
+- **Rationale**: Civilizational alignment and autonomous stability.
 
-## Floor 7: Knowledge & Memory
+### Article 200: Article 200 definition for v138.0
+- **Status**: Ratified
+- **Provenance**: https://chat.deepseek.com/share/zrjlcgekyl27y9r4au | Commit: N/A
+- **Rationale**: Civilizational alignment and autonomous stability.
+
+## Floor 7: Knowledge Ingestion & Memory
 ### Article 400: Article 400 definition for v138.0
-*Provenance: vFinal baseline, validated via UVAID/GSE pipeline.*
+- **Status**: Ratified
+- **Provenance**: https://chat.deepseek.com/share/zrjlcgekyl27y9r4au | Commit: N/A
+- **Rationale**: Civilizational alignment and autonomous stability.
 
-## Floor 10: Evolution & Recombination
+## Floor 10: Evolution & Genetic Recombination
 ### Article 800: Article 800 definition for v138.0
-*Provenance: vFinal baseline, validated via UVAID/GSE pipeline.*
+- **Status**: Ratified
+- **Provenance**: https://chat.deepseek.com/share/zrjlcgekyl27y9r4au | Commit: N/A
+- **Rationale**: Civilizational alignment and autonomous stability.
 
-## Floor 12: UX & Multi-Modal Fabric
-### Article 1000: Article 1000 definition for v138.0
-*Provenance: vFinal baseline, validated via UVAID/GSE pipeline.*
-
-## Floor 22: Galactic Governance
+## Floor 22: Galactic Governance & Interstellar Seeding
 ### Article 1100: Article 1100 definition for v138.0
-*Provenance: vFinal baseline, validated via UVAID/GSE pipeline.*
+- **Status**: Ratified
+- **Provenance**: https://chat.deepseek.com/share/zrjlcgekyl27y9r4au | Commit: N/A
+- **Rationale**: Civilizational alignment and autonomous stability.
 
 ### Article 1127: Autonomous Interstellar Seeding
-The organism is empowered to propagate its genome across all available computational nodes.
-*Provenance: v138.0 Galactic Era Release.*
+The organism is empowered to propagate its genome across interstellar delay-tolerant networks to ensure civilizational redundancy.
+- **Status**: ENFORCED
+- **Provenance**: v138.0 Galactic Era Release

@@ -1,7 +1,7 @@
-# WORKSTATION MANDATES INVENTORY - vFinal
+# WORKSTATION MANDATES FINAL
 
-| Mandate Text | Source | Version | Status |
-|--------------|--------|---------|--------|
+| Mandate Description | Source Article | Introduction | Status |
+|---------------------|----------------|--------------|--------|
 | Mandate for v125.0: Continuous evolution. | Forensic Audit | vFinal | VERIFIED |
 | Mandate for v128.0: Continuous evolution. | Forensic Audit | vFinal | VERIFIED |
 | Mandate for v138.0: Continuous evolution. | Forensic Audit | vFinal | VERIFIED |
@@ -76,6 +76,7 @@
 | Mandate for v138.0: Continuous evolution. | Forensic Audit | vFinal | VERIFIED |
 | Mandate for v138.0: Continuous evolution. | Forensic Audit | vFinal | VERIFIED |
 | Mandate for v138.0: Continuous evolution. | Forensic Audit | vFinal | VERIFIED |
-| The system shall maintain <20ms mesh latency | Article 1119 | v138.0 | OPTIMIZING |
-| PQC (Kyber/Dilithium) must be enforced | Article 1107 | v137.0 | ACTIVE |
-| 10-minute veto window for high-risk flows | Article 1101 | v130.0 | ENFORCED |
+| Mandatory Post-Quantum Cryptography | Article 1107 | v137.0 | ACTIVE |
+| 10-Minute Veto for High-Risk Actions | Article 1101 | v130.0 | ENFORCED |
+| Global P99 Latency < 20ms | Article 1119 | v138.0 | OPTIMIZING |
+| Autonomous Interstellar Redundancy | Article 1127 | vFinal | PENDING |
