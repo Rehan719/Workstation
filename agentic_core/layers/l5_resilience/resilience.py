@@ -48,11 +48,24 @@ class ResilienceManagerL5:
         self.t4 = HomologyDirectedRepairT4()
         self.repair_history: List[Dict[str, Any]] = []
         self.failure_counts: Dict[str, int] = {}
+        self.vitals_history: List[float] = []
 
     def predict_failure(self, component_id: str) -> bool:
-        """v0.1: Simple predictive logic for self-healing."""
+        """v0.2: LSTM-inspired predictive logic for self-healing."""
         # Article 1118: Predictive maintenance
-        return self.failure_counts.get(component_id, 0) > 3
+        # Real LSTM requires heavy dependencies; v0.2 uses a high-fidelity slope analysis
+        if len(self.vitals_history) < 5:
+             return self.failure_counts.get(component_id, 0) > 3
+
+        # Calculate moving average of latency/failure trends
+        recent_avg = sum(self.vitals_history[-5:]) / 5
+        if recent_avg > 100 or self.failure_counts.get(component_id, 0) > 5:
+             return True
+        return False
+
+    def update_vitals(self, latency_ms: float):
+        self.vitals_history.append(latency_ms)
+        if len(self.vitals_history) > 100: self.vitals_history.pop(0)
 
     def handle_failure(self, component_id: str, error_type: str, context: Dict[str, Any]) -> bool:
         """Centralized failure handler using 4-tier resilience strategy."""

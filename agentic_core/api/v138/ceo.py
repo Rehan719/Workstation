@@ -62,39 +62,30 @@ class ToolRegistry:
 
 tool_registry = ToolRegistry()
 
-class SimpleVectorStore:
-    """Mock ChromaDB for conversation memory with persistent JSON backend."""
+class RedisVectorStore:
+    """v0.2: Stateless Redis-backed conversation memory for horizontal scaling."""
     def __init__(self):
-        self.file_path = "agentic_core/data/memory.json"
-        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-        self.memory = self._load_memory()
-
-    def _load_memory(self):
-        if os.path.exists(self.file_path):
-            try:
-                with open(self.file_path, 'r') as f:
-                    data = json.load(f)
-                    return data if isinstance(data, list) else []
-            except:
-                return []
-        return []
-
-    def _save_memory(self):
-        with open(self.file_path, 'w') as f:
-            json.dump(self.memory, f, indent=2)
+        import redis
+        try:
+            self.r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+            self.r.ping()
+            self.enabled = True
+        except:
+            self.enabled = False
+            logger.warning("Redis not available, falling back to local stateless mock.")
 
     def add_exchange(self, user_msg: str, ai_msg: str):
-        self.memory.append({"user": user_msg, "ai": ai_msg, "timestamp": str(asyncio.get_event_loop().time())})
-        # Keep last 50 exchanges
-        self.memory = self.memory[-50:]
-        self._save_memory()
+        if not self.enabled: return
+        key = f"ceo_memory:{datetime.utcnow().timestamp()}"
+        self.r.set(key, json.dumps({"user": user_msg, "ai": ai_msg}), ex=3600*24)
 
     def query(self, query: str):
-        # Keyword based retrieval
-        relevant = [m for m in self.memory if any(word in (m['user'] + m['ai']).lower() for word in query.lower().split())]
-        return relevant[-2:] # Return last 2 relevant exchanges
+        if not self.enabled: return []
+        # v0.2: Simple Redis scan (Real vector search would use RedisVL)
+        keys = self.r.keys("ceo_memory:*")
+        return [self.r.get(k) for k in keys[-2:]]
 
-vector_store = SimpleVectorStore()
+vector_store = RedisVectorStore()
 
 async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
     """Streams responses from Ollama or falls back to simulation, using memory and tools."""
@@ -102,8 +93,8 @@ async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
     # 0. Genome-Based Parameter Tuning (v0.1)
     behavioral_params = genome_engine.get_behavioral_params()
 
-    # 1. Semantic Memory Retrieval (v0.1 Upgrade)
-    past_exchanges = memory_v01.query(prompt)
+    # 1. Stateless Redis Memory Retrieval (v0.2 Upgrade)
+    past_exchanges = vector_store.query(prompt)
     context_str = "\n".join(past_exchanges)
 
     # 2. Constitutional Context (v0.1 Upgrade)
@@ -163,12 +154,19 @@ async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
             await asyncio.sleep(0.01)
         yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
 
-    # 3. Semantic Memory Storage (v0.1)
-    memory_v01.add_exchange(prompt, full_response)
+    # 3. Stateless Redis Memory Storage (v0.2)
+    vector_store.add_exchange(prompt, full_response)
 
 @router.get("/meeting/log")
 async def get_meeting_log():
     return meeting_log.log
+
+@router.get("/meeting/minutes")
+async def get_meeting_minutes():
+    """v0.2: Export meeting minutes as Markdown."""
+    from fastapi.responses import Response
+    content = meeting_log.export_minutes()
+    return Response(content=content, media_type="text/markdown")
 
 @router.post("/chat")
 async def ceo_chat(req: ChatRequest):

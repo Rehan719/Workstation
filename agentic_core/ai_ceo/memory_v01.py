@@ -68,5 +68,12 @@ class CSuiteMeetingLog:
         recent = self.log[-10:]
         return "\n".join([f"{e['agent']} ({e['vote']}): {e['argument']}" for e in recent])
 
+    def export_minutes(self, format: str = "markdown") -> str:
+        """v0.2: Export meeting minutes."""
+        content = "# C-Suite Meeting Minutes\n\n"
+        for e in self.log:
+            content += f"### {e['agent']} ({e['vote']})\n- {e['argument']}\n- *Timestamp: {e['timestamp']}*\n\n"
+        return content
+
 memory_v01 = SemanticMemory()
 meeting_log = CSuiteMeetingLog()

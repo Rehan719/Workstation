@@ -11,6 +11,15 @@ export const CEOChat: React.FC = () => {
   const [sentiment, setSentiment] = useState('analytical');
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const getAvatarColor = () => {
+    switch (sentiment) {
+      case 'joyful': return 'text-emerald-400';
+      case 'frustrated': return 'text-vital';
+      case 'curious': return 'text-highlight';
+      default: return 'text-aura';
+    }
+  };
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -37,6 +46,12 @@ export const CEOChat: React.FC = () => {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = { role: 'assistant', content: '' };
+
+      // v0.2: Simple sentiment analysis (frontend-side for UI responsiveness)
+      if (input.toLowerCase().includes("great") || input.toLowerCase().includes("good")) setSentiment('joyful');
+      else if (input.toLowerCase().includes("error") || input.toLowerCase().includes("fail")) setSentiment('frustrated');
+      else if (input.toLowerCase().includes("how") || input.toLowerCase().includes("why")) setSentiment('curious');
+      else setSentiment('analytical');
 
       setMessages(prev => [...prev, assistantMessage]);
 
@@ -81,7 +96,7 @@ export const CEOChat: React.FC = () => {
           <div className={`p-1 rounded-2xl transition-all duration-700 relative group bg-aura/20 shadow-[0_0_20px_rgba(100,255,218,0.2)] overflow-hidden`}>
             {/* Visual Avatar Channel Simulation */}
             <div className="w-16 h-16 bg-slate-950 rounded-xl flex items-center justify-center relative">
-               <Bot size={32} className="text-aura relative z-10" />
+               <Bot size={32} className={`${getAvatarColor()} relative z-10 transition-colors duration-500`} />
                <motion.div
                  animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
                  transition={{ duration: 4, repeat: Infinity }}

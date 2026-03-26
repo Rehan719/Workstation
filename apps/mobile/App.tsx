@@ -161,8 +161,9 @@ const GenomeScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // v0.1: Fetch actual articles for mobile explorer
-    fetch('http://localhost:8000/api/v154/constitution/articles')
+    // v0.2: Fetch actual articles for mobile explorer (Env-aware)
+    const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+    fetch(`${baseUrl}/api/v154/constitution/articles`)
       .then(res => res.json())
       .then(data => {
         setArticles(data.slice(0, 50)); // Display top 50 for performance

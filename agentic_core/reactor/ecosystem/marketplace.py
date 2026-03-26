@@ -1,55 +1,67 @@
-import json
 import os
 import logging
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from sqlmodel import SQLModel, Field, create_engine, Session, select
 
 logger = logging.getLogger(__name__)
 
+class AgentRecord(SQLModel, table=True):
+    """v0.2: Agent Marketplace Database Schema."""
+    id: str = Field(primary_key=True)
+    name: str
+    creator: str
+    blueprint_json: str
+    rating: float = 0.0
+    votes: int = 0
+    version: int = 1
+    timestamp: str
+
 class AgentMarketplace:
-    """v0.1: Agent Marketplace Registry (JSON-backed)."""
-    def __init__(self, registry_path: str = "agentic_core/data/marketplace.json"):
-        self.registry_path = registry_path
-        os.makedirs(os.path.dirname(registry_path), exist_ok=True)
-        self.agents = self._load_agents()
-
-    def _load_agents(self) -> List[Dict[str, Any]]:
-        if os.path.exists(self.registry_path):
-            try:
-                with open(self.registry_path, 'r') as f:
-                    return json.load(f)
-            except: return []
-        return []
-
-    def _save_agents(self):
-        with open(self.registry_path, 'w') as f:
-            json.dump(self.agents, f, indent=2)
+    """v0.2: Agent Marketplace Registry (SQLite-backed)."""
+    def __init__(self, db_path: str = "agentic_core/data/marketplace.db"):
+        self.engine = create_engine(f"sqlite:///{db_path}")
+        SQLModel.metadata.create_all(self.engine)
 
     def publish_agent(self, blueprint: Dict[str, Any], creator: str):
-        """Publishes a new agent blueprint to the marketplace."""
-        agent_id = f"pub-{os.urandom(4).hex()}"
-        entry = {
-            "id": agent_id,
-            "blueprint": blueprint,
-            "creator": creator,
-            "rating": 0,
-            "votes": 0,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        self.agents.append(entry)
-        self._save_agents()
+        """v0.2: Publishes or versions an agent."""
+        import json
+        agent_id = blueprint.get("id", f"pub-{os.urandom(4).hex()}")
+
+        with Session(self.engine) as session:
+            existing = session.get(AgentRecord, agent_id)
+            if existing:
+                existing.version += 1
+                existing.blueprint_json = json.dumps(blueprint)
+                existing.timestamp = datetime.utcnow().isoformat()
+                session.add(existing)
+            else:
+                record = AgentRecord(
+                    id=agent_id,
+                    name=blueprint.get("name", "Unnamed Agent"),
+                    creator=creator,
+                    blueprint_json=json.dumps(blueprint),
+                    timestamp=datetime.utcnow().isoformat()
+                )
+                session.add(record)
+            session.commit()
         return agent_id
 
     def list_agents(self) -> List[Dict[str, Any]]:
-        return self.agents
+        with Session(self.engine) as session:
+            statement = select(AgentRecord)
+            results = session.exec(statement).all()
+            return [r.dict() for r in results]
 
     def rate_agent(self, agent_id: str, rating: int):
-        """Simple rating (1-5)."""
-        for a in self.agents:
-            if a["id"] == agent_id:
-                a["votes"] += 1
-                a["rating"] = (a["rating"] * (a["votes"] - 1) + rating) / a["votes"]
-                self._save_agents()
+        """v0.2: Rate an agent in the database."""
+        with Session(self.engine) as session:
+            record = session.get(AgentRecord, agent_id)
+            if record:
+                record.votes += 1
+                record.rating = (record.rating * (record.votes - 1) + rating) / record.votes
+                session.add(record)
+                session.commit()
                 return True
         return False
 

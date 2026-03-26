@@ -54,15 +54,16 @@ def sign_instruction(instruction_data: bytes, private_key: Any) -> bytes:
 
     return b"pqc_sig_" + instruction_data[:16]
 
-def verify_instruction(instruction_data: bytes, signature: bytes, public_key: Any) -> bool:
-    """v0.1: Production-grade verification using liboqs (Dilithium)."""
+def verify_instruction(instruction_data: bytes, signature: bytes, public_key: bytes) -> bool:
+    """v0.2: Production-grade verification using liboqs (Dilithium)."""
     if oqs:
          try:
             with oqs.Signature(PQC_ALGORITHM_SIG) as sig:
-                # Assuming public_key is provided or using a mock for v0.1
-                return sig.verify(instruction_data, signature, sig.export_public_key())
-         except:
-            pass
+                # v0.2 Fix: Use the provided public_key for verification
+                return sig.verify(instruction_data, signature, public_key)
+         except Exception as e:
+            logger.error(f"PQC Verification failed: {e}")
+            return False
 
     return signature.startswith(b"pqc_sig_")
 
