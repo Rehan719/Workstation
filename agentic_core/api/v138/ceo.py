@@ -5,9 +5,14 @@ import asyncio
 import httpx
 import os
 import logging
+import random
+from datetime import datetime
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 from agentic_core.ai_ceo.memory_v01 import memory_v01, meeting_log
+from agentic_core.layers.ueg import ueg
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ceo", tags=["AI CEO Galactic Era"])
 
@@ -83,12 +88,12 @@ tool_registry = ToolRegistry()
 class RedisVectorStore:
     """v0.2: Stateless Redis-backed conversation memory for horizontal scaling."""
     def __init__(self):
-        import redis
         try:
+            import redis
             self.r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
             self.r.ping()
             self.enabled = True
-        except:
+        except Exception:
             self.enabled = False
             logger.warning("Redis not available, falling back to local stateless mock.")
 
