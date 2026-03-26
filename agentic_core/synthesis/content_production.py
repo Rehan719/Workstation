@@ -43,8 +43,24 @@ Implications for sovereign AI alignment...
         plt.close()
         return base64.b64encode(buf.getvalue()).decode()
 
-    def generate_manim_stub(self, script: str):
-        """Simulates Manim animation generation."""
-        return {"status": "SUCCESS", "render_id": "ANIM-138", "format": "mp4", "duration": "12s"}
+    def generate_manim_animation(self, script: str) -> Dict[str, Any]:
+        """Simulates Manim animation generation for mathematical concepts."""
+        return {
+            "status": "SUCCESS",
+            "render_id": "ANIM-138-v09",
+            "format": "mp4",
+            "duration": "15s",
+            "source_script": script,
+            "preview_url": "/api/v1/content/preview/ANIM-138"
+        }
+
+    def render_quarto_lesson(self, lesson_id: str, format: str = "pdf") -> Dict[str, Any]:
+        """v0.9: Single-source (.qmd) rendering stub."""
+        return {
+            "lesson_id": lesson_id,
+            "format": format,
+            "render_status": "COMPLETED",
+            "artifact_url": f"/artifacts/lessons/{lesson_id}.{format}"
+        }
 
 content_pipeline = ContentProductionPipeline()
