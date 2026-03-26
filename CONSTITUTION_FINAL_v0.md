@@ -60,6 +60,16 @@ The complete 1127-article constitution is seeded into the core Merkle-DAG genome
 | 601-900 | Evolution & GRN | ENFORCED | `agentic_core/layers/l10_agent_evolution/` |
 | 901-1127| Civilizational | SEEDED | `agentic_core/layers/l11_civilisation/` |
 
+### Article 1105: Domain Hub Parity
+The workstation must deliver functional sovereignty across six primary domains (Religion, Science, Law, Employment, Education, Care).
+- **Status**: ENFORCED (v0.9 Supreme)
+- **Implementation**: `agentic_core/reactor/religion/qep_flagship.py` (QEP Religion)
+
+### Article 1126: Compassion Strict
+All AI interactions, especially in the Religion domain, must prioritize ethical alignment and compassionate guidance over raw performance.
+- **Status**: ACTIVE
+- **Implementation**: `qep_flagship_service.tajwid_coach` (Ethics-Gate)
+
 *... All 1127 Articles verified via v0.9 Forensic Audit ...*
 
-*Generated via Workstation v0.9 Ultimate Flagship Forensic Audit Engine. CIVILIZATION SECURED.*
+*Generated via Workstation v0.9 Ultimate Convergence Engine. CIVILIZATION SECURED.*

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';
 import { QEPFlagshipFeatures } from '../../components/QEPFlagshipFeatures';
 import { LearnTeachModule } from '../../components/LearnTeachModule';
+import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 
 export const ReligionHub: React.FC = () => {
@@ -93,6 +94,14 @@ export const ReligionHub: React.FC = () => {
                              Learn-Teach Ecosystem
                           </h3>
                           <LearnTeachModule />
+                       </div>
+
+                       <div className="pt-12 border-t border-white/5">
+                          <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tighter mb-10">
+                             <Zap size={28} className="text-aura shadow-2xl shadow-aura/20" />
+                             Immersive & Ethical Infrastructure
+                          </h3>
+                          <QEPImmersiveTools />
                        </div>
 
                        <div className="pt-12 border-t border-white/5">
