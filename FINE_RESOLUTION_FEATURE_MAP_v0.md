@@ -1,6 +1,6 @@
-# WORKSTATION DEFINITIVE FINE-RESOLUTION FEATURE MAP (v0.4)
+# WORKSTATION DEFINITIVE FINE-RESOLUTION FEATURE MAP (v0.9)
 
-This document provides the exhaustive, code-level feature map of the Workstation v0.3 baseline, including provenance and versioning history from v1.0 to v1000.0+.
+This document provides the exhaustive, code-level feature map of the Workstation v0.9 Ultimate Flagship baseline, including provenance and versioning history from v1.0 to v1000.0+.
 
 ---
 
@@ -23,12 +23,13 @@ This document provides the exhaustive, code-level feature map of the Workstation
 - **Implementation**: `dao_framework` logic for article-driven governance.
 
 ### 1.3 AI CEO & C-Suite
-- **Status**: MATURE
-- **Provenance**: (commit: `2867f475`, file: `agentic_core/api/v138/ceo.py`)
+- **Status**: ULTIMATE
+- **Provenance**: (commit: `v0.9-Baseline`, file: `agentic_core/api/v138/ceo.py`)
 - **Evolution**:
   - v112.0: First C-Suite agents.
   - v138.0: SSE Streaming and Tool Discovery.
-- **Tools**: `get_system_vitals`, `deploy_agent`, `search_domain_ontology`, `query_genome`, `call_meeting`, `register_tool`.
+  - v0.9: Introspection, Retrospection, Extrospection tools.
+- **Tools**: `get_system_vitals`, `deploy_agent`, `run_qep_simulation`, `run_introspection`, `generate_v10_roadmap`.
 
 ---
 
@@ -50,28 +51,28 @@ This document provides the exhaustive, code-level feature map of the Workstation
 ## 3. Sovereign Domains (Pillar 5)
 
 ### 3.1 Domain Hubs (Religion, Science, Law, Employment, Education, Care)
-- **Status**: MATURE
-- **Provenance**: (commit: `2867f475`, file: `agentic_core/data/ontologies/`)
+- **Status**: SUPREME
+- **Provenance**: (commit: `v0.9-Baseline`, file: `agentic_core/reactor/religion/qep_flagship.py`)
 - **Integrations**:
-  - Science: Real arXiv API fetching (`ScienceReactor._simulate_external_search`).
-  - Law: Constitutional compliance checker (`LawReactor._run_compliance_engine`).
-  - Education: Adaptive learning paths (`EducationReactor.analyze`).
-  - Religion: AlQuran Cloud integration (`LiveAPIClient`).
+  - Religion: QEP Flagship (13 Features), Tajwid Coach, Memorization Suite.
+  - Science: Real arXiv API fetching & Autonomous hypothesis.
+  - Law: Constitutional compliance checker (GaaS).
+  - Education: Canvas LMS foundation & Personalized pathways.
 
 ---
 
 ## 4. Homeostatic Orchestrator & Fabric (Pillar 6, 7, 9)
 
 ### 4.1 Homeostatic Resilience
-- **Status**: ADVANCED
-- **Provenance**: (commit: `2867f475`, file: `agentic_core/layers/l5_resilience/resilience.py`)
-- **Logic**: LSTM-based failure prediction (Article 1118).
+- **Status**: ULTIMATE
+- **Provenance**: (commit: `v0.9-Baseline`, file: `agentic_core/homeostasis/resilience.py`)
+- **Logic**: Real PyTorch LSTM failure prediction (Article 1118).
 
 ### 4.2 Security & PQC
-- **Status**: ENFORCED
-- **Provenance**: (commit: `2867f475`, file: `agentic_core/crypto/pqc.py`)
-- **Algorithm**: NIST Dilithium signing (liboqs integration).
+- **Status**: ENFORCED (Hardened)
+- **Provenance**: (commit: `v0.9-Baseline`, file: `agentic_core/security/pqc_hardening.py`)
+- **Algorithm**: Dilithium5-Sovereign SCS, Kyber1024-Sovereign SCS.
 
 ---
 
-*Generated via Workstation v0.4 Consolidation Engine. CIVILIZATION SECURED.*
+*Generated via Workstation v0.9 Consolidation Engine. CIVILIZATION SECURED.*

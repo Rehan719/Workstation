@@ -45,6 +45,8 @@ import { DebateLog } from './pages/c-suite/DebateLog';
 import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
 import { Contribute } from './pages/Contribute';
 import { QEPEngine } from './pages/QEPEngine';
+import { QEPLanding } from './pages/QEPLanding';
+import { IntrospectionDashboard } from './pages/IntrospectionDashboard';
 import { ARVRSandbox } from './pages/platforms/ARVRSandbox';
 import { WearableSync } from './pages/platforms/WearableSync';
 import { EmbodimentStudio } from './pages/platforms/EmbodimentStudio';
@@ -57,11 +59,21 @@ function App() {
   const { currentRealm } = useStore();
   const [runTutorial, setRunTutorial] = useState(true);
 
+  const isQEPStandalone = import.meta.env.VITE_QEP_STANDALONE === 'true';
+
   const steps = [
     { target: '.neon-text', content: 'Welcome to the v0.5 Sovereign Workstation! This is your control center.' },
     { target: 'aside nav', content: 'Navigate through the five flagships realms and sovereign domains here.' },
     { target: '.gaas-audit-btn', content: 'Every action is validated against the 1127 constitutional articles.' }
   ];
+
+  if (isQEPStandalone) {
+    return (
+      <ThemeProvider>
+        <QEPLanding />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider>
@@ -126,6 +138,7 @@ function App() {
           case 'council': return <CouncilInterface />;
           case 'debate': return <DebateLog />;
           case 'marketplace': return <LivingMarketplace />;
+          case 'introspection': return <IntrospectionDashboard />;
           case 'admin': return <AdminPanel />;
           default:
             return (

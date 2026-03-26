@@ -11,6 +11,13 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 from agentic_core.ai_ceo.memory_v01 import memory_v01, meeting_log
 from agentic_core.layers.ueg import ueg
+from agentic_core.simulation.ese import get_ese_instance
+from agentic_core.optimization.aro import get_aro_instance
+from agentic_core.homeostasis.drad import get_drad_instance
+from agentic_core.bto.religion_bto import get_religion_bto
+from agentic_core.swarm.signaling_protocol import SignalingProtocol
+from agentic_core.reactor.religion.qep_flagship import qep_flagship_service
+from agentic_core.ai_ceo.autonomy_pipelines import autonomy_pipelines
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +39,119 @@ class ToolRegistry:
             "deploy_agent": self.deploy_agent,
             "check_gaas_compliance": self.check_gaas_compliance,
             "call_meeting": self.call_meeting,
-            "discover_tools": self.discover_tools
+            "discover_tools": self.discover_tools,
+            "run_qep_simulation": self.run_qep_simulation,
+            "optimize_qep_resources": self.optimize_qep_resources,
+            "orchestrate_qep_swarm": self.orchestrate_qep_swarm,
+            "check_qep_fabric_health": self.check_qep_fabric_health,
+            "qep_tajwid_coach": self.qep_tajwid_coach,
+            "qep_memorization": self.qep_memorization,
+            "qep_competitions": self.qep_competitions,
+            "qep_ar_vr_immersion": self.qep_ar_vr_immersion,
+            "qep_learn_teach": self.qep_learn_teach,
+            "qep_adaptive_ui": self.qep_adaptive_ui,
+            "qep_community": self.qep_community,
+            "qep_analytics": self.qep_analytics,
+            "qep_certifications": self.qep_certifications,
+            "qep_offline_access": self.qep_offline_access,
+            "qep_billing_donations": self.qep_billing_donations,
+            "qep_guidance_assistant": self.qep_guidance_assistant,
+            "qep_swarm_learning": self.qep_swarm_learning,
+            "run_introspection": self.run_introspection,
+            "run_retrospection": self.run_retrospection,
+            "run_extrospection": self.run_extrospection,
+            "generate_v10_roadmap": self.generate_v10_roadmap
         }
+
+    async def run_qep_simulation(self, num_agents: int = 100, steps: int = 50):
+        """v0.8: Run Evolutionary Simulation Engine (ESE) for Religion Domain."""
+        ese = get_ese_instance(num_agents)
+        return await ese.run_simulation(steps)
+
+    async def optimize_qep_resources(self, sim_demand: float = 0.5, reason_demand: float = 0.8):
+        """v0.8: Run Autonomous Resource Optimisation (ARO)."""
+        aro = get_aro_instance()
+        return aro.optimize({"sim_demand": sim_demand, "reason_demand": reason_demand})
+
+    async def orchestrate_qep_swarm(self, topic: str):
+        """v0.8: Orchestrate specialized Religion Research Swarm (BTO)."""
+        # Mock signaling for tool execution
+        signaling = SignalingProtocol("CEO-ORCHESTRATOR")
+        bto = get_religion_bto("AI-CEO", signaling)
+        return bto.orchestrate_research(topic)
+
+    async def check_qep_fabric_health(self):
+        """v0.8: Check Dynamic Reactive Adaptive Fabric (DRAD) health."""
+        drad = get_drad_instance()
+        return drad.get_fabric_health()
+
+    async def qep_tajwid_coach(self, reference: str):
+        """v0.9: AI Tajwīd Coach."""
+        return await qep_flagship_service.tajwid_coach(b"", reference)
+
+    async def qep_memorization(self, user_id: str, reference: str):
+        """v0.9: Memorization Suite."""
+        return await qep_flagship_service.memorization_suite(user_id, reference)
+
+    async def qep_competitions(self):
+        """v0.9: Gamified Competitions."""
+        return await qep_flagship_service.gamified_competition()
+
+    async def qep_ar_vr_immersion(self, mode: str = "VR"):
+        """v0.9: Interactive AI/AR with VC/VR."""
+        return await qep_flagship_service.ar_vr_immersion(mode)
+
+    async def qep_learn_teach(self, role: str = "Learner"):
+        """v0.9: Learn-Teach Modules."""
+        return await qep_flagship_service.learn_teach_module(role)
+
+    async def qep_adaptive_ui(self, user_profile: Dict[str, Any]):
+        """v0.9: Adaptive UI/UX Engine."""
+        return await qep_flagship_service.adaptive_ui_engine(user_profile)
+
+    async def qep_community(self):
+        """v0.9: Social Media & Community."""
+        return await qep_flagship_service.community_features()
+
+    async def qep_analytics(self, user_id: str):
+        """v0.9: Analytics, Ratings & Reports."""
+        return await qep_flagship_service.analytics_reports(user_id)
+
+    async def qep_certifications(self, user_id: str, course_id: str):
+        """v0.9: Certifications & Credentials."""
+        return await qep_flagship_service.certifications(user_id, course_id)
+
+    async def qep_offline_access(self):
+        """v0.9: Offline & Global Access."""
+        return await qep_flagship_service.offline_global_access()
+
+    async def qep_billing_donations(self):
+        """v0.9: Secure Billing & Donations."""
+        return await qep_flagship_service.secure_billing_donations()
+
+    async def qep_guidance_assistant(self, query: str):
+        """v0.9: AI Agents & Guidance Assistant."""
+        return await qep_flagship_service.ai_guidance_assistant(query)
+
+    async def qep_swarm_learning(self):
+        """v0.9: Swarm Intelligence for Group Learning."""
+        return await qep_flagship_service.swarm_intelligence_learning()
+
+    async def run_introspection(self, action: str, reasoning: List[str], confidence: float):
+        """v0.9: Run AI CEO Introspection Pipeline."""
+        return autonomy_pipelines.log_introspection(action, reasoning, confidence)
+
+    async def run_retrospection(self, incident_log: Optional[List[Dict[str, Any]]] = None):
+        """v0.9: Run AI CEO Retrospection Pipeline."""
+        return autonomy_pipelines.run_retrospection(incident_log)
+
+    async def run_extrospection(self, external_data: Optional[List[str]] = None):
+        """v0.9: Run AI CEO Extrospection Pipeline."""
+        return autonomy_pipelines.run_extrospection(external_data)
+
+    async def generate_v10_roadmap(self):
+        """v0.9: Generate the v1.0 Global Launch Roadmap."""
+        return {"roadmap_path": autonomy_pipelines.generate_v10_roadmap()}
 
     async def discover_tools(self):
         """v0.1: Tool Discovery logic."""

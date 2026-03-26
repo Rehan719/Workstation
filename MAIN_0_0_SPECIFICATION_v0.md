@@ -1,15 +1,15 @@
-# WORKSTATION MAIN 0.7 SPECIFICATION (SUPREME BASELINE)
+# WORKSTATION MAIN 0.9 SPECIFICATION (ULTIMATE FLAGSHIP)
 
-This document represents the definitive unified technical specification of the Workstation v0.7 Supreme Baseline. It codifies the final production-ready state of the v138.0-v0.7 convergence.
+This document represents the definitive unified technical specification of the Workstation v0.9 Ultimate Flagship. It codifies the final production-ready state of the v0.8-v0.9 flagship evolution.
 
 ---
 
 ## 1. AI Core & Orchestration (Supreme v0.7)
-### 1.1 AI CEO (Galactic Era v138.0 Final)
+### 1.1 AI CEO (Ultimate Flagship v0.9)
 - **Endpoint**: `/api/v138/ceo/chat` (POST)
-- **Protocol**: Server-Sent Events (SSE) streaming with multi-agent context injection.
+- **Protocol**: SSE streaming with Introspection/Retrospection/Extrospection context.
 - **Model**: Local Llama 3.2 (Default); Ollama integration.
-- **Memory**: JSON-backed conversation store with semantic lookup foundations (ChromaDB).
+- **Memory**: Redis stateless memory + persistent ChromaDB search.
 - **Implementation**: `agentic_core/api/v138/ceo.py`.
 
 ### 1.2 Multi-Agent C-Suite Orchestration
@@ -46,9 +46,9 @@ This document represents the definitive unified technical specification of the W
 
 ## 4. Security & Constitutional Compliance
 ### 4.1 Post-Quantum Cryptography (Article 1107)
-- **Mandate**: NIST-standard Kyber-1024 (Encapsulation) and Dilithium-5 (Signatures).
-- **Implementation**: `agentic_core/crypto/pqc.py` (liboqs-based).
-- **Requirement**: Non-bypassable for all inter-node federation communications.
+- **Mandate**: NIST-standard Kyber-1024 and Dilithium-5.
+- **Implementation**: `agentic_core/security/pqc_hardening.py` (Sovereign SCS).
+- **Requirement**: Non-bypassable for all API/WS traffic (Hardened v0.9).
 
 ### 4.2 Governance-as-a-Service (GaaS)
 - **Engine**: `packages/shared/gaas.ts`
@@ -57,10 +57,10 @@ This document represents the definitive unified technical specification of the W
 ---
 
 ## 5. Deployment & Verification
-1. **Supreme Audit**: `python3 scripts/audit_v0.py` (Verify 1127 articles).
-2. **Setup**: `bash setup.sh` (Initializes production environment).
-3. **Tests**: `npm test` (Frontend) and `pytest` (Backend).
+1. **Ultimate Audit**: `python3 scripts/audit_v09.py` (Verify 1127+ articles).
+2. **Setup**: `.\setup.ps1` (Windows native) or `bash setup.sh`.
+3. **Standalone**: `VITE_QEP_STANDALONE=true npm run dev` (Launch QEP Product).
 
 ---
 
-*Generated via Workstation v0.7 Supreme Baseline Technical Specification. CIVILIZATION SECURED.*
+*Generated via Workstation v0.9 Ultimate Flagship Technical Specification. CIVILIZATION SECURED.*

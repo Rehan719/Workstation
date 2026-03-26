@@ -5,10 +5,11 @@ import random
 logger = logging.getLogger(__name__)
 
 class ExecutiveAgent:
-    def __init__(self, name: str, weight: float, desire_facet: str):
+    def __init__(self, name: str, weight: float, desire_facet: str, qep_tools: List[str] = None):
         self.name = name
         self.weight = weight
         self.desire_facet = desire_facet
+        self.qep_tools = qep_tools or []
         self.ptm_context = [] # Phonetic Trajectory Memory for neuro-symbolic reasoning
 
     def evaluate(self, question: str) -> bool:
@@ -28,7 +29,14 @@ class BiomimeticCSuite:
             ExecutiveAgent("CHRO", 0.80, "Telemetry Advocacy & Rest/Play Scheduling"),
             ExecutiveAgent("COO", 0.87, "Parametric Morphing & Resource Orchestration"),
             ExecutiveAgent("CLO", 0.90, "Ethical Boundary Enforcement & Sandboxing"),
-            ExecutiveAgent("CISO", 0.95, "Immune Synapse Fidelity & TRiSM Governance")
+            ExecutiveAgent("CISO", 0.95, "Immune Synapse Fidelity & TRiSM Governance"),
+            # v0.8 QEP Flagship C-Suite Roles
+            ExecutiveAgent("CEvO", 0.90, "Evolutionary Simulation & Hypothetical Modeling", ["run_qep_simulation"]),
+            ExecutiveAgent("CGO", 0.95, "Governance & Constitutional Compliance", ["check_gaas_compliance"]),
+            ExecutiveAgent("CPEO", 0.88, "Product Experience & User Feedback", ["check_qep_fabric_health"]),
+            ExecutiveAgent("CBO", 0.85, "Business Strategy & Product Distribution", ["optimize_qep_resources"]),
+            ExecutiveAgent("CoS", 0.82, "Team Coordination & Swarm Orchestration", ["orchestrate_qep_swarm"]),
+            ExecutiveAgent("CEnvO", 0.80, "Environmental Sustainability & Resource Efficiency", ["optimize_qep_resources"])
         ]
         self.quorum_thresholds = {
             "investment": 0.67,
