@@ -1,0 +1,22 @@
+{
+  "articles_verified": 1127,
+  "critical_article_enforcement": {
+    "1": "ENFORCED",
+    "42": "ENFORCED",
+    "60": "ENFORCED",
+    "1101": "ENFORCED",
+    "1104": "ENFORCED",
+    "1107": "ENFORCED",
+    "1127": "ENFORCED"
+  },
+  "domain_node_counts": {
+    "religion": 141,
+    "science": 141,
+    "law": 141,
+    "employment": 141,
+    "education": 141,
+    "care": 141
+  },
+  "gaas_mutations": 2,
+  "zero_placeholder_integrity": true
+}

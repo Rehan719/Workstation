@@ -1,0 +1,1414 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "type": "root",
+      "level": 0,
+      "id": "Religion Ontology Core"
+    },
+    {
+      "type": "pillar",
+      "level": 1,
+      "id": "Religion Pillar 1"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 1 - Concept 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 1 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 1 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 1 - Concept 2"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 2 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 2 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 1 - Concept 3"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 3 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 3 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 1 - Concept 4"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 4 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 4 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 1 - Concept 5"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 5 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 5 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 1 - Concept 6"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 6 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 6 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 1 - Concept 7"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 7 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 7 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 1 - Concept 8"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 8 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 8 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 1 - Concept 9"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 9 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 1 - Concept 9 - Attribute 2"
+    },
+    {
+      "type": "pillar",
+      "level": 1,
+      "id": "Religion Pillar 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 2 - Concept 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 1 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 1 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 2 - Concept 2"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 2 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 2 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 2 - Concept 3"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 3 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 3 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 2 - Concept 4"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 4 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 4 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 2 - Concept 5"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 5 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 5 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 2 - Concept 6"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 6 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 6 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 2 - Concept 7"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 7 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 7 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 2 - Concept 8"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 8 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 8 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 2 - Concept 9"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 9 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 2 - Concept 9 - Attribute 2"
+    },
+    {
+      "type": "pillar",
+      "level": 1,
+      "id": "Religion Pillar 3"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 3 - Concept 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 1 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 1 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 3 - Concept 2"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 2 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 2 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 3 - Concept 3"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 3 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 3 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 3 - Concept 4"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 4 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 4 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 3 - Concept 5"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 5 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 5 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 3 - Concept 6"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 6 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 6 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 3 - Concept 7"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 7 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 7 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 3 - Concept 8"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 8 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 8 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 3 - Concept 9"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 9 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 3 - Concept 9 - Attribute 2"
+    },
+    {
+      "type": "pillar",
+      "level": 1,
+      "id": "Religion Pillar 4"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 4 - Concept 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 1 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 1 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 4 - Concept 2"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 2 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 2 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 4 - Concept 3"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 3 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 3 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 4 - Concept 4"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 4 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 4 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 4 - Concept 5"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 5 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 5 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 4 - Concept 6"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 6 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 6 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 4 - Concept 7"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 7 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 7 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 4 - Concept 8"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 8 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 8 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 4 - Concept 9"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 9 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 4 - Concept 9 - Attribute 2"
+    },
+    {
+      "type": "pillar",
+      "level": 1,
+      "id": "Religion Pillar 5"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 5 - Concept 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 1 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 1 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 5 - Concept 2"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 2 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 2 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 5 - Concept 3"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 3 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 3 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 5 - Concept 4"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 4 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 4 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 5 - Concept 5"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 5 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 5 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 5 - Concept 6"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 6 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 6 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 5 - Concept 7"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 7 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 7 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 5 - Concept 8"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 8 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 8 - Attribute 2"
+    },
+    {
+      "type": "concept",
+      "level": 2,
+      "id": "Religion Pillar 5 - Concept 9"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 9 - Attribute 1"
+    },
+    {
+      "type": "attribute",
+      "level": 3,
+      "id": "Religion Pillar 5 - Concept 9 - Attribute 2"
+    }
+  ],
+  "edges": [
+    {
+      "relation": "contains",
+      "source": "Religion Ontology Core",
+      "target": "Religion Pillar 1"
+    },
+    {
+      "relation": "contains",
+      "source": "Religion Ontology Core",
+      "target": "Religion Pillar 2"
+    },
+    {
+      "relation": "contains",
+      "source": "Religion Ontology Core",
+      "target": "Religion Pillar 3"
+    },
+    {
+      "relation": "contains",
+      "source": "Religion Ontology Core",
+      "target": "Religion Pillar 4"
+    },
+    {
+      "relation": "contains",
+      "source": "Religion Ontology Core",
+      "target": "Religion Pillar 5"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 1",
+      "target": "Religion Pillar 1 - Concept 1"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 1",
+      "target": "Religion Pillar 1 - Concept 2"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 1",
+      "target": "Religion Pillar 1 - Concept 3"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 1",
+      "target": "Religion Pillar 1 - Concept 4"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 1",
+      "target": "Religion Pillar 1 - Concept 5"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 1",
+      "target": "Religion Pillar 1 - Concept 6"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 1",
+      "target": "Religion Pillar 1 - Concept 7"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 1",
+      "target": "Religion Pillar 1 - Concept 8"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 1",
+      "target": "Religion Pillar 1 - Concept 9"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 1",
+      "target": "Religion Pillar 1 - Concept 1 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 1",
+      "target": "Religion Pillar 1 - Concept 1 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 2",
+      "target": "Religion Pillar 1 - Concept 2 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 2",
+      "target": "Religion Pillar 1 - Concept 2 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 3",
+      "target": "Religion Pillar 1 - Concept 3 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 3",
+      "target": "Religion Pillar 1 - Concept 3 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 4",
+      "target": "Religion Pillar 1 - Concept 4 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 4",
+      "target": "Religion Pillar 1 - Concept 4 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 5",
+      "target": "Religion Pillar 1 - Concept 5 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 5",
+      "target": "Religion Pillar 1 - Concept 5 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 6",
+      "target": "Religion Pillar 1 - Concept 6 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 6",
+      "target": "Religion Pillar 1 - Concept 6 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 7",
+      "target": "Religion Pillar 1 - Concept 7 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 7",
+      "target": "Religion Pillar 1 - Concept 7 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 8",
+      "target": "Religion Pillar 1 - Concept 8 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 8",
+      "target": "Religion Pillar 1 - Concept 8 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 9",
+      "target": "Religion Pillar 1 - Concept 9 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 1 - Concept 9",
+      "target": "Religion Pillar 1 - Concept 9 - Attribute 2"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 2",
+      "target": "Religion Pillar 2 - Concept 1"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 2",
+      "target": "Religion Pillar 2 - Concept 2"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 2",
+      "target": "Religion Pillar 2 - Concept 3"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 2",
+      "target": "Religion Pillar 2 - Concept 4"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 2",
+      "target": "Religion Pillar 2 - Concept 5"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 2",
+      "target": "Religion Pillar 2 - Concept 6"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 2",
+      "target": "Religion Pillar 2 - Concept 7"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 2",
+      "target": "Religion Pillar 2 - Concept 8"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 2",
+      "target": "Religion Pillar 2 - Concept 9"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 1",
+      "target": "Religion Pillar 2 - Concept 1 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 1",
+      "target": "Religion Pillar 2 - Concept 1 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 2",
+      "target": "Religion Pillar 2 - Concept 2 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 2",
+      "target": "Religion Pillar 2 - Concept 2 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 3",
+      "target": "Religion Pillar 2 - Concept 3 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 3",
+      "target": "Religion Pillar 2 - Concept 3 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 4",
+      "target": "Religion Pillar 2 - Concept 4 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 4",
+      "target": "Religion Pillar 2 - Concept 4 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 5",
+      "target": "Religion Pillar 2 - Concept 5 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 5",
+      "target": "Religion Pillar 2 - Concept 5 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 6",
+      "target": "Religion Pillar 2 - Concept 6 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 6",
+      "target": "Religion Pillar 2 - Concept 6 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 7",
+      "target": "Religion Pillar 2 - Concept 7 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 7",
+      "target": "Religion Pillar 2 - Concept 7 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 8",
+      "target": "Religion Pillar 2 - Concept 8 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 8",
+      "target": "Religion Pillar 2 - Concept 8 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 9",
+      "target": "Religion Pillar 2 - Concept 9 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 2 - Concept 9",
+      "target": "Religion Pillar 2 - Concept 9 - Attribute 2"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 3",
+      "target": "Religion Pillar 3 - Concept 1"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 3",
+      "target": "Religion Pillar 3 - Concept 2"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 3",
+      "target": "Religion Pillar 3 - Concept 3"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 3",
+      "target": "Religion Pillar 3 - Concept 4"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 3",
+      "target": "Religion Pillar 3 - Concept 5"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 3",
+      "target": "Religion Pillar 3 - Concept 6"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 3",
+      "target": "Religion Pillar 3 - Concept 7"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 3",
+      "target": "Religion Pillar 3 - Concept 8"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 3",
+      "target": "Religion Pillar 3 - Concept 9"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 1",
+      "target": "Religion Pillar 3 - Concept 1 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 1",
+      "target": "Religion Pillar 3 - Concept 1 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 2",
+      "target": "Religion Pillar 3 - Concept 2 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 2",
+      "target": "Religion Pillar 3 - Concept 2 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 3",
+      "target": "Religion Pillar 3 - Concept 3 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 3",
+      "target": "Religion Pillar 3 - Concept 3 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 4",
+      "target": "Religion Pillar 3 - Concept 4 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 4",
+      "target": "Religion Pillar 3 - Concept 4 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 5",
+      "target": "Religion Pillar 3 - Concept 5 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 5",
+      "target": "Religion Pillar 3 - Concept 5 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 6",
+      "target": "Religion Pillar 3 - Concept 6 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 6",
+      "target": "Religion Pillar 3 - Concept 6 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 7",
+      "target": "Religion Pillar 3 - Concept 7 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 7",
+      "target": "Religion Pillar 3 - Concept 7 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 8",
+      "target": "Religion Pillar 3 - Concept 8 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 8",
+      "target": "Religion Pillar 3 - Concept 8 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 9",
+      "target": "Religion Pillar 3 - Concept 9 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 3 - Concept 9",
+      "target": "Religion Pillar 3 - Concept 9 - Attribute 2"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 4",
+      "target": "Religion Pillar 4 - Concept 1"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 4",
+      "target": "Religion Pillar 4 - Concept 2"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 4",
+      "target": "Religion Pillar 4 - Concept 3"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 4",
+      "target": "Religion Pillar 4 - Concept 4"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 4",
+      "target": "Religion Pillar 4 - Concept 5"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 4",
+      "target": "Religion Pillar 4 - Concept 6"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 4",
+      "target": "Religion Pillar 4 - Concept 7"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 4",
+      "target": "Religion Pillar 4 - Concept 8"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 4",
+      "target": "Religion Pillar 4 - Concept 9"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 1",
+      "target": "Religion Pillar 4 - Concept 1 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 1",
+      "target": "Religion Pillar 4 - Concept 1 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 2",
+      "target": "Religion Pillar 4 - Concept 2 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 2",
+      "target": "Religion Pillar 4 - Concept 2 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 3",
+      "target": "Religion Pillar 4 - Concept 3 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 3",
+      "target": "Religion Pillar 4 - Concept 3 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 4",
+      "target": "Religion Pillar 4 - Concept 4 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 4",
+      "target": "Religion Pillar 4 - Concept 4 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 5",
+      "target": "Religion Pillar 4 - Concept 5 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 5",
+      "target": "Religion Pillar 4 - Concept 5 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 6",
+      "target": "Religion Pillar 4 - Concept 6 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 6",
+      "target": "Religion Pillar 4 - Concept 6 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 7",
+      "target": "Religion Pillar 4 - Concept 7 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 7",
+      "target": "Religion Pillar 4 - Concept 7 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 8",
+      "target": "Religion Pillar 4 - Concept 8 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 8",
+      "target": "Religion Pillar 4 - Concept 8 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 9",
+      "target": "Religion Pillar 4 - Concept 9 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 4 - Concept 9",
+      "target": "Religion Pillar 4 - Concept 9 - Attribute 2"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 5",
+      "target": "Religion Pillar 5 - Concept 1"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 5",
+      "target": "Religion Pillar 5 - Concept 2"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 5",
+      "target": "Religion Pillar 5 - Concept 3"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 5",
+      "target": "Religion Pillar 5 - Concept 4"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 5",
+      "target": "Religion Pillar 5 - Concept 5"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 5",
+      "target": "Religion Pillar 5 - Concept 6"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 5",
+      "target": "Religion Pillar 5 - Concept 7"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 5",
+      "target": "Religion Pillar 5 - Concept 8"
+    },
+    {
+      "relation": "defines",
+      "source": "Religion Pillar 5",
+      "target": "Religion Pillar 5 - Concept 9"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 1",
+      "target": "Religion Pillar 5 - Concept 1 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 1",
+      "target": "Religion Pillar 5 - Concept 1 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 2",
+      "target": "Religion Pillar 5 - Concept 2 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 2",
+      "target": "Religion Pillar 5 - Concept 2 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 3",
+      "target": "Religion Pillar 5 - Concept 3 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 3",
+      "target": "Religion Pillar 5 - Concept 3 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 4",
+      "target": "Religion Pillar 5 - Concept 4 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 4",
+      "target": "Religion Pillar 5 - Concept 4 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 5",
+      "target": "Religion Pillar 5 - Concept 5 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 5",
+      "target": "Religion Pillar 5 - Concept 5 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 6",
+      "target": "Religion Pillar 5 - Concept 6 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 6",
+      "target": "Religion Pillar 5 - Concept 6 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 7",
+      "target": "Religion Pillar 5 - Concept 7 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 7",
+      "target": "Religion Pillar 5 - Concept 7 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 8",
+      "target": "Religion Pillar 5 - Concept 8 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 8",
+      "target": "Religion Pillar 5 - Concept 8 - Attribute 2"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 9",
+      "target": "Religion Pillar 5 - Concept 9 - Attribute 1"
+    },
+    {
+      "relation": "has_attribute",
+      "source": "Religion Pillar 5 - Concept 9",
+      "target": "Religion Pillar 5 - Concept 9 - Attribute 2"
+    }
+  ]
+}
