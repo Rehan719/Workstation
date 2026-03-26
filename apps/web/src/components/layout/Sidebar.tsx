@@ -110,6 +110,7 @@ const allNavItems: NavItem[] = [
 
   { name: 'File Hub', icon: Package, id: 'file-hub' },
   { name: 'UVAID / GSE', icon: Sparkles, id: 'uvaid' },
+  { name: 'Text Index', icon: FileText, id: 'text-index' },
   { name: 'Contributor Portal', icon: Code2, id: 'contribute' },
   { name: 'System Settings', icon: Settings, id: 'settings' },
 ];

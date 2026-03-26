@@ -2,24 +2,29 @@ import subprocess
 import re
 import json
 import logging
+import os
 from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-class GitHistoryAnalyzer:
+class EnhancedGitHistoryAnalyzer:
     """
-    ULTIMATE GIT ANALYSIS PIPELINE.
-    Performs forensic reconstruction of version history from Git commits.
+    SUPREME GIT ANALYSIS PIPELINE.
+    Forensically reconstructs the Workstation evolutionary record.
     """
     def __init__(self, repo_path: str = "."):
         self.repo_path = repo_path
 
     def analyze_full_history(self) -> List[Dict[str, Any]]:
-        logger.info("GitAnalyzer: Starting forensic reconstruction of commit history...")
+        logger.info("GitAnalyzer: Initiating forensic deep-dive into commit history...")
         try:
-            # Get full log with all details
-            cmd = ["git", "log", "--pretty=format:%H|%an|%ad|%s", "--name-status"]
+            # 1. Get full log with file stats and diff summaries
+            cmd = ["git", "log", "--pretty=format:%H|%an|%ad|%s", "--name-status", "--all"]
             result = subprocess.check_output(cmd, cwd=self.repo_path).decode("utf-8")
+
+            # 2. Get Tags
+            tags_cmd = ["git", "tag", "-l"]
+            tags = subprocess.check_output(tags_cmd, cwd=self.repo_path).decode("utf-8").splitlines()
 
             commits = []
             current_commit = None
@@ -35,7 +40,8 @@ class GitHistoryAnalyzer:
                         "timestamp": d,
                         "message": s,
                         "files_changed": [],
-                        "inferred_version": self._infer_version(s)
+                        "inferred_version": self._infer_version(s),
+                        "tags": [t for t in tags if self._is_tag_at_commit(t, h)]
                     }
                 elif line.strip() and current_commit:
                     current_commit["files_changed"].append(line.strip())
@@ -43,19 +49,31 @@ class GitHistoryAnalyzer:
             if current_commit:
                 commits.append(current_commit)
 
-            logger.info(f"GitAnalyzer: Successfully analyzed {len(commits)} commits.")
+            logger.info(f"GitAnalyzer: Mapped {len(commits)} commits to the evolutionary record.")
             return commits
         except Exception as e:
-            logger.error(f"GitAnalyzer: History analysis failed: {e}")
+            logger.error(f"GitAnalyzer: Forensic audit failed: {e}")
             return []
 
     def _infer_version(self, message: str) -> str:
+        # Improved regex for Workstation versioning patterns
         match = re.search(r"v(\d+\.\d+(\.\d+)?)", message)
-        return match.group(1) if match else "0.0.0"
+        if match: return f"v{match.group(1)}"
+        if "Apotheosis" in message: return "v120.0"
+        if "Galactic" in message: return "v138.0"
+        return "v0.0.0"
+
+    def _is_tag_at_commit(self, tag: str, commit_hash: str) -> bool:
+        try:
+            tag_hash = subprocess.check_output(["git", "rev-list", "-n", "1", tag], cwd=self.repo_path).decode("utf-8").strip()
+            return tag_hash == commit_hash
+        except:
+            return False
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    analyzer = GitHistoryAnalyzer()
+    analyzer = EnhancedGitHistoryAnalyzer()
     history = analyzer.analyze_full_history()
-    with open("docs/knowledge/git_forensic_analysis.json", "w") as f:
+    os.makedirs("docs/knowledge", exist_ok=True)
+    with open("docs/knowledge/git_forensic_deep_analysis.json", "w") as f:
         json.dump(history, f, indent=2)
