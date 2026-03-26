@@ -1,13 +1,14 @@
-# WORKSTATION MAIN 0.9 SPECIFICATION (ULTIMATE FLAGSHIP)
+# WORKSTATION MAIN 0.9 SPECIFICATION (ULTIMATE CONVERGENCE)
 
-This document represents the definitive unified technical specification of the Workstation v0.9 Ultimate Flagship. It codifies the final production-ready state of the v0.8-v0.9 flagship evolution.
+This document represents the definitive unified technical specification of the Workstation v0.9 Ultimate Convergence. It codifies the final production-ready state of the v0.8-v0.9 convergence.
 
 ---
 
 ## 1. AI Core & Orchestration (Supreme v0.7)
-### 1.1 AI CEO (Ultimate Flagship v0.9)
+### 1.1 AI CEO (Ultimate Convergence v0.9)
 - **Endpoint**: `/api/v138/ceo/chat` (POST)
 - **Protocol**: SSE streaming with Introspection/Retrospection/Extrospection context.
+- **Evolution**: Recursive Self-Improvement Engine (L5) active.
 - **Model**: Local Llama 3.2 (Default); Ollama integration.
 - **Memory**: Redis stateless memory + persistent ChromaDB search.
 - **Implementation**: `agentic_core/api/v138/ceo.py`.
@@ -61,6 +62,12 @@ This document represents the definitive unified technical specification of the W
 2. **Setup**: `.\setup.ps1` (Windows native) or `bash setup.sh`.
 3. **Standalone**: `VITE_QEP_STANDALONE=true npm run dev` (Launch QEP Product).
 
+## 6. Architectural Layers (v0.9 Convergence)
+- **Cognitive**: Five-layer hierarchy (Reactive to Transcendent).
+- **Biological**: Hox Patterns, GRN Signaling, Germ Layer Middleware.
+- **Content**: Scientific Publication, Manim, Quarto pipelines.
+- **Enterprise**: Sovereign Business Twin, finops-agent.
+
 ---
 
-*Generated via Workstation v0.9 Ultimate Flagship Technical Specification. CIVILIZATION SECURED.*
+*Generated via Workstation v0.9 Ultimate Convergence Technical Specification. CIVILIZATION SECURED.*

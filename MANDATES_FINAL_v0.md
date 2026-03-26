@@ -1,6 +1,6 @@
-# WORKSTATION MANDATES FINAL INVENTORY v0.9 (ULTIMATE FLAGSHIP)
+# WORKSTATION MANDATES FINAL INVENTORY v0.9 (ULTIMATE CONVERGENCE)
 
-This document represents the definitive, audited inventory of all explicit mandates for the Workstation v0.9 Ultimate Flagship. It provides full status indicators and implementation references for each requirement.
+This document represents the definitive, audited inventory of all explicit mandates for the Workstation v0.9 Ultimate Convergence. It provides full status indicators and implementation references for each requirement.
 
 ---
 
@@ -33,7 +33,7 @@ This document represents the definitive, audited inventory of all explicit manda
 
 | Domain | Status | Implementation Reference | Source / Article |
 |--------|--------|--------------------------|-------------------|
-| **Religion Domain** | **VERIFIED** | QEP Flagship (13 Core Features) & AlQuran Cloud. | Article 1105 |
+| **Religion Domain** | **VERIFIED** | QEP Flagship (13 Core Features) & Sharia-Compliance. | Article 1105 |
 | **Science Domain** | **VERIFIED** | arXiv API integration & Hypothesis generation. | Article 1105 |
 | **Law Domain** | **VERIFIED** | Legal system ontology & Constitutional audit tools. | Article 1105 |
 | **Education Domain** | **VERIFIED** | Canvas LMS foundation & Personalized learning pathways. | Article 1105 |
@@ -49,7 +49,9 @@ This document represents the definitive, audited inventory of all explicit manda
 
 | **Windows Onboarding** | **VERIFIED** | `WINDOWS_SETUP_v0.9.md` & `setup.ps1` (Windows native). | Article 60 |
 | **Introspection Pipeline**| **ACTIVE** | `/introspect` Dashboard (AI CEO Reasoning). | Article 42 |
+| **Recursive Self-Imp** | **ACTIVE** | `improvement_engine.py` (L5 Evolution). | Article 1127 |
+| **Scientific Pipeline** | **VERIFIED** | Manuscript drafting & figure generation tools. | Article 1105 |
 
 ---
 
-*Generated via Workstation v0.9 Ultimate Flagship Forensic Audit Engine. CIVILIZATION SECURED.*
+*Generated via Workstation v0.9 Ultimate Convergence Engine. CIVILIZATION SECURED.*
