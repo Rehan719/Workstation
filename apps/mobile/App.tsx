@@ -4,6 +4,7 @@ import { LayoutDashboard, Zap, Brain, Globe, Sparkles, Send, Bot, User, MessageS
 import { useStore } from './src/store/mobileStore';
 import { useBiometrics } from './src/hooks/useBiometrics';
 import { MessageItem } from './src/components/MessageItem';
+import { QEPDashboardMobile } from './src/components/QEPDashboardMobile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
@@ -304,6 +305,7 @@ export default function App() {
       <View style={{ flex: 1 }}>
         {activeTab === 'dashboard' && <DashboardScreen />}
         {activeTab === 'ceo' && <CEOChatScreen />}
+        {activeTab === 'qep' && <QEPDashboardMobile />}
         {activeTab === 'forge' && <ForgeScreen />}
         {activeTab === 'genome' && <GenomeScreen />}
         {activeTab === 'admin' && <AdminScreen />}
@@ -312,6 +314,7 @@ export default function App() {
       <View style={styles.navBar}>
         <NavBtn icon={LayoutDashboard} label="Pulse" active={activeTab === 'dashboard'} onPress={() => setActiveTab('dashboard')} />
         <NavBtn icon={MessageSquare} label="CEO" active={activeTab === 'ceo'} onPress={() => setActiveTab('ceo')} />
+        <NavBtn icon={Layers} label="QEP" active={activeTab === 'qep'} onPress={() => setActiveTab('qep')} />
         <NavBtn icon={Zap} label="Forge" active={activeTab === 'forge'} onPress={() => setActiveTab('forge')} />
         <NavBtn icon={Fingerprint} label="Genome" active={activeTab === 'genome'} onPress={() => setActiveTab('genome')} />
         <NavBtn icon={Settings} label="Admin" active={activeTab === 'admin'} onPress={() => setActiveTab('admin')} />

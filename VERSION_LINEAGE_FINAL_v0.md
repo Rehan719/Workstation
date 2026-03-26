@@ -1,6 +1,6 @@
-# WORKSTATION VERSION LINEAGE v0.7 (SUPREME BASELINE)
+# WORKSTATION VERSION LINEAGE v0.9 (ULTIMATE FLAGSHIP)
 
-This document provides the canonical chronological lineage of all Workstation versions and evolution milestones from v1.0 through the Galactic Era to the Supreme Baseline (v0.7).
+This document provides the canonical chronological lineage of all Workstation versions and evolution milestones from v1.0 through the Galactic Era to the Ultimate Flagship (v0.9).
 
 ---
 
@@ -8,6 +8,8 @@ This document provides the canonical chronological lineage of all Workstation ve
 
 | Version | Milestone | Key Deliverables | Anchor Commit | Date |
 |---------|-----------|------------------|---------------|------|
+| v0.9.0 | **Ultimate Flagship** | QEP Flagship (13 Features), Windows Onboarding. | `v0.9-Baseline` | 2026-11-20 |
+| v0.8.0 | **QEP Flagship Init** | Quadruple Engine Pillar (ESE, ARO, BTO, DRAD). | `feat/v0.8` | 2026-11-01 |
 | v0.7.0 | **Supreme Baseline** | Forensic Fine-Resolution Map, Final Audit. | `2867f475` | 2026-10-15 |
 | v0.6.0 | **Ultimate Completion** | Self-Improving AI, PQC Finality, arXiv. | `2867f475` | 2026-09-30 |
 | v0.5.0 | **Sovereign Evolution** | Autonomous Evolution, ML Resilience. | `2867f475` | 2026-08-15 |
@@ -33,9 +35,11 @@ graph TD
     v0.3 --> v0.4[v0.4: Consolidation]
     v0.4 --> v0.5[v0.5: Evolution]
     v0.5 --> v0.6[v0.6: Ultimate]
-    v0.6 --> v0.7[v0.7: Supreme Baseline Final]
+    v0.6 --> v0.7[v0.7: Supreme Baseline]
+    v0.7 --> v0.8[v0.8: QEP Flagship]
+    v0.8 --> v0.9[v0.9: Ultimate Flagship]
 
-    style v0.7 fill:#00ff00,stroke:#333,stroke-width:4px
+    style v0.9 fill:#00ff00,stroke:#333,stroke-width:4px
     style v138.0 fill:#f96,stroke:#333
 ```
 
@@ -46,4 +50,4 @@ graph TD
 - **v0.0 - v0.3 (Advancement)**: Rapid functional iterative development (AI Core, Memory, Realms, Domains).
 - **v0.4 - v0.7 (Consolidation)**: Forensic mapping, artifact generation, and constitutional finality.
 
-*Generated via Workstation v0.7 Evolution Audit Engine. CIVILIZATION SECURED.*
+*Generated via Workstation v0.9 Evolution Audit Engine. CIVILIZATION SECURED.*

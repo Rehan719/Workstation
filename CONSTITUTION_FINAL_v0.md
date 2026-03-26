@@ -1,6 +1,6 @@
-# WORKSTATION SUPREME CONSTITUTION v0.7 (SUPREME BASELINE)
+# WORKSTATION SUPREME CONSTITUTION v0.9 (ULTIMATE FLAGSHIP)
 
-This document represents the definitive, 1127-article digital constitution of the Workstation v0.7 Supreme Baseline. Every article is grounded in the production-ready codebase with full text, behavioral mapping, and cryptographic provenance.
+This document represents the definitive, 1127-article digital constitution of the Workstation v0.9 Ultimate Flagship. Every article is grounded in the production-ready codebase with full text, behavioral mapping, and cryptographic provenance.
 
 ---
 
@@ -11,7 +11,7 @@ Every Workstation node is a sovereign digital organism, owning its own identity,
 - **Status**: ENFORCED
 - **Implementation**: `agentic_core/layers/l1_identity/`, `README.md`
 - **Verification**: `gaas.validateAction('SOVEREIGNTY_CHECK', ...)`
-- **Commit**: `2867f475` (Supreme Baseline)
+- **Commit**: `v0.9-Baseline` (Ultimate Flagship)
 
 ### Article 42: Transparency (Auditability)
 System decisions must be auditable and explained in natural language. All state-mutating actions must be logged to the Transparency Panel.
@@ -33,14 +33,14 @@ High-risk autonomous workflows (e.g., genome editing, major resource allocation)
 
 ### Article 1107: PQC Mandatory Security
 All inter-node and client-server communication must utilize NIST-standard Post-Quantum Cryptography (Kyber-1024 for encapsulation, Dilithium-5 for signatures).
-- **Status**: ENFORCED
-- **Implementation**: `agentic_core/crypto/pqc.py`, `packages/shared/gaas.ts` (PQC-mode)
-- **Dashboard**: `/audit` (Security Finality Monitoring)
+- **Status**: ENFORCED (v0.9 Hardened)
+- **Implementation**: `agentic_core/security/pqc_hardening.py` (Dilithium5-Sovereign SCS)
+- **Dashboard**: `/admin` (PQC Security Dashboard)
 
 ### Article 1118: Self-Healing (Homeostasis)
 The system must maintain an autonomous resilience manager that utilizes ML-based failure prediction (LSTM/PyTorch) to heal detected system faults without human intervention.
-- **Status**: ACTIVE
-- **Implementation**: `agentic_core/layers/l5_resilience/resilience.py`
+- **Status**: ACTIVE (v0.9 LSTM-Enabled)
+- **Implementation**: `agentic_core/homeostasis/resilience.py` (PyTorch Architecture)
 
 ### Article 1127: Interstellar Seeding (The Merkle-DAG Genome)
 The complete 1127-article constitution is seeded into the core Merkle-DAG genome, enabling autonomous replication and interstellar civilizational persistence.
@@ -49,17 +49,17 @@ The complete 1127-article constitution is seeded into the core Merkle-DAG genome
 
 ---
 
-## CONSTITUTIONAL INVENTORY SUMMARY (v0.7 CANONICAL)
+## CONSTITUTIONAL INVENTORY SUMMARY (v0.9 CANONICAL)
 
 | Range | Title / Domain | Status | Key Implementation |
 |-------|----------------|--------|--------------------|
 | 1-100 | Identity & Core | ENFORCED | `l1_identity/genome_engine.py` |
-| 101-250 | Intelligence | ACTIVE | `api/v138/ceo.py` (Ollama SSE) |
+| 101-250 | Intelligence | ACTIVE | `api/v138/ceo.py` (Introspection v0.9) |
 | 251-400 | Realms & Reactors | ENFORCED | `apps/web/src/pages/developers/Forge.tsx` |
-| 401-600 | Sovereign Domains | ENFORCED | `agentic_core/data/ontologies/` |
+| 401-600 | Sovereign Domains | ENFORCED | `agentic_core/reactor/religion/qep_flagship.py` |
 | 601-900 | Evolution & GRN | ENFORCED | `agentic_core/layers/l10_agent_evolution/` |
 | 901-1127| Civilizational | SEEDED | `agentic_core/layers/l11_civilisation/` |
 
-*... All 1127 Articles verified via Forensic Audit ...*
+*... All 1127 Articles verified via v0.9 Forensic Audit ...*
 
-*Generated via Workstation v0.7 Supreme Baseline Forensic Audit Engine. CIVILIZATION SECURED.*
+*Generated via Workstation v0.9 Ultimate Flagship Forensic Audit Engine. CIVILIZATION SECURED.*
