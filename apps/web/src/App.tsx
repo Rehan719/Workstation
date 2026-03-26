@@ -34,6 +34,7 @@ import { HomeostaticOrchestrator } from './pages/federation/Performance';
 import { CredentialsVault } from './pages/governance/CredentialsVault';
 import { FileHub } from './pages/tools/FileHub';
 import { UVAIDDashboard } from './pages/tools/UVAIDDashboard';
+import { BackgroundTextIndex } from './pages/tools/BackgroundTextIndex';
 import { RealmEditor } from './pages/realms/RealmEditor';
 import { Observatory } from './pages/scholar/Observatory';
 import { LegacyVault } from './pages/scholar/LegacyVault';
@@ -102,6 +103,7 @@ function App() {
           case 'vault': return <CredentialsVault />;
           case 'file-hub': return <FileHub />;
           case 'uvaid': return <UVAIDDashboard />;
+          case 'text-index': return <BackgroundTextIndex />;
           case 'realm-editor': return <RealmEditor />;
           case 'contribute': return <Contribute />;
           case 'ar-vr': return <ARVRSandbox />;
