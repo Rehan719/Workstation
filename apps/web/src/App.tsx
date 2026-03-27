@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Shell } from './components/layout/Shell';
-import { Dashboard } from './pages/Dashboard';
+import { DashboardNew as Dashboard } from './pages/DashboardNew';
 import { CEOChat } from './pages/CEOChat';
 import { BTOCatalog } from './pages/BTOCatalog';
 import { AdminPanel } from './pages/AdminPanel';

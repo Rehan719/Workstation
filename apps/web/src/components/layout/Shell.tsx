@@ -16,7 +16,7 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
   const [commandOpen, setCommandOpen] = useState(false);
   const { updateSystemVitals, updateAgentVitals } = useStore();
 
-  useResilientWebSocket('ws://localhost:8000/api/v154/ws/streams', (data) => {
+  const { status: wsStatus } = useResilientWebSocket('ws://localhost:8000/api/v154/ws/streams', (data) => {
     if (data.type === 'SYSTEM_VITALS') {
       updateSystemVitals(data.payload);
     } else if (data.type === 'AGENT_SIGNAL') {
@@ -25,7 +25,7 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
   });
 
   return (
-    <div className="flex min-h-screen bg-sovereign text-white font-inter">
+    <div className="flex h-screen overflow-hidden bg-sovereign text-white font-inter">
       <CommandPalette
         open={commandOpen}
         setOpen={setCommandOpen}
@@ -34,11 +34,18 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
 
       <CommandCenter />
 
+      {/* Sidebar - Fixed Height and Independent Scroll */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="flex-1 flex flex-col">
-        <Header />
-        <main className="p-8 flex-1 ml-16">
-          {children(activeTab)}
+
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Header - Occupies top row */}
+        <Header wsStatus={wsStatus} />
+
+        {/* Main Content Area - Independent Scroll */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-8">
+          <div className="max-w-[1600px] mx-auto">
+            {children(activeTab)}
+          </div>
         </main>
       </div>
     </div>

@@ -19,100 +19,43 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { name: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
+
   {
-    name: 'VSB AI CEO',
-    icon: MessageSquare,
-    id: 'ceo-facet',
-    realms: ['ENTERPRISE', 'GENOME', 'UNIFIED'],
+    name: 'Productivity',
+    icon: Zap,
+    id: 'prod-facet',
     subItems: [
-      { name: 'Direct Chat', icon: MessageSquare, id: 'ceo' },
-      { name: 'Debate Log', icon: History, id: 'debate' },
-      { name: 'Introspection', icon: Brain, id: 'introspection' }
+      { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
+      { name: 'BTO Catalog', icon: Package, id: 'bto' },
+      { name: 'File Hub', icon: Package, id: 'file-hub' },
+      { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' }
     ]
   },
 
   {
-    name: 'Sovereign Domains',
-    icon: Globe,
-    id: 'domain-facet',
-    subItems: [
-      { name: 'Religion', icon: Heart, id: 'religion' },
-      { name: 'Science', icon: Microscope, id: 'science' },
-      { name: 'Law', icon: Gavel, id: 'law' },
-      { name: 'Employment', icon: Briefcase, id: 'employment' },
-      { name: 'Education', icon: GraduationCap, id: 'education' },
-      { name: 'Care', icon: HeartPulse, id: 'care' }
-    ]
-  },
-
-  {
-    name: 'Development',
-    icon: Terminal,
-    id: 'dev-facet',
-    realms: ['DEVELOPER', 'UNIFIED'],
-    subItems: [
-      { name: 'The Forge', icon: Terminal, id: 'forge' },
-      { name: 'Digital Reactor', icon: Zap, id: 'reactor' },
-      { name: 'Incubator', icon: Beaker, id: 'incubator' },
-      { name: 'Petri Dish', icon: FlaskConical, id: 'petri' },
-      { name: 'Factory', icon: Database, id: 'factory' },
-      { name: 'Pipelines', icon: Workflow, id: 'pipelines' }
-    ]
-  },
-
-  {
-    name: 'Flagship QEP',
+    name: 'QEP Flagship',
     icon: Layers,
     id: 'qep-facet',
     subItems: [
       { name: 'QEP Dashboard', icon: LayoutDashboard, id: 'qep' },
       { name: 'Religion Hub', icon: Heart, id: 'religion' },
       { name: 'Science Hub', icon: Microscope, id: 'science' },
-      { name: 'Education Hub', icon: GraduationCap, id: 'education' }
+      { name: 'Education Hub', icon: GraduationCap, id: 'education' },
+      { name: 'Law Hub', icon: Gavel, id: 'law' },
+      { name: 'Care Hub', icon: HeartPulse, id: 'care' },
+      { name: 'Employment', icon: Briefcase, id: 'employment' }
     ]
   },
 
   {
-    name: 'Civilisation',
-    icon: Network,
-    id: 'civ-facet',
+    name: 'Evolution',
+    icon: Brain,
+    id: 'evo-facet',
     subItems: [
-      { name: 'Federation Map', icon: Map, id: 'fed-map' },
-      { name: 'Homeostasis', icon: HeartPulse, id: 'orchestrator' },
-      { name: 'BTO Catalog', icon: Package, id: 'bto' },
-      { name: 'Orbital Command', icon: Satellite, id: 'orbital' },
-      { name: 'Cosmic Command', icon: Star, id: 'cosmic' },
-      { name: 'Seeding Portal', icon: Rocket, id: 'seeding' },
-      { name: 'Interstellar Diplomacy', icon: Globe2, id: 'diplomacy' },
-      { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' },
-      { name: 'Treaty Dashboard', icon: FileText, id: 'treaties' },
-      { name: 'Offspring Mgmt', icon: GitBranch, id: 'offspring' }
-    ]
-  },
-
-  {
-    name: 'Platforms',
-    icon: Smartphone,
-    id: 'plat-facet',
-    subItems: [
-      { name: 'AR/VR Lab', icon: Camera, id: 'ar-vr' },
-      { name: 'Wearable Sync', icon: Watch, id: 'wearables' },
-      { name: 'Embodiment Studio', icon: Eye, id: 'embodiment' },
-      { name: 'Voice Control', icon: Radio, id: 'voice' }
-    ]
-  },
-
-  {
-    name: 'Genomic Core',
-    icon: Binary,
-    id: 'genomic-facet',
-    realms: ['DEVELOPER', 'SCHOLAR', 'UNIFIED'],
-    subItems: [
-      { name: 'Genome Explorer', icon: Search, id: 'genome-explorer' },
-      { name: 'GRN Dashboard', icon: Network, id: 'grn-dashboard' },
-      { name: 'Methylation', icon: Fingerprint, id: 'methylation' },
-      { name: 'Transcriptional', icon: Radio, id: 'transcriptional' },
-      { name: 'Phenotype Preview', icon: Eye, id: 'phenotype' }
+      { name: 'Genome', icon: Fingerprint, id: 'genome-explorer' },
+      { name: 'GRN Mesh', icon: Network, id: 'grn-dashboard' },
+      { name: 'Introspection', icon: Brain, id: 'introspection' },
+      { name: 'Homeostasis', icon: HeartPulse, id: 'orchestrator' }
     ]
   },
 
@@ -122,20 +65,23 @@ const allNavItems: NavItem[] = [
     id: 'gov-facet',
     subItems: [
       { name: 'Constitution', icon: FileText, id: 'constitution' },
-      { name: 'Republic Council', icon: Gavel, id: 'council' },
+      { name: 'Transparency', icon: History, id: 'transparency' },
       { name: 'Entity Control', icon: ShieldCheck, id: 'admin' },
-      { name: 'Sovereign Vault', icon: Archive, id: 'vault' },
-      { name: 'Realm Foundry', icon: Globe, id: 'realm-editor' },
-      { name: 'Transparency', icon: History, id: 'transparency' }
+      { name: 'Audit Dashboard', icon: ShieldCheck, id: 'audit' }
     ]
   },
 
-  { name: 'File Hub', icon: Package, id: 'file-hub' },
-  { name: 'GaaS Audit', icon: ShieldCheck, id: 'audit' },
-  { name: 'UVAID / GSE', icon: Sparkles, id: 'uvaid' },
-  { name: 'Text Index', icon: FileText, id: 'text-index' },
-  { name: 'Contributor Portal', icon: Code2, id: 'contribute' },
-  { name: 'System Settings', icon: Settings, id: 'settings' },
+  {
+    name: 'Advanced',
+    icon: Settings,
+    id: 'adv-facet',
+    subItems: [
+      { name: 'The Forge', icon: Terminal, id: 'forge' },
+      { name: 'AR/VR Lab', icon: Camera, id: 'ar-vr' },
+      { name: 'Federation', icon: Map, id: 'fed-map' },
+      { name: 'System Settings', icon: Settings, id: 'settings' }
+    ]
+  }
 ];
 
 interface SidebarProps {
@@ -153,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   });
 
   return (
-    <aside className={`w-72 flex flex-col p-6 h-screen sticky top-0 transition-all duration-500 border-r bg-slate-950/80 backdrop-blur-3xl border-slate-900 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
+    <aside className={`w-72 flex flex-col p-6 h-full transition-all duration-500 border-r bg-slate-950 border-slate-900 z-30 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
       <div className="mb-10 relative">
         <button onClick={() => setCurrentTab('dashboard')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-aura to-highlight flex items-center justify-center text-sovereign shadow-lg shadow-aura/10 animate-pulse">
