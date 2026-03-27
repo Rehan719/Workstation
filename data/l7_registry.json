@@ -1,16 +1,16 @@
 {
-  "did:vsb:module-5200cdb7a416": {
+  "did:vsb:module-ddd9dbab2b46": {
     "name": "Llama-3.2-3B-Instruct",
     "type": "model",
     "format": "GGUF",
     "capabilities": [
       "text-generation"
     ],
-    "id": "did:vsb:module-5200cdb7a416",
+    "id": "did:vsb:module-ddd9dbab2b46",
     "status": "CERTIFIED",
     "provenance": {
       "author": "VSB-Foundry",
-      "created": 1774197812.5974572,
+      "created": 1774613868.2489438,
       "pqc_signed": true
     },
     "performance": {
@@ -18,18 +18,18 @@
       "avg_latency_ms": 42.0
     }
   },
-  "did:vsb:module-1c31c1dd3b57": {
+  "did:vsb:module-de4e29e7e751": {
     "name": "Phi-3-Mini-4K",
     "type": "model",
     "format": "ONNX",
     "capabilities": [
       "reasoning"
     ],
-    "id": "did:vsb:module-1c31c1dd3b57",
+    "id": "did:vsb:module-de4e29e7e751",
     "status": "CERTIFIED",
     "provenance": {
       "author": "VSB-Foundry",
-      "created": 1774197812.5978212,
+      "created": 1774613868.2493927,
       "pqc_signed": true
     },
     "performance": {
@@ -37,18 +37,18 @@
       "avg_latency_ms": 42.0
     }
   },
-  "did:vsb:module-69484a6d73cb": {
+  "did:vsb:module-2e887e2802a0": {
     "name": "Gemma-2B",
     "type": "model",
     "format": "GGUF",
     "capabilities": [
       "summarization"
     ],
-    "id": "did:vsb:module-69484a6d73cb",
+    "id": "did:vsb:module-2e887e2802a0",
     "status": "CERTIFIED",
     "provenance": {
       "author": "VSB-Foundry",
-      "created": 1774197812.5981011,
+      "created": 1774613868.250158,
       "pqc_signed": true
     },
     "performance": {
@@ -56,18 +56,36 @@
       "avg_latency_ms": 42.0
     }
   },
-  "did:vsb:module-7af0ce03f3f0": {
+  "did:vsb:module-a0a5eab44daa": {
     "name": "Mistral-7B-v0.3",
     "type": "model",
     "format": "GGUF",
     "capabilities": [
       "code-generation"
     ],
-    "id": "did:vsb:module-7af0ce03f3f0",
+    "id": "did:vsb:module-a0a5eab44daa",
     "status": "CERTIFIED",
     "provenance": {
       "author": "VSB-Foundry",
-      "created": 1774197812.5988317,
+      "created": 1774613868.2509103,
+      "pqc_signed": true
+    },
+    "performance": {
+      "base_fitness": 0.85,
+      "avg_latency_ms": 42.0
+    }
+  },
+  "did:vsb:module-5c8041a6230d": {
+    "name": "TestModel-v1.0",
+    "type": "model",
+    "capabilities": [
+      "verification"
+    ],
+    "id": "did:vsb:module-5c8041a6230d",
+    "status": "CERTIFIED",
+    "provenance": {
+      "author": "VSB-Foundry",
+      "created": 1774613869.7002409,
       "pqc_signed": true
     },
     "performance": {

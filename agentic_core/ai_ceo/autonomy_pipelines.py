@@ -3,15 +3,18 @@ import json
 import os
 from typing import List, Dict, Any
 from datetime import datetime
+from agentic_core.config.paths import LOG_DIR
 
 logger = logging.getLogger(__name__)
 
 class AutonomyPipelines:
     """
-    v0.9: Ultimate Autonomy Pipelines.
+    v1.0 Production: Unified Autonomy Pipelines.
     Introspection, Retrospection, and Extrospection for AI CEO self-evolution.
     """
-    def __init__(self, log_dir: str = "logs/autonomy"):
+    def __init__(self, log_dir: str = None):
+        if not log_dir:
+            log_dir = str(LOG_DIR / "autonomy")
         self.log_dir = log_dir
         os.makedirs(self.log_dir, exist_ok=True)
         self.introspection_log = []

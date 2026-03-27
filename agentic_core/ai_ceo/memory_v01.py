@@ -5,7 +5,7 @@ import json
 import logging
 from datetime import datetime
 from typing import List, Dict, Any
-from agentic_core.config.paths import DATA_DIR, CHROMA_DB_PATH
+from agentic_core.config.paths import DATA_DIR, CHROMA_DB_PATH, MEETING_LOG_FILE
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class CSuiteMeetingLog:
     """v0.1: Asynchronous Inter-Agent Meeting Log."""
     def __init__(self, log_path: str = None):
         if not log_path:
-             log_path = str(DATA_DIR / "meeting_log.json")
+             log_path = str(MEETING_LOG_FILE)
 
         self.log_path = log_path
         os.makedirs(os.path.dirname(log_path), exist_ok=True)

@@ -2,19 +2,19 @@ import os
 import json
 import sqlite3
 from pathlib import Path
-from agentic_core.config.paths import DATA_DIR, L7_REGISTRY_FILE, INTERACTIONS_DB, ensure_dirs
+from agentic_core.config.paths import DATA_DIR, L7_REGISTRY_FILE, INTERACTIONS_DB, MEETING_LOG_FILE, MEMORY_FILE, ensure_dirs
 
 def init_data():
-    print("🚀 Initializing Workstation v1.0 Production Data...")
+    print("🚀 Initializing Workstation v1.0 Unified Production Data...")
 
     # 1. Ensure directories exist
     ensure_dirs()
 
-    # 2. Initialize JSON files if missing
+    # 2. Initialize JSON files if missing (Unified in root data/)
     files_to_init = {
-        DATA_DIR / "memory.json": {},
-        DATA_DIR / "meeting_log.json": [],
-        L7_REGISTRY_FILE: {}
+        MEMORY_FILE: [], # VectorMemory expects a list
+        MEETING_LOG_FILE: [],
+        L7_REGISTRY_FILE: {} # Registry expects a dict for content-addressed lookup
     }
 
     for file_path, default_content in files_to_init.items():
