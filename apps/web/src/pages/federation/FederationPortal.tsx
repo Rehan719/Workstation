@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Network, Shield, Zap, Search, LayoutGrid, Activity } from 'lucide-react';
 import { WorkstationExplorer } from './WorkstationExplorer';
 import { FederationGovernance } from './Governance';
-import { FedPerformance } from './Performance';
+import { HomeostaticOrchestrator } from './Performance';
 import { TwinManagement } from './TwinManagement';
 import { TreatyStudio } from './TreatyStudio';
 import { GlobalSearch } from './GlobalSearch';
@@ -34,6 +34,7 @@ export const FederationPortal: React.FC = () => {
          {activeTab === 'governance' && <FederationGovernance />}
          {activeTab === 'treaties' && <TreatyStudio />}
          {activeTab === 'forge' && <TwinManagement />}
+         {activeTab === 'performance' && <HomeostaticOrchestrator />}
       </div>
     </div>
   );

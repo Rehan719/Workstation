@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
-import { BookOpen, Heart, Sparkles, MessageCircle, History, Info, ShieldCheck, Zap, Globe, HeartPulse, Network, Binary, Compass, Anchor, Wind, Layers } from 'lucide-react';
+import { BookOpen, Heart, Sparkles, MessageCircle, History, Info, ShieldCheck, Zap, Globe, HeartPulse, Network, Binary, Compass, Anchor, Wind, Layers, GraduationCap } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';

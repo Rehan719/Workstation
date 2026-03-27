@@ -144,6 +144,21 @@ function App() {
           case 'marketplace': return <LivingMarketplace />;
           case 'introspection': return <IntrospectionDashboard />;
           case 'admin': return <AdminPanel />;
+          case 'transparency': return <AuditDashboard />;
+          case 'settings':
+            return (
+              <div className="p-10">
+                <h2 className="text-3xl font-black mb-6">System Settings</h2>
+                <p className="text-slate-500">Configure your Workstation v1.0 parameters.</p>
+              </div>
+            );
+          case 'voice':
+            return (
+              <div className="p-10">
+                <h2 className="text-3xl font-black mb-6">Voice Control</h2>
+                <p className="text-slate-500">Multilingual voice command integration active.</p>
+              </div>
+            );
           default:
             return (
               <div className="flex items-center justify-center h-full text-center">

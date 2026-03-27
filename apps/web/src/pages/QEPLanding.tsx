@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Button } from '@workstation/ui';
+import { Card, Button, Badge } from '@workstation/ui';
 import { QEPDashboard } from '../components/QEPDashboard';
 import { Sparkles, ArrowRight, Shield, Globe, Cpu } from 'lucide-react';
 

@@ -5,7 +5,7 @@ import { Card } from '@workstation/ui';
 import { useStore } from '@workstation/shared';
 
 export const BTOCatalog: React.FC = () => {
-  const { products } = useStore();
+  const { products, setCurrentTab } = useStore();
 
   const getIcon = (category: string) => {
     switch (category) {
@@ -75,7 +75,11 @@ export const BTOCatalog: React.FC = () => {
       <div className="p-12 rounded-3xl bg-aura/5 border border-aura/20 backdrop-blur-sm text-center">
          <h3 className="text-2xl font-black mb-4">Need a custom solution?</h3>
          <p className="text-slate-400 font-bold mb-8 max-w-xl mx-auto">Our C-Suite agents can assist in architecting specialized reactors for high-throughput enterprise swarm coordination.</p>
-         <button className="px-10 py-5 bg-white text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase tracking-widest text-sm">Consult VSB AI CEO</button>
+         <button
+          onClick={() => setCurrentTab('ceo')}
+          className="px-10 py-5 bg-white text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase tracking-widest text-sm">
+            Consult VSB AI CEO
+          </button>
       </div>
     </div>
   );
