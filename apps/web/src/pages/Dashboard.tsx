@@ -14,8 +14,12 @@ export const Dashboard: React.FC = () => {
     { label: 'Mesh Size', value: '50+ Nodes', icon: Users, color: 'text-vital' },
   ];
 
+  const setCurrentTab = useStore(state => state.setCurrentTab);
+
+  console.log("Dashboard Rendered, setCurrentTab:", !!setCurrentTab);
+
   return (
-    <div className="space-y-12 pb-24">
+    <div className="space-y-12 pb-24" id="dashboard-page">
       {/* Article 1108: Economic Sustainability Badge */}
       <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between">
          <div className="flex items-center gap-4">
@@ -101,7 +105,11 @@ export const Dashboard: React.FC = () => {
                  <p className="text-xs text-slate-500 font-bold mb-6 leading-relaxed">
                     Article 1101: 10-minute veto window active for high-risk autonomous workflows. GaaS enforcement status: <span className="text-vital">STRICT</span>.
                  </p>
-                 <button className="w-full py-4 border border-vital text-vital font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-vital hover:text-white transition-all">Open Veto Console</button>
+                 <button
+                  onClick={() => setCurrentTab('admin')}
+                  className="w-full py-4 border border-vital text-vital font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-vital hover:text-white transition-all">
+                    Open Veto Console
+                 </button>
               </Card>
            </div>
         </div>
@@ -113,7 +121,12 @@ export const Dashboard: React.FC = () => {
                  <h3 className="text-2xl font-black mb-2 text-white">VSB AI CEO</h3>
                  <p className="text-sm text-slate-500 font-bold max-w-[200px] mx-auto leading-relaxed">"Sovereignty isn't just local—it's <span className="text-aura">federated and anti-fragile</span>."</p>
               </div>
-              <button className="mt-10 w-full py-5 rounded-2xl bg-white text-sovereign font-black text-xs uppercase tracking-[0.2em] hover:bg-aura transition-all shadow-2xl">Consult VSB CEO</button>
+              <button
+                id="consult-ceo-btn"
+                onClick={() => setCurrentTab('ceo')}
+                className="mt-10 w-full py-5 rounded-2xl bg-white text-sovereign font-black text-xs uppercase tracking-[0.2em] hover:bg-aura transition-all shadow-2xl">
+                  Consult VSB CEO
+              </button>
            </Card>
 
            <Card>

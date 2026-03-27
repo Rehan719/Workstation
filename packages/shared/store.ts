@@ -8,9 +8,11 @@ export interface AppState {
   user: UserProfile | null;
   agentVitals: AgentVitals[];
   systemVitals: SystemVitals;
+  currentTab: string;
   products: BTOProduct[];
   genomicMetadata: any;
   setCurrentRealm: (realm: RealmType) => void;
+  setCurrentTab: (tab: string) => void;
   setCurrentMode: (mode: ModeType) => void;
   setUser: (user: UserProfile | null) => void;
   updateSystemVitals: (vitals: Partial<SystemVitals>) => void;
@@ -29,8 +31,10 @@ export const useStore = create<AppState>((set, get) => ({
   },
   agentVitals: mockAgentVitals,
   systemVitals: mockSystemVitals,
+  currentTab: 'dashboard',
   products: mockBTOProducts,
   setCurrentRealm: (realm) => set({ currentRealm: realm }),
+  setCurrentTab: (tab) => set({ currentTab: tab }),
   setCurrentMode: (mode) => set({ currentMode: mode }),
   setUser: (user) => set({ user }),
   updateSystemVitals: (vitals) =>

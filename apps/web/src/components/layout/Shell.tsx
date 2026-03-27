@@ -11,7 +11,8 @@ interface ShellProps {
 }
 
 export const Shell: React.FC<ShellProps> = ({ children }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const activeTab = useStore(state => state.currentTab);
+  const setActiveTab = useStore(state => state.setCurrentTab);
   const [commandOpen, setCommandOpen] = useState(false);
   const { updateSystemVitals, updateAgentVitals } = useStore();
 

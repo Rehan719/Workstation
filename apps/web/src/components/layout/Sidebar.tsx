@@ -26,7 +26,8 @@ const allNavItems: NavItem[] = [
     realms: ['ENTERPRISE', 'GENOME', 'UNIFIED'],
     subItems: [
       { name: 'Direct Chat', icon: MessageSquare, id: 'ceo' },
-      { name: 'Debate Log', icon: History, id: 'debate' }
+      { name: 'Debate Log', icon: History, id: 'debate' },
+      { name: 'Introspection', icon: Brain, id: 'introspection' }
     ]
   },
 
@@ -54,9 +55,20 @@ const allNavItems: NavItem[] = [
       { name: 'Digital Reactor', icon: Zap, id: 'reactor' },
       { name: 'Incubator', icon: Beaker, id: 'incubator' },
       { name: 'Petri Dish', icon: FlaskConical, id: 'petri' },
-      { name: 'QEP Reactor', icon: Cpu, id: 'qep' },
       { name: 'Factory', icon: Database, id: 'factory' },
       { name: 'Pipelines', icon: Workflow, id: 'pipelines' }
+    ]
+  },
+
+  {
+    name: 'Flagship QEP',
+    icon: Layers,
+    id: 'qep-facet',
+    subItems: [
+      { name: 'QEP Dashboard', icon: LayoutDashboard, id: 'qep' },
+      { name: 'Religion Hub', icon: Heart, id: 'religion' },
+      { name: 'Science Hub', icon: Microscope, id: 'science' },
+      { name: 'Education Hub', icon: GraduationCap, id: 'education' }
     ]
   },
 
@@ -67,6 +79,7 @@ const allNavItems: NavItem[] = [
     subItems: [
       { name: 'Federation Map', icon: Map, id: 'fed-map' },
       { name: 'Homeostasis', icon: HeartPulse, id: 'orchestrator' },
+      { name: 'BTO Catalog', icon: Package, id: 'bto' },
       { name: 'Orbital Command', icon: Satellite, id: 'orbital' },
       { name: 'Cosmic Command', icon: Star, id: 'cosmic' },
       { name: 'Seeding Portal', icon: Rocket, id: 'seeding' },
@@ -131,7 +144,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-  const { currentRealm, currentMode, user } = useStore();
+  const { currentRealm, currentMode, user, setCurrentTab } = useStore();
 
   const filteredNavItems = allNavItems.filter(item => {
     if (currentRealm === 'UNIFIED') return true;
@@ -142,15 +155,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   return (
     <aside className={`w-72 flex flex-col p-6 h-screen sticky top-0 transition-all duration-500 border-r bg-slate-950/80 backdrop-blur-3xl border-slate-900 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
       <div className="mb-10 relative">
-        <div className="flex items-center gap-3">
+        <button onClick={() => setCurrentTab('dashboard')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-aura to-highlight flex items-center justify-center text-sovereign shadow-lg shadow-aura/10 animate-pulse">
               <Zap size={24} />
            </div>
-           <div>
+           <div className="text-left">
               <h2 className="text-xl font-black tracking-tighter text-white uppercase">Workstation</h2>
               <p className="text-[10px] uppercase tracking-[0.2em] text-aura font-black">v3.0 Ultimate</p>
            </div>
-        </div>
+        </button>
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
