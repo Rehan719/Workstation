@@ -109,7 +109,7 @@ class QEPFlagshipService:
             "certificate_id": f"VSB-CERT-{uuid.uuid4().hex[:8]}",
             "status": "ISSUED",
             "sharia_compliant": True,
-            "blockchain_hash": "0x-v09-cert-verified"
+            "blockchain_hash": "0x-v1-cert-verified"
         }
 
     async def offline_global_access(self) -> Dict[str, Any]:

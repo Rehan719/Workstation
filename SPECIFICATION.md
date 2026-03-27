@@ -1,14 +1,14 @@
-# WORKSTATION MAIN 0.9 SPECIFICATION (ULTIMATE CONVERGENCE)
+# WORKSTATION MAIN 1.0 SPECIFICATION (GLOBAL LAUNCH)
 
-This document represents the definitive unified technical specification of the Workstation v0.9 Ultimate Convergence. It codifies the final production-ready state of the v0.8-v0.9 convergence.
+This document represents the definitive unified technical specification of the Workstation v1.0 Global Launch. It codifies the final production-ready state of the v0.9-v1.0 global transition.
 
 ---
 
 ## 1. AI Core & Orchestration (Supreme v0.7)
-### 1.1 AI CEO (Ultimate Convergence v0.9)
+### 1.1 AI CEO (Global Launch v1.0)
 - **Endpoint**: `/api/v138/ceo/chat` (POST)
 - **Protocol**: SSE streaming with Introspection/Retrospection/Extrospection context.
-- **Evolution**: Recursive Self-Improvement Engine (L5) active.
+- **Evolution**: Recursive Self-Improvement Engine (L5) & Cross-Domain QEP Orchestration active.
 - **Model**: Local Llama 3.2 (Default); Ollama integration.
 - **Memory**: Redis stateless memory + persistent ChromaDB search.
 - **Implementation**: `agentic_core/api/v138/ceo.py`.
@@ -68,6 +68,10 @@ This document represents the definitive unified technical specification of the W
 - **Content**: Scientific Publication, Manim, Quarto pipelines.
 - **Enterprise**: Sovereign Business Twin, finops-agent.
 
+## 7. Cross-Domain QEP (v1.0)
+- **Framework**: Domain-agnostic modular QEP engines with specialized adapters.
+- **Support**: Integrated into all 5 Realms and 6 foundational Domains.
+
 ---
 
-*Generated via Workstation v0.9 Ultimate Convergence Technical Specification. CIVILIZATION SECURED.*
+*Generated via Workstation v1.0 Global Launch Technical Specification. CIVILIZATION SECURED.*

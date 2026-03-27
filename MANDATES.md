@@ -1,6 +1,6 @@
-# WORKSTATION MANDATES FINAL INVENTORY v0.9 (ULTIMATE CONVERGENCE)
+# WORKSTATION MANDATES FINAL INVENTORY v1.0 (GLOBAL LAUNCH)
 
-This document represents the definitive, audited inventory of all explicit mandates for the Workstation v0.9 Ultimate Convergence. It provides full status indicators and implementation references for each requirement.
+This document represents the definitive, audited inventory of all explicit mandates for the Workstation v1.0 Global Launch. It provides full status indicators and implementation references for each requirement.
 
 ---
 
@@ -11,7 +11,7 @@ This document represents the definitive, audited inventory of all explicit manda
 | **Zero-Placeholder Status** | **VERIFIED** | Entire `agentic_core` codebase (Article 60). | `MAIN_0_0_SPECIFICATION.md` |
 | **GaaS-Validated Mutations** | **ENFORCED** | Constitutional validation in `packages/shared/gaas.ts`. | Article 42 |
 | **10m Veto Window** | **MANDATORY**| Logic enforced in `agentic_core/layers/l1_identity/validator.py`. | Article 1101 |
-| **PQC Mandatory Security** | **ENFORCED** | Dilithium5-Sovereign SCS (v0.9 Hardened). | Article 1107 |
+| **PQC Mandatory Security** | **ENFORCED** | Dilithium5-Sovereign SCS (v1.0 Sovereign). | Article 1107 |
 | **1127-Article Genome** | **VERIFIED** | Seeded in `genome/constitution.work` and Merkle-DAG. | Article 1127 |
 | **Domain Hub Parity** | **VERIFIED** | Six domain ontologies (141+ nodes each) functional. | Article 1105 |
 
@@ -33,7 +33,7 @@ This document represents the definitive, audited inventory of all explicit manda
 
 | Domain | Status | Implementation Reference | Source / Article |
 |--------|--------|--------------------------|-------------------|
-| **Religion Domain** | **VERIFIED** | QEP Flagship (13 Core Features) & Sharia-Compliance. | Article 1105 |
+| **Religion Domain** | **VERIFIED** | QEP Flagship (13 Core Features) & Cross-Domain. | Article 1105 |
 | **Science Domain** | **VERIFIED** | arXiv API integration & Hypothesis generation. | Article 1105 |
 | **Law Domain** | **VERIFIED** | Legal system ontology & Constitutional audit tools. | Article 1105 |
 | **Education Domain** | **VERIFIED** | Canvas LMS foundation & Personalized learning pathways. | Article 1105 |
@@ -52,6 +52,8 @@ This document represents the definitive, audited inventory of all explicit manda
 | **Recursive Self-Imp** | **ACTIVE** | `improvement_engine.py` (L5 Evolution). | Article 1127 |
 | **Scientific Pipeline** | **VERIFIED** | Manuscript drafting & figure generation tools. | Article 1105 |
 
+| **Cross-Domain QEP** | **VERIFIED** | QEP engines integrated in all 6 domains. | Article 1105 |
+
 ---
 
-*Generated via Workstation v0.9 Ultimate Convergence Engine. CIVILIZATION SECURED.*
+*Generated via Workstation v1.0 Global Launch Engine. CIVILIZATION SECURED.*
