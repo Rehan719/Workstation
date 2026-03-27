@@ -3,7 +3,6 @@ import random
 from typing import Dict, Any, List, Optional
 import mesa
 from mesa import Agent, Model
-from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 from datetime import datetime
 
@@ -38,15 +37,13 @@ class EvolutionarySimulationEngine(Model):
         self.num_agents = num_agents
 
         for i in range(self.num_agents):
-            a = ReligionAgent(
+            ReligionAgent(
                 self,
                 i,
                 initial_belief_score=random.gauss(initial_belief_mean, 0.1),
                 conviction=random.uniform(0.05, 0.2)
             )
-            # In mesa 2.x+, agents are added to the model automatically if they inherit from Agent
-            # But we might need to manage them for the schedule if using older patterns.
-            # Mesa 3.x uses Model.agents property.
+            # v1.0: Mesa 3.x compliant. Agents are automatically registered.
 
         self.datacollector = DataCollector(
             model_reporters={"AvgBelief": lambda m: sum([a.belief_score for a in m.agents]) / len(m.agents)},

@@ -10,7 +10,11 @@ logger = logging.getLogger(__name__)
 
 class SemanticMemory:
     """v0.1: Semantic Vector Store for AI CEO Long-Term Memory."""
-    def __init__(self, persist_directory: str = "agentic_core/data/chroma"):
+    def __init__(self, persist_directory: str = None):
+        if not persist_directory:
+             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+             persist_directory = os.path.join(base_dir, "data", "chroma")
+
         os.makedirs(persist_directory, exist_ok=True)
         self.client = chromadb.PersistentClient(path=persist_directory)
         self.collection = self.client.get_or_create_collection(name="conversation_memory")
@@ -40,7 +44,11 @@ class SemanticMemory:
 
 class CSuiteMeetingLog:
     """v0.1: Asynchronous Inter-Agent Meeting Log."""
-    def __init__(self, log_path: str = "agentic_core/data/meeting_log.json"):
+    def __init__(self, log_path: str = None):
+        if not log_path:
+             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+             log_path = os.path.join(base_dir, "data", "meeting_log.json")
+
         self.log_path = log_path
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         self.log = self._load_log()

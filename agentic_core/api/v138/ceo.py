@@ -18,6 +18,9 @@ from agentic_core.bto.religion_bto import get_religion_bto
 from agentic_core.swarm.signaling_protocol import SignalingProtocol
 from agentic_core.reactor.religion.qep_flagship import qep_flagship_service
 from agentic_core.ai_ceo.autonomy_pipelines import autonomy_pipelines
+from agentic_core.synthesis.content_production import content_pipeline
+from agentic_core.governance.industry_adaptive import governance_verifier
+from agentic_core.ai.improvement_engine import improvement_engine
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +63,12 @@ class ToolRegistry:
             "run_introspection": self.run_introspection,
             "run_retrospection": self.run_retrospection,
             "run_extrospection": self.run_extrospection,
-            "generate_v10_roadmap": self.generate_v10_roadmap
+            "generate_v10_roadmap": self.generate_v10_roadmap,
+            "recursive_improve": self.recursive_improve,
+            "produce_scientific_draft": self.produce_scientific_draft,
+            "generate_manim_animation": self.generate_manim_animation,
+            "render_quarto_lesson": self.render_quarto_lesson,
+            "verify_governance_compliance": self.verify_governance_compliance
         }
 
     async def run_qep_simulation(self, num_agents: int = 100, steps: int = 50):
@@ -162,6 +170,28 @@ class ToolRegistry:
     async def generate_v10_roadmap(self):
         """v0.9: Generate the v1.0 Global Launch Roadmap."""
         return {"roadmap_path": autonomy_pipelines.generate_v10_roadmap()}
+
+    async def recursive_improve(self):
+        """v1.0: Start recursive self-improvement loop."""
+        asyncio.create_task(improvement_engine.start_optimization_loop())
+        return {"status": "EVOLUTION_LOOP_STARTED"}
+
+    async def produce_scientific_draft(self, topic: str, data: str):
+        """v1.0: Generate scientific IMRaD manuscript."""
+        return {"draft": content_pipeline.produce_scientific_draft(topic, data)}
+
+    async def generate_manim_animation(self, script: str):
+        """v1.0: Generate mathematical Manim animation."""
+        return content_pipeline.generate_manim_animation(script)
+
+    async def render_quarto_lesson(self, lesson_id: str, format: str = "pdf"):
+        """v1.0: Render single-source Quarto document."""
+        return content_pipeline.render_quarto_lesson(lesson_id, format)
+
+    async def verify_governance_compliance(self, profile: str, tags: List[str]):
+        """v1.0: Run VGA runtime verifier."""
+        valid = governance_verifier.verify_action(profile, tags)
+        return {"compliant": valid, "profile": profile}
 
     async def discover_tools(self):
         """v0.1: Tool Discovery logic."""
