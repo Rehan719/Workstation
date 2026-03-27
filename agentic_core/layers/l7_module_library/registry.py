@@ -10,8 +10,13 @@ class ModuleRegistryL7:
     Production-grade content-addressed registry with ONNX/GGUF parsing simulation.
     """
     def __init__(self):
-        # Simulated persistent storage path
-        self.storage_path = "agentic_core/layers/l7_module_library/registry.json"
+        # v1.0 Robust Path Handling
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.storage_path = os.path.join(base_dir, "registry.json")
+
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)
+
         self.storage: Dict[str, Dict[str, Any]] = self._load_storage()
         if not self.storage:
             self._populate_initial_models()
@@ -21,7 +26,8 @@ class ModuleRegistryL7:
             try:
                 with open(self.storage_path, "r") as f:
                     return json.load(f)
-            except Exception:
+            except Exception as e:
+                print(f"L7 Registry: Error loading storage: {e}")
                 return {}
         return {}
 
