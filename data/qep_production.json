@@ -1,0 +1,21 @@
+{
+  "users": {},
+  "competitions": [
+    {
+      "id": "q-1",
+      "name": "Ramadan Global Recitation",
+      "bracket": "Expert",
+      "start": "2025-03-01",
+      "participants": []
+    },
+    {
+      "id": "q-2",
+      "name": "Linguistic Roots Challenge",
+      "bracket": "Novice",
+      "start": "2025-04-15",
+      "participants": []
+    }
+  ],
+  "swarms": {},
+  "certificates": []
+}

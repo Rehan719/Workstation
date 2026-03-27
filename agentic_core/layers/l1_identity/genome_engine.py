@@ -44,7 +44,7 @@ class GenomeMutationWorkflow:
                   self.apply_mutation(f"healing-{int(time.time())}", amendment, authorized=True)
 
     def apply_mutation(self, proposal_id: str, patch: Dict[str, Any], authorized: bool) -> bool:
-        """v0.2: Applies a constitutional mutation with Merkle-DAG re-hashing."""
+        """v1.0 Production: Applies a constitutional mutation with Merkle-DAG re-hashing and Persistence."""
         if not authorized: return False
 
         # Checkpoint for Rollback (Article 1111)
@@ -74,6 +74,14 @@ class GenomeMutationWorkflow:
         self.genome["identity"]["merkle_root"] = hashlib.sha256(str(self.genome).encode()).hexdigest()
 
         ueg.log_event("L1", "Genome", "AMENDMENT_RATIFIED", {"id": patch.get("id"), "type": "AUTONOMOUS"})
+
+        # v1.0 Production: Persist mutated genome to disk
+        try:
+            with open(GENOME_FILE, "w") as f:
+                json.dump(self.genome, f, indent=2)
+        except Exception as e:
+            print(f"Genome: Error persisting mutation: {e}")
+
         print(f"Genome: Amendment {patch.get('id')} ratified. Root Hash: {self.genome['constitution']['root_hash']}")
         return True
 
@@ -125,10 +133,23 @@ class GenomeMutationWorkflow:
         return params
 
 # Initialize Engine
+from agentic_core.config.paths import GENOME_DIR
+
+GENOME_FILE = GENOME_DIR / "constitution.work"
+
 try:
-    with open("genome/constitution.work", "r") as f:
+    with open(GENOME_FILE, "r") as f:
         initial_genome = json.load(f)
 except:
-    initial_genome = {"constitution": {"articles": []}}
+    initial_genome = {
+        "constitution": {
+            "articles": [
+                {"id": 1, "title": "Sovereignty", "content": "Every Workstation node is a sovereign digital organism."},
+                {"id": 42, "title": "Transparency", "content": "System decisions must be auditable and explained."},
+                {"id": 1127, "title": "Autonomous Evolution", "content": "The system shall autonomously evolve its own code and constitution."}
+            ],
+            "root_hash": "0x-v1-init"
+        }
+    }
 
 genome_engine = GenomeMutationWorkflow(initial_genome)

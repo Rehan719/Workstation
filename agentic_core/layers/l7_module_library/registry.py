@@ -3,6 +3,7 @@ import time
 import hashlib
 import json
 import os
+from agentic_core.config.paths import L7_REGISTRY_FILE
 
 class ModuleRegistryL7:
     """
@@ -11,8 +12,7 @@ class ModuleRegistryL7:
     """
     def __init__(self):
         # v1.0 Robust Path Handling
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.storage_path = os.path.join(base_dir, "registry.json")
+        self.storage_path = str(L7_REGISTRY_FILE)
 
         # Ensure directory exists
         os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)

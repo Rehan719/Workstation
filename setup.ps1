@@ -25,39 +25,8 @@ if (Get-Command poetry -ErrorAction SilentlyContinue) {
 # 2. Setup Data Directories and Initial Files
 Write-Host "`nSetting up data infrastructure..." -ForegroundColor Cyan
 
-$DataDirs = @(
-    "agentic_core/data",
-    "agentic_core/data/memory",
-    "agentic_core/data/chroma",
-    "agentic_core/layers/l7_module_library",
-    "logs/autonomy",
-    "logs/metacognition",
-    "models"
-)
-
-foreach ($dir in $DataDirs) {
-    if (!(Test-Path $dir)) {
-        New-Item -ItemType Directory -Path $dir -Force | Out-Null
-        Write-Host "Created directory: $dir"
-    }
-}
-
-# Initial JSON Files
-if (!(Test-Path "agentic_core/data/memory.json")) {
-    Set-Content -Path "agentic_core/data/memory.json" -Value "{}"
-}
-if (!(Test-Path "agentic_core/layers/l7_module_library/registry.json")) {
-    Set-Content -Path "agentic_core/layers/l7_module_library/registry.json" -Value "{}"
-}
-if (!(Test-Path "agentic_core/data/meeting_log.json")) {
-    Set-Content -Path "agentic_core/data/meeting_log.json" -Value "[]"
-}
-
-# Initial Database Files
-if (!(Test-Path "agentic_core/data/interactions.db")) {
-    # Create empty file for SQLite
-    New-Item -ItemType File -Path "agentic_core/data/interactions.db" -Force | Out-Null
-}
+# Run Python initialization script for directories and initial data
+python scripts/init_data.py
 
 # 3. Environment Configuration
 if (!(Test-Path "agentic_core/.env")) {
