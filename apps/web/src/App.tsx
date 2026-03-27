@@ -106,6 +106,16 @@ function App() {
           case 'employment': return <EmploymentHub />;
           case 'education': return <EducationHub />;
           case 'care': return <CareHub />;
+          case 'fed-map': return <GlobalFederationMap />;
+          case 'orchestrator': return <HomeostaticOrchestrator />;
+          case 'bto': return <BTOCatalog />;
+          case 'orbital': return <OrbitalDashboard />;
+          case 'cosmic': return <CosmicMeshDashboard />;
+          case 'seeding': return <SeedingInterface />;
+          case 'diplomacy': return <InterstellarDiplomacy />;
+          case 'treaties': return <TreatyDashboard />;
+          case 'offspring': return <OffspringManagement />;
+          case 'vault': return <CredentialsVault />;
           case 'forge': return <Forge />;
           case 'reactor': return <DigitalReactor />;
           case 'incubator': return <Incubator />;

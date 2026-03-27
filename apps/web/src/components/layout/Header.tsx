@@ -75,11 +75,17 @@ export const Header: React.FC = () => {
         <button
           onClick={() => setShowAssistant(!showAssistant)}
           className={`p-3 rounded-xl transition-all ${showAssistant ? 'bg-aura text-sovereign' : 'bg-slate-800 text-aura hover:scale-105'}`}
+          title="Toggle Sovereign Assistant"
+          aria-label="Toggle Sovereign Assistant"
         >
           <Sparkles size={20} />
         </button>
 
-        <button className="relative p-2 text-slate-400 hover:text-white transition-colors">
+        <button
+          className="relative p-2 text-slate-400 hover:text-white transition-colors"
+          title="View Notifications"
+          aria-label="View Notifications"
+        >
           <Bell size={20} />
           <span className="absolute top-2 right-2 w-2 h-2 bg-aura rounded-full shadow-[0_0_8px_rgba(100,255,218,0.8)]"></span>
         </button>
@@ -100,7 +106,13 @@ export const Header: React.FC = () => {
            </div>
            <div className="p-4 border-t border-white/10 bg-slate-950 flex gap-2">
               <input placeholder="Ask the mesh..." className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white" />
-              <button className="p-2 bg-aura text-sovereign rounded-lg"><MessageCircle size={16} /></button>
+              <button
+                className="p-2 bg-aura text-sovereign rounded-lg"
+                title="Send Message"
+                aria-label="Send Message"
+              >
+                <MessageCircle size={16} />
+              </button>
            </div>
         </div>
       )}
