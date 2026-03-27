@@ -5,7 +5,7 @@ import {
   Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye,
-  HeartPulse, Workflow, Search, Smartphone, Globe2, Database
+  HeartPulse, Workflow, Search, Smartphone, Globe2, Database, Layers
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
