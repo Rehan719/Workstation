@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext } from 'react';
+import React, { useState, createContext, useContext, useEffect } from 'react';
 
 interface AdaptiveUIState {
   theme: string;
@@ -19,21 +19,22 @@ export const AdaptiveUIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const updateProfile = (profile: any) => {
-    // Logic powered by DRAD engine feedback
+    // Cross-Domain Adaptive Logic powered by DRAD engine
     const age = profile.age || 25;
     const skill = profile.skill || 'Intermediate';
+    const role = profile.role || 'Guardian';
 
     setUiState({
       theme: age < 12 ? 'Playful_Light' : 'Sovereign_Dark',
       fontSize: age > 60 ? 'Large' : 'Standard',
-      layout: skill === 'Expert' ? 'Advanced' : 'Guided',
+      layout: (skill === 'Expert' || role === 'CEO') ? 'Advanced' : 'Guided',
       emotionalAdjustment: profile.emotion === 'Frustrated' ? 'Gentle' : 'Encouraging'
     });
   };
 
   return (
     <AdaptiveUIContext.Provider value={{ ...uiState, updateProfile }}>
-      <div className={`adaptive-ui-root font-size-${uiState.fontSize.toLowerCase()}`}>
+      <div className={`adaptive-ui-root v1-baseline font-size-${uiState.fontSize.toLowerCase()}`}>
         {children}
       </div>
     </AdaptiveUIContext.Provider>

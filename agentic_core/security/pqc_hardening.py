@@ -21,7 +21,7 @@ class PQCHardening:
         if not self.pqc_secret:
             if self.production_mode:
                 raise RuntimeError("ARTICLE 1107 VIOLATION: PQC_SECRET must be set in production.")
-            self.pqc_secret = "dev_sovereign_pqc_v0.9_key"
+            self.pqc_secret = "default_v1_sovereign_hardened_key"
 
         self.sig_alg = "Dilithium5-Sovereign"
         self.kem_alg = "Kyber1024-Sovereign"

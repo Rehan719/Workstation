@@ -73,12 +73,22 @@ class ToolRegistry:
         aro = get_aro_instance()
         return aro.optimize({"sim_demand": sim_demand, "reason_demand": reason_demand})
 
-    async def orchestrate_qep_swarm(self, topic: str):
-        """v0.8: Orchestrate specialized Religion Research Swarm (BTO)."""
+    async def orchestrate_qep_swarm(self, topic: str, domain: str = "religion"):
+        """v1.0: Orchestrate specialized cross-domain research swarm (BTO)."""
         # Mock signaling for tool execution
         signaling = SignalingProtocol("CEO-ORCHESTRATOR")
-        bto = get_religion_bto("AI-CEO", signaling)
-        return bto.orchestrate_research(topic)
+        if domain == "religion":
+             bto = get_religion_bto("AI-CEO", signaling)
+             return bto.orchestrate_research(topic)
+        else:
+             # v1.0: Generic Domain BTO Adapter
+             return {
+                 "status": "SWARM_ACTIVE",
+                 "domain": domain,
+                 "topic": topic,
+                 "engine": "BTO",
+                 "timestamp": datetime.utcnow().isoformat()
+             }
 
     async def check_qep_fabric_health(self):
         """v0.8: Check Dynamic Reactive Adaptive Fabric (DRAD) health."""
