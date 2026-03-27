@@ -3,7 +3,11 @@ import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle, X, S
 import { useModeStore } from '../../store/modeStore';
 import { useStore } from '@workstation/shared';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  wsStatus?: 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED';
+}
+
+export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
   const { currentRealm, setCurrentRealm } = useStore();
   const [showAssistant, setShowAssistant] = useState(false);
   const [activeMode, setActiveMode] = useState('WORK');
@@ -24,7 +28,7 @@ export const Header: React.FC = () => {
   ];
 
   return (
-    <header className="h-20 border-b border-slate-800 px-8 flex items-center justify-between bg-sovereign/50 backdrop-blur-md sticky top-0 z-20">
+    <header className="h-20 shrink-0 border-b border-slate-800 px-8 flex items-center justify-between bg-sovereign/50 backdrop-blur-md z-20">
       <div className="flex items-center gap-4">
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
@@ -67,9 +71,17 @@ export const Header: React.FC = () => {
 
         <div className="h-8 w-px bg-slate-800 mx-2" />
 
-        <div className="flex items-center gap-2 px-4 py-2 bg-vital/10 border border-vital/30 rounded-full">
-          <Activity size={14} className="text-vital" />
-          <span className="text-[10px] font-black text-vital uppercase tracking-widest">Mesh Operational</span>
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${
+          wsStatus === 'CONNECTED' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' :
+          wsStatus === 'CONNECTING' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500' :
+          'bg-vital/10 border-vital/30 text-vital'
+        }`}>
+          <Activity size={14} className={wsStatus === 'CONNECTING' ? 'animate-pulse' : ''} />
+          <span className="text-[10px] font-black uppercase tracking-widest">
+            {wsStatus === 'CONNECTED' ? 'Mesh Operational' :
+             wsStatus === 'CONNECTING' ? 'Syncing Mesh...' :
+             'Mesh Offline'}
+          </span>
         </div>
 
         <button
