@@ -1,10 +1,11 @@
 import sqlite3
 import datetime
 import os
+from agentic_core.config.paths import INTERACTIONS_DB
 
 class InteractionLogger:
     def __init__(self):
-        self.db_path = "agentic_core/data/interactions.db"
+        self.db_path = str(INTERACTIONS_DB)
         self._init_db()
 
     def _init_db(self):

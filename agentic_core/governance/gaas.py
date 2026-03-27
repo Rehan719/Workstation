@@ -2,6 +2,7 @@ import logging
 import json
 from typing import Dict, Any, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
+from agentic_core.security.pqc_hardening import pqc_service
 
 logger = logging.getLogger(__name__)
 
@@ -40,15 +41,20 @@ class GaaS:
         if alignment_score >= self.alignment_threshold:
             status = "CERTIFIED"
             self.ueg.add_audit_log("GAAS_CA", f"Partner {partner_id} Certified", {"alignment": alignment_score})
+            # v1.0 Production: PQC Sign the certificate
+            cert_data = json.dumps({"partner_id": partner_id, "alignment": alignment_score}).encode()
+            pqc_signature = pqc_service.sign_dilithium5(cert_data)
         else:
             status = "REJECTED"
             logger.warning(f"GaaS: Partner {partner_id} failed alignment threshold.")
+            pqc_signature = None
 
         return {
             "partner_id": partner_id,
             "status": status,
             "did": f"did:workstation:partner:{partner_id}",
-            "liability_requirement": f"{self.liability_fund_ratio * 100}%"
+            "liability_requirement": f"{self.liability_fund_ratio * 100}%",
+            "pqc_signature": pqc_signature
         }
 
     def process_liability_allocation(self, revenue: float) -> float:

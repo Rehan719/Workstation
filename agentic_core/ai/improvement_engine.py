@@ -22,23 +22,22 @@ class RecursiveImprovementEngine:
         logger.info("Evolution: Recursive Self-Improvement Engine Awakening.")
 
         while self.is_running:
-            # 1. Gather current metrics (simulated)
+            # 1. Gather current metrics (simulated telemetry)
             metrics = {
                 "avg_latency": 450,
                 "token_efficiency": 0.85,
                 "gaas_rejections": 2
             }
 
-            # 2. Meta-Cognitive Analysis
+            # 2. Meta-Cognitive Analysis (Production v1.0)
+            # Proposals now require Guardian Approval via UI/API
             proposals = meta_cognitive_agent.reflect_on_metrics(metrics)
 
             for prop in proposals:
                 # 3. Run A/B Sandbox Experiment
                 result = await meta_cognitive_agent.run_ab_test(prop["id"])
                 if result["delta_improvement"] > 0.05:
-                    # 4. Generate Autonomous PR
-                    pr_path = await meta_cognitive_agent.create_autonomous_pr(prop)
-                    logger.info(f"Evolution: Autonomous PR generated at {pr_path}")
+                    logger.info(f"Evolution: Transformation Proposal {prop['id']} ready for Guardian Review.")
 
             await asyncio.sleep(3600) # Run hourly
 
