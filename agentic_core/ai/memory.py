@@ -1,11 +1,12 @@
 from typing import List, Dict, Any
 import json
 import os
+from agentic_core.config.paths import MEMORY_FILE
 
 class VectorMemory:
-    """v148.0 Lightweight Vector Memory (JSON-based for POC)."""
+    """v1.0 Production: Unified Absolute Path Memory."""
     def __init__(self):
-        self.storage_path = "agentic_core/data/memory.json"
+        self.storage_path = str(MEMORY_FILE)
         self._init_storage()
 
     def _init_storage(self):
