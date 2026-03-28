@@ -94,15 +94,15 @@ Then open `http://localhost:5173` for the Unified Web App.
 
 The Workstation has successfully completed the **Grand Operation**, transforming the DeepSeek Patient Safety Dossier into a definitive suite of high-fidelity outputs. This operation demonstrates the full orchestration of the C-Suite, BTO Swarms, and the Quadruple Engine Pillar.
 
-### 📦 GRAND OPERATION v3: DEFINITIVE FINAL SYNTHESIS (Located in `/outputs_final`)
+### 🏆 GRAND OPERATION: FINAL CAPSTONE SYNTHESIS (Located in `/outputs_final`)
 
-The Workstation has completed **v3.0 of the Grand Operation**, incorporating all source intelligence, whistleblower records, and 2025-2026 evidence into the **Definitive Final Synthesis**.
+The Workstation has completed the **Final Capstone Synthesis**, consolidating all intelligence, organizational records, and 2025-2026 evidence into the definitive set of masterpieces.
 
-- **[Unified Final Portal v3](outputs_final/index.html)** – **The ultimate hub for all final artifacts.**
-- **[Intelligence Assessment Final](outputs_final/intelligence_assessment_report.pdf)** – Definitive Mushahida Framework report.
-- **[Scientific Review Final](outputs_final/scientific_review.pdf)** – meta-analysis with DES lessons and mechanistic diagrams.
-- **[Definitive Strategic Dashboard](outputs_final/business_model_dashboard.html)** – Monte Carlo ROI and Strategic Options.
-- **[Final Artifact Suite](outputs_final/manifest.json)** – Regulatory Memo, White Paper, Pitch Deck, and Video Trailer.
+- **[Definitive Intelligence Dossier](outputs_final/intelligence_dossier.pdf)** – Capstone Urdu-framework assessment (Mushahida/Jaiza/Muaina).
+- **[Scientific Review Capstone](outputs_final/scientific_review.pdf)** – Peer-review ready distillation of the 2025-2026 evidence suite.
+- **[Documentary Presentation Hub](outputs_final/presentation/index.html)** – 20-slide immersive documentary with synchronized narration.
+- **[Definitive Strategic Dashboard](outputs_final/business_model_dashboard.html)** – Strategic options analysis and risk-adjusted ROI.
+- **[Final Capstone Manifest](outputs_final/manifest.json)** – Forensic record of all definitive artifacts.
 
 > View the [Historical v1.0 Baseline](outputs/manifest.json) and [v2.0 Ultimate Flagship](outputs_v2/manifest.json) records.
 

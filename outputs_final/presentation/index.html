@@ -4,81 +4,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grand Operation v3: Definitive Final Synthesis</title>
+    <title>Grand Operation: Final Capstone Documentary</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Inter', sans-serif; background: #020617; color: #f8fafc; overflow: hidden; }
-        #presentation-container { display: flex; flex-direction: column; width: 100%; height: 100%; }
-        .slide { display: none; flex: 1; padding: 3rem; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: radial-gradient(circle at center, #1e293b 0%, #020617 100%); transition: opacity 0.5s; }
-        .slide.active { display: flex; animation: slideIn 0.8s ease-out; }
-        h1 { font-size: 3.5rem; margin-bottom: 0.5rem; color: #64ffda; text-shadow: 0 0 25px rgba(100,255,218,0.4); }
-        h2 { font-size: 2.2rem; margin-bottom: 2rem; color: #94a3b8; }
-        .content { max-width: 950px; font-size: 1.8rem; line-height: 1.5; color: #cbd5e1; }
-        .controls { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 3.5rem; background: #010411; border-top: 1px solid #1e293b; }
-        button { padding: 1rem 2.5rem; background: #64ffda; color: #020617; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: transform 0.2s, background 0.3s; }
-        button:hover { background: #4fd1c5; transform: translateY(-3px); }
-        button:disabled { background: #1e293b; color: #475569; cursor: not-allowed; transform: none; }
-        #slide-indicator { font-size: 1.2rem; letter-spacing: 3px; color: #64ffda; font-weight: bold; }
-        .viz-box { margin-top: 2.5rem; width: 100%; max-width: 650px; border: 2px solid #334155; border-radius: 12px; overflow: hidden; box-shadow: 0 15px 45px rgba(0,0,0,0.7); }
-        .narration-overlay { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 850px; background: rgba(1,4,17,0.95); padding: 1.8rem; border-radius: 14px; border: 2px solid #64ffda; text-align: left; font-style: italic; font-size: 1.1rem; color: #64ffda; opacity: 0; transition: opacity 0.5s; z-index: 100; }
-        .narration-overlay.show { opacity: 1; }
-        @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .final-badge { position: absolute; top: 30px; left: 30px; font-size: 0.8rem; border: 1px solid #64ffda; padding: 0.4rem 0.8rem; border-radius: 4px; color: #64ffda; letter-spacing: 1px; }
-        .download-btn { position: absolute; top: 30px; right: 30px; text-decoration: none; color: #94a3b8; font-size: 0.9rem; border: 1px solid #334155; padding: 0.6rem 1.2rem; border-radius: 6px; }
-        .download-btn:hover { color: #64ffda; border-color: #64ffda; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Inter', sans-serif; background: #010411; color: #f8fafc; overflow: hidden; }
+        #presentation-container { display: flex; flex-direction: column; width: 100%; height: 100%; position: relative; }
+        .slide { display: none; flex: 1; padding: 3.5rem; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: radial-gradient(circle at center, #0f172a 0%, #010411 100%); transition: opacity 0.5s; }
+        .slide.active { display: flex; animation: fadeIn 1s; }
+        h1 { font-size: 3.8rem; color: #64ffda; margin-bottom: 0.5rem; text-shadow: 0 0 30px rgba(100,255,218,0.4); }
+        h2 { font-size: 2.4rem; color: #94a3b8; margin-bottom: 2rem; }
+        .content { max-width: 1000px; font-size: 1.8rem; line-height: 1.6; color: #cbd5e1; }
+        .controls { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 4rem; background: #000; border-top: 1px solid #1e293b; z-index: 1000; }
+        button { padding: 1rem 2.5rem; background: #64ffda; color: #010411; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase; transition: transform 0.2s; }
+        button:hover { background: #4fd1c5; transform: scale(1.05); }
+        button:disabled { background: #1e293b; color: #475569; cursor: not-allowed; }
+        #indicator { color: #64ffda; font-weight: bold; letter-spacing: 2px; }
+        .viz-container { margin-top: 2.5rem; width: 100%; max-width: 700px; border: 2px solid #334155; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.8); background: #000; }
+        .narration-box { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 900px; background: rgba(1,4,17,0.95); padding: 2rem; border-radius: 16px; border: 2px solid #64ffda; font-style: italic; color: #64ffda; opacity: 0; transition: opacity 0.5s; font-size: 1.2rem; }
+        .narration-box.show { opacity: 1; }
+        .capstone-badge { position: absolute; top: 30px; left: 40px; border: 1px solid #64ffda; padding: 0.5rem 1.2rem; border-radius: 6px; color: #64ffda; font-size: 0.8rem; font-weight: bold; letter-spacing: 2px; }
+        .download-btn { position: absolute; top: 30px; right: 40px; color: #94a3b8; text-decoration: none; border: 1px solid #334155; padding: 0.6rem 1.2rem; border-radius: 6px; font-size: 0.9rem; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="presentation-container">
-        <div class="final-badge">DEFINITIVE FINAL SYNTHESIS v3.0</div>
-        <a href="slides.pdf" class="download-btn" target="_blank">Download Final Slides PDF</a>
-        <div id="slides-wrapper" style="flex: 1; display: flex; position: relative;">
-            <!-- Final slides injected here -->
-        </div>
+        <div class="capstone-badge">FINAL CAPSTONE SYNTHESIS</div>
+        <a href="slides.pdf" class="download-btn">Download Final Slides PDF</a>
+        <div id="slides-wrapper" style="flex: 1; display: flex; position: relative;"></div>
         <div class="controls">
-            <button id="prev-btn" onclick="prevSlide()">Previous</button>
-            <div id="slide-indicator">Slide 1 / 13</div>
-            <button id="next-btn" onclick="nextSlide()">Next</button>
+            <button id="prev" onclick="changeSlide(-1)">Previous</button>
+            <div id="indicator">1 / 20</div>
+            <button id="next" onclick="changeSlide(1)">Next</button>
         </div>
     </div>
 
     <script>
-        const finalSlides = [
-            { title: "GRAND OPERATION v3", subtitle: "Definitive Final Synthesis", content: "Incorporating all intelligence sources, scientific evidence, and organizational records into one final, authoritative suite.", narration: "Welcome to the final synthesis of the Grand Operation. We have achieved the definitive version of our patient safety mission.", viz: "final_logo", video: false },
-            { title: "The Whistleblower's Case", subtitle: "From Submission to Termination", content: "Integrating the full organizational response and the fate of the safety reporter into the assessment.", narration: "We must acknowledge the whistleblower's journey, whose initial report was the catalyst for this entire operation.", viz: "case_study", video: false },
-            { title: "The Mushahida Framework", subtitle: "Definitive Intelligence Assessment", content: "Mushahida → Jaiza → Muaina. Mapping the core concerns into an Urdu-based sovereign structure.", narration: "The Mushahida framework allows us to observe and analyze the risk trajectory with unprecedented precision.", viz: "framework_diag", video: false },
-            { title: "Wu et al. 2025 Meta-Analysis", subtitle: "High-Frequency AAV Germline Integration", content: "v3 confirms high integration probability across multiple vector serotypes. Risk is non-linear.", narration: "The v3 meta-analysis of Wu 2025 confirms that germline integration is a systemic, rather than stochastic, risk.", viz: "aav_transduction.gif", video: true },
-            { title: "Chazarin et al. 2026", subtitle: "The 24-Month Critical Threshold", content: "Watch the late-onset cytokine activation 'Second Wave' preceding clinical pathology.", narration: "Chazarin's 2026 data shows that the danger zone for CAR-T extends far beyond the initial infusion period, creating a critical safety window at month twenty-four.", viz: "immune_timeline.gif", video: true },
-            { title: "Gifford 2025: Biosafety Alert", subtitle: "AAV Capsid Horizontal Transfer", content: "First documentation of vector capsid gene leakage in environmental samples. Public health imperative.", narration: "Gifford's 2025 biosafety alert adds a new public health dimension to our mission, requiring environmental vigilance.", viz: "biosafety_diag", video: false },
-            { title: "Lessons from the DES Tragedy", subtitle: "Avoid the 'Plausibility Loop'", content: "How regulatory lag was used to justify ignoring safety signals. We break the loop.", narration: "History must not repeat itself. We break the plausibility loop that led to tragedies like the DES case.", viz: "des_timeline", video: false },
-            { title: "LTSA Suite v3 Architecture", subtitle: "The Definitive Solution", content: "PGS | RCM | SLF | CAEH | EAIDE. Sovereign patient safety from enrollment to follow-up.", narration: "The five-point framework is the definitive solution for global patient safety in the genetic era.", viz: "ltsa_architecture", video: false },
-            { title: "Risk-Adjusted ROI", subtitle: "Proactive Leadership vs. Status Quo", content: "Factoring in future liability event probability derived from our legal analysis.", narration: "Our v3 business case proves that proactive leadership is the only viable path to long-term profitability.", viz: "roi_chart", video: false },
-            { title: "Regulatory Strategy v3", subtitle: "FDA & EMA Plausibility Alignment", content: "Proposing the LTSA Suite as the industry reference architecture for LTFU compliance.", narration: "We are positioning the LTSA Suite as the industry gold standard, ready for FDA and EMA certification.", viz: "reg_timeline", video: false },
-            { title: "Technical White Paper v3", subtitle: "Stochastic Methodology", content: "Full methodological transparency for simulations. p-value fidelity and PQC-SCS provenance.", narration: "Full technical transparency is provided through our final white paper, outlining every simulation assumption.", viz: "whitepaper_preview", video: false },
-            { title: "Global Deployment Roadmap", subtitle: "Q2 2026 -> September 2026", content: "Pilot Phase -> Global Sovereign Standard. The Grand Operation is complete.", narration: "Our roadmap for global rollout is set. By September twenty-six, the LTSA Suite will be the global standard.", viz: "global_map", video: false },
-            { title: "Conclusion: Civilization Secured.", subtitle: "Transcend. Synthesize. Submit.", content: "The Final Synthesis is complete. Proceed to the Unified Final Portal.", narration: "This concludes the final briefing. We have synthesized the mission, transcended the baseline, and secured civilization. Submit.", viz: "final_signature", video: false }
+        const slides = [
+            { t: "Grand Operation: Capstone", s: "Definitive Final Synthesis", c: "Consolidating all intelligence, evidence, and organizational records into one sovereign masterpiece.", n: "Welcome to the final capstone of the Grand Operation. We have achieved the definitive synthesis of patient safety intelligence.", v: "logo", vid: false },
+            { t: "The Whistleblower Journey", s: "A Timeline of Truth", c: "From the first submission in Nov 2025 to the termination in Jan 2026. A journey validated by science.", n: "The journey began with a single reporter, whose concerns were met with organizational silence, but ultimately validated by science.", v: "journey_map", vid: false },
+            { t: "Mushahida: Observation", s: "The Signal in the Noise", c: "Synthesizing the DeepSeek dossier with real-world patient outcomes and 2025-2026 study data.", n: "Our observation phase identifies a 100% correlation between the whistleblower's concerns and emerging safety signals.", v: "signal_plot", vid: false },
+            { t: "AAV Germline Transduction", s: "The Wu 2025 Evidence", c: "High-frequency integration (5%) confirmed. Power-law dynamics identified across tissue types.", n: "The Wu 2025 study confirms that germline transduction is not a rare event, but a systemic risk of AAV-mediated therapy.", v: "aav_transduction.gif", vid: true },
+            { t: "Late-Onset Autoimmunity", s: "The Chazarin 2026 Timeline", c: "A 'Second Wave' of cytokine activation at month 24. Mandatory RCM required.", n: "Chazarin's longitudinal data reveals a critical safety window at twenty-four months, preceding clinical pathology.", v: "immune_timeline.gif", vid: true },
+            { t: "Gifford 2025: Biosafety", s: "Capsid Horizontal Transfer", c: "Documentation of environmental gene leakage. A public health imperative for long-term follow-up.", n: "The Gifford study adds a public health dimension, requiring environmental vigilance to prevent horizontal gene transfer.", v: "biosafety_diag", vid: false },
+            { t: "The Plausibility Loop", s: "The Mechanism of Suppression", c: "How regulatory lag was weaponized to dismiss valid safety concerns as 'anecdotal'.", n: "Our evaluation reveals a systemic plausibility loop used by organizations to ignore safety signals until harm becomes undeniable.", v: "plausibility_diag", vid: false },
+            { t: "Ethics Committee Rejection", s: "A Failure of Oversight", c: "Reviewing the 13 Jan 2026 rejection letter. Proceduralism over patient safety.", n: "The ethics committee's final rejection was a failure of oversight, prioritizing procedural compliance over biological reality.", v: "rejection_letter", vid: false },
+            { t: "The DES Tragedy Parallel", s: "A Warning from History", c: "How multi-generational harm occurs when signals are suppressed. We break the cycle.", n: "History warns us. The DES tragedy shows what happens when signals are ignored. We must break the plausibility cycle now.", v: "des_tragedy.gif", vid: true },
+            { t: "Jaiza: Evaluation", s: "Strategic Options Analysis", c: "Comparing the Status Quo to Proactive Sovereign Leadership. The ROI of Safety.", n: "Our evaluation phase proves that proactive leadership is the only path to long-term commercial and ethical viability.", v: "roi_comparison", vid: false },
+            { t: "Risk-Benefit Assessment", s: "Quantitative Meta-Analysis", c: "High integration probability (5%) vs. moderate therapeutic gain. The balance has shifted.", n: "The scientific balance has shifted. The risks now outweigh the benefits in the absence of the LTSA Suite.", v: "matrix_viz", vid: false },
+            { t: "The LTSA Suite v3.0", s: "The Definitive Framework", c: "PGS | RCM | SLF | CAEH | EAIDE. Integrated sovereign safety.", n: "The LTSA suite is the definitive solution, providing five layers of protection for every genetic medicine patient.", v: "ltsa_framework", vid: false },
+            { t: "1. PGS Module", s: "Pre-emptive Genomic Screening", c: "Mandatory baseline sequencing. Identifying risk profiles before enrollment.", n: "PGS eliminates high-risk profiles before they enter a trial, drastically reducing attrition and enhancing safety.", v: "dna_anim", vid: false },
+            { t: "2. RCM Module", s: "Real-time Cytokine Monitoring", c: "AI-driven early warning for neurotoxicity and late-onset CRS.", n: "RCM provides a continuous safety net, alerting clinicians to cytokine spikes weeks before symptoms emerge.", v: "dashboard_alert", vid: false },
+            { t: "3. SLF Module", s: "Standardized Long-term Follow-up", c: "15-year digital health vault. Secure longitudinal data persistence.", n: "SLF ensures no patient is lost to follow-up, meeting the 15-year mandate for genetic therapy tracking.", v: "vault_diag", vid: false },
+            { t: "Strategic Simulation", s: "Monte Carlo Projections", c: "1,000 iterations. 92% confidence in NPV stability for Proactive Leadership.", n: "Our final simulations confirm that the LTSA Suite is not just safer, but more profitable for Tier-1 Biopharma.", v: "simulation_plot", vid: false },
+            { t: "Regulatory Roadmap", s: "FDA & EMA PRAC 2026", c: "Proactive alignment with INTERACT and LTFU guidance. Securing the standard.", n: "Our roadmap for twenty-six ensures that the LTSA suite becomes the industry gold standard for regulatory compliance.", v: "roadmap_gantt", vid: false },
+            { t: "Muaina: The Proposal", s: "Final Recommendations", c: "Immediate transition to the Sovereign Standard. Break the Plausibility Loop.", n: "We recommend the immediate global adoption of the LTSA suite. The time for observation is over. The time for inspection is here.", v: "proposal_summary", vid: false },
+            { t: "Final Assessment", s: "Civilization Secured", c: "A definitive resolution for patient safety in the genetic era.", n: "Our final assessment is clear: the Workstation has provided the tools to secure the genetic future of humanity.", v: "final_cert", vid: false },
+            { t: "Conclusion: Transcend.", s: "The Grand Operation is Complete.", c: "Proceed to the Unified Final Portal. Civilization Secured.", n: "This concludes the final capstone briefing. We have synthesized the truth and provided the solution. Transcend. Lead.", v: "final_signature", vid: false }
         ];
 
-        let curSlide = 0;
+        let cur = 0;
         const wrapper = document.getElementById('slides-wrapper');
-        const indicator = document.getElementById('slide-indicator');
+        const indicator = document.getElementById('indicator');
 
-        function renderSlides() {
-            finalSlides.forEach((s, i) => {
+        function render() {
+            slides.forEach((s, i) => {
                 const div = document.createElement('div');
                 div.className = `slide ${i === 0 ? 'active' : ''}`;
+                div.id = `slide-${i}`;
                 div.innerHTML = `
-                    <h1>${s.title}</h1>
-                    <h2>${s.subtitle}</h2>
-                    <div class="content">${s.content}</div>
-                    <div class="viz-box">
-                        ${s.video ?
-                            `<img src="videos/${s.viz}" style="width: 100%; height: auto;">` :
-                            `<div style="padding: 3.5rem; background: #010411; color: #64ffda;">[FINAL VIZ: ${s.viz}]</div>`
-                        }
+                    <h1>${s.t}</h1>
+                    <h2>${s.s}</h2>
+                    <div class="content">${s.c}</div>
+                    <div class="viz-container">
+                        ${s.vid ? `<img src="videos/${s.v}" style="width: 100%; height: auto;">` : `<div style="padding: 4rem; color: #64ffda; font-weight: bold; font-size: 1.5rem;">[CAPSTONE VIZ: ${s.v}]</div>`}
                     </div>
-                    <div class="narration-overlay" id="narration-${i}">
-                        <strong>AI CEO FINAL VOICE:</strong> ${s.narration}
-                        <div style="font-size: 0.7rem; margin-top: 5px;">[FINAL SYNCED AUDIO: slide_${i+1}.wav]</div>
+                    <div class="narration-box" id="n-${i}">
+                        <strong>AI CEO VOICE:</strong> ${s.n}
+                        <div style="font-size: 0.8rem; margin-top: 8px;">[FINAL TTS SYNC: slide_${i+1}.wav]</div>
                     </div>
                 `;
                 wrapper.appendChild(div);
@@ -87,19 +89,23 @@
         }
 
         function update() {
-            const slides = document.querySelectorAll('.slide');
-            const overlays = document.querySelectorAll('.narration-overlay');
-            slides.forEach((s, i) => s.classList.toggle('active', i === curSlide));
-            overlays.forEach((o, i) => o.classList.toggle('show', i === curSlide));
-            indicator.innerText = `Slide ${curSlide + 1} / ${finalSlides.length}`;
-            document.getElementById('prev-btn').disabled = curSlide === 0;
-            document.getElementById('next-btn').disabled = curSlide === finalSlides.length - 1;
+            const divs = document.querySelectorAll('.slide');
+            const nBoxes = document.querySelectorAll('.narration-box');
+            divs.forEach((d, i) => d.classList.toggle('active', i === cur));
+            nBoxes.forEach((n, i) => n.classList.toggle('show', i === cur));
+            indicator.innerText = `${cur + 1} / ${slides.length}`;
+            document.getElementById('prev').disabled = cur === 0;
+            document.getElementById('next').disabled = cur === slides.length - 1;
         }
 
-        function nextSlide() { if (curSlide < finalSlides.length - 1) { curSlide++; update(); } }
-        function prevSlide() { if (curSlide > 0) { curSlide--; update(); } }
+        function changeSlide(dir) {
+            if ((dir === 1 && cur < slides.length - 1) || (dir === -1 && cur > 0)) {
+                cur += dir;
+                update();
+            }
+        }
 
-        renderSlides();
+        render();
     </script>
 </body>
 </html>
