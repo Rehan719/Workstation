@@ -94,13 +94,18 @@ Then open `http://localhost:5173` for the Unified Web App.
 
 The Workstation has successfully completed the **Grand Operation**, transforming the DeepSeek Patient Safety Dossier into a definitive suite of high-fidelity outputs. This operation demonstrates the full orchestration of the C-Suite, BTO Swarms, and the Quadruple Engine Pillar.
 
-### 🏆 GRAND OPERATION: FINAL CAPSTONE SYNTHESIS (Located in `/outputs`)
+### 🏛️ GRAND OPERATION v4.0: ULTIMATE MASTER ARCHIVE (Located in `/outputs`)
 
-The Workstation has completed the **Final Capstone Synthesis**, consolidating all intelligence, organizational records, and 2025-2026 evidence into a unified, versioned output hierarchy.
+The Workstation has successfully consolidated all phases of the investigation into the **Ultimate Master Archive**, providing a definitive and interactive history of the patient safety case.
 
-- **[Unified Capstone Portal (v3)](outputs/v3/index.html)** – **The ultimate entry point for all final artifacts.**
-- **[Ultimate Flagship Portal (v2)](outputs/v2/index.html)** – The stochastic modeling and strategic dashboard baseline.
-- **[Historical Baseline (v1)](outputs/v1/manifest.json)** – The initial proof-of-concept synthesis.
+- **[ULTIMATE MASTER PORTAL](outputs/master/index.html)** – **The central hub for the complete investigation archive.**
+- **[Grand Summary Report (PDF)](outputs/master/grand_summary_report.pdf)** – The definitive meta-narrative of the investigation.
+- **[Unified Final Artifact (PDF)](outputs/master/final_artifact.pdf)** – A single volume of all authoritative findings.
+
+**Investigation History:**
+- **[Capstone Synthesis (v3)](outputs/v3/index.html)** – The final scientific and organizational consolidation.
+- **[Flagship Prototype (v2)](outputs/v2/index.html)** – Stochastic models and enhanced synthesis.
+- **[Initial Baseline (v1)](outputs/v1/index.html)** – Original proof-of-concept.
 
 **Key v3 Capstone Artifacts:**
 - **[Definitive Intelligence Dossier](outputs/v3/intelligence_dossier.pdf)** – Capstone Urdu-framework assessment (Mushahida/Jaiza/Muaina).
