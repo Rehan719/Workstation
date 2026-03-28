@@ -1,0 +1,105 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Operation v3: Definitive Final Synthesis</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Inter', sans-serif; background: #020617; color: #f8fafc; overflow: hidden; }
+        #presentation-container { display: flex; flex-direction: column; width: 100%; height: 100%; }
+        .slide { display: none; flex: 1; padding: 3rem; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: radial-gradient(circle at center, #1e293b 0%, #020617 100%); transition: opacity 0.5s; }
+        .slide.active { display: flex; animation: slideIn 0.8s ease-out; }
+        h1 { font-size: 3.5rem; margin-bottom: 0.5rem; color: #64ffda; text-shadow: 0 0 25px rgba(100,255,218,0.4); }
+        h2 { font-size: 2.2rem; margin-bottom: 2rem; color: #94a3b8; }
+        .content { max-width: 950px; font-size: 1.8rem; line-height: 1.5; color: #cbd5e1; }
+        .controls { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 3.5rem; background: #010411; border-top: 1px solid #1e293b; }
+        button { padding: 1rem 2.5rem; background: #64ffda; color: #020617; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: transform 0.2s, background 0.3s; }
+        button:hover { background: #4fd1c5; transform: translateY(-3px); }
+        button:disabled { background: #1e293b; color: #475569; cursor: not-allowed; transform: none; }
+        #slide-indicator { font-size: 1.2rem; letter-spacing: 3px; color: #64ffda; font-weight: bold; }
+        .viz-box { margin-top: 2.5rem; width: 100%; max-width: 650px; border: 2px solid #334155; border-radius: 12px; overflow: hidden; box-shadow: 0 15px 45px rgba(0,0,0,0.7); }
+        .narration-overlay { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 850px; background: rgba(1,4,17,0.95); padding: 1.8rem; border-radius: 14px; border: 2px solid #64ffda; text-align: left; font-style: italic; font-size: 1.1rem; color: #64ffda; opacity: 0; transition: opacity 0.5s; z-index: 100; }
+        .narration-overlay.show { opacity: 1; }
+        @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .final-badge { position: absolute; top: 30px; left: 30px; font-size: 0.8rem; border: 1px solid #64ffda; padding: 0.4rem 0.8rem; border-radius: 4px; color: #64ffda; letter-spacing: 1px; }
+        .download-btn { position: absolute; top: 30px; right: 30px; text-decoration: none; color: #94a3b8; font-size: 0.9rem; border: 1px solid #334155; padding: 0.6rem 1.2rem; border-radius: 6px; }
+        .download-btn:hover { color: #64ffda; border-color: #64ffda; }
+    </style>
+</head>
+<body>
+    <div id="presentation-container">
+        <div class="final-badge">DEFINITIVE FINAL SYNTHESIS v3.0</div>
+        <a href="slides.pdf" class="download-btn" target="_blank">Download Final Slides PDF</a>
+        <div id="slides-wrapper" style="flex: 1; display: flex; position: relative;">
+            <!-- Final slides injected here -->
+        </div>
+        <div class="controls">
+            <button id="prev-btn" onclick="prevSlide()">Previous</button>
+            <div id="slide-indicator">Slide 1 / 13</div>
+            <button id="next-btn" onclick="nextSlide()">Next</button>
+        </div>
+    </div>
+
+    <script>
+        const finalSlides = [
+            { title: "GRAND OPERATION v3", subtitle: "Definitive Final Synthesis", content: "Incorporating all intelligence sources, scientific evidence, and organizational records into one final, authoritative suite.", narration: "Welcome to the final synthesis of the Grand Operation. We have achieved the definitive version of our patient safety mission.", viz: "final_logo", video: false },
+            { title: "The Whistleblower's Case", subtitle: "From Submission to Termination", content: "Integrating the full organizational response and the fate of the safety reporter into the assessment.", narration: "We must acknowledge the whistleblower's journey, whose initial report was the catalyst for this entire operation.", viz: "case_study", video: false },
+            { title: "The Mushahida Framework", subtitle: "Definitive Intelligence Assessment", content: "Mushahida → Jaiza → Muaina. Mapping the core concerns into an Urdu-based sovereign structure.", narration: "The Mushahida framework allows us to observe and analyze the risk trajectory with unprecedented precision.", viz: "framework_diag", video: false },
+            { title: "Wu et al. 2025 Meta-Analysis", subtitle: "High-Frequency AAV Germline Integration", content: "v3 confirms high integration probability across multiple vector serotypes. Risk is non-linear.", narration: "The v3 meta-analysis of Wu 2025 confirms that germline integration is a systemic, rather than stochastic, risk.", viz: "aav_transduction.gif", video: true },
+            { title: "Chazarin et al. 2026", subtitle: "The 24-Month Critical Threshold", content: "Watch the late-onset cytokine activation 'Second Wave' preceding clinical pathology.", narration: "Chazarin's 2026 data shows that the danger zone for CAR-T extends far beyond the initial infusion period, creating a critical safety window at month twenty-four.", viz: "immune_timeline.gif", video: true },
+            { title: "Gifford 2025: Biosafety Alert", subtitle: "AAV Capsid Horizontal Transfer", content: "First documentation of vector capsid gene leakage in environmental samples. Public health imperative.", narration: "Gifford's 2025 biosafety alert adds a new public health dimension to our mission, requiring environmental vigilance.", viz: "biosafety_diag", video: false },
+            { title: "Lessons from the DES Tragedy", subtitle: "Avoid the 'Plausibility Loop'", content: "How regulatory lag was used to justify ignoring safety signals. We break the loop.", narration: "History must not repeat itself. We break the plausibility loop that led to tragedies like the DES case.", viz: "des_timeline", video: false },
+            { title: "LTSA Suite v3 Architecture", subtitle: "The Definitive Solution", content: "PGS | RCM | SLF | CAEH | EAIDE. Sovereign patient safety from enrollment to follow-up.", narration: "The five-point framework is the definitive solution for global patient safety in the genetic era.", viz: "ltsa_architecture", video: false },
+            { title: "Risk-Adjusted ROI", subtitle: "Proactive Leadership vs. Status Quo", content: "Factoring in future liability event probability derived from our legal analysis.", narration: "Our v3 business case proves that proactive leadership is the only viable path to long-term profitability.", viz: "roi_chart", video: false },
+            { title: "Regulatory Strategy v3", subtitle: "FDA & EMA Plausibility Alignment", content: "Proposing the LTSA Suite as the industry reference architecture for LTFU compliance.", narration: "We are positioning the LTSA Suite as the industry gold standard, ready for FDA and EMA certification.", viz: "reg_timeline", video: false },
+            { title: "Technical White Paper v3", subtitle: "Stochastic Methodology", content: "Full methodological transparency for simulations. p-value fidelity and PQC-SCS provenance.", narration: "Full technical transparency is provided through our final white paper, outlining every simulation assumption.", viz: "whitepaper_preview", video: false },
+            { title: "Global Deployment Roadmap", subtitle: "Q2 2026 -> September 2026", content: "Pilot Phase -> Global Sovereign Standard. The Grand Operation is complete.", narration: "Our roadmap for global rollout is set. By September twenty-six, the LTSA Suite will be the global standard.", viz: "global_map", video: false },
+            { title: "Conclusion: Civilization Secured.", subtitle: "Transcend. Synthesize. Submit.", content: "The Final Synthesis is complete. Proceed to the Unified Final Portal.", narration: "This concludes the final briefing. We have synthesized the mission, transcended the baseline, and secured civilization. Submit.", viz: "final_signature", video: false }
+        ];
+
+        let curSlide = 0;
+        const wrapper = document.getElementById('slides-wrapper');
+        const indicator = document.getElementById('slide-indicator');
+
+        function renderSlides() {
+            finalSlides.forEach((s, i) => {
+                const div = document.createElement('div');
+                div.className = `slide ${i === 0 ? 'active' : ''}`;
+                div.innerHTML = `
+                    <h1>${s.title}</h1>
+                    <h2>${s.subtitle}</h2>
+                    <div class="content">${s.content}</div>
+                    <div class="viz-box">
+                        ${s.video ?
+                            `<img src="videos/${s.viz}" style="width: 100%; height: auto;">` :
+                            `<div style="padding: 3.5rem; background: #010411; color: #64ffda;">[FINAL VIZ: ${s.viz}]</div>`
+                        }
+                    </div>
+                    <div class="narration-overlay" id="narration-${i}">
+                        <strong>AI CEO FINAL VOICE:</strong> ${s.narration}
+                        <div style="font-size: 0.7rem; margin-top: 5px;">[FINAL SYNCED AUDIO: slide_${i+1}.wav]</div>
+                    </div>
+                `;
+                wrapper.appendChild(div);
+            });
+            update();
+        }
+
+        function update() {
+            const slides = document.querySelectorAll('.slide');
+            const overlays = document.querySelectorAll('.narration-overlay');
+            slides.forEach((s, i) => s.classList.toggle('active', i === curSlide));
+            overlays.forEach((o, i) => o.classList.toggle('show', i === curSlide));
+            indicator.innerText = `Slide ${curSlide + 1} / ${finalSlides.length}`;
+            document.getElementById('prev-btn').disabled = curSlide === 0;
+            document.getElementById('next-btn').disabled = curSlide === finalSlides.length - 1;
+        }
+
+        function nextSlide() { if (curSlide < finalSlides.length - 1) { curSlide++; update(); } }
+        function prevSlide() { if (curSlide > 0) { curSlide--; update(); } }
+
+        renderSlides();
+    </script>
+</body>
+</html>
