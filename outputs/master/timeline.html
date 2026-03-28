@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeline of the Investigation (v4.0)</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #01040a; color: #c9d1d9; margin: 0; padding: 4rem 2rem; }
+        h1 { text-align: center; color: #58a6ff; font-size: 3rem; margin-bottom: 4rem; }
+        .timeline { position: relative; max-width: 1000px; margin: 0 auto; }
+        .timeline::after { content: ''; position: absolute; width: 6px; background-color: #30363d; top: 0; bottom: 0; left: 50%; margin-left: -3px; }
+        .event { padding: 10px 40px; position: relative; background-color: inherit; width: 50%; box-sizing: border-box; }
+        .event::after { content: ''; position: absolute; width: 25px; height: 25px; right: -17px; background-color: #01040a; border: 4px solid #58a6ff; top: 15px; border-radius: 50%; z-index: 1; }
+        .left { left: 0; }
+        .right { left: 50%; }
+        .right::after { left: -16px; }
+        .content { padding: 20px 30px; background-color: #0d1117; position: relative; border-radius: 8px; border: 1px solid #30363d; cursor: pointer; transition: 0.3s; }
+        .content:hover { border-color: #58a6ff; transform: scale(1.02); }
+        .date { font-weight: bold; color: #58a6ff; margin-bottom: 10px; display: block; }
+        h3 { margin-top: 0; color: #c9d1d9; }
+        p { margin-bottom: 0; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <h1>Investigation Timeline</h1>
+
+    <div class="timeline">
+        <div class="event left">
+            <div class="content">
+                <span class="date">13 Nov 2025</span>
+                <h3>Whistleblower Submission</h3>
+                <p>Initial report on AAV germline risks and CAR-T autoimmunity submitted.</p>
+            </div>
+        </div>
+        <div class="event right">
+            <div class="content">
+                <span class="date">27 Nov 2025</span>
+                <h3>Ethics Response (1)</h3>
+                <p>Ethics Committee acknowledges receipt; requests procedural clarification.</p>
+            </div>
+        </div>
+        <div class="event left">
+            <div class="content">
+                <span class="date">13 Jan 2026</span>
+                <h3>Ethics Response (2)</h3>
+                <p>Final rejection of concerns. Termination of the safety reporter.</p>
+            </div>
+        </div>
+        <div class="event right">
+            <div class="content">
+                <span class="date">Feb 2026</span>
+                <h3>Grand Operation v1.0</h3>
+                <p>First proof-of-concept synthesis released by AI CEO.</p>
+            </div>
+        </div>
+        <div class="event left">
+            <div class="content">
+                <span class="date">Mar 2026</span>
+                <h3>Scientific Validation (Wu 2025)</h3>
+                <p>Publication of Wu et al. confirming high-frequency AAV integration.</p>
+            </div>
+        </div>
+        <div class="event right">
+            <div class="content">
+                <span class="date">Mar 2026</span>
+                <h3>Grand Operation v2.0</h3>
+                <p>Ultimate Flagship release. Stochastic models and PRISMA meta-analysis.</p>
+            </div>
+        </div>
+        <div class="event left">
+            <div class="content">
+                <span class="date">Mar 2026</span>
+                <h3>Grand Operation v3.0</h3>
+                <p>Final Capstone Synthesis. Incorporation of full whistleblower journey.</p>
+            </div>
+        </div>
+        <div class="event right">
+            <div class="content">
+                <span class="date">Mar 2026</span>
+                <h3>Master Archive v4.0</h3>
+                <p>Consolidation of all investigation phases into a single definitive archive.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
