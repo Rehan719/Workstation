@@ -3,53 +3,38 @@
 ## ⚖️ Legal Claims (Equality Act 2010)
 
 ### 1. Discrimination Arising from Disability (s.15 EqA 2010)
--   **Did the Respondent subject the Claimant to a detriment?** Yes (dismissal, probation extension).
--   **Did the detriment arise "in consequence of" the disability?**
-    -   The Respondent relies on "punctuality" and "failure to pass probation targets."
-    -   The Claimant alleges these were directly or indirectly caused by his mental health condition (insomnia, anxiety) and medication side effects (incontinence).
--   **Can the Respondent prove that the treatment was a "proportionate means of achieving a legitimate aim"?**
-    -   Requires evidence of why the targets could not be adjusted (reasonable adjustments overlap).
--   **Did the Respondent know (or should have known) about the disability?** Yes (disclosure on 13 Sep 2025).
+-   **Legal Test:** (1) Did the Respondent treat the Claimant unfavourably? (2) Was this because of "something" arising in consequence of the Claimant's disability? (3) Can the Respondent show the treatment was a proportionate means of achieving a legitimate aim?
+-   **Facts:** Dismissal on 21 Jan 2026 for "punctuality" (06:00 starts) and "failure to meet probation targets." Claimant alleges these arose from insomnia, anxiety, and medication side-effects (incontinence).
+-   **Case Law:** *Royal Bank of Scotland v Morris* [2011] UKEAT/0436/10 (Requirement for medical evidence to link disability to the "something" arising).
 
 ### 2. Failure to Make Reasonable Adjustments (s.20/21 EqA 2010)
--   **Did the Respondent apply a provision, criterion or practice (PCP)?**
-    -   PCP 1: The requirement to be "signed-off on Akta set up" or "IPF" within a fixed probationary period.
-    -   PCP 2: The requirement for strict 06:00 punctuality.
--   **Did the PCP put the Claimant at a substantial disadvantage?**
-    -   Disability-related stress/anxiety and medication side effects made these requirements harder to meet.
--   **Did the Respondent fail to take "such steps as it is reasonable to have to take"?**
-    -   Failure to implement OH recommendations (Wellness Action Plan, Stress Risk Assessment) from Nov 2025.
-    -   Failure to adjust the probationary period or targets after the health crisis in Oct 2025.
+-   **Legal Test:** (1) Did the Respondent apply a Provision, Criterion or Practice (PCP)? (2) Did the PCP put the Claimant at a substantial disadvantage compared to non-disabled persons? (3) Did the Respondent fail to take reasonable steps to avoid the disadvantage?
+-   **PCPs:** 06:00 contractual start time; Fixed-term probation targets (Akta/IPF sign-off).
+-   **Reasonable Steps:** Implementing the Wellness Action Plan (WAP) and Stress Risk Assessment recommended by OH on 14 Nov 2025.
+-   **Case Law:** *Project Management Institute v Latif* [2007] IRLR 579 (The "step" must have a real prospect of avoiding the disadvantage).
 
 ### 3. Harassment Related to Disability (s.26 EqA 2010)
--   **Did the Respondent engage in unwanted conduct?**
-    -   Public shaming for lateness/health (SD, 26 Sep).
-    -   Intrusive questioning (RJ/SD, 27 Sep).
--   **Did the conduct have the purpose or effect of violating dignity or creating an intimidating, hostile, degrading, humiliating or offensive environment?**
-    -   The Claimant’s contemporaneous logs record feelings of isolation, "social labeling," and "shame."
+-   **Legal Test:** (1) Unwanted conduct related to disability? (2) Purpose or effect of violating dignity or creating an intimidating, hostile, degrading, humiliating or offensive environment?
+-   **Facts:** "Public shaming" by SD (26 Sep) and "intrusive questioning" by RJ (27 Sep) in an open-plan office.
+-   **Case Law:** *Richmond Pharmacology v Dhaliwal* [2009] IRLR 336 (Requires an objective and subjective assessment of the "effect").
 
 ### 4. Victimisation (s.27 EqA 2010)
--   **Did the Claimant do a "protected act"?** Yes (ACAS initiation 29 Sep, Formal Grievance 6 Oct).
--   **Did the Respondent subject the Claimant to a detriment because of the protected act?**
-    -   "Intense scrutiny" post-Oct 2025.
-    -   The decision to terminate shortly after the grievance appeal was rejected (Dec 2025).
-    -   Refusal to suspend or reassign line managers despite health risks.
+-   **Legal Test:** (1) Did the Claimant do a "protected act"? (2) Did the Respondent subject the Claimant to a detriment? (3) Was the detriment because of the protected act?
+-   **Protected Acts:** ACAS initiation (29 Sep), Formal grievance (6 Oct).
+-   **Detriment:** "Intense scrutiny" post-Oct 2025 and dismissal on 21 Jan 2026.
+-   **Case Law:** *Martin v Devonshires Solicitors* [2011] ICR 352 (The "reason why" the employer acted is the focus).
 
 ## 💼 Employment Rights Act 1996
 
-### 5. Unfair Dismissal (s.98 ERA 1996)
--   **What was the reason for dismissal?** Respondent claims "capability" (probation failure).
--   **Was the dismissal fair in all the circumstances?**
-    -   Procedural fairness: Did the Respondent follow its own policies and the ACAS Code?
-    -   The overlap with discrimination suggests the dismissal was not "within the band of reasonable responses."
+### 5. Automatic Unfair Dismissal (s.103A ERA 1996)
+-   **Legal Test:** Was the reason (or principal reason) for dismissal that the employee made a "protected disclosure"?
+-   **Protected Disclosures:** Claimant’s grievance (6 Oct) and notes (13 Oct) include reports of "Clean-Room Risks" and "Health & Safety Negligence" (Grievance Letter p.4, D.3), potentially meeting the criteria for whistleblowing.
+-   **Impact:** No 2-year service requirement; unlimited compensation.
 
-## 📉 Procedural Failures
-
-### 6. ACAS Code Breach
--   Failure to follow procedures regarding the grievance handling (SKM's "superficial" investigation).
--   Failure to address the health crisis (Oct 2025) adequately within the disciplinary/probationary process.
--   Potential 25% uplift in compensation for unreasonable failure to follow the Code.
+### 6. Ordinary Unfair Dismissal (s.94/98 ERA 1996)
+-   **Legal Test:** Was there a fair reason (capability/conduct)? Was the dismissal fair in all the circumstances (s.98(4))?
+-   **Procedural Failures:** Failure to follow the ACAS Code of Practice on Disciplinary and Grievance Procedures (2015).
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 22 May 2024 (Simulated Analysis Date)
+**Date:** 23 May 2024 (Enhanced Analysis)

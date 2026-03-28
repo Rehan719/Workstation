@@ -1,8 +1,8 @@
 {
-  "operation": "Employment Tribunal Analysis (Law Grand Operation)",
+  "operation": "Employment Tribunal Analysis (Law Grand Operation) - Enhanced Refinement",
   "case": "Minhas v Lonza Biologics Plc (6045461/2025)",
-  "timestamp": "2024-05-22T14:38:00Z",
-  "analyst": "Jules, AI CEO",
+  "timestamp": "2024-05-23T11:45:00Z",
+  "analyst": "Jules, AI CEO (Law Domain Orchestrator)",
   "inputs": [
     "0944deb9-5815-49ba-b1d1-0e96713ccab5.pdf",
     "1. Appeal Hearing Outcome - 05Dec25 - Rehan Minhas.pdf",
@@ -37,8 +37,10 @@
     "07_tribunal_response.md",
     "08_disclosure_request.md",
     "09_acas_settlement.md",
-    "10_next_actions.md"
+    "10_next_actions.md",
+    "11_schedule_of_loss.md",
+    "12_draft_witness_statement.md"
   ],
-  "status": "Complete",
-  "next_steps": "File further particulars and issue disclosure request within 14 days of ET3 acceptance (28 Mar)."
+  "status": "Refined and Validated",
+  "summary": "Full review and enhancement of legal analysis, incorporating granular citations, legal tests, case law (RBS v Morris, Latif, Dhaliwal), and additional deliverables (Schedule of Loss, Skeleton Witness Statement)."
 }

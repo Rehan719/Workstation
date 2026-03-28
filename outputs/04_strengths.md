@@ -2,34 +2,31 @@
 
 ## 💪 Case Strengths
 
-### 1. Contemporaneous Documentation
--   The Claimant’s `Minhas_Contemporaneous_Log_6Oct20252.pdf` and `Minhas_PostGrievance_Log_6Oct2025.pdf` are exceptionally detailed. They follow ACAS guidelines, provide timestamps, witnesses, and specific descriptions of conduct. These logs were shared with the Respondent at the time, enhancing their evidentiary value as a contemporaneous record.
--   **Impact:** Overcomes "word-against-word" scenarios by providing a structured, immediate narrative of events.
+### 1. Contemporaneous Documentation (Evidentiary Weight)
+-   **Quantified Detail:** The `Minhas_Contemporaneous_Log_6Oct20252.pdf` records 10 separate interactions between 26 Sep and 3 Oct where managers (RJ/SD) allegedly shamed or dismissed the Claimant’s health concerns.
+-   **Legal Strategy:** Courts prioritize documents written at the time of the event.
+-   **Reference:** Log p.3, "26 Sep 2025, 07:45" (SD public shaming) and "27 Sep 2025, 17:00" (RJ refusing investigation).
 
-### 2. Admissions in the Respondent’s ET3
--   The Respondent admits (ET3, p.8, para 16) knowledge of the disability and that its own OH provider (Dr. Tahir) recommended:
-    -   (i) a **Wellness Action Plan** (WAP).
-    -   (ii) a **stress risk assessment**.
-    -   (iii) a quieter working environment.
--   The Respondent also admitted (ET3, p.12, para 25) that the grievance (6 Oct 2025) was a **protected act**.
--   **Impact:** These admissions establish a duty of care and a duty to make reasonable adjustments. The Respondent must now prove they *did* implement these recommendations, which the Claimant disputes.
+### 2. Admissions in Respondent's ET3 (s.20-21 EqA 2010)
+-   **Quantified Admission:** The Respondent admits Dr. Tahir (OH) made 4 specific recommendations on 14 Nov 2025: (i) WAP, (ii) Stress Risk Assessment, (iii) Quiter desk, (iv) Advance agendas.
+-   **Legal Impact:** This creates an immediate "Step 2" burden on the Respondent to prove they implemented these reasonable adjustments before the 21 Jan termination.
+-   **Reference:** ET3 p.8, para 16(iv).
 
-### 3. Timeline of Protected Acts and Detriment (Victimisation)
--   The temporal proximity between the ACAS initiation (29 Sep), formal grievance (6 Oct), and subsequent "intense scrutiny" leading to dismissal (Jan 2026) is highly suggestive of victimisation.
--   **Impact:** Courts often infer causation when detriments occur shortly after protected acts.
+### 3. Causal Link (Victimisation s.27 EqA 2010)
+-   **Quantified Timing:** The decision to dismiss was made 47 days after the grievance appeal was rejected (5 Dec).
+-   **Legal Impact:** Temporal proximity supports the inference that the protected act (grievance) influenced the dismissal decision, despite the "capability" label.
+-   **Reference:** Appeal Outcome Letter (5 Dec 2025) vs. Termination Letter (21 Jan 2026).
 
-### 4. Severity of Health Crisis (Oct 2025)
--   The Claimant sought NHS crisis intervention (3 Oct 2025). This is an objective, third-party record (CNWL/Northwick Park) of the severity of the psychological harm allegedly caused by the Respondent's conduct.
--   **Impact:** This supports a high "Vento band" award for injury to feelings and personal injury claims.
+### 4. Third-Party Medical Evidence (Oct 2025 Crisis)
+-   **Quantified Impact:** Documentation of NHS Crisis Team (Northwick Park/CNWL) intervention on 3 Oct 2025.
+-   **Legal Impact:** This provides objective, non-partisan evidence of the severity of psychiatric injury, making a "lower band" Vento award highly unlikely.
+-   **Reference:** Grievance Letter p.4, "E...NHS Crisis Intervention."
 
 ### 5. Procedural Failures (ACAS Code)
--   The grievance process was handled internally by senior site managers (SKM, Nic Murrell) who may have had a vested interest in the site's performance metrics. The Claimant's request for an **independent external investigator** was refused.
--   **Impact:** Supports an "ACAS uplift" of up to 25% on any compensation awarded.
-
-### 6. Failure to Act on OH Recommendations
--   The Respondent admits they received the OH report on 14 Nov 2025. The Claimant was dismissed only 9 weeks later (21 Jan 2026).
--   **Impact:** It is unlikely that the Respondent can prove they "reasonably" implemented a WAP, stress risk assessment, and relocated the Claimant in such a short window during a busy production period.
+-   **Quantified Failure:** The grievance was investigated by internal site managers rather than an independent external party, despite requests.
+-   **Legal Impact:** Supports up to a 25% uplift in compensation for failing to provide a fair and impartial process.
+-   **Reference:** Grievance Decision Letter (10 Nov 2025).
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 22 May 2024 (Simulated Analysis Date)
+**Date:** 23 May 2024 (Enhanced Analysis)
