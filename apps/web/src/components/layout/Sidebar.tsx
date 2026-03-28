@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart,
   Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
@@ -38,7 +39,7 @@ const allNavItems: NavItem[] = [
     id: 'qep-facet',
     subItems: [
       { name: 'QEP Dashboard', icon: LayoutDashboard, id: 'qep' },
-      { name: 'Religion Hub', icon: Heart, id: 'religion' },
+      { name: 'Religion Hub', icon: Heart, id: 'qep-religion' },
       { name: 'Science Hub', icon: Microscope, id: 'science' },
       { name: 'Education Hub', icon: GraduationCap, id: 'education' },
       { name: 'Law Hub', icon: Gavel, id: 'law' },
@@ -91,6 +92,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const { currentRealm, currentMode, user, setCurrentTab } = useStore();
+  const navigate = useNavigate();
 
   const filteredNavItems = allNavItems.filter(item => {
     if (currentRealm === 'UNIFIED') return true;
@@ -99,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   });
 
   return (
-    <aside className={`w-72 flex flex-col p-6 h-full transition-all duration-500 border-r bg-slate-950 border-slate-900 z-30 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
+    <aside className={`w-full flex flex-col p-6 h-full transition-all duration-500 border-r bg-slate-950 border-slate-900 z-30 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
       <div className="mb-10 relative">
         <button onClick={() => setCurrentTab('dashboard')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-aura to-highlight flex items-center justify-center text-sovereign shadow-lg shadow-aura/10 animate-pulse">
@@ -117,7 +119,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           <div key={item.id} className="space-y-1">
             <button
               onClick={() => {
-                if (!item.subItems) setActiveTab(item.id);
+                if (!item.subItems) {
+                  setActiveTab(item.id);
+                  navigate(`/${item.id === 'dashboard' ? '' : item.id}`);
+                }
               }}
               className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all focus:outline-none group ${
                 activeTab === item.id ? 'bg-aura text-sovereign font-black shadow-xl shadow-aura/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-slate-900/50'
@@ -131,7 +136,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 {item.subItems.map((sub: any) => (
                   <button
                     key={sub.id}
-                    onClick={() => setActiveTab(sub.id)}
+                    onClick={() => {
+                      setActiveTab(sub.id);
+                      navigate(`/${sub.id}`);
+                    }}
                     className={`w-full flex items-center gap-3 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all group ${
                       activeTab === sub.id ? 'text-aura' : 'text-slate-600 hover:text-slate-300'
                     }`}

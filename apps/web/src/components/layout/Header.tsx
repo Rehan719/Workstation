@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle, X, Shield, Star, Award, Moon, Sun, Play, GraduationCap, Terminal, Briefcase, Microscope, Binary, LayoutDashboard } from 'lucide-react';
+import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle, X, Shield, Star, Award, Moon, Sun, Play, GraduationCap, Terminal, Briefcase, Microscope, Binary, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { useModeStore } from '../../store/modeStore';
 import { useStore } from '@workstation/shared';
 
@@ -91,6 +91,14 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
           aria-label="Toggle Sovereign Assistant"
         >
           <Sparkles size={20} />
+        </button>
+
+        <button
+          className="p-3 rounded-xl bg-slate-800 text-emerald-500 hover:scale-105 transition-all gaas-audit-btn"
+          title="Constitutional Audit Status"
+          aria-label="Constitutional Audit Status"
+        >
+          <ShieldCheck size={20} />
         </button>
 
         <button

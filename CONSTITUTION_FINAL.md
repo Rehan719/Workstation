@@ -49,9 +49,10 @@ The system shall autonomously evolve its own code and constitution via Transform
 | 1-100 | Identity & Core | ENFORCED | `l1_identity/genome_engine.py` |
 | 101-250 | Intelligence | ACTIVE | `api/v138/ceo.py` (Introspection v1.0) |
 | 251-400 | Realms & Reactors | ENFORCED | `agentic_core/layers/l7_module_library/` |
-| 401-600 | Sovereign Domains | ENFORCED | `agentic_core/reactor/religion/qep_flagship.py` |
-| 601-900 | Evolution & GRN | ENFORCED | `agentic_core/ai/improvement_engine.py` |
-| 901-1127| Civilizational | SEEDED | `agentic_core/layers/l11_civilisation/` |
+| 401-600 | Sovereign Domains | ENFORCED | `agentic_core/reactor/religion/qep_religion.py` |
+| 601-800 | Content Pipelines | ACTIVE | `agentic_core/ingestion/api.py` |
+| 801-1000| Evolution & GRN | ENFORCED | `agentic_core/ai/improvement_engine.py` |
+| 1001-1127| Civilizational | SEEDED | `agentic_core/layers/l11_civilisation/` |
 
 *... All 1127 Articles verified via v1.0 Production Audit ...*
 

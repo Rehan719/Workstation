@@ -33,6 +33,8 @@ from agentic_core.api.v320 import intelligence as intel_v320, governance_autonom
 from agentic_core.api.v340 import consciousness, soul_record
 from agentic_core.api.v138 import ceo as ceo_v138
 from agentic_core.api import v154_unified, v200_unified
+from agentic_core.ingestion import api as ingestion_api
+from agentic_core.synthesis import api as synthesis_api
 from prometheus_client import make_asgi_app, Counter, Histogram
 import time
 
@@ -199,6 +201,8 @@ app.include_router(soul_record.router, prefix="/api/v340")
 app.include_router(ceo_v138.router, prefix="/api/v138")
 app.include_router(v154_unified.router, prefix="/api")
 app.include_router(v200_unified.router, prefix="/api")
+app.include_router(ingestion_api.router, prefix="/api/v1")
+app.include_router(synthesis_api.router, prefix="/api/v1")
 
 app.add_middleware(
     CORSMiddleware,

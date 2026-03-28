@@ -6,8 +6,19 @@ export const useResilientWebSocket = (url: string, onMessage: (data: any) => voi
   const [status, setStatus] = useState<'CONNECTING' | 'CONNECTED' | 'DISCONNECTED'>('DISCONNECTED');
   const retryCount = useRef(0);
 
-  const connect = () => {
+  const connect = async () => {
     if (ws.current?.readyState === WebSocket.OPEN) return;
+
+    // v1.0: Wait for backend health before connecting
+    try {
+      const resp = await fetch('/api/v154/status');
+      if (!resp.ok) throw new Error('Backend not ready');
+    } catch (e) {
+      console.log('Backend not ready, delaying WebSocket connection...');
+      const delay = Math.min(1000 * Math.pow(2, retryCount.current), 30000);
+      reconnectTimeout.current = window.setTimeout(connect, delay);
+      return;
+    }
 
     console.log('Connecting to WebSocket:', url);
     setStatus('CONNECTING');
