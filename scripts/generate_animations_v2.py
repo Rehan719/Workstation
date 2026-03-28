@@ -59,7 +59,7 @@ def aav_transduction_script(i):
     return x[:int(progress*1000)], y[:int(progress*1000)]
 
 def main():
-    out_dir = Path("outputs_v2/presentation/videos")
+    out_dir = Path("outputs/v2/presentation/videos")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     generate_animation_v2("Immune Timeline", "Timeline of Delayed Cytokine Perturbation", immune_timeline_script, str(out_dir / "immune_timeline.mp4"))

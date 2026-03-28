@@ -12,9 +12,9 @@ from reportlab.lib.units import inch
 
 def generate_scientific_review_final():
     print("🧪 Generating Scientific Review (Final/Definitive)...")
-    output_dir = Path("outputs_final")
+    output_dir = Path("outputs/v3")
     output_dir.mkdir(parents=True, exist_ok=True)
-    Path("outputs_final/supplementary").mkdir(parents=True, exist_ok=True)
+    Path("outputs/v3/supplementary").mkdir(parents=True, exist_ok=True)
 
     md_path = output_dir / "scientific_review.md"
     pdf_path = output_dir / "scientific_review.pdf"

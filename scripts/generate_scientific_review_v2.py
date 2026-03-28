@@ -29,7 +29,7 @@ def generate_prisma_diagram():
         if y < 0.8:
             ax.annotate("", xy=(0.5, y+0.05), xytext=(0.5, y+0.1), arrowprops=dict(arrowstyle="->", lw=2))
 
-    diag_path = "outputs_v2/supplementary/prisma_diagram.png"
+    diag_path = "outputs/v2/supplementary/prisma_diagram.png"
     plt.savefig(diag_path, bbox_inches='tight')
     plt.close()
     return diag_path
@@ -38,7 +38,7 @@ def generate_scientific_review_v2():
     print("🧪 Generating Scientific Review v2 (Peer-Review Grade)...")
     output_dir = Path("outputs_v2")
     output_dir.mkdir(parents=True, exist_ok=True)
-    Path("outputs_v2/supplementary").mkdir(parents=True, exist_ok=True)
+    Path("outputs/v2/supplementary").mkdir(parents=True, exist_ok=True)
 
     prisma_path = generate_prisma_diagram()
     md_path = output_dir / "scientific_review.md"
@@ -72,7 +72,7 @@ Longitudinal tracking indicates a '2nd Wave' of cytokine activation at 24 months
 5. EAIDE: Ethical AI Oversight for Dose Escalation
 
 ---
-*Verified by CEvO, CGO. Artifact: outputs_v2/scientific_review.pdf*
+*Verified by CEvO, CGO. Artifact: outputs/v2/scientific_review.pdf*
 """
     with open(md_path, "w") as f:
         f.write(md_content)

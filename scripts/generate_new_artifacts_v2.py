@@ -10,7 +10,7 @@ from reportlab.lib.units import inch
 
 def generate_regulatory_strategy_memo():
     print("📜 Generating Regulatory Strategy Memo (v2)...")
-    pdf_path = "outputs_v2/regulatory_strategy_memo.pdf"
+    pdf_path = "outputs/v2/regulatory_strategy_memo.pdf"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
     h1_style = ParagraphStyle('v2H1', parent=styles['Heading1'], fontSize=22, spaceAfter=20)
@@ -59,7 +59,7 @@ def generate_regulatory_strategy_memo():
 
 def generate_technical_white_paper():
     print("📄 Generating Technical White Paper (v2)...")
-    pdf_path = "outputs_v2/technical_white_paper.pdf"
+    pdf_path = "outputs/v2/technical_white_paper.pdf"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
     h1_style = ParagraphStyle('v2H1', parent=styles['Heading1'], fontSize=24, spaceAfter=20, alignment=1)
@@ -88,7 +88,7 @@ def generate_technical_white_paper():
 
 def generate_pitch_deck():
     print("🎯 Generating Client Pitch Deck (v2)...")
-    pdf_path = "outputs_v2/ltsa_pitch_deck.pdf"
+    pdf_path = "outputs/v2/ltsa_pitch_deck.pdf"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
     h1_style = ParagraphStyle('v2Title', parent=styles['Heading1'], fontSize=28, spaceAfter=20, alignment=1, textColor=colors.HexColor("#64ffda"))

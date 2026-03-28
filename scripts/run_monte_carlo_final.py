@@ -40,13 +40,13 @@ def run_monte_carlo_final():
             "total_npv": float(np.sum(np.mean(samples, axis=0)))
         }
 
-    out_dir = Path("outputs_final/simulation_data")
+    out_dir = Path("outputs/v3/simulation_data")
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "final_simulation_results.json", "w") as f:
         json.dump(final_simulation_results, f, indent=2)
 
     # Generate Business Model Report Final
-    pdf_path = "outputs_final/business_model_report.pdf"
+    pdf_path = "outputs/v3/business_model_report.pdf"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
     h1_style = ParagraphStyle('FinalH1', parent=styles['Heading1'], fontSize=24, spaceAfter=20)

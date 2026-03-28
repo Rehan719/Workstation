@@ -10,8 +10,8 @@ from reportlab.lib.units import inch
 
 def generate_intelligence_assessment_report():
     print("🧠 Generating Definitive Intelligence Assessment Report (Final)...")
-    pdf_path = "outputs_final/intelligence_assessment_report.pdf"
-    md_path = "outputs_final/intelligence_assessment_report.md"
+    pdf_path = "outputs/v3/intelligence_assessment_report.pdf"
+    md_path = "outputs/v3/intelligence_assessment_report.md"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
 

@@ -61,13 +61,13 @@ def run_monte_carlo_v2():
         }
     }
 
-    out_dir = Path("outputs_v2/simulation_data")
+    out_dir = Path("outputs/v2/simulation_data")
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "monte_carlo_results.json", "w") as f:
         json.dump(simulation_data_v2, f, indent=2)
 
     # Generate Business Model Report v2
-    pdf_path = "outputs_v2/business_model_report.pdf"
+    pdf_path = "outputs/v2/business_model_report.pdf"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
     h1_style = ParagraphStyle('v2H1', parent=styles['Heading1'], fontSize=24, spaceAfter=20)
