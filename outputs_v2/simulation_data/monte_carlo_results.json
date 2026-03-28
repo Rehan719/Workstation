@@ -1,0 +1,48 @@
+{
+  "metadata": {
+    "timestamp": "2026-03-28T04:31:47.701942+00:00",
+    "operation": "Grand Operation v2",
+    "model": "Stochastic NPV (1k iterations)"
+  },
+  "statistics": {
+    "mean_revenue": [
+      0.6001556499554888,
+      1.1958703870215748,
+      3.5031800218870868,
+      5.807575702042464,
+      8.304195276606826
+    ],
+    "p10_revenue": [
+      0.4414627733454704,
+      0.8830259940886294,
+      2.6213682690345324,
+      4.318247388837722,
+      6.295461658716389
+    ],
+    "p90_revenue": [
+      0.7448972633728127,
+      1.5297625412652296,
+      4.424433778744343,
+      7.176687725446645,
+      10.342269084788176
+    ],
+    "total_5yr_npv_mean": 19.410977037513444,
+    "total_5yr_npv_std": 2.101319988806705
+  },
+  "sensitivity": {
+    "Adoption Rate": 0.45,
+    "Price per Module": 0.35,
+    "Market Growth": 0.15,
+    "OpEx Scaling": -0.05
+  },
+  "resource_optimization_v2": {
+    "target_headcount": [
+      20,
+      35,
+      50,
+      75,
+      100
+    ],
+    "aro_score": 0.96
+  }
+}

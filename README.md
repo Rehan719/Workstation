@@ -94,13 +94,17 @@ Then open `http://localhost:5173` for the Unified Web App.
 
 The Workstation has successfully completed the **Grand Operation**, transforming the DeepSeek Patient Safety Dossier into a definitive suite of high-fidelity outputs. This operation demonstrates the full orchestration of the C-Suite, BTO Swarms, and the Quadruple Engine Pillar.
 
-### 📦 Generated Artifacts (Located in `/outputs`)
+### 📦 GRAND OPERATION v2: ULTIMATE FLAGSHIP (Located in `/outputs_v2`)
 
-- **[Scientific Review](outputs/scientific_review.pdf)** – Enhanced evidence synthesis with 2025-2026 data.
-- **[Immersive Presentation](outputs/presentation/index.html)** – 15-slide interactive player with narration scripts and animations.
-- **[Business Model Report](outputs/business_model_report.pdf)** – Production-grade financial projections and service offering.
-- **[Business Dashboard](outputs/business_model_dashboard.html)** – Interactive simulation of market adoption scenarios.
-- **[Council Deliberation Log](outputs/council_deliberation_log.md)** – Full transcript of the C-Suite resolution.
+The Workstation has completed **v2.0 of the Grand Operation**, elevating the Patient Safety Dossier to definitive, peer-review ready, and stochastic-governed artifacts.
+
+- **[Unified Demo Portal v2](outputs_v2/index.html)** – **Central hub for all v2 artifacts.**
+- **[Scientific Review v2](outputs_v2/scientific_review.pdf)** – PRISMA-compliant systematic review (Peer-Review Grade).
+- **[Stochastic Business Dashboard](outputs_v2/business_model_dashboard.html)** – Real-time Monte Carlo simulation hub.
+- **[Narrated Immersive Presentation](outputs_v2/presentation/index.html)** – Web player with biological animations.
+- **[Strategic Artifact Suite](outputs_v2/manifest.json)** – Regulatory Memo, White Paper, Pitch Deck, and Video Trailer.
+
+> View the [Legacy v1.0 Artifacts](outputs/manifest.json) for historical context.
 
 ---
 *Codified via Grand Synthesis Engine v1.0.0. CIVILIZATION SECURED.*
