@@ -144,7 +144,7 @@ function App() {
           <Route path="/ar-vr" element={<ARVRSandbox />} />
           <Route path="/wearables" element={<WearableSync />} />
           <Route path="/embodiment" element={<EmbodimentStudio />} />
-          <Route path="/qep" element={<QEPEngine />} />
+          <Route path="/qep" element={<QEPReligionHub />} />
           <Route path="/constitution" element={<ConstitutionalUI />} />
           <Route path="/council" element={<CouncilInterface />} />
           <Route path="/debate" element={<DebateLog />} />

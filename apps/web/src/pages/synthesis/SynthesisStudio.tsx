@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from '@workstation/ui';
 import { Sparkles, FileText, Presentation, Globe, Layers, Download, Play, Loader2, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
+import { PresentationPlayer } from './PresentationPlayer';
+import { BusinessModelDashboard } from './BusinessModelDashboard';
 
 export const SynthesisStudio: React.FC = () => {
   const [ingestedFiles, setIngestedFiles] = useState<any[]>([]);
@@ -9,6 +11,7 @@ export const SynthesisStudio: React.FC = () => {
   const [outputType, setOutputType] = useState('report');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [showPlayer, setShowPlayer] = useState(false);
 
   useEffect(() => {
     fetchFiles();
@@ -155,16 +158,29 @@ export const SynthesisStudio: React.FC = () => {
                             <div className="w-10 h-10 rounded-full bg-aura flex items-center justify-center text-sovereign">
                                <Play size={18} />
                             </div>
-                            <p className="text-[10px] font-black text-aura uppercase tracking-widest">Web Player Ready: 3 Slides with AI Narration</p>
+                            <p className="text-[10px] font-black text-aura uppercase tracking-widest">Web Player Ready: {result.metadata.slides_count} Slides with AI Narration</p>
                          </div>
-                         <Button variant="secondary" className="px-6 py-2 text-[8px] uppercase font-black">Launch Player</Button>
+                         <Button onClick={() => setShowPlayer(true)} variant="secondary" className="px-6 py-2 text-[8px] uppercase font-black">Launch Player</Button>
                       </div>
+                    )}
+
+                    {outputType === 'simulation' && (
+                       <div className="mt-10 pt-10 border-t border-slate-800">
+                          <BusinessModelDashboard data={JSON.parse(result.content)} />
+                       </div>
                     )}
                  </div>
                )}
             </Card>
          </div>
       </div>
+
+      {showPlayer && result && (
+        <PresentationPlayer
+          slides={JSON.parse(result.content)}
+          onClose={() => setShowPlayer(false)}
+        />
+      )}
     </div>
   );
 };
