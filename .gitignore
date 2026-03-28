@@ -1,84 +1,21 @@
-# Jules AI Transcendent v117.0 Gitignore
-
-# Python
+# Output artifacts
+outputs/
+outputs_v2/
+outputs_final/
+*.pdf
+*.tex
+*.png
+*.gif
+*.mp4
+*.wav
+*.mp3
+*.txt
+# Python cache
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
+*.pyc
+# Node
+node_modules/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
+build/
 # Logs
 *.log
-logs/
-src/self_improvement/logs/
-npm_output.log
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-test_results/
-verification/
-
-# Environments
-.env
-.venv
-# Secure Credential Vault
-agentic_core/governance/credentials/master.key
-agentic_core/governance/credentials/vault.json
-venv/
-ENV/
-
-# Databases & Binary artifacts
-*.db
-*.sqlite
-*.sqlite3
-meta/data/
-workstation.db
-*.pyc
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Mission specific
-/.jules_state_production.json
-pip_list.txt
-installed_packages.txt
-test_v52_output.log
-test_v52_output_final.log
-src/qep_frontend/.vercel/
-src/qep_frontend/node_modules/
-src/qep_frontend/dist/
-*.log
-
-# Monorepo Node Modules & Build Artifacts
-node_modules/
-apps/*/node_modules/
-packages/*/node_modules/
-apps/*/dist/
-packages/*/dist/
-
-# Database & Vector Store data
-agentic_core/data/chroma/
-agentic_core/data/memory.json
-agentic_core/data/meeting_log.json
-agentic_core/data/marketplace.json

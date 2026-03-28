@@ -94,17 +94,17 @@ Then open `http://localhost:5173` for the Unified Web App.
 
 The Workstation has successfully completed the **Grand Operation**, transforming the DeepSeek Patient Safety Dossier into a definitive suite of high-fidelity outputs. This operation demonstrates the full orchestration of the C-Suite, BTO Swarms, and the Quadruple Engine Pillar.
 
-### 📦 GRAND OPERATION v2: ULTIMATE FLAGSHIP (Located in `/outputs_v2`)
+### 📦 GRAND OPERATION v3: DEFINITIVE FINAL SYNTHESIS (Located in `/outputs_final`)
 
-The Workstation has completed **v2.0 of the Grand Operation**, elevating the Patient Safety Dossier to definitive, peer-review ready, and stochastic-governed artifacts.
+The Workstation has completed **v3.0 of the Grand Operation**, incorporating all source intelligence, whistleblower records, and 2025-2026 evidence into the **Definitive Final Synthesis**.
 
-- **[Unified Demo Portal v2](outputs_v2/index.html)** – **Central hub for all v2 artifacts.**
-- **[Scientific Review v2](outputs_v2/scientific_review.pdf)** – PRISMA-compliant systematic review (Peer-Review Grade).
-- **[Stochastic Business Dashboard](outputs_v2/business_model_dashboard.html)** – Real-time Monte Carlo simulation hub.
-- **[Narrated Immersive Presentation](outputs_v2/presentation/index.html)** – Web player with biological animations.
-- **[Strategic Artifact Suite](outputs_v2/manifest.json)** – Regulatory Memo, White Paper, Pitch Deck, and Video Trailer.
+- **[Unified Final Portal v3](outputs_final/index.html)** – **The ultimate hub for all final artifacts.**
+- **[Intelligence Assessment Final](outputs_final/intelligence_assessment_report.pdf)** – Definitive Mushahida Framework report.
+- **[Scientific Review Final](outputs_final/scientific_review.pdf)** – meta-analysis with DES lessons and mechanistic diagrams.
+- **[Definitive Strategic Dashboard](outputs_final/business_model_dashboard.html)** – Monte Carlo ROI and Strategic Options.
+- **[Final Artifact Suite](outputs_final/manifest.json)** – Regulatory Memo, White Paper, Pitch Deck, and Video Trailer.
 
-> View the [Legacy v1.0 Artifacts](outputs/manifest.json) for historical context.
+> View the [Historical v1.0 Baseline](outputs/manifest.json) and [v2.0 Ultimate Flagship](outputs_v2/manifest.json) records.
 
 ---
 *Codified via Grand Synthesis Engine v1.0.0. CIVILIZATION SECURED.*
