@@ -7,6 +7,7 @@ export const Ingest: React.FC = () => {
   const [files, setFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [url, setUrl] = useState('');
 
   useEffect(() => {
     fetchIngestedFiles();
@@ -41,6 +42,20 @@ export const Ingest: React.FC = () => {
     }
   };
 
+  const handleURLIngest = async () => {
+    if (!url) return;
+    setUploading(true);
+    try {
+      await axios.post('/api/v1/ingest/url', { url });
+      setUrl('');
+      fetchIngestedFiles();
+    } catch (e) {
+      alert('URL Ingestion failed.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const filteredFiles = files.filter(f =>
     f.filename.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -52,12 +67,22 @@ export const Ingest: React.FC = () => {
           <h1 className="text-6xl font-black mb-1 text-white tracking-tighter uppercase italic">Content <span className="text-aura">Ingestion</span></h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Knowledge Base Acquisition • Multi-Format Extraction • v1.0</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+           <div className="flex bg-slate-900 border border-slate-800 rounded-2xl p-1 w-[400px]">
+              <input
+                 value={url}
+                 onChange={(e) => setUrl(e.target.value)}
+                 placeholder="Paste DeepSeek/Web URL..."
+                 className="flex-1 bg-transparent px-4 text-xs outline-none"
+              />
+              <Button onClick={handleURLIngest} disabled={uploading || !url} className="bg-aura text-sovereign px-6 py-2 rounded-xl">Fetch URL</Button>
+           </div>
+           <div className="h-8 w-px bg-slate-800 mx-2" />
            <label className="cursor-pointer">
               <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
               <Button className="bg-white text-sovereign shadow-xl pointer-events-none">
                  {uploading ? <Loader2 className="animate-spin mr-2" size={18} /> : <Upload className="mr-2" size={18} />}
-                 {uploading ? 'Processing...' : 'Ingest New Content'}
+                 {uploading ? 'Processing...' : 'Ingest File'}
               </Button>
            </label>
         </div>

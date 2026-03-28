@@ -14,15 +14,17 @@ import {
   Search
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 export const DashboardNew: React.FC = () => {
   const { user, setCurrentTab } = useStore();
+  const navigate = useNavigate();
 
   const actions = [
-    { id: 'task', name: 'New Task', icon: CheckCircle2, color: 'text-aura', bg: 'bg-aura/10', desc: 'Define autonomous agent goal.', tab: 'forge' },
-    { id: 'note', name: 'New Note', icon: FileText, color: 'text-highlight', bg: 'bg-highlight/10', desc: 'Capture inter-agent insights.', tab: 'file-hub' },
-    { id: 'event', name: 'New Event', icon: Calendar, color: 'text-vital', bg: 'bg-vital/10', desc: 'Schedule C-Suite debate.', tab: 'debate' },
-    { id: 'project', name: 'New Project', icon: Layout, color: 'text-emerald-500', bg: 'bg-emerald-500/10', desc: 'Initialize domain reactor.', tab: 'bto' },
+    { id: 'task', name: 'Knowledge Ingest', icon: Plus, color: 'text-aura', bg: 'bg-aura/10', desc: 'Upload and process raw data.', route: '/file-hub' },
+    { id: 'note', name: 'Synthesis Studio', icon: Sparkles, color: 'text-highlight', bg: 'bg-highlight/10', desc: 'Generate reports & presentations.', route: '/synthesis' },
+    { id: 'event', name: 'QEP Religion', icon: BookOpen, color: 'text-vital', bg: 'bg-vital/10', desc: 'Quran Education Platform Hub.', route: '/qep-religion' },
+    { id: 'project', name: 'Genome Core', icon: Binary, color: 'text-emerald-500', bg: 'bg-emerald-500/10', desc: 'System evolution & GRN.', route: '/genome-explorer' },
   ];
 
   const recentActivity = [
@@ -65,7 +67,7 @@ export const DashboardNew: React.FC = () => {
           >
             <Card
               className="p-8 group cursor-pointer hover:border-aura/40 transition-all bg-slate-950/40 backdrop-blur-sm border-slate-900 flex flex-col h-full"
-              onClick={() => setCurrentTab(action.tab)}
+              onClick={() => navigate(action.route)}
             >
               <div className={`w-14 h-14 rounded-2xl ${action.bg} ${action.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                 <action.icon size={28} />

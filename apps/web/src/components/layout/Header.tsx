@@ -28,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
   ];
 
   return (
-    <header className="h-20 shrink-0 border-b border-slate-800 px-8 flex items-center justify-between bg-sovereign/50 backdrop-blur-md z-20">
+    <header className="h-20 shrink-0 border-b border-slate-800 px-8 flex items-center justify-between bg-sovereign/50 backdrop-blur-md z-50 sticky top-0">
       <div className="flex items-center gap-4">
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
