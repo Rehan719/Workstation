@@ -11,7 +11,7 @@ from reportlab.lib.units import inch
 
 def generate_scientific_review_capstone():
     print("🧪 Generating Scientific Review (Capstone Edition)...")
-    output_dir = Path("outputs_final")
+    output_dir = Path("outputs/v3")
     pdf_path = output_dir / "scientific_review.pdf"
 
     doc = SimpleDocTemplate(str(pdf_path), pagesize=LETTER)
@@ -26,7 +26,7 @@ def generate_scientific_review_capstone():
 
     elements = []
     elements.append(Paragraph("Sovereign Patient Safety: Scientific Meta-Analysis", title_style))
-    elements.append(Paragraph("Definitive Capstone Edition v1.0", styles['Heading3'], alignment=1))
+    elements.append(Paragraph("Definitive Capstone Edition v1.0", ParagraphStyle("H3Center", parent=styles["Heading3"], alignment=1)))
     elements.append(Spacer(1, 10))
     elements.append(Paragraph(f"<b>Author:</b> Workstation AI CEO | <b>Date:</b> {timestamp[:10]}", styles['Normal']))
     elements.append(Spacer(20, 20))

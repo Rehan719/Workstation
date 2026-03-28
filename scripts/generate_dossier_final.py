@@ -10,8 +10,8 @@ from reportlab.lib.units import inch
 
 def generate_intelligence_dossier_final():
     print("🧠 Generating Definitive Intelligence Dossier (Final Capstone)...")
-    pdf_path = "outputs_final/intelligence_dossier.pdf"
-    md_path = "outputs_final/intelligence_dossier.md"
+    pdf_path = "outputs/v3/intelligence_dossier.pdf"
+    md_path = "outputs/v3/intelligence_dossier.md"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
 
@@ -67,7 +67,7 @@ We propose the immediate deployment of the **Five-Point LTSA Framework** to brea
     # Title Page
     elements.append(Spacer(1, 1.5*inch))
     elements.append(Paragraph("COMPREHENSIVE PATIENT SAFETY INTELLIGENCE DOSSIER", h1_style))
-    elements.append(Paragraph("Final Capstone Synthesis: The Urdu Framework Analysis", styles['Heading2'], alignment=1))
+    elements.append(Paragraph("Final Capstone Synthesis: The Urdu Framework Analysis", ParagraphStyle("H2Center", parent=styles["Heading2"], alignment=1)))
     elements.append(Spacer(1, 0.5*inch))
     elements.append(Paragraph(f"<b>Date:</b> {timestamp[:10]}", normal_center))
     elements.append(Paragraph("<b>Status:</b> DEFINITIVE / SOVEREIGN", normal_center))

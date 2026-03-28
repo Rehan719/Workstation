@@ -94,17 +94,19 @@ Then open `http://localhost:5173` for the Unified Web App.
 
 The Workstation has successfully completed the **Grand Operation**, transforming the DeepSeek Patient Safety Dossier into a definitive suite of high-fidelity outputs. This operation demonstrates the full orchestration of the C-Suite, BTO Swarms, and the Quadruple Engine Pillar.
 
-### 🏆 GRAND OPERATION: FINAL CAPSTONE SYNTHESIS (Located in `/outputs_final`)
+### 🏆 GRAND OPERATION: FINAL CAPSTONE SYNTHESIS (Located in `/outputs`)
 
-The Workstation has completed the **Final Capstone Synthesis**, consolidating all intelligence, organizational records, and 2025-2026 evidence into the definitive set of masterpieces.
+The Workstation has completed the **Final Capstone Synthesis**, consolidating all intelligence, organizational records, and 2025-2026 evidence into a unified, versioned output hierarchy.
 
-- **[Definitive Intelligence Dossier](outputs_final/intelligence_dossier.pdf)** – Capstone Urdu-framework assessment (Mushahida/Jaiza/Muaina).
-- **[Scientific Review Capstone](outputs_final/scientific_review.pdf)** – Peer-review ready distillation of the 2025-2026 evidence suite.
-- **[Documentary Presentation Hub](outputs_final/presentation/index.html)** – 20-slide immersive documentary with synchronized narration.
-- **[Definitive Strategic Dashboard](outputs_final/business_model_dashboard.html)** – Strategic options analysis and risk-adjusted ROI.
-- **[Final Capstone Manifest](outputs_final/manifest.json)** – Forensic record of all definitive artifacts.
+- **[Unified Capstone Portal (v3)](outputs/v3/index.html)** – **The ultimate entry point for all final artifacts.**
+- **[Ultimate Flagship Portal (v2)](outputs/v2/index.html)** – The stochastic modeling and strategic dashboard baseline.
+- **[Historical Baseline (v1)](outputs/v1/manifest.json)** – The initial proof-of-concept synthesis.
 
-> View the [Historical v1.0 Baseline](outputs/manifest.json) and [v2.0 Ultimate Flagship](outputs_v2/manifest.json) records.
+**Key v3 Capstone Artifacts:**
+- **[Definitive Intelligence Dossier](outputs/v3/intelligence_dossier.pdf)** – Capstone Urdu-framework assessment (Mushahida/Jaiza/Muaina).
+- **[Scientific Review Capstone](outputs/v3/scientific_review.pdf)** – Peer-review ready meta-analysis.
+- **[Documentary Presentation Hub](outputs/v3/presentation/index.html)** – 20-slide immersive documentary.
+- **[Definitive Strategic Dashboard](outputs/v3/business_model_dashboard.html)** – Risk-adjusted ROI analysis.
 
 ---
 *Codified via Grand Synthesis Engine v1.0.0. CIVILIZATION SECURED.*

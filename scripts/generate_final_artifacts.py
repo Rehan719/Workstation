@@ -10,7 +10,7 @@ from reportlab.lib.units import inch
 
 def generate_regulatory_strategy_memo_final():
     print("📜 Generating Final Regulatory Strategy Memo (v3)...")
-    pdf_path = "outputs_final/regulatory_strategy_memo.pdf"
+    pdf_path = "outputs/v3/regulatory_strategy_memo.pdf"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
     h1_style = ParagraphStyle('FinalH1', parent=styles['Heading1'], fontSize=22, spaceAfter=20)
@@ -56,7 +56,7 @@ def generate_regulatory_strategy_memo_final():
 
 def generate_technical_white_paper_final():
     print("📄 Generating Final Technical White Paper (v3)...")
-    pdf_path = "outputs_final/technical_white_paper.pdf"
+    pdf_path = "outputs/v3/technical_white_paper.pdf"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
     h1_style = ParagraphStyle('FinalH1', parent=styles['Heading1'], fontSize=24, spaceAfter=20, alignment=1)
@@ -85,7 +85,7 @@ def generate_technical_white_paper_final():
 
 def generate_pitch_deck_final():
     print("🎯 Generating Final Client Pitch Deck (v3)...")
-    pdf_path = "outputs_final/ltsa_pitch_deck.pdf"
+    pdf_path = "outputs/v3/ltsa_pitch_deck.pdf"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
     h1_style = ParagraphStyle('FinalTitle', parent=styles['Heading1'], fontSize=28, spaceAfter=20, alignment=1, textColor=colors.HexColor("#64ffda"))

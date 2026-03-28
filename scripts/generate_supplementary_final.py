@@ -6,7 +6,7 @@ from pathlib import Path
 
 def generate_supplementary_final():
     print("📂 Generating Supplementary Data for Final Synthesis...")
-    supp_dir = Path("outputs_final/supplementary")
+    supp_dir = Path("outputs/v3/supplementary")
     supp_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. CSV of Cited Papers

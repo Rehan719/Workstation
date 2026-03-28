@@ -37,11 +37,11 @@ def run_business_model_simulation():
         ]
     }
 
-    with open("outputs/simulation_data/scenario_results.json", "w") as f:
+    with open("outputs/v1/simulation_data/scenario_results.json", "w") as f:
         json.dump(simulation_data, f, indent=2)
 
     # 2. Generate PDF Report
-    pdf_path = "outputs/business_model_report.pdf"
+    pdf_path = "outputs/v1/business_model_report.pdf"
     doc = SimpleDocTemplate(pdf_path, pagesize=LETTER)
     styles = getSampleStyleSheet()
     h1_style = ParagraphStyle('H1', parent=styles['Heading1'], fontSize=22, spaceAfter=20)
@@ -91,7 +91,7 @@ def run_business_model_simulation():
     doc.build(elements)
 
     # 3. Generate Interactive HTML Dashboard
-    dashboard_path = "outputs/business_model_dashboard.html"
+    dashboard_path = "outputs/v1/business_model_dashboard.html"
     dashboard_content = f"""
 <!DOCTYPE html>
 <html>
@@ -166,7 +166,7 @@ def run_business_model_simulation():
     with open(dashboard_path, "w") as f:
         f.write(dashboard_content)
 
-    print(f"✅ Business Model outputs saved: {pdf_path}, {dashboard_path}, outputs/simulation_data/scenario_results.json")
+    print(f"✅ Business Model outputs saved: {pdf_path}, {dashboard_path}, outputs/v1/simulation_data/scenario_results.json")
 
 if __name__ == "__main__":
     run_business_model_simulation()

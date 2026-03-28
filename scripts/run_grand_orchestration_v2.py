@@ -72,7 +72,7 @@ async def run_grand_operation_v2_orchestration():
     deliberation_log.append("## 📜 FINAL RESOLUTION (v2)")
     deliberation_log.append("The Council mandates the immediate production of the v2 artifacts: Enhanced Scientific Review, Narrated Immersive Presentation, Stochastic Business Dashboard, and New Strategic Artifacts (Regulatory Memo, Video Trailer, Pitch Deck, White Paper).")
 
-    log_path = Path("outputs_v2/council_deliberation_log.md")
+    log_path = Path("outputs/v2/council_deliberation_log.md")
     with open(log_path, "w") as f:
         f.write("\n".join(deliberation_log))
 

@@ -73,7 +73,7 @@ async def run_grand_operation_orchestration():
     deliberation_log.append("## 📜 FINAL RESOLUTION")
     deliberation_log.append("The Council approves the full mobilization of Workstation resources to produce the Scientific Review, Immersive Presentation, and Business Model Dashboard.")
 
-    log_path = Path("outputs/council_deliberation_log.md")
+    log_path = Path("outputs/v1/council_deliberation_log.md")
     with open(log_path, "w") as f:
         f.write("\n".join(deliberation_log))
 

@@ -11,7 +11,7 @@ from reportlab.lib.units import inch
 def generate_presentation_pdf_final():
     print("📽️ Generating Final Presentation PDF Slides v3...")
 
-    output_path = Path("outputs_final/presentation/slides.pdf")
+    output_path = Path("outputs/v3/presentation/slides.pdf")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     doc = SimpleDocTemplate(str(output_path), pagesize=landscape(LETTER))

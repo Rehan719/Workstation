@@ -28,7 +28,7 @@ def generate_ltsa_trailer_final():
 
     ani = animation.FuncAnimation(fig, animate, frames=150, interval=40, blit=True)
 
-    filename = "outputs_final/ltsa_trailer.mp4"
+    filename = "outputs/v3/ltsa_trailer.mp4"
     try:
         ani.save(filename, writer='ffmpeg', fps=25)
         print(f"✅ Final Trailer saved to: {filename}")
