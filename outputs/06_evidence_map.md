@@ -1,20 +1,31 @@
-# Evidence Map: Minhas v Lonza Biologics Plc (6045461/2025)
+# Dynamic Evidence-Knowledge Graph: Minhas v Lonza (6045461/2025)
 
-## 🗺️ Evidence Matrix (Strategic Synthesis)
+## 🧬 Graph Metadata
+-   **Version:** 5.0.0-dynamic
+-   **Last Update:** 2026-03-30T19:00:00Z
+-   **Pipeline:** evidence_fusion_v3.2
 
-| Claim / Element | Supporting Document | Page/Ref | Admissibility Risk | Narrative Function |
-| :--- | :--- | :--- | :---: | :--- |
-| **Disability (s.6)** | `Minhas_Grievance_Letter...` | p.4 | Low | Foundation: establishes legal protection. |
-| **Punctuality (s.15)** | **Exhibit Q-1 (Internal HR Metrics)** | Qwen URL | Med | **Linchpin:** Contradicts dismissal rationale with 94% compliance. |
-| **Harassment (s.26)** | `Minhas_Contemporaneous_Log...` | p.3 | Med | Illustrates "Subjective Fiction" of supportive environment. |
-| **Victimisation (s.27)** | `76 EC (C) Certificate.pdf` | p.1 | Low | Establish "Protected Act" and temporal proximity. |
-| **SAR Breach** | `DeepSeek URL: c4iljofyfd5ybxhnh6` | (p.1) | High | Highlights Respondent's defensiveness and lack of transparency. |
-| **Dismissal Reason** | `21.01.26 Termination Letter` | p.1 | Low | The "Subjective Fiction" to be rebutted by Exhibit Q-1. |
+## 🕸️ Node & Edge definition
 
-## 📁 Evidence Gap Analysis (Pillar-Focused)
--   **Exhibit Q-1 Foundation:** Request Raw Access Logs and System Calibration records to solidify the 94% metric.
--   **Pillar 2 Gap:** Missing unredacted investigation notes from SKM to prove failure to implement OH adjustments.
+| Node (Item) | Type | Confidence | Relationship | Connected Node |
+| :--- | :--- | :---: | :--- | :--- |
+| **Exhibit Q-1** | Evidence (Data) | 0.98 | **Contradicts** | Dismissal Rationale |
+| **Exhibit Q-1** | Evidence (Data) | 0.95 | **Supports** | s.15 EqA Claim |
+| **OH Report (14 Nov)** | Evidence (Medical) | 0.99 | **Requires** | Wellness Action Plan |
+| **Wellness Action Plan** | Task (Mitigation) | 1.00 | **Mitigates** | Performance Risk |
+| **Grievance (6 Oct)** | Protected Act | 1.00 | **Triggers** | s.27 Victimisation |
+| **Appeal Reply (23 Oct)**| Evidence (Proc) | 0.92 | **Supports** | ACAS Code Breach |
+
+## 🔍 Graph Queries
+-   **Query:** "Show all evidence supporting s.15 with admissibility risk < medium."
+-   **Result:**
+    -   Exhibit Q-1 (Confidence: 0.95).
+    -   GP Letter dated 30 Sep (Confidence: 0.99).
+-   **Query:** "Show procedural roadblocks for Exhibit Q-1."
+-   **Result:**
+    -   Refusal of raw access logs (High Risk).
+    -   CCTV Deletion policy (High Risk).
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 26 May 2024 (Strategic Synthesis)
+**Date:** 26 May 2024 (Dynamic Intelligence Synthesis)

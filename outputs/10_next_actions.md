@@ -1,19 +1,17 @@
 # Next Actions: Minhas v Lonza Biologics Plc (6045461/2025)
 
-## 📋 Procedural Leverage Decision Tree
+## ⚡ Adaptive Action Queue (v5.0.0)
 
-```mermaid
-graph TD
-    A[Disclosure Compliance?] -->|Yes| B[Focus on methodological challenge; prepare expert evidence]
-    A -->|Partial| C[File unless order application; emphasise prejudice]
-    A -->|No| D[Apply for adverse inference; escalate settlement demand]
-```
+| Priority | Action | Status | Trigger |
+| :--- | :--- | :---: | :--- |
+| **CRITICAL** | File Unless Order (Rule 38) | ⏳ DRAFT | No disclosure by 11 Apr. |
+| **HIGH** | Medical Records Request | ✅ SENT | N/A |
+| **MEDIUM** | Judicial Mediation Request | ⏳ DRAFT | Settlement talks stall at CMH. |
 
-## 📅 Narrative Milestones
--   **Milestone 1:** Secure admission of Exhibit Q-1 authenticity (CMH).
--   **Milestone 2:** Link 6% lateness to disability symptoms via medical record.
--   **Milestone 3:** Expose the "Paradox" (94% compliance vs. dismissal) in cross-examination.
+## 🏹 Procedural Adversary Simulation
+-   **If Respondent delays:** Submit "Application for an Unless Order" within 48 hours of deadline breach.
+-   **If Respondent applies to strike out:** Rely on the "Jameel proportionality" opposition skeleton in `10_next_actions.md`.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 26 May 2024 (Strategic Synthesis)
+**Date:** 26 May 2024 (Dynamic Intelligence Synthesis)

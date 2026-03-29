@@ -1,18 +1,18 @@
 # Witness Briefing Note: Minhas v Lonza Biologics Plc (6045461/2025)
 
-## 📋 Testimony Rehearsal Checklist
+## 📋 Testimony Simulation Drills
 
-### 1. Exhibits to Master
--   **Exhibit Q-1 (Tab 1):** Memorise your 94% punctuality figure.
--   **Contemporaneous Log (Tab 2):** Ready to cite p.3 regarding the SD shaming incident.
+### Drill 1: The Punctuality Trap
+-   **Hostile Q:** "You admit you were late on 7 Jan, yes?"
+-   **Pivot Response:** "Yes, and as Exhibit Q-1 proves, that was a rare exception in a 94% compliance record, directly caused by the insomnia I disclosed on 13 Sep."
 
-### 2. Narrative Reminders
--   **Objective Truth vs. Subjective Fiction:** Always return to the data. If management says you were failing, remind them their records say otherwise.
--   **The "Why":** Why was 94% not enough? (Hint: It was because of the grievance).
+### Drill 2: Composur Reinforcement
+-   **Hostile Q:** "Why didn't you raise this earlier?"
+-   **Protocol:** Pause. Refer to UKSL 425 forms from August. "I did raise it in August, as these forms show. Management chose not to act until I made it a formal grievance."
 
-### 3. Procedural Expectations
--   Stay calm when they challenge your punctuality. Exhibit Q-1 is your defensive shield.
+## 🎭 Live Testimony Support
+-   **Exhibit Protocol:** "I would like the Tribunal to look at Tab 1, Exhibit Q-1. This is Lonza's own record of my performance."
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 26 May 2024 (Strategic Synthesis)
+**Date:** 26 May 2024 (Dynamic Intelligence Synthesis)

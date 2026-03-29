@@ -1,28 +1,21 @@
 # Cross-Examination Framework: Respondent Witnesses
 
-## 🏹 The Narrative Arc strategy
+## 🏹 The Narrative Arc (Dynamic Refinement)
 
-### Phase 1: Foundation (Authenticate Exhibit Q-1)
-*To HR/Line Manager:*
-1.  "This document—Exhibit Q-1—is an extract from Lonza's internal attendance system, correct?"
-2.  "It shows the Claimant was punctual for 94% of his shifts, doesn't it?"
-3.  **Narrative Pivot:** Secure admission of the 94% figure before moving to the dismissal rationale.
+### Foundation (Exhibit Q-1)
+1.  "Exhibit Q-1 shows a 94% compliance rate, correct?"
+2.  **Adversarial Branch:** If witness claims 94% is 'below site standard', pivot: "Provide the site-wide performance metrics requested in Category 3 disclosure. Why is 94% a failure for Rehan Minhas but acceptable for others?"
 
-### Phase 2: Contradiction (The Paradox)
-1.  "The termination letter states he was dismissed for 'punctuality.' How do you reconcile a 94% success rate with a dismissal for failure?"
-2.  "If 94% is a failure, what percentage did other Biotechnologists achieve? (Refer to Category 3 disclosure)."
+### Contradiction (The Paradox)
+1.  "Lonza claims Rehan failed probation for attendance. Rehan's data (Q-1) says he was 94% punctual. How do you reconcile these two truths?"
 
-### Phase 3: Context (Failure to Consider Disability)
-1.  "You received the OH report on 14 Nov. It recommended a Wellness Action Plan. Why is there no mention of the Claimant's disability in the 21 Jan dismissal notes?"
-2.  **Rhetorical Anchor:** *"As the Court of Appeal held in RBS v Morris, tribunals must scrutinise whether disability factors were properly excluded from performance assessments."*
+### Context (s.15/21 EqA)
+1.  "OH recommended a quieter desk. You didn't provide one. You then dismissed him for lateness—a symptom of the very condition the desk would have mitigated."
+2.  **Rhetorical Anchor:** *"Per RBS v Morris, tribunals must scrutinise whether disability factors were excluded from this assessment."*
 
-### Phase 4: Motive (Victimisation)
-1.  "The decision to terminate was made within weeks of his grievance appeal being rejected. Was that timing a coincidence, or a conclusion?"
-
-### Phase 5: Procedure (Adverse Inference)
-1.  "Why was the 'Excel File' containing health data not preserved despite the legal hold notice of 6 Oct?"
-2.  **Narrative Pivot:** Invite the Tribunal to draw a negative inference from the missing evidence.
+### Procedure (Adverse Inference)
+1.  "The 'unprotected Excel file' is missing. The CCTV for 26 Sep is missing. Should the Tribunal conclude this evidence was detrimental to Lonza's case?"
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 26 May 2024 (Strategic Synthesis)
+**Date:** 26 May 2024 (Dynamic Intelligence Synthesis)
