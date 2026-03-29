@@ -2,17 +2,9 @@
 
 ## 📋 Testimony Simulation Drills
 
-### Drill 1: The Punctuality Trap
--   **Hostile Q:** "You admit you were late on 7 Jan, yes?"
--   **Pivot Response:** "Yes, and as Exhibit Q-1 proves, that was a rare exception in a 94% compliance record, directly caused by the insomnia I disclosed on 13 Sep."
-
-### Drill 2: Composur Reinforcement
--   **Hostile Q:** "Why didn't you raise this earlier?"
--   **Protocol:** Pause. Refer to UKSL 425 forms from August. "I did raise it in August, as these forms show. Management chose not to act until I made it a formal grievance."
-
-## 🎭 Live Testimony Support
--   **Exhibit Protocol:** "I would like the Tribunal to look at Tab 1, Exhibit Q-1. This is Lonza's own record of my performance."
+### Drill 3: Exhibit Integration Timing
+-   **Protocol:** When introducing Exhibit Q-1, pause, allow the Tribunal to review, then state: *"This is the Respondent's own record. It shows I was compliant 94% of the time. The question for you is: why was that not enough?"*
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 26 May 2024 (Dynamic Intelligence Synthesis)
+**Date:** 30 Mar 2026 (Intelligence-Active)
