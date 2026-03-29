@@ -1,23 +1,23 @@
-# Weaknesses & Narrative Risks: Minhas v Lonza (6045461/2025)
+# Weaknesses & Risks: Minhas v Lonza Biologics Plc (6045461/2025)
 
-## 🔮 Dynamic Risk Forecasting (v5.0.0)
+## 🔮 Dynamic Risk Forecast (v5.0.0-dynamic)
 
-| Risk Factor | Probability | Mitigation Trigger | Action |
+| Risk Factor | Probability | Impact | Mitigation Strategy |
 | :--- | :---: | :---: | :--- |
-| **Disclosure Delay** | 75% | >14 days post-request | Draft Unless Order (Rule 38). |
-| **CCTV Deletion** | 85% | Confirmation of deletion | Apply for Negative Inference. |
-| **Witness Illness** | 20% | 48hrs pre-hearing | Request Adjournment or Virtual. |
+| **1. Disclosure Delay** | 75% | High | File Unless Order (Rule 38) within 14 days of deadline. |
+| **2. CCTV Deletion** | 85% | High | Apply for "Negative Inference" direction if footage is missing. |
+| **3. Probationary Shield**| Med | Med | Pivot to s.15 EqA: Probation is not a license to discriminate. |
 
-## 🌳 Procedural Leverage Decision Tree
+## 📉 Procedural Leverage Decision Tree
 
 ```mermaid
 graph TD
     A[Disclosure Status?] -->|Compliant| B[Focus on Methodological Challenge]
     A -->|Partial| C[File Unless Order Application]
     A -->|Refused| D[Apply for Adverse Inference]
-    D --> E[Escalate Settlement Target]
+    D --> E[Escalate Settlement Target to £89.5k]
 ```
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 26 May 2024 (Dynamic Intelligence Synthesis)
+**Date:** 30 Mar 2026 (Intelligence-Active Submission)

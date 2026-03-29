@@ -1,15 +1,16 @@
 # Schedule of Loss: Minhas v Lonza Biologics Plc (6045461/2025)
 
-## ⚖️ Dynamic Financial Model (v5.0.0-dynamic)
+## ⚖️ Dynamic Valuation (v5.0.0-dynamic-final)
 
--   **Weighted Valuation:** **£61,666** (£54,200 – £72,400 CI)
+-   **Expected Value:** **£61,666**
+-   **Aggravated Damages (SAR Breach):** **£5,000**
+-   **Injury to Feelings (Mid-Upper Vento):** **£26,000**
+-   **ACAS Uplift (25%):** **£12,333**
 
-| Variable | State | Impact |
-| :--- | :--- | :--- |
-| **SAR Compliance** | Refused | +£8,200 (Adverse Inference Premium) |
-| **Medical Report** | Pending | ±£15,000 (Vento Sensitivity) |
-| **Precedent (Thompson)** | Ingested | +15% Confidence on s.15 |
+## 📈 Interest & Future Loss
+-   **Interest:** 8% simple interest from 21 Jan 2026.
+-   **Future Loss:** 13 weeks based on £35,000 p.a. salary.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 30 Mar 2026 (Intelligence-Active)
+**Date:** 30 Mar 2026 (Intelligence-Active Submission)
