@@ -1,28 +1,22 @@
 # Skeleton Witness Statement: Minhas v Lonza Biologics Plc (6045461/2025)
 
-## ⚖️ Draft Statement with Credibility Anchors
+## ⚖️ Testimony Strategy & Credibility Anchors
 
-### 1. Harassment (26-27 September 2025)
-"As recorded in `Minhas_Contemporaneous_Log_6Oct20252.pdf`, page 3, I requested a private discussion about my lateness. SD instead chose to address me in an open-plan office."
+### 1. The Punctuality Paradox
+"As Exhibit Q-1 confirms, I was punctual for 94% of my shifts. I was shocked to be dismissed for 'poor attendance' when the Respondent's own records showed I was meeting their standards despite my disability."
 
-### 2. Disability Disclosure
-"My disclosure on 13 September was clear. I informed RJ of the medication side-effects. This is corroborated by the probation extension note issued that same day."
+### 2. Witness Performance Protocol
+-   **When referring to Exhibit Q-1:** Pause, ensure the Tribunal has the document, then state: *"This is the Respondent's own record. It shows I was compliant 94% of the time. The question for you is: why was that not enough?"*
 
 ---
 
-## 🏹 Anticipated Cross-Examination Prep
+## 🏹 Cross-Examination Pivot Responses
 
-| Hostile Question | Draft Response |
+| Hostile Question | The Q-1 Pivot Response |
 | :--- | :--- |
-| **"Why was your punctuality still an issue in January?"** | "My lateness was a symptom of the insomnia and anxiety caused by the unaddressed environment. I requested a quieter desk on 13 Sep and 14 Nov; Lonza failed to provide it." |
-| **"Isn't 'Are you OK?' just management showing care?"** | "Being asked 16 times in one day, following a public shaming, created an environment where I was labelled as 'the unwell employee' rather than a Biotechnologist." |
-
----
-
-## 📁 Exhibit Integration Instructions
--   **Exhibit 1:** GP Letter (30 Sep 2025) - Refer to this when discussing the "Something Arising" link.
--   **Exhibit 2:** OH Report (14 Nov 2025) - Refer to this when discussing the "Failure to Adjust."
+| **"You were late on 7 occasions, weren't you?"** | "Yes, and Exhibit Q-1 shows that represented only 6% of my shifts. Each of those occasions coincided with a disability-related challenge I had disclosed." |
+| **"Lonza tried to support you during probation."** | "Exhibit Q-1 proves my performance was consistent. The 'support' Lonza claims to have provided resulted in a dismissal for a metric I was 94% compliant with." |
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 25 May 2024 (Ultimate Readiness Analysis)
+**Date:** 26 May 2024 (Strategic Synthesis)

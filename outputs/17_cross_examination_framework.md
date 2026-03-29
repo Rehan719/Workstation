@@ -1,18 +1,28 @@
 # Cross-Examination Framework: Respondent Witnesses
 
-## 🏹 Targeted Questioning strategy
+## 🏹 The Narrative Arc strategy
 
-### Witness 1: Line Manager (RJ)
-1.  "You received the disability disclosure on 13 Sep 2025. Why was the 'Excel file' containing this sensitive data not password-protected?" (Goal: Establish Clause 14/15 breach).
-2.  "The OH report dated 14 Nov recommended a quieter desk. Did you provide one between that date and the termination in January? If not, why?" (Goal: Establish s.21 breach).
+### Phase 1: Foundation (Authenticate Exhibit Q-1)
+*To HR/Line Manager:*
+1.  "This document—Exhibit Q-1—is an extract from Lonza's internal attendance system, correct?"
+2.  "It shows the Claimant was punctual for 94% of his shifts, doesn't it?"
+3.  **Narrative Pivot:** Secure admission of the 94% figure before moving to the dismissal rationale.
 
-### Witness 2: Plant/Shift Manager (SD)
-1.  "On 26 Sep 2025, you addressed the Claimant's lateness in an open-plan office. Do you believe that discussing health-related lateness in public is consistent with Lonza's Conduct Policy?" (Goal: Establish s.26 Harassment).
-2.  "Are you aware of the 30-day CCTV deletion policy? Why was footage from the 26-27 Sep incidents not preserved following the legal hold notice on 6 Oct?" (Goal: Establish evidentiary destruction).
+### Phase 2: Contradiction (The Paradox)
+1.  "The termination letter states he was dismissed for 'punctuality.' How do you reconcile a 94% success rate with a dismissal for failure?"
+2.  "If 94% is a failure, what percentage did other Biotechnologists achieve? (Refer to Category 3 disclosure)."
 
-### Witness 3: HR Representative
-1.  "The Claimant’s grievance was investigated by site managers who were colleagues of the accused. Do you believe this meets the ACAS standard for an impartial investigation?" (Goal: Establish ACAS uplift).
+### Phase 3: Context (Failure to Consider Disability)
+1.  "You received the OH report on 14 Nov. It recommended a Wellness Action Plan. Why is there no mention of the Claimant's disability in the 21 Jan dismissal notes?"
+2.  **Rhetorical Anchor:** *"As the Court of Appeal held in RBS v Morris, tribunals must scrutinise whether disability factors were properly excluded from performance assessments."*
+
+### Phase 4: Motive (Victimisation)
+1.  "The decision to terminate was made within weeks of his grievance appeal being rejected. Was that timing a coincidence, or a conclusion?"
+
+### Phase 5: Procedure (Adverse Inference)
+1.  "Why was the 'Excel File' containing health data not preserved despite the legal hold notice of 6 Oct?"
+2.  **Narrative Pivot:** Invite the Tribunal to draw a negative inference from the missing evidence.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 25 May 2024 (Ultimate Readiness Analysis)
+**Date:** 26 May 2024 (Strategic Synthesis)

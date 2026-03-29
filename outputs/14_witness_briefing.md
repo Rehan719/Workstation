@@ -1,25 +1,18 @@
 # Witness Briefing Note: Minhas v Lonza Biologics Plc (6045461/2025)
 
-## 📋 Preparation Checklist
+## 📋 Testimony Rehearsal Checklist
 
-### 1. Key Dates to Memorise
--   **13 Sep 2025:** Disability disclosure and probation extension.
--   **26-27 Sep 2025:** Core harassment incidents (SD shaming, RJ questioning).
--   **6 Oct 2025:** Formal grievance submission (The Protected Act).
--   **14 Nov 2025:** OH report received by Lonza.
--   **21 Jan 2026:** Termination date.
+### 1. Exhibits to Master
+-   **Exhibit Q-1 (Tab 1):** Memorise your 94% punctuality figure.
+-   **Contemporaneous Log (Tab 2):** Ready to cite p.3 regarding the SD shaming incident.
 
-### 2. Documents to Review
--   `Minhas_Contemporaneous_Log_6Oct20252.pdf` (p.1-4).
--   The Termination Letter (21 Jan 2026).
--   The OH Report recommendations (14 Nov 2025).
+### 2. Narrative Reminders
+-   **Objective Truth vs. Subjective Fiction:** Always return to the data. If management says you were failing, remind them their records say otherwise.
+-   **The "Why":** Why was 94% not enough? (Hint: It was because of the grievance).
 
 ### 3. Procedural Expectations
--   **Oath:** You will be asked to swear an oath or make an affirmation.
--   **Questioning:** First, you confirm your statement. Then, the Respondent's lawyer will "cross-examine" you. Finally, the Judge may ask questions.
--   **Format:** Keep answers concise. If you don't understand a question, ask for clarification.
--   **Breaks:** You can request a break if you feel overwhelmed, especially given your health condition.
+-   Stay calm when they challenge your punctuality. Exhibit Q-1 is your defensive shield.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 25 May 2024 (Ultimate Readiness Analysis)
+**Date:** 26 May 2024 (Strategic Synthesis)

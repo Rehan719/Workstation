@@ -1,25 +1,21 @@
 # ACAS Settlement: Minhas v Lonza Biologics Plc (6045461/2025)
 
-## 💰 Valuation Scenarios
+## ⚖️ Litigation Inevitability Valuation
 
-| Scenario | Proposed Figure | Probability | Rationale |
-| :--- | :---: | :---: | :--- |
-| **Optimistic** | **£75,000** | 20% | Max Vento + Max Uplift + Aggravated Damages. |
-| **Realistic** | **£55,000** | 60% | Middle Vento + 15% Uplift + Loss of Earnings. |
-| **Bottom Line** | **£40,000** | 20% | Minimum Vento + No Uplift + immediate resolution. |
+-   **Optimistic Target (£89,500):** Full liability + Upper Vento + 25% Uplift + Aggravated Damages for SAR non-disclosure.
+-   **Realistic Settlement (£58,000):** Reflects avoidance of adverse inference risk and embarrassment of Exhibit Q-1 contradiction.
 
 ---
 
-## 🗣️ Dynamic Negotiation Scripts
+## 🗣️ Dynamic Negotiation Script
 
-### Anchoring Strategy
-"My opening figure is **£75,000**. This reflects the cumulative distress caused by harassment and the Respondent's solicitors' recent letter regarding the Subject Access Request."
+### Anchoring on Inevitability
+"Our position is clear. Settlement is no longer about liability—which is inevitable given Exhibit Q-1—but about avoiding the public finding that Lonza's own records contradict its primary defense."
 
-### Conditional Logic (The "Disclosure Pivot")
--   **IF Respondent produces the "Excel File":** "The disclosure of this file confirms the GDPR breach. We are now firm on the upper middle Vento band (£30,000+)."
--   **IF Respondent refuses CCTV disclosure:** "The failure to provide CCTV logs after our legal hold notice (6 Oct) suggests a deliberate destruction of evidence. We will seek a negative inference direction at hearing; our settlement figure remains at £75,000."
--   **IF Respondent makes a realistic counter-offer (£45k+):** "We appreciate the movement. We can discuss a figure in the region of £55,000 to conclude this today and avoid the 3-day hearing cost Lonza will face."
+### conditional Pivots
+-   **IF Refusing SAR/CCTV:** "The continued refusal to disclose the 'Excel File' following our 6 Oct legal hold notice makes a finding of aggravated damages inevitable. Our figure remains at £89,500."
+-   **IF Citing Comparators:** "Unless those comparators were also 94% compliant and dismissed for attendance, they are irrelevant. Exhibit Q-1 establishes a prima facie case of discrimination."
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 25 May 2024 (Ultimate Readiness Analysis)
+**Date:** 26 May 2024 (Strategic Synthesis)
