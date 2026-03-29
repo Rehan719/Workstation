@@ -1,9 +1,10 @@
 {
-  "operation": "Employment Tribunal Analysis (Law Grand Operation) - ULTIMATE LITIGATION READINESS",
+  "operation": "Employment Tribunal Analysis (Law Grand Operation) - STRATEGIC SYNTHESIS",
   "case": "Minhas v Lonza Biologics Plc (6045461/2025)",
-  "version": "3.0.0-ultimate",
-  "timestamp": "2024-05-25T14:30:00Z",
+  "version": "4.0.0-synthesis",
+  "timestamp": "2024-05-26T15:00:00Z",
   "analyst": "Jules, AI CEO (Law Domain Orchestrator)",
+  "linchpin": "Exhibit Q-1 (94% Punctuality vs. Dismissal Paradox)",
   "inputs": [
     "0944deb9-5815-49ba-b1d1-0e96713ccab5.pdf",
     "1. Appeal Hearing Outcome - 05Dec25 - Rehan Minhas.pdf",
@@ -47,8 +48,10 @@
     "14_witness_briefing.md",
     "15_comparative_cases.md",
     "16_skeleton_argument_liability.md",
-    "17_cross_examination_framework.md"
+    "17_cross_examination_framework.md",
+    "18_narrative_framework.md",
+    "19_tribunal_bundle_index.md"
   ],
-  "status": "Production-Ready / Weaponised",
-  "summary": "Phase 5 transformation into offensive advocacy toolkit. Integrated tripartite pillar framework, cross-examination strategies, comparative case parallels, and probability-weighted financial scenario modelling."
+  "status": "Narrative-Optimised / Weaponised",
+  "summary": "Phase 6 transition from robust analysis to inevitable narrative. Integrated Exhibit Q-1 as the evidentiary linchpin. Codified the Two Truths framework (Objective Data vs. Subjective Fiction) across all strategic deliverables."
 }
