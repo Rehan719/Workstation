@@ -34,24 +34,30 @@ Referring to paragraph 20 of the ET3, which contains a blanket denial of "public
 2.2  If so, does the Respondent deny that the Claimant’s punctuality was discussed in an open-plan office environment?
 2.3  Identify the names of the individuals present during the interaction on 26 September 2025.
 
-### 3. Victimisation (s.27 EqA 2010)
-Referring to paragraph 29 of the ET3, which admits the Respondent refused the Claimant's request to suspend or reassign his line manager (RJ):
-3.1  Identify the "objective and justifiable reasons" the Respondent relied upon to reject this request.
-3.2  Provide the names of the individuals involved in the decision-making process to refuse this request.
+### 3. Subject Access Request (SAR) Dispute
+Referring to the legal correspondence from Punter Southall Law dated 14 October 2025 (`DeepSeek URL: c4iljofyfd5ybxhnh6`):
+3.1  Identify the specific grounds on which the Respondent claims the Claimant’s SAR is "manifestly excessive."
+3.2  Confirm whether the "unprotected Excel file" mentioned in the 6 October grievance was preserved following the legal hold notice.
+3.3  Provide the date and details of the decision to delete (or the policy to delete) CCTV footage for 26-27 September 2025, given the 30-day retention policy mentioned in the SAR letter.
 
-### 4. Dismissal (s.98 ERA 1996 / s.103A ERA 1996)
+### 4. Victimisation (s.27 EqA 2010)
+Referring to paragraph 29 of the ET3, which admits the Respondent refused the Claimant's request to suspend or reassign his line manager (RJ):
+4.1  Identify the "objective and justifiable reasons" the Respondent relied upon to reject this request.
+4.2  Provide the names of the individuals involved in the decision-making process to refuse this request.
+
+### 5. Dismissal (s.98 ERA 1996 / s.103A ERA 1996)
 Referring to the termination letter dated 21 January 2026:
-4.1  Identify the specific "targets" that the Claimant allegedly failed to meet, and provide any training/support records provided to assist him in meeting those targets post-disclosure of his disability (13 Sep 2025).
-4.2  Explain why the Respondent considered dismissal to be a proportionate response, given the Claimant's ongoing health crisis (NHS intervention, 3 Oct 2025) and the recent OH recommendations (14 Nov 2025).
-4.3  Explain how the decision to terminate was independent of the Claimant's "Clean-Room Risks" and "Health & Safety Negligence" disclosures made in the grievance dated 6 October 2025.
+5.1  Identify the specific "targets" that the Claimant allegedly failed to meet, and provide any training/support records provided to assist him in meeting those targets post-disclosure of his disability (13 Sep 2025).
+5.2  Explain why the Respondent considered dismissal to be a proportionate response, given the Claimant's ongoing health crisis (NHS intervention, 3 Oct 2025) and the recent OH recommendations (14 Nov 2025).
+5.3  Explain how the decision to terminate was independent of the Claimant's "Clean-Room Risks" and "Health & Safety Negligence" disclosures made in the grievance dated 6 October 2025.
 
 ---
 
 **Signed:** [Your Name / Representative]
-**Date:** 23 May 2024 (Enhanced Analysis)
+**Date:** 24 May 2024 (Integrated Analysis)
 
 **⚠️ DEADLINE WARNING:** The Respondent must reply to this request within **14 days**. If no response is received, the Claimant reserves the right to apply for an "Unless Order" under Rule 38.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 23 May 2024 (Enhanced Analysis)
+**Date:** 24 May 2024 (Integrated Analysis)
