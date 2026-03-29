@@ -1,19 +1,14 @@
 # Comparative Case Analysis: Minhas v Lonza Biologics Plc (6045461/2025)
 
-## ⚖️ Narrative Parallels & Soundbites
+## 📈 Precedent Velocity & Impact Forecasting
 
-### 1. The Resilience Parallel (*Groom v MCA*)
--   **Parallel:** Like the claimant in *Groom*, Rehan Minhas showed exceptional resilience (94% punctuality) despite systemic failure to adjust the environment.
--   **Tribunal Phrasing:** *"The tribunal is asked to choose between an employee's documented efforts and an employer's unsubstantiated perceptions."*
+-   **High-Velocity Authorities:** *Groom v Maritime & Coastguard Agency* (2024); *City of York v Grosset* (2018).
+-   **Compensation Trend:** Tribunals are increasingly applying the 25% ACAS uplift in cases where disability-related grievances are handled by non-independent site managers.
 
-### 2. The Procedural Pretext (*Woodhouse v Leeds*)
--   **Parallel:** Lonza's focus on a 6% lateness rate as a "capability issue" mirrors the employer's attempt in *Woodhouse* to label protected acts as a "breakdown in relations."
--   **Tribunal Phrasing:** *"Procedural failures in performance management can themselves constitute evidence of discriminatory intent."*
-
-### 3. Compensation Rationale (*Base Childrenswear*)
--   **Parallel:** Short service (7 months) does not negate the high impact of psychiatric injury from public shaming.
--   **Tribunal Phrasing:** *"The severity of the discriminatory act, not the duration of employment, governs the Vento band."*
+## ⚖️ Judicial Reasoning Pattern Analysis
+-   **Parallel:** Recent judgments (e.g. *Base Childrenswear*) show Judges scrutinising "capability" labels when they appear shortly after protected acts.
+-   **Refinement:** Adapt skeleton argument to use the phrase: *"The capability process was the vehicle, but victimisation was the driver."*
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 26 May 2024 (Strategic Synthesis)
+**Date:** 26 May 2024 (Dynamic Intelligence Synthesis)
