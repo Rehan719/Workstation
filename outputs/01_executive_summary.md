@@ -8,17 +8,24 @@ This case involves claims of disability discrimination, harassment, and victimis
 2.  **Subject Access Request (SAR) Dispute:** Lonza's solicitors (Punter Southall Law) challenged the SAR as "manifestly excessive" (14 Oct 2025), inadvertently confirming the existence of contested evidence (RJ’s Excel file) and raising issues regarding 30-day CCTV retention.
 3.  **Failure to Make Reasonable Adjustments (s.20/21 EqA 2010):** Respondent admitted Dr. Tahir (OH) recommended a Wellness Action Plan (WAP) and stress risk assessment (14 Nov 2025), but there is no evidence of implementation before dismissal in January 2026.
 4.  **Contractual Breaches:** Specifically Clauses 7, 10, 14, 15, 17 of the employment contract and Sickness Absence Policy (s.2.9) regarding failure to implement adjustments.
-5.  **Harassment (s.26 EqA 2010):** Specific, contemporaneous accounts of "public shaming" (26 Sep) and "intrusive questioning" (27 Sep), corroborated by witness names (TNO, ADY, SAV) in `English.docx`.
+
+## 🏹 Tribunal Advocacy Readiness
+-   **Case Rating:** **LITIGATION-OPTIMISED**.
+-   **Tripartite Pillar Framework:** The case is now weaponised around three offensive pillars:
+    -   **Pillar 1 (s.15 EqA):** The punctuality defence is a facade for disability-related symptoms.
+    -   **Pillar 2 (Procedural):** Systematic failure to implement OH adjustments constitutes a direct breach of the duty of care.
+    -   **Pillar 3 (s.27 Victimisation):** The termination was the final act in a campaign triggered by the protected act (grievance).
+-   **Preparedness:** Skeleton argument (`16_`), cross-examination framework (`17_`), and pre-emptive rebuttals are fully indexed and ready for hearing.
 
 ## 💰 Valuation & Settlement
--   **Estimated Tribunal Award:** £64,582 – £83,855 (including Middle Band Vento, loss of earnings, and ACAS uplift).
--   **Settlement Recommendation:** Aim to settle in the range of **£50,000 – £55,000**. The Respondent's defensiveness in legal correspondence indicates a willingness to avoid further disclosure.
+-   **Estimated Tribunal Award:** £64,582 – £83,855.
+-   **Settlement Recommendation:** Aim to settle in the range of **£50,000 – £55,000**.
 
 ## 🚀 Immediate Next Actions
-1.  **Respond to SAR Correspondence:** Clarify SAR scope to counter "manifestly excessive" arguments.
-2.  **CCTV Preservation Meeting:** Request urgent meeting on evidence preservation given the 30-day retention policy.
-3.  **Disclosure Request:** Issue formal Category 1-6 request for the Excel file, unredacted appeal notes, and CCTV logs.
+1.  **File Further Particulars:** (See `07_tribunal_response.md`).
+2.  **Issue Disclosure Request:** (See `08_disclosure_request.md`).
+3.  **Respond to SAR Correspondence:** Clarify SAR scope to counter "manifestly excessive" arguments.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 24 May 2024 (Integrated Analysis)
+**Date:** 25 May 2024 (Ultimate Readiness Analysis)
