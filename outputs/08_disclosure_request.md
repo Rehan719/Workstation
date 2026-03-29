@@ -35,21 +35,25 @@ The Claimant requests **Standard Disclosure** of the following documents in acco
 3.1  **Anonymised performance data** for all other "Biotechnologists" on the same shift as the Claimant between 1 August 2025 and 21 January 2026, specifically relating to "Akta set up" and "IPF" sign-offs.
 3.2  **Anonymised attendance and punctuality records** for the same shift group, to establish whether other employees were disciplined or dismissed for similar lateness (e.g., 20 minutes) during their probationary period.
 
-### 📁 Category 4: Investigation & Grievance Notes - JUSTIFICATION: To establish procedural failures and the ACAS Code breach.
-4.1  **Unredacted investigation notes** from Suzanne Kennedy-May (SKM) and Nic Murrell, including any notes of interviews with witnesses TNO, ADY, SAV, RB, CGS, and DAR.
-4.2  **All internal communications** discussing the Claimant's formal grievance and subsequent appeal between 6 October 2025 and 5 December 2025.
+### 📁 Category 4: Subject Access Request (SAR) & CCTV - JUSTIFICATION: To establish data protection breaches and evidence preservation failures.
+4.1  **All documents relating to the Subject Access Request process** between 6 October 2025 and the present, including internal emails regarding the scope of the request and the decision to instruct Punter Southall Law.
+4.2  **The CCTV retention policy** and any logs showing whether footage for 26-27 September 2025 was deleted, and by whom, post-legal hold notice.
 
-### 📁 Category 5: Decision to Dismiss - JUSTIFICATION: To establish the "reason why" for the s.15/27/103A claims.
-5.1  **All internal communications (Emails/Notes)** leading to the decision to terminate the Claimant’s employment on 21 January 2026, including the involvement of RJ and HR.
-5.2  **Notes from the meetings on 4 January 2026 and 21 January 2026** which are not already in the Claimant's possession.
+### 📁 Category 5: Investigation & Grievance Notes - JUSTIFICATION: To establish procedural failures and the ACAS Code breach.
+5.1  **Unredacted investigation notes** from Suzanne Kennedy-May (SKM) and Nic Murrell, including any notes of interviews with witnesses TNO, ADY, SAV, RB, CGS, and DAR.
+5.2  **All internal communications** discussing the Claimant's formal grievance and subsequent appeal between 6 October 2025 and 5 December 2025, including the **Appeal Reply dated 23 October 2025**.
+
+### 📁 Category 6: Decision to Dismiss - JUSTIFICATION: To establish the "reason why" for the s.15/27/103A claims.
+6.1  **All internal communications (Emails/Notes)** leading to the decision to terminate the Claimant’s employment on 21 January 2026, including the involvement of RJ and HR.
+6.2  **Notes from the meetings on 4 January 2026 and 21 January 2026** which are not already in the Claimant's possession.
 
 ---
 
 **Signed:** [Your Name / Representative]
-**Date:** 23 May 2024 (Enhanced Analysis)
+**Date:** 24 May 2024 (Integrated Analysis)
 
 **⚠️ COMPLIANCE TIMELINE:** The Respondent must comply with this request within **14 days**. If no response is received, the Claimant reserves the right to apply for a Disclosure Order under Rule 31.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 23 May 2024 (Enhanced Analysis)
+**Date:** 24 May 2024 (Integrated Analysis)

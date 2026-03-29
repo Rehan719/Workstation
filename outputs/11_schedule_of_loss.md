@@ -16,11 +16,10 @@ Respondent
 
 ---
 
-## ⚖️ Formal Quantification of Claim (23 May 2024)
+## ⚖️ Formal Quantification of Claim (24 May 2024)
 
 ### 1. Basic Award (s.119 ERA 1996)
 -   Employment: 27 Jun 2025 – 21 Jan 2026 (7 Months).
--   Age: [Age at time of dismissal].
 -   **Total Basic Award:** **£0** (Less than 2 years service for ordinary unfair dismissal).
 
 ### 2. Compensatory Award (s.123 ERA 1996 / s.124A ERA 1996)
@@ -36,24 +35,24 @@ Respondent
 ### 3. Non-Pecuniary Loss (Equality Act 2010)
 -   **Injury to Feelings (Middle Vento Band):** **£25,000**.
 -   **Personal Injury (Psychiatric Harm):** **£15,000**.
--   **Aggravated Damages (GDPR Breach/Victimisation):** **£5,000**.
--   **ACAS Uplift (25% for Failure to Follow OH):** **£11,250**.
--   **Total Non-Pecuniary Loss:** **£56,250**.
+-   **Aggravated Damages (GDPR/SAR Breach):** **£6,000** (Reflecting the stress of the SAR dispute and legalistic defensiveness).
+-   **ACAS Uplift (25% for Failure to Follow OH):** **£11,500**.
+-   **Total Non-Pecuniary Loss:** **£57,500**.
 
-### 📉 GRAND TOTAL QUANTIFICATION: £82,605
+### 📉 GRAND TOTAL QUANTIFICATION: £83,855
 
 ---
 
 ## 📋 Notes on Calculations
 -   **Vento Bands:** The middle band for injury to feelings is currently **£11,700–£35,200** for claims presented on or after 6 April 2024.
--   **ACAS Uplift:** A 25% uplift is sought on all awards for the Respondent's unreasonable failure to follow the ACAS Code of Practice on Disciplinary and Grievance Procedures (2015), particularly regarding the handling of the 6 October grievance.
--   **Interest:** Interest at 8% per annum will be sought on any award from the date of dismissal until the date of the hearing.
+-   **SAR Stress:** The additional £1,000 in aggravated damages reflects the documented distress caused by the Respondent's solicitors' letter (14 Oct 2025) challenging a valid Subject Access Request.
+-   **ACAS Uplift:** Seek a 25% uplift for Lonza’s unreasonable failure to follow the ACAS Code, particularly regarding the handler’s dismissal of the grievance appeal (23 Oct 2025).
 
 ---
 
 **Signed:** [Your Name / Representative]
-**Date:** 23 May 2024 (Enhanced Analysis)
+**Date:** 24 May 2024 (Integrated Analysis)
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 23 May 2024 (Enhanced Analysis)
+**Date:** 24 May 2024 (Integrated Analysis)

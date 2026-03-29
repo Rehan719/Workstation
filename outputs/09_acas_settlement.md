@@ -13,7 +13,7 @@
 -   **Proposed Award:** **£11,666**.
 
 ### 3. Personal Injury (Psychiatric Harm)
--   **Claim:** NHS crisis intervention (3 Oct 2025) and ongoing psychiatric deterioration directly linked to workplace misconduct.
+-   **Claim:** NHS crisis intervention (3 Oct 2025) and ongoing psychiatric deterioration directly linked to workplace misconduct and subsequent **legalistic defensiveness during the SAR process**.
 -   **Proposed Award:** **£15,000**.
 
 ### 4. ACAS Uplift (up to 25%)
@@ -37,14 +37,14 @@
 ## 🗣️ ACAS Conciliator Scripts
 
 ### Scenario A: Opening (Optimistic)
-"I am contacting you to discuss a potential COT3 settlement for my claims against Lonza Biologics Plc (6045461/2025). My opening settlement figure is **£75,000**, which reflects the severity of the victimisation and harassment, the failure to follow OH recommendations from November 2025, and the documented psychiatric injury leading to NHS crisis intervention. I am prepared to take this to a full hearing, but I am willing to avoid litigation if Lonza makes a realistic offer that reflects these procedural failures."
+"I am contacting you to discuss a potential COT3 settlement for my claims against Lonza Biologics Plc (6045461/2025). My opening settlement figure is **£75,000**, which reflects the severity of the victimisation and harassment, the failure to follow OH recommendations from November 2025, and the documented psychiatric injury leading to NHS crisis intervention. I am prepared to take this to a full hearing, but I am willing to avoid litigation if Lonza makes a realistic offer that reflects these procedural failures, including the legalistic approach taken by Punter Southall Law regarding my Subject Access Request."
 
 ### Scenario B: Realistic (Negotiation)
 "While I believe my initial figure is fair, I am willing to consider a figure in the range of **£55,000** if it avoids the 12-18 month wait for a tribunal hearing and provides immediate resolution. This figure covers my loss of earnings and a middle-band Vento award for injury to feelings."
 
 ### Scenario C: Bottom Line (Closing)
-"My absolute bottom line for a COT3 is **£40,000**, inclusive of all claims. This is a final offer to avoid the significant legal costs and management time Lonza will incur in a 3-5 day tribunal hearing, especially given the admissions in the ET3 regarding OH recommendations."
+"My absolute bottom line for a COT3 is **£40,000**, inclusive of all claims. This is a final offer to avoid the significant legal costs and management time Lonza will incur in a 3-5 day tribunal hearing, especially given the admissions in the ET3 regarding OH recommendations and the documented failure to provide unredacted investigation notes."
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 23 May 2024 (Enhanced Analysis)
+**Date:** 24 May 2024 (Integrated Analysis)

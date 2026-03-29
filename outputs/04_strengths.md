@@ -27,6 +27,11 @@
 -   **Legal Impact:** Supports up to a 25% uplift in compensation for failing to provide a fair and impartial process.
 -   **Reference:** Grievance Decision Letter (10 Nov 2025).
 
+### 6. Defensiveness in Legal Correspondence (SAR Dispute)
+-   **Quantified Admission:** Lonza's own solicitors (Punter Southall Law) inadvertently confirmed the existence of contested evidence by challenging the scope of the Subject Access Request (SAR).
+-   **Legal Impact:** This indicates the company is aware of potentially damaging evidence (e.g., RJ’s Excel file) and is being defensive on data protection.
+-   **Reference:** SAR Clarification Letter (14 October 2025).
+
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 23 May 2024 (Enhanced Analysis)
+**Date:** 24 May 2024 (Integrated Analysis)

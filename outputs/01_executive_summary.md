@@ -1,23 +1,24 @@
 # Executive Summary: Minhas v Lonza Biologics Plc (6045461/2025)
 
 ## ⚖️ Case Overview
-This case involves claims of disability discrimination, harassment, and victimisation brought by Mr. Rehan Minhas (the "Claimant") against Lonza Biologics Plc (the "Respondent"). The Claimant, a Biotechnologist, alleges that following the disclosure of a mental health condition and associated medication side effects, he was subjected to a campaign of hostile treatment, culminating in the termination of his employment on 21 January 2026, ostensibly for failing probation.
+This case involves claims of disability discrimination, harassment, and victimisation brought by Mr. Rehan Minhas (the "Claimant") against Lonza Biologics Plc (the "Respondent"). The Claimant, a Biotechnologist, alleges that following the disclosure of a mental health condition and associated medication side effects (13 Sep 2025), he was subjected to a campaign of hostile treatment, culminating in the termination of his employment on 21 January 2026, ostensibly for failing probation.
 
 ## 🗝️ Key Findings
-1.  **Victimisation (s.27 EqA 2010):** This is the strongest head of claim. The Claimant initiated ACAS Early Conciliation on 29 September 2025 and filed a formal grievance on 6 October 2025. The subsequent "intense scrutiny" and eventual dismissal shortly after the grievance appeal was rejected (5 December 2025) suggest a strong causal link between the protected acts and the detriment.
-2.  **Failure to Make Reasonable Adjustments (s.20/21 EqA 2010):** The Respondent’s own ET3 admits that Occupational Health (OH) recommended a Wellness Action Plan and a stress risk assessment on 14 November 2025. There is little evidence these were meaningfully implemented before dismissal in January 2026.
-3.  **Harassment (s.26 EqA 2010):** The Claimant provides specific, contemporaneous accounts of "public shaming" regarding his health and lateness (26 Sept) and intrusive questioning (27 Sept). The Respondent's defense is a blanket denial and a request for further particulars, which is standard but vulnerable to the Claimant's detailed logs.
-4.  **Discrimination Arising from Disability (s.15 EqA 2010):** The dismissal was partly based on "punctuality" and "probation targets." If these were impacted by the Claimant's disability or the side effects of his medication (as alleged), the dismissal may be discriminatory unless the Respondent can prove it was a proportionate means of achieving a legitimate aim.
+1.  **Victimisation (s.27 EqA 2010):** Strongest claim. The Claimant initiated ACAS (29 Sep) and a formal grievance (6 Oct). Dismissal shortly after the grievance appeal was rejected (5 Dec) and a subsequent Appeal Reply (23 Oct) reinforces a causal link.
+2.  **Subject Access Request (SAR) Dispute:** Lonza's solicitors (Punter Southall Law) challenged the SAR as "manifestly excessive" (14 Oct 2025), inadvertently confirming the existence of contested evidence (RJ’s Excel file) and raising issues regarding 30-day CCTV retention.
+3.  **Failure to Make Reasonable Adjustments (s.20/21 EqA 2010):** Respondent admitted Dr. Tahir (OH) recommended a Wellness Action Plan (WAP) and stress risk assessment (14 Nov 2025), but there is no evidence of implementation before dismissal in January 2026.
+4.  **Contractual Breaches:** Specifically Clauses 7, 10, 14, 15, 17 of the employment contract and Sickness Absence Policy (s.2.9) regarding failure to implement adjustments.
+5.  **Harassment (s.26 EqA 2010):** Specific, contemporaneous accounts of "public shaming" (26 Sep) and "intrusive questioning" (27 Sep), corroborated by witness names (TNO, ADY, SAV) in `English.docx`.
 
 ## 💰 Valuation & Settlement
--   **Estimated Tribunal Award:** £45,000 – £70,000 (including Vento middle band for injury to feelings, loss of earnings, and potential ACAS uplift).
--   **Settlement Recommendation:** Aim to settle in the range of **£45,000 – £55,000**. The Respondent has already issued a draft Settlement Agreement (dated 22 Jan 2026), indicating an early willingness to avoid litigation.
+-   **Estimated Tribunal Award:** £64,582 – £83,855 (including Middle Band Vento, loss of earnings, and ACAS uplift).
+-   **Settlement Recommendation:** Aim to settle in the range of **£50,000 – £55,000**. The Respondent's defensiveness in legal correspondence indicates a willingness to avoid further disclosure.
 
 ## 🚀 Immediate Next Actions
-1.  **Draft Further Particulars:** Respond to the Respondent’s request for information in the ET3 to solidify the pleadings.
-2.  **Disclosure Request:** Issue a formal request for the "unprotected Excel file" and internal communications (Teams/Email) mentioned in the grievance.
-3.  **ACAS Engagement:** Utilize the ACAS conciliator to present the strengthened "Victimisation" narrative to the Respondent’s solicitors (Draper Lang LLP).
+1.  **Respond to SAR Correspondence:** Clarify SAR scope to counter "manifestly excessive" arguments.
+2.  **CCTV Preservation Meeting:** Request urgent meeting on evidence preservation given the 30-day retention policy.
+3.  **Disclosure Request:** Issue formal Category 1-6 request for the Excel file, unredacted appeal notes, and CCTV logs.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 22 May 2024 (Simulated Analysis Date)
+**Date:** 24 May 2024 (Integrated Analysis)
