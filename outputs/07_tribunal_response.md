@@ -2,40 +2,23 @@
 
 ## 📋 Request for Further Information (Rule 30)
 
-**PHASE TAGS: [CMH] = Case Management Hearing; [LIAB] = Liability; [REMEDY] = Remedy**
+### 1. The Exhibit Q-1 Paradox [LIAB]
+1.1  Does the Respondent deny that internal attendance metrics (Exhibit Q-1) show Rehan Minhas was punctual for 94% of his shifts?
+1.2  If 94% compliance is deemed a "probation failure," identify the exact percentage achieved by other Biotechnologists on the same shift during the same period.
 
----
+### 2. The Thompson Scrutiny [LIAB]
+2.1  Referring to *Thompson v TechFlow Ltd* [2026], provide the documents recording Lonza's positive exclusion of disability-related factors from the 21 Jan attendance assessment.
+2.2  Identify who conducted this scrutiny and when it occurred.
 
-### 1. Reasonable Adjustments [LIAB]
-Referring to paragraph 16(iv) of the ET3:
-1.1  Provide specific date(s) the Wellness Action Plan (WAP) was drafted.
-1.2  Provide specific date(s) the stress risk assessment was conducted.
-1.3  Identify implemented adjustments between 14 Nov 2025 and 21 Jan 2026.
-
-### 2. Harassment [LIAB]
-Referring to paragraph 20 of the ET3:
-2.1  Does the Respondent deny the interaction between Claimant and "SD" on 26 Sep 2025?
-2.2  Identify the names of individuals present during the 26 Sep interaction.
-
-### 3. Subject Access Request (SAR) Dispute [CMH/LIAB]
-Referring to Punter Southall Law letter (14 Oct 2025):
-3.1  Identify the grounds for claiming the SAR is "manifestly excessive."
-3.2  Confirm preservation of the "unprotected Excel file" post-legal hold.
-
-### 4. Victimisation [LIAB]
-Referring to paragraph 29 of the ET3:
-4.1  Identify the "objective and justifiable reasons" for refusing line manager reassignment.
-
-### 5. Dismissal [LIAB/REMEDY]
-Referring to the termination letter:
-5.1  Identify specific "targets" failed and provide training records.
-5.2  Explain proportionality of dismissal given the NHS intervention (3 Oct) and OH recommendations (14 Nov).
+### 3. Subject Access Request (SAR) [CMH]
+3.1  Confirm the current status of the "unprotected Excel file." Was it preserved following the 6 Oct legal hold?
+3.2  Provide the specific grounds for the "manifestly excessive" claim regarding the Claimant's SAR.
 
 ---
 
 **Signed:** [Representative]
-**Date:** 25 May 2024 (Ultimate Readiness Analysis)
+**Date:** 30 Mar 2026 (Intelligence-Active Submission)
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 25 May 2024 (Ultimate Readiness Analysis)
+**Date:** 30 Mar 2026 (Intelligence-Active Submission)

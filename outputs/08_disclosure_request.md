@@ -2,17 +2,17 @@
 
 ## 📋 Formal Disclosure Request (Rule 31)
 
-### 📁 Category 7: Exhibit Q-1 Verification & Raw Data
-**Narrative Justification:** To verify the objective truth of the Claimant's performance. Since internal HR records (Exhibit Q-1) show 94% punctuality, the raw access data is essential to establish that the dismissal was not based on objective metrics.
-7.1  **Raw Access Log Data** for the Claimant from 27 Jun 2025 to 21 Jan 2026.
-7.2  **System Calibration Records** for the door-swipe system used to track attendance.
-7.3  **Attendance policies** defining "satisfactory performance" for Biotechnologists.
+### 📁 Category 8: Internal Performance & Attendance Data
+**Justification:** Essential to establish less favourable treatment. Citing *Three Rivers DC v Bank of England* [2003], the raw data behind Exhibit Q-1 is the "heart of the issue."
+8.1  **Raw access logs** for Rehan Minhas (27 Jun - 21 Jan).
+8.2  **Anonymised attendance metrics** for all shift colleagues.
+8.3  **CCTV logs** showing access/deletion post-6 Oct.
 
 ---
 
 **Signed:** [Representative]
-**Date:** 26 May 2024 (Strategic Synthesis)
+**Date:** 30 Mar 2026 (Intelligence-Active Submission)
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 26 May 2024 (Strategic Synthesis)
+**Date:** 30 Mar 2026 (Intelligence-Active Submission)
