@@ -10,6 +10,13 @@ This layer integrates FREE and Open Source AI models into the Workstation's biom
 | **Qwen** | Strategic Research | UK Employment Law synthesis (EqA 2010, ERA 1996). |
 | **Minimax** | Codebase Reasoning | Autonomous test generation and async refactoring. |
 
+## Evolution & Optimization (Phase 6)
+- **Hybrid Orchestration**: Mixture-of-Experts task decomposition using `HybridOrchestrator`.
+- **Semantic Caching**: Zero-cost inference for repeat tasks using ChromaDB.
+- **Token Budgeting**: Real-time quota tracking and enforcement to stay within free-tier limits.
+- **UK Law Guardrail**: Automated compliance checks against Equality Act 2010 characteristics.
+- **AI Capability Dashboard**: Real-time monitoring of model health, usage, and orchestration status.
+
 ## Governance & Security
 - **AIAuditMiddleware**: Every LLM call is hash-chained and signed.
 - **@require_human_approval**: Critical actions (e.g., prod deploy, legal filing) block until human signature is received.

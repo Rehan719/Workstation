@@ -25,6 +25,19 @@ ai_features:
   deepseek_ingestion: { enabled: false, realm: "legal", requires_approval: true }
   qwen_legal_research: { enabled: false, realm: "legal", requires_approval: true }
   minimax_code_assist: { enabled: false, realm: "development", requires_approval: false }
+  semantic_caching: { enabled: true, similarity_threshold: 0.95 }
+  hybrid_orchestration: { enabled: false }
+
+ai_providers:
+  deepseek:
+    monthly_tokens: 5000000
+    rate_limit_rpm: 20
+  qwen:
+    monthly_tokens: 1000000
+    rate_limit_rpm: 10
+  minimax:
+    monthly_tokens: 500000
+    rate_limit_rpm: 5
 
 ai_security:
   credential_storage: "github_secrets_only"
