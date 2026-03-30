@@ -1,0 +1,21 @@
+enable_sovereign_mode: false
+tier: observational # observational | proposal | delegated | sovereign
+storage_dir: data/organism/state
+log_level: INFO
+audit_trail_path: data/organism/activity.jsonl
+neural_bus:
+  max_queue_size: 1000
+  worker_count: 1
+realms_config_path: src/organism/config/realms.yaml
+
+sovereignty:
+  escalation_policy:
+    # If Tier 2 (Proposal) is rejected 3x by human sovereign:
+    - trigger: "proposal_rejected_count >= 3"
+      action: "enter_learning_mode"  # Pause autonomous proposals, log for analysis
+      notification: "human_sovereign + ai_ethics_review"
+
+    # If Tier 3 (Delegated) action fails validation:
+    - trigger: "delegated_action_validation_failed"
+      action: "revoke_realm_auto_execute"  # Temporarily disable auto-execute for that realm
+      cooldown: "24h"  # Require human re-approval before re-enabling
