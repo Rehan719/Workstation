@@ -1,7 +1,6 @@
 import logging
 import hashlib
-import json
-from typing import Dict, Any, Optional, List
+from typing import Optional, Any, cast
 import chromadb
 from chromadb.utils import embedding_functions
 
@@ -16,9 +15,10 @@ class SemanticCache:
         self.client = chromadb.PersistentClient(path=persist_directory)
         # Use default embedding function (all-MiniLM-L6-v2) for efficiency
         self.emb_fn = embedding_functions.DefaultEmbeddingFunction()
+        # Cast to Any to satisfy mypy's strict protocol check for EmbeddingFunction
         self.collection = self.client.get_or_create_collection(
             name="llm_cache",
-            embedding_function=self.emb_fn
+            embedding_function=cast(Any, self.emb_fn)
         )
 
     async def get(self, prompt: str, model: str, threshold: float = 0.95) -> Optional[str]:
@@ -32,13 +32,17 @@ class SemanticCache:
                 where={"model": model}
             )
 
-            if results["ids"] and results["ids"][0]:
-                distance = results["distances"][0][0]
-                # Cosine distance: lower is more similar.
-                # default Chroma distance is l2. For semantic sim, we check threshold.
-                if distance < (1 - threshold) * 10: # Rough l2 scaling for similarity
-                    logger.info(f"SemanticCache: Hit for model {model} (dist: {distance:.4f})")
-                    return results["documents"][0][0]
+            if results["ids"] and len(results["ids"]) > 0 and results["ids"][0]:
+                distances = results.get("distances")
+                documents = results.get("documents")
+
+                if distances and documents and len(distances) > 0 and len(documents) > 0:
+                    distance = distances[0][0]
+                    # Cosine distance: lower is more similar.
+                    # default Chroma distance is l2. For semantic sim, we check threshold.
+                    if distance < (1 - threshold) * 10: # Rough l2 scaling for similarity
+                        logger.info(f"SemanticCache: Hit for model {model} (dist: {distance:.4f})")
+                        return documents[0][0]
         except Exception as e:
             logger.error(f"SemanticCache: Query error: {e}")
 

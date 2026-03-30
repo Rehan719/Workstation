@@ -1,9 +1,7 @@
 import functools
 import logging
 import asyncio
-from typing import Dict, Any, List, Optional
-from src.organism.python.neural.event_bus import AsyncEventBus
-from src.organism.python.neural.event_types import IntentGenerated, StrategicIntent
+from src.organism.python.neural.event_types import StrategicIntent
 
 logger = logging.getLogger(__name__)
 

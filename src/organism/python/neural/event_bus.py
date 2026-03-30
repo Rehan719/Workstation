@@ -18,7 +18,7 @@ class AsyncEventBus:
     """
     def __init__(self, max_queue_size: int = 1000):
         self._subscriptions: Dict[Type, List[Callable]] = collections.defaultdict(list)
-        self._queue = asyncio.PriorityQueue(maxsize=max_queue_size)
+        self._queue: asyncio.PriorityQueue = asyncio.PriorityQueue(maxsize=max_queue_size)
         self._is_running = False
         self._worker_task: Optional[asyncio.Task] = None
         self._history: collections.deque = collections.deque(maxlen=100)

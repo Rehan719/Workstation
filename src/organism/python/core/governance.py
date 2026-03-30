@@ -3,7 +3,7 @@ import json
 import logging
 import time
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives import serialization
@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 class SovereignIdentity:
     def __init__(self, key_path: str = "data/organism/sovereign_key.pem"):
         self.key_path = key_path
-        self._private_key = None
-        self._public_key = None
+        self._private_key: Optional[rsa.RSAPrivateKey] = None
+        self._public_key: Optional[rsa.RSAPublicKey] = None
         self._load_or_generate_key()
 
     def _load_or_generate_key(self):
@@ -54,6 +54,8 @@ class SovereignIdentity:
             logger.error(f"SovereignIdentity: Key save failure: {e}")
 
     def sign_action(self, action_data: Dict[str, Any]) -> str:
+        if not self._private_key:
+            raise RuntimeError("SovereignIdentity: Private key not loaded.")
         payload = json.dumps(action_data, sort_keys=True).encode()
         signature = self._private_key.sign(
             payload,
@@ -66,6 +68,8 @@ class SovereignIdentity:
         return signature.hex()
 
     def verify_action(self, action_data: Dict[str, Any], signature_hex: str) -> bool:
+        if not self._public_key:
+            return False
         payload = json.dumps(action_data, sort_keys=True).encode()
         try:
             self._public_key.verify(
@@ -82,6 +86,8 @@ class SovereignIdentity:
             return False
 
     def get_public_key_pem(self) -> str:
+        if not self._public_key:
+            raise RuntimeError("SovereignIdentity: Public key not loaded.")
         pem = self._public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo

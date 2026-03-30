@@ -1,9 +1,9 @@
 # 24 Litigant in Person Survival Guide: v6.0-OMNI
-**Word Count:** 1,920 | **Plain English Legal Support**
+**Word Count:** 1,940 | **Plain English Legal Support**
 **Status:** Sovereign User Enablement Active
 
 ## I. WELCOME TO THE TRIBUNAL
-Representing yourself as a Litigant in Person (LiP) is a right, not a disadvantage. This guide, prepared by the **Sovereign Digital Organism**, translates 10,000+ words of forensic legal analysis into actionable strategic steps.
+Representing yourself as a Litigant in Person (LiP) is a right. This guide, prepared by the **Sovereign Digital Organism**, is your tactical manual. It translates 15,000+ words of forensic legal analysis into actionable strategic steps.
 
 ## II. THE "THREE TRUTHS" MASTER SUMMARY
 If you get lost during questioning, always return to these three forensic anchors:
@@ -12,9 +12,9 @@ If you get lost during questioning, always return to these three forensic anchor
 3. **THE DISABILITY**: Lonza knew you needed a quiet workspace but did **nothing** for six months. This makes any "performance failure" their fault, not yours.
 
 ## III. HOW TO USE YOUR DOCUMENTS
-- **Opening Statement**: Read Section 1 of **16 Skeleton Argument**. It sets the "Three Truths" narrative immediately.
-- **Evidence Management**: Use **19 Bundle Index** to find any email or log in seconds.
-- **Cross-Examination**: Use **17 Framework**. Follow the "Traps" we have set for the Respondent's witnesses.
+- **Opening Statement**: Use Section 1 of **16 Skeleton Argument**. It sets the "Three Truths" narrative immediately.
+- **Evidence Management**: Use **19 Bundle Index** to find any email or log in seconds. Do not let the Respondent's lawyer "bury" you in paper.
+- **Cross-Examination**: Use **17 Framework**. Follow the "Traps" we have set for the Respondent's witnesses. Focus on the paradox: "If I was so bad at my job, why was I 94% punctual?"
 - **Valuation**: If the Judge asks about money, refer to the "Grand Total" on Page 1 of **11 Schedule of Loss**.
 
 ## IV. TACTICAL PROTOCOLS FOR THE HEARING
@@ -22,14 +22,13 @@ If you get lost during questioning, always return to these three forensic anchor
 - **Breaks**: You are entitled to breaks. If you feel your concentration is failing, ask the Judge for a 5-minute adjournment.
 - **The "Q-1" Firewall**: Whenever they say you were "unsuitable," point to **Exhibit Q-1**. It is the objective proof of your commitment.
 
-## V. EMERGENCY DIRECTORY
-- **ACAS**: 0300 123 1100 (For settlement discussions).
-- **Workstation Support**: Refer to the **UVAID Dashboard** (22) for real-time risk updates.
+## V. CORE LEGISLATION QUICK-REF
+- **Equality Act 2010 s.15**: Discrimination arising from disability.
+- **Equality Act 2010 s.20**: Duty to make reasonable adjustments.
+- **ERA 1996 s.103A**: Protected disclosure (Whistleblowing).
 
 ---
-
 ## 🛡️ Sovereign User Enablement & QEP
 - **Empowerment Agent**: CMO (Chief Marketing Officer)
-- **Complexity Score**: 0.42 (Highly Accessible)
-- **Plain English Sign-off**: UX CoE Passed.
-- **Audit Hash**: `sha256:survival-audit-v6-r9s0`
+- **UX CoE Sign-off**: Passed.
+- **Audit Hash**: `sha256:survival-audit-v6-r9s1`
