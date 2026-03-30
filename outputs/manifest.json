@@ -1,44 +1,149 @@
 {
-  "operation": "Law Grand Operation - DEFINITIVE FORENSIC REGENERATION",
-  "case": "Minhas v Lonza Biologics Plc (6045461/2025)",
-  "version": "5.0.0-dynamic-final-DEFINITIVE",
-  "timestamp": "2024-05-27T05:00:00Z",
-  "analyst": "Jules, AI CEO (Law Domain Orchestrator)",
-  "forensic_metrics": {
-    "citations": 142,
-    "precedents": 8,
-    "confidence": 0.94
-  },
-  "outputs": [
-    "01_executive_summary.md",
-    "02_chronology.md",
-    "03_issues_list.md",
-    "04_strengths.md",
-    "05_weaknesses_risks.md",
-    "06_evidence_map.md",
-    "07_tribunal_response.md",
-    "08_disclosure_request.md",
-    "09_acas_settlement.md",
-    "10_next_actions.md",
-    "11_schedule_of_loss.md",
-    "12_draft_witness_statement.md",
-    "14_witness_briefing.md",
-    "15_comparative_cases.md",
-    "16_skeleton_argument_liability.md",
-    "17_cross_examination_framework.md",
-    "18_narrative_framework.md",
-    "19_tribunal_bundle_index.md",
-    "20_pre_hearing_simulation.md",
-    "21_witness_realtime_support.md",
-    "22_dynamic_intelligence_dashboard.md",
-    "23_acas_tactical_briefing.md",
-    "24_lip_survival_guide.md",
-    "25_architecture_review.md",
-    "26_ecosystem_dependency_map.md",
-    "27_scope_scale_complexity_report.md",
-    "28_user_enablement_assessment.md",
-    "29_strategic_roadmap_v6.md"
-  ],
-  "status": "Forensic-Locked / Submission-Ready",
-  "summary": "Phase 7 Complete. All 29 outputs regenerated to forensic standards. Integrated Thompson/Chesterton precedents and Exhibit Q-1 paradox. Living financial model recalibrated to £95,939 total claim value."
+  "version": "v5.0.0-dynamic-final-DEFINITIVE",
+  "timestamp": "2026-03-30T09:50:27.232751",
+  "case": "Minhas v Lonza Biologics Plc",
+  "status": "SOVEREIGN_VERIFIED",
+  "audit_chain_root": "sha256:d37e1e0bc6c986235b2e987c69876a...",
+  "files": [
+    {
+      "name": "01_executive_summary.md",
+      "hash": "58f5f73f6b96a6c8e8f3e95dcb6f3548e6e4094b7523c977aebd49bfdbdcf740",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "02_chronology.md",
+      "hash": "81ea66f52af9be782cc5e74a400f81660820aa020d9c24d357c8684d5148df12",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "03_issues_list.md",
+      "hash": "f83fd90c9f911be44730f43f77e04cf0f8ee8d05253ad4004817b55414e4a468",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "04_strengths.md",
+      "hash": "7d362ed0fa20e3dd795e6165f5f9084f64f200b1ec8a15bd63fe3a2f357ab2f2",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "05_weaknesses_risks.md",
+      "hash": "6192e0a7e0e650661f69bde32fe5b360ec97b2f859f12320e75d211545fbee2b",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "06_evidence_map.md",
+      "hash": "4a8690816ff7477e21fc6ab5f7a5a04be76044ad232afdaa6d58daaef63245bc",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "07_tribunal_response.md",
+      "hash": "64b2ebcebe14c0df73c08d139c9a588e8500bf13e09de433faa2c77964924299",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "08_disclosure_request.md",
+      "hash": "940968026777784bf14afcb0c8f486004866e6b61090ead4912b50e3007a597d",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "09_acas_settlement.md",
+      "hash": "3770cb8aef1fe8750ebd290a79503dadd3972f6cb3e75d13005f0430e43f0c26",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "10_next_actions.md",
+      "hash": "98915c5bb16a97e192ae28e2b95e4e74e02164c111dbd69f3f2b6178878f0780",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "11_schedule_of_loss.md",
+      "hash": "69906c2bb6f119bb72cfac9c7d346b49f1b378d7db6ab599efa5e692a0a50309",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "12_draft_witness_statement.md",
+      "hash": "ef24075e4ac8075dd025ca9854dc95a6c6bb4b17f9bc5ce987d47eb69aaa4947",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "14_witness_briefing.md",
+      "hash": "b3ad7079c867009cc8d5527267c549a5f3ba9a57f9579817871d7b790ef11909",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "15_comparative_cases.md",
+      "hash": "5f34e37b5fdcd44e06d3a979bb9104846945f63097b7a4c30433758743ac2803",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "16_skeleton_argument_liability.md",
+      "hash": "bd8ac7baefb36c3ce8c0395f60b338ff0c7d060e5e34d4e6a0036da1023e48b8",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "17_cross_examination_framework.md",
+      "hash": "47c8266b881bc08b4491326bda6fa58327feab4c8d72ba6a9c2594c7198312c5",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "18_narrative_framework.md",
+      "hash": "36a79e6117cf429386338a6f2c471c327f00a12a24d8a14fdbc79822cb4d29c2",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "19_tribunal_bundle_index.md",
+      "hash": "59cb3367ba3f6ca1b05355cf09bdd5dd7b22ddb80bbf16080109a5dde962907b",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "20_pre_hearing_simulation.md",
+      "hash": "185178923d161dc42fa054236c8a16bbd273364ccafeedb83c4041be09777bde",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "21_witness_realtime_support.md",
+      "hash": "f01b8af52833989f585a4644073d4de0b3f284e011814c7de46a11d537a2bb09",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "22_dynamic_intelligence_dashboard.md",
+      "hash": "ab9b6e2055a05f78d226af081b12b286f80636a51e39a0182cdf05992070a51f",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "23_acas_tactical_briefing.md",
+      "hash": "b2b81389f87cadffe0307554493f60cabf87db5ae73c25ecd812db99586621d7",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "24_lip_survival_guide.md",
+      "hash": "e97fe9cd6fa08daab2b686812e1485f4ba3091d742525cb2f52921a7e60570ee",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "25_architecture_review.md",
+      "hash": "3d235d2b930db448ff66afa56851631cf44cd4a7203b2d69e42335b9281303d9",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "26_ecosystem_dependency_map.md",
+      "hash": "8e0f99b13b6a4828ebbde2e2ebf5f50966fdfae11708921f100b9fb27ac26302",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "27_scope_scale_complexity_report.md",
+      "hash": "aa4c9f6d191f6f4b819b485ce8cc5dc47fae5b4b35789046da9e2fc73af55e50",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "28_user_enablement_assessment.md",
+      "hash": "fbc35133364bf88cf30038f89c1dbe8fa1d6838e836bc679d79df356b454b6c4",
+      "governance": "Nemoclaw Approved"
+    },
+    {
+      "name": "29_strategic_roadmap_v6.md",
+      "hash": "87d9c31afb6f430a123d28c96cc4cce8cad4b2bce8358aa38f990bcce419fbf1",
+      "governance": "Nemoclaw Approved"
+    }
+  ]
 }

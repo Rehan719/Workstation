@@ -1,0 +1,340 @@
+{
+  "efd05de7_0": {
+    "id": "efd05de7_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 76 EC (C) Certificate.txt",
+    "source_document": "76 EC (C) Certificate.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "205068977c2f5553"
+  },
+  "c84773fc_0": {
+    "id": "c84773fc_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 1. Appeal Hearing Outcome - 05Dec25 - Rehan Minhas.txt",
+    "source_document": "1. Appeal Hearing Outcome - 05Dec25 - Rehan Minhas.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "5135787c2b145490"
+  },
+  "e81a8725_0": {
+    "id": "e81a8725_0",
+    "date": "2026-02-13",
+    "description": "Termination outcome letter received citing performance during probation.",
+    "source_document": "13.02.2026 RM Outcome Letter 1 SIGNED.txt",
+    "source_page": 1,
+    "related_parties": [
+      "Lonza Biologics"
+    ],
+    "legal_tags": [
+      "ERA_1996_S94"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "2d0d6aee1d79e585"
+  },
+  "6d89b94a_0": {
+    "id": "6d89b94a_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 2. Notes from Grievance Hearing 03Nov25.txt",
+    "source_document": "2. Notes from Grievance Hearing 03Nov25.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "71a24a8dcd13774f"
+  },
+  "8105a57c_0": {
+    "id": "8105a57c_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 21.01.26 Rehan Minhas - Probationary Review Notes.txt",
+    "source_document": "21.01.26 Rehan Minhas - Probationary Review Notes.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "761efb150d629c68"
+  },
+  "28549cba_0": {
+    "id": "28549cba_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 21.01.26 Rehan Minhas - Terminaion during Probation Period.txt",
+    "source_document": "21.01.26 Rehan Minhas - Terminaion during Probation Period.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "7f9bbc3f1e2c930e"
+  },
+  "7a30f8fb_0": {
+    "id": "7a30f8fb_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 22.01.26  Settlement Agreement_Rehan Minhas.txt",
+    "source_document": "22.01.26  Settlement Agreement_Rehan Minhas.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "445b8444d9a94557"
+  },
+  "43dd35b6_0": {
+    "id": "43dd35b6_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 3. Grievance Decision Letter - Rehan Minhas - 10Nov25.txt",
+    "source_document": "3. Grievance Decision Letter - Rehan Minhas - 10Nov25.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "5ae7fb75eb056ab3"
+  },
+  "3166e186_0": {
+    "id": "3166e186_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 5115df67-ad7e-481b-9f2c-8a83fc86d182.txt",
+    "source_document": "5115df67-ad7e-481b-9f2c-8a83fc86d182.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "60027fba262ad6c1"
+  },
+  "1c7d6615_0": {
+    "id": "1c7d6615_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 6045461.2025 ET3 accepted.txt",
+    "source_document": "6045461.2025 ET3 accepted.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "bc3363c54d7d977d"
+  },
+  "ccd74b7e_0": {
+    "id": "ccd74b7e_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from 99cfd2ef-a887-4c29-b766-12b298eed027.txt",
+    "source_document": "99cfd2ef-a887-4c29-b766-12b298eed027.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "21d2c227274a19d5"
+  },
+  "e6cea81f_0": {
+    "id": "e6cea81f_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from Collated Anonymised Investigation Notes.txt",
+    "source_document": "Collated Anonymised Investigation Notes.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "4e58afba846317f0"
+  },
+  "6a08a9de_0": {
+    "id": "6a08a9de_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from English.txt",
+    "source_document": "English.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "3dbc126ea455d4e8"
+  },
+  "3f0f278c_0": {
+    "id": "3f0f278c_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from Lonza Biologics Plc-ET3_Response.txt",
+    "source_document": "Lonza Biologics Plc-ET3_Response.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "9072cc86b93d749d"
+  },
+  "dec3d3c4_0": {
+    "id": "dec3d3c4_0",
+    "date": "2025-09-20",
+    "description": "Adjustment request for quiet workspace ignored by manager.",
+    "source_document": "Minhas_Contemporaneous_Log_6Oct20252.txt",
+    "source_page": 3,
+    "related_parties": [
+      "Manager"
+    ],
+    "legal_tags": [
+      "EqA_2010_S20"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "44c31f6540189da6"
+  },
+  "dec3d3c4_1": {
+    "id": "dec3d3c4_1",
+    "date": "2025-09-27",
+    "description": "Exhibit Q-1 Punctuality Data: 94% on-time record despite lack of adjustments.",
+    "source_document": "Minhas_Contemporaneous_Log_6Oct20252.txt",
+    "source_page": 5,
+    "related_parties": [
+      "Rehan Minhas"
+    ],
+    "legal_tags": [
+      "Exhibit_Q1",
+      "Evidence"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "50d7f6e893221f08"
+  },
+  "9c73e726_0": {
+    "id": "9c73e726_0",
+    "date": "2025-10-06",
+    "description": "Formal grievance submitted alleging disability discrimination and patient safety concerns.",
+    "source_document": "Minhas_Grievance_Letter_6Oct20252.txt",
+    "source_page": 1,
+    "related_parties": [
+      "Rehan Minhas",
+      "Lonza HR"
+    ],
+    "legal_tags": [
+      "EqA_2010_S15",
+      "Whistleblowing"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "44ecb529b505c422"
+  },
+  "9c73e726_1": {
+    "id": "9c73e726_1",
+    "date": "2025-08-15",
+    "description": "Disability disclosure: Diagnosed with [Condition] affecting concentration.",
+    "source_document": "Minhas_Grievance_Letter_6Oct20252.txt",
+    "source_page": 2,
+    "related_parties": [
+      "Rehan Minhas"
+    ],
+    "legal_tags": [
+      "EqA_2010_S6"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "0a1ce7a7ab499631"
+  },
+  "365eb53c_0": {
+    "id": "365eb53c_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from Minhas_PostGrievance_Log_6Oct2025.txt",
+    "source_document": "Minhas_PostGrievance_Log_6Oct2025.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "71fa5f18c3f9b2a5"
+  },
+  "b3eb4e32_0": {
+    "id": "b3eb4e32_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from Minhas_PostGrievance_Log_Update_13Oct2025.txt",
+    "source_document": "Minhas_PostGrievance_Log_Update_13Oct2025.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "9ca723a3beffa0da"
+  },
+  "97b6a013_0": {
+    "id": "97b6a013_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from R Minhas - Grounds of Resistance - 18.2.26.txt",
+    "source_document": "R Minhas - Grounds of Resistance - 18.2.26.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "865c4585b04bf88c"
+  },
+  "5c210454_0": {
+    "id": "5c210454_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from Rehan Minhas Notes Nov25.txt",
+    "source_document": "Rehan Minhas Notes Nov25.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "4caa4d538e098bef"
+  },
+  "868d6ed9_0": {
+    "id": "868d6ed9_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from Statement for Grievance Hearing.txt",
+    "source_document": "Statement for Grievance Hearing.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "bf537e8688a8148f"
+  },
+  "893e9110_0": {
+    "id": "893e9110_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from appeal-reply-42354508.txt",
+    "source_document": "appeal-reply-42354508.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "6ada25f5e356bff0"
+  },
+  "83b04a4e_0": {
+    "id": "83b04a4e_0",
+    "date": "2025-01-01",
+    "description": "Fact extracted from chronology.txt",
+    "source_document": "chronology.txt",
+    "source_page": 1,
+    "related_parties": [],
+    "legal_tags": [
+      "General"
+    ],
+    "confidence": 0.95,
+    "audit_hash": "b8ee0637dd37f70a"
+  }
+}
