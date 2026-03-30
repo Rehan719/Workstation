@@ -58,3 +58,17 @@ class HomeostasisEvent(BiomimeticEvent):
     metric: str = ""
     value: float = 0.0
     status: str = "STABLE"  # "STABLE" | "STRESS" | "RECOVERY"
+
+@dataclass
+class AIActionInitiated(BiomimeticEvent):
+    action: str = ""
+    provider: str = ""
+    payload_hash: str = ""
+
+@dataclass
+class AIInferenceComplete(BiomimeticEvent):
+    action_id: str = ""
+    provider: str = ""
+    tokens_used: int = 0
+    latency_ms: float = 0.0
+    status: str = "SUCCESS" # "SUCCESS" | "FAILED" | "RATE_LIMITED"
