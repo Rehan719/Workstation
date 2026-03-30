@@ -64,7 +64,25 @@ class ScienceReactor:
             h["status"] = "REVIEWED"
         return hypotheses
 
-    async def generate_scientific_manuscript(self, hypothesis_id: str) -> str:
-        """Generates a production-grade LaTeX scientific draft for the selected hypothesis."""
-        logger.info(f"ScienceReactor: Generating manuscript for hypothesis {hypothesis_id}")
-        return "scientific_draft_v6.0.tex"
+    async def generate_scientific_manuscript(self, hypothesis_id: str, hypothesis_content: str) -> str:
+        """
+        Strategic Roadmap v6.0: Science Reactor.
+        Generates a production-grade LaTeX scientific draft using Hybrid MoE.
+        """
+        logger.info(f"ScienceReactor: Generating LaTeX manuscript for hypothesis {hypothesis_id}")
+
+        messages = [
+            {"role": "system", "content": "You are a senior scientific editor. Generate a complete LaTeX manuscript for the provided hypothesis. Include sections for Abstract, Introduction, Methodology, and Discussion."},
+            {"role": "user", "content": f"Hypothesis: {hypothesis_content}"}
+        ]
+
+        result = await self.ai_gateway.execute_completion("deepseek", messages)
+        latex_content = result.get("content", "")
+
+        output_path = f"data/organism/science/manuscript_{hypothesis_id}.tex"
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w") as f:
+            f.write(latex_content)
+
+        logger.info(f"ScienceReactor: Manuscript saved to {output_path}")
+        return output_path
