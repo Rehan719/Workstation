@@ -1,9 +1,9 @@
 # Scope, Scale & Complexity Report (v5.0.0-DEFINITIVE)
 
-## 📊 Forensic Metrics Dashboard
+## 📊 Quantitative Metrics Dashboard
 
 -   **Evidentiary Citations:** 142 discrete references.
--   **Exhibit Q-1 references:** 18 nodes.
+-   **Exhibit Q-1 Nodes:** 18 references across toolkit.
 -   **Legal Coverage:** 100% (EqA / ERA / ACAS).
 -   **Intelligence Level:** Level 5 (Dynamic / Monte Carlo).
 

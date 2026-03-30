@@ -1,6 +1,6 @@
-# Dynamic Knowledge Graph: Minhas v Lonza (6045461/2025)
+# Dynamic Evidence-Knowledge Graph: Minhas v Lonza (6045461/2025)
 
-## 🧬 Node & Relationship Mapping (Forensic Logic)
+## 🧬 Node & Relationship Mapping (v5.0.0-DEFINITIVE)
 
 ```json
 {
@@ -10,13 +10,19 @@
       "id": "q1",
       "label": "Exhibit Q-1 (94% Metric)",
       "confidence": 0.98,
-      "narrative": "Destroys capability justification."
+      "narrative": "Central linchpin: destroys capability justification."
     },
     {
       "id": "safety",
-      "label": "Clean-Room Risks (ERA s.103A)",
+      "label": "Clean-Room Risks (s.103A)",
       "confidence": 0.96,
-      "narrative": "Elevates legal & regulatory risk."
+      "narrative": "Protected disclosure; triggers public interest protection."
+    },
+    {
+      "id": "med_crisis",
+      "label": "NHS Crisis Care (3 Oct)",
+      "confidence": 0.99,
+      "narrative": "Objective proof of psychiatric injury."
     }
   ],
   "edges": [
