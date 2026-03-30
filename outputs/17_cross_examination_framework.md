@@ -1,12 +1,16 @@
 # Cross-Examination Framework: Respondent Witnesses
 
-## 🏹 Disclosure Motivation sequence
+## 🏹 The Narrative Arc (Definitive)
 
-1.  "The Claimant raised 'Clean-Room Risks' in October 2025, correct?"
-2.  "Do you agree that sterility procedural failures in a suite could compromise patient safety?"
-3.  "Why was there no formal investigation into these risks before the 21 Jan termination?"
-4.  **Narrative Pivot:** *"As held in Chesterton, the Claimant's belief in the public interest is what matters. Lonza's response was not investigation, but dismissal."*
+### Phase 2: The Thompson Challenge
+1.  "Following *Thompson v TechFlow Ltd* [2026], did you positively exclude disability factors from the assessment of Rehan's attendance?"
+2.  "Show me the annotation in Exhibit Q-1 where this scrutiny was recorded."
+
+### Phase 3: Whistleblowing (Motive)
+1.  "The Claimant raised 'Clean-Room Risks' in October, yes?"
+2.  "Do you agree that sterility failures compromise patient safety?"
+3.  "Why was he dismissed within weeks of raising these risks, while maintaining 94% punctuality?"
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 30 Mar 2026 (Definitive Integration)
+**Date:** 30 Mar 2026 (Forensic Regeneration)
