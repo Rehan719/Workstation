@@ -1,17 +1,12 @@
 # Narrative Framework: Strategic Advocacy Index
 
-## 📈 Narrative Effectiveness Scoring
+## 📖 The "Three Truths" Narrative
+*"There are three truths in this case. Truth One: 94% Punctuality (Objective Data). Truth Two: Capability Dismissal (Subjective Fiction). Truth Three: Patient Safety Disclosures (Public Interest)."*
 
-| Narrative Beat | Core Effectiveness | Supporting Evidence |
-| :--- | :---: | :--- |
-| **94% Punctuality** | 0.95 | Exhibit Q-1 |
-| **Ignored OH Roadmap** | 0.88 | OH Report (14 Nov) |
-| **Campaign of Shaming** | 0.82 | Contemporaneous Log |
-
-## 🏹 Refined Oral Soundbites
--   "Lonza asks you to believe Rehan failed a metric their own system says he passed 94% of the time."
--   "This was not performance management; it was grievance management."
+## 🏹 Whistleblowing Soundbites
+-   "The Claimant was dismissed not for failing attendance, but for speaking the Truth about pharmaceutical risks."
+-   "Lonza chose to shoot the messenger rather than fix the clean-room protocol."
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
-**Date:** 26 May 2024 (Dynamic Intelligence Synthesis)
+**Date:** 30 Mar 2026 (Definitive Integration)
