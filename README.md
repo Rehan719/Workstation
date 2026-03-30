@@ -18,6 +18,7 @@ Workstation is a **Sovereign Digital Organism**—an **Entity Intelligent Digita
 ## 🎯 Key v0.7 Supreme Baseline Features
 
 - **🧠 Sovereign Organism Core** – Autonomous AI CEO powered by **Nematron** (Brain), **Nemoclaw** (Immune System/Governance), and **OpenClaw** (Execution) adapters.
+- **🤖 Sovereign AI Tooling** – Integrated **DeepSeek** (Ingestion), **Qwen** (Legal Research), and **Minimax** (Codebase Reasoning) via a unified, audited AI Gateway.
 - **🧬 Genome Realm** – 3D Merkle-DAG visualization, GRN discovery, and real-time transcriptional monitoring.
 - **🗺️ Five-Realm Architecture** – Full production parity for **Learner, Developer, Enterprise, Scholar, and Genome** realms.
 - **🏛️ Sovereign Domains** – High-fidelity ontologies and AI integration for **Religion, Science, Law, Employment, Education, and Care**.

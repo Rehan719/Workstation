@@ -19,3 +19,18 @@ sovereignty:
     - trigger: "delegated_action_validation_failed"
       action: "revoke_realm_auto_execute"  # Temporarily disable auto-execute for that realm
       cooldown: "24h"  # Require human re-approval before re-enabling
+
+ai_features:
+  ai_integration_experimental: { enabled: false, mode: "proposal" }
+  deepseek_ingestion: { enabled: false, realm: "legal", requires_approval: true }
+  qwen_legal_research: { enabled: false, realm: "legal", requires_approval: true }
+  minimax_code_assist: { enabled: false, realm: "development", requires_approval: false }
+
+ai_security:
+  credential_storage: "github_secrets_only"
+  audit_requirement: "all_ai_actions_logged"
+  realm_isolation: true
+  human_approval_threshold:
+    legal_analysis: "always"
+    code_suggestion: "risk_based"
+    ingestion: "batch_approval"

@@ -38,6 +38,21 @@ from agentic_core.synthesis import api as synthesis_api
 from prometheus_client import make_asgi_app, Counter, Histogram
 import time
 
+# Sovereign Organism Imports
+from src.organism.python.core.state_kernel import SovereignState
+from src.organism.python.neural.event_bus import AsyncEventBus
+from src.organism.python.core.csuite_orchestrator import CSuiteOrchestrator
+from src.organism.python.organs.nematron_adapter import NematronAdapter
+from src.organism.python.organs.nemoclaw_adapter import NemoclawAdapter
+from src.organism.python.organs.openclaw_adapter import OpenClawAdapter
+from src.organism.bridge import neural_bridge, ai_bridge
+from src.organism.python.resilience.homeostasis import HomeostasisManager
+from agentic_core.ai_ceo.c_suite import BiomimeticCSuite
+from agentic_core.governance.verifiable_governance import VGAEngine
+from agentic_core.immune.immune_system import ImmuneSystemV2
+from agentic_core.tools.registry import ToolRegistry
+from agentic_core.homeostasis.resilience import resilience_manager
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -48,6 +63,12 @@ token_ledger = TokenLedger()
 scraper = DualModeScraper(token_ledger=token_ledger)
 uviap = UVIAP()
 
+# Initialize Sovereign Organism Core
+state_kernel = SovereignState()
+event_bus = AsyncEventBus()
+orchestrator = CSuiteOrchestrator(event_bus, state_kernel)
+homeostasis_mgr = HomeostasisManager(event_bus, resilience_manager)
+
 # Default user for demo
 token_ledger.initialize_user("demo_user", UserTier.PRO)
 
@@ -56,12 +77,30 @@ async def lifespan(app: FastAPI):
     # ARTICLE 541: Passive sensory layer as continuous background process
     logger.info("Apotheosis: Passive Sensory Monitoring Awakening...")
 
+    # Initialize Neural Bridge
+    neural_bridge.bridge = neural_bridge.NeuralBridge(event_bus)
+
+    # Start Event Bus
+    await event_bus.start()
+
+    # Start Homeostasis Monitoring
+    await homeostasis_mgr.start_monitoring()
+
+    # Initialize Organs
+    nematron = NematronAdapter(BiomimeticCSuite(), event_bus)
+    nemoclaw = NemoclawAdapter(VGAEngine(), ImmuneSystemV2(), event_bus)
+    openclaw = OpenClawAdapter(ToolRegistry(), event_bus)
+    await orchestrator.initialize_organs(nematron, nemoclaw, openclaw)
+
     # Start the scraper's passive mode
     task = asyncio.create_task(scraper.passive.monitor_environment())
     # Start WebSocket broadcast task
     ws_task = asyncio.create_task(broadcast_vitals_background())
 
     yield
+    await orchestrator.shutdown_organs()
+    await homeostasis_mgr.stop_monitoring()
+    await event_bus.stop()
     task.cancel()
     ws_task.cancel()
     logger.info("Apotheosis: System Hibernating.")
@@ -149,6 +188,10 @@ async def websocket_test(websocket: WebSocket):
     await websocket.accept()
     await websocket.send_json({"status": "connected", "msg": "Sovereign Test Socket Active"})
     await websocket.close()
+
+# Include Neural & AI Bridges
+app.include_router(neural_bridge.router)
+app.include_router(ai_bridge.router)
 
 app.include_router(qep_analytics.router, prefix="/api/v1")
 app.include_router(tools.router, prefix="/api/v1")
