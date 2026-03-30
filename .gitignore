@@ -19,3 +19,12 @@ dist/
 build/
 # Logs
 *.log
+*.jsonl
+
+# Data & Secrets
+data/organism/
+data/demo/
+data/test_state/
+data/test_bundles/
+data/test_evidence_graph.json
+*.pem

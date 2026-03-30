@@ -1,8 +1,7 @@
-import os
 import logging
 import httpx
 import time
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Union
 from .base import SovereignLLMClient
 
 logger = logging.getLogger(__name__)

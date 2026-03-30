@@ -1,7 +1,6 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 from src.organism.python.ai_gateway import gateway
-from src.organism.python.evidence.graph_schema import EvidenceGraph
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@ import logging
 import time
 import hashlib
 import json
-from typing import Dict, Any, Type, Optional, List
+from typing import Dict, Any, Optional, List
 from .adapters.base import SovereignLLMClient
 from src.organism.python.neural.event_types import AIActionInitiated, AIInferenceComplete
 

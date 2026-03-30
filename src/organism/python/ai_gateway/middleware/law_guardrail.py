@@ -1,6 +1,5 @@
 import logging
-import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from src.organism.python.neural.event_types import ValidationResult
 
 logger = logging.getLogger(__name__)

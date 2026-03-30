@@ -1,6 +1,6 @@
 import pandas as pd
 from decimal import Decimal
-from typing import Dict, Any, List
+from typing import Dict, Any
 from src.organism.python.evidence.graph_schema import EvidenceGraph
 
 class ScheduleOfLossAgent:
@@ -26,8 +26,10 @@ class ScheduleOfLossAgent:
 
         # Age factors: <22 = 0.5, 22-40 = 1, >41 = 1.5
         age_factor = 1.0
-        if age < 22: age_factor = 0.5
-        elif age >= 41: age_factor = 1.5
+        if age < 22:
+            age_factor = 0.5
+        elif age >= 41:
+            age_factor = 1.5
 
         basic_award = Decimal(str(age_factor)) * Decimal(str(tenure)) * weekly_pay
         losses.append({

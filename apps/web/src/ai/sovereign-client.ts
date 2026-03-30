@@ -5,6 +5,7 @@
 export class SovereignAIClient {
   private static instance: SovereignAIClient;
   private ws: WebSocket | null = null;
+  private readonly token: string = 'sovereign-dev-token'; // In production, retrieve from secure storage
 
   private constructor() {}
 
@@ -28,7 +29,7 @@ export class SovereignAIClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // In production, add Sovereign Identity headers here
+        'Authorization': `Bearer ${this.token}`
       },
       body: JSON.stringify({
         provider,
@@ -49,7 +50,7 @@ export class SovereignAIClient {
    */
   public subscribeToAIEvents(callback: (event: any) => void): void {
     if (!this.ws) {
-      this.ws = new WebSocket('ws://localhost:8000/ws/organism/neural-bus');
+      this.ws = new WebSocket(`ws://localhost:8000/ws/organism/neural-bus?token=${this.token}`);
     }
 
     this.ws.onmessage = (event) => {
