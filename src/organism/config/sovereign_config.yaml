@@ -1,5 +1,5 @@
-enable_sovereign_mode: false
-tier: observational # observational | proposal | delegated | sovereign
+enable_sovereign_mode: true
+tier: proposal # observational | proposal | delegated | sovereign
 storage_dir: data/organism/state
 log_level: INFO
 audit_trail_path: data/organism/activity.jsonl
@@ -21,12 +21,12 @@ sovereignty:
       cooldown: "24h"  # Require human re-approval before re-enabling
 
 ai_features:
-  ai_integration_experimental: { enabled: false, mode: "proposal" }
-  deepseek_ingestion: { enabled: false, realm: "legal", requires_approval: true }
-  qwen_legal_research: { enabled: false, realm: "legal", requires_approval: true }
-  minimax_code_assist: { enabled: false, realm: "development", requires_approval: false }
+  ai_integration_experimental: { enabled: true, mode: "proposal" }
+  deepseek_ingestion: { enabled: true, realm: "legal", requires_approval: true }
+  qwen_legal_research: { enabled: true, realm: "legal", requires_approval: true }
+  minimax_code_assist: { enabled: true, realm: "development", requires_approval: false }
   semantic_caching: { enabled: true, similarity_threshold: 0.95 }
-  hybrid_orchestration: { enabled: false }
+  hybrid_orchestration: { enabled: true }
 
 ai_providers:
   deepseek:
