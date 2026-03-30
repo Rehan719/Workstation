@@ -11,11 +11,19 @@ from cryptography.hazmat.primitives import serialization
 logger = logging.getLogger(__name__)
 
 class SovereignIdentity:
+    """
+    ARTICLE 1051: Sovereign Identity Layer.
+    Implements Self-Sovereign Digital Identity (SSDI) with PQC preparedness.
+    """
     def __init__(self, key_path: str = "data/organism/sovereign_key.pem"):
         self.key_path = key_path
         self._private_key: Optional[rsa.RSAPrivateKey] = None
         self._public_key: Optional[rsa.RSAPublicKey] = None
+        self.did = f"did:sovereign:{self._generate_did_suffix()}"
         self._load_or_generate_key()
+
+    def _generate_did_suffix(self) -> str:
+        return hashlib.sha256(str(time.time()).encode()).hexdigest()[:16]
 
     def _load_or_generate_key(self):
         if os.path.exists(self.key_path):
@@ -93,6 +101,26 @@ class SovereignIdentity:
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
         return pem.decode()
+
+    def get_did_document(self) -> Dict[str, Any]:
+        """Returns the SSDI DID Document for the organism."""
+        return {
+            "@context": "https://www.w3.org/ns/did/v1",
+            "id": self.did,
+            "verificationMethod": [{
+                "id": f"{self.did}#key-1",
+                "type": "RsaVerificationKey2018",
+                "controller": self.did,
+                "publicKeyPem": self.get_public_key_pem()
+            }],
+            "authentication": [f"{self.did}#key-1"],
+            "assertionMethod": [f"{self.did}#key-1"],
+            "service": [{
+                "id": f"{self.did}#neural-bus",
+                "type": "NeuralBusService",
+                "serviceEndpoint": "ws://localhost:8000/ws/organism/neural-bus"
+            }]
+        }
 
 class SovereignAuditLog:
     def __init__(self, log_path: str = "data/organism/activity.jsonl"):
