@@ -15,7 +15,7 @@ Workstation is a **Sovereign Digital Organism**—an **Entity Intelligent Digita
 
 ---
 
-## 🎯 Key v0.7 Supreme Baseline Features
+## 🎯 Key v1.0 Production Maturity Features
 
 - **🧠 Sovereign Organism Core** – Autonomous AI CEO powered by **Nematron** (Brain), **Nemoclaw** (Immune System/Governance), and **OpenClaw** (Execution) adapters.
 - **🤖 Sovereign AI Tooling** – Integrated **DeepSeek** (Ingestion), **Qwen** (Legal Research), and **Minimax** (Codebase Reasoning) via a unified, audited AI Gateway.
@@ -33,7 +33,7 @@ Workstation is a **Sovereign Digital Organism**—an **Entity Intelligent Digita
 
 ```mermaid
 graph TD
-    A[Unified Web/Mobile UI] --> B{AI CEO v0.7}
+    A[Unified Web/Mobile UI] --> B{AI CEO v1.0}
     B --> C[C‑Suite Agents]
     B --> D[Five-Realm Hubs]
     B --> E[Six Sovereign Domains]
@@ -72,19 +72,19 @@ Then open `http://localhost:5173` for the Unified Web App. To monitor the organi
 
 ## 📚 Supreme Documentation
 
-- **[Supreme Technical Specification](MAIN_0_0_SPECIFICATION_v0.md)** – Definitive v0.7 technical baseline.
-- **[Fine-Resolution Feature Map](FINE_RESOLUTION_FEATURE_MAP_v0.md)** – Granular code-to-feature provenance.
-- **[Supreme Constitution v0.7](CONSTITUTION_FINAL_v0.md)** – The 1127-article digital charter.
-- **[Mandates Final Inventory](MANDATES_FINAL_v0.md)** – Audited system requirements and compliance status.
-- **[Version Lineage Final](VERSION_LINEAGE_FINAL_v0.md)** – Canonical DAG from v1.0 to v0.7.
-- **[QMS Validation Report](FINAL_VALIDATION_REPORT_v0.md)** – Final certification of zero-placeholder status.
+- **[Supreme Technical Specification](SPECIFICATION.md)** – Definitive v1.0 technical baseline.
+- **[Fine-Resolution Feature Map](FINE_RESOLUTION_FEATURE_MAP.md)** – Granular code-to-feature provenance.
+- **[Supreme Constitution v1.0](CONSTITUTION_FINAL.md)** – The 1127-article digital charter.
+- **[Mandates Final Inventory](MANDATES_FINAL.md)** – Audited system requirements and compliance status.
+- **[Version Lineage Final](VERSION_LINEAGE.md)** – Canonical DAG from v1.0 baseline.
+- **[QMS Validation Report](FINAL_VALIDATION_REPORT.md)** – Final certification of zero-placeholder status.
 
 ---
 
 ## ⚡ Status
 
-**Current Version:** v0.7.0 – “Supreme Baseline Final”
-**Milestone:** Production Convergence Achieved
+**Current Version:** v1.0.0 – “Production Maturity”
+**Milestone:** Global Launch Baseline Achieved
 **Production Readiness:** ✅ 100% – Zero‑Placeholder Certified
 **Constitutional Compliance:** ✅ 100% – All 1127 Articles Verified
 

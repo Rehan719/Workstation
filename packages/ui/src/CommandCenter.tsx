@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useStore, gaas } from '@workstation/shared';
-import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, MessageCircle, Heart, Brain, Zap, Clock, TrendingUp } from 'lucide-react';
+import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, MessageCircle, Heart, Brain, Zap, Clock, TrendingUp, Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge } from './index';
+import AgentForge from '../../../apps/web/src/components/organism/AgentForge';
+import OrganismVitals from '../../../apps/web/src/components/organism/OrganismVitals';
 
 export const CommandCenter = () => {
   const { currentRealm, currentMode } = useStore();
@@ -15,6 +17,7 @@ export const CommandCenter = () => {
     { id: 'summary', name: 'Summary', icon: FileText, color: 'text-aura', description: 'AI Reports' },
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3, color: 'text-highlight', description: 'Live Metrics' },
     { id: 'predictive', name: 'Predictive', icon: Sparkles, color: 'text-vital', description: 'Forecasting' },
+    { id: 'forge', name: 'Agent Forge', icon: Cpu, color: 'text-aura', description: 'Visual Composer' },
     { id: 'ethical', name: 'Ethical', icon: ShieldCheck, color: 'text-aura', description: 'Constitutional AI' },
   ];
 
@@ -157,6 +160,16 @@ const ChannelContent = ({ id }: { id: string }) => {
                   </div>
                </div>
             </div>
+         </div>
+      ),
+      forge: (
+         <div className="space-y-6">
+            <AgentForge />
+         </div>
+      ),
+      dashboard: (
+         <div className="space-y-6">
+            <OrganismVitals />
          </div>
       ),
       ethical: (
