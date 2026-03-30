@@ -1,149 +1,184 @@
 {
-  "version": "v5.0.0-dynamic-final-DEFINITIVE",
-  "timestamp": "2026-03-30T09:50:27.232751",
+  "version": "v6.0.0-omni-activation",
+  "timestamp": "2026-03-30T11:21:20.122472",
   "case": "Minhas v Lonza Biologics Plc",
-  "status": "SOVEREIGN_VERIFIED",
+  "status": "SOVEREIGN_VERIFIED_MAXIMUM_CAPABILITY",
   "audit_chain_root": "sha256:d37e1e0bc6c986235b2e987c69876a...",
+  "workstation_caps": [
+    "Entity_Core",
+    "IDBO",
+    "VSB_AI_CEO",
+    "Quad_Engine_Reactors",
+    "UVAID"
+  ],
   "files": [
     {
       "name": "01_executive_summary.md",
-      "hash": "58f5f73f6b96a6c8e8f3e95dcb6f3548e6e4094b7523c977aebd49bfdbdcf740",
-      "governance": "Nemoclaw Approved"
+      "hash": "c83db850666f643880ce1718129536c4c3926250ccee3f99c1ced5c76470858c",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "02_chronology.md",
-      "hash": "81ea66f52af9be782cc5e74a400f81660820aa020d9c24d357c8684d5148df12",
-      "governance": "Nemoclaw Approved"
+      "hash": "749001c4f8e585f676454e475e4622d3b33d8160f16be7aa0887c9f1c5586490",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "03_issues_list.md",
-      "hash": "f83fd90c9f911be44730f43f77e04cf0f8ee8d05253ad4004817b55414e4a468",
-      "governance": "Nemoclaw Approved"
+      "hash": "5b850a5d19b37a5851be7042df7420aa0020b2c87fe395a29a4cebf2513dd96c",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "04_strengths.md",
       "hash": "7d362ed0fa20e3dd795e6165f5f9084f64f200b1ec8a15bd63fe3a2f357ab2f2",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "05_weaknesses_risks.md",
       "hash": "6192e0a7e0e650661f69bde32fe5b360ec97b2f859f12320e75d211545fbee2b",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "06_evidence_map.md",
       "hash": "4a8690816ff7477e21fc6ab5f7a5a04be76044ad232afdaa6d58daaef63245bc",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "07_tribunal_response.md",
-      "hash": "64b2ebcebe14c0df73c08d139c9a588e8500bf13e09de433faa2c77964924299",
-      "governance": "Nemoclaw Approved"
+      "hash": "3c0e1c4d8657cc446f9f032ec7f2aca002b95bd272e05c9f692bb1a1fb20e64e",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "08_disclosure_request.md",
-      "hash": "940968026777784bf14afcb0c8f486004866e6b61090ead4912b50e3007a597d",
-      "governance": "Nemoclaw Approved"
+      "hash": "ebef1ff0c1a7f271dbb4212769f27acaa16dbc75130a7e7cc00dc6ee67822987",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "09_acas_settlement.md",
       "hash": "3770cb8aef1fe8750ebd290a79503dadd3972f6cb3e75d13005f0430e43f0c26",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "10_next_actions.md",
       "hash": "98915c5bb16a97e192ae28e2b95e4e74e02164c111dbd69f3f2b6178878f0780",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "11_schedule_of_loss.md",
-      "hash": "69906c2bb6f119bb72cfac9c7d346b49f1b378d7db6ab599efa5e692a0a50309",
-      "governance": "Nemoclaw Approved"
+      "hash": "d0b8783f883ad23238d13a970c836d28af7c01aa9155878fa85e8150256484ea",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "12_draft_witness_statement.md",
-      "hash": "ef24075e4ac8075dd025ca9854dc95a6c6bb4b17f9bc5ce987d47eb69aaa4947",
-      "governance": "Nemoclaw Approved"
+      "hash": "9f5eb865ae0ac60cbb42008d1e20c25346c21f9ef34d883994d2901f8a6faea1",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "14_witness_briefing.md",
       "hash": "b3ad7079c867009cc8d5527267c549a5f3ba9a57f9579817871d7b790ef11909",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "15_comparative_cases.md",
       "hash": "5f34e37b5fdcd44e06d3a979bb9104846945f63097b7a4c30433758743ac2803",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "16_skeleton_argument_liability.md",
-      "hash": "bd8ac7baefb36c3ce8c0395f60b338ff0c7d060e5e34d4e6a0036da1023e48b8",
-      "governance": "Nemoclaw Approved"
+      "hash": "f7ddc249acbdbc4db03ce9a9728bb01bb9f44b1037e9fc6bb83f16ce88fbfd50",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "17_cross_examination_framework.md",
       "hash": "47c8266b881bc08b4491326bda6fa58327feab4c8d72ba6a9c2594c7198312c5",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "18_narrative_framework.md",
       "hash": "36a79e6117cf429386338a6f2c471c327f00a12a24d8a14fdbc79822cb4d29c2",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "19_tribunal_bundle_index.md",
       "hash": "59cb3367ba3f6ca1b05355cf09bdd5dd7b22ddb80bbf16080109a5dde962907b",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "20_pre_hearing_simulation.md",
-      "hash": "185178923d161dc42fa054236c8a16bbd273364ccafeedb83c4041be09777bde",
-      "governance": "Nemoclaw Approved"
+      "hash": "51f67101db94c016711a1a6a75e375e353ba0bcff14a9538fc058b3fe8d3c8dc",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "21_witness_realtime_support.md",
       "hash": "f01b8af52833989f585a4644073d4de0b3f284e011814c7de46a11d537a2bb09",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "22_dynamic_intelligence_dashboard.md",
-      "hash": "ab9b6e2055a05f78d226af081b12b286f80636a51e39a0182cdf05992070a51f",
-      "governance": "Nemoclaw Approved"
+      "hash": "fa30ae55215332e0360443f69f9b608541c97e8a40162ff40096427ff3a4b04d",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "23_acas_tactical_briefing.md",
       "hash": "b2b81389f87cadffe0307554493f60cabf87db5ae73c25ecd812db99586621d7",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "24_lip_survival_guide.md",
-      "hash": "e97fe9cd6fa08daab2b686812e1485f4ba3091d742525cb2f52921a7e60570ee",
-      "governance": "Nemoclaw Approved"
+      "hash": "2b7b867f6347cc897dcfe47624e98ab80ffa9db008d15db15fcb682c2bcc7f7a",
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "25_architecture_review.md",
       "hash": "3d235d2b930db448ff66afa56851631cf44cd4a7203b2d69e42335b9281303d9",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "26_ecosystem_dependency_map.md",
       "hash": "8e0f99b13b6a4828ebbde2e2ebf5f50966fdfae11708921f100b9fb27ac26302",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "27_scope_scale_complexity_report.md",
       "hash": "aa4c9f6d191f6f4b819b485ce8cc5dc47fae5b4b35789046da9e2fc73af55e50",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "28_user_enablement_assessment.md",
       "hash": "fbc35133364bf88cf30038f89c1dbe8fa1d6838e836bc679d79df356b454b6c4",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     },
     {
       "name": "29_strategic_roadmap_v6.md",
       "hash": "87d9c31afb6f430a123d28c96cc4cce8cad4b2bce8358aa38f990bcce419fbf1",
-      "governance": "Nemoclaw Approved"
+      "governance": "Nemoclaw Approved",
+      "qse_gate": "Passed"
     }
   ]
 }

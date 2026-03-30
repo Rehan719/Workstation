@@ -1,12 +1,12 @@
 # 20 Pre-Hearing Simulation Results
-**Generated:** 2026-03-30T09:48:52.930056
+**Generated:** 2026-03-30T11:05:48.079095
 **Methodology:** Monte Carlo (10,000 iterations)
 
 | Panel Type | Win Probability | Expected Award Value |
 | :--- | :--- | :--- |
-| Strong Panel (Law Focus) | 85.5% | £68,465.08 |
-| Neutral Panel | 78.6% | £51,160.67 |
-| Conservative Panel (Employer Bias) | 55.0% | £19,237.88 |
+| Strong Panel (Law Focus) | 85.2% | £68,116.15 |
+| Neutral Panel | 77.8% | £50,619.62 |
+| Conservative Panel (Employer Bias) | 54.9% | £19,321.62 |
 
 
 ## 🛡️ Sovereign Confidence Analysis
