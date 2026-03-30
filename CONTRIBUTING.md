@@ -9,6 +9,14 @@ Welcome to the digital civilisation. As an open-source project under the Apache 
 3.  **Governance:** Propose constitutional amendments via the RFC process.
 4.  **Security:** Report vulnerabilities according to our `SECURITY.md` guidelines.
 
+## Sovereign Organism & NVIDIA SDK Integration
+
+The Workstation now operates as a **Sovereign Digital Organism**. The core organs (**Nematron**, **Nemoclaw**, **OpenClaw**) are implemented using an **Adapter Pattern**.
+
+To contribute real-world integrations:
+- **NVIDIA SDKs**: When **NVIDIA OpenClaw**, **Nemoclaw**, or **Nemotron** SDKs become available, create a new adapter in `src/organism/python/organs/` that implements the corresponding interface.
+- **New Organs**: Propose new biological functions (e.g., Sensory Ingestion, Metabolic Resource Management) by extending the `AsyncEventBus` with new typed events.
+
 ## RFC Process
 
 Major architectural changes must follow the Request for Comments (RFC) process:
