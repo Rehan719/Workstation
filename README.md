@@ -11,13 +11,13 @@
 
 ## ✨ Overview
 
-Workstation is a **living digital ecosystem**—an **Intelligent Digital Biomimetic Organism (IDBO)** that grows, learns, and governs itself through the **Supreme Constitution (1127 Articles)**. It converges all digital engines—the AI CEO, C-Suite Agents, and the Quad Engine Reactor—into a unified user application across Web and Mobile.
+Workstation is a **Sovereign Digital Organism**—an **Entity Intelligent Digital Biomimetic Organism (IDBO)** that operates as an autonomous **Virtual Sovereign Business AI CEO**. It integrates strategic reasoning (Brain), multi-layered governance (Immune System), and non-blocking execution (Limbs) into a unified, self-healing digital entity.
 
 ---
 
 ## 🎯 Key v0.7 Supreme Baseline Features
 
-- **🧠 AI Core v0.7** – AI CEO with SSE streaming, C-Suite delegation, and autonomous self-improving feedback loops.
+- **🧠 Sovereign Organism Core** – Autonomous AI CEO powered by **Nematron** (Brain), **Nemoclaw** (Immune System/Governance), and **OpenClaw** (Execution) adapters.
 - **🧬 Genome Realm** – 3D Merkle-DAG visualization, GRN discovery, and real-time transcriptional monitoring.
 - **🗺️ Five-Realm Architecture** – Full production parity for **Learner, Developer, Enterprise, Scholar, and Genome** realms.
 - **🏛️ Sovereign Domains** – High-fidelity ontologies and AI integration for **Religion, Science, Law, Employment, Education, and Care**.
@@ -58,15 +58,14 @@ cd workstation
 # Set up the production environment
 bash setup.sh
 
-# Configure the .env
-cp .env.template .env
-# Edit .env with your local/cloud keys
+# Enable Sovereign Mode (Optional)
+# Edit src/organism/config/sovereign_config.yaml: enable_sovereign_mode: true
 
-# Start the Supreme Baseline stack
+# Start the Sovereign stack
 npm run dev
 ```
 
-Then open `http://localhost:5173` for the Unified Web App.
+Then open `http://localhost:5173` for the Unified Web App. To monitor the organism's vital signs and Neural Bus, visit the **Organism Health Dashboard** within the app.
 
 ---
 

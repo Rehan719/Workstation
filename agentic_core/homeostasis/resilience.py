@@ -20,7 +20,8 @@ class LSTMModel:
         """v1.0 Production: Sigmoid-activated prediction for probability."""
         z = np.dot(input_data, self.weights) + self.bias
         probability = 1 / (1 + np.exp(-z))
-        return float(probability[0])
+        # Ensure it's a scalar even if it's a 1x1 array from np.dot
+        return float(np.array(probability).item())
 
     def train(self, data: List[List[float]], labels: List[float], epochs: int = 100):
         """v1.0 Production: Simple gradient descent training loop."""
