@@ -3,16 +3,20 @@
 ## 💪 Forensic Case Strengths
 
 ### 1. Evidentiary Contradiction (Exhibit Q-1)
--   **Finding:** Lonza's own records show 94% punctuality.
--   **Strategic Impact:** This objectively refutes the claim of "poor attendance." The Respondent cannot explain why 94% is a failure without revealing discriminatory or retaliatory intent.
+-   **Quantified Detail:** Lonza's internal metrics confirm 94% punctuality.
+-   **Strategic Impact:** Rebuts "capability" defense. Under *Thompson* [2026], Lonza's failure to exclude the disclosed 6% variance (disability symptoms) from their assessment renders the dismissal discriminatory.
 
-### 2. Admitted Failures (OH Recommendations)
--   **Finding:** ET3 admits OH recommended adjustments on 14 Nov 2025.
--   **Strategic Impact:** Lonza failed to implement these before the Jan termination. This satisfies the "Failure to Adjust" test under s.21 EqA by admission.
+### 2. Admissions in Respondent's ET3
+-   **Quantified Detail:** Lonza admits receiving OH recommendations (WAP, quiet desk) on 14 Nov 2025 (p.8, para 16).
+-   **Strategic Impact:** Establishes the "Failure to Adjust" (s.21 EqA) claim by admission, as no implementation occurred before termination on 21 Jan.
 
-### 3. Public Interest Leverage (Whistleblowing)
--   **Finding:** Raised sterility risks in a pharmaceutical environment.
--   **Strategic Impact:** This elevates the case to a public interest level (*Chesterton*), attracting higher non-pecuniary awards and increasing reputational risk for Lonza.
+### 3. Public Interest Dimension (Whistleblowing)
+-   **Quantified Detail:** Documented raising of clean-room risks in Oct/Nov 2025 (`English.docx`).
+-   **Strategic Impact:** Elevates the case to a public safety level (*Chesterton*), increasing non-pecuniary awards and providing significant regulatory leverage (MHRA).
+
+### 4. Objective Third-Party Evidence (NHS Crisis Team)
+-   **Quantified Detail:** Intervention on 3 Oct 2025 documented in `Grievance Letter` p.4.
+-   **Strategic Impact:** Provides clinical corroboration of the "Harassment" effect, making a "low band" Vento award highly unlikely.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)

@@ -2,11 +2,21 @@
 
 ## 🔮 Dynamic Risk Forecast (v5.0.0-DEFINITIVE)
 
-| Risk Factor | Probability | Impact | Mitigation strategy |
+| Risk Factor | Probability | Impact | Mitigation Strategy |
 | :--- | :---: | :---: | :--- |
 | **Disclosure Delay** | 75% | High | File Unless Order (Rule 38) within 14 days of deadline. |
-| **CCTV Deletion** | 85% | High | Apply for "Negative Inference" if footage is missing after hold notice. |
-| **Probationary Rights**| Med | Med | Pivot to s.15 EqA: Probation is not a license to discriminate. |
+| **CCTV Deletion** | 85% | High | Apply for "Negative Inference" direction if missing. |
+| **Probationary Shield**| Med | Med | Pivot to s.15 EqA: Probation is not a license to discriminate. |
+
+## 📉 Procedural Leverage Decision Tree
+
+```mermaid
+graph TD
+    A[Disclosure Status?] -->|Compliant| B[Focus on Methodological Challenge]
+    A -->|Partial| C[File Unless Order Application]
+    A -->|Refused| D[Apply for Adverse Inference]
+    D --> E[Escalate Settlement Target to £89.5k]
+```
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
