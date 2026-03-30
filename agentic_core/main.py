@@ -45,7 +45,7 @@ from src.organism.python.core.csuite_orchestrator import CSuiteOrchestrator
 from src.organism.python.organs.nematron_adapter import NematronAdapter
 from src.organism.python.organs.nemoclaw_adapter import NemoclawAdapter
 from src.organism.python.organs.openclaw_adapter import OpenClawAdapter
-from src.organism.bridge import neural_bridge, ai_bridge
+from src.organism.bridge import neural_bridge, ai_bridge, evidence_bridge
 from src.organism.python.resilience.homeostasis import HomeostasisManager
 from agentic_core.ai_ceo.c_suite import BiomimeticCSuite
 from agentic_core.governance.verifiable_governance import VGAEngine
@@ -189,9 +189,10 @@ async def websocket_test(websocket: WebSocket):
     await websocket.send_json({"status": "connected", "msg": "Sovereign Test Socket Active"})
     await websocket.close()
 
-# Include Neural & AI Bridges
+# Include Neural, AI, and Evidence Bridges
 app.include_router(neural_bridge.router)
 app.include_router(ai_bridge.router)
+app.include_router(evidence_bridge.router)
 
 app.include_router(qep_analytics.router, prefix="/api/v1")
 app.include_router(tools.router, prefix="/api/v1")
