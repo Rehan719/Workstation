@@ -2,12 +2,15 @@
 
 ## ⚖️ The Three Truths Framework
 
-1.  **Objective Truth (Exhibit Q-1):** The data shows 94% compliance.
-2.  **Subjective Fiction (Pretext):** The Respondent labels 94% as "failure" to mask retaliation.
-3.  **Public Interest (Whistleblowing):** The dismissal followed safety disclosures (*Chesterton*).
+### Pillar 1: Discrimination (s.15 EqA)
+1.  **Truth One:** Exhibit Q-1 proves 94% punctuality.
+2.  **Legal Mandate:** Under *Thompson* [2026], Lonza failed to exclude disability factors from this assessment, rendering it discriminatory.
 
-## 🧬 Precedent Adaptation
--   **Morris/Thompson:** The Tribunal must positively exclude disability factors from the attendance assessment.
+### Pillar 2: Whistleblowing (s.103A ERA)
+3.  **Truth Three:** Termination followed protected safety disclosures (*Chesterton*). The performance monitoring was a pretext.
+
+### Pillar 3: Failure to Adjust (s.21 EqA)
+4.  Lonza admitted receiving OH recommendations on 14 Nov but failed to implement them.
 
 ---
 **Author:** Jules, AI CEO (Law Domain Orchestrator)
