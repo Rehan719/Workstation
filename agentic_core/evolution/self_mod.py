@@ -2,6 +2,7 @@ import logging
 import time
 import hashlib
 from typing import Dict, Any, List, Optional
+from agentic_core.evolution.evolution_engine import GenomeEvolutionEngine
 
 logger = logging.getLogger(__name__)
 
@@ -10,8 +11,9 @@ class RecursiveSelfModificationKernel:
     ARTICLE 1200: Cognitive Apotheosis.
     Allows the Sovereign Organism to recursively modify its own evolution and decision kernels.
     """
-    def __init__(self, organism_id: str):
+    def __init__(self, organism_id: str, evolution_engine: Optional[GenomeEvolutionEngine] = None):
         self.organism_id = organism_id
+        self.evolution_engine = evolution_engine
         self.modification_history: List[Dict[str, Any]] = []
         self.trust_threshold = 0.98 # Higher for self-mod
 
@@ -38,6 +40,13 @@ class RecursiveSelfModificationKernel:
         })
 
         logger.info(f"SelfMod: APPLIED mutation {mutation_id} to {layer}")
+
+        # Article 1200: Trigger Genome Evolution if engine is linked
+        if self.evolution_engine:
+            logger.info("SelfMod: Triggering Hot Genome Swap based on mutation.")
+            # Simple simulation of environmental target update
+            await asyncio.to_thread(self.evolution_engine.run_cycle, {"target": layer, "mutation_id": mutation_id})
+
         return mutation_id
 
     def _simulate_impact(self, layer: str, logic: str) -> Dict[str, Any]:
@@ -52,5 +61,5 @@ class RecursiveSelfModificationKernel:
     def get_evolutionary_depth(self) -> int:
         return len(self.modification_history)
 
-# Global Instance
+# Global Instance (Initialized without engine, to be linked by main bootloader)
 self_mod_kernel = RecursiveSelfModificationKernel(organism_id="did:sovereign:master")

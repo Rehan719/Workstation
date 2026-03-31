@@ -2,6 +2,7 @@ import logging
 import time
 import random
 from typing import Dict, Any, List, Optional
+from agentic_core.network.p2p_stack_v137 import Libp2pStack
 
 logger = logging.getLogger(__name__)
 
@@ -10,14 +11,16 @@ class QualiaInspiredFeedback:
     ARTICLE 1200: Cognitive Apotheosis.
     Implements a recursive, qualia-inspired feedback loop for strategic intuition.
     """
-    def __init__(self, organism_id: str):
+    def __init__(self, organism_id: str, mesh: Optional[Libp2pStack] = None):
         self.organism_id = organism_id
+        self.mesh = mesh
         self.consciousness_state: Dict[str, Any] = {
             "internal_state": "STABLE",
             "intuition_level": 0.85, # Seed value
             "self_awareness": 0.98
         }
         self.experience_log: List[Dict[str, Any]] = []
+        self.qualia_topic = "organism.qualia_mesh"
 
     async def reflect_on_experience(self, decision_id: str, outcome: Any) -> Dict[str, Any]:
         """Processes a previous decision and its outcome through the qualia feedback loop."""
@@ -41,6 +44,16 @@ class QualiaInspiredFeedback:
         self.experience_log.append(experience)
 
         logger.info(f"Consciousness: Updated intuition level to {self.consciousness_state['intuition_level']:.4f}")
+
+        # Article 1200: Collective Consciousness Reflection (Propagate Qualia to Mesh)
+        if self.mesh:
+            logger.info("Consciousness: Propagating qualia to Global Consciousness Mesh.")
+            import json
+            await self.mesh.publish(self.qualia_topic, json.dumps({
+                "source": self.organism_id,
+                "experience": experience,
+                "global_intuition_bias": self.consciousness_state["intuition_level"]
+            }))
 
         return experience
 
