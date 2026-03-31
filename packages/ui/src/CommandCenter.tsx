@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge } from './index';
 import AgentForge from '../../../apps/web/src/components/organism/AgentForge';
 import OrganismVitals from '../../../apps/web/src/components/organism/OrganismVitals';
+import NeuralLink from '../../../apps/web/src/components/organism/NeuralLink';
+import SpatioTemporal from '../../../apps/web/src/components/organism/SpatioTemporal';
 
 export const CommandCenter = () => {
   const { currentRealm, currentMode } = useStore();
@@ -17,6 +19,8 @@ export const CommandCenter = () => {
     { id: 'summary', name: 'Summary', icon: FileText, color: 'text-aura', description: 'AI Reports' },
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3, color: 'text-highlight', description: 'Live Metrics' },
     { id: 'predictive', name: 'Predictive', icon: Sparkles, color: 'text-vital', description: 'Forecasting' },
+    { id: 'neural', name: 'Neural Link', icon: Zap, color: 'text-vital', description: 'L13 Interface' },
+    { id: 'spatio', name: 'Spatio-Temporal', icon: Clock, color: 'text-aura', description: 'L14 Mapping' },
     { id: 'forge', name: 'Agent Forge', icon: Cpu, color: 'text-aura', description: 'Visual Composer' },
     { id: 'ethical', name: 'Ethical', icon: ShieldCheck, color: 'text-aura', description: 'Constitutional AI' },
   ];
@@ -118,6 +122,16 @@ const ChannelContent = ({ id }: { id: string }) => {
                <Button variant="outline" className="text-[9px]">Switch Persona</Button>
                <Button variant="outline" className="text-[9px]">Calibrate Voice</Button>
             </div>
+         </div>
+      ),
+      neural: (
+         <div className="space-y-6">
+            <NeuralLink />
+         </div>
+      ),
+      spatio: (
+         <div className="space-y-6">
+            <SpatioTemporal />
          </div>
       ),
       predictive: (
