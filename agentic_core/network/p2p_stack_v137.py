@@ -81,12 +81,21 @@ class Libp2pStack:
         # Article 1119: Peer propagation latency simulation
         await asyncio.sleep(0.01)
 
-    # NAT Traversal / Relaying (Simulated)
+    # NAT Traversal / Relaying / Interstellar (Simulated)
     async def establish_connection(self, target_peer_id: str, multiaddr: str):
-        """Establishes a secure connection using Noise and handles NAT traversal."""
+        """
+        Establishes a secure connection using Noise and handles NAT traversal.
+        Supports Interstellar Planetary Multiaddrs (Article 1300).
+        """
         logger.info(f"Libp2p-AutoNAT: Attempting connection to {target_peer_id} at {multiaddr}")
-        # Logic for hole punching or relaying
-        await asyncio.sleep(0.1)
+
+        # Article 1300: Interstellar Multiaddr parsing
+        if "mars" in multiaddr.lower():
+            logger.info(f"Libp2p-Interstellar: Mars-Orbital link detected for {target_peer_id}. Optimizing for high latency.")
+            await asyncio.sleep(0.5) # Simulated handshake delay for orbital link
+        else:
+            await asyncio.sleep(0.1)
+
         logger.info(f"Libp2p-Noise: Secure channel established with {target_peer_id}")
         return True
 

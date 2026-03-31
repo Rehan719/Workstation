@@ -7,6 +7,7 @@ import AgentForge from '../../../apps/web/src/components/organism/AgentForge';
 import OrganismVitals from '../../../apps/web/src/components/organism/OrganismVitals';
 import NeuralLink from '../../../apps/web/src/components/organism/NeuralLink';
 import SpatioTemporal from '../../../apps/web/src/components/organism/SpatioTemporal';
+import HolographicForge from '../../../apps/web/src/components/organism/HolographicForge';
 
 export const CommandCenter = () => {
   const { currentRealm, currentMode } = useStore();
@@ -22,6 +23,7 @@ export const CommandCenter = () => {
     { id: 'neural', name: 'Neural Link', icon: Zap, color: 'text-vital', description: 'L13 Interface' },
     { id: 'spatio', name: 'Spatio-Temporal', icon: Clock, color: 'text-aura', description: 'L14 Mapping' },
     { id: 'forge', name: 'Agent Forge', icon: Cpu, color: 'text-aura', description: 'Visual Composer' },
+    { id: 'holo', name: 'Holo Forge', icon: Sparkles, color: 'text-highlight', description: '3D Immersion' },
     { id: 'ethical', name: 'Ethical', icon: ShieldCheck, color: 'text-aura', description: 'Constitutional AI' },
   ];
 
@@ -179,6 +181,11 @@ const ChannelContent = ({ id }: { id: string }) => {
       forge: (
          <div className="space-y-6">
             <AgentForge />
+         </div>
+      ),
+      holo: (
+         <div className="space-y-6">
+            <HolographicForge />
          </div>
       ),
       dashboard: (
