@@ -1,0 +1,43 @@
+{
+  "ontology_id": "IDBO-ISLAM-2026-001",
+  "version": "2.1",
+  "concepts": {
+    "Ikhlas": {
+      "name": "Sincerity",
+      "definition": "Purifying the heart from seeking other than Allah in any action.",
+      "related": ["Tawhid", "Niyyah"],
+      "citations": ["Quran 98:5"]
+    },
+    "Tawbah": {
+      "name": "Repentance",
+      "definition": "Returning to Allah after every slip, characterized by regret and resolve to improve.",
+      "related": ["Istighfar", "Purification"],
+      "citations": ["Quran 66:8"]
+    },
+    "Shukr": {
+      "name": "Gratitude",
+      "definition": "Recognizing blessings and using them to serve the Bestower.",
+      "related": ["Hamd", "Sadaqah"],
+      "citations": ["Quran 14:7"]
+    },
+    "Sabr": {
+      "name": "Patience",
+      "definition": "Steadfastness in trials and in obedience to Allah.",
+      "related": ["Tawakkul", "Perseverance"],
+      "citations": ["Quran 2:153"]
+    },
+    "Tawakkul": {
+      "name": "Trust",
+      "definition": "Reliance on Allah while taking necessary means.",
+      "related": ["Qadr", "Sabr"],
+      "citations": ["Quran 65:3"]
+    },
+    "Ihsan": {
+      "name": "Excellence/Perfection",
+      "definition": "To worship Allah as if you see Him; for if you do not see Him, He sees you.",
+      "related": ["Tazkiyah", "Adab"],
+      "citations": ["Hadith Jibril"]
+    }
+  },
+  "domains": ["Aqidah", "Ibadah", "Tazkiyah", "Sunnah", "Du'a", "Akhlaq"]
+}
