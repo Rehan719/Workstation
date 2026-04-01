@@ -1,0 +1,63 @@
+{
+  "roles": [
+    {
+      "title": "Biotechnologist 1",
+      "organisation": "Lonza Biologics PLC, Slough",
+      "period": "July 2025 \u2013 Jan 2026",
+      "bullets": [
+        "Operated AKTA chromatography (Sartorius columns): set-up, run, and post-run verification.",
+        "Executed downstream bioprocessing (IPF, VRF, UF/DF) in GMP clean-room suites.",
+        "Maintained ALCOA+ compliant batch records and supported CAPA/deviation logging.",
+        "Spearheaded local process improvements to enhance buffer preparation efficiency."
+      ]
+    },
+    {
+      "title": "Scientist",
+      "organisation": "NIBSC (MHRA)",
+      "period": "Mar 2013 \u2013 Aug 2022",
+      "bullets": [
+        "Led multiple high-profile international collaborative studies for the World Health Organization (WHO).",
+        "Coordinated a vast consortium of 32 premier institutions across 24 countries for global NAT standards.",
+        "Managed end-to-end production of CE-marked IVDs (ISO 13485/GMP) in CL3 environments.",
+        "Introduced ddPCR for vaccine stability, increasing sensitivity for viral contaminants 2-fold.",
+        "Architected CL3 facility refurbishment for WNV production to SAPO4 and Schedule 5 standards.",
+        "Evaluated Roche Cobas 6800 and Liaison XL systems for high-throughput virological screening."
+      ]
+    }
+  ],
+  "publications": [
+    "Rehan Minhas, Sheila Govind, Arinder Kohli, Thomas Bleazard, Martin Fritzsche, Paul Matejtschuk, Jason Hockley and Clare Morris. Collaborative Study to Evaluate the 1st WHO International Standard for Herpes Simplex Virus (HSV) DNA for Nucleic Acid Amplification Technology (NAT)-Based Assays. WHO/BS/2020.239.",
+    "Sarah L. Kempster, Rehan Minhas, Jason G Hockley, and Clare L. Morris. A collaborative study to evaluate the proposed 1st WHO International Standard for West Nile Virus (WNV) RNA for Nucleic Acid Amplification Techniques (NAT). WHO/BS/2020.2397.",
+    "Rehan Minhas, Emmanuella Adjei, Jason Hockley, Peter Rigsby, and Clare Morris. Preparation and evaluation of the 2nd WHO International Standard for human immunodeficiency virus 2 (HIV-2) for Nucleic acid Amplification Techniques (NAT). WHO/BS/2018.2343.",
+    "Rehan Minhas, Jacqueline F. Fryer, Jason Hockley and Clare Morris. Collaborative Study to Evaluate the Proposed 3rd WHO International Standard for Hepatitis A Virus (HAV) for Nucleic Acid Amplification Technology (NAT)-Based Assays. WHO/BS/2017.2308.",
+    "Jacqueline F. Fryer, Rehan Minhas, Thomas Dougall, Peter Rigsby, Clare L. Morris and the Collaborative Study Group. Collaborative Study to Evaluate the Proposed WHO 4th International Standard for Hepatitis B Virus (HBV) DNA for Nucleic Acid Amplification Technique (NAT) based assays. WHO/BS/2016.2291."
+  ],
+  "skills": [
+    "ABI 7500",
+    "AKTA",
+    "ALCOA+",
+    "CL3",
+    "Dynex",
+    "GLP",
+    "GMP",
+    "IPF",
+    "ISO 13485",
+    "ISO 17025",
+    "LATE PCR",
+    "Liaison XL",
+    "Qiagen Rotagene",
+    "RT-qPCR",
+    "Roche Cobas 6800",
+    "SAPO4",
+    "Sartorius",
+    "Schedule 5",
+    "UF/DF",
+    "VRF",
+    "ddPCR"
+  ],
+  "achievements": [
+    "WHO Technical Expert for 4+ Global NAT Standards",
+    "Architect of multi-million pound CL3 facility refurbishment",
+    "Lead in achieving zero major findings in UKAS/CPA audits"
+  ]
+}

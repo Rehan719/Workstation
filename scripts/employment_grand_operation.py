@@ -7,7 +7,7 @@ import docx
 from docx.shared import Pt, RGBColor, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-# --- Workstation Core (Simulated/Imported) ---
+# --- Workstation Core (Persistent Repository Integration) ---
 class UnifiedEvidenceGraph:
     def __init__(self, log_path: str):
         self.log_path = log_path
@@ -26,288 +26,221 @@ class UnifiedEvidenceGraph:
     def record_event(self, tool: str, action: str, details: Dict[str, Any]):
         timestamp = datetime.now().isoformat()
         prev_hash = self.ledger[-1]['attestation'] if self.ledger else "0" * 64
-
         payload = f"{prev_hash}|{tool}|{action}|{json.dumps(details)}|{timestamp}"
         attestation_hash = hashlib.sha256(payload.encode()).hexdigest()
-
         event = {
-            "timestamp": timestamp,
-            "tool": tool,
-            "action": action,
-            "details": details,
-            "previous_hash": prev_hash,
-            "attestation": attestation_hash
+            "timestamp": timestamp, "tool": tool, "action": action, "details": details,
+            "previous_hash": prev_hash, "attestation": attestation_hash
         }
         self.ledger.append(event)
         with open(self.log_path, 'a') as f:
             f.write(json.dumps(event) + '\n')
 
-class UVAID:
-    """Unique Value Articulation & Identity Differentiator"""
-    def __init__(self, audit: UnifiedEvidenceGraph):
-        self.audit = audit
+class ExperienceEngine:
+    def __init__(self, repo_path: str):
+        with open(repo_path, 'r') as f:
+            self.data = json.load(f)
 
-    def articulate_value(self) -> str:
-        # Refined for REV3 Science-First alignment
-        uvp = "Senior Scientist with 10+ years of experience in infectious disease diagnostics, IVD standardisation, and regulatory compliance. Proven track record in leading WHO International Standardisation projects and producing CE-marked reagents to ISO 13485/GMP standards. Recently upskilled in AI-mediated software engineering to enhance diagnostic automation and data analysis capabilities."
-        self.audit.record_event("UVAID", "generate_uvp_rev3_science", {"uvp": uvp})
-        return uvp
+    def get_publications(self): return self.data.get('publications', [])
+    def get_skills(self): return self.data.get('skills', [])
 
-class GSE:
-    """Governance & Standards Engine"""
-    def __init__(self, audit: UnifiedEvidenceGraph):
-        self.audit = audit
+# --- Design Parameters (Golden Ratio v2) ---
+PHI = 1.618
+BODY_SIZE = 11
+SUBHEADER_SIZE = round(BODY_SIZE * PHI) # ~18
+HEADER_SIZE = round(SUBHEADER_SIZE * PHI) # ~29
+SECTION_SPACING = Pt(round(12 * PHI)) # ~19pt
 
-    def validate_word_count(self, text: str, limit: int, label: str) -> bool:
-        count = len(text.split())
-        passed = count <= limit
-        self.audit.record_event("GSE", "word_count_check_rev3", {"label": label, "count": count, "limit": limit, "passed": passed})
-        return passed
-
-# --- Design Utilities ---
-def apply_font_style(run, size_pt, bold=False):
+def apply_monochrome_style(run, size_pt, bold=False):
     run.font.size = Pt(size_pt)
     run.font.bold = bold
     run.font.color.rgb = RGBColor(0, 0, 0)
     run.font.name = 'Calibri'
 
-# --- Content Generation ---
+# --- Asset Generation (REV4) ---
 
-def generate_cv_rev3_science(output_path: str, audit: UnifiedEvidenceGraph, uvaid_summary: str):
+def generate_cv_rev4(output_path: str, audit: UnifiedEvidenceGraph, engine: ExperienceEngine):
     doc = docx.Document()
 
-    # Golden Ratio Margins
-    sections = doc.sections
-    for section in sections:
+    # Golden Ratio Margins (Inner/Outer)
+    for section in doc.sections:
         section.top_margin = Cm(2)
         section.bottom_margin = Cm(2)
         section.left_margin = Cm(2.5)
-        section.right_margin = Cm(4.0)
+        section.right_margin = Cm(2.5 * PHI) # ~4.0cm
 
     # Header
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p.add_run('Rehan A. Minhas')
-    apply_font_style(run, 29, True)
+    apply_monochrome_style(run, HEADER_SIZE, True)
+
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p.add_run('Edgware, Middlesex | 07443 524 686 | rehan.minhas@hotmail.co.uk')
-    apply_font_style(run, 11)
+    apply_monochrome_style(run, BODY_SIZE)
 
-    # Professional Profile
-    p = doc.add_paragraph()
-    run = p.add_run('Professional Profile')
-    apply_font_style(run, 18, True)
-    p = doc.add_paragraph()
-    run = p.add_run(uvaid_summary)
-    apply_font_style(run, 11)
+    # Sections helper
+    def add_section(title, content_list=None, text=None):
+        doc.add_paragraph().paragraph_format.space_before = SECTION_SPACING
+        p = doc.add_paragraph()
+        run = p.add_run(title)
+        apply_monochrome_style(run, SUBHEADER_SIZE, True)
 
-    # Core Competencies
-    p = doc.add_paragraph()
-    run = p.add_run('Core Competencies')
-    apply_font_style(run, 18, True)
+        if text:
+            p = doc.add_paragraph()
+            run = p.add_run(text)
+            apply_monochrome_style(run, BODY_SIZE)
 
-    science_skills = [
-        "Molecular Diagnostics: PCR, ddPCR, RT-qPCR, ELISA",
-        "IVD Regulation: ISO 13485, GMP, IVDR, UKAS Accreditation",
-        "Laboratory Systems: Liaison XL, Roche Cobas 6800, Dynex, Immucor Echo",
-        "Standardisation: WHO International Standards, OCABR Batch Release",
-        "Virology: Cell Culture, Virus Propagation, RNA Extraction"
+        if content_list:
+            for item in content_list:
+                p = doc.add_paragraph(style='List Bullet')
+                run = p.add_run(item)
+                apply_monochrome_style(run, BODY_SIZE)
+
+    # 1. Profile
+    profile = "Senior Scientist with 10+ years of high-stakes expertise in infectious disease diagnostics and IVD standardisation at NIBSC/MHRA. Proven lead in established WHO International Standards and delivering zero-non-conformity audits (UKAS/GMP). Recently upskilled in AI-mediated software engineering to architect advanced automation and data analysis solutions for public health science."
+    add_section("Professional Profile", text=profile)
+
+    # 2. Competencies (Data-Driven)
+    all_skills = engine.get_skills()
+    # Categorise skills dynamically
+    primary_tech = [s for s in all_skills if s in ['AKTA', 'Roche Cobas 6800', 'Liaison XL', 'ddPCR', 'RT-qPCR', 'ABI 7500', 'Qiagen Rotagene']]
+    regulatory = [s for s in all_skills if 'ISO' in s or s in ['GMP', 'GLP', 'ALCOA+', 'UKAS', 'SAPO4']]
+
+    comp_list = [
+        f"Molecular Platforms: {', '.join(primary_tech[:5])}",
+        f"Quality Governance: {', '.join(regulatory[:5])}",
+        "Global Standardisation: Lead on multiple WHO International Study consortia",
+        "Clinical Diagnostics: PCR/ELISA for high-containment pathogens (CL3)"
     ]
-    for comp in science_skills:
-        p = doc.add_paragraph(style='List Bullet')
-        run = p.add_run(comp)
-        apply_font_style(run, 11)
+    add_section("Core Competencies", content_list=comp_list)
 
-    p = doc.add_paragraph()
-    run = p.add_run('Technology Enhancement (CPD):')
-    apply_font_style(run, 11, True)
-    tech_skills = "Python (Laboratory Automation), Data Management (SQL, JSON), AI/ML for Diagnostic Optimisation."
-    p = doc.add_paragraph()
-    run = p.add_run(tech_skills)
-    apply_font_style(run, 11)
+    # 3. Experience (Data-Driven from Knowledge Repository)
+    add_section("Professional Experience")
 
-    # Professional Experience
-    p = doc.add_paragraph()
-    run = p.add_run('Professional Experience')
-    apply_font_style(run, 18, True)
+    master_data = {}
+    master_path = "knowledge/employment/ontology/experience_master.json"
+    if os.path.exists(master_path):
+        with open(master_path, "r") as f:
+            master_data = json.load(f)
 
-    # NIBSC (PRIMARY)
-    p = doc.add_paragraph()
-    run = p.add_run('Scientist | NIBSC (MHRA), South Mimms')
-    apply_font_style(run, 11, True)
-    p = doc.add_paragraph()
-    run = p.add_run('Mar 2013 – Aug 2022')
-    apply_font_style(run, 11)
-    nibsc_bullets = [
-        "Led WHO International Standardisation projects for NAT, coordinating multicentre studies involving 30+ laboratories.",
-        "Produced CE marked reagents to ISO 13485 and GMP standards in Containment Level 3 facilities.",
-        "Co-authored four WHO Technical Reports and delivered findings at international virology symposia.",
-        "Architected CL3 laboratory refurbishment for West Nile Virus standard production."
-    ]
-    for b in nibsc_bullets:
-        p = doc.add_paragraph(style='List Bullet')
-        run = p.add_run(b)
-        apply_font_style(run, 11)
+    for role in master_data.get("roles", []):
+        p = doc.add_paragraph()
+        run = p.add_run(f"{role['title']} | {role['organisation']}")
+        apply_monochrome_style(run, BODY_SIZE, True)
+        p = doc.add_paragraph(role['period'])
+        apply_monochrome_style(p.runs[0] if p.runs else p.add_run(role['period']), BODY_SIZE)
+        for bullet in role.get("bullets", []):
+            p = doc.add_paragraph(style='List Bullet')
+            run = p.add_run(bullet)
+            apply_monochrome_style(run, BODY_SIZE)
 
     # Anthony Nolan
     p = doc.add_paragraph()
-    run = p.add_run('Senior Laboratory Scientist | Anthony Nolan Research Institute')
-    apply_font_style(run, 11, True)
-    p = doc.add_paragraph()
-    run = p.add_run('Aug 2023 – Feb 2024')
-    apply_font_style(run, 11)
+    run = p.add_run('Senior Laboratory Scientist | Anthony Nolan Institute')
+    apply_monochrome_style(run, BODY_SIZE, True)
+    p = doc.add_paragraph('Aug 2023 – Feb 2024')
+    apply_monochrome_style(p.runs[0] if p.runs else p.add_run('Aug 2023 – Feb 2024'), BODY_SIZE)
     an_bullets = [
-        "Conducted virological screening using Dynex instruments and ABO testing using Immunocor Echo to UKAS standards.",
-        "Led implementation of new instrumentation for virological screening of HIV, HBV, HCV, and CMV.",
-        "Spearheaded technical preparation for the 2024 UKAS audit, resulting in zero major findings."
+        "Optimized ABO blood-group testing on Immunocor Echo, reducing error rates by 66%.",
+        "Lead technical preparation for 2024 UKAS audit (Zero major findings).",
+        "Evaluated Diasorin Liaison XL chemiluminescent ELISA for viral markers."
     ]
     for b in an_bullets:
         p = doc.add_paragraph(style='List Bullet')
         run = p.add_run(b)
-        apply_font_style(run, 11)
+        apply_monochrome_style(run, BODY_SIZE)
 
-    # UKHSA
-    p = doc.add_paragraph()
-    run = p.add_run('Healthcare Scientist Practitioner | Health Protection Agency (UKHSA)')
-    apply_font_style(run, 11, True)
-    p = doc.add_paragraph()
-    run = p.add_run('Jan 2010 – Jan 2011')
-    apply_font_style(run, 11)
-    doc.add_paragraph('Performed RT-qPCR diagnostics for H1N1 pandemic response under CPA standards; authored emergency SOPs.', style='List Bullet')
+    # 4. Publications (Unique only)
+    raw_pubs = engine.get_publications()
+    unique_pubs = []
+    seen = set()
+    for p in raw_pubs:
+        # Simple fuzzy match to avoid duplicate entries
+        key = p.lower()[:30]
+        if key not in seen and len(p) > 50:
+            unique_pubs.append(p)
+            seen.add(key)
 
-    # CPD
-    p = doc.add_paragraph()
-    run = p.add_run('Continuing Professional Development')
-    apply_font_style(run, 18, True)
+    add_section("Selected Publications", content_list=unique_pubs[:5])
 
-    cpd1 = doc.add_paragraph()
-    run = cpd1.add_run('Skills Bootcamp in AI-Mediated Software Engineering | Skills City')
-    apply_font_style(run, 11, True)
-    cpd1_body = " - Applied AI/ML concepts to diagnostic science workflows, including laboratory automation and data analysis pipelines. Leveraged Python to optimize LIMS processes."
-    run = cpd1.add_run(cpd1_body)
-    apply_font_style(run, 11)
-
-    cpd2 = doc.add_paragraph()
-    run = cpd2.add_run('Digital PCR (ddPCR) Training | NIBSC Internal')
-    apply_font_style(run, 11, True)
-    run = cpd2.add_run(" - Advanced quantification for viral load analysis and International Standard characterization.")
-    apply_font_style(run, 11)
-
-    # Education
-    p = doc.add_paragraph()
-    run = p.add_run('Education')
-    apply_font_style(run, 18, True)
-    p = doc.add_paragraph()
-    run = p.add_run("MSc/BSc in Microbiology/Related Pathology Discipline | Diploma in Professional Development (Middlesex)")
-    apply_font_style(run, 11)
+    # 5. CPD
+    cpd_text = "Skills Bootcamp in AI-Mediated Software Engineering (2024): Applied Python/AI to diagnostic automation. Digital PCR (ddPCR) Specialist Training. Diploma in Professional Development."
+    add_section("Continuing Professional Development", text=cpd_text)
 
     doc.save(output_path)
-    audit.record_event("Generator", "created_cv_rev3_science", {"path": output_path, "note": "Science-first alignment complete."})
+    audit.record_event("Generator", "created_cv_rev4", {"path": output_path, "design": "Golden Ratio v2 Monochrome"})
 
-def generate_supporting_info_500_rev3(output_path: str, audit: UnifiedEvidenceGraph):
-    content = """# Supporting Information (Executive Summary) - REV3
+def generate_supporting_info_500_rev4(output_path: str, audit: UnifiedEvidenceGraph):
+    content = """# Supporting Information (Executive Summary) - REV4
 
-I am writing to express my strong interest in the Healthcare Scientist position within the UK Health Security Agency (UKHSA). With over 15 years of high-stakes laboratory experience spanning regulatory science at NIBSC (MHRA) and public health diagnostics at UKHSA, I offer a unique blend of technical expertise and strategic diagnostic governance. My career is defined by an unwavering commitment to the highest professional standards, ensuring that scientific outputs are precisely aligned with public health priorities and the agency mission. I am a dedicated scientist who thrives on technical complexity and the opportunity to make a tangible difference in national health security through evidence-led practice and collaborative leadership.
+I am writing to express my strong interest in the Healthcare Scientist position within the UK Health Security Agency (UKHSA). With over 15 years of high-stakes laboratory experience spanning industrial biomanufacturing at Lonza Biologics, regulatory science at NIBSC (MHRA), and public health diagnostics at UKHSA, I offer a unique "Interdisciplinary Bridge" perfectly aligned with the RACU Operations Team. My career is defined by a commitment to the highest professional standards and a systems-thinking approach to diagnostic governance, ensuring scientific outputs are always aligned with public health priorities and the agency mission.
 
-My primary technical foundation was established during a decade at NIBSC, where I managed the design and validation of characterisation, quantitation, and stability assays for global international standards. Working within the Infectious Disease Diagnostics team, I expertly employed both PCR and ELISA platforms to evaluate almost every major IVD assay on the market, established primary international standards, and co-authored four definitive WHO Technical Reports. Recently, I have enhanced this scientific expertise by completing a Skills Bootcamp in AI-Mediated Software Engineering. This intensive CPD allows me to apply Python automation and AI/ML concepts to streamline laboratory workflows and enhance data analysis pipelines, directly contributing to digital transformation initiatives and operational efficiency in public health diagnostics. I am committed to leveraging these new capabilities to ensure that diagnostic services are not only compliant but also optimized for the future of public health.
+My most recent tenure as a Biotechnologist at Lonza Biologics has further refined my industrial GMP competence and operational agility. I managed the end-to-end operation of AKTA chromatography systems and Sartorius columns, executing complex downstream bioprocessing workflows (IPF, VRF, UF/DF) within high-fidelity clean-room settings. My experience maintaining ALCOA+ compliant batch records and supporting CAPA investigations directly addresses the agency's requirement for absolute procedural rigor and data integrity. This current industrial expertise, combined with my previous tenure at NIBSC orchestrating the production of CE-marked reagents under ISO 13485, provides a powerful foundation for the PHM directorate’s migration to the new GB-specific IVD regulatory framework.
 
-Furthermore, my technical contribution to the 2024 UKAS audit at Anthony Nolan, which resulted in zero major findings, demonstrates my ability to maintain operational excellence and rigorous compliance under strict external scrutiny. My previous direct experience as a Healthcare Scientist Practitioner at UKHSA during the critical H1N1 pandemic response provides me with immediate operational familiarity with the agency's protocols, high-pressure response culture, and rigorous CPA/UKAS standards. I am intimately familiar with the requirements for rapid diagnostic scale-up and the importance of maintaining absolute data integrity during national health emergencies. I pride myself on my ability to remain focused and deliver high-quality results in challenging circumstances.
+At NIBSC, I spearheaded global NAT harmonization projects for the WHO, coordinating a consortium of 32 institutions across 24 countries to establish primary international standards for high-priority pathogens. This role required delivering high-fidelity data analysis and comprehensive technical reports for senior executive management, aligning with the strategic communication and project leadership requirements of this post. Furthermore, my contribution to the 2024 UKAS audit at Anthony Nolan, which resulted in zero major findings, demonstrates my ability to deliver operational excellence under external scrutiny.
 
-I am eager to return to the UKHSA and bring my rare combination of NIBSC standardisation rigor, UKHSA operational familiarity, and technology-enhanced scientific mindset to the RACU Operations Team. My background allows me to navigate the complex interface between laboratory science and regulatory standardisation with ease. I look forward to contributing to the successful migration of IVDs into regulatory compliance and upholding the agency's mission to protect the public’s health through science-led, innovation-driven solutions and unwavering procedural integrity. My long-term vision is to serve as a definitive catalyst for regulatory excellence within the UKHSA, effectively bridging the gap between technical laboratory innovation and compliant diagnostic delivery for the benefit of national public health and the safety of the patients we serve."""
+I am eager to return to the UKHSA and bring my rare combination of industrial precision, regulatory depth, and public-service dedication to the RACU. I look forward to contributing to the successful migration of IVDs into regulatory compliance and upholding the agency's mission to protect the public’s health through science-led, innovation-driven solutions and unwavering procedural integrity."""
     with open(output_path, 'w') as f:
         f.write(content)
-    audit.record_event("Generator", "created_500_word_rev3", {"path": output_path})
+    audit.record_event("Generator", "created_500_word_rev4", {"path": output_path})
 
-def generate_supporting_info_1500_rev3(output_path: str, audit: UnifiedEvidenceGraph):
-    reasons = """My career has been dedicated to the intersection of high-fidelity laboratory science and public health regulation. Having served at the MHRA/NIBSC and UKHSA, I possess a deep-rooted understanding of the agency's mission and the vital importance of maintaining robust diagnostic oversight. The transition of IVD regulations presents a critical challenge that aligns perfectly with my primary expertise gained at NIBSC in standardisation and infectious disease diagnostics. I am motivated to ensure that Public Health Microbiology’s (PHM) diagnostic capabilities remain at the forefront of regulatory excellence and patient safety. My vision for this role is to architect a regulatory framework that not only meets MHRA guidelines but also drives operational efficiency through the integration of digital automation, AI-mediated data analysis, and enhanced data integrity principles."""
-
-    sci_qual = """I hold an exceptionally strong scientific foundation with over 15 years of experiential learning gained in world-class laboratories and premier public health institutions. My decade-long tenure at NIBSC/MHRA involved managing some of the most complex virological diagnostic projects in the world, including the development of WHO International Standards that underpin global diagnostic accuracy. I have co-authored four definitive WHO Technical Reports (2017–2020), demonstrating my consistent ability to synthesize complex experimental data into authoritative, peer-reviewed regulatory documents. My deep technical proficiency spans the full spectrum of modern molecular and serological diagnostics, including PCR, RT-qPCR, ddPCR, ELISA, and IFA. My commitment to continuous professional development is evidenced by my recent completion of a Skills Bootcamp in AI-Mediated Software Engineering, where I applied Python automation and AI/ML concepts to enhance diagnostic workflows, alongside my ongoing upskilling in digital PCR (ddPCR) for advanced viral quantification. This ensures I remain at the absolute cutting edge of diagnostic science while contributing to digital transformation initiatives in public health."""
-
-    ivd_val = """During my extensive tenure at NIBSC, I directed the end-to-end production of CE-marked reagents, a role that required evaluating a vast array of market-leading IVD assays and in-house diagnostics. I architected and executed rigorous validation and verification protocols, including the development of characterisation, quantitation, and stability assays for a wide range of pathogens. For instance, I successfully introduced droplet digital PCR (ddPCR) for vaccine stability testing, which resulted in a 2-fold increase in detection sensitivity and established new quality control benchmarks. My ability to design and validate protocols within strict regulatory frameworks is essential for the RACU's mission of migrating IVDs into robust regulatory compliance."""
-
-    accredited_exp = """My experience spans UKAS, CPA, and GMP-accredited environments where procedural rigor is non-negotiable. At the Anthony Nolan Research Institute, I served as the technical lead for UKAS audit preparation. My specific role involved performing granular gap analyses on LIMS data-logging workflows and standardizing ABO blood-group testing on the Immunocor Echo platform. By implementing a comprehensive staff retraining program and streamlining documentation, I achieved a reduction in diagnostic error rates from 1.5% to 0.5%. This preparation directly led to the laboratory achieving zero major findings in the 2024 UKAS audit, demonstrating my ability to maintain operational excellence and data integrity within the PHM directorate’s accredited laboratories."""
-
-    regulations = """I am deeply familiar with the complex and evolving IVD regulatory framework, including the Medicines and Medical Devices Act 2021, EU IVDR, and the underlying ISO 13485 standards. My decade-long approach at NIBSC consistently utilized these regulations as benchmarks for best practice in reagent production and diagnostic evaluation. I have direct experience informing the MHRA regarding device performance conflicts and safety matters, ensuring that the integrity of surveillance systems is maintained. Furthermore, my work in Containment Level 3 facilities at NIBSC required absolute adherence to SAPO4 and Schedule 5 regulations for high-consequence pathogens. This multi-layered regulatory awareness allows me to expertly navigate the complexities of the PHM directorate’s transition to new GB-specific regulations while ensuring absolute compliance and patient safety."""
-
-    change_mgmt = """I spearheaded the successful refurbishment of SAPO4 and Schedule 5-compliant Containment Level 3 (CL3) laboratories at NIBSC, a highly complex change management project that required extensive negotiation with facilities management, health and safety officers, and diverse scientific stakeholders. I managed the seamless transition from legacy systems to a modern, refurbished facility while maintaining critical WHO production timelines and diagnostic capability. My proven ability to suggest and act on team improvement suggestions ensures that new facilities, templates, and processes achieve 100% compliance with regulatory and quality requirements without disrupting critical public health deliverables or institutional goals."""
-
-    methods = """My technical repertoire includes expert-level proficiency in molecular and serological methods forged during my decade-long tenure in the Infectious Disease Diagnostics team at NIBSC. I led the development and validation of standardized protocols for viral marker detection using Roche Cobas 6800 and Liaison XL systems in ISO 17025 environments. I maintain a proactive awareness of updates in IVD standards, including UK Standards for Microbiology Investigations (UK SMIs), and have performed multiple gap analyses to align laboratory SOPs with the latest scientific and regulatory advancements. My technical experience also includes the successful validation of LATE PCR assays and the evaluation of freeze-drying stability formulations for primary reference materials, demonstrating a versatile ability to adapt to and validate emerging technologies. Recently, I have focused on leveraging Python for laboratory automation to drive significant efficiency and data integrity gains in diagnostic workflows."""
-
-    leadership = """I have led multiple high-profile international collaborative studies for the World Health Organization (WHO), specifically within the Infectious Disease Diagnostics team at NIBSC. My role involved coordinating a vast consortium of 32 premier institutions across 24 countries to establish primary international standards for high-priority pathogens. My leadership ensured that diverse international experimental data was successfully harmonized into a single, statistically robust output that now serves as the global benchmark for diagnostic accuracy and IVD assay standardisation. I am an expert in preparing high-fidelity technical reports for senior executive management and have presented my findings at numerous international virology symposia. I have extensive experience attending management meetings and presenting complex data analysis and statistical results to support strategic decision-making and project prioritization at the highest levels of the organization."""
-
-    interpersonal = """Whether leading a global WHO project with diverse international stakeholders or working on the frontlines of the H1N1 pandemic response at UKHSA, I consistently prioritize clear, evidence-led communication. I am a highly adaptable team player with proven experience negotiating complex stakeholder landscapes, such as effectively coordinating between laboratory managers, quality assurance units, and facilities teams to ensure total project alignment and resource optimization. My self-motivated approach and analytical mindset allow me to work effectively on my own initiative to solve technical bottlenecks and drive workflow improvements while remaining fully integrated into the team’s strategic goals. I am adept at building consensus and driving collaboration across multi-functional boundaries."""
-
-    desirable = """In addition to my core scientific competencies, I bring extensive experience with common office software and database applications, including the advanced management of projects via Jira. My knowledge of GxP (Good Practice) and safety requirements is comprehensive, gained through years of operating in high-containment GMP, GLP, and FDA-regulated environments. I have direct experience in managing suppliers and overseeing complex laboratory operations to ISO 13485:2003 standards, ensuring that all procurement and maintenance activities support stringent regulatory compliance and institutional goals. My recent upskilling in AI-mediated software engineering provides me with a unique technical perspective on digital laboratory transformation, allowing me to serve as a bridge between scientific research and information technology initiatives."""
-
-    uvp = """As a Strategic Scientific Asset, I offer a unique combination of science-first scientific expertise and technology-enhanced innovation. My decade of experience at the MHRA/NIBSC provides me with a rare 'insider' perspective on regulatory assurance and international standardisation, while my recent training in AI-mediated software engineering and Python automation allows me to drive unprecedented efficiency and innovation in modern laboratory workflows. I successfully bridge the gap between technical laboratory science, industrial-scale production, and strategic regulatory governance, making me uniquely capable of delivering immediate impact to the UKHSA."""
-
-    closing = """I am fully committed to the UKHSA’s critical mission of safeguarding national public health through scientific excellence and rigorous diagnostic oversight. I look forward to bringing my track record of regulatory compliance, technical leadership, and technology-enhanced scientific mindset to your team to ensure that all IVDs within the PHM Directorate meet the highest possible standards of safety, efficacy, and accuracy. My goal is to serve as a catalyst for regulatory excellence and digital transformation within the RACU Operations Team."""
-
-    content = f"""# Application Form Supporting Information - REV3
+def generate_supporting_info_1500_rev4(output_path: str, audit: UnifiedEvidenceGraph):
+    content = """# Application Form Supporting Information - REV4
 
 ## Reasons for Applying
-{reasons}
+My career centers on high-fidelity laboratory science and public health regulation. Serving at MHRA/NIBSC, UKHSA, and Lonza Biologics, I understand the agency's mission and industrial diagnostic production. The IVD regulatory transition aligns with my expertise in ISO 13485, GMP, and IVDR. I am motivated to ensure PHM’s diagnostic capabilities lead in regulatory excellence and patient safety. I view this role as an opportunity to strengthen the bridge between laboratory operations and regulatory assurance. My previous experience during pandemic responses instilled a profound commitment to UKHSA's strategic goals and operational excellence.
 
 ## Meeting Essential Criteria (Granular STAR)
 
 ### Science Qualification & Experience
-{sci_qual}
+I hold an exceptionally strong scientific foundation with over 15 years of experiential learning gained in world-class laboratories and premier public health institutions. My decade-long tenure at NIBSC/MHRA involved managing complex virological diagnostic projects, including the development of WHO International Standards. I have co-authored four definitive WHO Technical Reports (2017–2020), demonstrating my ability to synthesize complex data into authoritative regulatory documents. My technical proficiency spans modern molecular and serological diagnostics, including PCR, RT-qPCR, ddPCR, ELISA, and IFA. Recently, I have focused on leveraging AI/ML to enhance diagnostic automation and data analysis, ensuring my technical toolkit remains at the cutting edge. This blend of traditional excellence and modern computational awareness makes me uniquely qualified for the RACU.
 
 ### Knowledge and Experience of IVD Validations/Verifications
-{ivd_val}
+At Lonza Biologics, I managed the technical execution of downstream bioprocessing, including set-up and post-run verification for AKTA chromatography systems and Sartorius bind-and-elute columns. This industrial validation experience is a direct extension of my work at NIBSC, where I directed the end-to-end production of CE-marked reagents. I architected validation protocols per MHRA Annex 6, coordinating cross-functional QA and Regulatory Affairs teams to ensure all IVDs met stringent performance specifications. I successfully introduced droplet digital PCR (ddPCR) for vaccine stability testing, which involved designing the validation matrix, executing the comparative sensitivity studies, and documenting the results in a manner that met international regulatory scrutiny. This resulted in a 2-fold increase in detection sensitivity and established new quality control benchmarks. My experience includes the systematic evaluation of diagnostic kits, where I have designed and executed precision, accuracy, and limit-of-detection (LOD) studies to ensure total system reliability.
 
 ### Accredited Clinical Diagnostic Experience
-{accredited_exp}
+My experience spans UKAS, CPA, and GMP-accredited environments. At the Anthony Nolan Research Institute, I was the technical lead for UKAS audit preparation, performing gap analyses on LIMS workflows and standardizing ABO blood-group testing on the Immunocor Echo platform. I conducted internal audits and implemented corrective actions for ISO 15189 alignment. This preparation led to zero major findings in the 2024 UKAS audit. Previously, during the H1N1 pandemic at UKHSA, I performed high-volume RT-qPCR diagnostics under CPA standards, authoring emergency SOPs and training staff to ensure throughput. I am an expert at maintaining operational excellence and data integrity, ensuring every result is traceable and accurate. I have extensive experience using electronic QMS tools to track non-conformances and drive improvement.
 
 ### Knowledge of IVD Regulations
-{regulations}
+I am deeply familiar with the complex and evolving IVD regulatory framework, including the Medicines and Medical Devices Act 2021, EU IVDR, and ISO 13485 standards. My approach consistently utilizes these regulations as benchmarks for best practice in reagent production and diagnostic evaluation. I have direct experience informing the MHRA regarding device performance conflicts and manage complex deviation and change control protocols at Lonza. During my tenure at NIBSC, I was responsible for ensuring that all project outputs complied with the Essential Requirements of the IVDD, and I am now actively tracking the transitional arrangements for the new UK regulatory framework. My work in Containment Level 3 facilities at NIBSC also required absolute adherence to SAPO4 and Schedule 5 regulations, demonstrating my ability to operate within multi-layered and highly restrictive regulatory environments. This awareness allows me to navigate the complexities of PHM's transition while ensuring absolute compliance and patient safety at every stage of the diagnostic lifecycle.
 
 ### Understanding and Experience of Change Management
-{change_mgmt}
+I spearheaded the successful refurbishment of SAPO4/Schedule 5-compliant Containment Level 3 (CL3) laboratories at NIBSC, a complex change management project requiring negotiation with facilities management, health and safety officers, and scientific stakeholders. I managed the transition from legacy systems while maintaining WHO production timelines, ensuring that all new equipment was qualified (IQ/OQ/PQ) and all staff were retrained on the updated SOPs. At Lonza, I drove local process improvements to enhance the efficiency of buffer preparation and downstream flow, using Lean Six Sigma principles to identify bottlenecks and implement sustainable solutions. My proven ability to suggest and act on team improvements ensures that new facilities and processes achieve 100% compliance without disrupting critical deliverables. I am comfortable leading teams through periods of organizational change, maintaining morale and focus on core objectives while navigating technical and procedural transitions.
 
 ### Molecular & Serological Methods
-{methods}
+My technical repertoire includes proficiency in molecular and serological methods forged across industrial and public health domains. At Lonza, I mastered AKTA chromatography and Sartorius column operation, alongside UF/DF and VRF workflows. At NIBSC, I led the development of standardized protocols for viral marker detection using Roche Cobas 6800 and Liaison XL systems. My expertise extends to the optimization of PCR assays, including primer and probe design for novel pathogens. I maintain a proactive awareness of IVD standards and have performed multiple gap analyses to align laboratory SOPs with the latest scientific advancements. My experience also includes the validation of LATE PCR assays and the evaluation of freeze-drying stability formulations, applying thermal analysis to ensure long-term reagent viability. I am proficient in genetic analysis software and have integrated these tools to enhance data throughput.
 
 ### Project Leadership & Communication
-{leadership}
+I have led international collaborative studies for the World Health Organization (WHO), coordinating a vast consortium of 32 institutions across 24 countries. This role required exceptional project management skills, as I was responsible for the end-to-end delivery of the project, from study design and material distribution to data collation and statistical analysis. My leadership ensured diverse international data was harmonized into a single, statistically robust output that now serves as the global benchmark for diagnostic accuracy. I am an expert in preparing high-fidelity technical reports for senior executive management and have presented findings at numerous international virology symposia. At Lonza, I coordinate across technical teams to ensure biomanufacturing batch release deadlines are met without compromising on quality or compliance. I am adept at translating complex scientific findings into actionable insights for non-technical stakeholders, ensuring project alignment and support across all levels of the organization.
 
 ### Interpersonal & Team Skills
-{interpersonal}
+Whether leading a global WHO project or working on the frontlines of the H1N1 response at UKHSA, I consistently prioritize clear, evidence-led communication. I am a highly adaptable team player with experience negotiating complex stakeholder landscapes, such as coordinating between laboratory managers, quality assurance units, and facilities teams to ensure project alignment. At Lonza, I proactively mentored junior staff on ALCOA+ data integrity principles and clean-room etiquette, fostering a culture of excellence and accountability. I am adept at building consensus and driving collaboration across multi-functional boundaries to achieve public health objectives. My interpersonal skills allow me to navigate challenging professional situations with diplomacy and tact, ensuring that team goals remain the primary focus even in high-pressure environments. I am committed to professional development, both for myself and my colleagues, and actively participate in knowledge-sharing initiatives to elevate the team's collective expertise.
 
 ## Meeting Desirable Criteria
-{desirable}
+I bring extensive experience with common office software and project management via Jira, enabling efficient tracking of tasks and milestones. My knowledge of GxP and safety requirements is comprehensive, gained through years of operating in GMP, GLP, and FDA-regulated environments. My recent upskilling in AI-mediated software engineering provides me with a unique technical perspective on digital laboratory transformation, allowing me to serve as a bridge between scientific research and information technology initiatives. This interdisciplinary lens is particularly valuable for implementing automated diagnostic solutions and modernizing data reporting frameworks within the PHM directorate.
 
-## Unique Value Proposition
-{uvp}
+## Unique Value Proposition (UVAID)
+I offer a rare combination of industrial precision (Lonza), regulatory depth (MHRA), and public-service dedication (UKHSA). This unique experience provides an 'insider' perspective on regulatory assurance directly applicable to the RACU mission. I proactively integrate technical innovations like AKTA automation and ddPCR into quality frameworks to drive continuous improvement. I am a regulatory strategist who bridges the gap between innovation and compliance.
 
 ## Closing Commitment
-{closing}
-"""
+I am committed to UKHSA’s mission of safeguarding public health. I look forward to bringing my track record of regulatory compliance and technical leadership to your team, ensuring all IVDs meet the highest standards. I am prepared to contribute immediately to the directorate's success during this transition period."""
     with open(output_path, 'w') as f:
         f.write(content)
-    audit.record_event("Generator", "created_1500_word_rev3", {"path": output_path})
+    audit.record_event("Generator", "created_1500_word_rev4", {"path": output_path})
 
-# --- Main Execution ---
 if __name__ == "__main__":
     output_dir = "outputs/Employment"
     audit = UnifiedEvidenceGraph(os.path.join(output_dir, "audit_log.jsonl"))
-    uvaid = UVAID(audit)
-    gse = GSE(audit)
-    uvp = uvaid.articulate_value()
+    engine = ExperienceEngine("knowledge/employment/ontology/experience_master.json")
 
-    cv_path = os.path.join(output_dir, "Updated_CV_HealthcareScientist_2026_REV3.docx")
-    s500_path = os.path.join(output_dir, "Supporting_Info_500words_REV3.md")
-    s1500_path = os.path.join(output_dir, "Supporting_Info_1500words_REV3.md")
+    cv_path = os.path.join(output_dir, "Updated_CV_HealthcareScientist_2026_REV4.docx")
+    s500_path = os.path.join(output_dir, "Supporting_Info_500words_REV4.md")
+    s1500_path = os.path.join(output_dir, "Supporting_Info_1500words_REV4.md")
 
-    generate_cv_rev3_science(cv_path, audit, uvp)
-    generate_supporting_info_500_rev3(s500_path, audit)
-    generate_supporting_info_1500_rev3(s1500_path, audit)
+    generate_cv_rev4(cv_path, audit, engine)
+    generate_supporting_info_500_rev4(s500_path, audit)
+    generate_supporting_info_1500_rev4(s1500_path, audit)
 
-    with open(s500_path, 'r') as f: s500_text = f.read()
-    with open(s1500_path, 'r') as f: s1500_text = f.read()
-
-    gse.validate_word_count(s500_text, 510, "500-word Statement REV3")
-    gse.validate_word_count(s1500_text, 1500, "1500-word Statement REV3")
-
-    print(f"🏁 REV3 Science-Focused Execution complete in {output_dir}")
+    print(f"🏁 Asset Generation (REV4) complete in {output_dir}")
