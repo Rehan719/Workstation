@@ -1,0 +1,22 @@
+{
+  "cpd_entries": [
+    {
+      "id": "CPD-001",
+      "activity": "Skills Bootcamp in AI-Mediated Software Engineering",
+      "provider": "Skills City",
+      "duration": "12 weeks (Sep-24 – Dec-24)",
+      "relevance_to_science": "AI/ML applications for diagnostic science, automation of laboratory workflows, digital PCR data analysis enhancement",
+      "competencies_gained": ["Python", "Data Management", "Automation", "AI/ML Concepts"],
+      "evidence_file": "knowledge/employment/cpd_log/Skills_City_Certificate.pdf"
+    },
+    {
+      "id": "CPD-002",
+      "activity": "Digital PCR (ddPCR) Training",
+      "provider": "NIBSC Internal",
+      "duration": "2021-2022",
+      "relevance_to_science": "Quantification of viral load, stability testing for International Standards",
+      "competencies_gained": ["ddPCR", "Quantification", "Viral Load Analysis"],
+      "evidence_file": "knowledge/employment/cpd_log/ddPCR_Training_Record.pdf"
+    }
+  ]
+}
