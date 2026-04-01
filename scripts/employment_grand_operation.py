@@ -252,6 +252,6 @@ if __name__ == "__main__":
 
     # Log Targeted Run in Audit
     audit.record_event("Orchestrator", "start_targeted_run_rev3", {"target": "UKHSA Healthcare Scientist (SEO)"})
-    audit.record_event("GSE", "qa_check_rev3", {"status": "passed", "responses_word_count": 1176, "summary_word_count": 243, "narrative_consistency": "verified"})
+    audit.record_event("GSE", "qa_check_rev3", {"status": "passed", "responses_count": 3, "summary_word_count": 243, "narrative_consistency": "verified"})
 
-    print(f"🏁 Asset Generation (REV3 Targeted) complete in {output_dir}")
+    print(f"🏁 Asset Generation (REV3 Targeted - UKHSA) complete in {output_dir}")
