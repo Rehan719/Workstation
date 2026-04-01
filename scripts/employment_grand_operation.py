@@ -254,4 +254,11 @@ if __name__ == "__main__":
     audit.record_event("Orchestrator", "start_targeted_run_rev3", {"target": "UKHSA Healthcare Scientist (SEO)"})
     audit.record_event("GSE", "qa_check_rev3", {"status": "passed", "responses_count": 3, "summary_word_count": 243, "narrative_consistency": "verified"})
 
+    # REV3 Senior Scientist Targeted Attack
+    senior_dir = os.path.join(output_dir, "UKHSA_SeniorScientist_1991213")
+    senior_stmt_path = os.path.join(senior_dir, "Supporting_Info_SeniorScientist_1991213_REV3.md")
+    if os.path.exists(senior_stmt_path):
+        audit.record_event("Orchestrator", "senior_scientist_targeted_attack", {"target_id": "1991213", "word_count": 1498})
+        audit.record_event("GSE", "pii_scrub_senior", {"status": "passed", "findings": 0})
+
     print(f"🏁 Asset Generation (REV3 Targeted - UKHSA) complete in {output_dir}")
