@@ -243,4 +243,14 @@ if __name__ == "__main__":
     generate_supporting_info_500_rev4(s500_path, audit)
     generate_supporting_info_1500_rev4(s1500_path, audit)
 
+    # REV3 Targeted Assets
+    res_a_path = os.path.join(output_dir, "Response_A_Behaviour.md")
+    res_b_path = os.path.join(output_dir, "Response_B_Experience.md")
+    res_c_path = os.path.join(output_dir, "Response_C_Technical.md")
+    history_path = os.path.join(output_dir, "Employment_History_Text_Boxes.md")
+    prep_path = os.path.join(output_dir, "Interview_Prep_HealthcareScientist_UKHSA.md")
+
+    # Log Targeted Run in Audit
+    audit.record_event("Orchestrator", "start_targeted_run_rev3", {"target": "UKHSA Healthcare Scientist (SEO)"})
+
     print(f"🏁 Asset Generation (REV4) complete in {output_dir}")
