@@ -1,0 +1,22 @@
+{
+  "adaptation_rules": [
+    {
+      "role_type": "Science-led (Regulatory/Public Health)",
+      "narrative_priority": "Regulatory Science & Public Health Mission",
+      "primary_experience": "NIBSC (MHRA) / UKHSA",
+      "secondary_experience": "Lonza Biologics (Technical Support)",
+      "star_selection": ["NIBSC-WHO-002", "UKHSA-H1N1-001", "AN-UKAS-005", "NIBSC-CL3-004"],
+      "tech_positioning": "CPD for Diagnostic Automation",
+      "design_theme": "Professional Monochrome / Golden Ratio"
+    },
+    {
+      "role_type": "Industrial-led (Biomanufacturing/Biotech)",
+      "narrative_priority": "Operational Excellence & GMP Compliance",
+      "primary_experience": "Lonza Biologics PLC",
+      "secondary_experience": "NIBSC (MHRA) (Quality/Technical Support)",
+      "star_selection": ["LONZA-AKTA-003", "NIBSC-CL3-004", "AN-UKAS-005"],
+      "tech_positioning": "Industrial Digital Transformation / Bioprocessing Automation",
+      "design_theme": "Modern Minimalist / Golden Ratio"
+    }
+  ]
+}
