@@ -1,0 +1,17 @@
+{
+  "skills_taxonomy": {
+    "Science-First (Primary)": [
+      "Molecular Diagnostics",
+      "IVD Regulation",
+      "Laboratory Systems",
+      "Standardisation",
+      "Virology"
+    ],
+    "Technology Enhancement (Secondary - CPD)": [
+      "Python",
+      "AI/ML",
+      "Data Automation",
+      "LIMS Integration"
+    ]
+  }
+}
