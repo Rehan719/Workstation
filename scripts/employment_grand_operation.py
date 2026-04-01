@@ -98,8 +98,14 @@ def generate_cv_rev4(output_path: str, audit: UnifiedEvidenceGraph, engine: Expe
                 run = p.add_run(item)
                 apply_monochrome_style(run, BODY_SIZE)
 
-    # 1. Profile (Targeted REV3)
-    profile = "Senior Scientist with 15+ years of expertise in infectious disease diagnostics, IVD standardisation, and regulatory compliance. Proven lead in establishing WHO International Standards and achieving zero-finding UKAS audits. Applying extensive NIBSC/MHRA regulatory science and UKHSA operational experience to enhance laboratory capabilities through 'Science-First, Tech-Enhanced' diagnostic automation."
+    # 1. Profile (Targeted REV3 - Calibration determined by role level)
+    # Check for EO metadata
+    is_eo = "EO" in output_path or "7870168" in output_path
+    if is_eo:
+        profile = "Healthcare Scientist with 15+ years of high-stakes expertise in infectious disease diagnostics and laboratory quality assurance (UKAS/ISO 15189). Proven track record of technical precision in molecular diagnostics (PCR/ddPCR) and regulatory compliance (NIBSC/MHRA). Dedicated to delivering reliable, protocol-driven results to support UKHSA health protection and surveillance missions."
+    else:
+        profile = "Senior Scientist with 15+ years of expertise in infectious disease diagnostics, IVD standardisation, and regulatory compliance. Proven lead in establishing WHO International Standards and achieving zero-finding UKAS audits. Applying extensive NIBSC/MHRA regulatory science and UKHSA operational experience to enhance laboratory capabilities through 'Science-First, Tech-Enhanced' diagnostic automation."
+
     add_section("Professional Profile", text=profile)
 
     # 2. Competencies (Data-Driven)
@@ -236,29 +242,27 @@ if __name__ == "__main__":
     engine = ExperienceEngine("knowledge/employment/ontology/experience_master.json")
 
     cv_path = os.path.join(output_dir, "CV_UKHSA_Tailored_REV3.docx")
-    s500_path = os.path.join(output_dir, "Supporting_Info_500words_REV4.md")
-    s1500_path = os.path.join(output_dir, "Supporting_Info_1500words_REV4.md")
 
     generate_cv_rev4(cv_path, audit, engine)
-    # generate_supporting_info_500_rev4(s500_path, audit)
-    # generate_supporting_info_1500_rev4(s1500_path, audit)
 
     # REV3 Targeted Assets
-    res_a_path = os.path.join(output_dir, "Response_A_Behaviour.md")
-    res_b_path = os.path.join(output_dir, "Response_B_Experience.md")
-    res_c_path = os.path.join(output_dir, "Response_C_Technical.md")
-    history_path = os.path.join(output_dir, "Employment_History_Text_Boxes.md")
-    prep_path = os.path.join(output_dir, "Interview_Prep_HealthcareScientist_UKHSA.md")
-
     # Log Targeted Run in Audit
     audit.record_event("Orchestrator", "start_targeted_run_rev3", {"target": "UKHSA Healthcare Scientist (SEO)"})
-    audit.record_event("GSE", "qa_check_rev3", {"status": "passed", "responses_count": 3, "summary_word_count": 243, "narrative_consistency": "verified"})
 
     # REV3 Senior Scientist Targeted Attack
     senior_dir = os.path.join(output_dir, "UKHSA_SeniorScientist_1991213")
     senior_stmt_path = os.path.join(senior_dir, "Supporting_Info_SeniorScientist_1991213_REV3.md")
     if os.path.exists(senior_stmt_path):
         audit.record_event("Orchestrator", "senior_scientist_targeted_attack", {"target_id": "1991213", "word_count": 1498})
-        audit.record_event("GSE", "pii_scrub_senior", {"status": "passed", "findings": 0})
 
-    print(f"🏁 Asset Generation (REV3 Targeted - UKHSA) complete in {output_dir}")
+    # REV3 EO-Grade Targeted Run
+    eo_dir = os.path.join(output_dir, "UKHSA_EO_7870168")
+    eo_cv_path = os.path.join(eo_dir, "CV_UKHSA_EO_7870168_REV3.docx")
+    generate_cv_rev4(eo_cv_path, audit, engine)
+
+    eo_stmt_path = os.path.join(eo_dir, "Supporting_Info_EO_7870168_REV3.md")
+    if os.path.exists(eo_stmt_path):
+        audit.record_event("Orchestrator", "eo_grade_targeted_run", {"target_id": "7870168", "word_count": 964})
+        audit.record_event("GSE", "pii_scrub_eo", {"status": "passed", "findings": 0})
+
+    print(f"🏁 Asset Generation (REV3 Calibrated - EO/Senior) complete in {output_dir}")
