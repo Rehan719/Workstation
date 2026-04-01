@@ -1,0 +1,64 @@
+{
+  "star_examples": [
+    {
+      "id": "STAR-UKHSA-H1N1-001",
+      "category": "Accredited Clinical Diagnostic Experience",
+      "role": "Healthcare Scientist | UKHSA",
+      "situation": "During the H1N1 pandemic at UKHSA, there was a critical need for high-volume diagnostic throughput under CPA standards.",
+      "task": "Perform rapid, accurate RT-qPCR diagnostics and ensure laboratory staff were equipped with standardized procedures.",
+      "action": "Authored emergency SOPs for RT-qPCR workflows and trained laboratory staff on high-throughput diagnostic protocols.",
+      "result": "Ensured continuous diagnostic operations under extreme pressure with zero quality failures during the pandemic response.",
+      "effectiveness_score": 0.95,
+      "tags": ["RT-qPCR", "CPA", "Emergency Response", "SOP Development"],
+      "hash": "7a8b9c..."
+    },
+    {
+      "id": "STAR-NIBSC-WHO-002",
+      "category": "Project Leadership & Communication",
+      "role": "Scientist | NIBSC (MHRA)",
+      "situation": "A global need existed for standardized NAT (Nucleic Acid Amplification Technique) benchmarks for high-priority pathogens.",
+      "task": "Lead a global WHO international collaborative study to establish primary standards for WNV, HSV, HIV-2, and HAV.",
+      "action": "Coordinated a consortium of 32 premier institutions across 24 countries, harmonizing diverse international data into a statistically robust output.",
+      "result": "Established primary WHO International Standards that serve as the global benchmark for diagnostic accuracy. Co-authored 4 WHO Technical Reports (2017-2020).",
+      "effectiveness_score": 0.98,
+      "tags": ["WHO", "International Standards", "Leadership", "Technical Writing", "NAT"],
+      "hash": "1d2e3f..."
+    },
+    {
+      "id": "STAR-LONZA-AKTA-003",
+      "category": "IVD Validations/Verifications",
+      "role": "Biotechnologist | Lonza Biologics PLC",
+      "situation": "Industrial bioprocessing required high-fidelity downstream purification and rigorous validation of chromatography systems.",
+      "task": "Manage technical execution of AKTA chromatography and Sartorius column operations within a GMP environment.",
+      "action": "Executed set-up, run, and post-run verification for AKTA systems. Managed UF/DF and VRF workflows and maintained ALCOA+ compliant batch records.",
+      "result": "Maintained 100% compliance with GMP/ALCOA+ standards, ensuring biomanufacturing batch release deadlines were met without quality deviations.",
+      "effectiveness_score": 0.92,
+      "tags": ["AKTA", "GMP", "ALCOA+", "Downstream Processing", "Sartorius"],
+      "hash": "4g5h6i..."
+    },
+    {
+      "id": "STAR-NIBSC-CL3-004",
+      "category": "Change Management",
+      "role": "Scientist | NIBSC (MHRA)",
+      "situation": "Legacy Containment Level 3 (CL3) facilities at NIBSC required refurbishment to meet SAPO4 and Schedule 5 standards without disrupting WHO production.",
+      "task": "Spearhead the refurbishment project and manage the transition while maintaining production timelines.",
+      "action": "Negotiated with facilities management, health and safety officers, and scientific stakeholders. Managed IQ/OQ/PQ qualification for all new equipment.",
+      "result": "Successfully delivered SAPO4/Schedule 5 compliant CL3 labs while maintaining all WHO production deadlines. Achieved 100% compliance for all new facilities.",
+      "effectiveness_score": 0.96,
+      "tags": ["CL3", "SAPO4", "Schedule 5", "Change Management", "IQ/OQ/PQ"],
+      "hash": "9j0k1l..."
+    },
+    {
+      "id": "STAR-AN-UKAS-005",
+      "category": "Accredited Clinical Diagnostic Experience",
+      "role": "Senior Laboratory Scientist | Anthony Nolan",
+      "situation": "The laboratory required preparation for a critical UKAS audit to maintain ISO 15189 accreditation.",
+      "task": "Lead the technical preparation and standardize blood-group testing workflows.",
+      "action": "Performed granular gap analyses on LIMS workflows and standardized ABO testing on the Immunocor Echo platform. Conducted comprehensive internal audits.",
+      "result": "Achieved zero major findings in the 2024 UKAS audit. Reduced error rates in blood-group testing by 66% through optimization.",
+      "effectiveness_score": 0.97,
+      "tags": ["UKAS", "ISO 15189", "Audit Preparation", "Immunocor Echo", "LIMS"],
+      "hash": "2m3n4o..."
+    }
+  ]
+}

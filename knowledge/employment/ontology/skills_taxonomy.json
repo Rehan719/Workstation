@@ -1,17 +1,32 @@
 {
   "skills_taxonomy": {
-    "Science-First (Primary)": [
-      "Molecular Diagnostics",
-      "IVD Regulation",
-      "Laboratory Systems",
-      "Standardisation",
-      "Virology"
-    ],
-    "Technology Enhancement (Secondary - CPD)": [
-      "Python",
-      "AI/ML",
-      "Data Automation",
-      "LIMS Integration"
-    ]
+    "scientific_&_technical": {
+      "infectious_disease_diagnostics": {
+        "molecular": ["PCR", "RT-qPCR", "ddPCR", "LATE PCR", "Qiagen Rotagene", "ABI 7500", "Roche Cobas 6800", "Liaison XL"],
+        "serological": ["ELISA", "IFA", "Chemiluminescent ELISA", "Liaison XL"],
+        "virological": ["Viral Marker Detection", "Vaccine Stability Testing", "Viral Load Assays"]
+      },
+      "industrial_bioprocessing": {
+        "downstream_processing": ["AKTA Chromatography", "Sartorius Columns", "IPF", "VRF", "UF/DF", "Protein Purification"],
+        "validation_&_qualification": ["IQ/OQ/PQ", "Validation Protocols", "MHRA Annex 6", "LOD Studies"]
+      },
+      "laboratory_management": {
+        "high_containment": ["CL3", "SAPO4", "Schedule 5"],
+        "operations": ["LIMS", "Change Management", "Facility Refurbishment", "Resource Allocation"]
+      }
+    },
+    "regulatory_&_compliance": {
+      "quality_standards": ["ISO 13485", "ISO 15189", "ISO 17025", "GMP", "GLP", "UKAS", "CPA"],
+      "frameworks": ["EU IVDR", "Medicines and Medical Devices Act 2021", "IVDD", "ALCOA+"],
+      "governance": ["CAPA", "Deviation Logging", "Change Control", "Audit Preparation"]
+    },
+    "digital_&_automation": {
+      "data_analysis": ["Python Scripting", "Scientific Workflow Automation", "Data Visualization", "AI-Mediated Software Engineering"],
+      "platforms": ["Jira", "Office Software", "Electronic QMS"]
+    },
+    "leadership_&_strategic": {
+      "project_management": ["International Collaborative Studies", "Consortium Coordination", "Stakeholder Management"],
+      "communication": ["WHO Technical Reports", "International Symposia Presentation", "Technical Writing", "Executive Reporting"]
+    }
   }
 }
