@@ -1,0 +1,96 @@
+{
+  "version": "7.0.0",
+  "last_updated": "2026-04-02T00:35:33.487672Z",
+  "integrations": [
+    {
+      "id": 1,
+      "integration": "Religion + Employment",
+      "type": "Workplace Ethics",
+      "status": "Active"
+    },
+    {
+      "id": 2,
+      "integration": "Religion + Care",
+      "type": "Spiritual Care",
+      "status": "Active"
+    },
+    {
+      "id": 3,
+      "integration": "Science + Religion",
+      "type": "Neuroscience of Worship",
+      "status": "Framework"
+    },
+    {
+      "id": 4,
+      "integration": "Law + Employment",
+      "type": "Employment Law Compliance",
+      "status": "Active"
+    },
+    {
+      "id": 5,
+      "integration": "Care + Employment",
+      "type": "Workplace Health & Safety",
+      "status": "Framework"
+    },
+    {
+      "id": 6,
+      "integration": "Religion + Law",
+      "type": "Sharia + Legal Compliance",
+      "status": "Framework"
+    },
+    {
+      "id": 7,
+      "integration": "Science + Care",
+      "type": "Medical Research Ethics",
+      "status": "Framework"
+    },
+    {
+      "id": 8,
+      "integration": "Law + Care",
+      "type": "Patient Rights & Consent",
+      "status": "Framework"
+    },
+    {
+      "id": 9,
+      "integration": "Religion + Science",
+      "type": "Faith & Reason Integration",
+      "status": "Framework"
+    },
+    {
+      "id": 10,
+      "integration": "Employment + Enterprise",
+      "type": "HR + Business Operations",
+      "status": "Framework"
+    },
+    {
+      "id": 11,
+      "integration": "Law + Enterprise",
+      "type": "Corporate Compliance",
+      "status": "Framework"
+    },
+    {
+      "id": 12,
+      "integration": "Care + Enterprise",
+      "type": "Wellbeing + Productivity",
+      "status": "Framework"
+    },
+    {
+      "id": 13,
+      "integration": "Religion + Enterprise",
+      "type": "Ethical Business Practices",
+      "status": "Framework"
+    },
+    {
+      "id": 14,
+      "integration": "Science + Employment",
+      "type": "Evidence-Based HR",
+      "status": "Framework"
+    },
+    {
+      "id": 15,
+      "integration": "All Domains",
+      "type": "Unified Audit Trail",
+      "status": "Active"
+    }
+  ]
+}

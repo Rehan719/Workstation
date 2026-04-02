@@ -1,0 +1,11 @@
+{
+  "domain": "Care",
+  "domain_id": "DOM-CAR-001",
+  "status": "FRAMEWORK_READY",
+  "phases_initialized": 12,
+  "governance": "CQC / Ethics Board",
+  "compliance": [
+    "Healthcare Standards",
+    "Safeguarding"
+  ]
+}
