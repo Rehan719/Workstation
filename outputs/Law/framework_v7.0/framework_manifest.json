@@ -1,0 +1,11 @@
+{
+  "domain": "Law",
+  "domain_id": "DOM-LAW-001",
+  "status": "FRAMEWORK_READY",
+  "phases_initialized": 12,
+  "governance": "Bar Association / Legal Experts",
+  "compliance": [
+    "UK/EU Law",
+    "Statutes"
+  ]
+}
