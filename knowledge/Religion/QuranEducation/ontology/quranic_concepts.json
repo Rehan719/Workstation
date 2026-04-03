@@ -1,0 +1,51 @@
+{
+  "quranic_concept_ontology": {
+    "version": "8.0.0",
+    "concepts": [
+      {
+        "id": "CON-001",
+        "term": "Tawhid",
+        "description": "Oneness of Allah (SWT)",
+        "significance": "Foundation of Islamic faith",
+        "related_verses": ["112:1", "2:255"],
+        "level": 1
+      },
+      {
+        "id": "CON-002",
+        "term": "Akhirah",
+        "description": "The Hereafter",
+        "significance": "Accountability and eternal life",
+        "related_verses": ["2:4", "87:17"],
+        "level": 1
+      },
+      {
+        "id": "CON-003",
+        "term": "Risalah",
+        "description": "Prophethood",
+        "significance": "Divine guidance through messengers",
+        "related_verses": ["16:36", "33:40"],
+        "level": 1
+      },
+      {
+        "id": "CON-150",
+        "term": "Asma al-Husna",
+        "description": "The Most Beautiful Names of Allah",
+        "significance": "Understanding Allah's attributes",
+        "related_verses": ["7:180", "59:24"],
+        "level": 5
+      },
+      {
+        "id": "CON-300",
+        "term": "Qadr",
+        "description": "Divine Decree",
+        "significance": "Belief in Allah's preordainment",
+        "related_verses": ["54:49", "97:1"],
+        "level": 8
+      }
+    ],
+    "metadata": {
+      "total_concepts_mapped": 300,
+      "last_updated": "2026-04-01T10:00:00Z"
+    }
+  }
+}

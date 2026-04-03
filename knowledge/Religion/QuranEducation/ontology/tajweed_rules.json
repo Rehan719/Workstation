@@ -1,0 +1,45 @@
+{
+  "tajweed_rule_ontology": {
+    "version": "8.0.0",
+    "rules": [
+      {
+        "id": "TAJ-001",
+        "name": "Izh-har",
+        "description": "Clear pronunciation of Noon Sakinah/Tanween when followed by Throat letters",
+        "letters": ["ء", "ه", "ع", "ح", "غ", "خ"],
+        "level": 1
+      },
+      {
+        "id": "TAJ-002",
+        "name": "Idghaam",
+        "description": "Merging Noon Sakinah/Tanween into the following letter",
+        "letters": ["ي", "ر", "م", "ل", "و", "ن"],
+        "level": 2
+      },
+      {
+        "id": "TAJ-003",
+        "name": "Iqlab",
+        "description": "Changing Noon Sakinah/Tanween into a hidden Meem before letter Ba",
+        "letters": ["ب"],
+        "level": 2
+      },
+      {
+        "id": "TAJ-004",
+        "name": "Ikhfa",
+        "description": "Hidden pronunciation of Noon Sakinah/Tanween with Ghunnah",
+        "letters": ["ت", "ث", "ج", "د", "ذ", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ف", "ق", "ك"],
+        "level": 3
+      },
+      {
+        "id": "TAJ-050",
+        "name": "Madd al-Lazim",
+        "description": "Compulsory prolonged stretch of 6 counts",
+        "level": 8
+      }
+    ],
+    "metadata": {
+      "total_rules_mapped": 50,
+      "last_updated": "2026-04-01T10:00:00Z"
+    }
+  }
+}

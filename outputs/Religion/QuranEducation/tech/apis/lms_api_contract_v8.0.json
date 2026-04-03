@@ -1,0 +1,50 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Quran Education Platform LMS API",
+    "version": "8.0.0",
+    "description": "API for student portal, teacher dashboard, and curriculum management"
+  },
+  "paths": {
+    "/students/{id}": {
+      "get": {
+        "summary": "Get student profile",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/lessons/{level}/{lesson_id}": {
+      "get": {
+        "summary": "Fetch lesson content",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/achievements/{student_id}": {
+      "get": {
+        "summary": "Get student achievements",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/ijazah/verify": {
+      "post": {
+        "summary": "Verify Ijazah chain",
+        "responses": {
+          "200": {
+            "description": "Verification Result"
+          }
+        }
+      }
+    }
+  }
+}

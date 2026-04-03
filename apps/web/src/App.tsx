@@ -18,6 +18,7 @@ import { TranscriptionalMonitor } from './pages/genome/TranscriptionalMonitor';
 import { PhenotypePreview } from './pages/genome/PhenotypePreview';
 import { ReligionHub } from './pages/domains/ReligionHub';
 import { QEPReligionHub } from './pages/domains/QEPReligionHub';
+import { QEPStudentPortalPage } from './pages/domains/QEPStudentPortalPage';
 import { ScienceHub } from './pages/domains/ScienceHub';
 import { LawHub } from './pages/domains/LawHub';
 import { EmploymentHub } from './pages/domains/EmploymentHub';
@@ -145,6 +146,7 @@ function App() {
           <Route path="/wearables" element={<WearableSync />} />
           <Route path="/embodiment" element={<EmbodimentStudio />} />
           <Route path="/qep" element={<QEPReligionHub />} />
+          <Route path="/qep-portal" element={<QEPStudentPortalPage />} />
           <Route path="/constitution" element={<ConstitutionalUI />} />
           <Route path="/council" element={<CouncilInterface />} />
           <Route path="/debate" element={<DebateLog />} />

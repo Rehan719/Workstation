@@ -1,0 +1,77 @@
+{
+  "verses": [
+    {
+      "id": 1,
+      "verse_number": 1,
+      "verse_key": "1:1",
+      "hizb_number": 1,
+      "rub_el_hizb_number": 1,
+      "ruku_number": 1,
+      "manzil_number": 1,
+      "sajdah_number": null,
+      "page_number": 1,
+      "juz_number": 1,
+      "words": [
+        {
+          "id": 1,
+          "position": 1,
+          "audio_url": "wbw/001_001_001.mp3",
+          "char_type_name": "word",
+          "code_v1": "p1",
+          "word_simple": "\u0628\u0650\u0633\u0652\u0645\u0650",
+          "word_transliteration": "bis'mi",
+          "translation": {
+            "language_name": "english",
+            "text": "In (the) name"
+          }
+        },
+        {
+          "id": 2,
+          "position": 2,
+          "audio_url": "wbw/001_001_002.mp3",
+          "char_type_name": "word",
+          "code_v1": "p1",
+          "word_simple": "\u0627\u0644\u0644\u0651\u064e\u0647\u0650",
+          "word_transliteration": "al-lahi",
+          "translation": {
+            "language_name": "english",
+            "text": "(of) Allah"
+          }
+        },
+        {
+          "id": 3,
+          "position": 3,
+          "audio_url": "wbw/001_001_003.mp3",
+          "char_type_name": "word",
+          "code_v1": "p1",
+          "word_simple": "\u0627\u0644\u0631\u0651\u064e\u062d\u0652\u0645\u064e\u0670\u0646\u0650",
+          "word_transliteration": "al-rahmani",
+          "translation": {
+            "language_name": "english",
+            "text": "the Most Gracious"
+          }
+        },
+        {
+          "id": 4,
+          "position": 4,
+          "audio_url": "wbw/001_001_004.mp3",
+          "char_type_name": "word",
+          "code_v1": "p1",
+          "word_simple": "\u0627\u0644\u0631\u0651\u064e\u062d\u0650\u064a\u0645\u0650",
+          "word_transliteration": "al-rahimi",
+          "translation": {
+            "language_name": "english",
+            "text": "the Most Merciful"
+          }
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "per_page": 1,
+    "current_page": 1,
+    "next_page": 2,
+    "total_pages": 7,
+    "total_records": 7
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "teacher_profile": {
+    "full_name": "Sheikh Abdullah Al-Mansoor",
+    "email": "sheikh.abdullah@example.com",
+    "biography": "Certified Quran teacher with 15 years of experience in Tajweed and Hifz. Author of several papers on Islamic pedagogy.",
+    "qualifications": [
+      {
+        "degree": "B.A. in Islamic Studies",
+        "institution": "Al-Azhar University",
+        "year": 2010
+      }
+    ],
+    "ijazahs": [
+      {
+        "type": "Hifz",
+        "narrator": "Hafs 'an 'Asim",
+        "sanad_chain": "Sheikh X -> Sheikh Y -> ... -> Prophet Muhammad (SAW)",
+        "verified": true
+      }
+    ],
+    "certification_tier": 4,
+    "status": "ACTIVE"
+  }
+}
