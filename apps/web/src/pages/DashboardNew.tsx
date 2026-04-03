@@ -11,7 +11,10 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
-  Search
+  Search,
+  Sparkles,
+  BookOpen,
+  Binary
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';

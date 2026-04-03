@@ -11,6 +11,6 @@
     "ui:build": "npm run build -w packages/ui"
   },
   "dependencies": {
-    "react-resizable-panels": "^2.1.2"
+    "react-resizable-panels": "2.1.2"
   }
 }
