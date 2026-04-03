@@ -1,6 +1,6 @@
 {
   "version": "8.0.0",
-  "last_updated": "2026-04-03T14:03:10.807275+00:00",
+  "last_updated": "2026-04-03T15:16:24.963982+00:00",
   "statistics": {
     "total_students": 0,
     "total_hifz_completers": 0,
@@ -82,6 +82,76 @@
       "tier": 1,
       "badge_name": "Progress Master",
       "awarded_at": "2026-04-03T14:03:10.807262+00:00",
+      "certification_id": "CERT-QEP-S-1-1"
+    },
+    {
+      "student_id": 1,
+      "tier": 3,
+      "badge_name": "Ijazah Verified",
+      "awarded_at": "2026-04-03T14:39:41.058658+00:00",
+      "certification_id": "CERT-QEP-S-1-3"
+    },
+    {
+      "student_id": 1,
+      "tier": 1,
+      "badge_name": "Progress Master",
+      "awarded_at": "2026-04-03T14:39:41.059651+00:00",
+      "certification_id": "CERT-QEP-S-1-1"
+    },
+    {
+      "student_id": 1,
+      "tier": 3,
+      "badge_name": "Ijazah Verified",
+      "awarded_at": "2026-04-03T14:40:43.446867+00:00",
+      "certification_id": "CERT-QEP-S-1-3"
+    },
+    {
+      "student_id": 1,
+      "tier": 1,
+      "badge_name": "Progress Master",
+      "awarded_at": "2026-04-03T14:40:43.447337+00:00",
+      "certification_id": "CERT-QEP-S-1-1"
+    },
+    {
+      "student_id": 1,
+      "tier": 3,
+      "badge_name": "Ijazah Verified",
+      "awarded_at": "2026-04-03T14:43:52.026267+00:00",
+      "certification_id": "CERT-QEP-S-1-3"
+    },
+    {
+      "student_id": 1,
+      "tier": 1,
+      "badge_name": "Progress Master",
+      "awarded_at": "2026-04-03T14:43:52.026710+00:00",
+      "certification_id": "CERT-QEP-S-1-1"
+    },
+    {
+      "student_id": 1,
+      "tier": 3,
+      "badge_name": "Ijazah Verified",
+      "awarded_at": "2026-04-03T14:44:39.463544+00:00",
+      "certification_id": "CERT-QEP-S-1-3"
+    },
+    {
+      "student_id": 1,
+      "tier": 1,
+      "badge_name": "Progress Master",
+      "awarded_at": "2026-04-03T14:44:39.463935+00:00",
+      "certification_id": "CERT-QEP-S-1-1"
+    },
+    {
+      "student_id": 1,
+      "tier": 3,
+      "badge_name": "Ijazah Verified",
+      "awarded_at": "2026-04-03T15:16:24.962893+00:00",
+      "certification_id": "CERT-QEP-S-1-3"
+    },
+    {
+      "student_id": 1,
+      "tier": 1,
+      "badge_name": "Progress Master",
+      "awarded_at": "2026-04-03T15:16:24.963924+00:00",
       "certification_id": "CERT-QEP-S-1-1"
     }
   ],

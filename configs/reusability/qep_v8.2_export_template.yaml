@@ -1,0 +1,20 @@
+reusability_export:
+  version: "8.2.0"
+  product_template: "vsb_signature_free_product"
+  product_id: "VSB-SIG-QEP-8.2"
+  synergization_enabled: true
+
+  reusable_components:
+    - name: "theological_validation_pipeline"
+      type: "qa_framework"
+      domain: "religion"
+      export_format: "plugin_package"
+      dependencies: ["entity_idbo", "nematron_agents", "pipeline_tracing"]
+      pipeline_integration: ["Introspection", "Knowledge"]
+
+    - name: "offline_first_pwa_architecture"
+      type: "technical_framework"
+      domain: "developer"
+      export_format: "starter_kit"
+      dependencies: ["service_worker", "local_graph_db", "pipeline_hooks"]
+      pipeline_integration: ["Developer", "Learning", "Knowledge"]
