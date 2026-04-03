@@ -1,0 +1,44 @@
+{
+  "hifz_progression_ontology": {
+    "version": "8.0.0",
+    "juz_mapping": [
+      {
+        "juz": 30,
+        "name": "Amma",
+        "description": "Short Surahs from An-Naba to An-Nas",
+        "difficulty_level": 1,
+        "recommended_for_beginners": true
+      },
+      {
+        "juz": 1,
+        "name": "Alif Lam Mim",
+        "description": "Surah Al-Fatihah to part of Al-Baqarah",
+        "difficulty_level": 5,
+        "recommended_for_beginners": false
+      },
+      {
+        "juz": 29,
+        "name": "Tabarak",
+        "description": "Surahs from Al-Mulk to Al-Mursalat",
+        "difficulty_level": 3,
+        "recommended_for_beginners": true
+      }
+    ],
+    "progression_tracks": [
+      {
+        "track_id": "BEGINNER-TRACK",
+        "description": "Recommended order for new students",
+        "steps": [30, 29, 28, 1, 2, 3]
+      },
+      {
+        "track_id": "CLASSIC-TRACK",
+        "description": "Order starting from Juz 1",
+        "steps": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      }
+    ],
+    "metadata": {
+      "total_juz_mapped": 30,
+      "last_updated": "2026-04-01T10:00:00Z"
+    }
+  }
+}

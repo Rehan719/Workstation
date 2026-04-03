@@ -1,0 +1,19 @@
+{
+  "version": "8.0.0",
+  "last_updated": "2026-04-03T03:05:03.588450+00:00",
+  "statistics": {
+    "total_students": 0,
+    "total_hifz_completers": 0,
+    "total_teachers_certified": 0
+  },
+  "student_achievements": [
+    {
+      "student_id": 1,
+      "tier": 1,
+      "badge_name": "Mubtadi",
+      "awarded_at": "2026-04-03T03:05:03.588439+00:00",
+      "certification_id": "CERT-QEP-S-1-1"
+    }
+  ],
+  "teacher_achievements": []
+}
