@@ -13,14 +13,19 @@ import {
   Layout,
   MessageCircle,
   HelpCircle,
-  Settings
+  Settings,
+  Target,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import HifzProgress from './progress/HifzProgress';
+import TajweedMeter from './progress/TajweedMeter';
 
 const QEPStudentPortal = () => {
   const [activeTab, setActiveTab] = useState('lessons');
   const [currentLevel, setCurrentLevel] = useState(1);
   const [juzMemorized, setJuzMemorized] = useState(1);
+  const [tajweedScore, setTajweedScore] = useState(85);
 
   const lessons = [
     { id: 1, title: 'Al-Fatihah', type: 'Recitation', status: 'Completed', level: 1 },
@@ -31,6 +36,12 @@ const QEPStudentPortal = () => {
   const badges = [
     { name: 'Beginner (Mubtadi)', tier: 1, icon: '🥉' },
     { name: 'First Surah Complete', tier: 1, icon: '🌟' },
+    { name: 'Ijazah Verified', tier: 3, icon: '📜' },
+  ];
+
+  const goals = [
+    { title: "Complete Juz 30", progress: 80, color: "aura" },
+    { title: "Master Noon Sakinah", progress: 45, color: "emerald" },
   ];
 
   return (
@@ -43,7 +54,7 @@ const QEPStudentPortal = () => {
           </div>
           <div>
             <h1 className="text-sm font-black tracking-widest uppercase">QEP Portal</h1>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">v8.0 Religion Domain</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">v8.1 Enhanced Release</p>
           </div>
         </div>
 
@@ -100,6 +111,12 @@ const QEPStudentPortal = () => {
           </div>
         </header>
 
+        {/* Enhanced Progress Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+           <HifzProgress juzMemorized={juzMemorized} />
+           <TajweedMeter score={tajweedScore} />
+        </div>
+
         <AnimatePresence mode="wait">
           {activeTab === 'lessons' && (
             <motion.div
@@ -108,6 +125,10 @@ const QEPStudentPortal = () => {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-8"
             >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xl font-black uppercase tracking-tight">Active Modules</h3>
+                <Badge variant="outline" className="text-[9px] uppercase tracking-tighter border-aura/30 text-aura">48 Lessons Remaining</Badge>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {lessons.map((lesson) => (
                   <Card
@@ -135,6 +156,32 @@ const QEPStudentPortal = () => {
                     </Button>
                   </Card>
                 ))}
+              </div>
+
+              {/* Goal Setting Section */}
+              <div className="mt-12">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
+                    <Target size={24} className="text-aura" />
+                    Learning Goals
+                  </h3>
+                  <Button variant="outline" size="sm" className="rounded-lg gap-2 text-[10px] uppercase font-black tracking-widest border-aura/20">
+                    <Plus size={14} /> Add Goal
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {goals.map((goal, idx) => (
+                    <Card key={idx} className="p-8 border-slate-900 group hover:border-aura/20 transition-all">
+                      <div className="flex justify-between items-center mb-6">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{goal.title}</p>
+                        <span className={`text-xs font-black text-${goal.color}-500`}>{goal.progress}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className={`h-full bg-${goal.color}-500`} style={{ width: `${goal.progress}%` }} />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}

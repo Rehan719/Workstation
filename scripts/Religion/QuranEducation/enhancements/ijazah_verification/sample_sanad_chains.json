@@ -1,0 +1,46 @@
+{
+  "sanad_chains": [
+    {
+      "sanad_chain_id": "SC-001",
+      "chain_name": "Sahih al-Bukhari Transmission",
+      "nodes": [
+        {
+          "transmitter_id": "T-001",
+          "name": "Imam al-Bukhari",
+          "birth_year": 194,
+          "death_year": 256,
+          "location": "Bukhara",
+          "reliability_grade": "Thiqah",
+          "next_transmitter": "T-002"
+        },
+        {
+          "transmitter_id": "T-002",
+          "name": "Imam al-Firabri",
+          "birth_year": 231,
+          "death_year": 320,
+          "location": "Firabr",
+          "reliability_grade": "Thiqah",
+          "next_transmitter": "T-003"
+        }
+      ],
+      "verification_status": "mock_validated",
+      "scholar_notes": "Pattern demonstration only for v8.1"
+    },
+    {
+      "sanad_chain_id": "SC-002",
+      "chain_name": "Warsh an Nafi' Recitation",
+      "nodes": [
+        {
+          "transmitter_id": "T-010",
+          "name": "Imam Nafi' al-Madani",
+          "death_year": 169,
+          "location": "Madinah",
+          "reliability_grade": "Thiqah",
+          "next_transmitter": "T-011"
+        }
+      ],
+      "verification_status": "pending_scholar_board",
+      "scholar_notes": "Awaiting final node verification"
+    }
+  ]
+}

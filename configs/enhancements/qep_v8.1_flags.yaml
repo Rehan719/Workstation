@@ -1,0 +1,13 @@
+feature_flags:
+  version: "8.1.0"
+  enabled:
+    ijazah_verification_poc: true
+    progress_dashboard: true
+    cross_domain_integration: true
+    scholar_workflow: true
+    mobile_skeleton: true
+  rollout:
+    strategy: "gradual"
+    percentage: 100
+  dependencies:
+    progress_dashboard: ["ijazah_verification_poc"]

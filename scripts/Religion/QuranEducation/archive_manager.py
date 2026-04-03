@@ -44,6 +44,41 @@ class ArchiveManager:
         print(f"Archived Curriculum v{version} to {target_dir}")
         return target_dir
 
+    def propagate_correction(self, version, module_path, new_content):
+        """
+        Propagates a theological correction to a curriculum module.
+        Ensures a new VSB snapshot is created before and after.
+        """
+        print(f"Propagating theological correction to {module_path}...")
+
+        # 1. Take Pre-correction Snapshot (VSB emulation)
+        pre_hash = self._generate_dir_hash(os.path.dirname(module_path))
+
+        # 2. Update Content
+        content_path = os.path.join(module_path, "content.md")
+        with open(content_path, "w") as f:
+            f.write(new_content)
+
+        # 3. Take Post-correction Snapshot
+        post_hash = self._generate_dir_hash(os.path.dirname(module_path))
+
+        # 4. Log the propagation
+        propagation_log = {
+            "version": version,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "module": module_path,
+            "pre_hash": pre_hash,
+            "post_hash": post_hash,
+            "status": "PROPAGATED_SUCCESSFULLY"
+        }
+        log_path = os.path.join(os.path.dirname(self.archive_base), "reruns/correction_propagation_log.jsonl")
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        with open(log_path, "a") as f:
+            f.write(json.dumps(propagation_log) + "\n")
+
+        print(f"Correction propagated. New Hash: {post_hash}")
+        return propagation_log
+
     def _generate_dir_hash(self, directory):
         """Generates a SHA-256 hash for all files in a directory"""
         hashes = []

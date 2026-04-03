@@ -1,0 +1,33 @@
+{
+  "integration_contracts": {
+    "version": "8.1.0",
+    "employment_domain": {
+      "endpoint": "/api/employment/v1/contract-validation",
+      "method": "POST",
+      "expected_input": {
+        "teacher_id": "int",
+        "full_name": "string",
+        "certification_tier": "int"
+      },
+      "expected_output": {
+        "is_valid": "boolean",
+        "compliance_checks": "array",
+        "recommendation": "string"
+      }
+    },
+    "law_domain": {
+      "endpoint": "/api/law/v1/safeguarding-trigger",
+      "method": "POST",
+      "expected_input": {
+        "policy_id": "string",
+        "content_update": "string",
+        "effective_date": "ISO8601"
+      },
+      "expected_output": {
+        "status": "string",
+        "policy_version": "string",
+        "required_action": "string"
+      }
+    }
+  }
+}
