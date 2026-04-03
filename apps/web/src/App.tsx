@@ -52,6 +52,8 @@ import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
 import { Contribute } from './pages/Contribute';
 import { QEPEngine } from './pages/QEPEngine';
 import { QEPLanding } from './pages/QEPLanding';
+import { SovereignXAIObservatory as QEPObservatoryPage } from './pages/domains/QEPObservatoryPage';
+import { QEPGovernancePortal } from './pages/domains/QEPGovernancePortal';
 import { IntrospectionDashboard } from './pages/IntrospectionDashboard';
 import { ARVRSandbox } from './pages/platforms/ARVRSandbox';
 import { WearableSync } from './pages/platforms/WearableSync';
@@ -149,6 +151,8 @@ function App() {
           <Route path="/qep" element={<QEPReligionHub />} />
           <Route path="/qep-portal" element={<QEPStudentPortalPage />} />
           <Route path="/qep-community" element={<QEPCommunityPortalPage />} />
+          <Route path="/qep/observatory" element={<QEPObservatoryPage />} />
+          <Route path="/qep/governance" element={<QEPGovernancePortal />} />
           <Route path="/constitution" element={<ConstitutionalUI />} />
           <Route path="/council" element={<CouncilInterface />} />
           <Route path="/debate" element={<DebateLog />} />
