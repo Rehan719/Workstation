@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-04-03T22:33:07.176568",
+  "region": "asia_pacific",
+  "content_id": "lesson_01",
+  "latency_ms": 39,
+  "compliance_result": {
+    "status": "COMPLIANT",
+    "enforced_rules": [
+      "APEC_Privacy",
+      "ASEAN_Standards"
+    ],
+    "data_masking_applied": false,
+    "region_id": "AP-001"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "source_mechanism": "ontology_engine",
+  "target_domain": "employment",
+  "required_adjustments": [
+    "Map Religion::ontology_engine ontology to Employment standards.",
+    "Adjust sensitivity parameters for Employment compliance.",
+    "Rename shared components for Employment domain context."
+  ],
+  "compatibility_score": 0.858,
+  "suggested_pipeline_overrides": {
+    "introspection": "Replace theological_validator with employment_compliance_validator"
+  },
+  "status": "APPROVED_BY_AI_ORCHESTRATOR"
+}

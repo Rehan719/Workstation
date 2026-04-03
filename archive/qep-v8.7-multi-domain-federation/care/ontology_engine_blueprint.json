@@ -1,0 +1,14 @@
+{
+  "source_mechanism": "ontology_engine",
+  "target_domain": "care",
+  "required_adjustments": [
+    "Map Religion::ontology_engine ontology to Care standards.",
+    "Adjust sensitivity parameters for Care compliance.",
+    "Rename shared components for Care domain context."
+  ],
+  "compatibility_score": 0.894,
+  "suggested_pipeline_overrides": {
+    "introspection": "Replace theological_validator with care_compliance_validator"
+  },
+  "status": "APPROVED_BY_AI_ORCHESTRATOR"
+}

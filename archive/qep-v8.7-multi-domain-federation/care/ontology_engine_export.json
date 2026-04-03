@@ -1,0 +1,15 @@
+{
+  "mechanism": "ontology_engine",
+  "metadata": {
+    "description": "Dynamic concept relationship inference engine",
+    "shared_pipelines": [
+      "knowledge",
+      "introspection"
+    ],
+    "version": "1.2.0"
+  },
+  "exported_at": "2026-04-03T22:33:07.164281",
+  "source_domain": "Religion",
+  "target_domain": "care",
+  "hash": "SHA-256-MOCK-FEDERATION-HASH"
+}

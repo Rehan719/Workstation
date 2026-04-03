@@ -6,7 +6,7 @@ class AchievementTracker:
     """
     Achievement Tracking System for Quran Education Platform
     Domain: RELIGION::QEP::ENTERPRISE
-    v8.4: Enhanced with Cross-Domain Adapter (Tier 10) support.
+    v8.7: Enhanced with AI Governance Steward (Tier 11) and Global Ambassador (Tier 12).
     """
     def __init__(self, tracker_path="outputs/Religion/QuranEducation/achievements/tracker.json"):
         self.tracker_path = tracker_path
@@ -18,7 +18,7 @@ class AchievementTracker:
                 self.data = json.load(f)
         else:
             self.data = {
-                "version": "8.4.0",
+                "version": "8.7.0",
                 "last_updated": None,
                 "statistics": {
                     "total_students": 0,
@@ -26,12 +26,15 @@ class AchievementTracker:
                     "total_teachers_certified": 0,
                     "total_community_moderations": 0,
                     "total_community_contributions": 0,
-                    "total_cross_domain_adaptations": 0
+                    "total_cross_domain_adaptations": 0,
+                    "total_ai_governance_audits": 0,
+                    "total_global_regions_active": 0
                 },
                 "student_achievements": [],
                 "teacher_achievements": [],
                 "community_achievements": [],
-                "cross_domain_achievements": []
+                "cross_domain_achievements": [],
+                "global_achievements": []
             }
             self._save_tracker()
 
@@ -56,7 +59,7 @@ class AchievementTracker:
         return achievement
 
     def award_community_badge(self, user_id, tier, badge_name, criteria_met=None):
-        """Awards a community-specific badge, including Tier 9 Community Guardian"""
+        """Awards a community-specific badge"""
         achievement = {
             "user_id": user_id,
             "tier": tier,
@@ -73,7 +76,7 @@ class AchievementTracker:
         return achievement
 
     def award_cross_domain_badge(self, user_id, tier, badge_name, domain=None):
-        """Awards a cross-domain specific badge, including Tier 10 Cross-Domain Adapter"""
+        """Awards a cross-domain specific badge"""
         achievement = {
             "user_id": user_id,
             "tier": tier,
@@ -89,6 +92,23 @@ class AchievementTracker:
         print(f"Awarded Cross-Domain Badge: {badge_name} (Tier {tier}) to User {user_id}")
         return achievement
 
+    def award_global_badge(self, user_id, tier, badge_name, regions=None):
+        """Awards a global-specific badge (Tier 12)"""
+        achievement = {
+            "user_id": user_id,
+            "tier": tier,
+            "badge_name": badge_name,
+            "active_regions": regions,
+            "awarded_at": datetime.now(timezone.utc).isoformat(),
+            "certification_id": f"CERT-QEP-G-{user_id}-{tier}"
+        }
+        if "global_achievements" not in self.data:
+            self.data["global_achievements"] = []
+        self.data["global_achievements"].append(achievement)
+        self._save_tracker()
+        print(f"Awarded Global Badge: {badge_name} (Tier {tier}) to User {user_id}")
+        return achievement
+
     def evaluate_community_guardian_tier_9(self, user_id, moderation_actions, quality_score, trust_score):
         """Automated evaluation for Tier 9 Community Guardian"""
         if moderation_actions >= 50 and quality_score >= 0.95 and trust_score >= 0.90:
@@ -98,7 +118,7 @@ class AchievementTracker:
 
     def evaluate_cross_domain_adapter_tier_10(self, user_id, adaptation_count, target_domain):
         """Automated evaluation for Tier 10 Cross-Domain Adapter"""
-        if adaptation_count >= 1: # Criteria: successfully adapt to at least one other domain
+        if adaptation_count >= 1:
             return self.award_cross_domain_badge(user_id, 10, "Cross-Domain Adapter", target_domain)
         return None
 
@@ -107,6 +127,20 @@ class AchievementTracker:
         if ethics_audit_count >= 10 and explainability_score >= 0.95:
             return self.award_community_badge(user_id, 10, "AI Ethics Steward",
                                              {"ethics_audits": ethics_audit_count, "explainability": explainability_score})
+        return None
+
+    def evaluate_ai_governance_steward_tier_11(self, user_id, policy_contributions, compliance_checks):
+        """Automated evaluation for Tier 11 AI Governance Steward (v8.7)"""
+        if policy_contributions >= 5 and compliance_checks >= 20:
+            return self.award_community_badge(user_id, 11, "AI Governance Steward",
+                                             {"policy_contributions": policy_contributions, "compliance_checks": compliance_checks})
+        return None
+
+    def evaluate_global_ambassador_tier_12(self, user_id, regions_count, localization_accuracy):
+        """Automated evaluation for Tier 12 Global Ambassador (v8.7)"""
+        if regions_count >= 5 and localization_accuracy >= 0.98:
+            return self.award_global_badge(user_id, 12, "Global Ambassador",
+                                             {"regions_count": regions_count, "localization_accuracy": localization_accuracy})
         return None
 
     def update_stats(self, key, value):
@@ -120,4 +154,4 @@ class AchievementTracker:
 if __name__ == "__main__":
     tracker = AchievementTracker()
     tracker.award_student_badge(101, 1, "Beginner (Mubtadi)")
-    tracker.evaluate_cross_domain_adapter_tier_10(303, 1, "Science")
+    tracker.evaluate_global_ambassador_tier_12(9901, 5, 0.99)

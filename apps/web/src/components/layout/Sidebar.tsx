@@ -44,7 +44,10 @@ const allNavItems: NavItem[] = [
       { name: 'Education Hub', icon: GraduationCap, id: 'education' },
       { name: 'Law Hub', icon: Gavel, id: 'law' },
       { name: 'Care Hub', icon: HeartPulse, id: 'care' },
-      { name: 'Employment', icon: Briefcase, id: 'employment' }
+      { name: 'Employment', icon: Briefcase, id: 'employment' },
+      { name: 'AI Portal', icon: Cpu, id: 'qep/ai' },
+      { name: 'Multi-Domain', icon: Network, id: 'qep/multi-domain' },
+      { name: 'Global Scale', icon: Globe, id: 'qep/global' }
     ]
   },
 
