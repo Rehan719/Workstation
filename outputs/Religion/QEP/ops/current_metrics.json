@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-04-03T21:08:26.358558+00:00",
+  "latency_ms": 180.2537829572954,
+  "error_rate": 0.041014787994355484,
+  "throughput_rps": 1304,
+  "sla_status": "breached",
+  "active_instances": 3,
+  "ai_model_accuracy": 0.9755494500920908
+}

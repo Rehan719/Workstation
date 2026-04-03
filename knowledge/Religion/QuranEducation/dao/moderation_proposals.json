@@ -13,6 +13,20 @@
         "reject": 0
       },
       "voting_deadline": "2026-04-03 18:56:11.032678"
+    },
+    {
+      "id": "mod-09f72409",
+      "moderator": "mod_01",
+      "content_id": "lesson_01",
+      "moderation_action": "approve",
+      "reason": "Passes theological review",
+      "status": "approved",
+      "timestamp": "2026-04-03 19:39:20.664551",
+      "votes": {
+        "approve": 201.2,
+        "reject": 0
+      },
+      "voting_deadline": "2026-04-03 19:39:20.664556"
     }
   ]
 }

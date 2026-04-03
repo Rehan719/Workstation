@@ -102,6 +102,13 @@ class AchievementTracker:
             return self.award_cross_domain_badge(user_id, 10, "Cross-Domain Adapter", target_domain)
         return None
 
+    def evaluate_ai_ethics_steward_tier_10(self, user_id, ethics_audit_count, explainability_score):
+        """Automated evaluation for Tier 10 AI Ethics Steward (v8.6)"""
+        if ethics_audit_count >= 10 and explainability_score >= 0.95:
+            return self.award_community_badge(user_id, 10, "AI Ethics Steward",
+                                             {"ethics_audits": ethics_audit_count, "explainability": explainability_score})
+        return None
+
     def update_stats(self, key, value):
         if key in self.data["statistics"]:
             self.data["statistics"][key] = value

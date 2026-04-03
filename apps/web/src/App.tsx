@@ -54,6 +54,9 @@ import { QEPEngine } from './pages/QEPEngine';
 import { QEPLanding } from './pages/QEPLanding';
 import { SovereignXAIObservatory as QEPObservatoryPage } from './pages/domains/QEPObservatoryPage';
 import { QEPGovernancePortal } from './pages/domains/QEPGovernancePortal';
+import QEPAnalyticsPage from './pages/domains/QEPAnalyticsPage';
+import QEPOpsPage from './pages/domains/QEPOpsPage';
+import HumanOversightQueue from './components/qep/scholar/HumanOversightQueue';
 import { IntrospectionDashboard } from './pages/IntrospectionDashboard';
 import { ARVRSandbox } from './pages/platforms/ARVRSandbox';
 import { WearableSync } from './pages/platforms/WearableSync';
@@ -153,6 +156,9 @@ function App() {
           <Route path="/qep-community" element={<QEPCommunityPortalPage />} />
           <Route path="/qep/observatory" element={<QEPObservatoryPage />} />
           <Route path="/qep/governance" element={<QEPGovernancePortal />} />
+          <Route path="/qep/analytics" element={<QEPAnalyticsPage />} />
+          <Route path="/qep/ops" element={<QEPOpsPage />} />
+          <Route path="/qep/oversight" element={<HumanOversightQueue />} />
           <Route path="/constitution" element={<ConstitutionalUI />} />
           <Route path="/council" element={<CouncilInterface />} />
           <Route path="/debate" element={<DebateLog />} />
