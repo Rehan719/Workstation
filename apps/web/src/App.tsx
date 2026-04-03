@@ -119,7 +119,7 @@ function App() {
           <Route path="/orbital" element={<OrbitalDashboard />} />
           <Route path="/cosmic" element={<CosmicMeshDashboard />} />
           <Route path="/seeding" element={<SeedingInterface />} />
-          <Route path="/did" element={<InterstellarDiplomacy />} />
+          <Route path="/diplomacy" element={<InterstellarDiplomacy />} />
           <Route path="/treaties" element={<TreatyDashboard />} />
           <Route path="/offspring" element={<OffspringManagement />} />
           <Route path="/vault" element={<CredentialsVault />} />

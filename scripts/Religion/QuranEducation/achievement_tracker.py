@@ -6,7 +6,7 @@ class AchievementTracker:
     """
     Achievement Tracking System for Quran Education Platform
     Domain: RELIGION::QEP::ENTERPRISE
-    v8.3: Enhanced with Community Guardian (Tier 9) support.
+    v8.4: Enhanced with Cross-Domain Adapter (Tier 10) support.
     """
     def __init__(self, tracker_path="outputs/Religion/QuranEducation/achievements/tracker.json"):
         self.tracker_path = tracker_path
@@ -18,18 +18,20 @@ class AchievementTracker:
                 self.data = json.load(f)
         else:
             self.data = {
-                "version": "8.3.0",
+                "version": "8.4.0",
                 "last_updated": None,
                 "statistics": {
                     "total_students": 0,
                     "total_hifz_completers": 0,
                     "total_teachers_certified": 0,
                     "total_community_moderations": 0,
-                    "total_community_contributions": 0
+                    "total_community_contributions": 0,
+                    "total_cross_domain_adaptations": 0
                 },
                 "student_achievements": [],
                 "teacher_achievements": [],
-                "community_achievements": []
+                "community_achievements": [],
+                "cross_domain_achievements": []
             }
             self._save_tracker()
 
@@ -70,12 +72,34 @@ class AchievementTracker:
         print(f"Awarded Community Badge: {badge_name} (Tier {tier}) to User {user_id}")
         return achievement
 
+    def award_cross_domain_badge(self, user_id, tier, badge_name, domain=None):
+        """Awards a cross-domain specific badge, including Tier 10 Cross-Domain Adapter"""
+        achievement = {
+            "user_id": user_id,
+            "tier": tier,
+            "badge_name": badge_name,
+            "target_domain": domain,
+            "awarded_at": datetime.now(timezone.utc).isoformat(),
+            "certification_id": f"CERT-QEP-XD-{user_id}-{tier}"
+        }
+        if "cross_domain_achievements" not in self.data:
+            self.data["cross_domain_achievements"] = []
+        self.data["cross_domain_achievements"].append(achievement)
+        self._save_tracker()
+        print(f"Awarded Cross-Domain Badge: {badge_name} (Tier {tier}) to User {user_id}")
+        return achievement
+
     def evaluate_community_guardian_tier_9(self, user_id, moderation_actions, quality_score, trust_score):
         """Automated evaluation for Tier 9 Community Guardian"""
-        # Thresholds defined in v8.3 prompt
         if moderation_actions >= 50 and quality_score >= 0.95 and trust_score >= 0.90:
             return self.award_community_badge(user_id, 9, "Community Guardian",
                                              {"moderation": moderation_actions, "quality": quality_score, "trust": trust_score})
+        return None
+
+    def evaluate_cross_domain_adapter_tier_10(self, user_id, adaptation_count, target_domain):
+        """Automated evaluation for Tier 10 Cross-Domain Adapter"""
+        if adaptation_count >= 1: # Criteria: successfully adapt to at least one other domain
+            return self.award_cross_domain_badge(user_id, 10, "Cross-Domain Adapter", target_domain)
         return None
 
     def update_stats(self, key, value):
@@ -89,4 +113,4 @@ class AchievementTracker:
 if __name__ == "__main__":
     tracker = AchievementTracker()
     tracker.award_student_badge(101, 1, "Beginner (Mubtadi)")
-    tracker.evaluate_community_guardian_tier_9(202, 55, 0.96, 0.92)
+    tracker.evaluate_cross_domain_adapter_tier_10(303, 1, "Science")

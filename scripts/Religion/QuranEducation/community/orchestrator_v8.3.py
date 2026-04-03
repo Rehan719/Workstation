@@ -10,14 +10,16 @@ from typing import Dict, Any, List
 # Setup paths for modules
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Base dir is the repo root
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR))))
 
 # Add required paths to sys.path
-sys.path.append(os.path.dirname(SCRIPT_DIR)) # For curriculum_generator, etc.
-sys.path.append(os.path.join(os.path.dirname(SCRIPT_DIR), "enhancements"))
-sys.path.append(os.path.join(os.path.dirname(SCRIPT_DIR), "enhancements/ijazah_verification"))
-sys.path.append(os.path.join(os.path.dirname(SCRIPT_DIR), "enhancements/cross_domain"))
-sys.path.append(os.path.join(os.path.dirname(SCRIPT_DIR), "enhancements/scholar_workflow"))
+# Parent is scripts/Religion/QuranEducation
+PARENT_DIR = os.path.dirname(SCRIPT_DIR)
+sys.path.append(PARENT_DIR) # For curriculum_generator, etc.
+sys.path.append(os.path.join(PARENT_DIR, "enhancements"))
+sys.path.append(os.path.join(PARENT_DIR, "enhancements/ijazah_verification"))
+sys.path.append(os.path.join(PARENT_DIR, "enhancements/cross_domain"))
+sys.path.append(os.path.join(PARENT_DIR, "enhancements/scholar_workflow"))
 sys.path.append(os.path.join(BASE_DIR, "scripts/shared/archive"))
 sys.path.append(SCRIPT_DIR) # For community sub-modules
 sys.path.append(os.path.join(SCRIPT_DIR, "contribution"))
