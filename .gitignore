@@ -28,3 +28,5 @@ data/test_state/
 data/test_bundles/
 data/test_evidence_graph.json
 *.pem
+
+agentic_core/service-account-key.json

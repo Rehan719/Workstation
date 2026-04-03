@@ -7,4 +7,4 @@ Healthcare Scientist with 15+ years of high-stakes expertise in infectious disea
 Leveraging NIBSC/MHRA regulatory science and UKHSA operational experience to enhance laboratory capabilities.
 
 ## Appendix: Source References
-Processed 26 documents from Employment ingest sources.
+Processed 18 documents from Employment ingest sources.

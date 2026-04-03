@@ -1,0 +1,4149 @@
+{
+    "nodes": [
+        {
+            "id": "insight_0",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_1",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:02:23.761610",
+                "operon_id": "operon_70062d05"
+            }
+        },
+        {
+            "id": "insight_1",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_1",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:04:49.331949",
+                "operon_id": "operon_2610007f"
+            }
+        },
+        {
+            "id": "insight_2",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_3",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:05:39.344530",
+                "operon_id": "operon_3790bd8f"
+            }
+        },
+        {
+            "id": "insight_3",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:07:29.410964",
+                "operon_id": "operon_6f84cade"
+            }
+        },
+        {
+            "id": "insight_4",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:08:49.608174",
+                "operon_id": "operon_cd7f3cc6"
+            }
+        },
+        {
+            "id": "insight_5",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_2",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:09:09.663146",
+                "operon_id": "operon_dbcce5f8"
+            }
+        },
+        {
+            "id": "insight_6",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:09:29.675415",
+                "operon_id": "operon_f8d9eb4a"
+            }
+        },
+        {
+            "id": "insight_7",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_1",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:09:39.678990",
+                "operon_id": "operon_59b52aee"
+            }
+        },
+        {
+            "id": "insight_8",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_1",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:10:29.725567",
+                "operon_id": "operon_c71e5df1"
+            }
+        },
+        {
+            "id": "insight_9",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:12:00.883181",
+                "operon_id": "operon_14b7cf1d"
+            }
+        },
+        {
+            "id": "insight_10",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_3",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:12:16.542714",
+                "operon_id": "operon_1ab3b3b5"
+            }
+        },
+        {
+            "id": "insight_11",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:12:27.883570",
+                "operon_id": "operon_2b8112f1"
+            }
+        },
+        {
+            "id": "insight_12",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:12:48.284226",
+                "operon_id": "operon_84a82d94"
+            }
+        },
+        {
+            "id": "insight_13",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:13:18.877303",
+                "operon_id": "operon_29600491"
+            }
+        },
+        {
+            "id": "insight_14",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_1",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:13:28.894002",
+                "operon_id": "operon_af24a97b"
+            }
+        },
+        {
+            "id": "insight_15",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:14:19.033141",
+                "operon_id": "operon_f5043e5b"
+            }
+        },
+        {
+            "id": "insight_16",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:14:59.063254",
+                "operon_id": "operon_7f4f3995"
+            }
+        },
+        {
+            "id": "insight_17",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:15:29.205014",
+                "operon_id": "operon_23251454"
+            }
+        },
+        {
+            "id": "insight_18",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_2",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:16:19.279842",
+                "operon_id": "operon_ea360648"
+            }
+        },
+        {
+            "id": "insight_19",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_3",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:16:39.320748",
+                "operon_id": "operon_25d3440a"
+            }
+        },
+        {
+            "id": "insight_20",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:16:49.343548",
+                "operon_id": "operon_4905abf6"
+            }
+        },
+        {
+            "id": "insight_21",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:17:19.492383",
+                "operon_id": "operon_aa9e5973"
+            }
+        },
+        {
+            "id": "insight_22",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_1",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:17:39.569285",
+                "operon_id": "operon_99892d57"
+            }
+        },
+        {
+            "id": "insight_23",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_3",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:18:19.652097",
+                "operon_id": "operon_7218b187"
+            }
+        },
+        {
+            "id": "insight_24",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:18:39.653752",
+                "operon_id": "operon_6ae4ef56"
+            }
+        },
+        {
+            "id": "insight_25",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:18:59.673825",
+                "operon_id": "operon_776bad66"
+            }
+        },
+        {
+            "id": "insight_26",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:19:19.676874",
+                "operon_id": "operon_de51331d"
+            }
+        },
+        {
+            "id": "insight_27",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:19:59.746582",
+                "operon_id": "operon_53748cc2"
+            }
+        },
+        {
+            "id": "insight_28",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_3",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:20:39.838479",
+                "operon_id": "operon_a484163b"
+            }
+        },
+        {
+            "id": "insight_29",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_2",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:21:19.940024",
+                "operon_id": "operon_c0c9e811"
+            }
+        },
+        {
+            "id": "insight_30",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:21:50.010540",
+                "operon_id": "operon_f091f614"
+            }
+        },
+        {
+            "id": "insight_31",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:22:10.043991",
+                "operon_id": "operon_3ef6b622"
+            }
+        },
+        {
+            "id": "insight_32",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_3",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:22:20.075751",
+                "operon_id": "operon_95a84702"
+            }
+        },
+        {
+            "id": "insight_33",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_2",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:22:50.384156",
+                "operon_id": "operon_fcab4168"
+            }
+        },
+        {
+            "id": "insight_34",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_3",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:23:10.440308",
+                "operon_id": "operon_f7d564d1"
+            }
+        },
+        {
+            "id": "insight_35",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_2",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:23:30.481224",
+                "operon_id": "operon_89e0b40e"
+            }
+        },
+        {
+            "id": "insight_36",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_5",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:24:30.578389",
+                "operon_id": "operon_52fb3c2c"
+            }
+        },
+        {
+            "id": "insight_37",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_1",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:24:40.616483",
+                "operon_id": "operon_54cafbfc"
+            }
+        },
+        {
+            "id": "insight_38",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:25:10.734139",
+                "operon_id": "operon_92160a97"
+            }
+        },
+        {
+            "id": "insight_39",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_4",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:25:20.756421",
+                "operon_id": "operon_c1411dae"
+            }
+        },
+        {
+            "id": "insight_40",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_2",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:25:30.802704",
+                "operon_id": "operon_22b00924"
+            }
+        },
+        {
+            "id": "insight_41",
+            "type": "ExtractedInsight",
+            "content": "Jules AI employs Biomimetic Logic",
+            "source": "web_stream_1",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:25:50.853556",
+                "operon_id": "operon_7c92f3ca"
+            }
+        },
+        {
+            "id": "insight_42",
+            "type": "ExtractedInsight",
+            "content": "Organism requires Embodied Perception",
+            "source": "web_stream_1",
+            "category": "extracted_knowledge",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "agent_id": "passive_sensory_01",
+                "ingested_at": "2026-04-03T01:26:01.794138",
+                "operon_id": "operon_d60fd029"
+            }
+        },
+        {
+            "id": "insight_43",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:43:19.082347",
+                "confidence_score": 0.9790188826039815,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_44",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:43:29.086101",
+                "confidence_score": 0.9707048639960618,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_45",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:43:49.117385",
+                "confidence_score": 0.8752707498201601,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_46",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:44:29.145158",
+                "confidence_score": 0.8226099405849311,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_47",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:44:39.162428",
+                "confidence_score": 0.9227012466278735,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_48",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:45:29.180372",
+                "confidence_score": 0.975623658550467,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_49",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:45:49.196639",
+                "confidence_score": 0.8690211341493539,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_50",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:45:59.212132",
+                "confidence_score": 0.9649577812887831,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_51",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:46:09.231297",
+                "confidence_score": 0.9026664098805681,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_52",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:46:19.236043",
+                "confidence_score": 0.8242282434177254,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_53",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:46:29.236054",
+                "confidence_score": 0.9739717238915728,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_54",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:46:39.246507",
+                "confidence_score": 0.8680057807898969,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_55",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:46:49.260763",
+                "confidence_score": 0.9281385220160641,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_56",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:46:59.273646",
+                "confidence_score": 0.8029913244681979,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_57",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:47:19.290217",
+                "confidence_score": 0.91008640921983,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_58",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:47:39.305032",
+                "confidence_score": 0.9087442475739937,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_59",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:47:49.308893",
+                "confidence_score": 0.9000376257352319,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_60",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:48:19.291507",
+                "confidence_score": 0.8686718711808257,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_61",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:48:29.305943",
+                "confidence_score": 0.7979718459644689,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_62",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:48:39.312184",
+                "confidence_score": 0.8031174627973509,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_63",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:48:49.323478",
+                "confidence_score": 0.9446161966688676,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_64",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:48:59.334180",
+                "confidence_score": 0.8228114199214304,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_65",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:49:09.354874",
+                "confidence_score": 0.8671935845683135,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_66",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:49:29.358797",
+                "confidence_score": 0.8884542490645007,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_67",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:49:39.361051",
+                "confidence_score": 0.8488465775042977,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_68",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:49:49.391291",
+                "confidence_score": 0.7426854711236968,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_69",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:49:59.383184",
+                "confidence_score": 0.7237718026678808,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_70",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:50:09.391210",
+                "confidence_score": 0.8239479443784001,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_71",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:50:19.404254",
+                "confidence_score": 0.7344313486863742,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_72",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:50:29.417973",
+                "confidence_score": 0.8468242467066045,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_73",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:50:39.436943",
+                "confidence_score": 0.9648570536796932,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_74",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:50:49.447055",
+                "confidence_score": 0.9340394677317683,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_75",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:50:59.459039",
+                "confidence_score": 0.8866674215793269,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_76",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:51:09.477219",
+                "confidence_score": 0.792559060483826,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_77",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:51:19.497081",
+                "confidence_score": 0.8176800365601985,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_78",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:51:29.524032",
+                "confidence_score": 0.907601643408624,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_79",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:51:39.543526",
+                "confidence_score": 0.9354079700972877,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_80",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:51:49.565095",
+                "confidence_score": 0.8795666410961628,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_81",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:52:09.574756",
+                "confidence_score": 0.8040806103241289,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_82",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:52:19.588601",
+                "confidence_score": 0.8814944888543936,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_83",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:52:29.595622",
+                "confidence_score": 0.8889997224443084,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_84",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:52:39.607403",
+                "confidence_score": 0.7864057324069841,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_85",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:52:49.629704",
+                "confidence_score": 0.911900397013702,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_86",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:52:59.652505",
+                "confidence_score": 0.8009313516826029,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_87",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:53:09.724895",
+                "confidence_score": 0.9408673849019678,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_88",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:53:19.745792",
+                "confidence_score": 0.7869121460619193,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_89",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:53:29.796521",
+                "confidence_score": 0.8518286486524105,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_90",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:53:39.835817",
+                "confidence_score": 0.7780557808922823,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_91",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:53:49.962940",
+                "confidence_score": 0.9296602087520809,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_92",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:54:00.011657",
+                "confidence_score": 0.8516383996729482,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_93",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:54:10.051521",
+                "confidence_score": 0.9301028695151838,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_94",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:54:20.087043",
+                "confidence_score": 0.794756027370995,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_95",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:54:30.114693",
+                "confidence_score": 0.8908302239237178,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_96",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:54:40.266274",
+                "confidence_score": 0.7840855056166225,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_97",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:54:50.735779",
+                "confidence_score": 0.8487048964419767,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_98",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:55:00.749421",
+                "confidence_score": 0.9378086169051264,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_99",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:55:10.800489",
+                "confidence_score": 0.7525175785452932,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_100",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:55:20.800439",
+                "confidence_score": 0.8849058907552065,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_101",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:55:30.831934",
+                "confidence_score": 0.8915830981134245,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_102",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:55:40.855652",
+                "confidence_score": 0.7716577129189376,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_103",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:55:50.868304",
+                "confidence_score": 0.8013418752018535,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_104",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:56:00.871502",
+                "confidence_score": 0.8269649151476838,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_105",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:56:10.871153",
+                "confidence_score": 0.8729959753960467,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_106",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:56:20.874599",
+                "confidence_score": 0.9361082453585856,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_107",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:56:30.888049",
+                "confidence_score": 0.8891959794705733,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_108",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:56:41.055343",
+                "confidence_score": 0.8106608680336622,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_109",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:56:51.101767",
+                "confidence_score": 0.9000442843020051,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_110",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:57:01.208542",
+                "confidence_score": 0.8176691799026738,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_111",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:57:11.393252",
+                "confidence_score": 0.9008546602588074,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_112",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:57:21.391537",
+                "confidence_score": 0.880074170452867,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_113",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:57:31.415606",
+                "confidence_score": 0.7180054463316081,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_114",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:57:41.459987",
+                "confidence_score": 0.9778994946894652,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_115",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:57:51.480377",
+                "confidence_score": 0.9218880957092851,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_116",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:58:01.520957",
+                "confidence_score": 0.8264683633591838,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_117",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:58:11.553258",
+                "confidence_score": 0.8632059594571033,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_118",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:58:21.596511",
+                "confidence_score": 0.933143730413643,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_119",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:58:31.639446",
+                "confidence_score": 0.8504902655479367,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_120",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T01:58:41.685082",
+                "confidence_score": 0.8294473743418734,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_121",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:58:51.712287",
+                "confidence_score": 0.9318318063370329,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_122",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T01:59:01.729168",
+                "confidence_score": 0.8849914315742111,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_123",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:59:11.770637",
+                "confidence_score": 0.789653250209331,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_124",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T01:59:21.803589",
+                "confidence_score": 0.9147623206974245,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_125",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T01:59:31.833975",
+                "confidence_score": 0.9098265718835274,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_126",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:59:41.848403",
+                "confidence_score": 0.7716528712516579,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_127",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T01:59:51.894423",
+                "confidence_score": 0.9473855331883014,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_128",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:00:01.914691",
+                "confidence_score": 0.7914179743689415,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_129",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:00:11.935700",
+                "confidence_score": 0.7779493369796306,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_130",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:00:31.933101",
+                "confidence_score": 0.7493772120299371,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_131",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:00:41.969542",
+                "confidence_score": 0.8048465990477507,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_132",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:00:51.979881",
+                "confidence_score": 0.7476311197351859,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_133",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:01:01.980572",
+                "confidence_score": 0.9251220261317179,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_134",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:01:12.010764",
+                "confidence_score": 0.7832743064452485,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_135",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:01:22.025438",
+                "confidence_score": 0.8448796212978689,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_136",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:01:32.054127",
+                "confidence_score": 0.7843806315538138,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_137",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:01:42.063513",
+                "confidence_score": 0.8484097342391125,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_138",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:01:52.077761",
+                "confidence_score": 0.9539104274236332,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_139",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:02:02.167094",
+                "confidence_score": 0.8109241248357304,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_140",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:02:12.180589",
+                "confidence_score": 0.9260999453450197,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_141",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:02:22.180351",
+                "confidence_score": 0.7506799007595395,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_142",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:02:32.194336",
+                "confidence_score": 0.8879808153292903,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_143",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:02:42.205743",
+                "confidence_score": 0.7939884033912192,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_144",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:02:52.238339",
+                "confidence_score": 0.9823261981023842,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_145",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:03:02.264487",
+                "confidence_score": 0.8490517786662444,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_146",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:03:12.273184",
+                "confidence_score": 0.7780872936264955,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_147",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:03:22.278479",
+                "confidence_score": 0.8889482846431136,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_148",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:03:32.285538",
+                "confidence_score": 0.7706524494975451,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_149",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:03:42.302524",
+                "confidence_score": 0.9113591273097319,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_150",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:03:52.335651",
+                "confidence_score": 0.771628503307797,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_151",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:04:03.044747",
+                "confidence_score": 0.8322646011493193,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_152",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:04:13.967038",
+                "confidence_score": 0.8545018990204953,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_153",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:04:24.139293",
+                "confidence_score": 0.8349738775053801,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_154",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:04:34.457317",
+                "confidence_score": 0.7692348542977426,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_155",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:04:44.984260",
+                "confidence_score": 0.9374888425955883,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_156",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:04:54.965097",
+                "confidence_score": 0.8865068974534496,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_157",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:05:05.163874",
+                "confidence_score": 0.8568689934913103,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_158",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:05:15.192641",
+                "confidence_score": 0.8596194749538963,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_159",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:05:25.319700",
+                "confidence_score": 0.8078983559684527,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_160",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:05:35.344672",
+                "confidence_score": 0.8709046967948875,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_161",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:05:45.363080",
+                "confidence_score": 0.8604475316184069,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_162",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:05:55.368494",
+                "confidence_score": 0.8645888869716014,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_163",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:06:05.568167",
+                "confidence_score": 0.8002165744987305,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_164",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:06:15.601362",
+                "confidence_score": 0.789014270147692,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_165",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:06:25.607375",
+                "confidence_score": 0.8033386154080334,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_166",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:06:35.622408",
+                "confidence_score": 0.924379165239704,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_167",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:06:45.635818",
+                "confidence_score": 0.854431104200368,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_168",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:06:55.686574",
+                "confidence_score": 0.9363932032006794,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_169",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:07:05.701366",
+                "confidence_score": 0.8937066728024072,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_170",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:07:15.734711",
+                "confidence_score": 0.845387281193767,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_171",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:07:25.745566",
+                "confidence_score": 0.8551912253402655,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_172",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:07:35.765003",
+                "confidence_score": 0.8551512288058398,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_173",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:07:45.780911",
+                "confidence_score": 0.7797764341592233,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_174",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:07:55.829407",
+                "confidence_score": 0.8756200797725004,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_175",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:08:05.854402",
+                "confidence_score": 0.941267486760091,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_176",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:08:15.875293",
+                "confidence_score": 0.9574073719277592,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_177",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:08:25.914172",
+                "confidence_score": 0.8193548215277899,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_178",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:08:35.916558",
+                "confidence_score": 0.8979146904347652,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_179",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:08:45.941024",
+                "confidence_score": 0.8268630957559306,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_180",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:08:55.960580",
+                "confidence_score": 0.7552982436578077,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_181",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:09:06.052982",
+                "confidence_score": 0.832227414156691,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_182",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:09:16.084445",
+                "confidence_score": 0.9500394956749347,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_183",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:09:26.092979",
+                "confidence_score": 0.9467255195245888,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_184",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:09:36.111250",
+                "confidence_score": 0.8185359285237925,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_185",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:09:46.121500",
+                "confidence_score": 0.7745058859058508,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_186",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:09:56.156986",
+                "confidence_score": 0.7259294707963307,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_187",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:10:06.163946",
+                "confidence_score": 0.9702395355778093,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_188",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:10:16.183617",
+                "confidence_score": 0.8470237014362931,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_189",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:10:26.182222",
+                "confidence_score": 0.9005121295314273,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_190",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:10:36.184304",
+                "confidence_score": 0.8776820479368378,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_191",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:10:46.212437",
+                "confidence_score": 0.7986674622341803,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_192",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:10:56.232501",
+                "confidence_score": 0.9571176139743196,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_193",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:11:06.267377",
+                "confidence_score": 0.765121493800061,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_194",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:11:16.275664",
+                "confidence_score": 0.8969316136338439,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_195",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:11:26.303999",
+                "confidence_score": 0.7727335113960825,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_196",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:11:36.306975",
+                "confidence_score": 0.856341894635452,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_197",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:11:46.315270",
+                "confidence_score": 0.7180370469820054,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_198",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:11:56.329480",
+                "confidence_score": 0.887052385686047,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_199",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:12:06.351749",
+                "confidence_score": 0.8521145507950212,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_200",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:12:16.455662",
+                "confidence_score": 0.9192819623541008,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_201",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:12:26.497178",
+                "confidence_score": 0.7622811241726313,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_202",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:12:36.528797",
+                "confidence_score": 0.8565225606455169,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_203",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:12:46.545518",
+                "confidence_score": 0.8007290571993353,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_204",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:12:56.563891",
+                "confidence_score": 0.7922176081889565,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_205",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:13:06.590700",
+                "confidence_score": 0.8765623705527749,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_206",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:13:16.601672",
+                "confidence_score": 0.76796773057384,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_207",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:13:26.608231",
+                "confidence_score": 0.8383358534197338,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_208",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:13:36.629557",
+                "confidence_score": 0.8834861535868087,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_209",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:13:46.656970",
+                "confidence_score": 0.8757798432438123,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_210",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:13:56.680036",
+                "confidence_score": 0.785062617022571,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_211",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:14:06.698572",
+                "confidence_score": 0.870203934785988,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_212",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:14:16.717003",
+                "confidence_score": 0.8615884726620067,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_213",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:14:26.732244",
+                "confidence_score": 0.7602697381759558,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_214",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:14:36.759285",
+                "confidence_score": 0.7656794774888229,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_215",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:14:46.775750",
+                "confidence_score": 0.8462773305219877,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_216",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:14:56.797226",
+                "confidence_score": 0.8635274157205499,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_217",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:15:06.818463",
+                "confidence_score": 0.7811148198055065,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_218",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:15:16.847430",
+                "confidence_score": 0.9339163410888365,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_219",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:15:26.892023",
+                "confidence_score": 0.819205725131336,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_220",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:15:36.938898",
+                "confidence_score": 0.7660000980953148,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_221",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:15:46.963834",
+                "confidence_score": 0.7897968958107788,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_222",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:15:56.997095",
+                "confidence_score": 0.8437912942357398,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_223",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:16:07.026888",
+                "confidence_score": 0.8641287578840076,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_224",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:16:17.045125",
+                "confidence_score": 0.7401136021869048,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_225",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:16:27.076812",
+                "confidence_score": 0.9722437546804144,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_226",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:16:37.104060",
+                "confidence_score": 0.7474531170636785,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_227",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:16:47.140873",
+                "confidence_score": 0.7807774635287836,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_228",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:16:57.206512",
+                "confidence_score": 0.9028798382969676,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_229",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:17:07.222585",
+                "confidence_score": 0.9105207843223174,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_230",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:17:17.254290",
+                "confidence_score": 0.8684987526028953,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_231",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:17:27.290163",
+                "confidence_score": 0.7526676624197817,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_232",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:17:47.310563",
+                "confidence_score": 0.7780493193792335,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_233",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:17:57.328873",
+                "confidence_score": 0.9323784440327411,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_234",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:18:07.347884",
+                "confidence_score": 0.7857723146914812,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_235",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:18:17.353044",
+                "confidence_score": 0.8488139221578268,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_236",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:18:27.383667",
+                "confidence_score": 0.7551259496116649,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_237",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:18:37.403767",
+                "confidence_score": 0.9182316883396142,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_238",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:18:47.413761",
+                "confidence_score": 0.767099587521473,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_239",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:18:57.424124",
+                "confidence_score": 0.8726898249164925,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_240",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:19:07.433890",
+                "confidence_score": 0.791014165606617,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_241",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:19:17.467492",
+                "confidence_score": 0.8057185474895378,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_242",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:19:27.485085",
+                "confidence_score": 0.8050522650031211,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_243",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:19:37.483628",
+                "confidence_score": 0.9122719937041213,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_244",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:19:47.505892",
+                "confidence_score": 0.8930279964029799,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_245",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:19:57.510063",
+                "confidence_score": 0.9383904110786472,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_246",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:20:07.521878",
+                "confidence_score": 0.7933107770355313,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_247",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:20:17.538504",
+                "confidence_score": 0.9518830362236954,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_248",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:20:27.557222",
+                "confidence_score": 0.854836305193939,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_249",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:20:37.598889",
+                "confidence_score": 0.8644840280376285,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_250",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:20:47.607610",
+                "confidence_score": 0.8490184408468091,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_251",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:20:57.628128",
+                "confidence_score": 0.9348731750873758,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_252",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:21:07.651046",
+                "confidence_score": 0.7981334497348895,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_253",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:21:17.674166",
+                "confidence_score": 0.7573807187946481,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_254",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:21:27.687781",
+                "confidence_score": 0.9126644906956758,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_255",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:21:37.709954",
+                "confidence_score": 0.7288812988853934,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_256",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:21:47.727484",
+                "confidence_score": 0.7501120341623546,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_257",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:21:57.728111",
+                "confidence_score": 0.910616554845326,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_258",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:22:07.744253",
+                "confidence_score": 0.8338386389447772,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_259",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:22:17.764087",
+                "confidence_score": 0.90633000978936,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_260",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:22:27.773392",
+                "confidence_score": 0.7877689541355215,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_261",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:22:37.786041",
+                "confidence_score": 0.7521065946941753,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_262",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:22:47.816061",
+                "confidence_score": 0.8833779053881453,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_263",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:23:07.831446",
+                "confidence_score": 0.893389438229302,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_264",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:23:17.839242",
+                "confidence_score": 0.7821419268487304,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_265",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:23:27.852578",
+                "confidence_score": 0.8273092008613141,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_266",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:23:37.879840",
+                "confidence_score": 0.8710088682206871,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_267",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:23:48.020138",
+                "confidence_score": 0.7604728439400833,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_268",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:23:58.012250",
+                "confidence_score": 0.895196677595091,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_269",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:24:08.034105",
+                "confidence_score": 0.9326475502400795,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_270",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:24:18.054294",
+                "confidence_score": 0.8807954775505531,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_271",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:24:28.065101",
+                "confidence_score": 0.7962403520983112,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_272",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:24:38.094914",
+                "confidence_score": 0.8127124276980324,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_273",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:24:48.274522",
+                "confidence_score": 0.7481580211662726,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_274",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:24:58.317544",
+                "confidence_score": 0.7332928825837792,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_275",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:25:08.324792",
+                "confidence_score": 0.8690650435106738,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_276",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:25:18.363736",
+                "confidence_score": 0.7815386486541801,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_277",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:25:28.374070",
+                "confidence_score": 0.8230927629271512,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_278",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:25:38.394042",
+                "confidence_score": 0.8824380654142105,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_279",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:25:48.419337",
+                "confidence_score": 0.756562861367079,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_280",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:25:58.444020",
+                "confidence_score": 0.8668560065898145,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_281",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:26:08.466237",
+                "confidence_score": 0.9171480397089714,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_282",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:26:18.482216",
+                "confidence_score": 0.7906105617796861,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_283",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_2",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_2",
+                "timestamp": "2026-04-03T02:26:28.504068",
+                "confidence_score": 0.8201119650306747,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_284",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:26:38.514071",
+                "confidence_score": 0.8440994900627523,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_285",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:26:48.533246",
+                "confidence_score": 0.7410108485234551,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_286",
+            "type": "ExtractedInsight",
+            "content": "Biomimetic research surges in biotech sector.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:26:58.557908",
+                "confidence_score": 0.8841534012149326,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_287",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:27:08.581040",
+                "confidence_score": 0.9268932961207852,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_288",
+            "type": "ExtractedInsight",
+            "content": "New advancements in Embodied AI perceived.",
+            "source": "web_stream_1",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_1",
+                "timestamp": "2026-04-03T02:27:18.601275",
+                "confidence_score": 0.9206649312778152,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_289",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:27:28.618837",
+                "confidence_score": 0.8971178170885274,
+                "topic": "quantum_cognition"
+            }
+        },
+        {
+            "id": "insight_290",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:27:38.636721",
+                "confidence_score": 0.8214330383885879,
+                "topic": "sovereign_business"
+            }
+        },
+        {
+            "id": "insight_291",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:27:48.652885",
+                "confidence_score": 0.7729721533626142,
+                "topic": "embodied_ai"
+            }
+        },
+        {
+            "id": "insight_292",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_4",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_4",
+                "timestamp": "2026-04-03T02:27:58.671005",
+                "confidence_score": 0.8493585185854728,
+                "topic": "quranic_studies"
+            }
+        },
+        {
+            "id": "insight_293",
+            "type": "ExtractedInsight",
+            "content": "Semantic search enhancements for classical texts.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:28:08.687741",
+                "confidence_score": 0.8016751366523945,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_294",
+            "type": "ExtractedInsight",
+            "content": "Market shift detected in sovereign business models.",
+            "source": "web_stream_5",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_5",
+                "timestamp": "2026-04-03T02:28:18.706865",
+                "confidence_score": 0.7427255233734227,
+                "topic": "biomimetics"
+            }
+        },
+        {
+            "id": "insight_295",
+            "type": "ExtractedInsight",
+            "content": "Quantum-inspired algorithms for pattern recognition.",
+            "source": "web_stream_3",
+            "category": "environmental_signal",
+            "confidence": 0.9,
+            "metadata": {
+                "source_url": "web_stream_3",
+                "timestamp": "2026-04-03T02:28:28.724163",
+                "confidence_score": 0.9017386174653876,
+                "topic": "sovereign_business"
+            }
+        }
+    ],
+    "edges": []
+}

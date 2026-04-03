@@ -1,7 +1,7 @@
 import os
 import json
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List
 
 class SovereignRegenerationOrchestratorV7:
@@ -23,7 +23,7 @@ class SovereignRegenerationOrchestratorV7:
         os.makedirs(os.path.dirname(self.audit_log), exist_ok=True)
 
     def log_event(self, phase: int, action: str, details: Dict[str, Any]):
-        timestamp = datetime.utcnow().isoformat() + "Z"
+        timestamp = datetime.now(timezone.utc).isoformat()
         event = {
             "version": self.version,
             "domain": self.domain,
@@ -43,7 +43,7 @@ class SovereignRegenerationOrchestratorV7:
                 tracker = json.load(f)
 
             tracker["total_cycles_completed"][self.domain] += 1
-            tracker["last_updated"] = datetime.utcnow().isoformat() + "Z"
+            tracker["last_updated"] = datetime.now(timezone.utc).isoformat()
 
             with open(self.achievement_file, "w") as f:
                 json.dump(tracker, f, indent=2)

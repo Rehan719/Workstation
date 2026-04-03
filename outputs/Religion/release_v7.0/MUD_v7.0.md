@@ -7,4 +7,4 @@ Allah calls His servants to His love through His signs and His messengers.
 Ikhlas (Sincerity) is the essential ingredient for all actions to be accepted.
 
 ## Appendix: Source References
-Processed 10 documents from Religion ingest sources.
+Processed 7 documents from Religion ingest sources.

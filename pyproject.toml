@@ -52,6 +52,7 @@ cryptography = "^42.0.0"
 oqs = "^0.10.2"
 psycopg2-binary = "^2.9.11"
 mesa = "3.0.1"
+firebase-admin = "^7.3.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"

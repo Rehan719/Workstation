@@ -9,5 +9,8 @@
     "web:dev": "npm run dev -w apps/web",
     "mobile:start": "npm run start -w apps/mobile",
     "ui:build": "npm run build -w packages/ui"
+  },
+  "dependencies": {
+    "react-resizable-panels": "^2.1.2"
   }
 }
