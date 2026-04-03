@@ -1,6 +1,6 @@
 {
   "version": "8.0.0",
-  "last_updated": "2026-04-03T16:05:31.723907+00:00",
+  "last_updated": "2026-04-03T17:11:41.547028+00:00",
   "statistics": {
     "total_students": 0,
     "total_hifz_completers": 0,
@@ -168,6 +168,24 @@
       },
       "awarded_at": "2026-04-03T16:05:31.723892+00:00",
       "certification_id": "CERT-QEP-C-user_789-9"
+    }
+  ],
+  "cross_domain_achievements": [
+    {
+      "user_id": "user_101",
+      "tier": 10,
+      "badge_name": "Cross-Domain Adapter",
+      "target_domain": "Science",
+      "awarded_at": "2026-04-03T16:55:39.964919+00:00",
+      "certification_id": "CERT-QEP-XD-user_101-10"
+    },
+    {
+      "user_id": "user_101",
+      "tier": 10,
+      "badge_name": "Cross-Domain Adapter",
+      "target_domain": "Science",
+      "awarded_at": "2026-04-03T17:11:41.547018+00:00",
+      "certification_id": "CERT-QEP-XD-user_101-10"
     }
   ]
 }
