@@ -1,6 +1,6 @@
 {
   "version": "8.0.0",
-  "last_updated": "2026-04-03T15:16:24.963982+00:00",
+  "last_updated": "2026-04-03T16:05:31.723907+00:00",
   "statistics": {
     "total_students": 0,
     "total_hifz_completers": 0,
@@ -155,5 +155,19 @@
       "certification_id": "CERT-QEP-S-1-1"
     }
   ],
-  "teacher_achievements": []
+  "teacher_achievements": [],
+  "community_achievements": [
+    {
+      "user_id": "user_789",
+      "tier": 9,
+      "badge_name": "Community Guardian",
+      "criteria_met": {
+        "moderation": 55,
+        "quality": 0.96,
+        "trust": 0.92
+      },
+      "awarded_at": "2026-04-03T16:05:31.723892+00:00",
+      "certification_id": "CERT-QEP-C-user_789-9"
+    }
+  ]
 }
