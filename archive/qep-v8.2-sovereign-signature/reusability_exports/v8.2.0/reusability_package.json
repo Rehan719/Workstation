@@ -1,0 +1,8 @@
+{
+  "product_id": "VSB-SIG-QEP-8.2",
+  "version": "8.2.0",
+  "exported_at": "2026-04-03T15:16:25.351335+00:00",
+  "mechanisms": {
+    "templates": "v8.2_starter_kit"
+  }
+}

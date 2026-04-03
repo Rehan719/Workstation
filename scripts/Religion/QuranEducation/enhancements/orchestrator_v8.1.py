@@ -7,12 +7,21 @@ import argparse
 from datetime import datetime, timezone
 from typing import Dict, Any, List
 
-# Add base directory and enhancement directories to path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "enhancements"))
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "enhancements", "ijazah_verification"))
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "enhancements", "cross_domain"))
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "enhancements", "scholar_workflow"))
+# Setup paths for modules
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Parent dir is scripts/Religion/QuranEducation
+PARENT_DIR = os.path.dirname(SCRIPT_DIR)
+# Grandparent is scripts/Religion
+GPARENT_DIR = os.path.dirname(PARENT_DIR)
+# Base dir is the repo root
+BASE_DIR = os.path.dirname(os.path.dirname(GPARENT_DIR))
+
+# Add required paths to sys.path
+sys.path.append(PARENT_DIR) # For curriculum_generator, etc.
+sys.path.append(os.path.join(SCRIPT_DIR, "ijazah_verification"))
+sys.path.append(os.path.join(SCRIPT_DIR, "cross_domain"))
+sys.path.append(os.path.join(SCRIPT_DIR, "scholar_workflow"))
+sys.path.append(os.path.join(BASE_DIR, "scripts/shared/archive"))
 
 # Import v8.0 modules
 from curriculum_generator import CurriculumGenerator
@@ -39,7 +48,7 @@ class QEPOrchestratorV81:
         self.version = "8.1.0"
         self.output_dir = f"outputs/{self.domain}/{self.subdomain}/enhancements"
         self.audit_log = f"{self.output_dir}/audit/sovereign_audit_log_v8.1.jsonl"
-        self.flag_config = flag_config
+        self.flag_config = os.path.join(BASE_DIR, flag_config)
         self.flags = self._load_flags()
 
         # Initialize Core Sub-systems
@@ -106,7 +115,9 @@ class QEPOrchestratorV81:
         # Phase 5: Curriculum Forging [ENHANCED]
         if self.is_enabled("scholar_workflow"):
             correction = self.scholar_handler.approve_correction("CORR-001", {"level_1/lesson_1_al-fatihah": "Enhanced Content v8.1"})
-            self.archive.propagate_correction("8.1", "outputs/Religion/QuranEducation/curriculum/samples/level_1/lesson_1_al-fatihah", "# Al-Fatihah v8.1 Enhanced\n\nCorrected and enhanced content.")
+            # Fix path for correction propagation to be absolute or root-relative
+            target_path = os.path.join(BASE_DIR, "outputs/Religion/QuranEducation/curriculum/samples/level_1/lesson_1_al-fatihah")
+            self.archive.propagate_correction("8.1", target_path, "# Al-Fatihah v8.1 Enhanced\n\nCorrected and enhanced content.")
             self.log_phase(5, "Enhanced Content Forging", {"correction": correction}, pipeline="Retrospection")
 
         # Phase 6: Technical Implementation [ENHANCED]

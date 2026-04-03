@@ -54,7 +54,7 @@ const QEPStudentPortal = () => {
           </div>
           <div>
             <h1 className="text-sm font-black tracking-widest uppercase">QEP Portal</h1>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">v8.1 Enhanced Release</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">v8.2 Sovereign Signature</p>
           </div>
         </div>
 

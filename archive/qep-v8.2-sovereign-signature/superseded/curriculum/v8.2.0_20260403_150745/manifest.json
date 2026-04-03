@@ -1,0 +1,14 @@
+{
+  "product_id": "VSB-SIG-QEP-8.2",
+  "version": "8.2.0",
+  "timestamp": "2026-04-03T15:07:45.002659+00:00",
+  "artifacts": {
+    "outputs": "outputs/Religion/QEP"
+  },
+  "pipeline_metadata": {
+    "pipelines": "all_7_fully_synergized"
+  },
+  "reusability_exports": {
+    "templates": "v8.2_starter_kit"
+  }
+}
