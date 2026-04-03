@@ -1,4 +1,5 @@
 feature_flags:
+  product_id: "VSB-SIG-QEP-8.1"
   version: "8.1.0"
   enabled:
     ijazah_verification_poc: true
@@ -11,3 +12,11 @@ feature_flags:
     percentage: 100
   dependencies:
     progress_dashboard: ["ijazah_verification_poc"]
+  pipelines:
+    scraping: enabled
+    ingestion: enabled
+    knowledge: enabled
+    introspection: enabled
+    retrospection: enabled
+    extrospection: enabled
+    learning: enabled
