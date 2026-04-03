@@ -1,0 +1,14 @@
+{
+  "source_mechanism": "ontology_engine",
+  "target_domain": "law",
+  "required_adjustments": [
+    "Map Religion::ontology_engine ontology to Law standards.",
+    "Adjust sensitivity parameters for Law compliance.",
+    "Rename shared components for Law domain context."
+  ],
+  "compatibility_score": 0.88,
+  "suggested_pipeline_overrides": {
+    "introspection": "Replace theological_validator with law_compliance_validator"
+  },
+  "status": "APPROVED_BY_AI_ORCHESTRATOR"
+}

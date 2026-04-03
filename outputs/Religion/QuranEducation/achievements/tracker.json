@@ -1,6 +1,6 @@
 {
   "version": "8.0.0",
-  "last_updated": "2026-04-03T21:08:26.361639+00:00",
+  "last_updated": "2026-04-03T22:33:07.191009+00:00",
   "statistics": {
     "total_students": 0,
     "total_hifz_completers": 0,
@@ -197,6 +197,19 @@
       "target_domain": "Science",
       "awarded_at": "2026-04-03T17:11:41.547018+00:00",
       "certification_id": "CERT-QEP-XD-user_101-10"
+    }
+  ],
+  "global_achievements": [
+    {
+      "user_id": 9901,
+      "tier": 12,
+      "badge_name": "Global Ambassador",
+      "active_regions": {
+        "regions_count": 5,
+        "localization_accuracy": 0.99
+      },
+      "awarded_at": "2026-04-03T22:33:07.190990+00:00",
+      "certification_id": "CERT-QEP-G-9901-12"
     }
   ]
 }

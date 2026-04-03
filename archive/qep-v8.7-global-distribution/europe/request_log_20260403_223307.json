@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-04-03T22:33:07.173835",
+  "region": "europe",
+  "content_id": "lesson_01",
+  "latency_ms": 27,
+  "compliance_result": {
+    "status": "COMPLIANT",
+    "enforced_rules": [
+      "GDPR",
+      "EU_Privacy_Shield",
+      "Digital_Services_Act"
+    ],
+    "data_masking_applied": true,
+    "region_id": "EU-001"
+  }
+}
