@@ -1,17 +1,17 @@
 {
   "version": "8.5.0",
-  "last_updated": "2026-04-03 18:56:11.033710",
+  "last_updated": "2026-04-03 19:39:20.666534",
   "balances": {
     "voter_01": {
-      "QEP-SOURCE-TOKEN": 50
+      "QEP-SOURCE-TOKEN": 100
     },
     "voter_02": {
-      "QEP-MOD-TOKEN": 101
+      "QEP-MOD-TOKEN": 202
     }
   },
   "reputation": {
-    "scholar_01": 10,
-    "voter_02": 2
+    "scholar_01": 20,
+    "voter_02": 4
   },
   "verifiable_credentials": []
 }

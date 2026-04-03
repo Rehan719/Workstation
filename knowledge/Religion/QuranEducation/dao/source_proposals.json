@@ -12,6 +12,19 @@
         "reject": 0
       },
       "voting_deadline": "2026-04-03 18:56:11.026930"
+    },
+    {
+      "id": "prop-afd0f6c7",
+      "proposer": "scholar_01",
+      "source_url": "https://quran.com",
+      "description": "Primary Quranic Text Source",
+      "status": "approved",
+      "timestamp": "2026-04-03 19:39:20.659822",
+      "votes": {
+        "approve": 1000,
+        "reject": 0
+      },
+      "voting_deadline": "2026-04-03 19:39:20.659864"
     }
   ]
 }
