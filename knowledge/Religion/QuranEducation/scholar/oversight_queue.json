@@ -1,0 +1,38 @@
+[
+  {
+    "item_id": "e7712dc3-7abe-443e-99fb-3c6060309b70",
+    "timestamp": "2026-04-03T21:02:18.249004+00:00",
+    "source_engine": "TheologicalConsistencyChecker",
+    "content_id": "lesson_01",
+    "issue_description": "Potential ambiguity in Tafsir of Surah Al-Fatiha verse 4.",
+    "metadata": {
+      "consistency_score": 0.92,
+      "xai_trace": "counterfactual_flagged"
+    },
+    "status": "RESOLVED",
+    "scholar_id": "scholar_786",
+    "decision": "APPROVE",
+    "decision_notes": "Contextual interpretation is verified as sahih.",
+    "resolved_at": "2026-04-03T21:02:18.250393+00:00"
+  },
+  {
+    "item_id": "9647209e-8285-4d24-8422-4d2d2e806f64",
+    "timestamp": "2026-04-03T21:08:26.357584+00:00",
+    "source_engine": "TheologicalConsistencyChecker",
+    "content_id": "lesson_fatiha_v86",
+    "issue_description": "Inconclusive consistency score.",
+    "metadata": {
+      "consistency_score": 0.9223432034172936,
+      "human_review_required": true,
+      "flags": [
+        "CONSISTENCY_CHECK_REQUESTED"
+      ],
+      "xai_trace": {
+        "method": "Counterfactual",
+        "scenario": "If the source was rejected, the consistency score would drop by 0.25.",
+        "semantic_similarity": 0.98
+      }
+    },
+    "status": "PENDING"
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "source_product": "VSB-SIG-QEP-8.6",
+  "target_domain": "Care",
+  "version": "1.0.0-ADAPTED",
+  "timestamp": "2026-04-03T21:00:00Z",
+  "pipeline_mappings": {
+    "scraping": "Adapting QEP fetchers to Care specific sources.",
+    "ingestion": "Universal SHA-256 and semantic validation with Care ontology.",
+    "knowledge": "Concept mapping to Care specific knowledge graph.",
+    "introspection": "Porting NemaTron QA agents and XAI explanation templates."
+  },
+  "compliance_rules": [
+    "Care Domain Specialization Compliance",
+    "WCAG 2.1 AA",
+    "GDPR",
+    "ISO 9001 QMS"
+  ],
+  "ui_adaptation": {
+    "theme": "care_primary_theme",
+    "layout": "Standard Sovereign Workstation Dashboard",
+    "components": [
+      "XAI_Observatory",
+      "Privacy_Panel",
+      "Governance_Portal"
+    ]
+  },
+  "reusable_mechanisms": [
+    "ProductionMonitoringManagerV86",
+    "PrivacyEngineV86",
+    "IntelligentArchiveManagerV86"
+  ]
+}
