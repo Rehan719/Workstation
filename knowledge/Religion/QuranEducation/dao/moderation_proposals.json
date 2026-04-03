@@ -1,0 +1,18 @@
+{
+  "proposals": [
+    {
+      "id": "mod-dc48f077",
+      "moderator": "mod_01",
+      "content_id": "lesson_01",
+      "moderation_action": "approve",
+      "reason": "Passes theological review",
+      "status": "approved",
+      "timestamp": "2026-04-03 18:56:11.032672",
+      "votes": {
+        "approve": 100.0,
+        "reject": 0
+      },
+      "voting_deadline": "2026-04-03 18:56:11.032678"
+    }
+  ]
+}

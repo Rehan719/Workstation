@@ -1,0 +1,17 @@
+{
+  "proposals": [
+    {
+      "id": "prop-65e575ac",
+      "proposer": "scholar_01",
+      "source_url": "https://quran.com",
+      "description": "Primary Quranic Text Source",
+      "status": "approved",
+      "timestamp": "2026-04-03 18:56:11.026916",
+      "votes": {
+        "approve": 500,
+        "reject": 0
+      },
+      "voting_deadline": "2026-04-03 18:56:11.026930"
+    }
+  ]
+}
