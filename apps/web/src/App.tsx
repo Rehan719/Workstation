@@ -19,6 +19,7 @@ import { PhenotypePreview } from './pages/genome/PhenotypePreview';
 import { ReligionHub } from './pages/domains/ReligionHub';
 import { QEPReligionHub } from './pages/domains/QEPReligionHub';
 import { QEPStudentPortalPage } from './pages/domains/QEPStudentPortalPage';
+import { QEPCommunityPortalPage } from './pages/domains/QEPCommunityPortalPage';
 import { ScienceHub } from './pages/domains/ScienceHub';
 import { LawHub } from './pages/domains/LawHub';
 import { EmploymentHub } from './pages/domains/EmploymentHub';
@@ -118,7 +119,7 @@ function App() {
           <Route path="/orbital" element={<OrbitalDashboard />} />
           <Route path="/cosmic" element={<CosmicMeshDashboard />} />
           <Route path="/seeding" element={<SeedingInterface />} />
-          <Route path="/diplomacy" element={<InterstellarDiplomacy />} />
+          <Route path="/did" element={<InterstellarDiplomacy />} />
           <Route path="/treaties" element={<TreatyDashboard />} />
           <Route path="/offspring" element={<OffspringManagement />} />
           <Route path="/vault" element={<CredentialsVault />} />
@@ -147,6 +148,7 @@ function App() {
           <Route path="/embodiment" element={<EmbodimentStudio />} />
           <Route path="/qep" element={<QEPReligionHub />} />
           <Route path="/qep-portal" element={<QEPStudentPortalPage />} />
+          <Route path="/qep-community" element={<QEPCommunityPortalPage />} />
           <Route path="/constitution" element={<ConstitutionalUI />} />
           <Route path="/council" element={<CouncilInterface />} />
           <Route path="/debate" element={<DebateLog />} />

@@ -1,0 +1,49 @@
+# Community-Sourced API Registry for QEP v8.3
+version: "8.3.0"
+product_id: "VSB-SIG-QEP-8.3"
+registry_type: "crowdsourced_scraping_endpoints"
+
+endpoints:
+  - id: "quran-api-community-001"
+    name: "Community Quran Text Mirror"
+    base_url: "https://api.quran-mirror.example/v1"
+    endpoints:
+      - path: "/surah/{number}"
+        method: "GET"
+        response_format: "json"
+        rate_limit: "100/hour"
+    validation:
+      schema: "quran_surah_schema.json"
+      checksum_required: true
+      source_attribution: "required"
+    community_metadata:
+      contributed_by: "community_user_123"
+      verified_by: ["scholar_001", "scholar_005"]
+      trust_score: 0.95
+      last_verified: "2026-04-01"
+    status: "approved"
+
+  - id: "hadith-community-002"
+    name: "Community Hadith Collection API"
+    base_url: "https://hadith-community.example/api"
+    endpoints:
+      - path: "/collection/{id}"
+        method: "GET"
+        response_format: "json"
+        rate_limit: "50/hour"
+    validation:
+      schema: "hadith_collection_schema.json"
+      checksum_required: true
+      source_attribution: "required"
+    community_metadata:
+      contributed_by: "scholar_002"
+      verified_by: ["scholar_001"]
+      trust_score: 0.98
+      last_verified: "2026-04-01"
+    status: "approved"
+
+validation_schema: "community_api_validation_schema.json"
+discovery_mechanism:
+  submission_endpoint: "/api/v1/community/endpoints/submit"
+  review_workflow: "scholar_board_approval"
+  auto_deprecation: "30_days_inactive"
