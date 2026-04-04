@@ -1,0 +1,11 @@
+blueprint_id: "VSB-BP-REACTOR-001"
+facility_type: "validation_reactor"
+target_domains: ["Law", "Religion", "Ethics"]
+scaling_config:
+  intensity: "High"
+  validation_accuracy: "100%"
+  containment_active: true
+pipeline_mapping:
+  introspection: "quality_assurance"
+  knowledge: "theological_consistency"
+required_adapters: ["scholar_board_bridge", "ethics_compliance_filter"]

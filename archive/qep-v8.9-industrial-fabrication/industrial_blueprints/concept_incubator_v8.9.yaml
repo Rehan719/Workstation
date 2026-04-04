@@ -1,0 +1,10 @@
+blueprint_id: "VSB-BP-INCUBATOR-001"
+facility_type: "concept_incubator"
+target_domains: ["Science", "Care", "Enterprise"]
+scaling_config:
+  concept_graduation_rate: "75%"
+  community_integration: "Active"
+pipeline_mapping:
+  knowledge: "ideation"
+  extrospection: "feedback_loop"
+required_adapters: ["community_portal_adapter", "innovation_tracking_module"]
