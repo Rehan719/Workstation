@@ -12,7 +12,12 @@ import {
   Cpu,
   Download,
   Smartphone,
-  Globe
+  Globe,
+  ShoppingCart,
+  Boxes,
+  ClipboardList,
+  RefreshCcw,
+  ExternalLink
 } from 'lucide-react';
 
 const FacilityCard = ({ id, name, icon: Icon, status, metrics, onOpen }) => (
@@ -39,12 +44,11 @@ const FacilityCard = ({ id, name, icon: Icon, status, metrics, onOpen }) => (
   </div>
 );
 
-const FacilityControlRoom = () => {
+const FabricationPlantDashboard = () => {
   const [selectedFacility, setSelectedFacility] = useState(null);
-  const [safetyIncidents, setSafetyIncidents] = useState([
-    { id: 1, type: 'Containment', facility: 'Reactors', msg: 'Theological anomaly detected in Surah Al-Baqarah Tafsir module.', time: '10 mins ago' },
-    { id: 2, type: 'Isolation', facility: 'Petri Dishes', msg: 'A/B Test 09-B failed validation gate. Auto-rollback triggered.', time: '2 hours ago' }
-  ]);
+  const [orderProgress, setOrderProgress] = useState(0);
+  const [activeOrder, setActiveOrder] = useState(null);
+  const [orderStep, setOrderStep] = useState('');
 
   const facilities = [
     {
@@ -52,166 +56,267 @@ const FacilityControlRoom = () => {
       name: 'Digital Engines',
       icon: Cpu,
       status: 'online',
-      metrics: { throughput: '1.2k/hr', uptime: '99.99%', load: '42%' }
+      metrics: { throughput: '2.5k/hr', uptime: '99.99%', load: '65%' }
     },
     {
       id: 'reactors',
-      name: 'Reactors',
+      name: 'Validation Reactors',
       icon: Zap,
       status: 'online',
-      metrics: { validation: '100%', containment: 'Ready', intensity: 'High' }
+      metrics: { accuracy: '100%', safety: 'Enforced', load: '12%' }
     },
     {
       id: 'incubators',
-      name: 'Incubators',
+      name: 'Concept Incubators',
       icon: Lightbulb,
       status: 'online',
-      metrics: { graduation: '78%', active_concepts: '12', community: 'High' }
+      metrics: { graduation: '82%', new_ideas: '15', speed: 'High' }
     },
     {
       id: 'petri_dishes',
-      name: 'Petri Dishes',
+      name: 'Testing Petri Dishes',
       icon: TestTube,
       status: 'online',
-      metrics: { isolation: '100%', stability: '99.5%', active_tests: '4' }
+      metrics: { isolation: '100%', stability: '99.8%', active: '3' }
     },
     {
       id: 'laboratories',
-      name: 'Laboratories',
+      name: 'Research Labs',
       icon: FlaskConical,
       status: 'online',
-      metrics: { research: '8 publications', ontology: '+12%', audits: 'Pass' }
+      metrics: { publications: '12', ontology: '+15%', status: 'Active' }
     },
     {
       id: 'factories',
-      name: 'Factories',
+      name: 'Production Factories',
       icon: Factory,
       status: 'online',
-      metrics: { yield: '99.9%', localization: '100%', backlog: 'Zero' }
+      metrics: { yield: '99.9%', custom_orders: '42', backlog: 'Zero' }
     }
   ];
+
+  const blueprints = [
+    { id: 'BP-001', name: 'High-Throughput Engine', domain: 'Science', status: 'Exported' },
+    { id: 'BP-002', name: 'Theological Reactor', domain: 'Law', status: 'Exported' },
+    { id: 'BP-003', name: 'Concept Incubator', domain: 'Enterprise', status: 'Ready' }
+  ];
+
+  const handlePlaceOrder = () => {
+    setActiveOrder({ id: 'BTO-786-ALIF', level: 5, type: 'Tafsir', lang: 'English' });
+    setOrderProgress(0);
+    setOrderStep('INTAKE');
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      setOrderProgress(progress);
+
+      if (progress < 20) setOrderStep('INTAKE (Digital Engines)');
+      else if (progress < 40) setOrderStep('REFINING (Digital Engines)');
+      else if (progress < 60) setOrderStep('INCUBATION (Incubators)');
+      else if (progress < 80) setOrderStep('VALIDATION (Reactors)');
+      else if (progress < 95) setOrderStep('ASSEMBLY (Factories)');
+      else setOrderStep('DELIVERY (Digital Engines)');
+
+      if (progress >= 100) {
+        clearInterval(interval);
+      }
+    }, 400);
+  };
 
   return (
     <div className="min-h-screen bg-black text-slate-200 p-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-10">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tighter flex items-center gap-3">
-            <Factory className="text-cyan-500" /> INDUSTRIAL FACILITY CONTROL ROOM
+          <h1 className="text-4xl font-black text-white tracking-tighter flex items-center gap-3">
+            <Boxes className="text-cyan-500" /> KNOWLEDGE FABRICATION PLANT
           </h1>
-          <p className="text-slate-500">QEP v8.8 Sovereign Signature | Production-Scale Management Layer</p>
+          <p className="text-slate-500">QEP v8.9 Sovereign Signature | Industrial-Scale Knowledge Manufacturing</p>
         </div>
         <div className="flex gap-4">
-          <div className="bg-slate-900 px-4 py-2 rounded-lg border border-slate-800 text-sm">
-            <span className="text-slate-500 mr-2">GLOBAL HEALTH:</span>
-            <span className="text-green-400 font-bold">OPTIMAL</span>
+          <div className="bg-slate-900 px-4 py-2 rounded-lg border border-slate-800 text-sm flex items-center gap-2">
+            <RefreshCcw size={14} className="text-cyan-500 animate-spin-slow" />
+            <span className="text-slate-500 uppercase">Plant Status:</span>
+            <span className="text-green-400 font-bold uppercase tracking-widest">Operating</span>
           </div>
-          <div className="bg-cyan-500 text-black px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
-            <ShieldAlert size={16} /> VSB SIGNATURE ACTIVE
+          <div className="bg-cyan-500 text-black px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg shadow-cyan-500/20">
+            <Boxes size={16} /> VSB FABRICATION ACTIVE
           </div>
         </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {facilities.map(f => (
-          <FacilityCard key={f.id} {...f} onOpen={() => setSelectedFacility(f)} />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Safety Incidents */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <ShieldAlert className="text-yellow-500" /> SAFETY & CONTAINMENT LOG
-          </h2>
-          <div className="space-y-4">
-            {safetyIncidents.map(incident => (
-              <div key={incident.id} className="p-4 bg-black/50 border-l-4 border-yellow-500 rounded-r-lg">
-                <div className="flex justify-between mb-1">
-                  <span className="text-xs font-bold text-yellow-500 uppercase">{incident.type}</span>
-                  <span className="text-xs text-slate-600 font-mono">{incident.time}</span>
-                </div>
-                <p className="text-sm text-slate-300 font-medium">{incident.msg}</p>
-                <div className="mt-2 text-xs text-slate-500 italic">Facility: {incident.facility}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Delivery & PWA */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <Globe className="text-cyan-500" /> STANDALONE DELIVERY (PWA & MOBILE)
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-black/30 border border-slate-800 rounded-lg text-center group hover:bg-cyan-500/10 transition-all cursor-pointer">
-              <Globe className="mx-auto mb-2 text-cyan-400" />
-              <div className="text-sm font-bold text-white">Progressive Web App</div>
-              <div className="text-xs text-slate-500 mb-3">Install on Desktop/Mobile</div>
-              <button className="bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded text-xs font-bold border border-cyan-500/30">INSTALL PWA</button>
-            </div>
-            <div className="p-4 bg-black/30 border border-slate-800 rounded-lg text-center">
-              <Smartphone className="mx-auto mb-2 text-slate-500" />
-              <div className="text-sm font-bold text-slate-400">Native Mobile Apps</div>
-              <div className="text-xs text-slate-600 mb-3">iOS & Android (v8.8)</div>
-              <div className="flex gap-2 justify-center">
-                <button className="bg-slate-800 text-slate-500 px-2 py-1 rounded text-[10px] font-bold opacity-50 cursor-not-allowed">APP STORE</button>
-                <button className="bg-slate-800 text-slate-500 px-2 py-1 rounded text-[10px] font-bold opacity-50 cursor-not-allowed">PLAY STORE</button>
-              </div>
-            </div>
-            <div className="col-span-2 p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-lg flex items-center justify-between">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Left Column: BTO & Blueprints */}
+        <div className="xl:col-span-1 space-y-8">
+          {/* BTO Order Section */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm">
+            <h2 className="text-2xl font-black text-white mb-6 flex items-center gap-3">
+               <ShoppingCart className="text-cyan-500" /> CUSTOM BTO ORDER
+            </h2>
+            <div className="space-y-4 mb-8">
               <div>
-                <div className="text-sm font-bold text-cyan-300 flex items-center gap-2">
-                   <Download size={16}/> Industrial Export Package
-                </div>
-                <div className="text-xs text-slate-500">Offline content factory ZIP (Full Signature)</div>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Content Type</label>
+                <select className="w-full bg-black border border-slate-800 rounded-lg p-3 text-sm text-white focus:border-cyan-500 outline-none">
+                  <option>Tafsir (Standard)</option>
+                  <option>Hifz Tracking</option>
+                  <option>Arabic Grammar</option>
+                  <option>Tajweed Visuals</option>
+                </select>
               </div>
-              <button className="bg-cyan-500 text-black px-4 py-2 rounded font-bold text-xs">DOWNLOAD ZIP</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal / Panel Placeholder */}
-      {selectedFacility && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-8 relative shadow-2xl">
-            <button className="absolute top-4 right-4 text-slate-500 hover:text-white" onClick={() => setSelectedFacility(null)}>✕</button>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-4 bg-cyan-500/20 rounded-xl text-cyan-400">
-                <selectedFacility.icon size={32} />
+              <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Level</label>
+                    <select className="w-full bg-black border border-slate-800 rounded-lg p-3 text-sm text-white focus:border-cyan-500 outline-none">
+                      {[...Array(10)].map((_, i) => <option key={i+1}>Level {i+1}</option>)}
+                    </select>
+                 </div>
+                 <div>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Language</label>
+                    <select className="w-full bg-black border border-slate-800 rounded-lg p-3 text-sm text-white focus:border-cyan-500 outline-none">
+                      <option>English</option>
+                      <option>Urdu</option>
+                      <option>Indonesian</option>
+                      <option>French</option>
+                    </select>
+                 </div>
               </div>
-              <div>
-                <h2 className="text-3xl font-black text-white">{selectedFacility.name.toUpperCase()}</h2>
-                <p className="text-cyan-500/70 font-mono tracking-widest text-xs">FACILITY ID: {selectedFacility.id.toUpperCase()}-001</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="bg-black/40 p-4 rounded-lg border border-slate-800">
-                <div className="text-xs text-slate-500 uppercase mb-1">Operational Protocol</div>
-                <div className="text-sm font-bold text-slate-200">Standard Production (v8.8)</div>
-              </div>
-              <div className="bg-black/40 p-4 rounded-lg border border-slate-800">
-                <div className="text-xs text-slate-500 uppercase mb-1">Safety Handler</div>
-                <div className="text-sm font-bold text-slate-200">{selectedFacility.id === 'reactors' ? 'Containment (Active)' : 'Auto-Remediation'}</div>
-              </div>
-            </div>
-
-            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Live Throughput Data</h4>
-            <div className="h-24 bg-black/60 rounded-lg mb-6 flex items-end justify-between p-2 gap-1 border border-slate-800">
-              {[...Array(20)].map((_, i) => (
-                <div key={i} className="bg-cyan-500/30 w-full rounded-t-sm" style={{ height: `${Math.random() * 100}%` }}></div>
-              ))}
             </div>
 
             <button
-              className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-black font-black rounded-xl transition-colors uppercase tracking-widest"
-              onClick={() => setSelectedFacility(null)}
+              onClick={handlePlaceOrder}
+              disabled={activeOrder && orderProgress < 100}
+              className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-black font-black rounded-xl transition-all uppercase tracking-widest shadow-lg active:scale-95"
             >
-              Close Facility Monitor
+              Start Fabrication Order
             </button>
+
+            {activeOrder && (
+              <div className="mt-8 pt-8 border-t border-slate-800">
+                <div className="flex justify-between items-center mb-2">
+                   <span className="text-xs font-bold text-cyan-400">{activeOrder.id}</span>
+                   <span className="text-[10px] font-mono text-slate-500">{orderProgress}%</span>
+                </div>
+                <div className="h-2 w-full bg-black rounded-full overflow-hidden mb-3">
+                   <div
+                    className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 transition-all duration-300"
+                    style={{ width: `${orderProgress}%` }}
+                   />
+                </div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] animate-pulse">
+                  CURRENT FACILITY: {orderStep}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Blueprint Library */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 backdrop-blur-sm">
+            <h2 className="text-2xl font-black text-white mb-6 flex items-center gap-3">
+               <ClipboardList className="text-cyan-500" /> BLUEPRINT LIBRARY
+            </h2>
+            <div className="space-y-4">
+              {blueprints.map(bp => (
+                <div key={bp.id} className="p-4 bg-black/40 border border-slate-800 rounded-xl group hover:border-cyan-500/30 transition-all cursor-pointer">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="text-sm font-bold text-slate-200">{bp.name}</div>
+                    <span className="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 text-[10px] font-black rounded">{bp.status}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">TARGET: {bp.domain.toUpperCase()}</span>
+                    <ExternalLink size={14} className="text-slate-600 group-hover:text-cyan-500" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button className="w-full mt-6 py-3 border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all">
+              Export All Blueprints
+            </button>
+          </div>
+        </div>
+
+        {/* Right Columns: Facility Grid */}
+        <div className="xl:col-span-2 space-y-8">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {facilities.map(f => (
+                <FacilityCard key={f.id} {...f} onOpen={() => setSelectedFacility(f)} />
+              ))}
+           </div>
+
+           {/* Plant Event Log (from v8.8) */}
+           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <ShieldAlert className="text-yellow-500" /> RECENT PLANT EVENTS
+             </h2>
+             <div className="space-y-4">
+               <div className="p-4 bg-black/50 border-l-4 border-cyan-500 rounded-r-lg">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-xs font-bold text-cyan-500 uppercase tracking-widest text-[10px]">BTO COMPLETED</span>
+                    <span className="text-[10px] text-slate-600 font-mono">2 mins ago</span>
+                  </div>
+                  <p className="text-sm text-slate-300 font-medium">BTO-902-AL-KAHF fabrication cycle successful. Delivered to Edge Distribution.</p>
+               </div>
+               <div className="p-4 bg-black/50 border-l-4 border-yellow-500 rounded-r-lg opacity-80">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-xs font-bold text-yellow-500 uppercase tracking-widest text-[10px]">REACTOR CONTAINMENT</span>
+                    <span className="text-[10px] text-slate-600 font-mono">1 hour ago</span>
+                  </div>
+                  <p className="text-sm text-slate-300 font-medium">Theological ambiguity flag in 'Attributes of Allah' module. Resolved via HITL.</p>
+               </div>
+             </div>
+           </div>
+        </div>
+      </div>
+
+      {/* Facility Detail Modal */}
+      {selectedFacility && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl p-10 relative shadow-2xl overflow-hidden">
+            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+               <selectedFacility.icon size={200} />
+            </div>
+
+            <button className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors" onClick={() => setSelectedFacility(null)}>✕</button>
+
+            <div className="flex items-center gap-6 mb-10">
+              <div className="p-6 bg-cyan-500/20 rounded-2xl text-cyan-400">
+                <selectedFacility.icon size={48} />
+              </div>
+              <div>
+                <h2 className="text-4xl font-black text-white tracking-tighter">{selectedFacility.name.toUpperCase()}</h2>
+                <div className="flex gap-4 mt-2">
+                   <p className="text-cyan-500 font-mono tracking-widest text-[10px]">FACILITY ID: {selectedFacility.id.toUpperCase()}-089</p>
+                   <p className="text-slate-500 font-mono tracking-widest text-[10px]">SOP: INDUSTRIAL-v8.9</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 mb-10">
+              <div className="bg-black/60 p-6 rounded-2xl border border-slate-800">
+                <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-2">Throughput Trend</div>
+                <div className="h-16 flex items-end gap-1">
+                  {[...Array(12)].map((_, i) => (
+                    <div key={i} className="bg-cyan-500/40 flex-1 rounded-t-sm" style={{ height: `${20 + Math.random() * 80}%` }}></div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-black/60 p-6 rounded-2xl border border-slate-800 flex flex-col justify-center">
+                <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-2">Active Workloads</div>
+                <div className="text-3xl font-black text-white font-mono">1,402 <span className="text-xs text-slate-500">OPS/MIN</span></div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+               <button className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-xl transition-all uppercase tracking-widest text-xs">
+                  Generate Industrial Blueprint
+               </button>
+               <button
+                className="w-full py-4 border border-slate-700 hover:bg-white/5 text-slate-500 hover:text-white font-black rounded-xl transition-all uppercase tracking-widest text-xs"
+                onClick={() => setSelectedFacility(null)}
+               >
+                Return to Plant Overview
+               </button>
+            </div>
           </div>
         </div>
       )}
@@ -219,4 +324,4 @@ const FacilityControlRoom = () => {
   );
 };
 
-export default FacilityControlRoom;
+export default FabricationPlantDashboard;

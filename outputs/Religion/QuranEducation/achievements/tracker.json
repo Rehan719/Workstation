@@ -1,6 +1,6 @@
 {
   "version": "8.0.0",
-  "last_updated": "2026-04-04T00:18:42.418654+00:00",
+  "last_updated": "2026-04-04T01:32:48.893195+00:00",
   "statistics": {
     "total_students": 0,
     "total_hifz_completers": 0,
@@ -181,6 +181,13 @@
       "badge_name": "Sovereign Industrialist",
       "awarded_at": "2026-04-04T00:18:42.418629+00:00",
       "certification_id": "CERT-QEP-S-8801-10"
+    },
+    {
+      "student_id": 8901,
+      "tier": 10,
+      "badge_name": "Sovereign Fabricator",
+      "awarded_at": "2026-04-04T01:32:48.890987+00:00",
+      "certification_id": "CERT-QEP-S-8901-10"
     }
   ],
   "teacher_achievements": [],
@@ -207,6 +214,16 @@
       },
       "awarded_at": "2026-04-03T21:08:26.361621+00:00",
       "certification_id": "CERT-QEP-C-8601-10"
+    },
+    {
+      "user_id": 8901,
+      "tier": 8,
+      "badge_name": "Blueprint Architect",
+      "criteria_met": {
+        "action": "contributed_industrial_blueprint"
+      },
+      "awarded_at": "2026-04-04T01:32:48.893176+00:00",
+      "certification_id": "CERT-QEP-C-8901-8"
     }
   ],
   "cross_domain_achievements": [

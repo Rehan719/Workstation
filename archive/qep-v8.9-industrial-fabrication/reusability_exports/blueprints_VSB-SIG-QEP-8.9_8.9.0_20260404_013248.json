@@ -1,0 +1,9 @@
+{
+  "exported_blueprints": [
+    "digital_engine_v8.9",
+    "validation_reactor_v8.9",
+    "concept_incubator_v8.9",
+    "production_factory_v8.9"
+  ],
+  "reusability_format": "VSB-INDUSTRIAL-JSON-v1"
+}

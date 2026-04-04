@@ -6,7 +6,7 @@ class AchievementTracker:
     """
     Achievement Tracking System for Quran Education Platform
     Domain: RELIGION::QEP::ENTERPRISE
-    v8.8: Enhanced with Sovereign Industrialist (Tier 10 Student) and Facility Governance achievements.
+    v8.9: Enhanced with Sovereign Fabricator (Tier 10 Student) and Industrial Blueprint achievements.
     """
     def __init__(self, tracker_path="outputs/Religion/QuranEducation/achievements/tracker.json"):
         self.tracker_path = tracker_path
@@ -18,7 +18,7 @@ class AchievementTracker:
                 self.data = json.load(f)
         else:
             self.data = {
-                "version": "8.8.0",
+                "version": "8.9.0",
                 "last_updated": None,
                 "statistics": {
                     "total_students": 0,
@@ -30,7 +30,9 @@ class AchievementTracker:
                     "total_ai_governance_audits": 0,
                     "total_global_regions_active": 0,
                     "total_facility_optimizations": 0,
-                    "total_safety_containments_resolved": 0
+                    "total_safety_containments_resolved": 0,
+                    "total_bto_orders_completed": 0,
+                    "total_blueprints_exported": 0
                 },
                 "student_achievements": [],
                 "teacher_achievements": [],
@@ -145,11 +147,15 @@ class AchievementTracker:
                                              {"regions_count": regions_count, "localization_accuracy": localization_accuracy})
         return None
 
-    def evaluate_sovereign_industrialist_tier_10(self, user_id, throughput_optimizations, safety_compliance_score):
-        """Automated evaluation for Tier 10 Sovereign Industrialist (v8.8)"""
-        if throughput_optimizations >= 20 and safety_compliance_score >= 1.0:
-            return self.award_student_badge(user_id, 10, "Sovereign Industrialist")
+    def evaluate_sovereign_fabricator_tier_10(self, user_id, bto_orders, blueprints_viewed):
+        """Automated evaluation for Tier 10 Sovereign Fabricator (v8.9)"""
+        if bto_orders >= 1 and blueprints_viewed >= 1:
+            return self.award_student_badge(user_id, 10, "Sovereign Fabricator")
         return None
+
+    def award_blueprint_architect_badge(self, user_id):
+        """Awards the 'Blueprint Architect' sub-badge"""
+        return self.award_community_badge(user_id, 8, "Blueprint Architect", {"action": "contributed_industrial_blueprint"})
 
     def award_facility_badge(self, user_id, tier, badge_name, facility_id):
         """Awards a facility-specific badge"""

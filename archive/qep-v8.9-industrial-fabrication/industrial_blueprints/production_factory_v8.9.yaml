@@ -1,0 +1,11 @@
+blueprint_id: "VSB-BP-FACTORY-001"
+facility_type: "production_factory"
+target_domains: ["Education", "Employment", "Content"]
+scaling_config:
+  yield_target: "99.9%"
+  mass_customization: true
+pipeline_mapping:
+  forge: "assembly_line"
+  bto: "custom_order_processing"
+  learning: "personalization"
+required_adapters: ["content_distribution_hub", "order_management_system"]
