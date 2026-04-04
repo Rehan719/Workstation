@@ -6,7 +6,7 @@ import {
   Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye,
-  HeartPulse, Workflow, Search, Smartphone, Globe2, Database, Layers
+  HeartPulse, Workflow, Search, Smartphone, Globe2, Database, Layers, Factory
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -47,7 +47,8 @@ const allNavItems: NavItem[] = [
       { name: 'Employment', icon: Briefcase, id: 'employment' },
       { name: 'AI Portal', icon: Cpu, id: 'qep/ai' },
       { name: 'Multi-Domain', icon: Network, id: 'qep/multi-domain' },
-      { name: 'Global Scale', icon: Globe, id: 'qep/global' }
+      { name: 'Global Scale', icon: Globe, id: 'qep/global' },
+      { name: 'Industrial', icon: Factory, id: 'qep/facility' }
     ]
   },
 

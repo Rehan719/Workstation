@@ -6,7 +6,7 @@ class AchievementTracker:
     """
     Achievement Tracking System for Quran Education Platform
     Domain: RELIGION::QEP::ENTERPRISE
-    v8.7: Enhanced with AI Governance Steward (Tier 11) and Global Ambassador (Tier 12).
+    v8.8: Enhanced with Sovereign Industrialist (Tier 10 Student) and Facility Governance achievements.
     """
     def __init__(self, tracker_path="outputs/Religion/QuranEducation/achievements/tracker.json"):
         self.tracker_path = tracker_path
@@ -18,7 +18,7 @@ class AchievementTracker:
                 self.data = json.load(f)
         else:
             self.data = {
-                "version": "8.7.0",
+                "version": "8.8.0",
                 "last_updated": None,
                 "statistics": {
                     "total_students": 0,
@@ -28,7 +28,9 @@ class AchievementTracker:
                     "total_community_contributions": 0,
                     "total_cross_domain_adaptations": 0,
                     "total_ai_governance_audits": 0,
-                    "total_global_regions_active": 0
+                    "total_global_regions_active": 0,
+                    "total_facility_optimizations": 0,
+                    "total_safety_containments_resolved": 0
                 },
                 "student_achievements": [],
                 "teacher_achievements": [],
@@ -142,6 +144,29 @@ class AchievementTracker:
             return self.award_global_badge(user_id, 12, "Global Ambassador",
                                              {"regions_count": regions_count, "localization_accuracy": localization_accuracy})
         return None
+
+    def evaluate_sovereign_industrialist_tier_10(self, user_id, throughput_optimizations, safety_compliance_score):
+        """Automated evaluation for Tier 10 Sovereign Industrialist (v8.8)"""
+        if throughput_optimizations >= 20 and safety_compliance_score >= 1.0:
+            return self.award_student_badge(user_id, 10, "Sovereign Industrialist")
+        return None
+
+    def award_facility_badge(self, user_id, tier, badge_name, facility_id):
+        """Awards a facility-specific badge"""
+        achievement = {
+            "user_id": user_id,
+            "tier": tier,
+            "badge_name": badge_name,
+            "facility_id": facility_id,
+            "awarded_at": datetime.now(timezone.utc).isoformat(),
+            "certification_id": f"CERT-QEP-F-{user_id}-{facility_id}-{tier}"
+        }
+        if "facility_achievements" not in self.data:
+            self.data["facility_achievements"] = []
+        self.data["facility_achievements"].append(achievement)
+        self._save_tracker()
+        print(f"Awarded Facility Badge: {badge_name} (Tier {tier}) for Facility {facility_id}")
+        return achievement
 
     def update_stats(self, key, value):
         if key in self.data["statistics"]:

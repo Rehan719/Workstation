@@ -1,0 +1,13 @@
+{
+  "exported_mechanisms": [
+    "ontology_engine",
+    "audit_trail",
+    "facility_orchestrator",
+    "safety_containment_protocol"
+  ],
+  "facility_mechanisms": [
+    "engine_templates",
+    "reactor_protocols",
+    "incubator_workflows"
+  ]
+}
