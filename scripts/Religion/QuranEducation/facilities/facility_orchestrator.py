@@ -14,7 +14,19 @@ class FacilityOrchestrator:
         with open(protocols_path, 'r') as f:
             self.config = yaml.safe_load(f)
 
-        self.facilities = self.config['facility_protocols']
+        # Support both v8.8 and v8.9 config formats
+        if 'facility_protocols' in self.config:
+            self.facilities = self.config['facility_protocols']
+        elif 'industrial_fabrication' in self.config:
+            # Map the v8.9 facilities list to a dict for backward compat
+            self.facilities = { f['name']: f for f in self.config['industrial_fabrication']['facilities'] }
+            # Also support the pluralized keys used in run_in_facility (e.g. digital_engines)
+            if 'digital_engine_facility' in self.facilities:
+                self.facilities['digital_engines'] = self.facilities['digital_engine_facility']
+            if 'production_factory_facility' in self.facilities:
+                self.facilities['factories'] = self.facilities['production_factory_facility']
+            if 'validation_reactor_facility' in self.facilities:
+                self.facilities['reactors'] = self.facilities['validation_reactor_facility']
         self.log_dir = "archive/qep-v8.8-industrial-ecosystem/facility_logs/"
         os.makedirs(self.log_dir, exist_ok=True)
 

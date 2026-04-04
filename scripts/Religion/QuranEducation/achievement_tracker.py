@@ -6,7 +6,7 @@ class AchievementTracker:
     """
     Achievement Tracking System for Quran Education Platform
     Domain: RELIGION::QEP::ENTERPRISE
-    v8.9: Enhanced with Sovereign Fabricator (Tier 10 Student) and Industrial Blueprint achievements.
+    v9.0: Enhanced with Sovereign Integrator (Tier 10 Student) and Cross-Domain Universalism.
     """
     def __init__(self, tracker_path="outputs/Religion/QuranEducation/achievements/tracker.json"):
         self.tracker_path = tracker_path
@@ -18,7 +18,7 @@ class AchievementTracker:
                 self.data = json.load(f)
         else:
             self.data = {
-                "version": "8.9.0",
+                "version": "9.0.0",
                 "last_updated": None,
                 "statistics": {
                     "total_students": 0,
@@ -32,7 +32,9 @@ class AchievementTracker:
                     "total_facility_optimizations": 0,
                     "total_safety_containments_resolved": 0,
                     "total_bto_orders_completed": 0,
-                    "total_blueprints_exported": 0
+                    "total_blueprints_exported": 0,
+                    "total_cross_domain_integrations": 0,
+                    "total_security_sign_offs": 0
                 },
                 "student_achievements": [],
                 "teacher_achievements": [],
@@ -147,10 +149,10 @@ class AchievementTracker:
                                              {"regions_count": regions_count, "localization_accuracy": localization_accuracy})
         return None
 
-    def evaluate_sovereign_fabricator_tier_10(self, user_id, bto_orders, blueprints_viewed):
-        """Automated evaluation for Tier 10 Sovereign Fabricator (v8.9)"""
-        if bto_orders >= 1 and blueprints_viewed >= 1:
-            return self.award_student_badge(user_id, 10, "Sovereign Fabricator")
+    def evaluate_sovereign_integrator_tier_10(self, user_id, cross_domain_count, security_sign_off):
+        """Automated evaluation for Tier 10 Sovereign Integrator (v9.0)"""
+        if cross_domain_count >= 4 and security_sign_off:
+            return self.award_student_badge(user_id, 10, "Sovereign Integrator")
         return None
 
     def award_blueprint_architect_badge(self, user_id):

@@ -48,7 +48,8 @@ const allNavItems: NavItem[] = [
       { name: 'AI Portal', icon: Cpu, id: 'qep/ai' },
       { name: 'Multi-Domain', icon: Network, id: 'qep/multi-domain' },
       { name: 'Global Scale', icon: Globe, id: 'qep/global' },
-      { name: 'Industrial', icon: Factory, id: 'qep/facility' }
+      { name: 'Industrial', icon: Factory, id: 'qep/facility' },
+      { name: 'Ultimate v9', icon: Zap, id: 'qep/v9' }
     ]
   },
 
