@@ -3,23 +3,39 @@ import json
 import hashlib
 from datetime import datetime, timezone
 from typing import Dict, Any, List
+import time
 
 class CommunityContributionOrchestrator:
     """
     BACKEND ORCHESTRATOR: COMMUNITY CONTRIBUTION WORKFLOW v8.3
+    Industrialized v8.8 Backend: Acts as "Community Incubator".
     Handles ingestion, validation, and pipeline routing for community content.
     """
-    def __init__(self, archive_manager, scholar_handler):
+    def __init__(self, archive_manager, scholar_handler, facility_orchestrator=None):
         self.archive = archive_manager
         self.scholar = scholar_handler
+        self.facility_orchestrator = facility_orchestrator
         self.output_dir = "outputs/Religion/QuranEducation/community"
-        self.audit_log = f"{self.output_dir}/audit/community_contribution_log_v8.3.jsonl"
+        self.audit_log = f"{self.output_dir}/audit/community_contribution_log_v8.8.jsonl"
         os.makedirs(os.path.dirname(self.audit_log), exist_ok=True)
 
     def ingest_contribution(self, contribution_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Ingest a community contribution with validation and pipeline routing.
+        Executed within the "Community Incubator" facility in v8.8.
         """
+        if self.facility_orchestrator:
+            return self.facility_orchestrator.run_in_facility(
+                "incubators",
+                "community_contribution_ingestion",
+                self._ingest_logic,
+                contribution_data,
+                item_count=1
+            )
+        else:
+            return self._ingest_logic(contribution_data)
+
+    def _ingest_logic(self, contribution_data: Dict[str, Any]) -> Dict[str, Any]:
         timestamp = datetime.now(timezone.utc).isoformat()
         contribution_id = f"CONT-{hashlib.sha256(f'{timestamp}|{contribution_data.get('contributor')}|{contribution_data.get('title')}'.encode()).hexdigest()[:8]}"
 
