@@ -60,6 +60,7 @@ import { QEPAIPortal as QEPAIPortalPage } from './pages/domains/QEPAIPortalPage'
 import { QEPMultiDomainPortal as QEPMultiDomainPortalPage } from './pages/domains/QEPMultiDomainPortalPage';
 import { QEPGlobalPortal as QEPGlobalPortalPage } from './pages/domains/QEPGlobalPortalPage';
 import FacilityControlRoom from './pages/domains/FacilityControlRoom';
+import QEPV9CommandCenter from './pages/domains/QEPV9CommandCenter';
 import HumanOversightQueue from './components/qep/scholar/HumanOversightQueue';
 import { IntrospectionDashboard } from './pages/IntrospectionDashboard';
 import { ARVRSandbox } from './pages/platforms/ARVRSandbox';
@@ -166,6 +167,7 @@ function App() {
           <Route path="/qep/multi-domain" element={<QEPMultiDomainPortalPage />} />
           <Route path="/qep/global" element={<QEPGlobalPortalPage />} />
           <Route path="/qep/facility" element={<FacilityControlRoom />} />
+          <Route path="/qep/v9" element={<QEPV9CommandCenter />} />
           <Route path="/qep/oversight" element={<HumanOversightQueue />} />
           <Route path="/constitution" element={<ConstitutionalUI />} />
           <Route path="/council" element={<CouncilInterface />} />
