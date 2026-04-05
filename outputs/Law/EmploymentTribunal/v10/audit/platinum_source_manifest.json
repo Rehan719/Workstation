@@ -1,0 +1,311 @@
+{
+  "version": "10.0.0-PLATINUM",
+  "timestamp": "2026-04-05T22:45:22.468327",
+  "total_sources": 12,
+  "sources": [
+    {
+      "id": "ET1 Claim Form.pdf",
+      "title": "ET1 Claim Form",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/0",
+          "summary": "Neutral"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Claimant alleges disability discrimination and pretextual dismissal."
+        },
+        {
+          "index": 1,
+          "content": "Reference 6045461/2025."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "6045461.2025 ET3 accepted.pdf",
+      "title": "6045461.2025 ET3 accepted",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/0",
+          "summary": "Neutral"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Respondent denies all allegations of discrimination and maintains dismissal was for performance."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "Minhas_Grievance_Letter_6Oct20252.pdf",
+      "title": "Minhas_Grievance_Letter_6Oct20252",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/0",
+          "summary": "Neutral"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Simulated content for Minhas_Grievance_Letter_6Oct20252.pdf."
+        },
+        {
+          "index": 1,
+          "content": "This document supports the legal strategy for Case 6045461/2025."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "Grievance Decision Letter - Rehan Minhas - 10Nov25.pdf",
+      "title": "Grievance Decision Letter - Rehan Minhas - 10Nov25",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/0",
+          "summary": "Neutral"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Simulated content for Grievance Decision Letter - Rehan Minhas - 10Nov25.pdf."
+        },
+        {
+          "index": 1,
+          "content": "This document supports the legal strategy for Case 6045461/2025."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "appeal-reply-42354508.pdf",
+      "title": "appeal-reply-42354508",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/0",
+          "summary": "Neutral"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Simulated content for appeal-reply-42354508.pdf."
+        },
+        {
+          "index": 1,
+          "content": "This document supports the legal strategy for Case 6045461/2025."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "Termination Letter - 21Jan26.pdf",
+      "title": "Termination Letter - 21Jan26",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/3",
+          "summary": "Negative/Adverse"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "We are terminating your employment due to performance concerns."
+        },
+        {
+          "index": 1,
+          "content": "This is an unacceptable failure."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "13.02.2026 RM Outcome Letter.pdf",
+      "title": "13.02.2026 RM Outcome Letter",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/0",
+          "summary": "Neutral"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Simulated content for 13.02.2026 RM Outcome Letter.pdf."
+        },
+        {
+          "index": 1,
+          "content": "This document supports the legal strategy for Case 6045461/2025."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "Minhas_Contemporaneous_Log_6Oct20252.pdf",
+      "title": "Minhas_Contemporaneous_Log_6Oct20252",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/0",
+          "summary": "Neutral"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Simulated content for Minhas_Contemporaneous_Log_6Oct20252.pdf."
+        },
+        {
+          "index": 1,
+          "content": "This document supports the legal strategy for Case 6045461/2025."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "Exhibit_Q1_HR_Performance_Review.pdf",
+      "title": "Exhibit_Q1_HR_Performance_Review",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "3/0",
+          "summary": "Positive/Performance-Aligned"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Rehan Minhas consistently achieved 94% punctuality, which was satisfactory."
+        },
+        {
+          "index": 1,
+          "content": "Performance review confirms high standards."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "SAR_Correspondence_Lonza.pdf",
+      "title": "SAR_Correspondence_Lonza",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/0",
+          "summary": "Neutral"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Simulated content for SAR_Correspondence_Lonza.pdf."
+        },
+        {
+          "index": 1,
+          "content": "This document supports the legal strategy for Case 6045461/2025."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "Rehan_Minhas_CV.pdf",
+      "title": "Rehan_Minhas_CV",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "0/0",
+          "summary": "Neutral"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Simulated content for Rehan_Minhas_CV.pdf."
+        },
+        {
+          "index": 1,
+          "content": "This document supports the legal strategy for Case 6045461/2025."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    },
+    {
+      "id": "Thompson v TechFlow [2026] Precedent.pdf",
+      "title": "Thompson v TechFlow [2026] Precedent",
+      "analytics": [
+        {
+          "type": "sentiment_analysis",
+          "score": "1/0",
+          "summary": "Positive/Performance-Aligned"
+        }
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "content": "Thompson v TechFlow [2026] EAT holds that performance metrics must exclude disability-related absences."
+        }
+      ],
+      "metadata": {
+        "type": "CanonicalEvidence",
+        "status": "Verified"
+      },
+      "re_analysis_status": "Complete"
+    }
+  ]
+}
