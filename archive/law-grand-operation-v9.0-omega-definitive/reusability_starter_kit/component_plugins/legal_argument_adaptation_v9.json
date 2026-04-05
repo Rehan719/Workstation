@@ -1,0 +1,7 @@
+{
+  "plugin_id": "LAW-PLG-001",
+  "name": "Legal Argument Adaptation Engine",
+  "version": "9.0.0",
+  "function": "Adapts core legal arguments for different jurisdictions",
+  "pipeline_hooks": ["knowledge", "introspection"]
+}
