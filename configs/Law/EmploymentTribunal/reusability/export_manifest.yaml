@@ -1,0 +1,10 @@
+reusability_export:
+  product_id: VSB-SIG-LAW-9.0-ULTIMATE
+  exported_at: "2026-04-04T12:00:00Z"
+  packages:
+    - name: "litigation_starter_kit"
+      path: "archive/law-grand-operation-v9.0-ultimate-integrated/reusability_exports/starter_kit/"
+    - name: "expert_mechanisms"
+      path: "configs/Law/EmploymentTribunal/expert/"
+    - name: "production_mechanisms"
+      path: "configs/Law/EmploymentTribunal/production/"

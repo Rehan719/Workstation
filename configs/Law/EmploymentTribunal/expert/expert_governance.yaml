@@ -1,0 +1,7 @@
+expert_governance:
+  board_members: ["SIM-BARRISTER-01", "SIM-SOLICITOR-01"]
+  reputation_system:
+    enabled: true
+    min_score_for_contribution: 0.8
+  review_workflow:
+    steps: ["submission", "peer_review", "compliance_check", "approval"]
