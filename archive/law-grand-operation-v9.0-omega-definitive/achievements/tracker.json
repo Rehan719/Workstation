@@ -1,0 +1,115 @@
+{
+  "version": "9.0.0-ULTIMATE",
+  "domain": "LAW",
+  "execution_date": "2026-04-05",
+  "last_updated": "2026-04-05T14:10:03.369316+00:00",
+  "statistics": {
+    "total_litigants": 0,
+    "total_et1_filed": 0,
+    "total_disclosures_completed": 0,
+    "total_witness_statements_completed": 0,
+    "total_favorable_outcomes": 0,
+    "total_expert_contributions": 0,
+    "total_reusable_mechanisms_exported": 0,
+    "total_cross_case_adaptations": 0,
+    "total_production_deployments": 0,
+    "total_facility_integrations": 0
+  },
+  "litigant_achievements": [
+    {
+      "litigant_id": "L-001",
+      "tier": 1,
+      "badge_name": "Claimant (Mudda'i)",
+      "icon": "\ud83d\udccb",
+      "criteria": "Complete orientation + file ET1",
+      "awarded_at": "2026-04-05T14:10:03.364714+00:00",
+      "certification_id": "CERT-LAW-L-L-001-1"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 2,
+      "badge_name": "Prepared Litigant (Musta'id)",
+      "icon": "\ud83d\uddc2\ufe0f",
+      "criteria": "Complete disclosure + evidence mapping",
+      "awarded_at": "2026-04-05T14:10:03.365047+00:00",
+      "certification_id": "CERT-LAW-L-L-001-2"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 3,
+      "badge_name": "Active Litigant (Fa''al)",
+      "icon": "\u2696\ufe0f",
+      "criteria": "Complete witness statement + ACAS engagement",
+      "awarded_at": "2026-04-05T14:10:03.365751+00:00",
+      "certification_id": "CERT-LAW-L-L-001-3"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 4,
+      "badge_name": "Advanced Litigant (Mutaqaddim)",
+      "icon": "\ud83c\udfaf",
+      "criteria": "Complete skeleton argument + cross-exam prep",
+      "awarded_at": "2026-04-05T14:10:03.366189+00:00",
+      "certification_id": "CERT-LAW-L-L-001-4"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 5,
+      "badge_name": "Hearing Candidate (Murashsha\u1e25)",
+      "icon": "\ud83c\udfad",
+      "criteria": "Complete bundle + pre-hearing simulation",
+      "awarded_at": "2026-04-05T14:10:03.366742+00:00",
+      "certification_id": "CERT-LAW-L-L-001-5"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 6,
+      "badge_name": "Successful Litigant (N\u0101ji\u1e25)",
+      "icon": "\ud83d\udc51",
+      "criteria": "Favorable tribunal outcome + costs recovery",
+      "awarded_at": "2026-04-05T14:10:03.367127+00:00",
+      "certification_id": "CERT-LAW-L-L-001-6"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 7,
+      "badge_name": "Legal Mentor (Murshid)",
+      "icon": "\ud83c\udfdb\ufe0f",
+      "criteria": "Certified to guide other litigants",
+      "awarded_at": "2026-04-05T14:10:03.367627+00:00",
+      "certification_id": "CERT-LAW-L-L-001-7"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 8,
+      "badge_name": "Pipeline Architect",
+      "icon": "\ud83d\udd27",
+      "criteria": "Contribute reusable litigation pipeline mechanisms",
+      "awarded_at": "2026-04-05T14:10:03.368168+00:00",
+      "certification_id": "CERT-LAW-L-L-001-8"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 9,
+      "badge_name": "Community Guardian",
+      "icon": "\ud83d\udee1\ufe0f",
+      "criteria": "Moderate expert contributions + ensure quality",
+      "awarded_at": "2026-04-05T14:10:03.368699+00:00",
+      "certification_id": "CERT-LAW-L-L-001-9"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 10,
+      "badge_name": "Sovereign Integrator",
+      "icon": "\ud83c\udf10",
+      "criteria": "Successfully integrate litigation platform across cases",
+      "awarded_at": "2026-04-05T14:10:03.369305+00:00",
+      "certification_id": "CERT-LAW-L-L-001-10"
+    }
+  ],
+  "expert_achievements": [],
+  "community_achievements": [],
+  "cross_case_achievements": [],
+  "production_achievements": [],
+  "facility_achievements": []
+}

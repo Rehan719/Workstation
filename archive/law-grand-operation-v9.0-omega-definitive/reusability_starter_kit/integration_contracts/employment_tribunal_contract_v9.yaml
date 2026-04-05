@@ -1,0 +1,7 @@
+contract:
+  id: ET-CON-001
+  domain: LAW
+  interfaces:
+    - EvidenceIngestion
+    - NarrativeSynthesis
+    - ExpertReviewSignoff
