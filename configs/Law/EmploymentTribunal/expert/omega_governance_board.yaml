@@ -1,0 +1,5 @@
+expert_governance_omega:
+  board: ["OMEGA-BARRISTER-LEAD", "VSB-LEGAL-COE"]
+  authentication: "Cryptographic SHA-256 Signature"
+  validation_standard: "Thompson-Scrutiny-2026"
+  audit_retention: "Permanent (Sovereign Archive)"
