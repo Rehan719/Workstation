@@ -1,0 +1,1763 @@
+{
+  "version": "9.0.0-GOLD-REGEN",
+  "nodes": [
+    {
+      "path": "/app/RM CV Science Oct 2025 (1).docx",
+      "hash": "3af52ecb09251d33ec98fcfd977965b9a687ad7a40654d4cfcb9c48bd264cc51",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/RM CV Science Dec24 (1) (1).docx",
+      "hash": "6b6044a3ec488495f1d6f8c94411ce9aeb991e8d516ebd149d4ecff035c3a794",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Lonza Biotechnologist Interview prep (1).docx",
+      "hash": "c7325713d779fec93bf7739fc9227fd64fea06a00c59b9e40a65e2df04d0a4b4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Book idea The Path to Allah\u2019s Love, A Journey of Faith1.docx",
+      "hash": "5ad2e827136894cadb1339ffab770d46d8453c9a8c37bdb8543dee531431ff09",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/RM CV Science October 2025.docx",
+      "hash": "65f59555ee8ddb6992614b424b69a9d51228088e8deca9362626683998c1074b",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/RM CV Science 2025 (1).pdf",
+      "hash": "0fec237d0f4480647ce01e07bf653aea6e350e98e1adf2a3aa693fef1496e6dc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Civil Service Recruitment-Principles-April-2018.pdf",
+      "hash": "3b38b1492191e9706c70163f174969dad22c13b7702ba2576e5ac8cfa9d188fc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Book idea The Path to Allah\u2019s Love, A Journey of Faith1.pdf",
+      "hash": "f6c5e20b40737f4e0db9c01a9e61f0330cbed3763407a9d37a84d94399e99ef5",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Rehan Minhas CV NOV 2023n.docx",
+      "hash": "ec1ece478ed2ee79c1052ef1c2f5ef63befb2272b968dbc57a1a43c8ab2f91d7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Book idea The Path to Allah\u2019s Love, A Journey of Faith.docx",
+      "hash": "45edba5a65558fd91955348f55d1e47bbc185b291f4eb5a34d344906f18a0d2a",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/RM CV Science 2025 (1).docx",
+      "hash": "3b66b544aaf8cbebe50ab5ecd1f9959ac4bc56b9e77e86f46ce74e3df52e4419",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Updated_RM_CV_Science_2025 (1).docx",
+      "hash": "1eed99d81f185ed397ceffdd406ccdfda1d4faddc50cee5e592916091afeb9f4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/RM CV Science 2025.docx",
+      "hash": "2b6d352a10a8ee9e02edbc85176eb4d8abfd925d6eadc0fabeca329337e428a1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Lonza Biotechnologist Interview prep.docx",
+      "hash": "3ce8e5ba9dde3ece583d8d6775036a0afa102a64785e85000b66f66c84fd2549",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Interview prep SEO NIBSC .docx",
+      "hash": "427a19cc35c8d3637f6c27f45141de81582ac838270e4de42398d88744ec02e1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Interview prep UKHSA HEO .docx",
+      "hash": "6d93a950415bc7df634f820454e93b4bbc0c924cc6c9d68490aa3edd0ea7a1a3",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/RM Sci CV 100624 (1).docx",
+      "hash": "56dbf3e0c9abeaea206dad9d595a61d8efc0d6d0eea5efada94c75eace2d47b1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Lonza Biotechnologist 1 Interview Preparation Guide (1).docx",
+      "hash": "ce27da32e676a7bf1b1e366e8a4115a4f627c17cd221590e4c6fd60215586180",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Loving-Allahs-Beloved-by-Life-With-Allah.pdf",
+      "hash": "e726e9a43e4cfe5938bf3e4d9973bb679907ac5f77c3a79fe812ea9dcf21fe29",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/CONTRIBUTING.md",
+      "hash": "24a9995bc7c0ee594c7e34ecac7106500116be957d97b56ae980c5bb5909d6af",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Book idea The Path to Allah\u2019s Love, A Journey of Faith a.docx",
+      "hash": "9bb2f8e4ace3a0ab9c0817f22ab946aae10a65a6ed5bee067cdb25810680e185",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/CODE_OF_CONDUCT.md",
+      "hash": "b66d7393acdeb791790c78d26b13e813ee7b6145c99ea04b28e9ee7403092edb",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Application_Form_Guidance_Notes.pdf",
+      "hash": "c1c2af57221687f35ed410f285c5528e69a6defbefe80f1a6f2f98f993cadff9",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Book idea The Path to Allah\u2019s Love, A Journey of Faith2.docx",
+      "hash": "9430463a9a263876c331509b74dbae5544bdc75577324f717512404c553614ca",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/RM CV Science 2025.pdf",
+      "hash": "a9ea754134cab85b334c009c91b767cbdb6231d06b3f1ed06cb7e26e0432d332",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/RM CV Science Oct 2025.docx",
+      "hash": "afd248325aec89c4721c6fb6cbb4c0e90bf96b2e09a774bc249132cca65ba475",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Lonza Biotechnologist 1 Interview Preparation Guide.pdf",
+      "hash": "edf412bb83e0c2f2dc47ce80c966e138791d82ef1e576221245d76869978cee1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/RM CV Science Dec24 (1).pdf",
+      "hash": "3c60976d42a0c310d719f79352e429571c423dfcb012f6440ef338d4bb3dc79f",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Healthcare Scientist - Civil Service Jobs - GOV.UK.pdf",
+      "hash": "dbede23b2566ac3e7229107b7984621a20f9cc2dd0b24d7aaef0a1b91e6df889",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Book idea The Path to Allah\u2019s Love, A Journey of Faith1 (2).docx",
+      "hash": "d92ab32cf9d2dd611551bedcf4a1ca00ffff10ef6513e22dbc9d6c0c77813aa8",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Updated_RM_CV_Science_2025.docx",
+      "hash": "2ebde332ea00386584c44e927ba1627b56fdcfa757b2c90cebf1ed9373171394",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Information+Sheet+Selection+Process.pdf",
+      "hash": "35c56bfb04d0a14e60a993962e793ef5b607b720564606fa632478162c2e9cd0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Rehan Minhas CV 2024.docx",
+      "hash": "f4ee63688fe4cc52e51331cbce9d08e0cd25670aa7916d5c995e19a474bec90f",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Book idea The Path to Allah\u2019s Love, A Journey of Faith2 (1).docx",
+      "hash": "8ea8b91791f67a5629609add19fa6b67bc02c7294464634c51dcb71c9ce1e7ec",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Rehan Minhas CV Jul 2023 (1).docx",
+      "hash": "c4a9412fa1eb2c45aef2368a8800dca1fce806e79c2b5896f69632b5bf6fd6a6",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Rehan Minhas CV NOV 2023 (1).docx",
+      "hash": "35dba415debe8c2f752c92403a0da4ba36ef70177b77e7b874db04d0ef318b3a",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/README.md",
+      "hash": "6c8d38fbd34530f82a4d9b7e422499b777f693e35e58311b01902a3e6ea7c7c0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/The Path to Allah\u2019s Love3.pdf",
+      "hash": "c8c31e89c13ede40563f22a9b7ada4ab21e11b389de82e388f71b7ac1a0a654f",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/Book idea The Path to Allah\u2019s Love, A Journey of Faith1 (1).docx",
+      "hash": "8cbda609d070b0ddbde1870a3fd6056e808a09655900d9b54f53411f1642fb38",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/1. Appeal Hearing Outcome - 05Dec25 - Rehan Minhas.pdf",
+      "hash": "0bd586d9669c88cc4fda0edb55bd8ef8ec5173ce66dafb1605712caf60c4d85a",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/0944deb9-5815-49ba-b1d1-0e96713ccab5.pdf",
+      "hash": "9521b17e11aa5295a34964d9fd03d59b62d2518eda224ca1f9eb6051a156cb2a",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/Rehan Minhas Notes Nov25.pdf",
+      "hash": "84261307e01342ae53ba2077944c83c5c1119a4495dce514eada2fa21ade5032",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/2. Notes from Grievance Hearing 03Nov25.pdf",
+      "hash": "f7b9481832e3f15380319340564613d405a8899a20530baaee2b597d8cc36de5",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/21.01.26 Rehan Minhas - Probationary Review Notes.pdf",
+      "hash": "7210de420ddd0d8b3fea06277efd02d8dc40356eb2859c95a976b3012c896431",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/Minhas_Contemporaneous_Log_6Oct20252.pdf",
+      "hash": "e074d9861082ce32538c90747a6a148a47b681df20eabb84d3c82a446a66e094",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/appeal-reply-42354508.pdf",
+      "hash": "bd374eeed19498c1472f2ff1d3807ccc2d4f11d5ee53b861219ae1b3b5b71c94",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/Minhas_PostGrievance_Log_6Oct2025.pdf",
+      "hash": "75902a092072f81264c1b94346dc402b50e8268e92c10f764918ace7ba0f79fa",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/22.01.26  Settlement Agreement_Rehan Minhas.pdf",
+      "hash": "b88655409e9c906a9bb6aa7e92a02d890b5f097a4a2dd228cf12946ecbb83c46",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/R Minhas - Grounds of Resistance - 18.2.26.pdf",
+      "hash": "40d30f732cf7ea55b99551fa27dceb667d6e3c13e99c8e12447527cd50200445",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/Lonza Biologics Plc-ET3_Response.pdf",
+      "hash": "f2bed45845d1800a357b25e04256fd157dec224cb09d8a66badeabb8adccb563",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/6045461.2025 ET3 accepted.pdf",
+      "hash": "1e4a75cafe913f0cdea673c352e0d9be811ee800279c066cda1c34aae058a15e",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/76 EC (C) Certificate.pdf",
+      "hash": "945e0a50aab4f2981a0ed5019e4d432bbf4312883ce97b08d6f4e55674651aa9",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/Minhas_Grievance_Letter_6Oct20252.pdf",
+      "hash": "1e22a0fa4af074eb6abcd92c1cd4542c6f54b0e41e81656fe8200ed0d521337d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/Statement for Grievance Hearing.docx",
+      "hash": "b8c3ca1a0c475688c5fe9b20033a51ec71c2d0a0673f384652ee48b4b7b885e3",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/21.01.26 Rehan Minhas - Terminaion during Probation Period.pdf",
+      "hash": "b1f79dfb418b54b8da95ad7a29248c07beb5290e705840831eab9256af7cbf13",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/3. Grievance Decision Letter - Rehan Minhas - 10Nov25.pdf",
+      "hash": "d388c7f0a0fe2f6f0d93d681bf992be823e02481daa05c7900cedfa63b16cc55",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/Collated Anonymised Investigation Notes.pdf",
+      "hash": "e01c11ea5256977ca8a5d1320c7b789112ac183a1b7987c8195e3559a1645143",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/5115df67-ad7e-481b-9f2c-8a83fc86d182.pdf",
+      "hash": "4029b70aee8f4a5d8d9e9f6c468859b8b2b024bb8984b45e73d2a77e52777ad4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/chronology.pdf",
+      "hash": "67662af3ce327999c3298021fec3fa127d991dba5731ed572190c5e76aaba8dc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/Minhas_PostGrievance_Log_Update_13Oct2025.pdf",
+      "hash": "8d9675dd9e95ac74281b947d10c6b2a127ce45fd99da7eecb363bbdbb30aa6a9",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/99cfd2ef-a887-4c29-b766-12b298eed027.pdf",
+      "hash": "3c136901c5609691b32356d75b998990d500bb09ad84768a8b0e7f2de74dd491",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/13.02.2026 RM Outcome Letter 1 SIGNED.pdf",
+      "hash": "f19ca062f91154e0e0920d8efba51c01bb57bcee4a2cb8062086bc21b9af7f07",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/inputs/Statement for Grievance Hearing.pdf",
+      "hash": "4314347177de3e2421cc8226d3e5ad63b5257bce40e043c2cbdce6e3676edda0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.9-industrial-fabrication/reusability_exports/blueprints_VSB-SIG-QEP-8.9_8.9.0_20260404_013248.json",
+      "hash": "695bdbd562bf45ec157fc2add64cfee247c9281c0f26bbe55fbcee335cedd2c4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.9-industrial-fabrication/superseded/curriculum/VSB-SIG-QEP-8.9_8.9.0_20260404_013248/manifest.json",
+      "hash": "c73197a229e86baffaf17f7e76d4adbe26c66aebdf8b1e74db4a452afb306ec0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.9-industrial-fabrication/superseded/curriculum/VSB-SIG-QEP-8.9_8.9.0_20260404_013248/artifacts.json",
+      "hash": "27a41947c72313498db2732c604d7965ab86b63591bdddc160b1b43c6d47bb73",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.9-industrial-fabrication/industrial_blueprints/digital_engine_v8.9.yaml",
+      "hash": "bbdf243b0210946def18231f2d84932e9a2bf3fa8b88fd0e72dec953a5854330",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.9-industrial-fabrication/industrial_blueprints/production_factory_v8.9.yaml",
+      "hash": "4a310247854b63bbb33ac07c416e824ed585d497ae94fb9115ee2723a77f34a2",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.9-industrial-fabrication/industrial_blueprints/validation_reactor_v8.9.yaml",
+      "hash": "b353c6abbf5f6c0862e0d0a539c2a111ee960d5234a58b18300ce26205f9dc56",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.9-industrial-fabrication/industrial_blueprints/concept_incubator_v8.9.yaml",
+      "hash": "ab6dff97a947e0f4fd3c07fa2c8348588c1fd3a9ab481f1e3c754215038115e3",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/mock_apk_placeholder.apk",
+      "hash": "128f8bccd9e5c50d0c1b89ec82e4b4ba651cd1bd1c70b18783748227e67a9ef5",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/mobile_poc_structure.json",
+      "hash": "9c3a8c4151e91f1268d4feea5036ede46c19f5c3b086844854e49e6f0ab806bb",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/reusability_exports/mechanisms_VSB-SIG-QEP-8.8_8.8.0_20260403_235222.json",
+      "hash": "c40465cc11200e744df47ae3dc92b293cf8a2bc9ebc758fa421d3cda0f3a900f",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/reusability_exports/mechanisms_VSB-SIG-QEP-8.8_8.8.0_20260403_233705.json",
+      "hash": "ab87425da7eb0985bdbdbb1b551ca32551d72df64c2c9efc1e15635a3506adc9",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/facility_logs/legal_knowledge_incubator.jsonl",
+      "hash": "b7c6d5f04dbbc0a1cf5c711f11005a5e2f963e99ff721789e4171883190190ce",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/facility_logs/legal_authority_reactor.jsonl",
+      "hash": "cb5623bace729884e437c4ee4026ccfb30aadd3b859cc8c87966efa5d67a65a1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/facility_logs/evidence_scraping_engine.jsonl",
+      "hash": "bd4cf2be70455a25b325f50128465807e561b001dd73350170e0184f0c769faa",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/facility_logs/security_petri_dish.jsonl",
+      "hash": "d437fc95e9d3929095f20cebacff970a4a744d06fd37e8ebe05d1f24f75ebf20",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/facility_logs/legal_delivery_factory.jsonl",
+      "hash": "b258d6d3320d0ab0768ad31f6a7e3e78ea97f67e9550063cf01aceb8cd88f508",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/facility_logs/litigation_learning_engine.jsonl",
+      "hash": "dad3ecf991a0a126f29ef46fa32bf4b92e09d17af5ff195455972e0b70b445b7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/facility_logs/legal_content_factory.jsonl",
+      "hash": "8a87f0ae1d787c933a40d5f538e540cb7fce442367985c6a0f925a239c91976b",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/superseded/curriculum/VSB-SIG-QEP-8.8_8.8.0_20260403_235222/manifest.json",
+      "hash": "7b9c128a1b7a2c6d2af6ae2d29ae3040b022bab05adad69d2f116d0a75593e0d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/superseded/curriculum/VSB-SIG-QEP-8.8_8.8.0_20260403_235222/artifacts.json",
+      "hash": "bbab0226b854d19964d5b83149e1aae8df296b2d5b04f253cbb6f715cc4a0207",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/superseded/curriculum/VSB-SIG-QEP-8.8_8.8.0_20260403_233705/manifest.json",
+      "hash": "537e2d01ec5b5e95d6c4f1f5bd686bb3c983fdaa2e33da905385285b379098a3",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.8-industrial-ecosystem/superseded/curriculum/VSB-SIG-QEP-8.8_8.8.0_20260403_233705/artifacts.json",
+      "hash": "128aa59bff547249890114381b7e188cad4ca87ebd6169f603cf11c60a33f9c7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-ai-enhanced-federated/reusability_exports/mechanisms_VSB-SIG-QEP-8.7_8.7.0_20260403_223307.json",
+      "hash": "ef6979f9e2e3d142ad5219fe5a61a42638df42ab071597b0c5edc57045b6e6b4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-ai-enhanced-federated/superseded/curriculum/VSB-SIG-QEP-8.7_8.7.0_20260403_223307/manifest.json",
+      "hash": "cd36cfe57f7504fbdfebcafd112eff1d15895033e57a8a9a9577fb10fa91c551",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-ai-enhanced-federated/superseded/curriculum/VSB-SIG-QEP-8.7_8.7.0_20260403_223307/artifacts.json",
+      "hash": "87dbded2d736614866ca53a2301d1e6689ada582795e651a9d28ef4a9289b811",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.2-sovereign-signature/reusability_exports/v8.2.0/reusability_package.json",
+      "hash": "06524d8e1674a16b2dd50fc79a93c5633030eaa0927f359cbbd01ebf3b2abc92",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.2-sovereign-signature/superseded/curriculum/v8.2.0_20260403_150939/manifest.json",
+      "hash": "0caae02744ae2681f512b260bcd81771542a8eca39a6fcec146b9416a5e94ba6",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.2-sovereign-signature/superseded/curriculum/v8.2.0_20260403_151625/manifest.json",
+      "hash": "1e3f42feb430cd3536263bac3ba981799a0ce128e49b1ee3a3f4d1003e6bbb05",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.2-sovereign-signature/superseded/curriculum/v8.2.0_20260403_150330/manifest.json",
+      "hash": "15759be436c51a4e21a300f46c6e656d5fa500077df105f78b398f934371dcbc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.2-sovereign-signature/superseded/curriculum/v8.2.0_20260403_150745/manifest.json",
+      "hash": "1fea3db3af1fe86d604684cf4b2763f0719b3b1daad18c952396afaa58ccd1f6",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/06_evidence_map.md",
+      "hash": "c0b82ee64028c90405f3aca52c0b83600cca8e20766d35bc22a6f3d84904c016",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/19_tribunal_bundle_index.md",
+      "hash": "1d797341d1843dc136419401dea896301aa924ff63fe846f1a0cd8b4bc96ad6f",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/12_draft_witness_statement.md",
+      "hash": "32c53d571256dc086bcb352f283b74adcfc49fd707e3b49f954e1ce3d38ec65c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/17_cross_examination_framework.md",
+      "hash": "2d6b759785e1028edc66fb0f6e626d849eddc1fa11c06958c430ffdd05684116",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/11_schedule_of_loss.md",
+      "hash": "086b310a31cf66d5c0634e03e976794df67e41c125a76b96a7e47d1c6563c05b",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/09_acas_settlement.md",
+      "hash": "922bc427ff87a9dcfeaa4b2a1652174aede787e744cdff562cdc3fd0646c2b16",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/manifest.json",
+      "hash": "4e517f791e9f85bb80893b879c95c3ff00a59a5a542c9103fa26e5a2e2646b51",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/08_disclosure_request.md",
+      "hash": "5d249db3b374c05c0f9d4c99a7c60a8d2561bb48fe95a3fa21df2ccd0eec970d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/24_lip_survival_guide.md",
+      "hash": "3d51ed787cbe07339afd2707d96487a141663da926deb5611768cc3cce33881a",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/23_acas_tactical_briefing.md",
+      "hash": "509c6b4a3b8d8fc580b878974b102985abdd10701557ed465d663944fa16be3e",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/16_skeleton_argument_liability.md",
+      "hash": "f0fd428a2854a16abf3772bc34beb644c27cf5304c26b487789cde85259c05fc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/02_chronology.md",
+      "hash": "4ff51260c48a59ed2771d6706f6532e961794ac18e04507f3874caa299ecc408",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/04_strengths.md",
+      "hash": "40fd14bfca0cf48a826e9d6e679f6581f7da55548f3e0a1cccefa63a677d0afd",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/14_witness_briefing.md",
+      "hash": "c24ac0e6f3310b74c5f27a2a8ddaa809c1accda005e3e8350fe2a1641a5545bc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/01_executive_summary.md",
+      "hash": "dd4cabcd3a29d6189573ee438219eb5a7dd391d5ff9261e5be5617b5033e5db4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/FINAL_SUBMISSION_REPORT_v9.0_ULTIMATE.md",
+      "hash": "9d40b1d8b4bd9f453fd1793d3ad0b60c832c74ec76bd2935eb68974d8be9d4d7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/LITIGANTS_MASTER_GUIDE_v9.0_ULTIMATE.md",
+      "hash": "044f8d15c9d92488196e7fbe49765593d7982236fba179548378cafe9eac8797",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/reusability_exports/integration_contracts/employment_tribunal_contract_v9.yaml",
+      "hash": "97cc3617929d770124fa90ae327faebd2e7ee5e0435f8a16bf05c41817400042",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/reusability_exports/validation_tools/pipeline_health_monitor.py",
+      "hash": "fc0db06a5eb77a66eda7b62902deae04a653de4cd4bf4165537efcb5babe1887",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/reusability_exports/starter_kit/README.md",
+      "hash": "4b75ce26bec389089b1b1c15434e4cb4c10dceb7f6b2127f6936fd69710d77b8",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/reusability_exports/component_plugins/legal_argument_adaptation_v9.json",
+      "hash": "f009e01f1f8803fd1f0eafeaade51210512aa9fba50b0e67edd48f74a7cc82b5",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/superseded/litigation/phase-1-initiation.json",
+      "hash": "6048778ca7996614d17d89b12a8eed582f41d53e6e25db0e131b341464fa2669",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/superseded/litigation/phase-7-ux-optimization.json",
+      "hash": "8f5b92a5a1161250a20a24e217aa0b1da6f2333416e8b6160387710a8fd3b7ae",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/superseded/litigation/phase-5-technical-implementation.json",
+      "hash": "cddecc501ab4d980627b8853bca90f00d0ae5d493d4c034a126d629860caaf67",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/superseded/litigation/phase-4-content-forging.json",
+      "hash": "4e4eafab8ea70e2446322019b7651cc9d91573c8c9b6d81aba9c87ad21fab852",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/superseded/litigation/phase-6-validation-cycle.json",
+      "hash": "642e458f8a9548b2219f6c2be7b9037ddbd6d1f33c86e227e60efa29ba978d56",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/superseded/litigation/phase-2-evidence-acquisition.json",
+      "hash": "1307b1fa81a9eca5ae2e18857e39e7286a168561ab07ef06430efd5a1cc0b080",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/superseded/litigation/phase-3-ontology-construction.json",
+      "hash": "756d4fc47fdd6b2785b66e69d7cd834623414f65a1fdcec702f16408b00aa463",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-ultimate-integrated/enhancements/v9.0_ultimate_integration.json",
+      "hash": "c51d2cfb0cb7a5a24a3f147265521b18ee2e8581466ab2a4c5f701417393ffd0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.4-production-ready/superseded/curriculum/v8.4.0_20260403_171141/manifest.json",
+      "hash": "3312c8fe6faa1543b8685902f4de0e9f69369306e03e068840a7866062e201d1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.4-production-ready/superseded/curriculum/v8.4.0_20260403_165539/manifest.json",
+      "hash": "8309b8758873c8634019f5641e88084c1dc7cb80e3442dcdd6b4f9366e92d349",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Employment/v1.0/reason_for_supersede.md",
+      "hash": "dbd59570b866f0a37ec666e1dff9a1f847807d5abd03c2a104be5cfe0bd76bc8",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Employment/v1.0/vsb_snapshot.json",
+      "hash": "cbf2d9061d9b026e40dcd330299999265e5994f56f55f3f2aef58b6c8e8cbf52",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Employment/v1.0/timestamp.json",
+      "hash": "198fa755ea91490a77368922c3aca5bf8ea7d340240b7dda9503e257f3d18614",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v4.0/reason_for_supersede.md",
+      "hash": "76d44bca8be53e6028080a8c806d5aa47629f4db6d7d379d681b72dbee9d046f",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v4.0/vsb_snapshot.json",
+      "hash": "dbfe169dcc7072c4e860a391c5bcd3d630832ad4964581253768f1d7bb6723b7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v4.0/timestamp.json",
+      "hash": "90b475e19ef8535e74ccdf4864581124a5c1ef52016c656c251b2cb7c34ca13e",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v5.0/reason_for_supersede.md",
+      "hash": "ab64aeb11518e3e2b63c49db7b8df580a4201ae4406a7d538e3073601104ddb9",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v5.0/vsb_snapshot.json",
+      "hash": "0b4ff0506a840339a431e2681f85609c3ce6b50635b8d0bba57f9cdaa5c98362",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v5.0/timestamp.json",
+      "hash": "6013fca986da3f0752db1c254775abe94eef77afe1ab06f12aa836bd60ff5deb",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v1.0/reason_for_supersede.md",
+      "hash": "2ff7fdce7a3b76f757d63f77a208299bf0e929e364a1e2acee04d6728ced0571",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v1.0/vsb_snapshot.json",
+      "hash": "c5fc37e93be803e5e78a629abc04f25a64cf6a83be31df777d59fa50cec3cc9b",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v1.0/timestamp.json",
+      "hash": "397692e535c99c21fccabfebdeedab16bded06bd6424c65a16cd77c1c019a855",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v2.0/reason_for_supersede.md",
+      "hash": "2399a500f29cb375707eda502f7ced89fe277e24379a00474a467f56576942bc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v2.0/vsb_snapshot.json",
+      "hash": "465bff9acb1f65bcb7a3e5572130e09ec9db1f609f344d1453bfd7cd3ed5707d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v2.0/timestamp.json",
+      "hash": "8e3e807065b0835e71a75ae31e073605a61bca57e204ee7138835eb652da1dcf",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v3.0/reason_for_supersede.md",
+      "hash": "4b81cf40ce81cc6a4e9cc8ebd552aac187a67740554a89e9647a98ffd7df6b50",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v3.0/vsb_snapshot.json",
+      "hash": "974a68d7a8fe5ad052bfb919effa3bdd4dc8eea5ce60d250ff5d92bfcec20d49",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v3.0/timestamp.json",
+      "hash": "ba52b94e7b3b5a76517c0f575a57fbb78079945803868169ce7797464e5ed5c0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v6.0/reason_for_supersede.md",
+      "hash": "f3d55541d040c317d5d5013f785791414cf6c658dc3cdd86c04af2eb0a92ec54",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v6.0/vsb_snapshot.json",
+      "hash": "cf7fe42486a4ee425fceb87c805a50f5828a1f7c4f56f810b899d0ef9cc7bcdc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/superseded/Religion/v6.0/timestamp.json",
+      "hash": "8aa81972adad47169bc60c2b63ca1b7f0810388e2ddd286654c5ca79f7072e50",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/06_evidence_map.md",
+      "hash": "0e45c8d0ee32174be72d391f9a1ed5f58cd2c86cdfe6fe7d5ee268a752596c9c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/19_tribunal_bundle_index.md",
+      "hash": "ff5cf77cc7d6121a186dd41f9356978b81db7660c6ef4d4cd79802a65df2f590",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/12_draft_witness_statement.md",
+      "hash": "08992a1cdadc36514347390e02e47c07dc3333567cbef803458f3bfecd98107d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/17_cross_examination_framework.md",
+      "hash": "7fa327acb0216024bf0158dfcdb4c1b8299e1d8b2dac2f68eb2c6c899e182037",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/11_schedule_of_loss.md",
+      "hash": "90093540ce95750c9cc3837cbf05ce5bf674f35b39d78f7b6330ba4ddbbb13ab",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/09_acas_settlement.md",
+      "hash": "c600d30a383b3b74317be053051134aaf0228656d072ad3a03b3fab4d5cab9c1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/OMEGA_NARRATIVE_WEAPONIZATION.md",
+      "hash": "a095d1a587f49742f56bd65cf18a06fc200cac88e096e3f4c9bbb69a72cdb007",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/manifest.json",
+      "hash": "779a6eb2bb46561b6a51beee6aea65fa7fac1e668eb571d6cbe8b2f6f85235b0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/08_disclosure_request.md",
+      "hash": "5f10ceeb2561e0cf7d2bccfc14f61f80e6a7b87c3317e371d4f85b07986b544c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/24_lip_survival_guide.md",
+      "hash": "886a6b4cac0d869a65bcbde40382435b5fe6b789ab163e0c9df730757ceb88ac",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/23_acas_tactical_briefing.md",
+      "hash": "44a4aa4b49cfdda78bd8edfadfcefa1878ee8690f0ed2fdcabbf72308d410244",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/16_skeleton_argument_liability.md",
+      "hash": "40bbad479d844aeff23b636fee8e0a42056edf20f48723da9f04b4b94e30698c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/02_chronology.md",
+      "hash": "ca86cb9b2aa01aae440fb69bf303b147affe7d1ffbaf7038e554b1e7bfab8735",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/04_strengths.md",
+      "hash": "2d91a8d53f255bb55ee29a369cb4afaf26bf0c9cdf29b25a477950e10f611e80",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/14_witness_briefing.md",
+      "hash": "b92904cdddd1c8745c737b323fa965ba8d137f6088e1705ad0aab02602340d40",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/01_executive_summary.md",
+      "hash": "2007b6667bc93c1d90d9f78b6c8b9b8c9c85bdcef86ecc60cddde559a6cd1616",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/FINAL_SUBMISSION_REPORT_v9.0_ULTIMATE.md",
+      "hash": "5a5ac3651da49995e6f7d6fc3291bf6e97155204b48bafbde234e05d685334d4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/LITIGANTS_MASTER_GUIDE_v9.0_ULTIMATE.md",
+      "hash": "f719c5631666fa8987ee96bfe6100503d28e076234c5160fa62d176bb94e6c0c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/achievements/tracker.json",
+      "hash": "33ec538ff1357d8d4d819b1e31510ee4200f90b99e2d7c85077b4a60f88bdc0c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/evidence/ingested_evidence_manifest.json",
+      "hash": "edf230049c09f2ac867ede4fe9baccb75970dd82b7430098962feb5d2a846a5c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/evidence/MUED_v9.0_ULTIMATE.json",
+      "hash": "bfcdd496e3fb0406f1b8b523bd5f8c6cf316a1f825429e728f3d95befa5b5d51",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/audit/vsb_signature_log_v9.0_ultimate.jsonl",
+      "hash": "0dc66869566de56e08db4f49842f4c0867735c9b618fd7d672a5cc948b3a9121",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/audit/vsb_signature_log_v9.0_omega.jsonl",
+      "hash": "d05f070b868478bc116bb15edf5b0c1ba8d86cbf427ff569304fa4df461f586d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/reusability_starter_kit/integration_contracts/employment_tribunal_contract_v9.yaml",
+      "hash": "3afcd164e3f909a2a9dc7adce630af1c341e7d30704b9c441043eb65371d3e29",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/reusability_starter_kit/validation_tools/pipeline_health_monitor.py",
+      "hash": "15e067bf42aa93c10e9721a8d1365b244ad5bc604be7d91ccdaef10350555ce5",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/reusability_starter_kit/starter_kit/README.md",
+      "hash": "149c73e9a827ee7046bfad990661fd9ff83d347f529caf0e8dcbd8716dfc48b0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative/reusability_starter_kit/component_plugins/legal_argument_adaptation_v9.json",
+      "hash": "242bfe9c543766ecfa0d5f71a51d74230aafc5e46305e0265a604c42325e2700",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-global-distribution/europe/request_log_20260403_223307.json",
+      "hash": "49c1d74c9ca45af5d698e0d83642e8092c04e7c84930650c082e609c15edd32b",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-global-distribution/asia_pacific/request_log_20260403_223307.json",
+      "hash": "46897cca7038da3cc87d7993faf8609a259579a82b8de7445f2409229423b4d1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/06_evidence_map.md",
+      "hash": "7f6980655aab2cf8c8eb48ec353dcb98458d6df10cd825489e972463747f2861",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/19_tribunal_bundle_index.md",
+      "hash": "1a3894bafafd341e4eeef371edc1325af35159a0f4e2b42074f407714c8be0a3",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/12_draft_witness_statement.md",
+      "hash": "9937e084342fe97385f6e821e3b843ed109f520db1597bc58b6501c77de4925f",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/17_cross_examination_framework.md",
+      "hash": "accf638a18903ad4386334eb0d6b3f4e2dba9d40b9c45f80aaa19d5cf8118af4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/11_schedule_of_loss.md",
+      "hash": "07825825309b1336c8e78df893ee2a86f763ed6378697aace7004d1e44723d69",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/09_acas_settlement.md",
+      "hash": "4fd851f6d5e3445960207de5b5408cafe8b6565560cdb2dc25e3e2098a3b41e3",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/OMEGA_NARRATIVE_WEAPONIZATION.md",
+      "hash": "68aed5ece5b6d249a38e1b4f89ae3d964e4d82c7809461609a49b2a17e4a2c57",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/manifest.json",
+      "hash": "43dacdb0ee2269f231a4c4b4c6703c1ce6c2b6b03ae4c7f3811bcab5bb16b33a",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/08_disclosure_request.md",
+      "hash": "e40685de03a64b42a0b0fec80779e0a20b8e89130b911bca3060eeac24c68939",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/vsb_signature_log_v9.0_omega.jsonl",
+      "hash": "61dc6ab39d6fb01b642ffdc6b59d4019b30753d79ffd010e4cae6dc757af853d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/24_lip_survival_guide.md",
+      "hash": "760f8be1bbfa99d2eecb6d9f22f56ef8fdcb52c045c9e525bb9a56c7731de24c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/23_acas_tactical_briefing.md",
+      "hash": "c7a76d0c733a9c8c9b33fbf612ff0c9560df434e68f183d82fd51bd6310110f1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/16_skeleton_argument_liability.md",
+      "hash": "92aa9ec8f5c5941fcb1381f0d3b99bd9131df10631943680f1768c9eeea364e9",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/02_chronology.md",
+      "hash": "fd955b1555272b0a9fccc265584728b842fc9b36ce9886eaa2e94f532871610c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/04_strengths.md",
+      "hash": "ead03a9bea6466bfefc40ff9b19f17a63438234130362344b38792b639190eb2",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/14_witness_briefing.md",
+      "hash": "7f9754607b1776d1c82ec304d0f76f29e99f324cfc8af23a19a3e8dc91fc27fb",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/01_executive_summary.md",
+      "hash": "d67a8c6ba632896ec79392e498e6e8a254b1ae8c9fe25030fecdbd26d0394d36",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/FINAL_SUBMISSION_REPORT_v9.0_ULTIMATE.md",
+      "hash": "9b650da596f0662639c7bc0d7b00f7bb7c35ceca0e35a252b93af26ff19de7fd",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/LITIGANTS_MASTER_GUIDE_v9.0_ULTIMATE.md",
+      "hash": "8da2e2afccf12fdf419e53fd3e6c038839f548d57ecde2159ff5a05732026cfb",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/achievements/tracker.json",
+      "hash": "766a279688daac4f9c496cc3418dbe0c7851dd93defc34f5ac90240f2f9cc9a7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/evidence/ingested_evidence_manifest.json",
+      "hash": "c91de5ee6f8a316d868ddaf0c4de4dcb3e88c8c717e2c744caf35c8dc69f0bde",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/evidence/MUED_v9.0_ULTIMATE.json",
+      "hash": "7e9c602395bae0e4455f30f399a0d7a7e85a38e97c57dabaf15f04980448be5c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/audit/vsb_signature_log_v9.0_ultimate.jsonl",
+      "hash": "1a0cbe013ce24cf6017c27e0f78ca53b6c6c342209f6c019cefa42134b0d7f89",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/audit/vsb_signature_log_v9.0_omega.jsonl",
+      "hash": "7d01f74e5eead4ffbbca1af329cfec0d9425fa78f2f6582fcd24093b00c2b3c9",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/reusability_starter_kit/integration_contracts/employment_tribunal_contract_v9.yaml",
+      "hash": "d0e87ca224b0acea604746c9453a4e615cb1d2ee1b6e3a3821ce3f036f398edc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/reusability_starter_kit/validation_tools/pipeline_health_monitor.py",
+      "hash": "c48a484c06d745a7fd0ba636988c359466c9c768393f297889e8db406bd91616",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/reusability_starter_kit/starter_kit/README.md",
+      "hash": "8ba11888191e1779c5d3a813a07268df6e7bebbbac5c13efabe1733b613ba7b7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-definitive/reusability_starter_kit/component_plugins/legal_argument_adaptation_v9.json",
+      "hash": "248c3ef21e326607ae9a21afe6cd852a90af907ef6962d695f20a4b59c0c8a3b",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/Religion/QuranEducation/superseded/curriculum/v7.0_20260403_030503/archive_metadata.json",
+      "hash": "82f782b67336b31ed229b609b2e6b5c42b5a586da4397641d6603afc5af77346",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/Religion/QuranEducation/superseded/curriculum/v7.0_20260403_030503/Scholar_Edition_v7.0.md",
+      "hash": "1286fe436e20e0c89a1a23981a87ffffea277064ea08cb6048e5455a4c20b155",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/Religion/QuranEducation/superseded/curriculum/v7.0_20260403_030503/Study_Guide_Edition_v7.0.md",
+      "hash": "fb2f4d9ddfffba61f695b25a191add7a51b6720b1e1dbf918844779b15252a1e",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/Religion/QuranEducation/superseded/curriculum/v7.0_20260403_030503/Pocket_Edition_v7.0.md",
+      "hash": "6f057b9e98d0ac8e9417dc97e349e9cab833741f346d7fc6ce8f69731b441cd3",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/Religion/QuranEducation/superseded/curriculum/v7.0_20260403_030503/Comprehensive_Edition_v7.0.md",
+      "hash": "3e6999fe00eda206fec658083f36e0731650c71ad27ed0539a3ba7f1645ee9a5",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/Religion/QuranEducation/superseded/curriculum/v7.0_20260403_030503/MUD_v7.0.md",
+      "hash": "c146b10b128af048ce285a03ea2fb26f34287062071afac41e61a0a75fbd3f35",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/Religion/QuranEducation/superseded/curriculum/v7.0_20260403_030503/Youth_Edition_v7.0.md",
+      "hash": "7ced5a86d13b663f9b6385690016df04fc3988734b8683ef567caa72d7e144b2",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.6-production-ready/superseded/curriculum/VSB-SIG-QEP-8.6_8.6.0_20260403_210826/manifest.json",
+      "hash": "551b717e5a0e34e0c8c94c94d49d3a5c846474d560c0ac2cc2baec205b3e0cdd",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.6-production-ready/superseded/curriculum/VSB-SIG-QEP-8.6_8.6.0_20260403_210826/artifacts.json",
+      "hash": "0b11fde0a310b78b48756b3d83fa804a8e90ab5a4e34f99446384703fbdd7635",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.6-production-ready/cross_domain_adaptations/law_adaptation_plan.json",
+      "hash": "93df3fa244bb7b34b3a932c06463f0cec2e1a41be2a928fb0b583f217f4cf4c3",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.6-production-ready/cross_domain_adaptations/care_adaptation_plan.json",
+      "hash": "563c224f9c33b12841dc583e1ceab02f93b95bff196607c559ffeaabb8376497",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.6-production-ready/cross_domain_adaptations/employment_adaptation_plan.json",
+      "hash": "81d4be77d0775b2f0e5cee22e5da3de7595462d949ba1c1c84434874f5e694c4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.6-production-ready/cross_domain_adaptations/science_adaptation_plan.json",
+      "hash": "97df88fdfc5fb7c8c6517456cf291a8c37375ba647d2955637eb1f107b37e0c0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v9.0-ultimate-integrated/superseded/curriculum/VSB-SIG-QEP-9.0_9.0.0_20260404_101605/ultimate_manifest.json",
+      "hash": "f8c4fa728c31dcd7a155cd3da2ce5fd9d666f7499db6e155f48497815ef9c375",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v9.0-ultimate-integrated/superseded/curriculum/VSB-SIG-QEP-9.0_9.0.0_20260404_101605/artifacts.json",
+      "hash": "b5c625c94176b423f451a7201176e66b674222b07af8aedecd667d51b6584bf0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-multi-domain-federation/care/ontology_engine_blueprint.json",
+      "hash": "09543162f10070193162c09e2e9110f7dc9c4c7d93e7ccb618fb4adb33b76e21",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-multi-domain-federation/care/ontology_engine_export.json",
+      "hash": "9434c2fb5e6fcc763785c44e5053b44ebe289af7f60e4c4c8c7e612dfb2b6de7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-multi-domain-federation/law/ontology_engine_blueprint.json",
+      "hash": "b3a69b9e92903992098c21b00509fd17921d957271985237c742291227a8a946",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-multi-domain-federation/law/ontology_engine_export.json",
+      "hash": "407d35bdc10dfece86c25809dc0013e446d946fa57a95af2503ff41fe344c94c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-multi-domain-federation/science/ontology_engine_blueprint.json",
+      "hash": "0f5e7fcf243d0e2246467dbfab6d83ccc888683cccecc323d3483d796dbdfa18",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-multi-domain-federation/science/ontology_engine_export.json",
+      "hash": "8c51a59eb496f03396d3c048e7ec37153af4e7a6950fe6b3ca85afb22090ca10",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-multi-domain-federation/employment/ontology_engine_blueprint.json",
+      "hash": "963b3c23a1a496520a0b68bb56862e4180b3c05c2b6c31ca2f076183b07b92f8",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.7-multi-domain-federation/employment/ontology_engine_export.json",
+      "hash": "cd5038c48a466db3c3b8e0905959b83e6172e9fd93ae54382d3b5df5cf1b9002",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/06_evidence_map.md",
+      "hash": "b2a47d8342435ead7ae95592635b227b8b76127f1cf781523e62166d12e0f804",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/19_tribunal_bundle_index.md",
+      "hash": "b46e0cf8b799653f347fd8d24229a04270a475d48f2d509234faf56373879f3b",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/12_draft_witness_statement.md",
+      "hash": "007eddd6b4c82966b5a65f49cacf0deace90253a5ca0e4f24f782342d4d366ab",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/17_cross_examination_framework.md",
+      "hash": "c9c4eec0d0cb3bf7bfa71ad9fab08dc179d7c2fe78bacbd41fb477460fd9af21",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/11_schedule_of_loss.md",
+      "hash": "f926ad70ddacc436bd187c23818eeee407a791a0609e17e7489ac80e126ef616",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/09_acas_settlement.md",
+      "hash": "c27cb9c9ca0d44f48d15e6e460770bc05cb93e98678323657866fdfd420f0a3e",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/OMEGA_NARRATIVE_WEAPONIZATION.md",
+      "hash": "91e5b0eebaf27be5990644c6604748f878c367f102bf3ced75be397657341a8b",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/manifest.json",
+      "hash": "83d2700c22099e89ebbedfebb296f74a47306f271a75ffe25977b537ec7f40ef",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/08_disclosure_request.md",
+      "hash": "2d76cd100782a8d8a38041f9511aedd717d7f5d30c220229513422229ba86385",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/vsb_signature_log_v9.0_omega.jsonl",
+      "hash": "9ba46391ff9a61d6899b34d03fb320955135a13d061a18d852b29994482bf3f9",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/24_lip_survival_guide.md",
+      "hash": "a454b602d9ccdde6ec2d593f84b03fef54262b4b7fbf3a063460864c93e17438",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/23_acas_tactical_briefing.md",
+      "hash": "79b1a5095cf10ac7eb86b95b559571a86dcfd1adc6a7ed928eeb29ddc01d7e3f",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/16_skeleton_argument_liability.md",
+      "hash": "2cbc1c5c94c3e3ce4485ddcdc9058978365e484cf1ffbaea8e083a526b258f92",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/02_chronology.md",
+      "hash": "3224092f0553d5e0b6fd0746bef781db8f9de9c7fa3c6a16c537fb5d59f2f72b",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/04_strengths.md",
+      "hash": "3a903fb54cd1c2462fdbc1296e2a8195de0e3c7d3e38c0d698f978dddf9ca0ef",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/14_witness_briefing.md",
+      "hash": "81b63f96c9a64509b6831ca2d5bb7b040aa8a55036ab4fa15595dc6e423fd7c7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/01_executive_summary.md",
+      "hash": "e7df6f2dc48543013611bd4d2fb4776ff58790926e86a834f87c2a4740056049",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/FINAL_SUBMISSION_REPORT_v9.0_ULTIMATE.md",
+      "hash": "390f7e7a50f24cf744824cc1a4186f5d8f6ff6cf3ce80dc2430a7b763ceb2f17",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/LITIGANTS_MASTER_GUIDE_v9.0_ULTIMATE.md",
+      "hash": "7d4e67480f972af354bf4e73ce9dce439ef2e17a20a181faab75d655aeaff590",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/achievements/tracker.json",
+      "hash": "cc57185c423a9402d605df0c8d75b7d080741959a5afa702870aeb952e368e27",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/evidence/ingested_evidence_manifest.json",
+      "hash": "6f7b8647c8138d31ca7a2378e246fe43df46e29d47e612a07e2a21fe57c2f90d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/evidence/MUED_v9.0_ULTIMATE.json",
+      "hash": "e7583ea6d64f6cb1f2a40bbf4ef558795367b594a054577d25ba31900f2c10b5",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/audit/vsb_signature_log_v9.0_ultimate.jsonl",
+      "hash": "0ba0df4949bc2b9bed77a5b165f08a2e3b1cc57fcdbeeb014e5f906687398b9f",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/audit/vsb_signature_log_v9.0_omega.jsonl",
+      "hash": "ca1b3ee2735f2682c7f024de630e95d10b4cac1c2deee8d2055b2c38263e3361",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/reusability_starter_kit/integration_contracts/employment_tribunal_contract_v9.yaml",
+      "hash": "9ef31722a2f8172300982cb9f1d331f1cdb1d09ca301386a782e6f1ab8d8503a",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/reusability_starter_kit/validation_tools/pipeline_health_monitor.py",
+      "hash": "89b4f9d1ee7ef89cc11d115488ef8a84e0200718f01af7e3e50c29e844d42031",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/reusability_starter_kit/starter_kit/README.md",
+      "hash": "3298b6ac4054b5e9fdf4aeaf2652af7a3c7be0aa85291f50b893ed6ea8f3c41d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-omega-complete-assimilative-convergent/reusability_starter_kit/component_plugins/legal_argument_adaptation_v9.json",
+      "hash": "480236eaad2d454639aed05d770d070502b02285bff0b2fd45ca65082e4750ae",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/06_evidence_map.md",
+      "hash": "432bb75bd1e9e7634bf96d4f23ec5bbe946fc344fc4da41dfd5e7ed844ab09a8",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/19_tribunal_bundle_index.md",
+      "hash": "7b7eb136566d826fcab5164380e1a44a9e746bf6e2f98c2f7e07c5aefb42570c",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/05_weaknesses_risks.md",
+      "hash": "e88d04a109952b226d6fe23a85ec3b65fd17d64eea170f6d7f1da5e3337d33d0",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/12_draft_witness_statement.md",
+      "hash": "115aecc95d0dd96d5753dab31b16c44e2ece12237cbd63feb233403296c88473",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/17_cross_examination_framework.md",
+      "hash": "e53e0b0c8e69fb1a7ce59f554ff9bf8349a4745203cd3761c7d0e13ee5224f6d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/11_schedule_of_loss.md",
+      "hash": "a738e97a8653fc056bb0081f85964e581a1cba766c3792e433c4e86484257eec",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/09_acas_settlement.md",
+      "hash": "c87f652842b8801dd9edc52e6e1634d7d3672b27b4d818a8a12fdf4e53ca6797",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/15_comparative_cases.md",
+      "hash": "553b0fb862f5d447bc40d65e675538e57de77cf076127dba7f5923c5504ddde4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/18_narrative_framework.md",
+      "hash": "76149384544878282d6922ddbdc173443b4c2662e7a3ad347c03e6af24ec0d54",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/21_witness_realtime_support.md",
+      "hash": "8cacf5ab046995c85f54628fff7c9bcef9b3cf4ec598b177dd627471d6cc4af4",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/LITIGANTS_MASTER_GUIDE_v9.0_GOLD.md",
+      "hash": "93da11c2c987bcb513ed52c44332fc1f2dc93cdd91450bf674133590c705f725",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/DEVELOPMENT_CYCLE_LEARNINGS.md",
+      "hash": "0aa4490fe93c90317770680f4cd127fa65203e8f824bad665ee0f1ddb2614b37",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/OMEGA_NARRATIVE_WEAPONIZATION.md",
+      "hash": "93702d7c573dfb011f5a33b55333c7c4921a8ed1bb1d470883efe606dd9fca95",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/10_next_actions.md",
+      "hash": "a5953a183154752bdba0e49e3df6f215c7df70c968146e15810e2673e8797ca5",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/manifest.json",
+      "hash": "cb22d0c9d9cf758e72d4cdbbc69fde987d2d5a3ec3a23fe0e47f1aa1241beb97",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/03_issues_list.md",
+      "hash": "8a16981487340eaacf9b2f649d243ed6ab078156e09a7fb7d57bf083730825ec",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/08_disclosure_request.md",
+      "hash": "12bdaa49048f38221b6de13bf60117202ea9aa4505c8206514cc6a9127c07fe7",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/FINAL_SUBMISSION_REPORT_v9.0_GOLD.md",
+      "hash": "3fd2b610486fc2e4bfee5d841f07abe57721d3b40dfe001845bde67f128fa9ec",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/20_pre_hearing_simulation.md",
+      "hash": "8745ad63494c787d553f089efb05870464916c4ae53354835fd0b0d3bce6ae92",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/CODE_REVIEW_FIXES_SUMMARY.md",
+      "hash": "6b919f05674df2a625be08c7183ba3c49a40eb00345a15304c42b314326cca0d",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/13_qwen_strategy_integration.md",
+      "hash": "7f66b940b5f046e174404f94eab954f1f3039bc26bb1641e4f3fd10b8e850bbf",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/compliance_report.json",
+      "hash": "f5eba8bad048426f93fd61aa8df6fd84143d6bdf5ad1559d0b1b0bb6ef258325",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/24_lip_survival_guide.md",
+      "hash": "a465fa80c3d9e9a5a2a7055b4903a8068ee636a989995fcaf8dbffa0f87d4ab2",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/23_acas_tactical_briefing.md",
+      "hash": "3c5726e95b4c54347ed8a3be949e52744ea8b374af4043791bb3fb0572a4d4ee",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/16_skeleton_argument_liability.md",
+      "hash": "f5bfdf7c22dbf4670def7a95b0ddabafa163ee1fa9e9dd6f6d2b8c37a933a475",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/02_chronology.md",
+      "hash": "298f16175c906fe4dee54621550265c538cd0f5fd2598babd957f13b985e3868",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/04_strengths.md",
+      "hash": "a6b6fb260f09bfe96a0a41dc974082798394b472409803a211aa93aca47f18d8",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/14_witness_briefing.md",
+      "hash": "262f18f5de9142e2d8640d2e093f2567aafbd3b00d047a462497779965f40383",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/vsb_signature_log_v9.0_gold.jsonl",
+      "hash": "e2ac2bae6604d86bbcef65ce74133a06dbc35433dc2aa7ad81da4b3b325c2ba6",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/01_executive_summary.md",
+      "hash": "8f3fc828d28b0f0ee8e30482752c13eecbec2e535e1cb651152a9bffaec5bdcc",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/FINAL_SUBMISSION_REPORT_v9.0_ULTIMATE.md",
+      "hash": "ebd99f82f547f89d63ddba540e0b9d682eda08fd5e77563b19284607a7c6f2b1",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/22_dynamic_intelligence_dashboard.md",
+      "hash": "235f5a7d022617a750e4a393a2352177d008563f7de362ece779f026802ec012",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/law-grand-operation-v9.0-gold-final/LITIGANTS_MASTER_GUIDE_v9.0_ULTIMATE.md",
+      "hash": "157f74edbc25cee455bb35e826a0f80620072e9adaeedfa875f1b6b0335290bd",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.5-xai-dao-ethics/reusability_exports/VSB-SIG-QEP-8.5_8.5.0_20260403_193920_exports.json",
+      "hash": "a69252385668dd577337cb2aeae2f6fd24cf6b9381415548425b2a23f14b7368",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.5-xai-dao-ethics/xai_records/VSB-SIG-QEP-8.5_8.5.0_20260403_193920_xai.json",
+      "hash": "186b23a690116daada7b8f1599bb7eab92f99fc30446c14c897ff77dcf8a4fd3",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.5-xai-dao-ethics/superseded/curriculum/VSB-SIG-QEP-8.5_8.5.0_20260403_193920/manifest.json",
+      "hash": "d95163d571d8db9222c21e296a44c334328c6e41ec4686803d55aa9a805c0cd8",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.5-xai-dao-ethics/superseded/curriculum/VSB-SIG-QEP-8.5_8.5.0_20260403_193920/artifacts.json",
+      "hash": "0e073228375bda6df664fd5b8935b9f94e7fc42ebcd5edcfa2a77fe90273fe68",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.5-xai-dao-ethics/ethics_records/VSB-SIG-QEP-8.5_8.5.0_20260403_193920_ethics.json",
+      "hash": "dcfc87e487c59924a2d96de77ed2511d4cb233a9ea7a440045ed455185a36308",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.5-xai-dao-ethics/dao_records/VSB-SIG-QEP-8.5_8.5.0_20260403_193920_dao.json",
+      "hash": "d936d02cddec5ef0f5b2515e7215ba611844f4b9d60923ede167e0584b4e4330",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    },
+    {
+      "path": "/app/archive/qep-v8.3-community-enhanced/superseded/curriculum/v8.3.0_20260403_160531/manifest.json",
+      "hash": "ca2795990beb2f249fd8b47ce1dfd7bad576e147f0b987e575bee4874e930698",
+      "status": "ASSIMILATED",
+      "granularity": "page_paragraph"
+    }
+  ]
+}
