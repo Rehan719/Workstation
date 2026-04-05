@@ -1,0 +1,11 @@
+{
+  "standards": [
+    "UK-Employment-Law",
+    "WCAG-2.1-AA",
+    "GDPR",
+    "ACAS-Code"
+  ],
+  "result": "PASSED",
+  "zero_invented_facts": true,
+  "granular_citations": true
+}
