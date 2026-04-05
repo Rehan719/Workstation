@@ -1,0 +1,38 @@
+{
+  "version": "9.0.0-ULTIMATE",
+  "domain": "LAW",
+  "last_updated": "2026-04-05T12:54:44.568930+00:00",
+  "statistics": {
+    "total_litigants": 0,
+    "total_et1_filed": 0,
+    "total_disclosures_completed": 0,
+    "total_witness_statements_completed": 0,
+    "total_favorable_outcomes": 0,
+    "total_expert_contributions": 0,
+    "total_reusable_mechanisms_exported": 0,
+    "total_cross_case_adaptations": 0,
+    "total_production_deployments": 0,
+    "total_facility_integrations": 0
+  },
+  "litigant_achievements": [
+    {
+      "litigant_id": "L-001",
+      "tier": 1,
+      "badge_name": "Claimant (Mudda'i)",
+      "awarded_at": "2026-04-05T12:54:44.568673+00:00",
+      "certification_id": "CERT-LAW-L-L-001-1"
+    },
+    {
+      "litigant_id": "L-001",
+      "tier": 10,
+      "badge_name": "Sovereign Integrator",
+      "awarded_at": "2026-04-05T12:54:44.568919+00:00",
+      "certification_id": "CERT-LAW-L-L-001-10"
+    }
+  ],
+  "expert_achievements": [],
+  "community_achievements": [],
+  "cross_case_achievements": [],
+  "production_achievements": [],
+  "facility_achievements": []
+}
