@@ -2,18 +2,26 @@ facility_protocols:
   digital_engines:
     name: "Digital Engines"
     type: "Engine"
+    sla_target: "99.9%"
+    governance_rule: "Article 1118"
   reactors:
     name: "Validation Reactors"
     type: "Reactor"
+    safety_protocol: "Containment"
+    oversight: "Scholar Board"
   incubators:
     name: "Development Incubators"
     type: "Incubator"
+    throughput_target: "500 concepts/day"
   petri_dishes:
     name: "Testing Petri Dishes"
     type: "Petri Dish"
+    isolation_level: "High"
   laboratories:
     name: "Analysis Laboratories"
     type: "Laboratory"
+    analysis_depth: "Sentence-Level"
   factories:
     name: "Production Factories"
     type: "Factory"
+    output_standard: "ISO 9001"
