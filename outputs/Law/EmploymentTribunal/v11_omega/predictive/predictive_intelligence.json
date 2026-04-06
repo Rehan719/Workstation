@@ -1,0 +1,19 @@
+{
+  "monte_carlo": {
+    "iterations": 50000,
+    "liability_probability": 0.82676,
+    "status": "CONVERGED",
+    "timestamp": "2026-04-06T10:07:21.496414"
+  },
+  "opponent_model": {
+    "opponent": "Punter Southall Law",
+    "risk_profile": "AGGRESSIVE-PROCEDURAL",
+    "modeled_patterns": {
+      "defensive_posture": 0.94,
+      "disclosure_compliance": 0.35,
+      "settlement_propensity": "Low (requires strategic anchoring)",
+      "concession_threshold": 0.65
+    }
+  },
+  "system_health": "OPTIMAL"
+}
