@@ -1,0 +1,32 @@
+{
+  "FORGE": {
+    "ai_agent_id": "agent_forge_v12",
+    "sync_status": "LOCKED",
+    "optimization_gain": "+15%"
+  },
+  "GENOME": {
+    "ai_agent_id": "agent_genome_v12",
+    "sync_status": "LOCKED",
+    "optimization_gain": "+15%"
+  },
+  "LITIGANT": {
+    "ai_agent_id": "agent_litigant_v12",
+    "sync_status": "LOCKED",
+    "optimization_gain": "+15%"
+  },
+  "DEVELOPER": {
+    "ai_agent_id": "agent_developer_v12",
+    "sync_status": "LOCKED",
+    "optimization_gain": "+15%"
+  },
+  "EXPERT": {
+    "ai_agent_id": "agent_expert_v12",
+    "sync_status": "LOCKED",
+    "optimization_gain": "+15%"
+  },
+  "ENTERPRISE": {
+    "ai_agent_id": "agent_enterprise_v12",
+    "sync_status": "LOCKED",
+    "optimization_gain": "+15%"
+  }
+}
