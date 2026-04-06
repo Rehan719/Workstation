@@ -1,0 +1,8 @@
+{
+  "monte_carlo_iterations": 100000,
+  "success_probability": 0.822,
+  "mean_settlement": 78500,
+  "standard_deviation": 5400,
+  "worst_case_outcome": "\u00a345k (Dismissal but some costs recovered)",
+  "best_case_outcome": "\u00a3125k (Full award + aggravated damages)"
+}
