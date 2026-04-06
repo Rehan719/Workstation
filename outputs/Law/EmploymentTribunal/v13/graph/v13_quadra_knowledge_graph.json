@@ -1,0 +1,6 @@
+{
+  "version": "13.0-QUADRA-VERITAS",
+  "nodes": 47,
+  "edges": 156,
+  "truth_convergence": 0.98
+}
