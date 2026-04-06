@@ -10,7 +10,7 @@ class FacilityOrchestrator:
     Facility-based management layer for QEP v8.8.
     Wraps pipeline execution and enforces safety protocols.
     """
-    def __init__(self, protocols_path="configs/facilities/operational_protocols_v8.8.yaml"):
+    def __init__(self, protocols_path="configs/facilities/operational_protocols_v8.8.yaml", audit_log_path=None, log_dir=None):
         with open(protocols_path, 'r') as f:
             self.config = yaml.safe_load(f)
 
@@ -27,10 +27,11 @@ class FacilityOrchestrator:
                 self.facilities['factories'] = self.facilities['production_factory_facility']
             if 'validation_reactor_facility' in self.facilities:
                 self.facilities['reactors'] = self.facilities['validation_reactor_facility']
-        self.log_dir = "archive/qep-v8.8-industrial-ecosystem/facility_logs/"
+
+        self.log_dir = log_dir or "archive/shared/facility_logs/"
         os.makedirs(self.log_dir, exist_ok=True)
 
-        self.audit_log_path = "outputs/Religion/QuranEducation/audit/sovereign_audit_log_v8.8.jsonl"
+        self.audit_log_path = audit_log_path or "outputs/shared/audit/sovereign_audit_log.jsonl"
         os.makedirs(os.path.dirname(self.audit_log_path), exist_ok=True)
 
     def _log_to_audit(self, entry):
@@ -107,30 +108,30 @@ class FacilityOrchestrator:
 
             raise e
 
-    def handle_safety_containment(self, facility_id, pipeline_step, error_msg):
+    def handle_safety_containment(self, facility_id, pipeline_step, error_msg, anomaly_type="systemic_anomaly", reviewer="Governance Board"):
         """
-        Simulated Safety Protocol: Containment on theological anomaly.
+        Simulated Safety Protocol: Containment on anomaly.
         """
         print(f"⚠️  [SAFETY] REACTOR CONTAINMENT ACTIVATED: {pipeline_step}")
         self._log_to_audit({
             "event": "safety_containment",
             "facility": facility_id,
             "pipeline_step": pipeline_step,
-            "type": "theological_anomaly",
+            "type": anomaly_type,
             "message": error_msg,
-            "action": "pause_for_scholar_review"
+            "action": f"pause_for_{reviewer.lower().replace(' ', '_')}_review"
         })
 
         # Simulated HITL: Pause and wait for mock approval
-        print("⏳ Waiting for Scholar Governance Board override...")
+        print(f"⏳ Waiting for {reviewer} override...")
         time.sleep(2) # Simulate wait
-        print("🔓 [HITL] Scholar override granted. Resuming with containment logs.")
+        print(f"🔓 [HITL] {reviewer} override granted. Resuming with containment logs.")
 
         self._log_to_audit({
             "event": "safety_override",
             "facility": facility_id,
             "pipeline_step": pipeline_step,
-            "approver": "Scholar Board (Simulator)",
+            "approver": f"{reviewer} (Simulator)",
             "justification": "Anomaly resolved via context injection."
         })
 
