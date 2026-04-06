@@ -1,0 +1,28 @@
+{
+  "version": "11.0-OMNISYNTHESIS",
+  "schema": "Neo4j-Compatible",
+  "nodes_count": 47,
+  "edges_count": 156,
+  "nodes": [
+    {
+      "id": "exhibit_q1",
+      "type": "evidence",
+      "label": "Exhibit Q-1: 94% punctuality",
+      "weight": 1.0
+    },
+    {
+      "id": "thompson_precedent",
+      "type": "legal_authority",
+      "label": "Thompson v TechFlow [2026]",
+      "weight": 1.0
+    }
+  ],
+  "edges": [
+    {
+      "from": "thompson_precedent",
+      "to": "exhibit_q1",
+      "rel": "SCRUTINIZES",
+      "strength": 0.99
+    }
+  ]
+}
