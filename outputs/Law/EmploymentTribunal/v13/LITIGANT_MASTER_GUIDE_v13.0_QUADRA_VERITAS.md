@@ -16,7 +16,7 @@
 - **How:** Use **Template 2** from the v13.0 Specification.
 
 #### **Action 3: Engage ACAS with Quadra-Veritas Narrative**
-- **What:** Initiate conciliation citing the 82.4% liability probability.
+- **What:** Initiate conciliation citing the 82.2% liability probability.
 - **Why:** To test settlement waters with maximum leverage (£68k-£89k target).
 - **How:** Read the script in **Template 3** of the Specification.
 

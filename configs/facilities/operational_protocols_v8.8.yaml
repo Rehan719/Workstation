@@ -1,63 +1,19 @@
 facility_protocols:
-  version: "8.8.0"
-  product_id: "VSB-SIG-QEP-8.8"
-
   digital_engines:
-    function: "Core processing & orchestration"
-    pipelines: [Scraping, Ingestion, Extrospection, Learning]
-    safety_protocol: "Auto-shutdown on critical failure"
-    monitoring: "Real-time performance metrics"
-    governance: "Entity VSB"
-    metrics:
-      throughput_target: "1000 items/hour"
-      uptime_sla: "99.99%"
-
+    name: "Digital Engines"
+    type: "Engine"
   reactors:
-    function: "High-intensity validation & AI processing"
-    pipelines: [Introspection]
-    safety_protocol: "Containment on theological anomaly"
-    monitoring: "Validation throughput & accuracy"
-    governance: "AI CEO"
-    metrics:
-      validation_accuracy_target: "100%"
-      containment_response_time: "< 1s"
-
+    name: "Validation Reactors"
+    type: "Reactor"
   incubators:
-    function: "New idea/concept development"
-    pipelines: [Knowledge, Learning]
-    safety_protocol: "Scholar approval before graduation"
-    monitoring: "Concept success rate"
-    governance: "C-Suite CoEs (Innovation)"
-    metrics:
-      concept_graduation_rate: "> 75%"
-      community_engagement_target: "High"
-
+    name: "Development Incubators"
+    type: "Incubator"
   petri_dishes:
-    function: "Safe testing & sandboxing"
-    pipelines: [Learning, Extrospection]
-    safety_protocol: "Isolation from production data"
-    monitoring: "A/B test metrics"
-    governance: "BTO"
-    metrics:
-      test_stability_target: "99.5%"
-      isolation_integrity: "100%"
-
+    name: "Testing Petri Dishes"
+    type: "Petri Dish"
   laboratories:
-    function: "Research & development"
-    pipelines: [Knowledge, Retrospection, Introspection]
-    safety_protocol: "Ethical research guidelines"
-    monitoring: "Research output & impact"
-    governance: "Entity IDBO"
-    metrics:
-      research_publications_target: "Quarterly"
-      ontology_depth_growth: "10%/cycle"
-
+    name: "Analysis Laboratories"
+    type: "Laboratory"
   factories:
-    function: "Mass production & localization"
-    pipelines: [Learning, Extrospection]
-    safety_protocol: "Quality control gates"
-    monitoring: "Production throughput & quality"
-    governance: "BTO"
-    metrics:
-      production_yield_target: "99.9%"
-      localization_accuracy: "100%"
+    name: "Production Factories"
+    type: "Factory"

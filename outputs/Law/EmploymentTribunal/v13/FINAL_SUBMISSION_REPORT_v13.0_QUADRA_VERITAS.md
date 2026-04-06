@@ -16,8 +16,8 @@ This report finalizes the **Law Grand Operation v13.0-QUADRA-VERITAS**, represen
 
 ### **3. QUADRA-VERITAS CONVERGED METRICS**
 - **Convergence Score**: 0.98 (Verified alignment across all 4 dimensions)
-- **Liability Probability**: 82.4% (Predictive forecast with confidence intervals)
-- **Settlement Range**: £68,000 – £89,000 (Weighted leverage)
+- **Liability Probability**: 82.2% (Predictive forecast with confidence intervals)
+- **Settlement Range**: £68k-£89k (Weighted leverage)
 - **Strategic status**: **ADAPTIVE INEVITABILITY**
 
 ### **4. DIGITAL FACILITY DEPLOYMENT**
