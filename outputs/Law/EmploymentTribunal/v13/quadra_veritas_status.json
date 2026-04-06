@@ -1,7 +1,8 @@
 {
   "product_id": "VSB-SIG-LAW-13.0",
-  "status": "SOVEREIGN_CONVERGENCE_COMPLETE",
+  "status": "QUADRA-VERITAS-COMPLETE",
   "convergence_score": 0.98,
-  "liability_probability": 0.821,
+  "liability_probability": 0.822,
+  "expected_settlement": "\u00a368k-\u00a389k",
   "paradigm": "Temporal-Dynamic"
 }
