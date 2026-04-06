@@ -1,0 +1,78 @@
+{
+  "version": "11.0.0-OMNISYNTHESIS",
+  "timestamp": "2026-04-05T23:43:14.951402",
+  "sources": [
+    {
+      "id": "ET1 Claim Form.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "6045461.2025 ET3 accepted.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "Minhas_Grievance_Letter_6Oct20252.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "Grievance Decision Letter - Rehan Minhas - 10Nov25.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "appeal-reply-42354508.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "Termination Letter - 21Jan26.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": true,
+      "confidence": 0.99
+    },
+    {
+      "id": "13.02.2026 RM Outcome Letter.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "Minhas_Contemporaneous_Log_6Oct20252.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "Exhibit_Q1_HR_Performance_Review.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": true,
+      "confidence": 0.99
+    },
+    {
+      "id": "SAR_Correspondence_Lonza.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "Rehan_Minhas_CV.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    },
+    {
+      "id": "Thompson v TechFlow [2026] Precedent.pdf",
+      "scrutiny_status": "VALIDATED",
+      "burden_shift": false,
+      "confidence": 0.95
+    }
+  ]
+}
