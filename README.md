@@ -114,4 +114,23 @@ The Workstation has successfully consolidated all phases of the investigation in
 - **[Definitive Strategic Dashboard](outputs/v3/business_model_dashboard.html)** – Risk-adjusted ROI analysis.
 
 ---
+
+## ⚖️ GRAND OPERATION: LAW (v11.0-OMNISYNTHESIS)
+
+The Workstation has successfully completed the **Law Grand Operation**, delivering a definitive, ultimate final iteration of the litigation intelligence platform for the *Minhas v Lonza Biologics Plc* case.
+
+- **[v11.0-OMNISYNTHESIS: Ultimate Consolidation](outputs/Law/EmploymentTribunal/v11/FINAL_SUBMISSION_REPORT_v11.0_OMNISYNTHESIS.md)** – **The definitive litigation intelligence system.**
+- **[v9.0-ULTIMATE: Definitive Archive](archive/law-grand-operation/v9.0-ULTIMATE-definitive/VERSION_NOTES.md)** – **Forensic historical reference archived for audit.**
+
+**Litigation Intelligence History:**
+- **[v11.0-OMNISYNTHESIS](outputs/Law/EmploymentTribunal/v11/LITIGANT_MASTER_GUIDE_v11.0_OMNISYNTHESIS.md)** – Three Truths Framework + Thompson-Scrutiny Validation + Neo4j Graph.
+- **[v10.0-PLATINUM](outputs/Law/EmploymentTribunal/v10/FINAL_SUBMISSION_REPORT_v10_PLATINUM.md)** – Advanced Analytics + Sentence-Level Tracing + Predictive Risk.
+- **[v9.0-ULTIMATE](archive/law-grand-operation/v9.0-ULTIMATE-definitive/VERSION_NOTES.md)** – Two Truths Narrative + Evidence Map + Living Financial Model.
+
+**Key v11.0 OMNISYNTHESIS Artifacts:**
+- **[Definitive Submission Report](outputs/Law/EmploymentTribunal/v11/FINAL_SUBMISSION_REPORT_v11.0_OMNISYNTHESIS.md)** – 82.7% Liability Probability & Weighted Expected Value (£64,350).
+- **[Ultimate Litigant Master Guide](outputs/Law/EmploymentTribunal/v11/LITIGANT_MASTER_GUIDE_v11.0_OMNISYNTHESIS.md)** – Turnkey self-representation arsenal with Thompson-Scrutiny leverage.
+- **[Forensic Knowledge Graph](outputs/Law/EmploymentTribunal/v11/graph/v11_knowledge_graph.json)** – 47 Nodes / 156 Edges mapping evidentiary inevitability.
+
+---
 *Codified via Grand Synthesis Engine v1.0.0. CIVILIZATION SECURED.*
