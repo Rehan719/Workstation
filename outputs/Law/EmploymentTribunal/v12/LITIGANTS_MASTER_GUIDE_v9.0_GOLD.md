@@ -1,5 +1,5 @@
 # 📘 **THE LITIGANT'S MASTER GUIDE: MINHAS v LONZA BIOLOGICS PLC**
-### **Case Reference:** 6045461/2025 | **Version:** v9.0-GOLD (Definitive Edition)
+### **Case Reference:** 6045461/2025 | **Version:** v12.0-OMNISYNTHESIS (Definitive Edition)
 **Date: Monday, April 06, 2026**
 
 ---
