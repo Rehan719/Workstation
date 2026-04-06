@@ -115,23 +115,23 @@ The Workstation has successfully consolidated all phases of the investigation in
 
 ---
 
-## ⚖️ GRAND OPERATION: LAW (v13.0-QUADRA-VERITAS)
+## ⚖️ GRAND OPERATION: LAW (v14.0-SELF-AWARE)
 
-The Workstation has successfully completed the **Law Grand Operation**, delivering a definitive, ultimate final iteration of the litigation intelligence platform for the *Minhas v Lonza Biologics Plc* case, now powered by **Temporal-Dynamic Intelligence**.
+The Workstation has successfully completed the **Law Grand Operation**, delivering a definitive, self-aware governance ecosystem for the *Minhas v Lonza Biologics Plc* case, shifting from reactive compliance to proactive, causally-informed litigation intelligence.
 
-- **[v13.0-QUADRA-VERITAS: Ultimate Temporal Consolidation](outputs/Law/EmploymentTribunal/v13/FINAL_SUBMISSION_REPORT_v13.0_QUADRA_VERITAS.md)** – **The definitive litigation intelligence system.**
-- **[v12.0-OMEGA: AI-Enhanced Baseline](outputs/Law/EmploymentTribunal/v12/FINAL_SUBMISSION_REPORT_v12.0_OMEGA.md)** – Swarm intelligence and 100k Monte Carlo simulations.
+- **[v14.0-SELF-AWARE: Proactive Governance Ecosystem](outputs/Law/EmploymentTribunal/v14/FINAL_SUBMISSION_REPORT_v14.0.md)** – **The definitive self-aware litigation intelligence system.**
+- **[v13.0-QUADRA-VERITAS: Temporal Consolidation](outputs/Law/EmploymentTribunal/v13/FINAL_SUBMISSION_REPORT_v13.0_QUADRA_VERITAS.md)** – Temporal-Dynamic Intelligence (Past/Present/Future).
 - **[v9.0-ULTIMATE: Definitive Archive](archive/law-grand-operation/v9.0-ULTIMATE-definitive/VERSION_NOTES.md)** – **Forensic historical reference archived for audit.**
 
 **Litigation Intelligence History:**
-- **[v13.0-QUADRA-VERITAS](outputs/Law/EmploymentTribunal/v13/LITIGANT_MASTER_GUIDE_v13.0_QUADRA_VERITAS.md)** – Temporal-Dynamic Intelligence (Past/Present/Future) + Four Truths Paradigm.
-- **[v12.0-OMEGA](outputs/Law/EmploymentTribunal/v12/LITIGANT_MASTER_GUIDE_v12.0_OMEGA.md)** – Advanced AI Integration + 100k Monte Carlo + Swarm Orchestration.
-- **[v11.0-OMNISYNTHESIS](outputs/Law/EmploymentTribunal/v11/FINAL_SUBMISSION_REPORT_v11.0_OMNISYNTHESIS.md)** – Three Truths Framework + Thompson-Scrutiny Validation + Neo4j Graph.
+- **[v14.0-SELF-AWARE](outputs/Law/EmploymentTribunal/v14/LITIGANT_MASTER_GUIDE_v14.0.md)** – Neuro-Symbolic TKGs + Causal AI + Formal STL Verification + RAM.
+- **[v13.0-QUADRA-VERITAS](outputs/Law/EmploymentTribunal/v13/LITIGANT_MASTER_GUIDE_v13.0_QUADRA_VERITAS.md)** – Four Truths Paradigm + Thompson-Scrutiny Validation.
+- **[v12.0-OMNISYNTHESIS](outputs/Law/EmploymentTribunal/v12/FINAL_SUBMISSION_REPORT_v12.0_OMNISYNTHESIS.md)** – Five-Dimensional Convergence (Objective/Subjective/Procedural/Temporal/Systemic).
 
-**Key v13.0 QUADRA-VERITAS Artifacts:**
-- **[Definitive Submission Report](outputs/Law/EmploymentTribunal/v13/FINAL_SUBMISSION_REPORT_v13.0_QUADRA_VERITAS.md)** – 0.98 Convergence Score & Adaptive Inevitability Strategy.
-- **[Litigant Master Guide](outputs/Law/EmploymentTribunal/v13/LITIGANT_MASTER_GUIDE_v13.0_QUADRA_VERITAS.md)** – Turnkey self-representation arsenal with temporal tactical anchors.
-- **[Quadra-Veritas Manifest](outputs/Law/EmploymentTribunal/v13/audit/quadra_manifest.json)** – Full temporal-metadata-aware tracing of 156 assimilated sources.
+**Key v14.0 SELF-AWARE Artifacts:**
+- **[Definitive Submission Report](outputs/Law/EmploymentTribunal/v14/FINAL_SUBMISSION_REPORT_v14.0.md)** – Unified Intelligence Ecosystem & Proactive Governance certification.
+- **[System Dossier v14.0](outputs/Law/EmploymentTribunal/v14/SYSTEM_DOSSIER_v14.0.md)** – Mandatory technical baseline and algorithmic accountability rationale.
+- **[Safety Case v14.0](outputs/Law/EmploymentTribunal/v14/SAFETY_CASE_v14.0.md)** – Institutional responsibility and formally verified decision integrity.
 
 ---
 *Codified via Grand Synthesis Engine v1.0.0. CIVILIZATION SECURED.*

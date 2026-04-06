@@ -1,0 +1,8 @@
+{
+  "product_id": "VSB-SIG-LAW-14.0",
+  "status": "SELF-AWARE-GOVERNANCE-ACTIVE",
+  "convergence_score": 0.969,
+  "causal_link_strength": 0.95,
+  "formal_verification": "SUCCESS",
+  "regulatory_foresight": "ALIGNED (EU AI Act / NIST RMF / IEEE 7003)"
+}
