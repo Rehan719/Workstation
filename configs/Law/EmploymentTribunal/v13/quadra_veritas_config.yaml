@@ -1,4 +1,4 @@
-# Law Grand Operation v13.0-QUADRA-VERITAS Configuration
+# Law Grand Operation v13.0-QUADRA-VERITAS Definitive Configuration
 quadra_veritas_framework:
   version: "13.0.0"
   paradigm: "Temporal-Dynamic"
@@ -28,6 +28,10 @@ digital_facilities:
     type: "Laboratory"
   - name: "Real-Time Adaptation Reactor"
     type: "Reactor"
+  - name: "Temporal Pattern Incubator"
+    type: "Incubator"
+  - name: "Sovereign Strategy Petri Dish"
+    type: "Petri Dish"
   - name: "Adaptive Settlement Observatory"
     type: "Observatory"
 
