@@ -1,0 +1,25 @@
+# v16.0 STL Procedural Specifications for ACAS & ET Rules
+procedural_specs:
+  STL-PROC-001:
+    id: "φ_disclosure_timeliness"
+    logic: "ALWAYS(Disclosure_Request -> EVENTUALLY_WITHIN_7_DAYS(Substantive_Response))"
+    legal_source: "Rule 31 ET Rules 2013"
+    violation_impact: "Adverse Inference Risk + Aggravated Damages"
+
+  STL-PROC-003:
+    id: "φ_thompson_scrutiny"
+    logic: "ALWAYS(Performance_Review -> EXCLUDES(Disability_Factors))"
+    legal_source: "Thompson v TechFlow [2026] EAT 12"
+    violation_impact: "Rebuttable Presumption of Discrimination"
+
+  STL-PROC-007:
+    id: "φ_consultation_requirement"
+    logic: "ALWAYS(Adjustment_Recommendation -> EVENTUALLY(Interactive_Consultation))"
+    legal_source: "s.20/21 Equality Act 2010"
+    violation_impact: "Procedural Unfairness Finding"
+
+  STL-PROC-031:
+    id: "φ_acas_code_31"
+    logic: "ALWAYS(Grievance_Filed -> EVENTUALLY(Meeting_Within_Reasonable_Time))"
+    legal_source: "ACAS Code Para 31"
+    violation_impact: "Uplift in Compensatory Award"
