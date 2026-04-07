@@ -1,0 +1,11 @@
+{
+  "product_id": "VSB-SIG-LAW-15.0-SELF-AWARE",
+  "status": "V15-SELF-AWARE-ACTIVE",
+  "convergence_score": 1.0,
+  "metrics": {
+    "liability_probability": 0.857,
+    "expected_settlement": "\u00a372k\u2013\u00a395k",
+    "causal_impact": 0.85
+  },
+  "paradigm": "7-Dimensional Neuro-Symbolic Causal AI"
+}
