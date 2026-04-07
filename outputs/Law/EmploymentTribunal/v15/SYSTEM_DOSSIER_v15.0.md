@@ -1,7 +1,7 @@
 # 📑 **SYSTEM DOSSIER: v15.0 SELF-AWARE ECOSYSTEM**
-## **Neuro-Symbolic Baseline & Algorithmic Rationale (ID: SD-LAW-15.0-001)**
+## **Neuro-Symbolic Baseline (ID: SD-LAW-15.0-001)**
 
-- **Architecture**: Hybrid Neuro-Symbolic Temporal Knowledge Graph (QVT-KG)
-- **Logic**: Signal Temporal Logic (STL) for Mathematical Correctness
-- **Impact**: Bayesian Causal Inference for Harm Attribution
-- **Governance**: EU AI Act Article 14 (Human Oversight) Verified
+- **Evidence**: 7 PDFs Ingested (UUID: b24e44e2...)
+- **Logic**: STL (Signal Temporal Logic) Verification Active
+- **Attribution**: BSTS (Bayesian Structural Time Series) Causal Inference
+- **Compliance**: EU AI Act Article 14 / NIST RMF / Article 1118

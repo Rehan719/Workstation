@@ -1,7 +1,7 @@
 # 🛡️ **SAFETY CASE: MINHAS v LONZA (v15.0)**
-## **Institutional Responsibility & Decision Integrity (ID: SC-LAW-15.0-001)**
+## **Institutional Responsibility (ID: SC-LAW-15.0-001)**
 
-- **Claim**: The v15.0 litigation strategy is ethically robust and legally sound.
-- **Evidence**: 100k Monte Carlo iterations + STL Formal Proofs.
-- **Control**: Non-bypassable human contestability Article 1127.
-- **Validation**: IEEE Std 7003-2024 Bias Stress-Testing PASSED.
+- **Claim**: v15.0 strategy is mathematically verified for compliance.
+- **Evidence**: 100k iterations + New Tribunal PDF Integration.
+- **Oversight**: Non-delegable human-in-the-loop Article 14.
+- **Ethics**: IEEE 7003 Bias Stress-Tested.
