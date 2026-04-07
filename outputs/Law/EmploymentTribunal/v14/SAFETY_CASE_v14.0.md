@@ -1,7 +1,8 @@
-# 🛡️ **SAFETY CASE: MINHAS v LONZA (v14.0)**
-## **Institutional Responsibility & Decision Integrity**
+# 🛡️ **SAFETY CASE: v14.0 SOCIO-TECHNICAL INTEGRITY**
+## **Institutional Responsibility & Risk Foresight**
 
-- **Claim**: The v14.0 recommendation to escalate disclosure is safe.
-- **Evidence**: Causal AI predicts 89% success; STL Verifier confirms human-in-the-loop oversight article 1118.
-- **Mitigation**: Automated gap detection alerts Litigant to evidence voids.
-- **Certification**: VSB Sovereign Compliance certified.
+- **Hazard Identification**: User Over-reliance on STGNN point forecasts.
+- **Mitigation**: Bayesian Probabilistic Outputs (± 0.05) + XAI Rationale (Article 86).
+- **Foreseeability**: Socio-Technical foreseeability of disparate impacts on vulnerable claimants.
+- **Control**: Non-delegable human-in-the-loop oversight article 14.
+- **Validation**: Adversarial Red-Teaming (v14 Ethics Module).

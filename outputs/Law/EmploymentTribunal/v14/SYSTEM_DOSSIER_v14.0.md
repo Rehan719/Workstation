@@ -1,8 +1,9 @@
-# 📑 **SYSTEM DOSSIER: v14.0 OMNISCIENCE ECOSYSTEM**
-## **Technical Baseline & Algorithmic Rationale**
+# 📑 **SYSTEM DOSSIER: v14.0 BEYOND PREDICTION**
+## **Spatio-Temporal Baseline & Algorithmic Accountability**
 
-- **Logic**: Neuro-Symbolic Temporal Knowledge Graph (QVT-KG)
-- **Model**: Causal AI (Bayesian Structural Time Series)
-- **Verification**: STL (ALWAYS(Decision -> Human_Oversight))
-- **Governance**: EU AI Act (Article 14) Compliant
-- **Data Integrity**: Cryptographic Hashing (SHA-256) enabled
+- **SPA Model**: Hybrid STGNN (STGCN + MTGNN + HS-TGN)
+- **Graph Topology**: Adaptive (Learned from VSB repository data)
+- **Uncertainty**: Bayesian Uncertainty Quantification (Flow Matching)
+- **Legal Alignment**: Wesentlichkeitstheorie (Theory of Essentials)
+- **Ethics**: IEEE Std 7003-2024 (Bias Stress-Testing)
+- **Transparency**: AI-CAIQ + AI Model Cards
