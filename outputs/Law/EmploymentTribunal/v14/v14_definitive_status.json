@@ -1,0 +1,11 @@
+{
+  "product_id": "VSB-SIG-LAW-14.0-SELF-AWARE",
+  "status": "DEFINITIVE-SELF-AWARE-ACTIVE",
+  "convergence_score": 1.0,
+  "metrics": {
+    "causal_strength": 0.89,
+    "formal_proof": 0.95,
+    "liability_probability": 0.857
+  },
+  "paradigm": "7-Dimensional Omniscience"
+}

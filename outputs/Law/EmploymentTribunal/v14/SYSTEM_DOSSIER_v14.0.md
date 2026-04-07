@@ -1,9 +1,8 @@
-# 📑 **SYSTEM DOSSIER: v14.0 BEYOND PREDICTION**
-## **Spatio-Temporal Baseline & Algorithmic Accountability**
+# 📑 **SYSTEM DOSSIER: v14.0 OMNISCIENCE ECOSYSTEM**
+## **Technical Baseline & Algorithmic Rationale (ID: SD-LAW-14.0-001)**
 
-- **SPA Model**: Hybrid STGNN (STGCN + MTGNN + HS-TGN)
-- **Graph Topology**: Adaptive (Learned from VSB repository data)
-- **Uncertainty**: Bayesian Uncertainty Quantification (Flow Matching)
-- **Legal Alignment**: Wesentlichkeitstheorie (Theory of Essentials)
-- **Ethics**: IEEE Std 7003-2024 (Bias Stress-Testing)
-- **Transparency**: AI-CAIQ + AI Model Cards
+- **Architecture**: Hybrid Neuro-Symbolic Temporal Knowledge Graph (QVT-KG)
+- **Causal Model**: Bayesian Structural Time Series (BSTS) for Intervention Impact
+- **Verification**: Signal Temporal Logic (STL) Proof Generation
+- **Human Oversight**: Mandatory Human-in-the-Loop Article 14 Compliance
+- **Data Provenance**: Cryptographic Hashing (SHA-256) per Exhibit Q-1

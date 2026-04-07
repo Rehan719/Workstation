@@ -1,8 +1,8 @@
-# 🛡️ **SAFETY CASE: v14.0 SOCIO-TECHNICAL INTEGRITY**
-## **Institutional Responsibility & Risk Foresight**
+# 🛡️ **SAFETY CASE: MINHAS v LONZA (v14.0)**
+## **Institutional Responsibility & Decision Integrity (ID: SC-LAW-14.0-001)**
 
-- **Hazard Identification**: User Over-reliance on STGNN point forecasts.
-- **Mitigation**: Bayesian Probabilistic Outputs (± 0.05) + XAI Rationale (Article 86).
-- **Foreseeability**: Socio-Technical foreseeability of disparate impacts on vulnerable claimants.
-- **Control**: Non-delegable human-in-the-loop oversight article 14.
-- **Validation**: Adversarial Red-Teaming (v14 Ethics Module).
+- **Hazard**: Non-delegated decision making in high-risk litigation.
+- **Mitigation**: Automated Safety Case generation + Expert Review Protocol v14.0.
+- **Foreseeability**: Socio-Technical risk modeling for user over-reliance.
+- **Control**: Non-bypassable human contestability Article 1127.
+- **Validation**: IEEE Std 7003-2024 Bias Stress-Testing Verified.

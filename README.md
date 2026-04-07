@@ -119,12 +119,12 @@ The Workstation has successfully consolidated all phases of the investigation in
 
 The Workstation has successfully completed the **Law Grand Operation**, delivering a definitive, self-aware governance ecosystem for the *Minhas v Lonza Biologics Plc* case, shifting from reactive compliance to proactive, causally-informed litigation intelligence.
 
-- **[v14.0-SELF-AWARE: Proactive Governance Ecosystem](outputs/Law/EmploymentTribunal/v14/FINAL_SUBMISSION_REPORT_v14.0.md)** – **The definitive self-aware litigation intelligence system.**
+- **[v14.0-SELF-AWARE: Proactive Governance Ecosystem](outputs/Law/EmploymentTribunal/v14/FINAL_SUBMISSION_REPORT_v14.0_SELF_AWARE.md)** – **The definitive self-aware litigation intelligence system.**
 - **[v13.0-QUADRA-VERITAS: Temporal Consolidation](outputs/Law/EmploymentTribunal/v13/FINAL_SUBMISSION_REPORT_v13.0_QUADRA_VERITAS.md)** – Temporal-Dynamic Intelligence (Past/Present/Future).
 - **[v9.0-ULTIMATE: Definitive Archive](archive/law-grand-operation/v9.0-ULTIMATE-definitive/VERSION_NOTES.md)** – **Forensic historical reference archived for audit.**
 
 **Litigation Intelligence History:**
-- **[v14.0-SELF-AWARE](outputs/Law/EmploymentTribunal/v14/LITIGANT_MASTER_GUIDE_v14.0.md)** – Neuro-Symbolic TKGs + Causal AI + Formal STL Verification + RAM.
+- **[v14.0-SELF-AWARE](outputs/Law/EmploymentTribunal/v14/LITIGANT_MASTER_GUIDE_v14.0_SELF_AWARE.md)** – Neuro-Symbolic TKGs + Causal AI + Formal STL Verification + RAM.
 - **[v13.0-QUADRA-VERITAS](outputs/Law/EmploymentTribunal/v13/LITIGANT_MASTER_GUIDE_v13.0_QUADRA_VERITAS.md)** – Four Truths Paradigm + Thompson-Scrutiny Validation.
 - **[v12.0-OMNISYNTHESIS](outputs/Law/EmploymentTribunal/v12/FINAL_SUBMISSION_REPORT_v12.0_OMNISYNTHESIS.md)** – Five-Dimensional Convergence (Objective/Subjective/Procedural/Temporal/Systemic).
 
