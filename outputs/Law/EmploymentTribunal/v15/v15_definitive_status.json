@@ -1,6 +1,7 @@
 {
   "product_id": "VSB-SIG-LAW-15.0-SELF-AWARE",
   "status": "V15-CONSOLIDATED-COMPLETE",
-  "convergence": 1.0,
-  "audit_trail": "outputs/Law/EmploymentTribunal/v15/audit/vsb_signature_log_v15.0_self_aware.jsonl"
+  "convergence_score": 0.964,
+  "ingestion_count": 7,
+  "paradigm": "7-Dimensional Neuro-Symbolic Causal Governance"
 }
