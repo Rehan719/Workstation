@@ -1,0 +1,64 @@
+{
+  "documentary_modules": [
+    {
+      "id": "MOD-01",
+      "title": "Module 1: The Evidence Converges",
+      "duration_estimate": "10:00",
+      "focus": "Scientific validation timeline (Wu et al. 2025, Chazarin et al. 2026)",
+      "visual_style": "Animated data visualizations, laboratory footage, expert interviews",
+      "truth_dimension": "Truth I (Objective)"
+    },
+    {
+      "id": "MOD-02",
+      "title": "Module 2: Patient Voices, Patient Futures",
+      "duration_estimate": "08:30",
+      "focus": "Stakeholder narratives, whistleblower testimony, ethical considerations",
+      "visual_style": "Documentary-style interviews, patient journey animations",
+      "truth_dimension": "Truth II (Subjective)"
+    },
+    {
+      "id": "MOD-03",
+      "title": "Module 3: The Regulatory Gap",
+      "duration_estimate": "12:00",
+      "focus": "Trial design flaws, monitoring inadequacies, liability frameworks",
+      "visual_style": "Process flow animations, regulatory timeline visualisations",
+      "truth_dimension": "Truth III (Procedural)"
+    },
+    {
+      "id": "MOD-04",
+      "title": "Module 4: The Strategic Imperative",
+      "duration_estimate": "10:00",
+      "focus": "Predictive modelling, regulatory trajectory, commercial opportunity",
+      "visual_style": "Interactive dashboard demonstrations, scenario modelling animations",
+      "truth_dimension": "Truth IV (Temporal)"
+    }
+  ],
+  "animated_sequences": [
+    {
+      "title": "DES Tragedy Parallel",
+      "duration": "90s",
+      "purpose": "Illustrate historical precedent for intergenerational harm"
+    },
+    {
+      "title": "AAV Germ Cell Transduction Mechanism",
+      "duration": "120s",
+      "purpose": "Explain Wu et al. 2025 findings on germline exposure"
+    },
+    {
+      "title": "Complement Activation Pathway",
+      "duration": "90s",
+      "purpose": "Clarify Chazarin et al. 2026 immune perturbation findings"
+    },
+    {
+      "title": "Quadra-Veritas Framework Overview",
+      "duration": "120s",
+      "purpose": "Introduce the four-truth methodology for stakeholder understanding"
+    }
+  ],
+  "technical_specifications": {
+    "resolution": "4K (3840x2160)",
+    "frame_rate": "24fps",
+    "accessibility": "WCAG 2.1 AA Compliant (Closed Captions, Audio Descriptions)",
+    "metadata": "Embedded Quadra-Veritas dimension tags in XMP"
+  }
+}
