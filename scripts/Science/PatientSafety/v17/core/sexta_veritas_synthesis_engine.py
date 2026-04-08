@@ -5,8 +5,8 @@ from typing import Dict, List, Any
 
 class SextaVeritasSynthesisEngine:
     """
-    v17.0 Sexta-Veritas Synthesis Engine
-    Implements weighted coherence scoring across 6 truth dimensions.
+    v17.0 Sexta-Veritas Synthesis Engine - Production Implementation
+    Implements deterministic weighted coherence scoring with evidence-based penalties.
     """
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {
@@ -15,35 +15,37 @@ class SextaVeritasSynthesisEngine:
                 "truth_iv": 0.15, "truth_v": 0.15, "truth_vi": 0.20
             },
             "thresholds": {
-                "adaptive_inevitability": 0.90,
-                "strategic_sovereignty": 0.85
+                "adaptive_inevitability": 0.92,
+                "strategic_sovereignty": 0.88
             }
         }
         self.audit_log = []
 
     def calculate_convergence(self, evidence: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculates score with dynamic correlation logic."""
+        """Calculates score with deterministic correlation and consistency logic."""
         dimension_scores = {}
         weighted_sum = 0.0
 
-        # 1. Base Dimension Scoring
+        # 1. Base Dimension Scoring (Derived from deterministic evidence evaluation)
         for dim, weight in self.config["weights"].items():
             score = evidence.get(f"{dim}_score", 0.0)
             dimension_scores[dim] = score
             weighted_sum += score * weight
 
-        # 2. Evidence Correlation Logic
+        # 2. Evidence Correlation Logic (Deterministic)
         # If Truth I (Objective) is high but Truth III (Procedural) is low,
         # it indicates a systemic gap (Truth V) which penalizes the consistency.
         correlation_penalty = 0.0
         if dimension_scores.get("truth_i", 0) > 0.9 and dimension_scores.get("truth_iii", 0) < 0.7:
-            correlation_penalty = 0.05
+            correlation_penalty = 0.08
 
-        # 3. Consistency multiplier
+        # 3. Deterministic Consistency Multiplier
+        # Uses standard deviation to reward alignment across dimensions
         vals = list(dimension_scores.values())
         avg = sum(vals) / len(vals)
         variance = sum((x - avg) ** 2 for x in vals) / len(vals)
-        consistency_bonus = 0.10 * (1.0 - variance)
+        std_dev = variance ** 0.5
+        consistency_bonus = 0.10 * (1.0 - std_dev)
 
         # 4. Final Aggregation
         final_score = min(1.0, weighted_sum + consistency_bonus - correlation_penalty)
@@ -55,7 +57,7 @@ class SextaVeritasSynthesisEngine:
             "correlation_penalty": round(correlation_penalty, 4),
             "status": self._determine_status(final_score),
             "timestamp": datetime.now().isoformat(),
-            "engine_version": "v17.0-SEXTA-VERITAS"
+            "engine_version": "v17.0-SEXTA-VERITAS-PROD"
         }
 
         self._log_operation("calculate_convergence", evidence, report)
