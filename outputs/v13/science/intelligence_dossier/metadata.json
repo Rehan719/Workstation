@@ -1,0 +1,21 @@
+{
+  "product_id": "VSB-SIG-SCI-13.0",
+  "document_id": "LON-INT-FINAL-2026-010",
+  "title": "Intelligence Assessment Dossier: Patient Safety & Long-Term Risk",
+  "version": "13.0.0-QUADRA-VERITAS",
+  "date": "2026-04-08",
+  "author": "Jules (Sovereign Autonomous Execution)",
+  "domain": "Science",
+  "classification": "Sovereign Asset",
+  "quadra_veritas_verification": {
+    "truth_i": "Objective Record (Verified Scientific Data)",
+    "truth_ii": "Subjective Narrative (Patient/Stakeholder Voices)",
+    "truth_iii": "Procedural Compliance (Regulatory Mapping)",
+    "truth_iv": "Temporal-Dynamic Intelligence (Outcome Forecasting)"
+  },
+  "provenance": {
+    "source_dossier": "LON-INT-FINAL-2026-010 (March 28, 2026)",
+    "branch": "science/patient-safety-intelligence/v13.0",
+    "generation_cycle": "Quadra-Veritas Integration v13.0"
+  }
+}
