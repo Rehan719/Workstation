@@ -1,0 +1,24 @@
+{
+  "presentation_metadata": {
+    "title": "Patient Safety Intelligence: Quadra-Veritas Strategic Imperative",
+    "version": "v14.0",
+    "date": "2026-04-08"
+  },
+  "embedded_videos": [
+    {
+      "filename": "intro_loop.mp4",
+      "module": "executive_hook",
+      "duration": "10s"
+    },
+    {
+      "filename": "patient_impact_vignette.mp4",
+      "module": "executive_hook",
+      "duration": "30s"
+    },
+    {
+      "filename": "aav_germ_cell_explainer.mp4",
+      "module": "evidence",
+      "duration": "120s"
+    }
+  ]
+}
