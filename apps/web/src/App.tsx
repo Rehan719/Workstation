@@ -6,6 +6,7 @@ import { CEOChat } from './pages/CEOChat';
 import { BTOCatalog } from './pages/BTOCatalog';
 import { AdminPanel } from './pages/AdminPanel';
 import { Forge } from './pages/developers/Forge';
+import VisualAgentComposer from './components/organism/VisualAgentComposer';
 import { DigitalReactor } from './pages/developers/DigitalReactor';
 import { Incubator } from './pages/developers/Incubator';
 import { PetriDish } from './pages/developers/PetriDish';
@@ -134,6 +135,7 @@ function App() {
           <Route path="/offspring" element={<OffspringManagement />} />
           <Route path="/vault" element={<CredentialsVault />} />
           <Route path="/forge" element={<Forge />} />
+          <Route path="/visual-composer" element={<VisualAgentComposer />} />
           <Route path="/reactor" element={<DigitalReactor />} />
           <Route path="/incubator" element={<Incubator />} />
           <Route path="/petri" element={<PetriDish />} />
