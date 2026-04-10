@@ -51,7 +51,7 @@ class Phase4Validator:
 
     def validate_user_centricity(self):
         """Check NPS improvement (Simulated proxy)."""
-        # Baseline NPS from Phase 3 (autonomous) was 40. Target +10 -> 50.
+        # Baseline NPS from Phase 3 (mock) was 40. Target +10 -> 50.
         current_nps = 55.0 # Simulated result of A/B test
         self.monitor.log_metric("UX", "nps_score", current_nps)
         print(f"User Satisfaction (NPS): {current_nps}")

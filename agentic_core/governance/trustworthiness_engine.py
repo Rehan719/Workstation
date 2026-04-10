@@ -20,7 +20,7 @@ class TrustworthinessEngine:
         """
         fairness_score = 1.0
 
-        # Baseline: Analyze if output is biased against specific demographic groups
+        # Placeholder: Analyze if output is biased against specific demographic groups
         if demographic_data:
             # Simple bias calculation: are outputs significantly different across groups?
             # Example: 1.0 (Fair) to 0.0 (Unfair)
@@ -39,7 +39,7 @@ class TrustworthinessEngine:
         """
         Detects potential biases in the provided output.
         """
-        # Baseline: Detect bias patterns in text or decisions
+        # Placeholder: Detect bias patterns in text or decisions
         bias_score = 0.05
 
         is_biased = bias_score > sensitivity

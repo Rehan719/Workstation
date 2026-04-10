@@ -26,11 +26,11 @@ class GenericDomainProductGenerator(OctoOmnimediaGenerator):
 
     def generate_video(self, data: Dict[str, Any]) -> MultimediaAsset:
         metadata = {"accessibility": self.accessibility.tag_asset("video", {})}
-        return MultimediaAsset(f"{self.domain} Video", "video", b"autonomous_VIDEO", metadata)
+        return MultimediaAsset(f"{self.domain} Video", "video", b"MOCK_VIDEO", metadata)
 
     def generate_audio(self, data: Dict[str, Any]) -> MultimediaAsset:
         metadata = {"accessibility": self.accessibility.tag_asset("audio", {})}
-        return MultimediaAsset(f"{self.domain} Audio", "audio", b"autonomous_AUDIO", metadata)
+        return MultimediaAsset(f"{self.domain} Audio", "audio", b"MOCK_AUDIO", metadata)
 
     def generate_digital_twin(self, data: Dict[str, Any]) -> MultimediaAsset:
         metadata = {"accessibility": self.accessibility.tag_asset("digital_twin", {})}

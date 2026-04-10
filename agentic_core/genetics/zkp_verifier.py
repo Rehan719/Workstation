@@ -14,7 +14,7 @@ class ZKPVerifier:
         Simulates ZK-SNARK generation.
         """
         start = time.perf_counter()
-        # Autonomous proof generation
+        # Mock proof generation
         payload = str(mutation_data) + str(time.time())
         proof = hashlib.sha384(payload.encode()).hexdigest()
 

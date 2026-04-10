@@ -45,7 +45,7 @@ class TajwidRuleEngine:
         # High-fidelity simulation of phonetic and textual comparison
 
         # 1. Similarity check
-        accuracy = 0.95 + (random.random() * 0.04) # Autonomous accuracy
+        accuracy = 0.95 + (random.random() * 0.04) # Mock accuracy
 
         # 2. Rule Violation Detection (Simulated based on text patterns)
         violations = []

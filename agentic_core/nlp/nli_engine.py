@@ -69,4 +69,4 @@ class NLIEngine:
         """
         Returns the confidence score for a specific intent ID based on historical results.
         """
-        return 0.85 # Baseline for historical confidence tracking
+        return 0.85 # Placeholder for historical confidence tracking

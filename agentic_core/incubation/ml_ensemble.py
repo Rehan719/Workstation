@@ -36,7 +36,7 @@ class MLEnsemble:
         return min(risk, 1.0)
 
     def _ml_risk(self, metrics: Dict[str, float]) -> float:
-        # Baseline for actual model inference
+        # Placeholder for actual model inference
         return 0.5
 
     def add_training_sample(self, sample: Dict[str, Any]):

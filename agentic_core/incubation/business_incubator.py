@@ -31,7 +31,7 @@ class BusinessSimulationIncubator:
         sim_id = f"sim_{uuid.uuid4().hex[:8]}"
         # await self.ese.lifecycle.create_twin("incubator", sim_id, {"goal": goal, "sources": data_sources})
         # results = await self.ese.run_simulation(sim_id, steps=20, mode="abm")
-        results = {"data": [{"step": 1, "risk": 0.1, "pas": 0.98}, {"step": 20, "risk": 0.2, "pas": 0.99}]} # Autonomous for v122
+        results = {"data": [{"step": 1, "risk": 0.1, "pas": 0.98}, {"step": 20, "risk": 0.2, "pas": 0.99}]} # Mock for v122
 
         # Phase 2: Constitutional Vetting (Runtime Governance)
         # ARTICLE 611: All outputs must undergo constitutional vetting
@@ -40,12 +40,12 @@ class BusinessSimulationIncubator:
 
         for res in results.get("data", []):
             # Check arifOS floors
-            autonomous_event = {
+            mock_event = {
                 "agent_id": f"sim_{sim_id}",
                 "event_type": "simulation.result",
                 "payload": {"pas": res.get("pas", 1.0), "entropy_delta": -0.05}
             }
-            if not self.runtime_gov.check_arifos_floors(autonomous_event):
+            if not self.runtime_gov.check_arifos_floors(mock_event):
                 vetting_passed = False
                 vetting_logs.append(f"VETTING: Floor violation in result: {res}")
 

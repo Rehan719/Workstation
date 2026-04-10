@@ -192,7 +192,7 @@ class DevelopmentScraper:
 
         if not async_playwright:
             return {
-                "design_patterns": ["Simulated Hero", "Autonomous Dashboard"],
+                "design_patterns": ["Simulated Hero", "Mock Dashboard"],
                 "ux_best_practices": ["Simulated Navigation"],
                 "tech_advancements": ["Simulated WASM"],
                 "scraped_at": "2024-05-23T10:00:00Z"

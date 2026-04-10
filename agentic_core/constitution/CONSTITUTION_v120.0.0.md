@@ -11,7 +11,7 @@ The organism must prioritize resource allocation in the following absolute order
 
 ## ⚙️ SECTION II: OPERATIONAL MANDATES (Articles 48-63)
 **ARTICLE 60: NO-STUBS MANDATE**
-All code within the core hierarchy must contain functional logic; stubs and baselines are strictly prohibited.
+All code within the core hierarchy must contain functional logic; stubs and placeholders are strictly prohibited.
 
 ## 🏢 SECTION XI: MAGNIFICENT SEVEN GOVERNANCE (Articles 341-355)
 **ARTICLE 341: MAGNIFICENT SEVEN GOVERNANCE MANDATE**
@@ -42,7 +42,7 @@ The system shall provide a unified, commercial‑grade user access layer compris
 The system shall maintain a permanent Centre of Excellence for Digital Product Engineering (CoE‑DPE), staffed by a multidisciplinary team of expert agents.
 
 **ARTICLE 403: NO-PLACEHOLDER MANDATE**
-All delivered products must be production‑ready, with no baselines, scaffolding, or autonomousups.
+All delivered products must be production‑ready, with no placeholders, scaffolding, or mockups.
 
 ## 🧬 SECTION XXI: QUADRUPLE-PILLAR ENGINE SYSTEM (Articles 406-410)
 **ARTICLE 406: ENVIRONMENTAL SIMULATOR ENGINE (ESE) MANDATE**

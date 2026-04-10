@@ -61,8 +61,8 @@ class AvatarChannel:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def autonomous_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('expression', '')})")
-    avatar = AvatarChannel(ueg_callback=autonomous_ueg)
+    def mock_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('expression', '')})")
+    avatar = AvatarChannel(ueg_callback=mock_ueg)
     avatar.start_stream("session_88", user_consent=True)
     avatar.update_expression("SMILING")
     avatar.synthesize_speech("Welcome to the Garden of Curiosity.")

@@ -39,7 +39,7 @@ class EdgeNAS:
             # 2. Estimate Performance (Pareto Improvement)
             # Higher layers = better accuracy, more latency
             # Smaller dim = lower power, lower accuracy
-            latency = (arch["layers"] * arch["dim"]) / 5000.0 # Autonomous ms
+            latency = (arch["layers"] * arch["dim"]) / 5000.0 # Mock ms
             accuracy = 0.6 + (arch["layers"] / 40.0) + (arch["dim"] / 10000.0)
 
             name = f"NAS-Arch-{arch['layers']}L-{arch['dim']}D-{i}"

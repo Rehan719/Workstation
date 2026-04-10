@@ -6,7 +6,7 @@ from agentic_core.utils.data_governance import DataGovernanceModule
 def get_v1_validator():
     """
     Safely attempts to load GaaSValidatorV1 using a temporary module swap.
-    NO production.logic used in production code.
+    NO unittest.mock used in production code.
     """
     import sys
     import types

@@ -35,7 +35,7 @@ class BiomimeticTeamOrchestrator:
         team_id = f"vtf_{intent_id}_{domain}"
         self.registry.register_team(team_id, f"Mission for {domain}", agent_ids)
 
-        # 2. Autonomousing agent profiles for negotiation
+        # 2. Mocking agent profiles for negotiation
         # In full production, these come from sub-reactor registries
         agents = []
         for aid in agent_ids:

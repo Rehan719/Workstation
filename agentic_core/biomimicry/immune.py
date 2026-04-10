@@ -85,8 +85,8 @@ class ImmuneOrchestrator:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def autonomous_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('entity_id', '')})")
-    immune = ImmuneOrchestrator(ueg_callback=autonomous_ueg)
+    def mock_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('entity_id', '')})")
+    immune = ImmuneOrchestrator(ueg_callback=mock_ueg)
 
     # Simulate a series of suspicious events
     for _ in range(4):

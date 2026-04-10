@@ -21,7 +21,7 @@ class SummaryChannel:
         # In Phase 5, we simulate the inference call
         hal_res = self.hal.cl1_infer({"task": "summarize", "data_count": len(events)})
 
-        # 2. Autonomous Summary Text
+        # 2. Mock Summary Text
         summary = f"Daily Digest: {len(events)} events processed. "
         summary += "Notable: Swarm evolution achieved 94% fitness. "
         summary += "Homeostasis remains stable with 99.8% uptime."

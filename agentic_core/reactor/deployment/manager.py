@@ -13,7 +13,7 @@ class BaseDeploymentProvider:
     async def deploy(self, package: Dict[str, Any]) -> str:
         """
         ARTICLE 60: Base deployment logic.
-        Returns a autonomous URL if not overridden, ensuring 100% functional logic.
+        Returns a mock URL if not overridden, ensuring 100% functional logic.
         """
         logger.info(f"BaseProvider: Generic deployment for {package.get('id')} on {self.provider_name}")
         return f"https://{package.get('id')}.{self.provider_name}.local"

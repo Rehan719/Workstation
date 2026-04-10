@@ -27,7 +27,7 @@ if 'organism' not in st.session_state:
 
 if st.session_state.organism is None:
     st.warning("Master Orchestrator (v70.0) not yet fully instantiated. Initializing stubs for Phase 0.")
-    class AutonomousOrganism:
+    class MockOrganism:
         agent_id = "v70-BOOT"
         def run_lifecycle_pulse(self, d, l):
             return {
@@ -37,7 +37,7 @@ if st.session_state.organism is None:
                 "mce": {"action": "Initializing DA Layer", "reason": "Phase 0"},
                 "genome_depth": 0
             }
-    st.session_state.organism = AutonomousOrganism()
+    st.session_state.organism = MockOrganism()
 
 col1, col2, col3 = st.columns([1, 1, 1])
 

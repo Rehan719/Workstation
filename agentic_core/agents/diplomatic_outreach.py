@@ -6,7 +6,7 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 class OutreachCampaignManager:
-    """v127.0: Manages diplomatic outreach via authenticated channels (Zero-Baseline)."""
+    """v127.0: Manages diplomatic outreach via authenticated channels (Zero-Placeholder)."""
     def __init__(self):
         self.channels = ["email", "linkedin"]
         # In a production env, API keys are loaded from environment

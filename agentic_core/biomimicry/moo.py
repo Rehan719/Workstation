@@ -83,7 +83,7 @@ class MultiObjectiveOptimizer:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def autonomous_ueg(e): print(f"Gen {e['payload']['gen']}: Pareto Front Size {e['payload']['front_size']}")
-    moo = MultiObjectiveOptimizer(ueg_callback=autonomous_ueg)
+    def mock_ueg(e): print(f"Gen {e['payload']['gen']}: Pareto Front Size {e['payload']['front_size']}")
+    moo = MultiObjectiveOptimizer(ueg_callback=mock_ueg)
     results = moo.run_optimization(5)
     print(f"Final population size: {len(results)}")

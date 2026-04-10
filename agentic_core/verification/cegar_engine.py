@@ -20,5 +20,5 @@ class CEGAREngine:
             self.abstraction_level += 1
         return {"status": "REFUTED", "reason": "Persistent counterexamples found."}
 
-def autonomous_verifier(h):
+def mock_verifier(h):
     return 'unstable' not in str(h).lower()

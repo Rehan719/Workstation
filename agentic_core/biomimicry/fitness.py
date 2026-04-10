@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 
 class RewardModel:
     """
-    Autonomous Reward Model for RLHF loop.
+    Mock Reward Model for RLHF loop.
     Predicts user preference based on agent behavior.
     """
     def predict(self, agent_output: str, user_context: Dict[str, Any]) -> float:
@@ -40,7 +40,7 @@ class HybridFitnessFunction:
             user_base = avg_stars / 5.0
         else:
             # Fallback to Reward Model prediction if no live feedback
-            user_base = self.reward_model.predict("agent_output_autonomous", {})
+            user_base = self.reward_model.predict("agent_output_mock", {})
 
         total_fitness = (self.tech_weight * tech_base) + (self.user_weight * user_base)
         return total_fitness

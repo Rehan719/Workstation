@@ -78,7 +78,7 @@ class MycelialClient:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def autonomous_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('peer_id', '')})")
-    mesh = MycelialClient("node_alpha", autonomous_ueg)
+    def mock_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('peer_id', '')})")
+    mesh = MycelialClient("node_alpha", mock_ueg)
     mesh.discover_peer("node_beta", "192.168.1.10")
     mesh.handle_partition("node_beta")

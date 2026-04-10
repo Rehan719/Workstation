@@ -22,7 +22,7 @@ class GRNModeler:
         size = len(genes)
         if size == 0: return {"stability_score": 1.0, "status": "EMPTY"}
 
-        # Create a autonomous interaction matrix based on interactions list
+        # Create a mock interaction matrix based on interactions list
         adj = np.eye(size) * 0.5
         for inter in interactions:
             try:
@@ -52,7 +52,7 @@ class GRNModeler:
         Reconstructs GRN topology from system activity logs using correlation analysis.
         """
         topology = {}
-        # Article 60: Reconstruct from logs instead of returning hardcoded autonomous
+        # Article 60: Reconstruct from logs instead of returning hardcoded mock
         for log in interaction_logs:
             caller = log.get('caller')
             callee = log.get('callee')

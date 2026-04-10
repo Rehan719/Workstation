@@ -20,7 +20,7 @@ class LawProductGenerator(OctoOmnimediaGenerator):
         return MultimediaAsset(
             name=data.get("name", "Law Infographic"),
             asset_type="infographic",
-            content=None, # Allow injector to generate autonomous image
+            content=None, # Allow injector to generate mock image
             metadata={"accessibility": {"alt_text": "A timeline of legal precedents."}}
         )
 

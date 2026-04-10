@@ -14,7 +14,7 @@ class DocumentationLinter:
             "Check constitutional alignment (Articles 1-1038)",
             "Enforce style guide (Scholarly Minimalism)",
             "Validate cross-references",
-            "Check for stubs/baselines"
+            "Check for stubs/placeholders"
         ]
 
     def lint_file(self, filepath: str) -> List[Dict[str, Any]]:
@@ -25,8 +25,8 @@ class DocumentationLinter:
         # Simulated linting logic
         with open(filepath, "r") as f:
             content = f.read()
-            if "COMPLETED" in content or "FIXME" in content:
-                issues.append({"severity": "warning", "message": "Baseline detected (COMPLETED/FIXME)"})
+            if "TODO" in content or "FIXME" in content:
+                issues.append({"severity": "warning", "message": "Placeholder detected (TODO/FIXME)"})
             if "Article" not in content and filepath.endswith("CONSTITUTION.md"):
                 issues.append({"severity": "critical", "message": "Missing constitutional articles"})
 

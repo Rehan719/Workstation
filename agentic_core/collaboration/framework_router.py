@@ -49,13 +49,13 @@ class FrameworkRouter:
         return {"framework": "pc_agent", "status": "success", "result": result}
 
     async def _execute_autogen_task(self, task: str) -> Dict[str, Any]:
-        """Baseline for actual AutoGen session execution (Article 95)."""
+        """Placeholder for actual AutoGen session execution (Article 95)."""
         logger.info("FrameworkRouter: Initiating AutoGen agent session.")
         # Logic to initialize autogen.ConversableAgent and run initiate_chat
         return {"framework": "autogen", "status": "success", "result": f"AutoGen result for: {task}"}
 
     async def _execute_crewai_task(self, task: str) -> Dict[str, Any]:
-        """Baseline for actual CrewAI task execution (Article 95)."""
+        """Placeholder for actual CrewAI task execution (Article 95)."""
         logger.info("FrameworkRouter: Initializing CrewAI sequential workflow.")
         # Logic to initialize Crew, Agents, and Tasks
         return {"framework": "crewai", "status": "success", "result": f"CrewAI result for: {task}"}

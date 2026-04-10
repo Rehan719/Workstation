@@ -62,7 +62,7 @@ class EnvironmentalBridge:
             "timestamp": "2024-05-23T18:30:00Z"
         }
 
-        # Simulating sub-system signaling (zero-baseline target)
+        # Simulating sub-system signaling (zero-placeholder target)
         for server_name, config in self.mcp_servers.items():
             logger.debug(f"VSB_Bridge: Initialized MCP Connector: {server_name} (Protocols: {list(config.keys())})")
 

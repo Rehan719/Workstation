@@ -22,7 +22,7 @@ class FormalProofAgent:
         # Simplified mapping: treat strings as boolean variables for demonstration
         # In v53, we use actual symbol extraction
 
-        # Autonomousing a successful Z3 check
+        # Mocking a successful Z3 check
         status = "VERIFIED"
         proof_trace_parts = [f"Theorem: {assertion}"]
 
