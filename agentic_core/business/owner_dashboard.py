@@ -26,7 +26,7 @@ class OwnerDashboard:
             "mission_impact": self.commander.mission_kpis,
             "strategic_proposals": list(self.commander.strategy_map.keys()),
             "halal_audit_status": "PASSED",
-            "active_leads": 5, # Autonomous data for now
+            "active_leads": 5, # Mock data for now
             "client_satisfaction_nps": 78
         }
 

@@ -46,7 +46,7 @@ class MorphogenesisOrchestrator:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def autonomous_ueg(e): print(f"UEG -> {e['type']} ({e['payload']['action']})")
-    mo = MorphogenesisOrchestrator(autonomous_ueg)
+    def mock_ueg(e): print(f"UEG -> {e['type']} ({e['payload']['action']})")
+    mo = MorphogenesisOrchestrator(mock_ueg)
     mo.adapt_topology("HIGH_LOAD")
     mo.adapt_topology("LOW_LOAD")

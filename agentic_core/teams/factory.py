@@ -19,9 +19,9 @@ class ExpertAgentFactory:
     def create_agent(self, agent_type: str, config: Optional[Dict[str, Any]] = None) -> Any:
         logger.info(f"Factory: Creating expert agent of type {agent_type}")
         # In a real system, this would import and instantiate classes dynamically
-        # For v100.0-alpha, we return a autonomous object that mimics the expected interface
+        # For v100.0-alpha, we return a mock object that mimics the expected interface
 
-        class AutonomousExpertAgent:
+        class MockExpertAgent:
             def __init__(self, agent_type, config):
                 self.agent_type = agent_type
                 self.config = config or {}
@@ -29,7 +29,7 @@ class ExpertAgentFactory:
             async def process(self, input_data: Any) -> Dict[str, Any]:
                 return {"result": f"Expert {self.agent_type} processed data.", "confidence": 0.98}
 
-        return AutonomousExpertAgent(agent_type, config)
+        return MockExpertAgent(agent_type, config)
 
     def get_supported_agents(self) -> List[str]:
         return list(self.agent_types.keys())

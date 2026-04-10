@@ -20,7 +20,7 @@ class GraphRAGEngine:
         for neighbor in neighbors:
             self.graph.add_edge(concept_id, neighbor)
 
-        # Autonomous embedding and vector storage
+        # Mock embedding and vector storage
         self.vector_store[concept_id] = [0.1, 0.2, 0.3]
 
     def multi_hop_query(self, start_node: str, depth: int = 2) -> List[Dict[str, Any]]:

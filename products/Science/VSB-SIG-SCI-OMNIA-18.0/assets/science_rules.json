@@ -1,0 +1,24 @@
+{
+  "domain": "Science",
+  "rules": [
+    {
+      "id": "GRADE_MANDATORY_FIELDS",
+      "field": "grade_matrix",
+      "check": "all_fields_present",
+      "action": "reject",
+      "params": ["outcomes", "certainty", "importance", "evidence_summary"]
+    },
+    {
+      "id": "REGULATORY_COMPLIANCE_LINK",
+      "field": "regulatory_info",
+      "check": "referenced",
+      "action": "warning"
+    },
+    {
+      "id": "ICH_M14_COMPLIANCE",
+      "field": "ich_alignment",
+      "check": "consent_given",
+      "action": "reject"
+    }
+  ]
+}

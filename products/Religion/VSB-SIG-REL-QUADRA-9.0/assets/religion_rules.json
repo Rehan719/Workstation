@@ -1,0 +1,1 @@
+{"domain": "Religion", "rules": [{"id": "UTHMANI_SCRIPT", "field": "script", "check": "equals", "params": "Uthmani", "action": "reject"}]}

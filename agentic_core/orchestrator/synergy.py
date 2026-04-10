@@ -81,7 +81,7 @@ class SynergyOrchestrator:
             reactor = self.registry.get_reactor(r_id)
             if reactor:
                 twin_id = f"twin_{r_id.replace(':', '_')}"
-                # Zero-baseline initialization
+                # Zero-placeholder initialization
                 initial_state = {"bodies": [], "agents": [], "meta": {"objective": objective}}
                 await self.ese.lifecycle.create_twin(r_id, twin_id, initial_state)
 

@@ -1,0 +1,1 @@
+{"domain": "Care", "rules": [{"id": "CARE_ACT_2014", "field": "legal_base", "check": "equals", "params": "Care Act 2014", "action": "reject"}]}

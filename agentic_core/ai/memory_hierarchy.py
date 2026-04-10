@@ -34,7 +34,7 @@ class MemoryHierarchy:
 
     def query_semantic_memory(self, query: str) -> List[str]:
         """Semantic Memory: Fact retrieval (Vector-style)."""
-        # Autonomousing vector search results
+        # Mocking vector search results
         facts = ["Article 1127 governs evolution", "QEP Flagship is live", "PQC is mandatory"]
         return [f for f in facts if any(word in f.lower() for word in query.lower().split())]
 

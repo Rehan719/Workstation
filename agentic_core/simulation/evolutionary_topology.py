@@ -58,8 +58,8 @@ class PhylogeneticDiversityTwin:
         for n in self.tree["nodes"]:
             all_features.extend(n.get("conserved_features", []))
 
-        # Autonomous anchor identification
-        anchors = ["dual_purpose_foundation", "survival_instinct_hierarchy", "zero_baseline_mandate"]
+        # Mock anchor identification
+        anchors = ["dual_purpose_foundation", "survival_instinct_hierarchy", "zero_placeholder_mandate"]
         logger.info(f"PHYLOGENETIC: Identified {len(anchors)} immutable anchors.")
         return anchors
 
@@ -68,7 +68,7 @@ class PhylogeneticDiversityTwin:
         return {
             "dag": self.tree,
             "conserved_lineage": self.identify_immutable_anchors(),
-            "extinct_features": ["baseline_logic", "manual_deployment_v1", "unstructured_ueg_v0"],
+            "extinct_features": ["placeholder_logic", "manual_deployment_v1", "unstructured_ueg_v0"],
             "last_common_ancestor": "v1.0"
         }
 

@@ -13,7 +13,7 @@ class ExecutiveAgent:
         self.ptm_context = [] # Phonetic Trajectory Memory for neuro-symbolic reasoning
 
     def evaluate(self, question: str) -> bool:
-        # Neuro-symbolic evaluation (autonomoused)
+        # Neuro-symbolic evaluation (mocked)
         return random.random() < self.weight
 
 class BiomimeticCSuite:

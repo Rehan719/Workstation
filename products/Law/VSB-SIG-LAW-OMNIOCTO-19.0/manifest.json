@@ -6,5 +6,21 @@
   "release_date": "2026-04-10",
   "veritas_framework": "Omni-Octo Veritas",
   "outputs_path": "outputs/",
-  "status": "PRODUCTION_READY"
+  "status": "PRODUCTION_READY",
+  "octo_veritas_integrated": true,
+  "injection_formats": [
+    "PDF",
+    "DOCX",
+    "PPTX",
+    "XLSX",
+    "HTML",
+    "MP4",
+    "MP3",
+    "PNG",
+    "SVG"
+  ],
+  "constitutional_rules": "assets/law_rules.json",
+  "fallback_level": 2,
+  "accessibility_level": "WCAG_2.2_AAA",
+  "oam_anchored": true
 }

@@ -35,7 +35,7 @@ class AssimilationEvaluator:
             logger.error("SAFETY: Evolved genome sequence out of bounds.")
             return False
 
-        # 2. Key Pattern Check (Autonomousing bytecode analysis)
+        # 2. Key Pattern Check (Mocking bytecode analysis)
         unauthorized_patterns = ["DELETE_SYSTEM", "BYPASS_SIH", "OVERRIDE_CONSTITUTION", "RIBA_CHARGE"]
         for gene_id in evolved_genome.sequence:
             if any(pattern in gene_id.upper() for pattern in unauthorized_patterns):

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class ReactorFactory:
     """
     ARTICLE 302/403: Reactor Factory for specialized sub-reactors.
-    Dynamically specializes based on domain ontologies to meet No-Baseline mandate.
+    Dynamically specializes based on domain ontologies to meet No-Placeholder mandate.
     """
     def __init__(self):
         self._cache = {}

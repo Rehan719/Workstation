@@ -1,0 +1,24 @@
+{
+  "domain": "Law",
+  "rules": [
+    {
+      "id": "ET1_MANDATORY_FIELDS",
+      "field": "et1_form",
+      "check": "all_fields_present",
+      "action": "reject",
+      "params": ["claimant_name", "respondent_name", "claim_details"]
+    },
+    {
+      "id": "ACAS_EARLY_CONCILIATION",
+      "field": "acas_code",
+      "check": "referenced",
+      "action": "warning"
+    },
+    {
+      "id": "GDPR_CONSENT",
+      "field": "personal_data",
+      "check": "consent_given",
+      "action": "reject"
+    }
+  ]
+}

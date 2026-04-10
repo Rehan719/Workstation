@@ -1,0 +1,66 @@
+{
+  "series_name": "Veritas Signature Products",
+  "version": "2.0",
+  "release_date": "2026-04-10",
+  "octo_veritas_engine_version": "6.0.0",
+  "products": [
+    {
+      "id": "VSB-SIG-REL-QUADRA-9.0",
+      "name": "Quran Education Platform",
+      "domain": "Religion",
+      "version": "9.0",
+      "octo_veritas_integrated": true,
+      "injection_formats": ["PDF","DOCX","PPTX","XLSX","HTML","MP4","MP3","PNG","SVG"],
+      "constitutional_rules": "Uthmani script, Sanad chain, Ijazah verification",
+      "accessibility": "WCAG 2.2 AAA",
+      "status": "PRODUCTION_READY"
+    },
+    {
+      "id": "VSB-SIG-SCI-OMNIA-18.0",
+      "name": "Patient Safety Intelligence",
+      "domain": "Science",
+      "version": "18.0",
+      "octo_veritas_integrated": true,
+      "injection_formats": ["PDF","DOCX","PPTX","XLSX","HTML","MP4","MP3","PNG","SVG"],
+      "constitutional_rules": "GRADE, ICH M14, FDA LTFU, EMA PRAC",
+      "accessibility": "WCAG 2.2 AAA",
+      "status": "PRODUCTION_READY"
+    },
+    {
+      "id": "VSB-SIG-LAW-OMNIOCTO-19.0",
+      "name": "Employment Tribunal Intelligence",
+      "domain": "Law",
+      "version": "19.0",
+      "octo_veritas_integrated": true,
+      "injection_formats": ["PDF","DOCX","PPTX","XLSX","HTML","MP4","MP3","PNG","SVG"],
+      "constitutional_rules": "ET Rules 2013, ACAS Code, GDPR",
+      "accessibility": "WCAG 2.2 AAA",
+      "status": "PRODUCTION_READY"
+    },
+    {
+      "id": "VSB-SIG-EMP-PENTA-3.0",
+      "name": "Career Application Intelligence",
+      "domain": "Employment",
+      "version": "rev3",
+      "octo_veritas_integrated": true,
+      "injection_formats": ["PDF","DOCX","PPTX","XLSX","HTML","MP4","MP3","PNG","SVG"],
+      "constitutional_rules": "STAR evidence completeness, competency mapping",
+      "accessibility": "WCAG 2.2 AAA",
+      "status": "PRODUCTION_READY"
+    },
+    {
+      "id": "VSB-SIG-CARE-SEXTA-1.0",
+      "name": "Health & Social Care Intelligence",
+      "domain": "Care",
+      "version": "1.0",
+      "octo_veritas_integrated": true,
+      "injection_formats": ["PDF","DOCX","PPTX","XLSX","HTML","MP4","MP3","PNG","SVG"],
+      "constitutional_rules": "Care Act 2014, CQC standards, Data Governance (sensitive fields)",
+      "accessibility": "WCAG 2.2 AAA",
+      "status": "PRODUCTION_READY"
+    }
+  ],
+  "cross_domain_learning_enabled": true,
+  "global_fallback_level": 2,
+  "oam_topological_anchoring": "Floor 20 Article 1086"
+}

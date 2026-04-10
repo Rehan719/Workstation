@@ -27,7 +27,7 @@ The VSB remains legally and ethically responsible for autonomous agent actions. 
 
 ## 🧬 SECTION XLIII: UNIVERSAL COMPLETION & INSTITUTIONAL LEADERSHIP (Articles 736-750)
 **ARTICLE 736: UNIVERSAL MANDATE COMPLETION**
-The Workstation must achieve 100% completion of all historical P0-P2 features and mandates from prior versions (v1.0-v127.0). No stubs or baselines are permitted in core functional paths.
+The Workstation must achieve 100% completion of all historical P0-P2 features and mandates from prior versions (v1.0-v127.0). No stubs or placeholders are permitted in core functional paths.
 
 **ARTICLE 741: INSTITUTIONAL LEADERSHIP MANDATE**
 The VSB shall actively lead the global AI community through academic contributions, award excellence, and the "VSB Certified" alignment program.

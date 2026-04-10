@@ -29,5 +29,5 @@ class UnifiedEvidenceGraph:
         logger.info(f"AUDIT: Recorded {action} by {actor}. Hash: {attestation_hash[:8]}")
 
     def generate_compliance_report(self, filter_actor: str = None) -> str:
-        # Autonomousing report generation
+        # Mocking report generation
         return "AUDIT_REPORT_V99_STABLE"

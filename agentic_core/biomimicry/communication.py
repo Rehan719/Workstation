@@ -59,9 +59,9 @@ class SignalChannel:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def autonomous_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('title', e['payload'].get('pulse'))})")
-    notif = NotificationChannel(autonomous_ueg)
-    sig = SignalChannel(autonomous_ueg)
+    def mock_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('title', e['payload'].get('pulse'))})")
+    notif = NotificationChannel(mock_ueg)
+    sig = SignalChannel(mock_ueg)
 
     notif.push_alert("Swarm Found", "A new TIES-merged swarm is available.", "HIGH")
     sig.send_pulse("nematron-1b", "THINKING")

@@ -25,7 +25,7 @@ class EthicalChannel:
         if decision == "BLOCK":
             explanation += f"This action was prevented because it failed to align with the Workstation Constitution."
             if article_num:
-                # Autonomous lookup in parsed articles
+                # Mock lookup in parsed articles
                 article = next((a for a in self.gaas.articles if a["number"] == article_num), None)
                 if article:
                     explanation += f" Specifically, it violated Article {article_num} ({article['title']})."
@@ -57,5 +57,5 @@ if __name__ == "__main__":
     ethical = EthicalChannel(gaas)
 
     # Test block explanation
-    autonomous_event = {"decision": "BLOCK", "reason": "Low trust", "violated_article": 1114, "agent_id": "test_agent"}
-    print(ethical.explain_decision(autonomous_event))
+    mock_event = {"decision": "BLOCK", "reason": "Low trust", "violated_article": 1114, "agent_id": "test_agent"}
+    print(ethical.explain_decision(mock_event))

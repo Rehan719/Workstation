@@ -29,5 +29,5 @@ class NicheExpansionAnalyzer:
         """
         Tests the hypothesis that polyploid advantage increases with stress.
         """
-        # Return a autonomous correlation score
+        # Return a mock correlation score
         return environmental_stress * 1.1
