@@ -20,19 +20,22 @@ class GenericDomainProductGenerator(OctoOmnimediaGenerator):
 
     def generate_infographic(self, data: Dict[str, Any]) -> MultimediaAsset:
         metadata = {"accessibility": self.accessibility.tag_asset("infographic", {})}
-        return MultimediaAsset(f"{self.domain} Infographic", "infographic", b"MOCK_PNG", metadata)
+        # Standard 1x1 transparent PNG
+        png_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0bIDATx\xda\x63\x60\x00\x02\x00\x00\x05\x00\x01\x26\x06\x10\x40\x00\x00\x00\x00IEND\xaeB`\x82'
+        return MultimediaAsset(f"{self.domain} Infographic", "infographic", png_content, metadata)
 
     def generate_video(self, data: Dict[str, Any]) -> MultimediaAsset:
         metadata = {"accessibility": self.accessibility.tag_asset("video", {})}
-        return MultimediaAsset(f"{self.domain} Video", "video", None, metadata)
+        return MultimediaAsset(f"{self.domain} Video", "video", b"MOCK_VIDEO", metadata)
 
     def generate_audio(self, data: Dict[str, Any]) -> MultimediaAsset:
         metadata = {"accessibility": self.accessibility.tag_asset("audio", {})}
-        return MultimediaAsset(f"{self.domain} Audio", "audio", None, metadata)
+        return MultimediaAsset(f"{self.domain} Audio", "audio", b"MOCK_AUDIO", metadata)
 
     def generate_digital_twin(self, data: Dict[str, Any]) -> MultimediaAsset:
         metadata = {"accessibility": self.accessibility.tag_asset("digital_twin", {})}
-        return MultimediaAsset(f"{self.domain} Digital Twin", "digital_twin", b"MOCK_PNG", metadata)
+        png_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0bIDATx\xda\x63\x60\x00\x02\x00\x00\x05\x00\x01\x26\x06\x10\x40\x00\x00\x00\x00IEND\xaeB`\x82'
+        return MultimediaAsset(f"{self.domain} Digital Twin", "digital_twin", png_content, metadata)
 
     def generate_document(self, data: Dict[str, Any], format: OutputFormat) -> MultimediaAsset:
         return MultimediaAsset(f"{self.domain} Document", "document", "Generic Content")

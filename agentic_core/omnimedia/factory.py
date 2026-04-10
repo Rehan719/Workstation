@@ -35,24 +35,24 @@ class MultimediaAsset:
 class OctoOmnimediaGenerator(ABC):
     @abstractmethod
     def generate_infographic(self, data: Dict[str, Any]) -> MultimediaAsset:
-        raise NotImplementedError("Subclasses must implement generate_infographic")
+        """Generates a domain-specific infographic."""
 
     @abstractmethod
     def generate_video(self, data: Dict[str, Any]) -> MultimediaAsset:
-        raise NotImplementedError("Subclasses must implement generate_video")
+        """Generates a domain-specific explainer video."""
 
     @abstractmethod
     def generate_audio(self, data: Dict[str, Any]) -> MultimediaAsset:
-        raise NotImplementedError("Subclasses must implement generate_audio")
+        """Generates a domain-specific audio recitation or narration."""
 
     @abstractmethod
     def generate_digital_twin(self, data: Dict[str, Any]) -> MultimediaAsset:
-        raise NotImplementedError("Subclasses must implement generate_digital_twin")
+        """Generates a domain-specific digital twin model."""
 
     @abstractmethod
     def generate_document(self, data: Dict[str, Any], format: OutputFormat) -> MultimediaAsset:
-        raise NotImplementedError("Subclasses must implement generate_document")
+        """Generates a domain-specific structured document."""
 
     @abstractmethod
     def generate_dashboard(self, data: Dict[str, Any]) -> MultimediaAsset:
-        raise NotImplementedError("Subclasses must implement generate_dashboard")
+        """Generates a domain-specific interactive dashboard component."""

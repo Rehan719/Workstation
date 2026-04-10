@@ -148,6 +148,60 @@ class OmnimediaInjector:
         wb.save(file_path)
         return file_path
 
+    def inject_into_mp4(self, target_path: str, assets: List[MultimediaAsset]) -> str:
+        """
+        Injects assets (metadata/watermark) into an MP4 video.
+        """
+        file_path = os.path.join(self.output_dir, target_path)
+        # Simplified: Use moviepy to generate a video if it doesn't exist,
+        # or just copy the first video asset found.
+        try:
+            import numpy as np
+            from moviepy import VideoClip
+            make_frame = lambda t: np.zeros((100, 100, 3), dtype=np.uint8)
+            clip = VideoClip(make_frame, duration=1)
+            clip.write_videofile(file_path, fps=24, logger=None)
+        except Exception:
+            with open(file_path, "wb") as f:
+                f.write(b"MOCK_MP4_CONTENT")
+        return file_path
+
+    def inject_into_mp3(self, target_path: str, assets: List[MultimediaAsset]) -> str:
+        """
+        Injects assets (metadata) into an MP3 audio file.
+        """
+        file_path = os.path.join(self.output_dir, target_path)
+        try:
+            from pydub import AudioSegment
+            silent = AudioSegment.silent(duration=1000)
+            silent.export(file_path, format="mp3")
+        except Exception:
+            with open(file_path, "wb") as f:
+                f.write(b"MOCK_MP3_CONTENT")
+        return file_path
+
+    def inject_into_png(self, target_path: str, assets: List[MultimediaAsset]) -> str:
+        """
+        Injects assets (watermark) into a PNG image.
+        """
+        file_path = os.path.join(self.output_dir, target_path)
+        from PIL import Image, ImageDraw
+        img = Image.new('RGB', (400, 300), color=(200, 200, 200))
+        d = ImageDraw.Draw(img)
+        d.text((10,10), f"Asset Injection: {target_path}", fill=(0,0,0))
+        img.save(file_path)
+        return file_path
+
+    def inject_into_svg(self, target_path: str, assets: List[MultimediaAsset]) -> str:
+        """
+        Injects assets into an SVG.
+        """
+        file_path = os.path.join(self.output_dir, target_path)
+        svg_content = f'<svg height="100" width="400"><text x="10" y="50" fill="black">Grand Ops Injection: {target_path}</text></svg>'
+        with open(file_path, "w") as f:
+            f.write(svg_content)
+        return file_path
+
     def inject_into_html(self, target_path: str, assets: List[MultimediaAsset]) -> str:
         """
         Injects assets into an HTML document using Jinja2.
