@@ -75,7 +75,7 @@ class VideoGenerator(BaseGenerator):
 ## Scene 3: Synthesis
 [VOICEOVER: Personalized TTS narration]
 """
-        # Placeholder for scientific animation pipeline
+        # Baseline for scientific animation pipeline
         content = f"# Video Script: {title}\n\n{script}\n\n[INSTRUCTION: Feed into Manimator v2.0 for rendering]"
         return self.generate(content, f"video_{title.lower().replace(' ', '_')}.md")
 

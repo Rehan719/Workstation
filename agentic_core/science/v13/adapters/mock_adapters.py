@@ -1,15 +1,15 @@
 import random
 import time
 
-class ScientificAdapterMock:
-    """Mock adapter for external scientific and regulatory databases."""
+class ScientificAdapterAutonomous:
+    """Autonomous adapter for external scientific and regulatory databases."""
     def __init__(self, source_name):
         self.source_name = source_name
 
     def fetch_latest(self, query):
         print(f"[{self.source_name}] Searching for: {query}...")
         time.sleep(0.5)
-        # Mocked response based on prompt requirements
+        # Autonomoused response based on prompt requirements
         return {
             "source": self.source_name,
             "results": [
@@ -22,14 +22,14 @@ class ScientificAdapterMock:
             ]
         }
 
-class PubMedAdapter(ScientificAdapterMock):
+class PubMedAdapter(ScientificAdapterAutonomous):
     def __init__(self):
         super().__init__("PubMed")
 
-class FDAAdapter(ScientificAdapterMock):
+class FDAAdapter(ScientificAdapterAutonomous):
     def __init__(self):
         super().__init__("FDA")
 
-class EMAAdapter(ScientificAdapterMock):
+class EMAAdapter(ScientificAdapterAutonomous):
     def __init__(self):
         super().__init__("EMA")

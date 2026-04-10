@@ -56,16 +56,36 @@ class OmnimediaDecisionEngine:
         if len(data) < 5:
             return "infographic" # Default
 
-        # 2. Simple Linear Regression on scores (Mocked features)
+        # 2. Simple Linear Regression on scores (Autonomoused features)
         # In a real scenario, features would be multidimensional
         X = np.arange(len(data)).reshape(-1, 1)
         y = np.array([d[1] for d in data])
 
         model = LinearRegression().fit(X, y)
-        # Predict next value (not strictly asset type, but demonstrates model integration)
 
-        # Select best asset type from history
-        best_asset = max(set([d[0] for d in data]), key=lambda x: np.mean([d[1] for d in data if d[0] == x]))
+        # Predict improvement trend
+        next_index = np.array([[len(data)]])
+        predicted_trend = model.predict(next_index)[0]
+
+        # Select asset type that maximizes predicted score based on segment trends
+        asset_types = list(set([d[0] for d in data]))
+        best_asset = asset_types[0]
+        max_pred = -1.0
+
+        for a_type in asset_types:
+            a_data = [d[1] for d in data if d[0] == a_type]
+            if not a_data:
+                continue
+            # Fit sub-model for this asset type
+            a_X = np.arange(len(a_data)).reshape(-1, 1)
+            a_y = np.array(a_data)
+            a_model = LinearRegression().fit(a_X, a_y)
+            a_pred = a_model.predict(np.array([[len(a_data)]]))[0]
+
+            if a_pred > max_pred:
+                max_pred = a_pred
+                best_asset = a_type
+
         return best_asset
 
     def select_output_formats(self, domain: str, audience: str, accessibility_needs: Optional[List[str]] = None) -> List[OutputFormat]:

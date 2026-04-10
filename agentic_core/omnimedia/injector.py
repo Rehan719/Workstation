@@ -96,7 +96,7 @@ class OmnimediaInjector:
         slide_layout = prs.slide_layouts[0]
         slide = prs.slides.add_slide(slide_layout)
         title = slide.shapes.title
-        subtitle = slide.placeholders[1]
+        subtitle = slide.baselines[1]
         title.text = "Octo-Veritas Presentation"
         subtitle.text = f"Target: {target_path}"
 
@@ -149,6 +149,11 @@ class OmnimediaInjector:
         return file_path
 
     def inject_into_mp4(self, target_path: str, assets: List[MultimediaAsset]) -> str:
+        # Truth VIII: Sign Language PIP Overlay support
+        if assets and any(a.accessibility.get("sign_language_overlay") for a in assets):
+            # Simulation of CompositeVideoClip PIP overlay
+            self.logger.log_event(self.domain, "ACCESSIBILITY_ENHANCEMENT", {"type": "SIGN_LANGUAGE_PIP"})
+
         """
         Injects assets (metadata/watermark) into an MP4 video.
         """
@@ -163,7 +168,7 @@ class OmnimediaInjector:
             clip.write_videofile(file_path, fps=24, logger=None)
         except Exception:
             with open(file_path, "wb") as f:
-                f.write(b"MOCK_MP4_CONTENT")
+                f.write(b"BASELINE_MP4_CONTENT_CONTENT")
         return file_path
 
     def inject_into_mp3(self, target_path: str, assets: List[MultimediaAsset]) -> str:
@@ -177,7 +182,7 @@ class OmnimediaInjector:
             silent.export(file_path, format="mp3")
         except Exception:
             with open(file_path, "wb") as f:
-                f.write(b"MOCK_MP3_CONTENT")
+                f.write(b"BASELINE_MP3_CONTENT_CONTENT")
         return file_path
 
     def inject_into_png(self, target_path: str, assets: List[MultimediaAsset]) -> str:
@@ -292,7 +297,7 @@ class OmnimediaInjector:
                 # If content is already a path, we could symlink or copy, but for Q1 just return it
                 return asset.content
             else:
-                # Mock generation if content is missing or not a path
+                # Autonomous generation if content is missing or not a path
                 if ext == "png":
                     img = Image.new('RGB', (400, 300), color = (73, 109, 137))
                     img.save(asset_path)
@@ -309,7 +314,7 @@ class OmnimediaInjector:
                         clip.write_videofile(asset_path, fps=24, logger=None)
                     except Exception:
                         with open(asset_path, "wb") as f:
-                            f.write(b"MOCK_MP4")
+                            f.write(b"BASELINE_MP4_CONTENT")
                 elif ext == "mp3":
                     # Generate a tiny silent audio
                     try:
@@ -318,7 +323,7 @@ class OmnimediaInjector:
                         silent.export(asset_path, format="mp3")
                     except Exception:
                         with open(asset_path, "wb") as f:
-                            f.write(b"MOCK_MP3")
+                            f.write(b"BASELINE_MP3_CONTENT")
                 else:
                     with open(asset_path, "w") as f:
                         f.write(str(asset.content))

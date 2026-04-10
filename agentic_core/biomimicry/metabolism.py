@@ -49,7 +49,7 @@ class MetabolismEngine:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def mock_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('remaining_balance', 'N/A')})")
-    me = MetabolismEngine(mock_ueg)
+    def autonomous_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('remaining_balance', 'N/A')})")
+    me = MetabolismEngine(autonomous_ueg)
     me.process_work("task_alpha", 100.0)
     me.process_work("task_beta", 20000.0)

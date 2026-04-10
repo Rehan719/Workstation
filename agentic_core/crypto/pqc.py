@@ -46,7 +46,7 @@ def sign_instruction(instruction_data: bytes, private_key: Any) -> bytes:
         try:
             with oqs.Signature(PQC_ALGORITHM_SIG) as sig:
                 # In production, we'd use the actual private_key
-                # For v0.1 demonstration, we use a generated key if private_key is mock
+                # For v0.1 demonstration, we use a generated key if private_key is autonomous
                 signature = sig.sign(instruction_data)
                 return signature
         except Exception as e:

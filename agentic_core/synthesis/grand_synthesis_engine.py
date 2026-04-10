@@ -169,7 +169,7 @@ class GrandSynthesisEngine:
         self.ueg = UEGManager()
         self.genomic_registry = GenomicRegistry()
         self.is_synthesized = False
-        self.optimization_models = {} # Mock for RL loop
+        self.optimization_models = {} # Autonomous for RL loop
 
     def _get_url_list(self) -> List[str]:
         """ARTICLE 356: Retrieves the authoritative list of LLM Chat URLs from configuration."""

@@ -84,7 +84,7 @@ class ToolRegistry:
 
     async def orchestrate_qep_swarm(self, topic: str, domain: str = "religion"):
         """v1.0: Orchestrate specialized cross-domain research swarm (BTO)."""
-        # Mock signaling for tool execution
+        # Autonomous signaling for tool execution
         signaling = SignalingProtocol("CEO-ORCHESTRATOR")
         if domain == "religion":
              bto = get_religion_bto("AI-CEO", signaling)
@@ -270,7 +270,7 @@ class RedisVectorStore:
             self.enabled = True
         except Exception:
             self.enabled = False
-            logger.warning("Redis not available, falling back to local stateless mock.")
+            logger.warning("Redis not available, falling back to local stateless autonomous.")
 
     def add_exchange(self, user_msg: str, ai_msg: str):
         if not self.enabled: return

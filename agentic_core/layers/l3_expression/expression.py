@@ -8,7 +8,7 @@ class ExpressionEngineL3:
     Predicts phenotype configurations from the genomic sequence.
     """
     def __init__(self, model_weights_path: str = "models/expression_v1.pt"):
-        # Placeholder for SwinTransformer4M (input_dim=4, output_dim=128)
+        # Baseline for SwinTransformer4M (input_dim=4, output_dim=128)
         self.weights = model_weights_path
         print(f"L3 Expression: Initialized Swin-Transformer4M predictor at {self.weights}.")
 

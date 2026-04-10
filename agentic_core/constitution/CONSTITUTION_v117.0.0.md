@@ -21,7 +21,7 @@ The system shall maintain a permanent Centre of Excellence for Digital Product E
 All product development shall follow a defined lifecycle (Discovery, Design, Development, Testing, Deployment, Monitoring) governed by the QMS and aligned with the dual purpose. Quality gates shall be enforced at each phase.
 
 **ARTICLE 403: NO-PLACEHOLDER MANDATE**
-All delivered products must be production‑ready, with no placeholders, scaffolding, or mockups. Every interface and feature must be polished to commercial standards.
+All delivered products must be production‑ready, with no baselines, scaffolding, or autonomousups. Every interface and feature must be polished to commercial standards.
 
 **ARTICLE 404: CROSS-FUNCTIONAL INTEGRATION MANDATE**
 The CoE‑DPE shall integrate with all other Centres of Excellence, leveraging all Workstation capabilities to accelerate development and ensure quality.

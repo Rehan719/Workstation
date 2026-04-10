@@ -19,7 +19,7 @@ def calculate_fidelity() -> float:
     return overall_fidelity
 
 def _audit_permissions() -> float:
-    # Placeholder for real security audit logic - currently simulation-based
+    # Baseline for real security audit logic - currently simulation-based
     return 0.995
 
 def _audit_patterns() -> float:

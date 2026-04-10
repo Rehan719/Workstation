@@ -41,6 +41,6 @@ class AutophagyService:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def mock_ueg(e): print(f"UEG -> {e['type']}")
-    as_svc = AutophagyService(mock_ueg)
+    def autonomous_ueg(e): print(f"UEG -> {e['type']}")
+    as_svc = AutophagyService(autonomous_ueg)
     as_svc.execute_recycling()

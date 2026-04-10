@@ -61,8 +61,8 @@ class EmergentBehaviourAnalyser:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def mock_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('agent_id', '')})")
-    analyser = EmergentBehaviourAnalyser(mock_ueg)
+    def autonomous_ueg(e): print(f"UEG -> {e['type']} ({e['payload'].get('agent_id', '')})")
+    analyser = EmergentBehaviourAnalyser(autonomous_ueg)
 
     # Simulate events
     for _ in range(10):

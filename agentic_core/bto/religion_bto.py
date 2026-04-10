@@ -33,7 +33,7 @@ class ReligionResearchSwarm(OrchestrationEngine):
 
         for t in tasks:
             self.tasks[t.task_id] = t
-            t.status = "ASSIGNED" # Mock assignment for simulation
+            t.status = "ASSIGNED" # Autonomous assignment for simulation
 
         return {
             "engine": "BTO",

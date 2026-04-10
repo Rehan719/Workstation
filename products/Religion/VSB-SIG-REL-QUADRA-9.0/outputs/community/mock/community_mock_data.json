@@ -1,0 +1,48 @@
+{
+  "community_mock_data": {
+    "version": "8.3.0",
+    "product_id": "VSB-SIG-QEP-8.3",
+    "contributions": [
+      {
+        "id": "CONT-001",
+        "title": "Extended Tajweed Audio Samples - Warsh",
+        "category": "Audio",
+        "contributor": "Qari-Ahmad-Warsh",
+        "scholar_rating": 4.9,
+        "community_rating": 4.8,
+        "status": "approved",
+        "tags": ["Tajweed", "Warsh", "Audio"],
+        "pipelines": ["Knowledge", "Learning"]
+      },
+      {
+        "id": "CONT-002",
+        "title": "Intro to Quranic Arabic: Level 1 Interactive Exercises",
+        "category": "Interactive",
+        "contributor": "ArabicTeacher-Sarah",
+        "scholar_rating": 4.7,
+        "community_rating": 4.9,
+        "status": "approved",
+        "tags": ["Arabic", "Beginner", "Interactive"],
+        "pipelines": ["Learning", "Forge"]
+      }
+    ],
+    "scholar_profiles": [
+      {
+        "id": "SCH-001",
+        "name": "Dr. Mahmoud Al-Hussary",
+        "specialization": "Tajweed & Qira'at",
+        "verification_status": "verified",
+        "contributions_reviewed": 125,
+        "trust_score": 0.99
+      },
+      {
+        "id": "SCH-002",
+        "name": "Sheikh Yusuf Al-Qaradawi",
+        "specialization": "Fiqh & Tafsir",
+        "verification_status": "verified",
+        "contributions_reviewed": 210,
+        "trust_score": 0.98
+      }
+    ]
+  }
+}

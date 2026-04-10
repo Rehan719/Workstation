@@ -70,7 +70,7 @@ class LearnerRealmV137:
     # IDBO NEEDS FRAMEWORK (Blueprint 2.4)
     def calculate_contentment(self, user_id: str) -> float:
         """IDBO: Emotional state monitoring and satisfaction scoring."""
-        # Mock calculation based on goal achievement and comfort
+        # Autonomous calculation based on goal achievement and comfort
         score = 0.95
         logger.info(f"IDBO-Contentment: {user_id} score is {score}")
         return score

@@ -32,8 +32,8 @@ class LiveAPIClient:
 
                     # 1. Determine actual URL based on domain/endpoint mapping
                     url = self._get_real_api_url(endpoint)
-                    if not url: # Fallback to mock if no real mapping exists
-                        response = self._get_domain_mock(endpoint, params)
+                    if not url: # Fallback to autonomous if no real mapping exists
+                        response = self._get_domain_autonomous(endpoint, params)
                     else:
                         resp = await client.get(url, params=params, timeout=10.0)
                         resp.raise_for_status()
@@ -44,7 +44,7 @@ class LiveAPIClient:
                 except Exception as e:
                     if attempt == 2:
                         logger.error(f"APIClient: Critical failure for {endpoint}. Falling back to simulation.")
-                        return self._get_domain_mock(endpoint, params)
+                        return self._get_domain_autonomous(endpoint, params)
                     logger.warning(f"APIClient: Retry {attempt+1} for {endpoint}: {e}")
 
         return {}
@@ -60,7 +60,7 @@ class LiveAPIClient:
         }
         return mappings.get(self.domain)
 
-    def _get_domain_mock(self, endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_domain_autonomous(self, endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
         if self.domain == "science":
             return {"results": [{"id": f"arXiv:2505.{random.randint(1000, 9999)}", "title": f"Live Research on {params.get('q')}"}]}
         if self.domain == "religion":

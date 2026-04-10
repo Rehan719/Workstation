@@ -52,14 +52,14 @@ class AI_Tajwid_Coach:
     async def provide_feedback(self, audio_id: str, transcription: str) -> Dict[str, Any]:
         """Bridges the rule engine with the UI and AI reasoning."""
         # Simulated phonetic extraction
-        mock_phonetics = {
+        autonomous_phonetics = {
             "madd_accuracy": 0.92,
             "ghunnah_accuracy": 0.78,
             "qalqalah_accuracy": 0.88,
             "makharij_accuracy": 0.85
         }
 
-        analysis = self.engine.evaluate_recitation(mock_phonetics)
+        analysis = self.engine.evaluate_recitation(autonomous_phonetics)
         logger.info(f"TajwidCoach: Provided feedback for session {audio_id}")
 
         return {

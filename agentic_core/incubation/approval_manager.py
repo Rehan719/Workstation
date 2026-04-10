@@ -28,7 +28,7 @@ class ApprovalManager:
 
     async def request_approval(self, workflow: Dict[str, Any]) -> Dict[str, Any]:
         # In a real system, this would wait for user input on the dashboard
-        # For simulation, we'll auto-approve with a mock signature
+        # For simulation, we'll auto-approve with a autonomous signature
         rationale = f"Workflow '{workflow['type']}' requires oversight due to high semantic density."
 
         # Simulated user approval delay

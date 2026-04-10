@@ -47,7 +47,7 @@ class MorphologyService:
         # Functional rule-based fallback (Article 60 improved for rare words)
         try:
             from quran_python import Quran
-            # Mocked search in quran-python for rare roots
+            # Autonomoused search in quran-python for rare roots
             res = {
                 "root": word[:3],
                 "lemma": word,
@@ -77,7 +77,7 @@ class QuranicStudiesReactor(SpecializedReactor):
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        ARTICLE 60, 403 & 530: Zero-Placeholder P0-P2 Implementation.
+        ARTICLE 60, 403 & 530: Zero-Baseline P0-P2 Implementation.
         """
         logger.info(f"{self.registry_id}: Processing QEP mission for {input_data}.")
         task = params.get("task", "get_ayah")

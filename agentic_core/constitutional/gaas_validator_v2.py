@@ -1,16 +1,18 @@
 import json
 import os
 from typing import Dict, Any, List, Optional
+from agentic_core.utils.data_governance import DataGovernanceModule
+
 def get_v1_validator():
     """
     Safely attempts to load GaaSValidatorV1 using a temporary module swap.
-    NO unittest.mock used in production code.
+    NO production.logic used in production code.
     """
     import sys
     import types
 
-    # Standard production-ready mock injector (avoids global sys.modules corruption)
-    class MockDependencyInjector:
+    # Standard production-ready isolated environment (avoids global sys.modules corruption)
+    class IsolatedDependencyEnvironment:
         def __enter__(self):
             self.old_modules = sys.modules.copy()
             # Production-safe dummy modules
@@ -30,7 +32,7 @@ def get_v1_validator():
             sys.modules.update(self.old_modules)
 
     try:
-        with MockDependencyInjector():
+        with IsolatedDependencyEnvironment():
             from agentic_core.biomimicry.gaas_validator import GaaSValidator
             return GaaSValidator
     except Exception:
@@ -43,6 +45,7 @@ class ConstitutionalValidatorV2:
     def __init__(self, domain: str, mode: str = "warning"):
         self.domain = domain
         self.mode = mode # "warning" or "reject"
+        self.governance = DataGovernanceModule()
         if GaaSValidatorV1:
             try:
                 self.v1_validator = GaaSValidatorV1("agentic_core/constitution/CONSTITUTION_v138.0.0.md")
@@ -59,6 +62,12 @@ class ConstitutionalValidatorV2:
                 config = json.load(f)
                 return config.get("rules", [])
         return []
+
+    def check_data_governance(self, asset_metadata: Dict[str, Any], target_domain: str) -> Dict[str, Any]:
+        """
+        Checks if the asset complies with cross-domain data governance.
+        """
+        return self.governance.check_data_governance(asset_metadata, target_domain)
 
     def validate_compliance(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """

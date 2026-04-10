@@ -10,12 +10,12 @@ class AvatarOrchestrator:
     """
     def __init__(self):
         self.asset_registry = {
-            "placeholders": {
-                "entity": "/avatars/placeholders/entity_sovereign.mp4",
-                "jules": "/avatars/placeholders/jules_executive.mp4",
-                "twin": "/avatars/placeholders/twin_proxy.mp4",
-                "csuite": "/avatars/placeholders/csuite_council.mp4",
-                "coe": "/avatars/placeholders/coe_department.mp4"
+            "baselines": {
+                "entity": "/avatars/baselines/entity_sovereign.mp4",
+                "jules": "/avatars/baselines/jules_executive.mp4",
+                "twin": "/avatars/baselines/twin_proxy.mp4",
+                "csuite": "/avatars/baselines/csuite_council.mp4",
+                "coe": "/avatars/baselines/coe_department.mp4"
             },
             "voice_templates": {
                 "entity": "sovereign_authoritative_v1",

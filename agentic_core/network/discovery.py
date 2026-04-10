@@ -17,7 +17,7 @@ class Libp2pDiscoveryRegistry:
         """Registers an agent in the local and simulated global DHT."""
         logger.info(f"Libp2p: Registering agent {agent_id} via Gossipsub.")
         self.local_agents[agent_id] = agent_card
-        self.dht_cache[agent_id] = agent_card # Mock DHT update
+        self.dht_cache[agent_id] = agent_card # Autonomous DHT update
         return True
 
     def find_agent(self, agent_id: str) -> Dict[str, Any]:

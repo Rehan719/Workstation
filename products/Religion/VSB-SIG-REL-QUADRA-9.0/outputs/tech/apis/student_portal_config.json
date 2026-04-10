@@ -1,0 +1,15 @@
+{
+  "platform_name": "Quran Education Platform",
+  "api_endpoint": "https://api.qep.workstation/v1",
+  "features": {
+    "lesson_viewer": true,
+    "quiz_engine": true,
+    "achievement_badges": true,
+    "parent_dashboard": true,
+    "sanad_checker": true
+  },
+  "themes": {
+    "primary": "#1A202C",
+    "accent": "#FBBF24"
+  }
+}

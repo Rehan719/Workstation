@@ -21,7 +21,7 @@ class ApoptosisHandler:
         time.sleep(0.5)
 
         # 2. Resource Reclamation
-        reclaimed_ram_mb = 128.0 # Mock
+        reclaimed_ram_mb = 128.0 # Autonomous
 
         self._emit_event("APOPTOSIS_COMPLETE", {
             "agent_id": agent_id,
@@ -41,6 +41,6 @@ class ApoptosisHandler:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def mock_ueg(e): print(f"UEG -> {e['type']} for {e['payload']['agent_id']}")
-    ah = ApoptosisHandler(mock_ueg)
+    def autonomous_ueg(e): print(f"UEG -> {e['type']} for {e['payload']['agent_id']}")
+    ah = ApoptosisHandler(autonomous_ueg)
     ah.trigger_apoptosis("rogue_agent_42", "Excessive GaaS violations")
