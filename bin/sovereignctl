@@ -16,6 +16,7 @@ def main():
     # Report command
     report_parser = subparsers.add_parser("report", help="Generate phase report")
     report_parser.add_argument("--phase", type=str, default="1", help="Phase number or name")
+    report_parser.add_argument("--subphase", type=str, help="Sub-phase (e.g., Q1, Q2)")
     report_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
     args = parser.parse_args()
@@ -50,6 +51,7 @@ def main():
 
         report = {
             "phase": args.phase,
+            "subphase": args.subphase if args.subphase else "N/A",
             "timestamp": "2026-03-28T12:00:00Z",
             "deliverables_status": "VERIFIED" if metrics else "INITIALIZING",
             "kpi_summary": {
