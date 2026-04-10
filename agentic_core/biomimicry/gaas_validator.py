@@ -45,9 +45,9 @@ class GaaSValidator:
 
     def _determine_risk(self, article_num: int) -> str:
         # High risk articles related to core modifications or security
-        if article_num in [1089, 1091, 1099, 1101, 1104, 1108]:
+        if article_num in [1089, 1091, 1099, 1101, 1104, 1108, 1114, 1115]:
             return "High"
-        if article_num in [1087, 1093, 1094, 1103, 1105, 1110]:
+        if article_num in [1087, 1093, 1094, 1103, 1105, 1110, 1112, 1113]:
             return "Medium"
         return "Low"
 

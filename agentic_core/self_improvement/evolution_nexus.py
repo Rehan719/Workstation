@@ -2,6 +2,8 @@ import logging
 import asyncio
 from typing import Dict, Any, List, Optional
 from .genetic_algorithm import GeneticEvolutionEngine, Genotype
+from agentic_core.biomimicry.recombiner import RecombinationEngine
+from agentic_core.biomimicry.recombination_validator import RecombinationValidator
 
 logger = logging.getLogger(__name__)
 
@@ -10,9 +12,13 @@ class EvolutionNexus:
     ARTICLE 170: Evolution Nexus - Managing system-wide autonomous mutations.
     Coordinates self-improvement loops and applies verified genomic changes.
     """
-    def __init__(self):
+    def __init__(self, registry=None, ueg_callback=None):
         self.genetic_engine = GeneticEvolutionEngine(population_size=10)
         self.active_mutations: List[Dict[str, Any]] = []
+        self.registry = registry
+        if registry:
+            self.recombiner = RecombinationEngine(registry, ueg_callback)
+            self.validator = RecombinationValidator(registry, ueg_callback=ueg_callback)
 
     def get_current_system_state(self) -> Dict[str, Any]:
         """Captures the 'genotype' of the current system configuration."""
@@ -39,6 +45,33 @@ class EvolutionNexus:
         # Simulated high-fidelity verification
         await asyncio.sleep(0.1)
         return True
+
+    async def trigger_recombinatorial_mutation(self, method: str, source_hashes: List[str]):
+        """
+        New operator for Phase 3: High-fidelity model recombination.
+        """
+        if not self.registry:
+            logger.error("NEXUS: Cannot recombine without registry.")
+            return None
+
+        logger.info(f"NEXUS: Triggering {method} recombination for {source_hashes}")
+
+        try:
+            # 1. Recombine
+            offspring_hash = self.recombiner.recombine(
+                method, source_hashes, f"Recombinant-{method}-{source_hashes[0][:6]}"
+            )
+
+            # 2. Validate
+            if self.validator.validate_offspring(offspring_hash):
+                logger.info(f"NEXUS: Recombinant {offspring_hash} accepted for evolution.")
+                return offspring_hash
+            else:
+                logger.warning(f"NEXUS: Recombinant {offspring_hash} failed fitness gate.")
+                return None
+        except Exception as e:
+            logger.error(f"NEXUS: Recombination failed: {str(e)}")
+            return None
 
     async def apply_mutation(self, mutation: Dict[str, Any]):
         """

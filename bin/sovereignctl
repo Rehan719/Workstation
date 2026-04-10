@@ -31,9 +31,13 @@ def main():
         print(json.dumps(status, indent=2))
 
     elif args.command == "report":
+        # Use phase-specific log if it exists, fallback to general
+        phase_log = f"outputs/phase{args.phase}_metrics.jsonl"
+        active_log = phase_log if os.path.exists(phase_log) else LOG_PATH
+
         metrics = []
-        if os.path.exists(LOG_PATH):
-            with open(LOG_PATH, "r") as f:
+        if os.path.exists(active_log):
+            with open(active_log, "r") as f:
                 for line in f:
                     metrics.append(json.loads(line))
 

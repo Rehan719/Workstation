@@ -113,5 +113,24 @@ Agents participating in the symbiotic exchange must contribute compute or WST to
 The constitution itself is a living document, subject to morphogenic growth. Floor amendments shall be tracked with immutable hashes, ensuring the sovereign auditability of the system's evolving governance.
 *Serves: Genomic Sovereignty (Self-Evolution)*
 
+## ⚖️ SECTION LIX: RECOMBINATORIAL GOVERNANCE & EVOLUTION (Articles 1112-1115)
+*Refined from the v138.0 Phase 3 "Recombination Engine" mandate.*
+
+**ARTICLE 1112: IMMUTABLE RECOMBINATION PROVENANCE**
+The provenance of every recombined module must be recorded as an immutable chain in the Unified Event Graph. Every offspring shall carry the Merkle hashes of its source modules, ensuring forensic traceability to its genetic origins.
+*Serves: Genomic Integrity (Traceable Evolution)*
+
+**ARTICLE 1113: LICENSING COMPLIANCE IN FUSION**
+No recombinatorial operation shall violate the licensing terms of any source module. The GaaS validator shall block merges that would result in incompatible license cascades (e.g., merging proprietary and GPL-3.0 without explicit relicensing).
+*Serves: Legal Homeostasis (Ecosystem Compliance)*
+
+**ARTICLE 1114: MANDATORY OFFSPRING VALIDATION**
+Every recombined module must pass a non-bypassable validation gate (integrity, performance, and constitution) before being registered in the Module Library. Stubs and placeholders are prohibited in the validation of evolved intelligence.
+*Serves: Selective Pressure (Fitness Assurance)*
+
+**ARTICLE 1115: EVOLUTIONARY AUTONOMY & OVERSIGHT**
+Autonomous recombination is permitted for low-risk architectural searches. High-risk "transgenic" recombinations—those spanning fundamentally different model architectures—require an explicit human oversight window before deployment.
+*Serves: Executive Homeostasis (Controlled Growth)*
+
 ---
 *Codified via Grand Synthesis Engine v138.0.0 "The Systems Biology Epoch"*
