@@ -4,8 +4,20 @@ import { Card, RealmSelector } from '@workstation/ui';
 import { useStore } from '@workstation/shared';
 import { Book, Compass, Star, Users, ArrowRight, Flower2, Activity } from 'lucide-react';
 
+import { MessageSquare, Bell, Zap, FileText, Layout, BarChart, ShieldCheck } from 'lucide-react';
+
 export const LearnerRealm: React.FC = () => {
   const { user } = useStore();
+
+  const channels = [
+    { id: 'avatar', icon: <MessageSquare size={16} />, label: 'Avatar', status: 'streaming' },
+    { id: 'notification', icon: <Bell size={16} />, label: 'Notify', status: 'online' },
+    { id: 'signal', icon: <Zap size={16} />, label: 'Signal', status: 'low-latency' },
+    { id: 'summary', icon: <FileText size={16} />, label: 'Summary', status: 'daily' },
+    { id: 'dashboard', icon: <Layout size={16} />, label: 'Console', status: 'active' },
+    { id: 'predictive', icon: <BarChart size={16} />, label: 'Predict', status: 'forecasting' },
+    { id: 'ethical', icon: <ShieldCheck size={16} />, label: 'Ethical', status: 'transparent' },
+  ];
 
   const gardens = [
     { name: 'Quantum Mechanics', progress: 88, flowers: 3, level: 'Advanced' },
@@ -16,6 +28,18 @@ export const LearnerRealm: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
+      {/* 7-Channel Communication Bar */}
+      <div className="flex justify-center -mt-6">
+        <div className="bg-slate-950/80 backdrop-blur-xl border border-slate-800 rounded-2xl p-2 flex gap-4 shadow-2xl">
+          {channels.map(ch => (
+            <div key={ch.id} className="flex flex-col items-center gap-1 group cursor-pointer hover:bg-slate-900 p-2 rounded-xl transition-all">
+              <div className="text-slate-500 group-hover:text-aura transition-colors">{ch.icon}</div>
+              <span className="text-[8px] font-black uppercase text-slate-600 group-hover:text-slate-400">{ch.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div>
           <h1 className="text-6xl font-black tracking-tighter mb-4 text-aura">Garden of Curiosity</h1>

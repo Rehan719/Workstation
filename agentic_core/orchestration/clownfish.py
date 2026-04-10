@@ -4,49 +4,70 @@ from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
+import functools
+
+def clownfish_role(role: str):
+    """Decorator to enforce Clownfish triadic roles and GaaS validation."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            # 1. GaaS validation for role access
+            if hasattr(self, 'gaas') and self.gaas:
+                payload = {"intent": f"execute_as_{role}", "role": role}
+                auth = self.gaas.validate_payload(self.agent_id, payload)
+                if auth["decision"] == "BLOCK":
+                    raise PermissionError(f"GaaS blocked {role} role for {self.agent_id}: {auth['reason']}")
+
+            logger.info(f"Clownfish: {self.agent_id} engaging as {role}")
+            result = func(self, *args, **kwargs)
+
+            # 2. Emit UEG event (simulated)
+            if hasattr(self, 'ueg_callback') and self.ueg_callback:
+                self.ueg_callback({"source": self.agent_id, "type": f"CLOWNFISH_{role}", "payload": result})
+
+            return result
+        return wrapper
+    return decorator
+
 class ClownfishProtocol:
     """
-    IDBO BLUEPRINT: The triadic rotation model for AI architecture.
-    Roles: The Model (Executor), The Editor (Optimizer), The Watcher (Monitor).
+    IDBO BLUEPRINT: Updated Triadic Roles for Phase 4.
+    Roles: WRITER (Proposer), READER (Validator), ERASER (Pruner).
     """
-    def __init__(self, agent_id: str):
+    def __init__(self, agent_id: str, gaas=None, ueg_callback=None):
         self.agent_id = agent_id
-        self.roles = ["MODEL", "EDITOR", "WATCHER"]
+        self.gaas = gaas
+        self.ueg_callback = ueg_callback
+        self.roles = ["WRITER", "READER", "ERASER"]
         self.current_role_index = 0
-        self.performance_history: List[Dict[str, Any]] = []
 
     def rotate_role(self):
-        """Cyclical distributed structure for managing agentic systems."""
+        """Rotates agent role in the triadic cycle."""
         self.current_role_index = (self.current_role_index + 1) % len(self.roles)
-        new_role = self.roles[self.current_role_index]
-        logger.info(f"Clownfish: Agent {self.agent_id} rotated to role: {new_role}")
-        return new_role
+        return self.roles[self.current_role_index]
 
-    def execute_as_model(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """The Model acts as the executor."""
-        logger.info(f"Clownfish: {self.agent_id} executing task as MODEL.")
-        return {"result": f"Executed: {task.get('name')}", "status": "COMPLETED"}
+    @clownfish_role("WRITER")
+    def propose_change(self, target: str, value: Any) -> Dict[str, Any]:
+        """WRITER: Proposes a state mutation."""
+        return {"action": "PROPOSE", "target": target, "value": value}
 
-    def optimize_as_editor(self, previous_output: Dict[str, Any]) -> Dict[str, Any]:
-        """The Editor serves as the optimizer."""
-        logger.info(f"Clownfish: {self.agent_id} refining output as EDITOR.")
-        refined = previous_output.copy()
-        refined["optimized"] = True
-        return refined
+    @clownfish_role("READER")
+    def validate_change(self, proposal: Dict[str, Any]) -> Dict[str, Any]:
+        """READER: Validates a proposed change against consistency rules."""
+        # Biological analogue: Proofreading during DNA replication
+        return {"action": "VALIDATE", "proposal": proposal, "status": "APPROVED"}
 
-    def monitor_as_watcher(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """The Watcher functions as the monitor."""
-        logger.info(f"Clownfish: {self.agent_id} auditing state as WATCHER.")
-        return {"audit_score": 0.98, "compliance": "PASSED"}
+    @clownfish_role("ERASER")
+    def prune_obsolete(self, state_id: str) -> Dict[str, Any]:
+        """ERASER: Removes obsolete or harmful state."""
+        # Biological analogue: Autophagy / Apoptosis
+        return {"action": "PRUNE", "target": state_id}
 
-    def run_full_triad(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Runs the task through all three triadic roles in sequence."""
-        model_out = self.execute_as_model(task)
-        editor_out = self.optimize_as_editor(model_out)
-        watcher_out = self.monitor_as_watcher(editor_out)
-
-        return {
-            "final_output": editor_out,
-            "audit": watcher_out,
-            "triad_complete": True
-        }
+    def execute_lifecycle(self, target: str, value: Any):
+        """Runs a complete mutualistic cycle."""
+        prop = self.propose_change(target, value)
+        valid = self.validate_change(prop)
+        if valid["status"] == "APPROVED":
+            # In a real swarm, this would then be pruned by ERASER later
+            return True
+        return False

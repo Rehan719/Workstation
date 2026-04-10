@@ -45,9 +45,9 @@ class GaaSValidator:
 
     def _determine_risk(self, article_num: int) -> str:
         # High risk articles related to core modifications or security
-        if article_num in [1089, 1091, 1099, 1101, 1104, 1108]:
+        if article_num in [1089, 1091, 1099, 1101, 1104, 1108, 1114, 1115, 1116, 1121, 1123, 1124, 1125]:
             return "High"
-        if article_num in [1087, 1093, 1094, 1103, 1105, 1110]:
+        if article_num in [1087, 1093, 1094, 1103, 1105, 1110, 1112, 1113, 1119]:
             return "Medium"
         return "Low"
 
@@ -57,23 +57,28 @@ class GaaSValidator:
         """
         intent = payload.get("intent", "unknown")
         is_high_risk = payload.get("high_risk", False)
+        swarm_id = payload.get("swarm_id")
 
         t_fa = self.trust_factors.get(agent_id, 1.0)
+
+        # Swarm Trust Factor (Article 1114/1117)
+        swarm_t_fa = self.trust_factors.get(f"swarm_{swarm_id}", 1.0) if swarm_id else 1.0
+        effective_t_fa = min(t_fa, swarm_t_fa)
 
         decision = "ALLOW"
         reason = "Constitutional alignment verified."
         violated_article = None
 
-        # Check for High-Risk intent without proper trust (Article 1101)
+        # Check for High-Risk intent without proper trust (Article 1101 & 1114)
         if is_high_risk:
-            if t_fa < 0.8:
+            if effective_t_fa < 0.8:
                 decision = "BLOCK"
-                reason = "Violation of Article 1101: High-risk action by low-trust agent."
-                violated_article = 1101
+                reason = "Violation of Article 1101/1114: High-risk action by low-trust agent/swarm."
+                violated_article = 1114 if swarm_id else 1101
             else:
                 decision = "PENDING_APPROVAL"
-                reason = "Article 1101: High-risk action requires human approval window."
-                violated_article = 1101
+                reason = "Article 1114: Swarm high-risk action requires 10-minute human veto window."
+                violated_article = 1114
 
         # Update trust factor
         if decision == "ALLOW":
