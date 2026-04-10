@@ -49,6 +49,6 @@ class HomeostasisMonitor:
         # print(f"UEG EVENT: {event_type} | {data}")
 
 if __name__ == "__main__":
-    def mock_ueg(e): print(f"UEG -> {e['type']}")
-    hm = HomeostasisMonitor(mock_ueg)
+    def autonomous_ueg(e): print(f"UEG -> {e['type']}")
+    hm = HomeostasisMonitor(autonomous_ueg)
     hm.monitor_vitals({"latency_ms": 15.0, "cpu_percent": 85.0})

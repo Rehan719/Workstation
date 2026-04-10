@@ -1,0 +1,10 @@
+{
+  "product_id": "VSB-SIG-LAW-OMNIOCTO-19.0",
+  "name": "Omni-Octo Veritas Employment Tribunal Intelligence",
+  "domain": "Law",
+  "version": "19.0",
+  "release_date": "2026-04-10",
+  "veritas_framework": "Omni-Octo Veritas",
+  "outputs_path": "outputs/",
+  "status": "PRODUCTION_READY"
+}

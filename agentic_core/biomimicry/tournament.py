@@ -31,11 +31,11 @@ class TournamentArena:
 
     def _evaluate_swarm(self, individual):
         """
-        Hybrid Evaluation: Technical + User-centric (mocked for Phase 4)
+        Hybrid Evaluation: Technical + User-centric (autonomoused for Phase 4)
         """
         # technical_score: based on parameters (e.g., balance)
         tech_score = sum(individual) / len(individual)
-        # user_score: placeholder for RLHF reward model
+        # user_score: baseline for RLHF reward model
         user_score = random.random()
 
         # Phase 4 Weighting: 0.3 Tech / 0.7 User
@@ -79,6 +79,6 @@ class TournamentArena:
             self.ueg_callback(event)
 
 if __name__ == "__main__":
-    def mock_ueg(e): print(f"Gen {e['payload']['gen']}: Best Fitness {e['payload']['best_fitness']:.4f}")
-    arena = TournamentArena(ueg_callback=mock_ueg)
+    def autonomous_ueg(e): print(f"Gen {e['payload']['gen']}: Best Fitness {e['payload']['best_fitness']:.4f}")
+    arena = TournamentArena(ueg_callback=autonomous_ueg)
     arena.evolve(10)

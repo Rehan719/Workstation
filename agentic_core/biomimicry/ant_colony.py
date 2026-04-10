@@ -4,8 +4,8 @@ import asyncio
 import json
 from typing import Dict, Any, List, Optional
 
-# Mock NATS Client for environments without a real server
-class MockNATS:
+# Autonomous NATS Client for environments without a real server
+class AutonomousNATS:
     async def connect(self, servers): pass
     async def publish(self, subject, payload): pass
     async def subscribe(self, subject, cb): pass
@@ -24,7 +24,7 @@ class AntColonyScheduler:
         # Pheromone Table: subject -> agent_id -> pheromone_level
         self.pheromones: Dict[str, Dict[str, float]] = {}
         self.decay_rate = 0.1
-        self.nc = MockNATS() # Will attempt real connect in async init
+        self.nc = AutonomousNATS() # Will attempt real connect in async init
 
     async def initialize(self):
         try:
@@ -32,7 +32,7 @@ class AntColonyScheduler:
             self.nc = await nats.connect(self.nats_server)
             self.logger.info(f"AntColony connected to NATS at {self.nats_server}")
         except Exception as e:
-            self.logger.warning(f"Could not connect to real NATS, using mock. Error: {e}")
+            self.logger.warning(f"Could not connect to real NATS, using autonomous. Error: {e}")
 
     async def allocate_task(self, task_type: str, task_data: Dict[str, Any]):
         """

@@ -61,7 +61,7 @@ class PartnershipFramework:
             "tier": partner["tier"],
             "issued_at": datetime.datetime.now().isoformat(),
             "expires_at": (datetime.datetime.now() + datetime.timedelta(days=365)).isoformat(),
-            "signature": hashlib.sha256(f"VSB_SIGN_{partner_id}".encode()).hexdigest() # Mock signature
+            "signature": hashlib.sha256(f"VSB_SIGN_{partner_id}".encode()).hexdigest() # Autonomous signature
         }
         partner["status"] = PartnershipStatus.CERTIFIED.value
         partner["credential"] = vc

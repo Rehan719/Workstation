@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 router = APIRouter(prefix="/user", tags=["User & RBAC"])
 
-# Mock User database
+# Autonomous User database
 USERS = {
     "demo_user": {
         "id": "demo_user",

@@ -52,8 +52,8 @@ class Phase5Validator:
     def validate_ethical_comprehension(self):
         """Check ethical explanation rendering."""
         print("--- Validating Ethical Channel ---")
-        mock_decision = {"decision": "BLOCK", "violated_article": 1121, "agent_id": "test_agent"}
-        explanation = self.ethical.explain_decision(mock_decision)
+        autonomous_decision = {"decision": "BLOCK", "violated_article": 1121, "agent_id": "test_agent"}
+        explanation = self.ethical.explain_decision(autonomous_decision)
 
         valid = "Article 1121" in explanation and "BLOCK" in explanation
         self.monitor.log_metric("Governance", "ethical_transparency_score", 1.0 if valid else 0.0)

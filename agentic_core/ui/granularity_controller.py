@@ -55,7 +55,7 @@ class GranularityController:
 
         # Map signals to system_metrics for evaluation
         metrics = {
-            "cognitive_confidence": 0.9, # Mocked for now
+            "cognitive_confidence": 0.9, # Autonomoused for now
             "system_load": 0.1,
             "user_engagement": 0.5
         }

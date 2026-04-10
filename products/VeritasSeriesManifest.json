@@ -1,0 +1,56 @@
+{
+  "series_name": "Veritas Signature Products",
+  "date": "2026-04-10",
+  "products": [
+    {
+      "product_id": "VSB-SIG-REL-QUADRA-9.0",
+      "name": "Quran Education Platform",
+      "domain": "Religion",
+      "version": "9.0",
+      "release_date": "2026-04-10",
+      "veritas_framework": "Quadra-Veritas",
+      "outputs_path": "outputs/",
+      "status": "PRODUCTION_READY"
+    },
+    {
+      "product_id": "VSB-SIG-SCI-OMNIA-18.0",
+      "name": "Omnia-Veritas Patient Safety Intelligence",
+      "domain": "Science",
+      "version": "18.0",
+      "release_date": "2026-04-10",
+      "veritas_framework": "Omnia-Veritas",
+      "outputs_path": "outputs/",
+      "status": "PRODUCTION_READY"
+    },
+    {
+      "product_id": "VSB-SIG-LAW-OMNIOCTO-19.0",
+      "name": "Omni-Octo Veritas Employment Tribunal Intelligence",
+      "domain": "Law",
+      "version": "19.0",
+      "release_date": "2026-04-10",
+      "veritas_framework": "Omni-Octo Veritas",
+      "outputs_path": "outputs/",
+      "status": "PRODUCTION_READY"
+    },
+    {
+      "product_id": "VSB-SIG-EMP-PENTA-3.0",
+      "name": "Penta-Veritas Career Advocacy & Application Intelligence",
+      "domain": "Employment",
+      "version": "3.0",
+      "release_date": "2026-04-10",
+      "veritas_framework": "Penta-Veritas",
+      "outputs_path": "outputs/",
+      "status": "PRODUCTION_READY"
+    },
+    {
+      "product_id": "VSB-SIG-CARE-SEXTA-1.0",
+      "name": "Sexta-Veritas Health & Social Care Intelligence",
+      "domain": "Care",
+      "version": "1.0",
+      "release_date": "2026-04-10",
+      "veritas_framework": "Sexta-Veritas",
+      "outputs_path": "outputs/",
+      "status": "PRODUCTION_READY"
+    }
+  ]
+}

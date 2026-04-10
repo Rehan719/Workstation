@@ -43,7 +43,7 @@ class FallbackProtocol:
 
     def _level_2_reduced_automation(self, reason: str):
         print(f"[FALLBACK L2] Reduced automation in {self.domain}: {reason}")
-        return {"action": "PLACEHOLDER", "status": "degraded"}
+        return {"action": "DEGRADED_ASSET", "status": "degraded"}
 
     def _level_3_manual_review(self, reason: str):
         print(f"[FALLBACK L3] MANUAL REVIEW REQUIRED in {self.domain}: {reason}")

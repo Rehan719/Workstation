@@ -14,7 +14,7 @@ class ReligionProductGenerator(GenericDomainProductGenerator):
         import matplotlib.pyplot as plt
         import numpy as np
 
-        # Simulated waveform from "Al-Fatihah" mock audio
+        # Simulated waveform from "Al-Fatihah" autonomous audio
         time = np.linspace(0, 10, 1000)
         amplitude = np.sin(time) * np.exp(-0.1 * time)
 

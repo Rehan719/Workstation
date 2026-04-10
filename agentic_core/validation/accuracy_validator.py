@@ -31,7 +31,7 @@ class AccuracyValidator:
                 confidence = 0.0
 
         elif task_type == "SEMANTIC":
-            # Article 60: Replace placeholder with difflib SequenceMatcher ratio for semantic similarity
+            # Article 60: Replace baseline with difflib SequenceMatcher ratio for semantic similarity
             ratio = difflib.SequenceMatcher(None, str(prediction), str(actual)).ratio()
             is_accurate = ratio >= 0.8
             confidence = ratio

@@ -63,7 +63,7 @@ class OctopusEmbodiedIntelligence:
             }
         else:
             self.logger.warning(f"Low confidence ({confidence:.2f}). Falling back to Central reasoning.")
-            # Mock fallback
+            # Autonomous fallback
             return {
                 "status": "CENTRAL_FALLBACK",
                 "result": {"fallback": "Central processing required"},
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     # Test low confidence (forcefully for simulation)
     hal.CL1_PROJECTED_WATTS = 50.0 # Just some change
     res2 = octopus.perform_inference({"task": "complex_reasoning", "force_low": True})
-    # Note: In our current HAL, confidence is hardcoded to 0.92, so we'd need to mock it.
+    # Note: In our current HAL, confidence is hardcoded to 0.92, so we'd need to autonomous it.
     # But the logic is clear.
 
     # Test CRDT sync

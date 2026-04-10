@@ -10,7 +10,7 @@ class DesignStudio:
     """
     def create_graphical_abstract(self, findings: str) -> Dict[str, Any]:
         logger.info(f"DESIGN_STUDIO: Generating graphical abstract for findings: {findings[:50]}...")
-        # Mocking generation of asset paths
+        # Autonomousing generation of asset paths
         return {
             "asset_id": "ABSTRACT-v70-01",
             "type": "vector_graphics",

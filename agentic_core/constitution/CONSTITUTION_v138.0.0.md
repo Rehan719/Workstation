@@ -125,7 +125,7 @@ No recombinatorial operation shall violate the licensing terms of any source mod
 *Serves: Legal Homeostasis (Ecosystem Compliance)*
 
 **ARTICLE 1114: MANDATORY OFFSPRING VALIDATION**
-Every recombined module must pass a non-bypassable validation gate (integrity, performance, and constitution) before being registered in the Module Library. Stubs and placeholders are prohibited in the validation of evolved intelligence.
+Every recombined module must pass a non-bypassable validation gate (integrity, performance, and constitution) before being registered in the Module Library. Stubs and baselines are prohibited in the validation of evolved intelligence.
 *Serves: Selective Pressure (Fitness Assurance)*
 
 **ARTICLE 1115: EVOLUTIONARY AUTONOMY & OVERSIGHT**

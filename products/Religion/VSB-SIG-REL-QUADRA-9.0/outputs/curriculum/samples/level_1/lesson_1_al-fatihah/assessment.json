@@ -1,0 +1,19 @@
+{
+  "lesson_id": 1,
+  "level": 1,
+  "questions": [
+    {
+      "question": "What is the definition of Tawhid?",
+      "options": [
+        "Oneness of Allah (SWT)",
+        "Other random answer",
+        "Incorrect info"
+      ],
+      "answer": 0
+    },
+    {
+      "question": "Which rule is focus of this lesson?",
+      "answer": "Izh-har"
+    }
+  ]
+}

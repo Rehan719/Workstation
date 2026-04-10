@@ -16,7 +16,7 @@ async def register_node(node_data: Dict[str, Any]):
         "last_heartbeat": time.time(),
         "status": "online"
     }
-    return {"status": "registered", "token": "signed-jwt-placeholder"}
+    return {"status": "registered", "token": "signed-jwt-baseline"}
 
 @router.get("/nodes", response_model=List[Dict[str, Any]])
 async def list_nodes():

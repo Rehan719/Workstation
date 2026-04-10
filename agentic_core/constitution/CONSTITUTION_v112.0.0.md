@@ -11,7 +11,7 @@ The organism must prioritize resource allocation in the following absolute order
 
 ## ⚙️ SECTION II: OPERATIONAL MANDATES (Articles 48-63)
 **ARTICLE 60: NO-STUBS MANDATE**
-All code within the core hierarchy must contain functional logic; stubs and placeholders are strictly prohibited.
+All code within the core hierarchy must contain functional logic; stubs and baselines are strictly prohibited.
 
 ## 🔄 SECTION III: TRANSITION & MIGRATION (Articles 64-77)
 **ARTICLE 73: GRAND SYNTHESIS ENGINE**

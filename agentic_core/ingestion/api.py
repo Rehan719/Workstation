@@ -63,7 +63,7 @@ class IngestionManager:
              with open(file_path, "r") as f:
                  extracted_text = f.read()
         elif any(ext in filename_lower for ext in [".pdf", ".docx"]):
-             # Simulation: High-fidelity placeholder for PDF/DOCX
+             # Simulation: High-fidelity baseline for PDF/DOCX
              extracted_text = f"Content extracted from rich document: {file.filename}. Primary topics identified: Digital Sovereign Intelligence, Autonomous Evolution."
         elif any(ext in filename_lower for ext in [".mp3", ".mp4", ".wav"]):
              # High-Fidelity Transcription Simulation

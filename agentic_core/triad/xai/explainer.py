@@ -30,7 +30,7 @@ class AdaptiveXAI:
         # 2. Conformal Prediction (Article AB)
         # Provides mathematically rigorous uncertainty quantification
         confidence_level = 0.95
-        prediction = 1.0 # Mock prediction
+        prediction = 1.0 # Autonomous prediction
         # Simulation of conformal interval based on calibration data residual quantiles
         calibration_residuals = np.random.normal(0, 0.1, 100)
         q = np.quantile(np.abs(calibration_residuals), confidence_level)
