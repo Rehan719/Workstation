@@ -1,9 +1,10 @@
 import os
 import sys
 
-# Ensure parent directory is in path for imports
+# Ensure parent and core directories are in path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
+sys.path.append(os.path.join(current_dir, "core"))
 
 from sexta_veritas_synthesis_engine import SextaVeritasSynthesisEngine
 from facilities import EthicalAIAuditEngine, SovereignDeploymentOrchestrator, PatientProtectiveActionSynthesizer

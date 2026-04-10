@@ -1,4 +1,3 @@
-# 13: Strategic Engagement Script (v17.0)
+# 13: Strategic Engagement Script
 
-## 1. SOVEREIGN ADVOCACY
-Use Truth VI to leverage international regulatory precedent. 'Patient safety is a global sovereign duty, not a local compliance choice.'
+Refined communication templates for engaging with EMA/FDA panels using evidence-anchored narratives and Quadra-Veritas metadata.

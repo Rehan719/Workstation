@@ -1,0 +1,93 @@
+{
+    "convergence": {
+        "overall_score": 1.0,
+        "dimension_scores": {
+            "truth_i": 0.96,
+            "truth_ii": 0.92,
+            "truth_iii": 0.94,
+            "truth_iv": 0.92,
+            "truth_v": 0.9,
+            "truth_vi": 0.95
+        },
+        "consistency_bonus": 0.098,
+        "correlation_penalty": 0.0,
+        "status": "Adaptive Inevitability (Verified)",
+        "timestamp": "2026-04-09T22:00:13.798732",
+        "engine_version": "v17.0-SEXTA-VERITAS-PROD"
+    },
+    "ethical_audit": {
+        "audit_id": "bc7dfbd6a0a5b2cc",
+        "timestamp": "2026-04-09T22:00:13.799555",
+        "bias_metrics": {
+            "age": 1.0,
+            "gender": 1.0,
+            "ethnicity": 1.0,
+            "socioeconomic_status": 1.0
+        },
+        "fairness_assessment": "requires_review",
+        "explainability": {
+            "method": "Heuristic Representation Mapping (HRM)",
+            "status": "Verified",
+            "key_features": [
+                "age_representation",
+                "gender_representation",
+                "ethnicity_representation",
+                "socioeconomic_status_representation"
+            ]
+        },
+        "compliance": {
+            "GDPR_Article_22": true,
+            "EU_AI_Act_2024": true,
+            "Article_14_Oversight": "Deterministic Verification Active"
+        }
+    },
+    "deployments": [
+        {
+            "jurisdiction": "EMA",
+            "regulator": "European EMA",
+            "package_id": "SOV-DEP-EMA-fb4d976d",
+            "timestamp": "2026-04-09T22:00:13.799600",
+            "compliance_checks": {
+                "ltfu_requirement": "10 years",
+                "format_standard": "MAA",
+                "data_sovereignty": "Deterministic Proof of Residency (verified_local)"
+            },
+            "deliverables": [
+                "SextaConvergenceReport_EMA_v17",
+                "RegulatorySubmission_MAA_Draft",
+                "PatientImpactAudit_Sovereign_Integrated"
+            ]
+        },
+        {
+            "jurisdiction": "FDA",
+            "regulator": "U.S. FDA",
+            "package_id": "SOV-DEP-FDA-fb4d976d",
+            "timestamp": "2026-04-09T22:00:13.799622",
+            "compliance_checks": {
+                "ltfu_requirement": "15 years",
+                "format_standard": "BLA",
+                "data_sovereignty": "Deterministic Proof of Residency (verified_local)"
+            },
+            "deliverables": [
+                "SextaConvergenceReport_FDA_v17",
+                "RegulatorySubmission_BLA_Draft",
+                "PatientImpactAudit_Sovereign_Integrated"
+            ]
+        }
+    ],
+    "protective_actions": [
+        {
+            "id": "ACT-bdc0da",
+            "gap_ref": "GAP-001",
+            "intervention": "Immediate Revision of Clinical Trial Protocol Monitoring Windows",
+            "urgency": "Standard",
+            "patient_impact_reduction": "Substantive",
+            "implementation_roadmap": [
+                "Notification",
+                "Stakeholder Review",
+                "Protocol Deployment",
+                "Final Audit"
+            ]
+        }
+    ]
+}
