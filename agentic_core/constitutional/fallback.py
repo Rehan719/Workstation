@@ -14,20 +14,27 @@ class FallbackProtocol:
         """
         Triggers a specific fallback level.
         """
-        self.violation_count += 1
-        self.logger.log_event(self.domain, f"FALLBACK_LEVEL_{level}", {
+        if level > 1: # Only count critical levels towards suspension
+            self.violation_count += 1
+
+        # Check for immediate escalation to level 4
+        effective_level = level
+        if self.violation_count >= 10:
+            effective_level = 4
+
+        self.logger.log_event(self.domain, f"FALLBACK_LEVEL_{effective_level}", {
             "reason": reason,
             "details": details,
             "violation_count": self.violation_count
         })
 
-        if level == 1:
+        if effective_level == 1:
             return self._level_1_warning(reason)
-        elif level == 2:
+        elif effective_level == 2:
             return self._level_2_reduced_automation(reason)
-        elif level == 3:
+        elif effective_level == 3:
             return self._level_3_manual_review(reason)
-        elif level == 4:
+        elif effective_level == 4:
             return self._level_4_suspension(reason)
 
     def _level_1_warning(self, reason: str):
@@ -52,13 +59,17 @@ class FallbackProtocol:
         Evaluates violations and determines fallback level.
         """
         if not violations:
+            # Still check if we reached suspension from previous events
+            if self.violation_count >= 10:
+                return self.trigger(4, "Threshold for total violations exceeded.")
             return None
-
-        reject_count = sum(1 for v in violations if v["status"] == "reject")
 
         if self.violation_count >= 10:
             return self.trigger(4, "Threshold for total violations exceeded.")
-        elif reject_count >= 3:
+
+        reject_count = sum(1 for v in violations if v["status"] == "reject")
+
+        if reject_count >= 3:
             return self.trigger(3, "Multiple critical violations in single package.")
         elif reject_count >= 1:
             return self.trigger(2, "Critical violation detected.")

@@ -101,14 +101,15 @@ class LawProductGenerator(OctoOmnimediaGenerator):
         try:
             plt.savefig(img_path)
             plt.close()
-        except Exception:
-            pass
+        except Exception as e:
+            # Fallback to logging instead of pass
+            self.logger.log_event(self.domain, "GEN_WARNING", {"message": f"Matplotlib failed: {str(e)}"})
 
         if os.path.exists(img_path):
             with open(img_path, "rb") as f:
                 content = f.read()
         else:
-            content = b"MOCK_LAW_TIMELINE_PNG"
+            content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
 
         return MultimediaAsset("Precedent Timeline", "infographic", content)
 

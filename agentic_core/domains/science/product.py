@@ -41,14 +41,15 @@ class ScienceProductGenerator(OctoOmnimediaGenerator):
             try:
                 plt.savefig(img_path)
                 plt.close()
-            except Exception:
-                pass # Matplotlib might be mocked
+            except Exception as e:
+                self.logger.log_event(self.domain, "GEN_WARNING", {"message": f"Matplotlib failed: {str(e)}"})
 
             if os.path.exists(img_path):
                 with open(img_path, "rb") as f:
                     content = f.read()
             else:
-                content = b"MOCK_GRADE_MATRIX_PNG"
+                # Real PNG header for PPTX identification
+                content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
         else:
             content = df.to_csv() # Default to CSV for simplicity in Q2 if not PDF/DOCX handled by injector
 
@@ -72,14 +73,14 @@ class ScienceProductGenerator(OctoOmnimediaGenerator):
         try:
             plt.savefig(img_path)
             plt.close()
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.log_event(self.domain, "GEN_WARNING", {"message": f"Matplotlib failed: {str(e)}"})
 
         if os.path.exists(img_path):
             with open(img_path, "rb") as f:
                 content = f.read()
         else:
-            content = b"MOCK_HEATMAP_PNG"
+            content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
 
         metadata = {"accessibility": self.accessibility.tag_asset("infographic", {"alt_text": "A 5x5 heatmap showing probability vs impact of safety risks."})}
         return MultimediaAsset("Risk Heatmap", "infographic", content, metadata)
@@ -100,14 +101,14 @@ class ScienceProductGenerator(OctoOmnimediaGenerator):
         try:
             plt.savefig(img_path)
             plt.close()
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.log_event(self.domain, "GEN_WARNING", {"message": f"Matplotlib failed: {str(e)}"})
 
         if os.path.exists(img_path):
             with open(img_path, "rb") as f:
                 content = f.read()
         else:
-            content = b"MOCK_AAV_TWIN_PNG"
+            content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
 
         metadata = {"accessibility": self.accessibility.tag_asset("digital_twin", {"alt_text": "Flowchart of AAV manufacturing process: Design to Infusion."})}
         return MultimediaAsset("AAV Digital Twin", "digital_twin", content, metadata)

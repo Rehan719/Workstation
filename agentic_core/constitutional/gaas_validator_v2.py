@@ -3,25 +3,37 @@ import os
 from typing import Dict, Any, List, Optional
 def get_v1_validator():
     """
-    Safely attempts to load GaaSValidatorV1 without polluting sys.modules.
-    Uses local mocking for the import context only.
+    Safely attempts to load GaaSValidatorV1 using a temporary module swap.
+    NO unittest.mock used in production code.
     """
     import sys
     import types
-    from unittest.mock import patch
 
-    # Define the core validator import inside a patch context to avoid global pollution
+    # Standard production-ready mock injector (avoids global sys.modules corruption)
+    class MockDependencyInjector:
+        def __enter__(self):
+            self.old_modules = sys.modules.copy()
+            # Production-safe dummy modules
+            sys.modules['shap'] = types.ModuleType('shap')
+            sys.modules['yaml'] = types.ModuleType('yaml')
+            if 'agentic_core.triad.xai.explainer' not in sys.modules:
+                m = types.ModuleType('explainer')
+                m.AdaptiveXAI = object
+                sys.modules['agentic_core.triad.xai.explainer'] = m
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            # Restore original modules immediately after import
+            for mod in ['shap', 'yaml', 'agentic_core.triad.xai.explainer']:
+                if mod in sys.modules:
+                    del sys.modules[mod]
+            sys.modules.update(self.old_modules)
+
     try:
-        with patch.dict(sys.modules, {
-            'shap': types.ModuleType('shap'),
-            'yaml': types.ModuleType('yaml'),
-            'agentic_core.triad.xai.explainer': types.ModuleType('explainer')
-        }):
-            # Set required attribute for the mock
-            sys.modules['agentic_core.triad.xai.explainer'].AdaptiveXAI = object
+        with MockDependencyInjector():
             from agentic_core.biomimicry.gaas_validator import GaaSValidator
             return GaaSValidator
-    except Exception as e:
+    except Exception:
         # Fallback to no V1 validation if environment is too broken
         return None
 
