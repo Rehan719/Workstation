@@ -15,14 +15,14 @@ def main():
 
     # Report command
     report_parser = subparsers.add_parser("report", help="Generate phase report")
-    report_parser.add_argument("--phase", type=int, default=1, help="Phase number")
+    report_parser.add_argument("--phase", type=str, default="1", help="Phase number or name")
     report_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
     args = parser.parse_args()
 
     if args.command == "status":
         status = {
-            "version": "v138.0",
+            "version": "v138.0 + GrandOps-v6.0-Q1",
             "phase": 6,
             "status": "Operational",
             "constitution": "v138.0.0 (Articles 1-1127)",
@@ -32,8 +32,11 @@ def main():
 
     elif args.command == "report":
         # Use phase-specific log if it exists, fallback to general
-        phase_log = f"outputs/phase{args.phase}_metrics.jsonl"
-        active_log = phase_log if os.path.exists(phase_log) else LOG_PATH
+        if args.phase == "grand-ops-v6":
+            active_log = "outputs/sovereign_metrics.jsonl" # Grand Ops logs here via UEG
+        else:
+            phase_log = f"outputs/phase{args.phase}_metrics.jsonl"
+            active_log = phase_log if os.path.exists(phase_log) else LOG_PATH
 
         metrics = []
         if os.path.exists(active_log):
@@ -47,7 +50,7 @@ def main():
 
         report = {
             "phase": args.phase,
-            "timestamp": "2026-03-20T...Z",
+            "timestamp": "2026-03-28T12:00:00Z",
             "deliverables_status": "VERIFIED" if metrics else "INITIALIZING",
             "kpi_summary": {
                 "total_recorded": len(metrics),
