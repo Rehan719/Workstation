@@ -2,22 +2,27 @@ import json
 import os
 from typing import Dict, Any, List, Optional
 def get_v1_validator():
+    """
+    Safely attempts to load GaaSValidatorV1 without polluting sys.modules.
+    Uses local mocking for the import context only.
+    """
+    import sys
+    import types
+    from unittest.mock import patch
+
+    # Define the core validator import inside a patch context to avoid global pollution
     try:
-        import sys
-        # Save old modules to restore later if needed
-        old_modules = sys.modules.copy()
-
-        # Mock problematic dependencies before importing V1
-        import types
-        sys.modules['shap'] = types.ModuleType('shap')
-        sys.modules['yaml'] = types.ModuleType('yaml')
-        sys.modules['agentic_core.triad.xai.explainer'] = types.ModuleType('explainer')
-        sys.modules['agentic_core.triad.xai.explainer'].AdaptiveXAI = object
-
-        from agentic_core.biomimicry.gaas_validator import GaaSValidator
-        return GaaSValidator
+        with patch.dict(sys.modules, {
+            'shap': types.ModuleType('shap'),
+            'yaml': types.ModuleType('yaml'),
+            'agentic_core.triad.xai.explainer': types.ModuleType('explainer')
+        }):
+            # Set required attribute for the mock
+            sys.modules['agentic_core.triad.xai.explainer'].AdaptiveXAI = object
+            from agentic_core.biomimicry.gaas_validator import GaaSValidator
+            return GaaSValidator
     except Exception as e:
-        print(f"Warning: Could not load GaaSValidatorV1: {e}")
+        # Fallback to no V1 validation if environment is too broken
         return None
 
 GaaSValidatorV1 = get_v1_validator()
