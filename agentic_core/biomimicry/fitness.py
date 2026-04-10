@@ -47,23 +47,52 @@ class HybridFitnessFunction:
 
 class FeedbackChannel:
     """
-    Learner Realm Feedback Channel (Mock).
-    Collects user ratings and flags for evolution.
+    Learner Realm Feedback Channel (Enhanced).
+    Collects explicit (ratings) and implicit (dwell, hover) feedback for RLHF.
     """
     def __init__(self, ueg_callback=None):
         self.ueg_callback = ueg_callback
         self.storage: List[Dict[str, Any]] = []
+        # Personalized Reward Models (User_ID -> Weights)
+        self.user_reward_models: Dict[str, Dict[str, float]] = {}
 
-    def submit_feedback(self, agent_id: str, stars: int, flags: List[str] = None):
+    def submit_feedback(self, agent_id: str, stars: int, user_id: str = "default", flags: List[str] = None):
         entry = {
+            "user_id": user_id,
             "agent_id": agent_id,
             "stars": stars,
             "flags": flags or [],
+            "type": "EXPLICIT",
             "timestamp": time.time()
         }
         self.storage.append(entry)
         self._emit_event("USER_FEEDBACK", entry)
+        self._update_personalized_model(user_id, entry)
         return True
+
+    def log_implicit_feedback(self, agent_id: str, dwell_time: float, user_id: str = "default"):
+        """Logs behavior-based feedback (Article 1120 compliant)."""
+        entry = {
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "dwell_time": dwell_time,
+            "type": "IMPLICIT",
+            "timestamp": time.time()
+        }
+        self.storage.append(entry)
+        self._emit_event("IMPLICIT_FEEDBACK", entry)
+        return True
+
+    def _update_personalized_model(self, user_id: str, feedback: Dict[str, Any]):
+        """Simulates federated learning update for a user's reward model."""
+        if user_id not in self.user_reward_models:
+            self.user_reward_models[user_id] = {"verbosity_pref": 0.5, "speed_pref": 0.5}
+
+        # Simple adaptation logic
+        if feedback["stars"] >= 4:
+            self.user_reward_models[user_id]["verbosity_pref"] += 0.05
+        else:
+            self.user_reward_models[user_id]["verbosity_pref"] -= 0.05
 
     def _emit_event(self, event_type: str, data: Dict[str, Any]):
         event = {
