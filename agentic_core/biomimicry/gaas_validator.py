@@ -14,7 +14,7 @@ class GaaSValidator:
         self.constitution_path = constitution_path
         self.logger = logging.getLogger("GaaSValidator")
         self.trust_factors: Dict[str, float] = {} # agent_id -> T_Fa
-        self.enforcement_mode = "Adaptive" # Coercive, Normative, Adaptive
+        self.enforcement_mode = "Adaptive" # Coercive, Normative, Adaptive, adaptive_immune, symbiotic_audit
 
         # Load and parse constitution
         self.articles = self._load_articles()
@@ -45,9 +45,9 @@ class GaaSValidator:
 
     def _determine_risk(self, article_num: int) -> str:
         # High risk articles related to core modifications or security
-        if article_num in [1089, 1091, 1099, 1101]:
+        if article_num in [1089, 1091, 1099, 1101, 1104, 1108]:
             return "High"
-        if article_num in [1087, 1093, 1094, 1103]:
+        if article_num in [1087, 1093, 1094, 1103, 1105, 1110]:
             return "Medium"
         return "Low"
 
@@ -92,6 +92,11 @@ class GaaSValidator:
 
         self.logger.info(f"GaaS Decision: {decision} for {agent_id} | Reason: {reason}")
         return result
+
+    def set_enforcement_mode(self, mode: str):
+        if mode in ["Coercive", "Normative", "Adaptive", "adaptive_immune", "symbiotic_audit"]:
+            self.enforcement_mode = mode
+            self.logger.info(f"GaaS enforcement mode set to {mode}")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

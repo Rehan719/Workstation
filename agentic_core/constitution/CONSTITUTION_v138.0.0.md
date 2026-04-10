@@ -78,5 +78,40 @@ The system shall support 50+ concurrent nodes with <50ms inter-node latency, ena
 The Sovereign Liability Fund on Polygon mainnet shall manage real WST circulation, ensuring the metabolic efficiency and long-term viability of the organism's economic activities.
 *Serves: Metabolic Economy*
 
+## ⚖️ SECTION LVIII: BIOMIMETIC INTEGRATION & SWARM GOVERNANCE (Articles 1104-1111)
+*Refined from the v138.0 Phase 2 "Biomimetic Integration" mandate.*
+
+**ARTICLE 1104: IMMUNE RESPONSE LIMITS**
+The ImmuneOrchestrator shall have the authority to isolate and repair nodes exhibiting anomaly scores > 0.95. However, isolation must not exceed 60 minutes without human review, ensuring that defensive measures do not become a source of instability.
+*Serves: Immune System (Adaptive Defense)*
+
+**ARTICLE 1105: SYMBIOSIS FAIRNESS**
+All agent partnerships managed by the SymbiosisEngine must adhere to mutual reciprocity. Resource sharing agreements shall be audited for fairness, preventing predatory resource extraction and ensuring ecosystem balance.
+*Serves: Symbiotic Layer (Mutualism)*
+
+**ARTICLE 1106: MYCELIAL DATA RETENTION**
+Data propagated through mycelial routing shall maintain a verifiable provenance chain. Nodes must honor retention policies that balance signal persistence with the need for autophagy and resource reclamation.
+*Serves: Mycelial Layer (Resilient Transport)*
+
+**ARTICLE 1107: ANT COLONY QUORUM**
+Task allocation by the AntColonyScheduler requires a stigmergy-based quorum. No single agent shall be overwhelmed by pheromone signals, ensuring that work is distributed according to the collective intelligence of the swarm.
+*Serves: Ant Colony (Swarm Coordination)*
+
+**ARTICLE 1108: OCTOPUS EDGE SOVEREIGNTY**
+Edge nodes shall maintain sovereignty over local inferences. Central coordination is required only when local confidence thresholds fall below 0.85, prioritizing decentralized intelligence and low-latency processing.
+*Serves: Octopus Layer (Embodied Intelligence)*
+
+**ARTICLE 1109: BIO-LOGICAL STATE CONVERGENCE**
+State synchronization via CRDTs must achieve eventual consistency across all participating nodes. Conflict resolution shall favor deterministic, bio-logical rules that preserve the integrity of the organism's memory.
+*Serves: Nervous System (Consistent Memory)*
+
+**ARTICLE 1110: METABOLIC RECIPROCITY**
+Agents participating in the symbiotic exchange must contribute compute or WST tokens proportionally to their resource consumption. Metabolic deficits shall be flagged and remediated by the MetabolismEngine.
+*Serves: Metabolic Economy (Efficient Exchange)*
+
+**ARTICLE 1111: CONSTITUTIONAL EVOLUTION**
+The constitution itself is a living document, subject to morphogenic growth. Floor amendments shall be tracked with immutable hashes, ensuring the sovereign auditability of the system's evolving governance.
+*Serves: Genomic Sovereignty (Self-Evolution)*
+
 ---
 *Codified via Grand Synthesis Engine v138.0.0 "The Systems Biology Epoch"*
