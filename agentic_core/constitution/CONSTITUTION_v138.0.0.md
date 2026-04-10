@@ -132,5 +132,24 @@ Every recombined module must pass a non-bypassable validation gate (integrity, p
 Autonomous recombination is permitted for low-risk architectural searches. High-risk "transgenic" recombinations—those spanning fundamentally different model architectures—require an explicit human oversight window before deployment.
 *Serves: Executive Homeostasis (Controlled Growth)*
 
+## ⚖️ SECTION LX: SWARM ORCHESTRATION & EVOLUTIONARY ETHICS (Articles 1116-1119)
+*Refined from the v138.0 Phase 4 "Swarm Orchestration & Evolution" mandate.*
+
+**ARTICLE 1116: SWARM AUTONOMY & HUMAN VETO**
+Swarm-level decisions are autonomous by default to ensure operational speed. However, any high-risk action proposed by a swarm—including significant resource reallocation or external data exports—must honor a 10-minute human veto window before final execution.
+*Serves: Executive Homeostasis (Controlled Autonomy)*
+
+**ARTICLE 1117: IDENTITY-NEUTRAL SWARM PARTICIPATION**
+No swarm formation algorithm shall exclude or penalize agents based on immutable identity attributes. Recruitment must be driven solely by fitness, task similarity, and trust scores, ensuring a fair and meritocratic agent society.
+*Serves: Social Homeostasis (Fair Recruitment)*
+
+**ARTICLE 1118: INTEGRITY OF USER FEEDBACK**
+User feedback signals (NPS, ratings) are sacred inputs for fitness evaluation. The system shall implement cryptographic signatures and differential privacy to prevent feedback manipulation or the coercion of agents into harmful behavior.
+*Serves: Symbiotic Ethics (Feedback Integrity)*
+
+**ARTICLE 1119: FEDERATED SWARM TRACEABILITY**
+Cross-node swarms spanning multiple Workstations must maintain a unified, verifiable audit trail of all inter-node communication. Provenance shall be preserved across administrative boundaries to ensure the sovereignty of the planetary mind.
+*Serves: Civilizational Integrity (Global Traceability)*
+
 ---
 *Codified via Grand Synthesis Engine v138.0.0 "The Systems Biology Epoch"*
