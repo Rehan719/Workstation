@@ -170,5 +170,24 @@ The Ethical Channel—providing transparent, natural language explanations of Ga
 User feedback signals utilized for Reinforcement Learning from Human Feedback (RLHF) must be audited for demographic bias. No evolutionary pressure shall be applied that discriminates against or marginalizes any demographic group.
 *Serves: basirah (Basirah - Foresight & Justice)*
 
+## ⚖️ SECTION LXII: FEDERATION, MARKETPLACE & CIVILIZATIONAL SCALE (Articles 1124-1127)
+*Refined from the v138.0 Phase 6 "Full Integration & Scaling" mandate.*
+
+**ARTICLE 1124: CROSS-NODE DATA SOVEREIGNTY**
+Data generated within a local Workstation node remains under the absolute sovereignty of that node. Cross-node transfers are prohibited unless explicitly permitted by a federated treaty or a validated user request.
+*Serves: Mycelial Layer (Data Sovereignty)*
+
+**ARTICLE 1125: ANTI-MONOPOLY IN FEDERATION**
+To prevent civilizational centralisation, no single workstation node or organization shall control more than 30% of the active agents in the federated marketplace or swarm topology.
+*Serves: Symbiotic Layer (Democratic Balance)*
+
+**ARTICLE 1126: AUDITABLE FEDERATED LEARNING**
+All contributions to global federated learning models must be auditable for fairness and integrity. The system shall utilize differential privacy (ε=0.1) and secure aggregation to prevent model poisoning or individual data leakage.
+*Serves: Collective Intelligence (Integrity)*
+
+**ARTICLE 1127: EQUAL ACCESS ACROSS REALMS**
+All four audience realms—Learner, Developer, Enterprise, and Scholar—must provide equal access to the organism's intelligence under the same constitutional protections. No realm shall be privileged to bypass GaaS enforcement.
+*Serves: Basirah (Universal Equity)*
+
 ---
 *Codified via Grand Synthesis Engine v138.0.0 "The Systems Biology Epoch"*

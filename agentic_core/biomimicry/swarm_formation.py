@@ -19,26 +19,35 @@ class SwarmAgent:
 class SwarmFormationEngine:
     """
     Implements autonomous swarm formation using Boids-inspired rules.
+    Phase 6: Extended with Federation support for cross-node swarms.
     - Cohesion: Agents move toward the average position of neighbors.
     - Alignment: Agents match velocity with neighbors.
     - Separation: Agents avoid crowding.
     """
-    def __init__(self, nats_client=None, ueg_callback=None):
-        self.logger = logging.getLogger("SwarmFormation")
+    def __init__(self, node_id: str = "local", nats_client=None, ueg_callback=None):
+        self.node_id = node_id
+        self.logger = logging.getLogger(f"SwarmFormation-{node_id}")
         self.nc = nats_client
         self.ueg_callback = ueg_callback
         self.agents: Dict[str, SwarmAgent] = {}
         self.swarms: Dict[str, List[str]] = {} # swarm_id -> [agent_ids]
+        # Cross-node registry
+        self.remote_agents: Dict[str, Dict[str, Any]] = {} # agent_id -> {node, pos}
 
     def add_agent(self, agent_id: str, task_vector: List[float]):
         self.agents[agent_id] = SwarmAgent(agent_id, task_vector)
 
+    def add_remote_agent(self, agent_id: str, node_id: str, task_vector: List[float]):
+        """Adds a discovered remote agent to the potential swarm pool."""
+        self.remote_agents[agent_id] = {"node": node_id, "pos": task_vector}
+
     def update_topology(self):
         """
         Runs one iteration of the Boids-based self-organization.
-        Identifies clusters and forms swarms.
+        Identifies clusters and forms swarms, including remote members.
         """
-        agent_list = list(self.agents.values())
+        local_agent_list = list(self.agents.values())
+        agent_list = local_agent_list + [SwarmAgent(aid, d["pos"]) for aid, d in self.remote_agents.items()]
         if len(agent_list) < 2: return
 
         for agent in agent_list:
