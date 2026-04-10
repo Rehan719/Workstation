@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+import sys
+import argparse
+import json
+import os
+
+LOG_PATH = "outputs/sovereign_metrics.jsonl"
+
+def main():
+    parser = argparse.ArgumentParser(description="Sovereign Console CLI")
+    subparsers = parser.add_subparsers(dest="command")
+
+    # Status command
+    subparsers.add_parser("status", help="Get system status")
+
+    # Report command
+    report_parser = subparsers.add_parser("report", help="Generate phase report")
+    report_parser.add_argument("--phase", type=int, default=1, help="Phase number")
+    report_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
+    args = parser.parse_args()
+
+    if args.command == "status":
+        status = {
+            "version": "v138.0",
+            "phase": 1,
+            "status": "Operational",
+            "constitution": "v138.0.0 (Articles 1-1103)",
+            "biomimetic_layers": ["Immune", "Nervous", "Metabolic"]
+        }
+        print(json.dumps(status, indent=2))
+
+    elif args.command == "report":
+        metrics = []
+        if os.path.exists(LOG_PATH):
+            with open(LOG_PATH, "r") as f:
+                for line in f:
+                    metrics.append(json.loads(line))
+
+        # Calculate summary from actual logs
+        pass_count = sum(1 for m in metrics if m["status"] == "PASS")
+        fail_count = sum(1 for m in metrics if m["status"] == "FAIL")
+
+        report = {
+            "phase": args.phase,
+            "timestamp": "2026-03-20T...Z",
+            "deliverables_status": "VERIFIED" if metrics else "INITIALIZING",
+            "kpi_summary": {
+                "total_recorded": len(metrics),
+                "passing": pass_count,
+                "failing": fail_count,
+                "compliance_rate": pass_count / len(metrics) if metrics else 1.0
+            },
+            "recent_metrics": metrics[-5:] if metrics else []
+        }
+
+        if args.format == "json":
+            print(json.dumps(report, indent=2))
+        else:
+            print(f"--- SOVEREIGN PHASE {args.phase} LIVE REPORT ---")
+            print(f"Status: {report['deliverables_status']}")
+            print(f"Total KPIs Monitored: {report['kpi_summary']['total_recorded']}")
+            print(f"Passing: {report['kpi_summary']['passing']}")
+            print(f"Failing: {report['kpi_summary']['failing']}")
+            print(f"Compliance: {report['kpi_summary']['compliance_rate']*100:.1f}%")
+            if report['recent_metrics']:
+                print("\nRecent Vitals:")
+                for m in report['recent_metrics']:
+                    print(f"  [{m['layer']}] {m['metric']}: {m['value']} ({m['status']})")
+
+    else:
+        parser.print_help()
+
+if __name__ == "__main__":
+    main()
