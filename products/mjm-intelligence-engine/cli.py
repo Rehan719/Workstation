@@ -1,0 +1,49 @@
+import argparse
+import sys
+import logging
+from core.workflow_orchestrator import MJMWorkflowOrchestrator
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("mjm-cli")
+
+def main():
+    parser = argparse.ArgumentParser(description="MJM Intelligence Engine CLI")
+    subparsers = parser.add_subparsers(dest="command", help="Commands")
+
+    # Mushahida
+    mush_parser = subparsers.add_parser("mushahida", help="Run Observation phase")
+    mush_parser.add_argument("--queries", nargs="+", required=True, help="Search queries")
+    mush_parser.add_argument("--user", default="default_user", help="User ID")
+
+    # Jaiza
+    jaiza_parser = subparsers.add_parser("jaiza", help="Run Evaluation phase")
+    jaiza_parser.add_argument("--checkpoint", required=True, help="Mushahida checkpoint ID")
+    jaiza_parser.add_argument("--user", default="default_user", help="User ID")
+
+    # Muaina
+    muaina_parser = subparsers.add_parser("muaina", help="Run Inspection phase")
+    muaina_parser.add_argument("--checkpoint", required=True, help="Jaiza checkpoint ID")
+    muaina_parser.add_argument("--option", required=True, help="Selected strategic option ID")
+    muaina_parser.add_argument("--user", default="default_user", help="User ID")
+
+    args = parser.parse_args()
+    orchestrator = MJMWorkflowOrchestrator()
+
+    try:
+        if args.command == "mushahida":
+            chk_id = orchestrator.run_mushahida(args.queries, args.user)
+            print(f"Mushahida completed. Checkpoint: {chk_id}")
+        elif args.command == "jaiza":
+            chk_id = orchestrator.run_jaiza(args.checkpoint, args.user)
+            print(f"Jaiza completed. Checkpoint: {chk_id}")
+        elif args.command == "muaina":
+            chk_id = orchestrator.run_muaina(args.checkpoint, args.option, args.user)
+            print(f"Muaina completed. Checkpoint: {chk_id}")
+        else:
+            parser.print_help()
+    except Exception as e:
+        logger.error(f"Error executing {args.command}: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
