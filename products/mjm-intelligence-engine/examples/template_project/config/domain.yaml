@@ -1,0 +1,25 @@
+domain:
+  id: "base-mjm-genome"
+  name: "Universal MJM Genome"
+  description: "Core schema for the Mushahida-Jaiza-Muaina lifecycle"
+  version: "1.0.0"
+  parent_domain: null
+mushahida:
+  allowed_sources: [web_search, web_extractor, file_upload, entity_vsb_query]
+  evidence_schema:
+    type: object
+    required: [content, source, timestamp]
+    properties:
+      content: {type: string}
+      source: {type: string}
+      timestamp: {type: string, format: date-time}
+  attention_profile:
+    default_focus: [high_confidence_sources, recent_evidence]
+jaiza:
+  pattern_libraries: [default]
+  alignment_frameworks: [generic]
+muaina:
+  output_templates: [markdown, json_ld]
+learning:
+  evolution_triggers:
+    performance_threshold: 0.9

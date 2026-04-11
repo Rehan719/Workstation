@@ -15,7 +15,7 @@ def orchestrator():
 
 def test_workflow_end_to_end(orchestrator):
     # 1. Mushahida
-    m_id = orchestrator.run_mushahida(["test query"], "user1")
+    m_id = orchestrator.run_mushahida("patient_safety", ["test query"], "user1")
     assert m_id.startswith("CHK-MUS-")
 
     # 2. Jaiza

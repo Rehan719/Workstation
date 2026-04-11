@@ -1,0 +1,8 @@
+extends: base_schema
+domain:
+  id: patient_safety
+  name: Patient Safety & Long-Term Risk
+jaiza:
+  pattern_libraries: [autoimmune_risk, germline_transmission]
+muaina:
+  output_templates: [regulatory_dossier]
