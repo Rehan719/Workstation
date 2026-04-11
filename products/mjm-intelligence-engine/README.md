@@ -4,29 +4,30 @@ The Mushahida-Jaiza-Muaina (MJM) Intelligence Engine is a standalone Signature P
 
 ## 🏗️ Core Methodology
 
-- **Mushahida (Observation):** Fact-finding layer for evidence acquisition and chronological documentation.
-- **Jaiza (Evaluation):** Analysis layer for pattern recognition, risk-benefit assessment, and regulatory alignment.
-- **Muaina (Inspection):** Proposal layer for developing implementation roadmaps and litigation-ready packages.
+- **Mushahida (Observation):** Fact-finding layer for evidence acquisition (DuckDuckGo Search + BeautifulSoup) and chronological documentation.
+- **Jaiza (Evaluation):** Analysis layer for pattern recognition and risk-benefit assessment (LLM-driven via Ollama with heuristic fallback).
+- **Muaina (Inspection):** Proposal layer for developing implementation roadmaps (Gantt charts) and litigation-ready packages (UK Employment Tribunal).
 
 ## 🚀 Quick Start
 
 ### Installation
 ```bash
 cd products/mjm-intelligence-engine
+pip install -r requirements.txt
 pip install -e .
 ```
 
-### Usage (CLI)
+### Usage (Python API)
 ```python
-from core.workflow_orchestrator import MJMWorkflowOrchestrator
+from core.orchestration.workflow_orchestrator import MJMWorkflowOrchestrator
 
 orchestrator = MJMWorkflowOrchestrator()
-# 1. Start Observation
-m_id = orchestrator.run_mushahida(["query 1", "query 2"], "user_id")
-# 2. Run Analysis
-j_id = orchestrator.run_jaiza(m_id, "user_id")
-# 3. Generate Proposal
-mu_id = orchestrator.run_muaina(j_id, "selected_option", "user_id")
+# Execute end-to-end pipeline
+bundle = await orchestrator.execute_pipeline({
+    "domain_id": "patient_safety",
+    "queries": ["query 1"],
+    "contributor": "user_id"
+})
 ```
 
 ## 🌐 UI Stack
@@ -34,4 +35,7 @@ mu_id = orchestrator.run_muaina(j_id, "selected_option", "user_id")
 - **Localization:** Support for Urdu (مشاہدہ/جائزہ/معائنہ) and English.
 
 ## 🔐 Governance & Verification
-Every output element has traceable provenance to source evidence via SHA-256 hashing and immutable checkpointing.
+Every output element has traceable provenance to source evidence via SHA-256 hashing and immutable checkpointing. Cross-layer traceability ensures that every proposal links back to specific evidence nodes.
+
+## 🏛️ Litigation Ready
+The Muaina module generates drafts for UK Employment Tribunal submissions, including ET1 guidance, witness statements, and formal email templates aligned with the Equality Act 2010.

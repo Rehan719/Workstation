@@ -1,50 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional, Callable, Any
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-import asyncio
+from typing import Any, Dict, List
 
-@dataclass
-class AdapterContext:
-    ecosystem_config: Dict[str, Any]
-    security_credentials: Dict[str, str]
-    feature_flags: Dict[str, bool]
-
-@dataclass
-class RegistrationReceipt:
-    adapter_id: str
-    registered_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    capabilities: List[str] = field(default_factory=list)
-
-@dataclass
-class SovereignEvent:
-    event_type: str
-    payload: Dict[str, Any]
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-
-@dataclass
-class QuerySpecification:
-    query_type: str
-    parameters: Dict[str, Any]
-
-class BaseAdapter(ABC):
+class AdapterInterface(ABC):
     """
-    Universal interface for all MJM ecosystem adapters.
+    Base interface for all MJM Engine adapters.
+    Ensures consistent integration pattern across the Workstation ecosystem.
     """
 
-    def __init__(self, adapter_id: str, config: Dict[str, Any] = None):
-        self.adapter_id = adapter_id
-        self.config = config or {}
-        self.status = "DISCONNECTED"
+    @abstractmethod
+    def connect(self) -> bool:
+        """Establish connection to the target system."""
+        return True
 
     @abstractmethod
-    async def register(self, context: AdapterContext) -> RegistrationReceipt:
-        pass
+    def publish(self, topic: str, payload: Any) -> Dict[str, Any]:
+        """Publish data to the target system."""
+        return {"status": "published", "topic": topic}
 
     @abstractmethod
-    async def publish(self, event: SovereignEvent) -> Dict[str, Any]:
-        pass
-
-    @abstractmethod
-    async def query(self, spec: QuerySpecification) -> Any:
-        pass
+    def subscribe(self, topic: str) -> Any:
+        """Subscribe to updates from the target system."""
+        return {"status": "subscribed", "topic": topic}
