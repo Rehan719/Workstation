@@ -1,97 +1,122 @@
-from .pipelines.registry import PipelineRegistry
-from .pipelines.provenance import ProvenanceTracker
-from .modes.mode_router import ModeRouter
+import os
+from typing import List, Dict, Any, Optional
+
+from .constitution.articles_parser import ConstitutionParser
+from .constitution.compliance_checker import ComplianceChecker, EscalationManager, ConstitutionalViolation
+from .constitution.constitutional_audit import ConstitutionalAudit
+from .workstation.ai_ceo_client import AICEOClient
+from .workstation.csuite_coordinator import CSuiteCoordinator, COEGatekeeper
+from .workstation.quad_engine_bridge import QuadEngineBridge
+from .workstation.bto_configurator import BTOConfigurator
+from .intelligence.mycelial_router import MycelialRouter
+from .intelligence.ant_colony_parallelizer import AntColonyParallelizer
+from .intelligence.octopus_embodiment import OctopusArm
+from .intelligence.immune_learner import ImmuneLearner
 from .intelligence.injection_planner import InjectionPlanner
 from .omnimedia.injector import OmnimediaInjector
-from .omnimedia.decision_engine_v3 import OmnimediaDecisionEngineV3
-from .omnimedia.accessibility import AccessibilityEngine
-from .constitutional.gaas_validator_v2 import ConstitutionalValidatorV2
-from .constitutional.fallback import FallbackProtocol
+from .omnimedia.decision_engine_v4 import OmnimediaDecisionEngineV4
 from .constitutional.ueg_logger import UEGLogger
-from .constitutional.data_governance import DataGovernanceModule
-from .utils.hashing import calculate_sha3_512, attach_hash_to_file, verify_asset_integrity
-from .utils.workflow import WorkflowCollaborator
 
-class OctoVeritasEngineV3:
+class OctoVeritasEngineV4:
     def __init__(self,
                  domain: str,
-                 output_dir: str = "outputs/veritas-v3",
-                 db_path: str = "outputs/v3_effectiveness.db"):
+                 output_dir: str = "outputs/veritas-v4",
+                 db_path: str = "outputs/v4_effectiveness.db"):
         self.domain = domain
-        self.registry = PipelineRegistry()
-        self.tracker = ProvenanceTracker()
-        self.router = ModeRouter()
-        self.decision_engine = OmnimediaDecisionEngineV3(db_path=db_path)
-        self.planner = InjectionPlanner(self.registry, self.router, db_path)
-        self.injector = OmnimediaInjector(output_dir=output_dir)
-        self.validator = ConstitutionalValidatorV2()
-        self.ueg = UEGLogger(os.path.join(output_dir, "ueg_audit.jsonl"))
+        self.output_dir = output_dir
+        os.makedirs(output_dir, exist_ok=True)
 
-    def set_mode(self, mode: str):
+        # 1. Foundation & Logging
+        self.ueg = UEGLogger(os.path.join(output_dir, "ueg_audit.jsonl"))
+        self.decision_engine = OmnimediaDecisionEngineV4(db_path=db_path)
+
+        # 2. Constitutional Layer
+        self.parser = ConstitutionParser()
+        self.articles = self.parser.load_articles()
+        self.compliance = ComplianceChecker(self.articles)
+        self.escalation = EscalationManager(self.ueg)
+        self.audit = ConstitutionalAudit(self.ueg)
+
+        # 3. Workstation Layer
+        self.ceo = AICEOClient()
+        self.csuite = CSuiteCoordinator()
+        self.coe = COEGatekeeper()
+        self.quad = QuadEngineBridge(self.ueg)
+        self.bto = BTOConfigurator()
+
+        # 4. Biomimetic Layer
+        self.mycelial = MycelialRouter(self.ueg)
+        self.ants = AntColonyParallelizer()
+        self.arm = OctopusArm(domain, OmnimediaInjector(output_dir=output_dir))
+        self.immune = ImmuneLearner(self.decision_engine, self.ueg)
+
+        # 5. Injection Planner
+        from .pipelines.registry import PipelineRegistry
+        from .modes.mode_router import ModeRouter
+        self.registry = PipelineRegistry()
+        self.router = ModeRouter()
+        self.planner = InjectionPlanner(self.registry, self.router, db_path)
+
+    def produce_sovereign_package(self, assets: list, bto_config: dict = None):
+        """
+        Final v4.0 Orchestration: Constitutional, Biomimetic, and Strategic.
+        """
+        # A. BTO Configuration
+        config = self.bto.validate_config(bto_config or {})
+        mode = config.get("default_mode", "jaiza")
         self.router.set_mode(mode)
 
-    def produce_intelligent_package(self,
-                                     assets: list,
-                                     audience: str = "general",
-                                     target_formats: list = None):
-        """
-        Orchestrates the intelligent injection process.
-        """
-        # 1. Analyze Context
-        mode = self.router.get_mode()
+        # B. Quad Discovery
+        discovered_assets = self.quad.discover(self.domain)
+        all_assets = assets + discovered_assets
 
-        # 2. Plan Injection
-        plan = self.planner.plan_injection(assets, mode=mode, audience=audience)
+        # C. Strategic Priorities (AI CEO)
+        priority = self.ceo.get_strategic_priority(self.domain)
 
-        # 3. Execute Jobs
-        results = []
-        for job in plan:
-            # Constitutional Check
-            compliance = self.validator.validate_compliance(self.domain, job.asset)
-            if not compliance["valid"]:
-                # Trigger Fallback
-                job.modifiers.append("compliance_warning")
+        # D. Planning (Synthesize)
+        plan = self.planner.plan_injection(all_assets, mode=mode, audience="all")
 
-            # Inject
-            # Note: OmnimediaInjector expects MultimediaAsset objects.
-            # We'll need to wrap job.asset.
-            from .omnimedia.factory import MultimediaAsset
-            m_asset = MultimediaAsset(
-                name=job.asset.get('name', 'Unnamed'),
-                asset_type=job.asset.get('asset_type', 'png'),
-                content=job.asset.get('content', b''),
-                hash=job.asset.get('hash', '0'*128),
-                accessibility=job.asset.get('accessibility', {})
-            )
+        # E. CoE Gatekeeping
+        # We wrap the plan for CoE review
+        review_plan = type('Plan', (), {
+            'accessibility': all(a.get('accessibility', {}).get('alt_text') for a in assets),
+            'hashed': all(a.get('hash') for a in assets)
+        })
+        coe_results = self.coe.approve_plan(review_plan)
 
-            # Map format to injector method
-            method_map = {
-                "PDF": self.injector.inject_into_pdf,
-                "DOCX": self.injector.inject_into_docx,
-                "PPTX": self.injector.inject_into_pptx,
-                "XLSX": self.injector.inject_into_xlsx,
-                "HTML": self.injector.inject_into_html,
-                "MP4": self.injector.inject_into_mp4,
-                "MP3": self.injector.inject_into_mp3,
-                "PNG": self.injector.inject_into_png,
-                "SVG": self.injector.inject_into_svg
+        # F. Parallel Deployment
+        def deploy_worker(job):
+            # 1. Compliance Check (P0)
+            action_context = {
+                "jurisdiction": "Sovereign",
+                "accessibility": job.asset.get('accessibility', {}),
+                "logging_enabled": True,
+                "ceo_approved": priority["strategic_alignment"] == "HIGH",
+                "strategic_priority": "high" if priority["strategic_alignment"] == "HIGH" else "normal"
             }
 
-            method = method_map.get(job.format.upper(), self.injector.inject_into_html)
-            output_path = f"{self.domain.lower()}_output_{mode}.{job.format.lower()}"
-            result_path = method(output_path, [m_asset])
+            try:
+                for art_id in ComplianceChecker.P0_ARTICLES:
+                    self.compliance.check_compliance(art_id, action_context)
+            except ConstitutionalViolation as e:
+                self.escalation.escalate(e)
+                return f"REJECTED: {str(e)}"
 
-            # Log to UEG
-            self.ueg.log_event({
-                "operation": "intelligent_injection",
-                "domain": self.domain,
-                "mode": mode,
-                "pipeline": job.pipeline,
-                "format": job.format,
-                "output": result_path
-            })
-            results.append(result_path)
+            # 2. Immune Memory Check
+            if self.immune.is_pathogen_present({"format": job.format, "pipeline": job.pipeline, "mode": mode}):
+                job.modifiers.append("PROACTIVE_FALLBACK")
+
+            # 3. Resilient Injection (Mycelial)
+            try:
+                return self.mycelial.execute_with_resilience(job.format, self.arm.inject_asset, job)
+            except Exception as e:
+                self.immune.learn_from_failure("injection_failure", {"format": job.format, "pipeline": job.pipeline, "mode": mode})
+                raise
+
+        # Execute in parallel
+        results = self.ants.execute_parallel(plan, deploy_worker)
+
+        # G. Final Audit
+        self.audit.log_injection_audit("v4_batch", ComplianceChecker.P0_ARTICLES, "SUCCESS", {"count": len(results)})
 
         return results
-
-import os

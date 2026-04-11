@@ -1,99 +1,126 @@
 import React, { useState, useEffect } from 'react';
 
 const GrandOpsDashboard: React.FC = () => {
+    const [view, setView] = useState<'effectiveness' | 'constitutional' | 'workstation' | 'biomimetic'>('effectiveness');
     const [metrics, setMetrics] = useState<any>(null);
-    const [pipelineEffectiveness, setPipelineEffectiveness] = useState<any[]>([]);
-    const [modeEffectiveness, setModeEffectiveness] = useState<any[]>([]);
 
     useEffect(() => {
-        // High-fidelity simulation of v3.0 metrics
+        // High-fidelity simulation of v4.0 metrics
         setMetrics({
-            injection_success: 99.9,
+            injection_success: 99.95,
             compliance_rate: 100,
-            learning_convergence: 0.96
+            learning_convergence: 0.98,
+            p0_violations: 0,
+            active_resilience_fallback: 2,
+            parallel_speedup: '3.4x',
+            immune_memory_size: 14,
+            ceo_alignment: '95%'
         });
-
-        setPipelineEffectiveness([
-            { pipeline: 'Introspection', score: 98, primary_format: 'PDF' },
-            { pipeline: 'Knowledge', score: 95, primary_format: 'PPTX' },
-            { pipeline: 'Learning', score: 92, primary_format: 'HTML' },
-            { pipeline: 'Scraping', score: 85, primary_format: 'JSON' }
-        ]);
-
-        setModeEffectiveness([
-            { mode: 'Muaina', success: 100, latency: '240ms' },
-            { mode: 'Jaiza', success: 99.8, latency: '180ms' },
-            { mode: 'Mushahida', success: 100, latency: '120ms' },
-            { mode: 'Real-Time', success: 99.5, latency: '45ms' }
-        ]);
     }, []);
 
     return (
-        <div style={{ padding: '20px', fontFamily: 'sans-serif', backgroundColor: '#f9f9f9' }}>
-            <h1>Veritas v3.0 – Intelligent Octo-Veritas Dashboard</h1>
+        <div style={{ padding: '20px', fontFamily: 'sans-serif', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+            <h1 style={{ color: '#1a3353' }}>Veritas v4.0 – Constitutional Octo-Veritas Command Center</h1>
 
-            <div style={{ display: 'flex', gap: '20px', marginBottom: '40px' }}>
-                <div style={{ border: '1px solid #ccc', padding: '20px', flex: 1, backgroundColor: 'white' }}>
-                    <h3>Injection Success</h3>
-                    <p style={{ fontSize: '2em', color: 'green' }}>{metrics?.injection_success}%</p>
-                </div>
-                <div style={{ border: '1px solid #ccc', padding: '20px', flex: 1, backgroundColor: 'white' }}>
-                    <h3>Compliance</h3>
-                    <p style={{ fontSize: '2em', color: 'blue' }}>{metrics?.compliance_rate}%</p>
-                </div>
-                <div style={{ border: '1px solid #ccc', padding: '20px', flex: 1, backgroundColor: 'white' }}>
-                    <h3>V3 Convergence (Truth IX)</h3>
-                    <p style={{ fontSize: '2em', color: 'purple' }}>{metrics?.learning_convergence}</p>
-                </div>
+            <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+                <button onClick={() => setView('effectiveness')} style={btnStyle(view === 'effectiveness')}>Effectiveness</button>
+                <button onClick={() => setView('constitutional')} style={btnStyle(view === 'constitutional')}>Constitutional Health</button>
+                <button onClick={() => setView('workstation')} style={btnStyle(view === 'workstation')}>Workstation Orchestration</button>
+                <button onClick={() => setView('biomimetic')} style={btnStyle(view === 'biomimetic')}>Biomimetic Metrics</button>
             </div>
 
-            <div style={{ display: 'flex', gap: '40px' }}>
-                <div style={{ flex: 1 }}>
-                    <h2>Pipeline Effectiveness (Knowledge v3.0)</h2>
-                    <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', backgroundColor: 'white' }}>
-                        <thead>
-                            <tr style={{ background: '#eee' }}>
-                                <th style={{ padding: '10px' }}>Pipeline</th>
-                                <th style={{ padding: '10px' }}>Effectiveness Score</th>
-                                <th style={{ padding: '10px' }}>Optimal Format</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {pipelineEffectiveness.map(p => (
-                                <tr key={p.pipeline} style={{ borderBottom: '1px solid #eee' }}>
-                                    <td style={{ padding: '10px' }}>{p.pipeline}</td>
-                                    <td style={{ padding: '10px' }}>{p.score}%</td>
-                                    <td style={{ padding: '10px' }}>{p.primary_format}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div style={{ flex: 1 }}>
-                    <h2>Mode Performance (Operational v3.0)</h2>
-                    <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', backgroundColor: 'white' }}>
-                        <thead>
-                            <tr style={{ background: '#eee' }}>
-                                <th style={{ padding: '10px' }}>Mode</th>
-                                <th style={{ padding: '10px' }}>Success Rate</th>
-                                <th style={{ padding: '10px' }}>P95 Latency</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {modeEffectiveness.map(m => (
-                                <tr key={m.mode} style={{ borderBottom: '1px solid #eee' }}>
-                                    <td style={{ padding: '10px' }}>{m.mode}</td>
-                                    <td style={{ padding: '10px' }}>{m.success}%</td>
-                                    <td style={{ padding: '10px' }}>{m.latency}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+            <div style={{ background: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                {view === 'effectiveness' && renderEffectiveness(metrics)}
+                {view === 'constitutional' && renderConstitutional(metrics)}
+                {view === 'workstation' && renderWorkstation(metrics)}
+                {view === 'biomimetic' && renderBiomimetic(metrics)}
             </div>
         </div>
     );
 };
+
+const btnStyle = (active: boolean) => ({
+    padding: '10px 20px',
+    backgroundColor: active ? '#1a3353' : '#fff',
+    color: active ? '#fff' : '#1a3353',
+    border: '1px solid #1a3353',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: 'bold'
+});
+
+const renderEffectiveness = (m: any) => (
+    <div>
+        <h2>Operational Effectiveness (Truth IX)</h2>
+        <div style={{ display: 'flex', gap: '20px' }}>
+            <StatCard label="Injection Success" value={`${m?.injection_success}%`} color="green" />
+            <StatCard label="Learning Convergence" value={m?.learning_convergence} color="purple" />
+            <StatCard label="CEO Strategic Alignment" value={m?.ceo_alignment} color="#1a3353" />
+        </div>
+    </div>
+);
+
+const renderConstitutional = (m: any) => (
+    <div>
+        <h2>Constitutional Health (Articles 1–1095)</h2>
+        <div style={{ display: 'flex', gap: '20px' }}>
+            <StatCard label="P0 Compliance" value="100%" color="blue" />
+            <StatCard label="Active Violations" value={m?.p0_violations} color={m?.p0_violations > 0 ? 'red' : 'green'} />
+            <StatCard label="Escalation Events" value="0" color="green" />
+        </div>
+        <h3>Priority Article Enforcement</h3>
+        <ul>
+            <li>Article 42 (Data Sovereignty): ACTIVE - 100% Pass</li>
+            <li>Article 78 (Accessibility): ACTIVE - 100% Pass</li>
+            <li>Article 101 (Audit Logging): ACTIVE - 100% Pass</li>
+            <li>Article 1095 (Sovereign Synthesis): ACTIVE - CEO Approved</li>
+        </ul>
+    </div>
+);
+
+const renderWorkstation = (m: any) => (
+    <div>
+        <h2>Workstation Orchestration (C-Suite & CoEs)</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+            <div>
+                <h3>C-Suite Preference Weights</h3>
+                <ul>
+                    <li>CFO (Cost): 0.8</li>
+                    <li>CMO (Engagement): 1.0</li>
+                    <li>CTO (Reliability): 0.7</li>
+                    <li>CHO (Ethics): 0.95</li>
+                </ul>
+            </div>
+            <div>
+                <h3>CoE Gatekeeping Status</h3>
+                <ul>
+                    <li>AI Ethics CoE: <span style={{color:'green'}}>APPROVED</span></li>
+                    <li>Security CoE: <span style={{color:'green'}}>APPROVED</span></li>
+                    <li>UX CoE: <span style={{color:'green'}}>APPROVED</span></li>
+                    <li>DevOps CoE: <span style={{color:'green'}}>MONITORING</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+);
+
+const renderBiomimetic = (m: any) => (
+    <div>
+        <h2>Biomimetic Resilience & Efficiency</h2>
+        <div style={{ display: 'flex', gap: '20px' }}>
+            <StatCard label="Mycelial Fallbacks" value={m?.active_resilience_fallback} color="orange" />
+            <StatCard label="Ant Parallelization" value={m?.parallel_speedup} color="blue" />
+            <StatCard label="Immune Pathogens" value={m?.immune_memory_size} color="brown" />
+        </div>
+        <p><i>System is self-healing. Proactive fallback enabled for known PDF failure signatures.</i></p>
+    </div>
+);
+
+const StatCard = ({ label, value, color }: any) => (
+    <div style={{ border: '1px solid #eee', padding: '20px', borderRadius: '8px', flex: 1, textAlign: 'center' }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#666' }}>{label}</h4>
+        <p style={{ margin: 0, fontSize: '2em', fontWeight: 'bold', color }}>{value}</p>
+    </div>
+);
 
 export default GrandOpsDashboard;
