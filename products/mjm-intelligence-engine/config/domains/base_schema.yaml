@@ -1,0 +1,64 @@
+genome:
+  version: "1.0.0"
+  id: "mjm_base"
+  description: "Universal intelligence lifecycle framework"
+  biomimetic_properties:
+    homeostasis: {enabled: true, quality_threshold: 0.95}
+    adaptation: {learning_rate: 0.01, feedback_window: 100}
+    metabolism: {min_compute_units: 2, max_compute_units: 16}
+    response: {latency_budget_ms: 5000, fallback_strategy: "graceful_degradation"}
+    evolution: {proposal_threshold: 0.85, governance_required: true}
+
+# PHASE 1: MUSHAHIDA (Observation)
+mushahida:
+  allowed_sources: [web_search, web_extractor, file_upload, api_connector, manual_entry, github_repo]
+  evidence_schema:
+    type: object
+    required: [content, source, timestamp, confidence]
+    properties:
+      content: {type: string}
+      source: {type: string}
+      timestamp: {type: string, format: date-time}
+      confidence: {type: number, minimum: 0, maximum: 1}
+  attention_profile:
+    default_focus: [high_confidence_sources, recent_evidence]
+    learn_from_feedback: true
+
+# PHASE 2: JAIZA (Evaluation)
+jaiza:
+  pattern_libraries: [default]
+  cognitive_architecture:
+    pattern_recognition:
+      model_selector: {strategy: "adaptive_ensemble", candidates: ["llama3.1:8b", "mistral-nemo:12b"]}
+    risk_benefit_analysis:
+      criteria_schema:
+        type: object
+        properties:
+          criteria:
+            type: array
+            items:
+              name: {type: string}
+              weight: {type: number}
+  alignment_verification:
+    rule_engines: [generic_compliance]
+
+# PHASE 3: MUAINA (Inspection)
+muaina:
+  output_templates: [markdown, pdf, json_ld]
+  proposal_generation:
+    structure_schema:
+      type: object
+      required: [executive_summary, recommendations, implementation_plan]
+  kpi_schema:
+    type: object
+  verification_protocols: [empirical_benchmark, expert_panel_review]
+
+# LEARNING & EVOLUTION
+learning:
+  feedback_ingestion:
+    sources: [execution_outcomes, user_ratings]
+  pattern_propagation:
+    enabled: true
+    confidence_threshold: 0.8
+  evolution_governance:
+    approval_workflow: [automated_validation, expert_review]

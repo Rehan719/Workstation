@@ -1,0 +1,6 @@
+extends: base_schema
+domain:
+  id: uk_employment_tribunal
+  name: UK Employment Tribunal Analysis
+muaina:
+  output_templates: [tribunal_submission, copy_paste_emails]

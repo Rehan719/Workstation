@@ -12,6 +12,7 @@ def main():
 
     # Mushahida
     mush_parser = subparsers.add_parser("mushahida", help="Run Observation phase")
+    mush_parser.add_argument("--domain", default="patient_safety", help="Domain ID")
     mush_parser.add_argument("--queries", nargs="+", required=True, help="Search queries")
     mush_parser.add_argument("--user", default="default_user", help="User ID")
 
@@ -31,7 +32,7 @@ def main():
 
     try:
         if args.command == "mushahida":
-            chk_id = orchestrator.run_mushahida(args.queries, args.user)
+            chk_id = orchestrator.run_mushahida(args.domain, args.queries, args.user)
             print(f"Mushahida completed. Checkpoint: {chk_id}")
         elif args.command == "jaiza":
             chk_id = orchestrator.run_jaiza(args.checkpoint, args.user)
