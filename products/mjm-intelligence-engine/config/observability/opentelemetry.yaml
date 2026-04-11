@@ -1,0 +1,21 @@
+service:
+  name: "mjm-intelligence-engine"
+  version: "1.0.0"
+
+tracing:
+  enabled: true
+  exporter: "otlp"
+  endpoint: "localhost:4317"
+
+metrics:
+  enabled: true
+  exporter: "prometheus"
+  endpoint: ":9464"
+
+custom_instruments:
+  - name: "mjm.learning.signal_ingestion_rate"
+    type: "counter"
+  - name: "mjm.homeostasis.quality_score"
+    type: "gauge"
+  - name: "mjm.provenance.chain_depth"
+    type: "histogram"

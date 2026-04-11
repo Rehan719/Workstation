@@ -1,0 +1,12 @@
+scenarios:
+  - name: "adapter_failure_cascade"
+    description: "Test system behavior when critical adapter fails"
+    target: "veritas_adapter"
+    failure_type: "timeout"
+    expected_outcome: "graceful_degradation"
+
+  - name: "provenance_chain_attack"
+    description: "Test tamper-evident provenance under adversarial conditions"
+    target: "checkpoint_integrity"
+    attack_type: "hash_tamper"
+    expected_outcome: "rejection"
