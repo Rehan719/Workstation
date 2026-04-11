@@ -1,0 +1,5 @@
+{
+  "cost_weight": 1.0,
+  "speed_weight": 0.5,
+  "format_preferences": ["PDF", "XLSX", "CSV"]
+}

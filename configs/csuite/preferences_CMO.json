@@ -1,0 +1,5 @@
+{
+  "engagement_weight": 1.0,
+  "quality_weight": 0.8,
+  "format_preferences": ["HTML", "MP4", "PPTX"]
+}
