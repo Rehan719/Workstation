@@ -1,10 +1,29 @@
 import argparse
 import sys
 import logging
-from core.workflow_orchestrator import MJMWorkflowOrchestrator
+import asyncio
+from core.orchestration.workflow_orchestrator import MJMWorkflowOrchestrator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mjm-cli")
+
+async def run_command(args):
+    orchestrator = MJMWorkflowOrchestrator()
+    try:
+        if args.command == "mushahida":
+            chk_id = await orchestrator.run_mushahida(args.domain, args.queries, args.user)
+            print(f"Mushahida completed. Checkpoint: {chk_id}")
+        elif args.command == "jaiza":
+            chk_id = await orchestrator.run_jaiza(args.checkpoint, args.user)
+            print(f"Jaiza completed. Checkpoint: {chk_id}")
+        elif args.command == "muaina":
+            chk_id = await orchestrator.run_muaina(args.checkpoint, args.option, args.user)
+            print(f"Muaina completed. Checkpoint: {chk_id}")
+        else:
+            print("Unknown command")
+    except Exception as e:
+        logger.error(f"Error executing {args.command}: {e}")
+        sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(description="MJM Intelligence Engine CLI")
@@ -28,23 +47,11 @@ def main():
     muaina_parser.add_argument("--user", default="default_user", help="User ID")
 
     args = parser.parse_args()
-    orchestrator = MJMWorkflowOrchestrator()
+    if not args.command:
+        parser.print_help()
+        return
 
-    try:
-        if args.command == "mushahida":
-            chk_id = orchestrator.run_mushahida(args.domain, args.queries, args.user)
-            print(f"Mushahida completed. Checkpoint: {chk_id}")
-        elif args.command == "jaiza":
-            chk_id = orchestrator.run_jaiza(args.checkpoint, args.user)
-            print(f"Jaiza completed. Checkpoint: {chk_id}")
-        elif args.command == "muaina":
-            chk_id = orchestrator.run_muaina(args.checkpoint, args.option, args.user)
-            print(f"Muaina completed. Checkpoint: {chk_id}")
-        else:
-            parser.print_help()
-    except Exception as e:
-        logger.error(f"Error executing {args.command}: {e}")
-        sys.exit(1)
+    asyncio.run(run_command(args))
 
 if __name__ == "__main__":
     main()
