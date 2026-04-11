@@ -46,6 +46,12 @@ def main():
     muaina_parser.add_argument("--option", required=True, help="Selected strategic option ID")
     muaina_parser.add_argument("--user", default="default_user", help="User ID")
 
+    # Research (v2)
+    research_parser = subparsers.add_parser("research", help="Run Deep Research (v2)")
+    research_parser.add_argument("--question", required=True, help="Research question")
+    research_parser.add_argument("--domain", default="patient_safety", help="Domain ID")
+    research_parser.add_argument("--depth", default="standard", choices=["fast", "standard", "exhaustive"])
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
