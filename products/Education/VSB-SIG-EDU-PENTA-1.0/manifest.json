@@ -1,0 +1,8 @@
+{
+  "name": "Veritas Signature Product - Education",
+  "version": "1.0.0-v3",
+  "domain": "Education",
+  "framework": "PENTA",
+  "pipeline_integration": true,
+  "modes_supported": ["mushahida", "jaiza", "muaina", "real_time_support", "synthesis", "continuous_operation"]
+}
