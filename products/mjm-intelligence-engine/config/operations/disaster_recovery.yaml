@@ -1,0 +1,9 @@
+recovery_objectives:
+  rto_minutes: 30
+  rpo_minutes: 5
+
+backup_strategy:
+  frequency: 'continuous'
+  retention:
+    daily: 7
+    weekly: 4

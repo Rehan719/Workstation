@@ -15,6 +15,8 @@ from core.provenance_graph import ProvenanceGraph
 from core.learning.learning_engine import MJMLearningEngine, LearningSignal
 from core.biomimetics.homeostasis_controller import HomeostasisController
 from core.biomimetics.metabolism_manager import MetabolismManager
+from core.security.zero_trust_manager import ZeroTrustSecurityManager
+from core.security.runtime_attestation import RuntimeAttestationManager
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +34,18 @@ class MJMWorkflowOrchestrator:
         self.learning = MJMLearningEngine(self.config.get("learning"))
         self.homeostasis = HomeostasisController(self.config.get("homeostasis"))
         self.metabolism = MetabolismManager()
+        self.security = ZeroTrustSecurityManager()
+        self.attestation = RuntimeAttestationManager()
 
         if not os.path.exists(self.checkpoints_dir):
             os.makedirs(self.checkpoints_dir)
+
+        # Capture baseline for attestation
+        self.attestation.capture_baseline([
+            "core/orchestration/workflow_orchestrator.py",
+            "core/models.py",
+            "core/mushahida/engine.py"
+        ])
 
     async def execute_pipeline(self, input_spec: Dict[str, Any], mode: str = "sync") -> MJMOutputBundle:
         """

@@ -28,5 +28,8 @@ data/test_state/
 data/test_bundles/
 data/test_evidence_graph.json
 *.pem
+products/mjm-intelligence-engine/checkpoints/
+products/mjm-intelligence-engine/artifacts/
+.hypothesis/
 
 agentic_core/service-account-key.json
