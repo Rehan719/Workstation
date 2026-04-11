@@ -1,0 +1,25 @@
+{
+  "common": {
+    "mushahida": "مشاہدہ",
+    "jaiza": "جائزہ",
+    "muaina": "معائنہ",
+    "next": "آگے",
+    "back": "پیچھے",
+    "submit": "جمع کریں",
+    "provenance": "ماخذ"
+  },
+  "mushahida": {
+    "title": "شواہد کا حصول",
+    "query_label": "سرچ سوالات درج کریں",
+    "acquire_btn": "شواہد حاصل کریں"
+  },
+  "jaiza": {
+    "title": "تجزیہ اور پیٹرن کی شناخت",
+    "risk_level": "خطرہ کی سطح",
+    "confidence": "اعتماد"
+  },
+  "muaina": {
+    "title": "تجویز اور عمل درآمد",
+    "export_btn": "ٹریبونل کے لیے ایکسپورٹ کریں"
+  }
+}

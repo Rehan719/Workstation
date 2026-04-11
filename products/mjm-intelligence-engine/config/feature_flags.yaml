@@ -1,0 +1,36 @@
+mjm_engine:
+  enabled: true
+  version: "1.0.0"
+
+mushahida:
+  web_search_integration: true
+  evidence_graph_export: true
+  bluf_auto_generation: true
+  dynamic_content_enabled: false  # v1.0 default
+
+jaiza:
+  ai_backend:
+    default: "ollama"
+    fallback: "llama-cpp-python"
+  regulatory_rule_engine:
+    enabled: true
+    jurisdictions: ["UK", "EU", "US"]
+  pattern_recognition_model: "llama3.1:8b"
+
+muaina:
+  litigation_ready_export: true  # UK Employment Tribunal format
+  github_workflow_instructions: true
+  copy_paste_email_templates: true
+
+collaboration:
+  async_mode_default: true
+  real_time_mode_available: false
+
+verification:
+  empirical_harness_enabled: true
+  cross_layer_traceability: true
+  provenance_immutable: true
+
+ui:
+  rtl_enabled: false
+  localization_glossary: true

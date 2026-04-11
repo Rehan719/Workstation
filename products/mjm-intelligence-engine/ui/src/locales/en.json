@@ -1,0 +1,25 @@
+{
+  "common": {
+    "mushahida": "Mushahida (Observation)",
+    "jaiza": "Jaiza (Evaluation)",
+    "muaina": "Muaina (Inspection)",
+    "next": "Next",
+    "back": "Back",
+    "submit": "Submit",
+    "provenance": "Provenance"
+  },
+  "mushahida": {
+    "title": "Evidence Acquisition",
+    "query_label": "Enter search queries",
+    "acquire_btn": "Acquire Evidence"
+  },
+  "jaiza": {
+    "title": "Analysis & Pattern Recognition",
+    "risk_level": "Risk Level",
+    "confidence": "Confidence"
+  },
+  "muaina": {
+    "title": "Proposal & Execution",
+    "export_btn": "Export to Tribunal"
+  }
+}
