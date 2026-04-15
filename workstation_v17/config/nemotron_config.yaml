@@ -1,0 +1,13 @@
+nemotron_3_super:
+  architecture: "Mamba-Attention-MoE-120B"
+  latent_moe:
+    experts: 128
+    active_experts: 8
+    optimization: "Latent-Perception-FLOP"
+  capabilities:
+    context_length: 1048576
+    speculative_decoding: "MTP-v2"
+    quantization: "NVFP4"
+  deployment:
+    platform: "DGX-Spark-RTX"
+    sovereignty: "Zero-Cloud-Only"

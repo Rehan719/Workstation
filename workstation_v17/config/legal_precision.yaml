@@ -1,0 +1,11 @@
+legal_precision_engine:
+  jurisdictions: [UK_Employment, UK_Civil, UK_Taxation]
+  acts:
+    - Equality_Act_2010
+    - ERA_1996
+    - GDPR_UK
+    - CPR_Rules
+  compliance_gates:
+    pre_execution: enabled
+    bias_stress_test: enabled
+    audit_trace: "SHA-3-512-UEG"
