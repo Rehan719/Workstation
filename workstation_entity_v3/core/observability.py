@@ -1,5 +1,8 @@
 import logging
 from contextlib import asynccontextmanager
+
+logger = logging.getLogger("Observability")
+
 class MetricsCollector:
     def __init__(self):
         self.metrics = {"cycles_completed": 0, "cycles_failed": 0}

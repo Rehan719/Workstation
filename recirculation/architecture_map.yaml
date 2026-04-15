@@ -1,29 +1,22 @@
 omega_stack:
   orchestration:
-    core: agent_opus_director (JULES v16.0 GOLDEN MASTER)
+    core: agent_opus_director (JULES v17.0 GOLDEN MASTER II)
     frameworks: [LangGraph, AutoGen, CrewAI, Mammouth]
     neural_backbone: [NVIDIA Nemotron 3 Super (LatentMoE), AlphaFold 3]
   biomimetic_architecture:
     layers:
-      1_identity: "JulesIdentity (JWT+TPM)"
-      2_hardware: "HardwareAttestation (NVIDIA GPU / TPM 2.0)"
-      3_expression: "IntentPlanner (HTN+LLM)"
-      4_regulation: "ConstitutionalState (Merkle-DAG)"
-      5_resilience: "NeuralCircuitBreaker (v16.0 State Replay)"
-      6_propagation: "AgentRegistry (Content-Addressed)"
-      7_module_library: "IPFSModuleStore"
-      8_recombination: "CrossDomainTransfer (Knowledge Fusion)"
-      9_orchestration: "JulesOmegaOrganism (CEO/Director)"
-      10_evolution: "Nematron NAS (v16.0 Golden Evolution)"
-      11_civilisation: "Libp2pFederation"
-      12_user_experience: "Workstation Realms (v16.0 Immersive)"
-  application_architecture:
-    enforcement_points:
-      6_ui_comm: "AR/VR/Haptic / Constitutional Narrative"
-      5_execution: "GaaS v4 Intercepts / Tool Invocation"
-      4_workflow: "LangGraph Audit / Deterministic Replay"
-      3_intent: "Pre-execution Neural Validation"
-      2_memory: "Epigenetic Tags / State Bounds"
-      1_identity: "Signed Neural Manifest / Immutable pathway"
-  legal_precision: "UK Employment Tribunal Alignment (Equality Act 2010)"
-  biomimetic_health: "Self-healing & Synaptic Plasticity active"
+      1_identity: "JulesIdentity (v17.0 TPM Quote)"
+      2_hardware: "HardwareAttestation (NVIDIA Blackwell / NVFP4)"
+      3_expression: "IntentPlanner (Long-horizon HTN)"
+      4_regulation: "ConstitutionalState (SHA-3-512 Merkle-DAG)"
+      5_resilience: "NeuralCircuitBreaker (Biomimetic Self-Healing)"
+      6_propagation: "Fractal Scaling (Child Workstations)"
+      7_module_library: "IPFS/Merkle-DAG Registry"
+      8_recombination: "Cross-Domain Transfer (Latent Fusion)"
+      9_orchestration: "JulesOmegaOrganism (CEO v17.0)"
+      10_evolution: "Nematron NAS (GM II Evolution)"
+      11_civilisation: "Fractal Civilization Federation"
+      12_user_experience: "Workstation Realms (Immersive v17)"
+  legal_precision: "UK Legal Precision Engine (Employment, Civil, Taxation)"
+  fractal_scaling: "Micro (<100ms), Meso (<15min), Macro (<60sec)"
+  biomimetic_health: "Biomimetic Adaptation Index (BAI) active"
