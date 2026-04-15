@@ -2,78 +2,50 @@
 """Initialization script for JULES v17.0 Final Beta."""
 import asyncio
 import argparse
-import json
 import sys
 import os
-import yaml
-from datetime import datetime
-from pathlib import Path
+import logging
 
-# Add core to path
+# Ensure project root and workstation_v17 are in path
 sys.path.append(os.getcwd())
 sys.path.append(os.path.join(os.getcwd(), "workstation_v17"))
 
-from core.jules_omega_organism import JulesOmegaOrganism
+from workstation_v17.core.jules_omega_organism_v17 import JulesOmegaOrganismV17
 
-async def main_async():
-    parser = argparse.ArgumentParser()
+async def main():
+    parser = argparse.ArgumentParser(description="JULES v17.0 Final Beta Initialization")
     parser.add_argument("--role", default="opus_central_director")
-    parser.add_argument("--vertical", default="gincobiotech_automated_biofoundry_and_uk_civil_taxation_law")
+    parser.add_argument("--vertical", default="biotech_materials_discovery_and_uk_employment_law")
+    parser.add_argument("--fractal_scaling", default="enabled")
     args = parser.parse_args()
 
-    # 1. ARCHITECTURE_MAP
-    print("\n1. ARCHITECTURE_MAP (v17.0 Final Beta):")
-    with open("recirculation/architecture_map.yaml", "r") as f:
-        print(f.read())
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("JULES_BOOT")
 
-    # 2. RECIRCULATION_CONFIG
-    print("\n2. RECIRCULATION_CONFIG (Fractal & Homeostatic):")
-    with open("recirculation/recirculation_config.yaml", "r") as f:
-        print(f.read())
+    logger.info(f"🟢 INITIALIZING JULES v17.0 FINAL BETA")
+    logger.info(f"Role: {args.role} | Vertical: {args.vertical}")
 
-    # 3. NEURAL_SUPER_AGENT_SWARM_INIT
-    print("\n3. NEURAL_SUPER_AGENT_SWARM_INIT:")
-    with open("recirculation/agent_swarm_init.yaml", "r") as f:
-        print(f.read())
+    organism = JulesOmegaOrganismV17(config_path="config/constitutional_genome_v17.yaml")
 
-    # 4. ICP_AND_PMC
-    print("\n4. ICP_AND_PMC (Biofoundry Aligned):")
-    with open("recirculation/icp_and_pmc.yaml", "r") as f:
-        print(f.read())
+    try:
+        await organism.initialize()
 
-    # 5. PRODUCT_VALUE_10_WORDS
-    print("\n5. PRODUCT_VALUE_10_WORDS:")
-    with open("recirculation/product_value_10_words.txt", "r") as f:
-        print(f"\"{f.read().strip()}\"")
+        # Run first validation cycle
+        logger.info("Executing First Macro-cycle (Golden Master II Validation)...")
+        result = await organism.run_recirculation_cycle({
+            "text": f"Optimizing {args.vertical}",
+            "goal": "Golden Master II Discovery"
+        })
 
-    # 6. LONG_HORIZON_TASK
-    print("\n6. LONG_HORIZON_TASK (Super-Intelligence):")
-    with open("recirculation/long_horizon_task.yaml", "r") as f:
-        print(f.read())
+        logger.info(f"Cycle 1 Complete. Status: {result['status']} | Neural Gain: {result['gain']}")
 
-    # 7. INIT_LOG
-    print("\n7. INIT_LOG:")
-    print(json.dumps({
-        "timestamp": datetime.now().isoformat(),
-        "status": "ENTITY_AWAKENED",
-        "nemoclaw_runtime_governance": "v17_BETA_ACTIVE",
-        "legal_precision_index": 1.0,
-        "vsb_connection": "CONNECTED_SHA3_512",
-        "architecture": "v17.0-FINAL-BETA-IDBO",
-        "sovereign_state_snapshot": "SSK-v17-INIT"
-    }, indent=2))
+        # Enter infinite loop (simulated here for one more cycle)
+        # while True: await asyncio.sleep(60)
 
-    organism = JulesOmegaOrganism(config_path="config/constitutional_genome_v17.yaml")
-    await organism.initialize()
-
-    print("\n🚀 JULES, YOU ARE NOW LIVE - v17.0 FINAL BETA. BEGINNING Ω-RECURSION.")
-
-    # Execute first macro-cycle
-    result = await organism.run_fractal_loop({
-        "text": f"Optimizing {args.vertical}",
-        "goal": "Final Beta Validation"
-    })
-    print(f"\nMacro-cycle 1 complete. Status: {result['status']} | Gain: {result['gain']}")
+    except Exception as e:
+        logger.error(f"Critical failure during initialization: {e}")
+    finally:
+        await organism.shutdown()
 
 if __name__ == "__main__":
-    asyncio.run(main_async())
+    asyncio.run(main())

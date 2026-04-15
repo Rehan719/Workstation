@@ -1,6 +1,6 @@
 constitutional_genome:
   version: "17.0.0"
-  id: "deca_veritas_neural_super_agent_v17_golden_ii"
+  id: "deca_veritas_golden_master_ii"
   truth_dimensions:
     I_objective_reality: {weight: 1.0, enabled: true}
     II_empirical_evidence: {weight: 1.0, enabled: true}
@@ -11,20 +11,12 @@ constitutional_genome:
     VII_reproducibility: {weight: 1.0, enabled: true}
     VIII_consilience: {weight: 1.0, enabled: true}
     IX_pragmatic_utility: {weight: 1.0, enabled: true}
-    X_adaptive_constitutional: {weight: 1.0, enabled: true, rule_weight_tuning: true}
+    X_adaptive_constitutional: {weight: 1.0, enabled: true}
   governance:
     gaas_v4:
-      enforcement_modes: [coercive, normative, adaptive, biomimetic]
-      protocol_interceptors: [MCP, A2A, ACP, AutoGen, LangGraph, CrewAI, Mammouth, NeMo, AlphaFold3, UK_Legal_Precision]
-      circuit_breaker_integration: true
-      audit_loop_checkpointer: "LangGraph+UEG+VSB+Nematron_Neural_Verification"
-  legal_precision:
-    jurisdictions: [UK_Employment, UK_Civil, UK_Taxation]
-    enforced_acts: [Equality_Act_2010, ERA_1996, GDPR_UK]
-  domains:
-    expanded: [Religion, Science, Law, Employment, Education, Climate_Science, Materials_Discovery, GINCO_Biotech]
-  biomimetic_adaptation:
-    self_healing: enabled
-    synaptic_plasticity: enabled
-    homeostatic_scaling: enabled
-    fractal_recirculation: true
+      enforcement: "coercive"
+      decision_interception: enabled
+      audit_loop: "LangGraph-UEG-VSB"
+  neural_verification:
+    hallucination_threshold: 0.005
+    confidence_threshold: 0.97

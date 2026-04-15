@@ -1,0 +1,11 @@
+biomimetic_control:
+  homeostasis:
+    micro_cycle_ms: 100
+    meso_cycle_min: 15
+    macro_cycle_sec: 60
+  self_healing:
+    strategy: "AEHO-v2"
+    pathway_regeneration: enabled
+  synaptic_plasticity:
+    learning_rate_adaptive: enabled
+    memory_persistence: 0.999

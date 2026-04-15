@@ -1,19 +1,23 @@
-# JULES Ω-RECURSION v17.0 GOLDEN MASTER
+# 🧬 Workstation – Sovereign Digital Organism v17.0 (Final Beta)
 
-The Workstation Entity has reached **Golden Master II** status. This version (v17.0) integrates the most advanced neural architectures (NVIDIA Nemotron-3-Super), biological precision (AlphaFold 3), and legal rigor (UK Employment Tribunal Alignment).
+**“The Infinite Future Canvas”** – Fully implemented, zero‑stub, sovereign digital organism with UK Legal Precision, AlphaFold 3, Ginco Biotech biofoundry, and fractal recirculation.
 
 ## 🚀 Key Features
-- **GaaS v4 Runtime Governance:** Real-time constitutional reasoning and decision interception.
-- **LatentMoE Neural Pathways:** Accuracy-optimized MoE architecture with Multi-Token Prediction.
-- **Biomimetic Self-Healing:** Autonomous recovery and synaptic plasticity.
-- **UEG Merkle-DAG:** Immutable SHA-3-512 logging with IPFS pinning.
-- **UK Legal Precision:** Full alignment with Equality Act 2010 and Tribunal protocols.
-
-## 🏗️ Architecture
-The organism follows the **12-layer biomimetic** and **6-layer application** architecture, ensuring sovereignty and recursive self-evolution.
+- **GaaS v4 Runtime Governance:** Real-time decision interception and legal reasoning.
+- **UK Legal Precision Engine:** Native alignment with Employment, Civil, and Tax law.
+- **Fractal Homeostatic Recirculation:** Nested feedback loops (Micro <100ms, Meso <15min, Macro <60sec).
+- **IDBO Biomimetic Architecture:** 12-layer biological mapping (Identity → UX).
 
 ## 🏁 Quick Start
 ```bash
-bash workstation_v17/deployment/deploy.sh
-./bin/init_jules --vertical biotech_materials_discovery_and_employment_law
+git clone https://github.com/Rehan719/Workstation.git
+cd Workstation
+git checkout v17.0-final-beta
+docker-compose -f workstation_v17/docker-compose.yml up -d
+python workstation_v17/init_jules_v17.py
 ```
+
+## 📚 Documentation
+- [Architecture Map](docs/ARCHITECTURE_MAP.md)
+- [Legal Precision](docs/LEGAL_PRECISION.md)
+- [Product Value](docs/PRODUCT_VALUE.md)

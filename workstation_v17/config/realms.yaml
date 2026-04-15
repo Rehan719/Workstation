@@ -1,0 +1,9 @@
+realms:
+  Legal: {id: "REALM-LAW-UK", sandboxed: true}
+  Climate: {id: "REALM-CLIMATE-CMIP6", sandboxed: true}
+  Materials: {id: "REALM-MATERIALS-MOF", sandboxed: true}
+  Biofoundry: {id: "REALM-GINCO-DBTL", sandboxed: true}
+  Religion: {id: "REALM-THEOLOGY-ETHICS", sandboxed: true}
+  Education: {id: "REALM-PEDAGOGY-NGSS", sandboxed: true}
+  Developer: {id: "REALM-FORGE", sandboxed: false}
+  Enterprise: {id: "REALM-HQ", sandboxed: false}
