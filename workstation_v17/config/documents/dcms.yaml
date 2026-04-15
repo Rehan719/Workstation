@@ -1,0 +1,4 @@
+control:
+  version_hashing: "SHA-3-512"
+  approval_latency_ms: 50
+  auto_expiry: enabled

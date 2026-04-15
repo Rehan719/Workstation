@@ -1,3 +1,4 @@
-quality_gates:
-  min_test_coverage: 0.95
-  enforce_zero_placeholder: true
+governance:
+  min_coverage: 0.95
+  iso_9001_aligned: true
+  defect_mttr_hours: 2

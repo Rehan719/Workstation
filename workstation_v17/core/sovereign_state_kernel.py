@@ -1,8 +1,6 @@
 import sqlite3
 import json
-import time
 import hashlib
-import os
 import logging
 from typing import Dict, Any, Optional
 
@@ -20,7 +18,7 @@ class SovereignStateKernel:
         conn.commit()
         conn.close()
 
-    def commit_state(self, entity_id: str, state: Dict[str, Any]):
+    async def commit_state(self, entity_id: str, state: Dict[str, Any]):
         state_json = json.dumps(state, sort_keys=True)
         state_hash = hashlib.sha3_512(state_json.encode()).hexdigest()
         conn = sqlite3.connect(self.db_path)

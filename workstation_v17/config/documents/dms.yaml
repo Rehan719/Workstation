@@ -1,3 +1,0 @@
-control:
-  retention_days: 365
-  cryptographic_versioning: true

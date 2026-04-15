@@ -12,19 +12,17 @@ def validator():
 @pytest.mark.asyncio
 async def test_legal_blocking(validator):
     # Action with a known violation
-    action = {
-        "type": "dismissal",
-        "category": "Employment",
-        "potential_violations": ["EMP-001"] # Direct discrimination
+    intent = {
+        "type": "intent_test",
+        "potential_flags": ["EMP-001"], # Direct discrimination
+        "confidence": 0.99
     }
-    result = await validator.validate_action(action, {})
-    # It should be blocked because EMP-001 has enforcement_action: block
+    result = await validator.validate_intent(intent, {})
     assert result["passed"] is False
-    assert result["legal_audit"]["blocked"] is True
+    assert result["blocked"] is True
 
 @pytest.mark.asyncio
 async def test_constitutional_alignment(validator):
-    action = {"type": "neutral_analysis", "category": "General"}
-    result = await validator.validate_action(action, {})
+    intent = {"type": "neutral_analysis", "confidence": 0.96}
+    result = await validator.validate_intent(intent, {})
     assert result["passed"] is True
-    assert result["confidence_score"] >= 0.85

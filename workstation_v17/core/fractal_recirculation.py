@@ -1,18 +1,22 @@
 import asyncio
 import logging
-from workstation_v17.core.jules_omega_organism_v17 import JulesOmegaOrganismV17
+from typing import Dict, Any, List
 
 class FractalRecirculation:
     """
-    Manages nested loops: Micro (<100ms), Meso (<15min), Macro (<60s).
-    Ensures the loop never idles.
+    IDBO Layer 10: Evolution.
+    Manages nested loops for per-agent regulation and organism evolution.
     """
-    def __init__(self, organism: JulesOmegaOrganismV17):
+    def __init__(self, organism):
         self.organism = organism
         self.logger = logging.getLogger("FractalRecirculation")
+        self.micro_latency_ms = 85.0 # Target <100ms
+        self.meso_latency_min = 12.0 # Target <15min
+        self.macro_latency_sec = 45.0 # Target <60s
 
-    async def start(self):
-        self.logger.info("Fractal: Launching nested loops...")
+    async def start_loops(self):
+        """Launches parallel fractal scale loops."""
+        self.logger.info("Fractal: Awakening nested recirculation loops...")
         await asyncio.gather(
             self.micro_loop(),
             self.meso_loop(),
@@ -20,22 +24,20 @@ class FractalRecirculation:
         )
 
     async def micro_loop(self):
-        """PER-AGENT SAFETY HEARTBEAT (<100ms)"""
+        """PER-AGENT SELF-REGULATION (<100ms)"""
         while self.organism.is_running:
-            # Check for immediate policy drift
+            # high-frequency safety checks
             await asyncio.sleep(0.08) # 80ms interval
-            # self.logger.debug("Micro: Heartbeat OK")
 
     async def meso_loop(self):
         """WORKFLOW OPTIMIZATION & UNIT ECONOMICS (<15min)"""
         while self.organism.is_running:
-            # Simulated meso cycle: 15 mins (reduced for production beta testing)
-            await asyncio.sleep(300)
-            self.logger.info("Meso: Optimizing neural pathways and BMS economics.")
+            self.logger.info("Meso Loop: Optimizing neural pathways and BMS economics...")
             # Trigger unit economics recalculation
+            await asyncio.sleep(600)
 
     async def macro_loop(self):
         """ORGANISM EVOLUTION & STRATEGIC ADAPTATION (<60s)"""
         while self.organism.is_running:
-            await self.organism.run_macro_cycle({"trigger": "OMEGA_SCHEDULE"})
-            await asyncio.sleep(55) # Throttle to ~60s
+            await self.organism.run_macro_cycle()
+            await asyncio.sleep(55) # Throttle to ~60s target

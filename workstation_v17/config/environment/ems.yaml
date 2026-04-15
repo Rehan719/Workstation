@@ -1,3 +1,4 @@
 stewardship:
-  target_power_efficiency: 0.8
-  carbon_tracking: enabled
+  target_efficiency_gain: 0.20
+  carbon_accuracy: 0.98
+  max_idle_waste: 0.01

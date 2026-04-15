@@ -1,43 +1,27 @@
 import logging
 from typing import Dict, Any, List
 
-class BioCoE:
-    """Center of Excellence: Bio (IDBO Layer 9/12)."""
-    def __init__(self):
-        self.logger = logging.getLogger("BioCoE")
+class CoELead:
+    def __init__(self, domain: str):
+        self.domain = domain
+        self.logger = logging.getLogger(f"CoE_{domain}")
 
     async def execute_subloop(self, context: Dict) -> Dict:
-        self.logger.info("BioCoE: Running molecular Meso subloop.")
-        return {"domain": "Biofoundry", "status": "OPTIMIZED"}
-
-class LawCoE:
-    """Center of Excellence: Law (IDBO Layer 9/12)."""
-    def __init__(self):
-        self.logger = logging.getLogger("LawCoE")
-
-    async def execute_subloop(self, context: Dict) -> Dict:
-        self.logger.info("LawCoE: Running UK Legal Precision Meso subloop.")
-        return {"domain": "Legal", "status": "ALIGNED"}
-
-class ClimateCoE:
-    """Center of Excellence: Climate (IDBO Layer 9/12)."""
-    def __init__(self):
-        self.logger = logging.getLogger("ClimateCoE")
-
-    async def execute_subloop(self, context: Dict) -> Dict:
-        self.logger.info("ClimateCoE: Running CMIP-6 Meso subloop.")
-        return {"domain": "Climate", "status": "VERIFIED"}
+        self.logger.info(f"CoE[{self.domain}]: Executing specialized subloop.")
+        return {"domain": self.domain, "status": "VERIFIED", "gain": 0.12}
 
 class CoELeads:
-    """Orchestrates CoE ensemble participation in macro cycles."""
+    """Center of Excellence Lead Orchestration."""
     def __init__(self):
-        self.bio = BioCoE()
-        self.law = LawCoE()
-        self.climate = ClimateCoE()
+        self.bio = CoELead("Biofoundry")
+        self.law = CoELead("UKLPE")
+        self.climate = CoELead("Climate")
+        self.materials = CoELead("Materials")
 
     async def run_ensemble(self, context: Dict) -> List[Dict]:
         return [
             await self.bio.execute_subloop(context),
             await self.law.execute_subloop(context),
-            await self.climate.execute_subloop(context)
+            await self.climate.execute_subloop(context),
+            await self.materials.execute_subloop(context)
         ]
