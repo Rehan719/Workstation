@@ -32,5 +32,56 @@
       "neural_gain": 0.16,
       "truth_score": 0.95
     }
+  },
+  {
+    "timestamp": "2026-04-15T07:21:41.236528",
+    "cycle": 1,
+    "duration_s": 0.00018286705017089844,
+    "status": "SUCCESS",
+    "nemoclaw_status": "GREEN",
+    "sovereign_snapshot_id": "SSK-1",
+    "metrics": {
+      "velocity_ms": 0.18286705017089844,
+      "neural_gain": 0.16999999999999998,
+      "truth_score": 0.95,
+      "viral_coefficient": 1.25,
+      "sovereign_continuity": 1.0
+    }
+  },
+  {
+    "timestamp": "2026-04-15T07:26:12.415065",
+    "cycle": 1,
+    "duration_s": 0.0001895427703857422,
+    "status": "SUCCESS",
+    "nemoclaw_status": "GREEN",
+    "sovereign_snapshot_id": "SSK-1",
+    "metrics": {
+      "velocity_ms": 0.1895427703857422,
+      "neural_gain": 0.16999999999999998,
+      "truth_score": 0.95,
+      "viral_coefficient": 1.25,
+      "sovereign_continuity": 1.0,
+      "cataclysmic_shift_rate": 1.0,
+      "unit_cost_reduction": 0.4,
+      "ceo_confidence_score": 0.98
+    }
+  },
+  {
+    "timestamp": "2026-04-15T07:28:19.564295",
+    "cycle": 1,
+    "duration_s": 0.0001823902130126953,
+    "status": "SUCCESS",
+    "nemoclaw_status": "GREEN",
+    "sovereign_snapshot_id": "SSK-1",
+    "metrics": {
+      "velocity_ms": 0.1823902130126953,
+      "neural_gain": 0.16999999999999998,
+      "truth_score": 0.95,
+      "viral_coefficient": 1.25,
+      "sovereign_continuity": 1.0,
+      "cataclysmic_shift_rate": 1.0,
+      "unit_cost_reduction": 0.4,
+      "ceo_confidence_score": 0.98
+    }
   }
 ]
