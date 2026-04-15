@@ -269,8 +269,74 @@
             },
             "previous_hash": "2739fa4a32c848fd7932116b3a3af8abb647f4ad67d2e585581a11691be64266c4385ccd0829ad81b8871b9626e99817bfb28550b30e5a3bae16677bb172f5ca",
             "hash": "962919378b61ac1f252bbed01cfb948622045cb301917f525ee1ae80bb6f51e63d0d756978dfb2a43dfd346c99ad4d808e23c94c0e1fb4ff118e78d434cf7aac"
+        },
+        {
+            "id": "event_25",
+            "timestamp": 1776219652.2167823,
+            "data": {
+                "type": "policy_gate_halt",
+                "domain": "core_business_process",
+                "action": "swarm_orchestration",
+                "reason": "Unconsented PII export prohibited by constitution."
+            },
+            "previous_hash": "962919378b61ac1f252bbed01cfb948622045cb301917f525ee1ae80bb6f51e63d0d756978dfb2a43dfd346c99ad4d808e23c94c0e1fb4ff118e78d434cf7aac",
+            "hash": "1cad5e85eb0b8714d0325c14530e0e521d8e7ca41ae3aaf5b755bde920c02fd41499c9bd1f3b6171cd229415ae0defdf17028fe8d45de721d6a96b28f602a5f9"
+        },
+        {
+            "id": "event_26",
+            "timestamp": 1776219652.230558,
+            "data": {
+                "type": "mushahida_complete",
+                "node_count": 1
+            },
+            "previous_hash": "1cad5e85eb0b8714d0325c14530e0e521d8e7ca41ae3aaf5b755bde920c02fd41499c9bd1f3b6171cd229415ae0defdf17028fe8d45de721d6a96b28f602a5f9",
+            "hash": "b26290b1a192835b08c3262eb1ab905384c68b96f66dfffa09e4276673fe7eff12ef7596f6cf6a59030e3a18ce2432429be5b4bdfe947792aea452bed0a69b48"
+        },
+        {
+            "id": "event_27",
+            "timestamp": 1776219652.2318358,
+            "data": {
+                "type": "jaiza_complete",
+                "risk_score": 0.15
+            },
+            "previous_hash": "b26290b1a192835b08c3262eb1ab905384c68b96f66dfffa09e4276673fe7eff12ef7596f6cf6a59030e3a18ce2432429be5b4bdfe947792aea452bed0a69b48",
+            "hash": "1f55596d9c4bec97d81e5b6a0973e35fbe09d969f4a2f4142507f3ad4da9b334e0b93eff8ad7b101936091fc28fab730ad3b7f8f83fd56e3d24edb254ecd1986"
+        },
+        {
+            "id": "event_28",
+            "timestamp": 1776219652.2329037,
+            "data": {
+                "type": "muaina_complete",
+                "proposal_id": "PROP-1776219652232"
+            },
+            "previous_hash": "1f55596d9c4bec97d81e5b6a0973e35fbe09d969f4a2f4142507f3ad4da9b334e0b93eff8ad7b101936091fc28fab730ad3b7f8f83fd56e3d24edb254ecd1986",
+            "hash": "8a00fa99a26bb0555cd29f088c95cdd8c97cb893c8f34e3b2205693b2f5e7cb9ed3a23e21259083984d827f89b37f6358b1a68226b4ec496c2c27d51dfd04fac"
+        },
+        {
+            "id": "event_29",
+            "timestamp": 1776219652.2819126,
+            "data": {
+                "type": "gaas_validation",
+                "domain": "core_business_process",
+                "is_valid": true,
+                "violations": []
+            },
+            "previous_hash": "8a00fa99a26bb0555cd29f088c95cdd8c97cb893c8f34e3b2205693b2f5e7cb9ed3a23e21259083984d827f89b37f6358b1a68226b4ec496c2c27d51dfd04fac",
+            "hash": "d0be9d8ec718403e7e4cbb525751cc742b9fca3990a3299881b91fdb04fce8cb7d0eac0461ee7a53bdf20097fa5173a99c5153ac6acba3d1f388b30813d898c7"
+        },
+        {
+            "id": "event_30",
+            "timestamp": 1776219652.2831407,
+            "data": {
+                "type": "process_complete",
+                "domain": "core_business_process",
+                "proposal_id": "PROP-1776219652232",
+                "bundle_hash": "a13850adb4db539a853898ab6213a3bf0cb8ae08e8b76a8012aefb66f300ad51"
+            },
+            "previous_hash": "d0be9d8ec718403e7e4cbb525751cc742b9fca3990a3299881b91fdb04fce8cb7d0eac0461ee7a53bdf20097fa5173a99c5153ac6acba3d1f388b30813d898c7",
+            "hash": "f7e4621637e8d8e0d5206db00b9d02e267e5372776db1a91f5af696342fd620e9bc26a843e85dc2f47dd88d4e1c5cef5c866f42ca157ade10f9222b9e9413f89"
         }
     ],
     "edges": [],
-    "root_hash": "962919378b61ac1f252bbed01cfb948622045cb301917f525ee1ae80bb6f51e63d0d756978dfb2a43dfd346c99ad4d808e23c94c0e1fb4ff118e78d434cf7aac"
+    "root_hash": "f7e4621637e8d8e0d5206db00b9d02e267e5372776db1a91f5af696342fd620e9bc26a843e85dc2f47dd88d4e1c5cef5c866f42ca157ade10f9222b9e9413f89"
 }

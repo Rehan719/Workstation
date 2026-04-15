@@ -1,0 +1,10 @@
+[project]
+name = "vsb-multi-agent-orchestration"
+version = "10.0.0-rc"
+description = "Constitutional Super-Agent Orchestration Fabric"
+dependencies = [
+    "vsb-constitutional-core"
+]
+
+[tool.uv.sources]
+vsb-constitutional-core = { workspace = true }

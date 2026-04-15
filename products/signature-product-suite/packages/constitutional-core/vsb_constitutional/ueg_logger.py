@@ -56,3 +56,21 @@ class UEGLogger:
             "pattern_id": pattern_id,
             "sovereignty_attestation": sovereignty_attestation
         })
+
+    def log_circuit_breaker_trip(self, domain: str, reason: str, state: Dict[str, Any]):
+        """Logs a circuit breaker trip event."""
+        return self.log_constitutional_event({
+            "type": "circuit_breaker_trip",
+            "domain": domain,
+            "reason": reason,
+            "state_at_trip": state
+        })
+
+    def log_policy_halt(self, domain: str, action_type: str, reason: str):
+        """Logs a policy gate halt event."""
+        return self.log_constitutional_event({
+            "type": "policy_gate_halt",
+            "domain": domain,
+            "action": action_type,
+            "reason": reason
+        })

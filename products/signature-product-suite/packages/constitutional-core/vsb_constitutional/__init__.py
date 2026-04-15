@@ -5,6 +5,8 @@ from .adaptive_learning import AdaptiveLearning
 from .multi_stakeholder_consensus import MultiStakeholderConsensus
 from .omnimedia_injector import OmnimediaInjector
 from .mjm_lifecycle import MJMIntelligenceLifecycle
+from .circuit_breaker import CircuitBreaker
+from .policy_gate import PolicyGate
 from .adapters.constitutional.deca_veritas_orchestrator import DecaVeritasOrchestrator
 
 __all__ = [
@@ -16,5 +18,7 @@ __all__ = [
     "MultiStakeholderConsensus",
     "OmnimediaInjector",
     "MJMIntelligenceLifecycle",
+    "CircuitBreaker",
+    "PolicyGate",
     "DecaVeritasOrchestrator"
 ]

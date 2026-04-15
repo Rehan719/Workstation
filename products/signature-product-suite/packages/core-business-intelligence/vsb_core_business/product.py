@@ -2,20 +2,33 @@ import yaml
 import asyncio
 import argparse
 from vsb_constitutional import TruthEngine, DecaVeritasOrchestrator
+from vsb_multi_agent import MammouthConstitutionalOrchestrator
 
 class CoreBusinessIntelligence:
-    """Core Business Process Intelligence Phenotype."""
+    """Core Business Process Intelligence Phenotype v10.0."""
     def __init__(self, config_path: str):
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
-        # In a real setup, we would load the base_schema and merge
+
+        # v10.0 Multi-Agent Orchestration
         self.orchestrator = DecaVeritasOrchestrator(self.config, {})
+        self.swarm_orchestrator = MammouthConstitutionalOrchestrator(self.config, self.orchestrator.governance)
 
     async def run(self, input_data: dict):
-        # Load business patterns
+        # 1. Load business patterns
         from .patterns.business_patterns import BUSINESS_PATTERNS
         self.orchestrator.config["jaiza"]["constitutional_pattern_library"]["domain_patterns"] = BUSINESS_PATTERNS
 
+        # 2. Execute via Super-Agent Swarm
+        goal = input_data.get("goal", "Execute core business process intelligence")
+        swarm_id = "business-intelligence-swarm"
+
+        swarm_result = await self.swarm_orchestrator.orchestrate_swarm(swarm_id, goal, input_data)
+
+        if swarm_result["status"] == "HALTED":
+             return {"error": "Execution halted by policy gate", "reason": swarm_result["reason"]}
+
+        # 3. Finalize via standard Deca-Veritas Orchestrator
         return await self.orchestrator.orchestrate_core_process(input_data)
 
 async def main():
