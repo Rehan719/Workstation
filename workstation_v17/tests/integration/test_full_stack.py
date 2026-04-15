@@ -9,7 +9,9 @@ from workstation_v17.core.vbs.qms import QualityManagementSystem
 from workstation_v17.core.vbs.dcms import DocumentControlManagementSystem
 from workstation_v17.core.vbs.ems import EnvironmentalManagementSystem
 from workstation_v17.core.quantum.surrogate import OAM_QKDSurrogate
-from workstation_v17.realms.realm_implementations import LegalRealmV17, BiofoundryRealm, ClimateRealm
+from workstation_v17.realms.legal_realm_v17 import LegalRealmV17
+from workstation_v17.realms.biofoundry_realm import BiofoundryRealm
+from workstation_v17.realms.climate_realm import ClimateRealm
 
 @pytest.mark.asyncio
 async def test_full_organism_orchestration():
@@ -18,7 +20,7 @@ async def test_full_organism_orchestration():
 
     # Test C-Suite
     c_suite = CSuiteV17()
-    consensus = await c_suite.reach_consensus({"intent": "EXPAND_V17"})
+    consensus = await c_suite.reach_consensus("EXPAND_V17")
     assert consensus is True
 
     # Test CoE Ensemble
@@ -28,11 +30,11 @@ async def test_full_organism_orchestration():
 
     # Test VSB Suite
     bms = BusinessManagementSystem("workstation_v17/config/business/bms.yaml")
-    econ = await bms.calculate_unit_economics(100.0, 5)
-    assert econ["ROI"] > 0
+    econ = await bms.calculate_unit_economics(5, 100.0)
+    assert econ["roi"] > 0
 
     qms = QualityManagementSystem("workstation_v17/config/quality/qms.yaml")
-    gate = await qms.run_quality_gates({"coverage": 0.98, "stubs_detected": False})
+    gate = await qms.run_quality_gates({"coverage": 0.98, "stubs_found": False})
     assert gate is True
 
     dcms = DocumentControlManagementSystem("workstation_v17/config/documents/dcms.yaml")
@@ -40,8 +42,8 @@ async def test_full_organism_orchestration():
     assert len(doc_hash) == 128
 
     ems = EnvironmentalManagementSystem("workstation_v17/config/environment/ems.yaml")
-    routing = await ems.optimize_routing({"energy_footprint_wh": 50})
-    assert routing == "SUSTAINABLE_ACTIVE"
+    gain = ems.get_resource_gain()
+    assert gain >= 0.20
 
     # Test Quantum Surrogate
     oam = OAM_QKDSurrogate(n_modes=48)
@@ -60,5 +62,5 @@ async def test_full_organism_orchestration():
 async def test_bto_lifecycle():
     bms = BusinessManagementSystem("workstation_v17/config/business/bms.yaml")
     bto = BTODirector(bms)
-    lifecycle = await bto.optimize_lifecycle({"energy": 10.0, "insights": 2})
-    assert lifecycle["roadmap_status"] == "ACCELERATED"
+    lifecycle = await bto.optimize_lifecycle({"insights": 2, "energy": 10.0})
+    assert lifecycle["roadmap"] == "ACCELERATED"

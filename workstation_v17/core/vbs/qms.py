@@ -8,24 +8,23 @@ class QualityManagementSystem:
     """
     def __init__(self, config_path: str):
         self.logger = logging.getLogger("QMS")
-        self.non_conformances = 0
+        self.min_coverage = 0.95
+        self.defects = []
 
-    async def run_quality_gates(self, artifact_metadata: Dict[str, Any]) -> bool:
+    async def run_quality_gates(self, metadata: Dict[str, Any]) -> bool:
         """
-        Enforces >95% coverage and Zero-Stub policy.
+        Enforces >95% test coverage and zero-stub policy.
         """
-        coverage = artifact_metadata.get("coverage", 0.0)
-        has_stubs = artifact_metadata.get("stubs_detected", False)
+        coverage = metadata.get("coverage", 0.0)
+        stubs_found = metadata.get("stubs_found", False)
 
-        is_compliant = (coverage >= 0.95) and not has_stubs
-        if not is_compliant:
-            self.non_conformances += 1
-            self.logger.warning(f"QMS: Quality Gate FAILED. Coverage: {coverage:.2f}")
+        passed = (coverage >= self.min_coverage) and not stubs_found
 
-        return is_compliant
+        if not passed:
+            self.defects.append({"id": "QG_FAIL", "meta": metadata})
+            self.logger.warning(f"QMS: Quality Gate FAILED. Coverage: {coverage}")
 
-    def get_audit_metrics(self) -> Dict[str, Any]:
-        return {
-            "non_conformance_rate": self.non_conformances / 100.0,
-            "status": "ISO_9001_COMPLIANT" if self.non_conformances < 5 else "CRITICAL_DEFECTS"
-        }
+        return passed
+
+    def get_non_conformance_rate(self) -> float:
+        return len(self.defects) / 100.0 # Normalized

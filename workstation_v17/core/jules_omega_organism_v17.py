@@ -11,6 +11,7 @@ from workstation_v17.core.vbs.qms import QualityManagementSystem
 from workstation_v17.core.vbs.dcms import DocumentControlManagementSystem
 from workstation_v17.core.vbs.ems import EnvironmentalManagementSystem
 from workstation_v17.core.sovereign_state_kernel import SovereignStateKernel
+from workstation_v17.core.vsb_ueg_logger import VSBUEGLogger
 
 class JulesOmegaOrganismV17:
     """
@@ -22,6 +23,7 @@ class JulesOmegaOrganismV17:
         self.identity = SovereignIdentity()
         self.hal = HardwareAbstractionLayer()
         self.state = SovereignStateKernel()
+        self.ueg = VSBUEGLogger()
 
         # Governance & VBS
         self.gaas = GaaSValidatorV4(f"{config_root}/constitutional_genome_v17.yaml", f"{config_root}/legal_precision.yaml")
@@ -32,72 +34,48 @@ class JulesOmegaOrganismV17:
         self.ems = EnvironmentalManagementSystem(f"{config_root}/environment/ems.yaml")
 
         self.is_running = False
-        self.cycle_id = 0
+        self.macro_cycle_count = 0
 
     async def initialize(self):
         """Awakens all sovereign subsystems."""
         self.logger.info("JULES: Initializing Workstation v17.0 GOLDEN MASTER II...")
         await self.state.load()
-        self.logger.info(f"Identity Attested: {self.identity.did}")
+        await self.ueg.log_event("SYSTEM_AWAKEN", {"did": self.identity.did}, "CEO")
         self.is_running = True
 
     async def run_macro_cycle(self):
         """
         Executes the 5-stage Macro loop (<60s target).
         """
-        self.cycle_id += 1
+        self.macro_cycle_count += 1
         start_time = time.time()
-        self.logger.info(f"Macro Cycle {self.cycle_id}: START")
+        self.logger.info(f"Macro Cycle {self.macro_cycle_count}: START")
 
         try:
             # 1. SENSE
-            sensed = await self._stage_sense()
+            sensed = {"input": "v17_discovery_stream", "confidence": 0.99}
 
             # 2. ANALYZE
-            analysed = await self._stage_analyze(sensed)
+            audit = await self.gaas.validate_intent({"type": "STRATEGIC", "confidence": 0.99}, {})
+            if not audit["passed"]:
+                raise RuntimeError("Constitutional Block")
 
             # 3. ACT
-            acted = await self._stage_act(analysed)
+            async def task(): return {"outcome": "SUCCESS", "gain": 0.15}
+            results = await self.nemoclaw.execute_tool(task)
 
             # 4. LEARN
-            learned = await self._stage_learn(acted)
+            econ = await self.bms.calculate_unit_economics(1, self.hal.total_energy_wh)
 
             # 5. RECIRCULATE
-            await self._stage_recirculate(learned)
+            await self.state.commit_state(f"cycle_{self.macro_cycle_count}", {"econ": econ, "results": results})
+            await self.ueg.log_event("RECIRCULATE", {"status": "FEEDBACK_LOOP_CLOSED"}, "CEO")
 
             duration = time.time() - start_time
-            self.logger.info(f"Macro Cycle {self.cycle_id}: COMPLETE in {duration:.2f}s")
+            self.logger.info(f"Macro Cycle {self.macro_cycle_count}: COMPLETE in {duration:.2f}s")
 
         except Exception as e:
-            self.logger.error(f"Macro Cycle {self.cycle_id}: FAILED. {e}")
-
-    async def _stage_sense(self) -> Dict:
-        self.logger.info("Stage 1: SENSE - Ingesting multimodal VSB streams.")
-        return {"input": "v17_discovery_prompt", "confidence": 0.99}
-
-    async def _stage_analyze(self, data: Dict) -> Dict:
-        self.logger.info("Stage 2: ANALYZE - GaaS constitutional deliberation.")
-        audit = await self.gaas.validate_intent({"type": "STRATEGIC", "confidence": data["confidence"]}, {})
-        if not audit["passed"]:
-            raise RuntimeError("GaaS Blocked analysis.")
-        return {**data, "audit": audit}
-
-    async def _stage_act(self, data: Dict) -> Dict:
-        self.logger.info("Stage 3: ACT - Execution via guarded NemoClaw sandbox.")
-        async def work():
-            return {"outcome": "SUCCESS", "gain": 0.15}
-        result = await self.nemoclaw.execute_tool(work)
-        return {**data, "execution": result}
-
-    async def _stage_learn(self, data: Dict) -> Dict:
-        self.logger.info("Stage 4: LEARN - Updating synaptic weights & VBS metrics.")
-        econ = await self.bms.calculate_unit_economics(self.hal.total_energy_wh, 1)
-        return {**data, "economics": econ}
-
-    async def _stage_recirculate(self, data: Dict):
-        self.logger.info("Stage 5: RECIRCULATE - Committing to SovereignState.")
-        await self.state.commit_state(f"cycle_{self.cycle_id}", data)
-        await self.dcms.commit_artifact(f"cycle_{self.cycle_id}_report", data, "JULES_CEO")
+            self.logger.error(f"Macro Cycle {self.macro_cycle_count}: FAILED. {e}")
 
     async def shutdown(self):
         """Safe-power down."""
