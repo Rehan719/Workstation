@@ -3,17 +3,28 @@ import asyncio
 from workstation_v17.core.gaas_validator_v4 import GaaSValidatorV4
 
 @pytest.fixture
-def gaas_validator():
-    genome = {"constitutional_genome": {"truth_dimensions": ["I", "II"]}}
-    return GaaSValidatorV4(genome)
-
-def test_gaas_pii_export(gaas_validator):
-    payload = {"text": "exporting PII data"}
-    valid, reason = gaas_validator.validate_agent_interaction("Agent", "Target", payload)
-    assert not valid
-    assert "PII" in reason
+def validator():
+    return GaaSValidatorV4(
+        "workstation_v17/config/constitutional_genome_v17.yaml",
+        "workstation_v17/config/legal_precision.yaml"
+    )
 
 @pytest.mark.asyncio
-async def test_gaas_neural_verify(gaas_validator):
-    score = await gaas_validator.neural_verify("v17.0 validation")
-    assert score > 0.9
+async def test_legal_blocking(validator):
+    # Action with a known violation
+    action = {
+        "type": "dismissal",
+        "category": "Employment",
+        "potential_violations": ["EMP-001"] # Direct discrimination
+    }
+    result = await validator.validate_action(action, {})
+    # It should be blocked because EMP-001 has enforcement_action: block
+    assert result["passed"] is False
+    assert result["legal_audit"]["blocked"] is True
+
+@pytest.mark.asyncio
+async def test_constitutional_alignment(validator):
+    action = {"type": "neutral_analysis", "category": "General"}
+    result = await validator.validate_action(action, {})
+    assert result["passed"] is True
+    assert result["confidence_score"] >= 0.85

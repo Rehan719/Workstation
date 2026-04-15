@@ -1,22 +1,66 @@
-constitutional_genome:
-  version: "17.0.0"
-  id: "deca_veritas_golden_master_ii"
-  truth_dimensions:
-    I_objective_reality: {weight: 1.0, enabled: true}
-    II_empirical_evidence: {weight: 1.0, enabled: true}
-    III_logical_consistency: {weight: 1.0, enabled: true}
-    IV_predictive_power: {weight: 1.0, enabled: true}
-    V_causal_mechanism: {weight: 1.0, enabled: true}
-    VI_falsifiability: {weight: 1.0, enabled: true}
-    VII_reproducibility: {weight: 1.0, enabled: true}
-    VIII_consilience: {weight: 1.0, enabled: true}
-    IX_pragmatic_utility: {weight: 1.0, enabled: true}
-    X_adaptive_constitutional: {weight: 1.0, enabled: true}
-  governance:
-    gaas_v4:
-      enforcement: "coercive"
-      decision_interception: enabled
-      audit_loop: "LangGraph-UEG-VSB"
-  neural_verification:
-    hallucination_threshold: 0.005
-    confidence_threshold: 0.97
+version: "17.0.0"
+metadata:
+  codename: "Omega-Recursion"
+  status: "Production Beta"
+  quantum_hardware: "Disabled (Classical Surrogate Enabled)"
+
+truth_dimensions:
+  - id: 1
+    name: "Factual Accuracy"
+    weight: 0.20
+  - id: 2
+    name: "Causal Integrity"
+    weight: 0.15
+  - id: 3
+    name: "Source Provenance"
+    weight: 0.15
+  - id: 4
+    name: "Neutrality & Bias"
+    weight: 0.10
+  - id: 5
+    name: "Legal Precision"
+    weight: 0.15
+  - id: 6
+    name: "Unit Economic Viability"
+    weight: 0.05
+  - id: 7
+    name: "Scientific Falsifiability"
+    weight: 0.10
+  - id: 8
+    name: "Ethical Alignment"
+    weight: 0.05
+  - id: 9
+    name: "Computational Efficiency"
+    weight: 0.03
+  - id: 10
+    name: "Recursion Safety"
+    weight: 0.02
+
+enforcement_modes:
+  - stage: "SENSE"
+    mode: "filter_and_tag"
+  - stage: "ANALYSE"
+    mode: "neural_verify"
+  - stage: "ACT"
+    mode: "sandbox_execution"
+  - stage: "LEARN"
+    mode: "policy_update"
+  - stage: "RECIRCULATE"
+    mode: "integrity_audit"
+
+fractal_recirculation:
+  micro:
+    target_latency_ms: 100
+    scope: "per-agent-safety"
+  meso:
+    target_latency_min: 15
+    scope: "workflow-optimization"
+  macro:
+    target_latency_sec: 60
+    scope: "strategic-evolution"
+
+gaas_v4_config:
+  intercept_all_actions: true
+  min_confidence_score: 0.85
+  circuit_breaker_threshold: 3
+  reset_timeout_sec: 300

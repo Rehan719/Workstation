@@ -1,125 +1,120 @@
-#!/usr/bin/env python3
-"""JULES Omega Organism v17.0 – Golden Master II Orchestrator (CEO)"""
 import asyncio
-import json
-import yaml
 import logging
-import signal
-from datetime import datetime
-from typing import Dict, Any, List, Optional
-from pathlib import Path
-
-# Internal modules
-from .gaas_validator_v4 import GaaSValidatorV4
-from .nemoclaw_runtime import NemoclawRuntime
-from .vsb_ueg_logger import VSBUEGLogger
-from .sovereign_state_kernel import SovereignStateKernel
-from .nemotron_integration import NemotronIntegration
-from .alphafold3_integration import AlphaFold3Integration
-from .biomimetic_self_healing import BiomimeticSelfHealing
-from .fractal_recirculation import FractalRecirculationEngine
-from .cross_domain_transfer import CrossDomainTransfer
-from .federation_libp2p import Libp2pFederation
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("JULES_CEO")
+import time
+from typing import Dict, Any, List
+from workstation_v17.core.gaas_validator_v4 import GaaSValidatorV4
+from workstation_v17.core.vsb_ueg_logger import VSBUEGLogger
+from workstation_v17.core.sovereign_state_kernel import SovereignStateKernel
+from workstation_v17.core.nemoclaw_runtime import NemoclawRuntime
+from workstation_v17.core.nemotron_integration import NemotronIntegration
+from workstation_v17.core.alphafold3_integration import AlphaFold3Integration
 
 class JulesOmegaOrganismV17:
-    def __init__(self, config_path: str = "config/constitutional_genome_v17.yaml"):
-        # Resolve path relative to this file's folder
-        root = Path(__file__).parent.parent
-        self.config_path = root / config_path
-        with open(self.config_path, 'r') as f:
-            self.genome = yaml.safe_load(f)
-
-        self.vsb = VSBUEGLogger()
-        self.gaas = GaaSValidatorV4(self.genome)
-        self.nemoclaw = NemoclawRuntime(self.gaas)
-        self.ssk = SovereignStateKernel(self.vsb)
-        self.nemo = NemotronIntegration(config_path="config/nemotron_config.yaml")
+    """
+    Agent Opus: Central Director.
+    Orchestrates the 5-stage IDBO-native biomimetic recirculation loop.
+    """
+    def __init__(self, config_dir: str = "workstation_v17/config"):
+        self.logger = logging.getLogger("JulesOmegaOrganism")
+        self.validator = GaaSValidatorV4(f"{config_dir}/constitutional_genome_v17.yaml", f"{config_dir}/legal_precision.yaml")
+        self.ueg = VSBUEGLogger()
+        self.state = SovereignStateKernel()
+        self.runtime = NemoclawRuntime(f"{config_dir}/nemotron_config.yaml")
+        self.nemo = NemotronIntegration()
         self.af3 = AlphaFold3Integration()
-        self.healing = BiomimeticSelfHealing(self.gaas, self.vsb)
-        self.fractal = FractalRecirculationEngine(self, self.nemoclaw, self.vsb)
-        self.federation = Libp2pFederation()
+        self.is_running = False
+        self.cycle_count = 0
 
-        self.active_cycles = 0
-        self.running = True
+    async def initialize(self):
+        self.logger.info("Initializing JULES v17.0 GOLDEN MASTER II [IDBO-Native]")
+        await self.ueg.initialize()
+        await self.state.load()
+        self.ueg.log_event("SYSTEM_INIT", {"version": "17.0.0", "status": "ENTITY_AWAKENED"}, "JULES")
+        self.is_running = True
 
-    async def initialize(self) -> Dict[str, Any]:
-        logger.info("Initializing JULES v17.0 GOLDEN MASTER II [IDBO-Native]")
-        await self.vsb.initialize()
-        await self.ssk.load()
-        await self.nemo.load_models()
-        await self.af3.load()
-        await self.healing.activate()
-        await self.federation.start()
-        await self.fractal.start()
-        return {"status": "ENTITY_AWAKENED", "version": "17.0.0"}
-
-    async def run_recirculation_cycle(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """v17.0: Macro Recirculation Cycle Execution."""
-        self.active_cycles += 1
-        cycle_id = f"v17_cycle_{self.active_cycles}"
-        await self.vsb.log_event("macro_cycle_start", {"id": cycle_id})
+    async def run_cycle(self):
+        """
+        Executes one full 5-stage biomimetic cycle:
+        SENSE (Afferent) -> ANALYSE (Cognitive) -> ACT (Efferent) -> LEARN (Synaptic) -> RECIRCULATE (Homeostatic)
+        """
+        self.cycle_count += 1
+        start_time = time.time()
+        cycle_id = f"v17_macro_cycle_{self.cycle_count}"
+        self.logger.info(f"Starting Macro Recirculation Cycle: {cycle_id}")
 
         try:
-            # 1. SENSE (Afferent)
-            sensed = await self._sense(input_data)
+            # 1. SENSE (Afferent Fusion)
+            sensed = await self._afferent_sense()
 
-            # 2. ANALYZE (Cognitive)
-            analysed = await self._analyse(sensed)
+            # 2. ANALYSE (Cognitive Deliberation)
+            analysed = await self._cognitive_analyse(sensed)
 
-            # 3. ACT (Efferent)
-            acted = await self._act(analysed)
+            # 3. ACT (Efferent Execution)
+            acted = await self._efferent_act(analysed)
 
-            # 4. LEARN (Synaptic)
-            learned = await self._learn(acted)
+            # 4. LEARN (Synaptic Plasticity)
+            learned = await self._synaptic_learn(acted)
 
-            # 5. EVOLVE (Homeostatic)
-            evolved = await self._evolve(learned, cycle_id)
+            # 5. RECIRCULATE (Homeostatic Evolution)
+            await self._homeostatic_recirculate(learned, cycle_id)
 
-            await self.vsb.log_event("macro_cycle_complete", {"id": cycle_id, "gain": evolved.get("gain")})
-            return evolved
+            duration = time.time() - start_time
+            self.logger.info(f"Cycle {cycle_id} completed in {duration:.2f}s")
+            self.ueg.log_event("MACRO_CYCLE_COMPLETE", {"id": cycle_id, "duration": duration}, "JULES")
 
         except Exception as e:
-            logger.error(f"Macro-cycle failed: {e}")
-            await self.vsb.log_event("macro_cycle_failed", {"error": str(e)})
-            raise
+            self.logger.error(f"Macro-cycle {cycle_id} failed: {e}")
+            self.ueg.log_event("MACRO_CYCLE_FAILURE", {"id": cycle_id, "error": str(e)}, "JULES")
 
-    async def _sense(self, data: Dict) -> Dict:
-        logger.info("SENSE: v17.0 multimodal fusion active...")
-        emb = await self.nemo.embed(data.get("text", ""))
-        return {**data, "embeddings": emb}
+    async def _afferent_sense(self) -> Dict:
+        self.logger.info("Stage 1: SENSE (Afferent Fusion)")
+        raw_signals = {"market": "biotech", "discovery": "protein_fold", "legal_query": "Equality_Act_s15"}
+        # Enrich with embeddings
+        emb = await self.nemo.embed(str(raw_signals))
+        sensed = {**raw_signals, "neural_signature": emb[:8]}
+        self.ueg.log_event("STAGE_SENSE", sensed, "AFFERENT_ENGINE")
+        return sensed
 
-    async def _analyse(self, sensed: Dict) -> Dict:
-        logger.info("ANALYZE: GaaS v4 + UK Legal Precision Engine + Causal Reasoning...")
-        # Nemoclaw gate
-        if not await self.nemoclaw.gate(sensed):
-            raise RuntimeError("Nemoclaw BLOCKED analytical reasoning path.")
+    async def _cognitive_analyse(self, sensed: Dict) -> Dict:
+        self.logger.info("Stage 2: ANALYSE (Cognitive Deliberation)")
+        # GaaS v4 + UK Legal Precision
+        valid = await self.validator.validate_action({"type": "analyse_legal", "category": "Employment", "data": sensed}, {})
+        truth_score = await self.validator.neural_verify("v17.0-Strategic-Intent")
 
-        legal_res = await self.gaas.validate_legal_async(sensed)
-        truth_score = await self.gaas.neural_verify("v17.0-Lead-Found")
+        analysis = {**sensed, "valid": valid, "truth_score": truth_score, "intent": "H-GM-II-ACTIVE"}
+        self.ueg.log_event("STAGE_ANALYSE", analysis, "COGNITIVE_ENGINE")
+        return analysis
 
-        return {**sensed, "legal": legal_res, "truth_score": truth_score, "hypotheses": ["H-GM-II"]}
+    async def _efferent_act(self, analysed: Dict) -> Dict:
+        self.logger.info("Stage 3: ACT (Efferent Execution)")
 
-    async def _act(self, analysed: Dict) -> Dict:
-        logger.info("ACT: Routing to specialized CoE Swarms...")
-        # AlphaFold 3Joint Prediction
-        af3_res = await self.af3.predict("MQIFVKTLTGKTITLEVEPS")
-        return {**analysed, "af3_result": af3_res, "status": "SIMULATED"}
+        async def efferent_task():
+            # Parallel AF3 and BTO check
+            af3_res = await self.af3.predict_structure("MQIFVKTLTGKTITLEVEPS")
+            return {"status": "SUCCESS", "af3_data": af3_res}
 
-    async def _learn(self, acted: Dict) -> Dict:
-        logger.info("LEARN: Pathway NAS evolution & Persistent update...")
-        await self.nemo.evolve_pathways(acted["truth_score"])
-        await self.ssk.update({"last_gain": 0.25})
-        return {**acted, "gain": 0.25}
+        results = await self.runtime.execute(efferent_task)
+        acted = {**analysed, "execution_results": results}
+        self.ueg.log_event("STAGE_ACT", acted, "EFFERENT_ENGINE")
+        return acted
 
-    async def _evolve(self, learned: Dict, cycle_id: str) -> Dict:
-        logger.info("EVOLVE: Fractal expansion & Paradigm generation...")
-        paradigm = await self.nemo.generate_paradigm(learned)
-        return {"cycle_id": cycle_id, "status": "EVOLVED", "gain": learned["gain"], "new_paradigm": paradigm}
+    async def _synaptic_learn(self, acted: Dict) -> Dict:
+        self.logger.info("Stage 4: LEARN (Synaptic Plasticity)")
+        # Path NAS evolution
+        await self.nemo.generate_paradigm("Biotech-Discovery")
+        gain = 0.25
+        learned = {**acted, "gain": gain, "synaptic_update": "COMPLETE"}
+        self.ueg.log_event("STAGE_LEARN", learned, "SYNAPTIC_ENGINE")
+        return learned
+
+    async def _homeostatic_recirculate(self, learned: Dict, cycle_id: str):
+        self.logger.info("Stage 5: RECIRCULATE (Homeostatic Evolution)")
+        # Persistent update to Sovereign State
+        self.state.commit_state(cycle_id, {"status": "EVOLVED", "gain": learned["gain"]})
+        self.ueg.log_event("STAGE_RECIRCULATE", {"id": cycle_id, "status": "fed_back"}, "HOMEOSTATIC_ENGINE")
 
     async def shutdown(self):
-        logger.info("Shutting down JULES v17.0 organism...")
-        await self.ssk.commit()
-        await self.federation.stop()
+        self.logger.info("Shutting down JULES v17.0 Digital Organism...")
+        await self.state.commit()
+        self.is_running = False
+        self.ueg.log_event("SYSTEM_SHUTDOWN", {}, "JULES")
