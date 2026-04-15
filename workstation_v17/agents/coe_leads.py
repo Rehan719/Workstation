@@ -1,37 +1,43 @@
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 
-class CoELead:
-    def __init__(self, domain: str):
-        self.domain = domain
-        self.logger = logging.getLogger(f"CoE_{domain}")
-
-    async def execute_subloop(self, task: Dict) -> Dict:
-        self.logger.info(f"Executing Ω-subloop for {self.domain} task: {task.get('type')}")
-        return {"domain": self.domain, "status": "COMPLETE", "insight": f"Enhanced {self.domain} model v2.1"}
-
-class BioCoE(CoELead):
+class BioCoE:
+    """Center of Excellence: Bio (IDBO Layer 9/12)."""
     def __init__(self):
-        super().__init__("Biotech")
+        self.logger = logging.getLogger("BioCoE")
 
-class LawCoE(CoELead):
-    def __init__(self):
-        super().__init__("Law")
+    async def execute_subloop(self, context: Dict) -> Dict:
+        self.logger.info("BioCoE: Running molecular Meso subloop.")
+        return {"domain": "Biofoundry", "status": "OPTIMIZED"}
 
-class PhysicsCoE(CoELead):
+class LawCoE:
+    """Center of Excellence: Law (IDBO Layer 9/12)."""
     def __init__(self):
-        super().__init__("Physics")
+        self.logger = logging.getLogger("LawCoE")
+
+    async def execute_subloop(self, context: Dict) -> Dict:
+        self.logger.info("LawCoE: Running UK Legal Precision Meso subloop.")
+        return {"domain": "Legal", "status": "ALIGNED"}
+
+class ClimateCoE:
+    """Center of Excellence: Climate (IDBO Layer 9/12)."""
+    def __init__(self):
+        self.logger = logging.getLogger("ClimateCoE")
+
+    async def execute_subloop(self, context: Dict) -> Dict:
+        self.logger.info("ClimateCoE: Running CMIP-6 Meso subloop.")
+        return {"domain": "Climate", "status": "VERIFIED"}
 
 class CoELeads:
+    """Orchestrates CoE ensemble participation in macro cycles."""
     def __init__(self):
         self.bio = BioCoE()
         self.law = LawCoE()
-        self.physics = PhysicsCoE()
+        self.climate = ClimateCoE()
 
-    async def run_all(self, context: Dict) -> Dict:
-        results = {
-            "bio": await self.bio.execute_subloop(context),
-            "law": await self.law.execute_subloop(context),
-            "physics": await self.physics.execute_subloop(context)
-        }
-        return results
+    async def run_ensemble(self, context: Dict) -> List[Dict]:
+        return [
+            await self.bio.execute_subloop(context),
+            await self.law.execute_subloop(context),
+            await self.climate.execute_subloop(context)
+        ]

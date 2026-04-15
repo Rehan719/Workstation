@@ -1,0 +1,3 @@
+strategy:
+  target_roi: 2.5
+  icp_resonance_threshold: 0.85
