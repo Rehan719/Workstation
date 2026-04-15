@@ -31,7 +31,7 @@ class DeepResearchEngine:
         research_log = []
 
         # 1. Hypothesis Generation
-        hypotheses = self._generate_hypotheses(question)
+        hypotheses = await self._generate_hypotheses(question)
         research_log.append({"step": "hypothesis_generation", "count": len(hypotheses)})
 
         # 2. Multi-source evidence collection (Iterative)
@@ -39,7 +39,7 @@ class DeepResearchEngine:
         all_evidence = []
 
         for i in range(iterations):
-            queries = self._formulate_queries(question, hypotheses, all_evidence)
+            queries = await self._formulate_queries(question, hypotheses, all_evidence)
             evidence_graph = await self.mushahida.acquire_evidence_async(queries)
             all_evidence.extend(evidence_graph.items)
             research_log.append({"step": "evidence_gathering", "iteration": i+1, "count": len(evidence_graph.items)})
@@ -63,14 +63,44 @@ class DeepResearchEngine:
         self.research_memory.append(report)
         return report
 
-    def _generate_hypotheses(self, question: str) -> List[str]:
-        # Logic to decompose question into testable hypotheses
-        return [f"Hypothesis 1: {question} is true", f"Hypothesis 2: {question} has alternative causes"]
+    async def _generate_hypotheses(self, question: str) -> List[str]:
+        """Uses LLM to decompose question into testable hypotheses."""
+        prompt = f"Decompose the following research question into 3 testable hypotheses for investigation:\nQuestion: {question}\nOutput: Return a JSON list of strings."
+        try:
+            from ollama import AsyncClient
+            import json
+            client = AsyncClient()
+            response = await client.generate(model="llama3.1:8b", prompt=prompt)
+            text = response['response']
+            start = text.find('[')
+            end = text.rfind(']') + 1
+            return json.loads(text[start:end])
+        except Exception as e:
+            logger.warning(f"Hypothesis generation fallback: {e}")
+            return [f"{question} is occurring", f"{question} has external drivers"]
 
-    def _formulate_queries(self, question: str, hypotheses: List[str], current_evidence: List[EvidenceItem]) -> List[str]:
-        # Logic to generate search queries based on question and current knowledge gaps
-        return [question] + hypotheses[:1]
+    async def _formulate_queries(self, question: str, hypotheses: List[str], current_evidence: List[EvidenceItem]) -> List[str]:
+        """Uses LLM to generate targeted search queries based on knowledge gaps."""
+        context = " ".join([e.content[:200] for e in current_evidence[-5:]])
+        prompt = f"Based on the question '{question}' and these hypotheses {hypotheses}, and current knowledge '{context}', generate 4 specific search queries to find missing evidence.\nOutput: Return a JSON list of strings."
+        try:
+            from ollama import AsyncClient
+            import json
+            client = AsyncClient()
+            response = await client.generate(model="llama3.1:8b", prompt=prompt)
+            text = response['response']
+            start = text.find('[')
+            end = text.rfind(']') + 1
+            return json.loads(text[start:end])
+        except Exception as e:
+            logger.warning(f"Query formulation fallback: {e}")
+            return [question] + hypotheses
 
     def _check_convergence(self, evidence: List[EvidenceItem]) -> bool:
-        # Simple convergence check: if we have more than 10 items, stop for now in standard mode
-        return len(evidence) >= 15
+        """Determines if enough evidence has been gathered."""
+        if len(evidence) < 5: return False
+        if len(evidence) >= 20: return True
+
+        # Check for redundancy in recent evidence
+        recent_hashes = [e.sha256 for e in evidence[-3:]]
+        return len(set(recent_hashes)) < len(recent_hashes)

@@ -1,0 +1,15 @@
+{
+    "domain_id": "patient_safety",
+    "queries": [
+        "patient safety and long-term risk proceduralism trap",
+        "LON-INT-FINAL-2026-003 whistleblower data March 28 2026",
+        "Equality Act 2010 section 13 direct discrimination healthcare",
+        "ACAS Code of Practice on disciplinary and grievance procedures 2026"
+    ],
+    "constraints": {
+        "jurisdiction": "UK",
+        "priority": "High",
+        "litigation_ready": true
+    },
+    "contributor": "Rehan"
+}

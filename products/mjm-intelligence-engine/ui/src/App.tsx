@@ -86,7 +86,7 @@ const App = () => {
               {step === 1 && (
                 <>
                   <DomainSelector selectedDomain={domainId} onSelect={setDomainId} />
-                  <MushahidaStep onNext={handleNext} />
+                  <MushahidaStep onNext={handleNext} domainId={domainId} />
                 </>
               )}
 
@@ -107,8 +107,8 @@ const App = () => {
                 </div>
               )}
 
-              {step === 2 && <JaizaStep evidence={data} onNext={handleNext} onBack={handleBack} />}
-              {step === 3 && <MuainaStep analysis={data} onBack={handleBack} />}
+              {step === 2 && <JaizaStep previousData={data} onNext={handleNext} onBack={handleBack} />}
+              {step === 3 && <MuainaStep previousData={data} onBack={handleBack} />}
             </>
           )}
 
