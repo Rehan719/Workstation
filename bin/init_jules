@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+import argparse
+import sys
+import os
+import json
+import yaml
+from datetime import datetime
+
+# Add project root to path
+sys.path.append(os.getcwd())
+
+def main():
+    parser = argparse.ArgumentParser(description="JULES v9.0 Neural-Super-Agent Initialization")
+    parser.add_argument("--role", required=True)
+    parser.add_argument("--loop", required=True)
+    parser.add_argument("--assimilate", required=True)
+    parser.add_argument("--horizon", required=True)
+    parser.add_argument("--safety_interrupts", required=True)
+    parser.add_argument("--compute_routing", required=True)
+    parser.add_argument("--vertical", required=True)
+    parser.add_argument("--constitutional_genome", required=True)
+    parser.add_argument("--nemo_config", required=True)
+    parser.add_argument("--nematron_enabled", required=True)
+
+    args = parser.parse_args()
+
+    print("🟢 INITIALIZING JULES: OMEGA NEURAL-SUPER-AGENT RECIRCULATION CAMPAIGN (v9.0)")
+    print(f"Mandate: {args.role} | Loop: {args.loop} | Genome: {args.constitutional_genome}")
+
+    # 1. ARCHITECTURE_MAP
+    with open("recirculation/architecture_map.yaml", "r") as f:
+        print("\n1. ARCHITECTURE_MAP:")
+        print(f.read())
+
+    # 2. RECIRCULATION_CONFIG
+    with open("recirculation/recirculation_config.yaml", "r") as f:
+        print("\n2. RECIRCULATION_CONFIG:")
+        print(f.read())
+
+    # 3. NEURAL_SUPER_AGENT_SWARM_INIT
+    with open("recirculation/agent_swarm_init.yaml", "r") as f:
+        print("\n3. NEURAL_SUPER_AGENT_SWARM_INIT:")
+        print(f.read())
+
+    # 4. ICP_AND_PMC
+    with open("recirculation/icp_and_pmc.yaml", "r") as f:
+        print("\n4. ICP_AND_PMC:")
+        print(f.read())
+
+    # 5. PRODUCT_VALUE_10_WORDS
+    with open("recirculation/product_value_10_words.txt", "r") as f:
+        print("\n5. PRODUCT_VALUE_10_WORDS:")
+        print(f.read().strip())
+
+    # 6. LONG_HORIZON_TASK
+    with open("recirculation/long_horizon_task.yaml", "r") as f:
+        print("\n6. LONG_HORIZON_TASK:")
+        print(f.read())
+
+    # 7. INIT_LOG (First cycle status)
+    print("\n7. INIT_LOG:")
+    init_log = {
+        "timestamp": datetime.now().isoformat(),
+        "status": "LOOP_ACTIVATED",
+        "neural_circuit_breaker": "NOMINAL",
+        "first_cycle": "PENDING_EXECUTION"
+    }
+    print(json.dumps(init_log, indent=2))
+
+    print("\n🚀 JULES, YOU ARE NOW LIVE. BEGINNING RECIRCULATION...")
+
+    # Trigger actual execution
+    from src.recirculation.main_v9 import JulesOmegaOrchestratorV9
+    import asyncio
+    orchestrator = JulesOmegaOrchestratorV9()
+    asyncio.run(orchestrator.run_v9_cycle())
+
+if __name__ == "__main__":
+    main()

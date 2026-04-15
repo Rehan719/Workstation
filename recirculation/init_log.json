@@ -20,5 +20,17 @@
       "neural_gain": 0.16,
       "truth_score": 0.95
     }
+  },
+  {
+    "timestamp": "2026-04-15T03:26:36.851425",
+    "cycle": 1,
+    "duration_s": 0.0002040863037109375,
+    "status": "SUCCESS",
+    "circuit_breaker": "GREEN",
+    "metrics": {
+      "velocity_ms": 0.2040863037109375,
+      "neural_gain": 0.16,
+      "truth_score": 0.95
+    }
   }
 ]
