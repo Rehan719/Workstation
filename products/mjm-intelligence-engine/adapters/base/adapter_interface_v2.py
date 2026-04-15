@@ -9,18 +9,20 @@ class BaseAdapterV2(ABC):
 
     @abstractmethod
     async def connect(self) -> bool:
-        pass
+        """Establishes connection to the adapter's backend."""
+        return True
 
     @abstractmethod
     async def publish(self, topic: str, payload: Any) -> Dict[str, Any]:
-        pass
+        """Publishes a payload to a specific ecosystem topic."""
+        return {"status": "published", "topic": topic}
 
     @abstractmethod
     async def stream_query(self, query_spec: Dict[str, Any]) -> AsyncIterator[Dict[str, Any]]:
         """Yields results in chunks for efficiency."""
-        yield {"chunk": "default"}
+        yield {"chunk": "adapter_base_v2_stream_active"}
 
     @abstractmethod
     async def receive_meta_context(self, context: Dict[str, Any]):
         """Accepts meta-cognitive strategy alignment data."""
-        pass
+        return {"context_ingested": True}

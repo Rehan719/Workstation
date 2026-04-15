@@ -38,8 +38,8 @@ class OmniLearningEngine:
         logger.info(f"OmniLearning: Ingesting {signal.type} signal from {signal.source}")
         self.signal_history.append(signal)
 
-        # 1. Pattern Extraction (Simulated for RC, logic to be expanded)
-        extracted_patterns = self._extract_patterns(signal)
+        # 1. Pattern Extraction via LLM Synthesis
+        extracted_patterns = await self._extract_patterns_async(signal)
 
         # 2. Store domain-specific patterns
         domain_id = signal.payload.get("domain_id", "universal")
@@ -52,8 +52,10 @@ class OmniLearningEngine:
             if p.get("generalization_score", 0) > 0.8:
                 self.universal_patterns.append(p)
 
-        # 4. Federated Share (Simulated)
-        federated_sent = self.config.get("federation_enabled", False)
+        # 4. Federated Share (Actual persistence to shared ecosystem log)
+        federated_sent = False
+        if self.config.get("federation_enabled", False):
+            federated_sent = self._broadcast_to_ecosystem(signal, extracted_patterns)
 
         return OmniLearningReceipt(
             signal_id=signal.id,
@@ -62,25 +64,52 @@ class OmniLearningEngine:
             federated_share_sent=federated_sent
         )
 
-    def _extract_patterns(self, signal: OmniSignal) -> List[Dict[str, Any]]:
-        """Extracts patterns based on signal type and content."""
+    async def _extract_patterns_async(self, signal: OmniSignal) -> List[Dict[str, Any]]:
+        """Extracts patterns using LLM analysis of the signal payload."""
+        prompt = f"""
+        Analyze the following signal for reusable intelligence patterns:
+        Source: {signal.source}
+        Type: {signal.type}
+        Payload: {json.dumps(signal.payload)}
+
+        Output: Return a JSON list of pattern objects: {{ "id": string, "type": string, "description": string, "generalization_score": float }}
+        """
+        try:
+            from ollama import AsyncClient
+            client = AsyncClient()
+            response = await client.generate(model="llama3.1:8b", prompt=prompt)
+            text = response['response']
+            start = text.find('[')
+            end = text.rfind(']') + 1
+            return json.loads(text[start:end])
+        except Exception as e:
+            logger.warning(f"Omni pattern extraction fallback: {e}")
+            return self._heuristic_pattern_extraction(signal)
+
+    def _heuristic_pattern_extraction(self, signal: OmniSignal) -> List[Dict[str, Any]]:
         patterns = []
-        if signal.type == "execution_outcome":
-            success = signal.payload.get("success", False)
-            if success:
-                patterns.append({
-                    "id": f"P-{signal.id}",
-                    "type": "successful_strategy",
-                    "strategy_id": signal.payload.get("strategy_id"),
-                    "generalization_score": 0.85
-                })
-        elif signal.type == "meta_decision":
+        if signal.type == "execution_outcome" and signal.payload.get("success"):
             patterns.append({
-                "id": f"PM-{signal.id}",
-                "type": "meta_logic_shift",
-                "generalization_score": 0.92
+                "id": f"P-{signal.id}",
+                "type": "success_heuristic",
+                "description": f"Successful execution in {signal.payload.get('domain_id')}",
+                "generalization_score": 0.7
             })
         return patterns
+
+    def _broadcast_to_ecosystem(self, signal: OmniSignal, patterns: List[Dict[str, Any]]) -> bool:
+        """Persists learned patterns to a shared ecosystem discovery log."""
+        try:
+            log_entry = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "signal_id": signal.id,
+                "patterns": patterns
+            }
+            with open("ecosystem_discovery.log", "a") as f:
+                f.write(json.dumps(log_entry) + "\n")
+            return True
+        except Exception:
+            return False
 
     async def replay_experiences(self, domain_id: str) -> List[Dict[str, Any]]:
         """Returns relevant learned patterns for a domain."""
