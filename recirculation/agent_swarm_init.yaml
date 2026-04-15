@@ -1,51 +1,22 @@
-swarm_id: "OMEGA-FRACTAL-SWARM-v9.0"
-constitutional_genome: "v9.0.0-neural-super-agent-rc"
-reporting_hierarchy: "CEO_Agent → MultiSigCouncil"
+swarm_id: "OMEGA-GOLDEN-SWARM-v16.0"
+constitutional_genome: "v16.0.0-neural-super-agent-biomimetic-golden-rc"
 executive_swarm:
   ceo_agent:
-    role: "Strategy & Fractal Governance (CEO)"
-    mapping: "Layer 12 - UX / Orchestration"
-    pathway: "Meta-Reasoning"
+    role: "Strategic Sovereign CEO"
+    pathway: "LatentMoE-Meta-Reasoning"
   cfo_agent:
-    role: "Financial Modeling & ROI (CFO)"
-    mapping: "Layer 4 - Regulation"
-    pathway: "Risk-Reward"
-  coo_agent:
-    role: "Operational Workflows & Scaling (COO)"
-    mapping: "Layer 9 - Orchestration"
-    pathway: "Operations"
-  cro_agent:
-    role: "Risk Assessment & Circuit Breakers (CRO)"
-    mapping: "Layer 5 - Resilience"
-    pathway: "Risk"
-  cto_agent:
-    role: "Tech Stack & Sovereign AI (CTO)"
-    mapping: "Layer 2 - Hardware / Sovereignty"
-    pathway: "Tech"
+    role: "Economics & UK Legal Compliance"
+    pathway: "Precision-Legal"
+  clo_agent:
+    role: "Chief Legal Officer (UK Employment Law)"
+    pathway: "Tribunal-Protocol"
   chief_scientist:
-    role: "R&D & Falsification (Chief Scientist)"
-    mapping: "Layer 3 - Expression"
-    pathway: "Discovery"
-  cso_agent:
-    role: "Knowledge Curation (Scholarship Officer)"
-    mapping: "Layer 7 - Module Library"
-    pathway: "Scholarship"
-  cpo_agent:
-    role: "Product-Market Fit & Value (CPO)"
-    mapping: "Layer 12 - User Experience"
-    pathway: "Product"
-  bto_director:
-    role: "Continuous Transformation (BTO Director)"
-    mapping: "Layer 10 - Evolution"
-    pathway: "Transformation"
-coe_leads:
-  - Biotech
-  - Materials
-  - Legal
-  - Finance
+    role: "AlphaFold 3 R&D Lead"
+    pathway: "Joint-Complex-Prediction"
 communication:
-  protocol: "Encrypted WebSocket + libp2p + AR/VR Presence"
-  haptic_feedback: "Gated via Nematron Neural Circuit Breakers"
+  protocol: "NATS + libp2p (TLS/mTLS)"
+  gating: "Nemoclaw GaaS v4 Interception"
+  presence: "Holographic AR/VR (Encrypted)"
 routing:
-  strategy: "Nematron-NAS Adaptive Routing"
-  default_priority: "Normal"
+  strategy: "Nemotron-driven AGI compute routing"
+  priority: "Maximum Autonomous"

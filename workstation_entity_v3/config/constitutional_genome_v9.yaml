@@ -1,6 +1,6 @@
 constitutional_genome:
-  version: "10.0.0"
-  id: "deca_veritas_neural_super_agent_v10"
+  version: "16.0.0"
+  id: "deca_veritas_neural_super_agent_v16_golden"
   truth_dimensions:
     I_objective_reality: {weight: 1.0, enabled: true}
     II_empirical_evidence: {weight: 1.0, enabled: true}
@@ -15,31 +15,18 @@ constitutional_genome:
   governance:
     gaas_v4:
       enforcement_modes: [coercive, normative, adaptive, biomimetic]
-      protocol_interceptors: [MCP, A2A, ACP, AutoGen, LangGraph, CrewAI, Mammouth, NeMo, AlphaFold3]
+      protocol_interceptors: [MCP, A2A, ACP, AutoGen, LangGraph, CrewAI, Mammouth, NeMo, AlphaFold3, UK_ET_Compliance]
       circuit_breaker_integration: true
-      audit_loop_checkpointer: "LangGraph+UEG+Nematron_Neural_Verification"
-  neural_super_agent_orchestration:
-    frameworks:
-      nemo_nematron_v3:
-        enabled: true
-        use_cases: [neural_pathway_optimization, adaptive_reasoning, sovereign_training]
-        architecture: "LatentMoE"
-      mammouth:
-        enabled: true
-        use_cases: [process_templating, agent_generation, constitutional_evolution]
-      autogen:
-        enabled: true
-      langgraph:
-        enabled: true
-      crewai:
-        enabled: true
-    agent_registry: "content_addressed_dag_layer7"
-  core_process_streams:
-    business: {enabled: true, orchestrator: "nemotron3+langgraph+autogen"}
-    science: {enabled: true, orchestrator: "nemotron3+langgraph+mammouth"}
-    scholarship: {enabled: true, orchestrator: "nemotron3+crewai+langgraph"}
-    domain_specific: {enabled: true, orchestrator: "nemotron3+autogen+crewai"}
+      audit_loop_checkpointer: "LangGraph+UEG+VSB+Nematron_Neural_Verification"
+  neural_verifier:
+    enabled: true
+    model: "nemotron-3-super-120b"
+    prompt_template: |
+      Evaluate the following claim against truth dimension {dimension}.
+      Claim: {claim}
+      Score 0-1 and explain briefly.
   biomimetic_adaptation:
     self_healing: enabled
     synaptic_plasticity: enabled
     homeostatic_scaling: enabled
+    uk_legal_precision: enabled

@@ -1,18 +1,10 @@
-vertical: "Computational Biotech - Materials Discovery"
-bto_catalog_registration: "BTO-CAT-BIO-777"
-market_segment: "R&D-focused Biotech Startups"
-vertical_niche: "AI-driven small molecule lead optimization"
-pain_points:
-  - "High cost of wet-lab validation"
-  - "Long iteration cycles between synthesis and testing"
-ideal_customer_profile:
-  - "Series A biotech companies"
+vertical: "Biotech Discovery & UK Employment Law"
+market_segment: "High-Regulated AI R&D Organisms"
 unit_economics:
-  cost_per_simulation: "$0.05"
-  insight_value_multiplier: "100x"
-  viral_coefficient_target: "1.2"
-distribution_channels:
-  - "Open-source breakthroughs (VSB-published)"
-  - "Scientific publications"
-go_viral_trigger: "Real-time transparent protein-folding breakthrough live stream via CCO agent"
-provenance: "VSB-Verified"
+  cost_per_cycle: "0.0001 WST"
+  latency_optimized: "99.9%"
+viral_economics:
+  target_coefficient: "1.5"
+  mechanism: "Open-source legal breakthroughs & AlphaFold 3 insights"
+legal_alignment: "UK_Employment_Tribunal_Ready"
+PMF: "85% resonance target"
