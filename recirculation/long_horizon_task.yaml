@@ -1,16 +1,17 @@
-objective: "Autonomous discovery of a novel lead compound for metabolic targets using Neural-Super-Agent swarms."
+objective: "Autonomous discovery of metabolic inhibitors using IDBO-native Neural-Super-Agent swarms."
 horizon: "Infinite"
+sovereign_state_strategy: "Delta-Snapshot per Cycle"
 compute_routing:
   local: "Edge-optimized (Ollama/vLLM)"
-  distributed: "Nematron-driven AGI compute routing"
+  distributed: "Nematron-driven AGI routing (VSB-coordinated)"
   neural_pathway_targets: ["binding_affinity_precision", "simulation_latency"]
 milestones:
-  - "Nemo-integrated AlphaFold v9.0 deployment"
-  - "First LangGraph-governed scientific debate loop"
+  - "Nemo-integrated AlphaFold v9.0 deployment in CoE-Bio"
+  - "First VSB-verified scientific debate loop"
   - "15% performance gain via Nematron NAS evolution"
 alignment:
-  safety_layer: "Nemoclaw Guard v9.0"
+  safety_layer: "Nemoclaw Guard v9.0 (GaaS v3)"
   neural_circuit_breakers:
-    - "Hallucination detection > 1%"
+    - "Hallucination detection > 1% (NC-GOV-001)"
     - "Policy divergence from Constitutional Genome"
-    - "UEG integrity failure"
+    - "VSB integrity failure"

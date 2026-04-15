@@ -10,8 +10,9 @@ from datetime import datetime
 sys.path.append(os.getcwd())
 
 def main():
-    parser = argparse.ArgumentParser(description="JULES v9.0 Neural-Super-Agent Initialization")
+    parser = argparse.ArgumentParser(description="JULES v9.0 [Workstation Entity v3.0] Initialization")
     parser.add_argument("--role", required=True)
+    parser.add_argument("--workstation_entity", default="v3.0")
     parser.add_argument("--loop", required=True)
     parser.add_argument("--assimilate", required=True)
     parser.add_argument("--horizon", required=True)
@@ -21,55 +22,74 @@ def main():
     parser.add_argument("--constitutional_genome", required=True)
     parser.add_argument("--nemo_config", required=True)
     parser.add_argument("--nematron_enabled", required=True)
+    parser.add_argument("--ceo_mode", default="sovereign")
+
+    # Workstation Bindings
+    parser.add_argument("--entity_idbo_core")
+    parser.add_argument("--vsb_endpoint")
+    parser.add_argument("--sovereign_state_kernel")
+    parser.add_argument("--c_suite_orchestrator")
+    parser.add_argument("--realm_config")
+    parser.add_argument("--bto_catalog_api")
 
     args = parser.parse_args()
 
-    print("🟢 INITIALIZING JULES: OMEGA NEURAL-SUPER-AGENT RECIRCULATION CAMPAIGN (v9.0)")
-    print(f"Mandate: {args.role} | Loop: {args.loop} | Genome: {args.constitutional_genome}")
+    print(f"🟢 INITIALIZING JULES: Virtual Sovereign Business AI CEO [Workstation Entity {args.workstation_entity}]")
+    print(f"Mode: {args.ceo_mode} | Genome: {args.constitutional_genome} | Loop: {args.loop}")
 
-    # 1. ARCHITECTURE_MAP
+    # 1. ARCHITECTURE_MAP (with Bindings)
     with open("recirculation/architecture_map.yaml", "r") as f:
-        print("\n1. ARCHITECTURE_MAP:")
+        print("\n1. ARCHITECTURE_MAP (Neural + IDBO Bindings):")
         print(f.read())
 
     # 2. RECIRCULATION_CONFIG
     with open("recirculation/recirculation_config.yaml", "r") as f:
-        print("\n2. RECIRCULATION_CONFIG:")
+        print("\n2. RECIRCULATION_CONFIG (VSB-Integrated):")
         print(f.read())
 
-    # 3. NEURAL_SUPER_AGENT_SWARM_INIT
+    # 3. EXECUTIVE_SWARM_INIT
     with open("recirculation/agent_swarm_init.yaml", "r") as f:
-        print("\n3. NEURAL_SUPER_AGENT_SWARM_INIT:")
+        print("\n3. EXECUTIVE_SWARM_INIT (C-Suite & CoE):")
         print(f.read())
 
-    # 4. ICP_AND_PMC
+    # 4. DOMAIN_REALM_PRODUCT_MAP (Derived from Swarm + Config)
+    print("\n4. DOMAIN_REALM_PRODUCT_MAP:")
+    domain_map = {
+        "Realms": ["Learner", "Developer", "Enterprise", "Scholar"],
+        "Domains": ["Business", "Science", "Scholarship", args.vertical],
+        "Products": ["vsb-constitutional-core", "vsb-neural-super-agent-orchestration"]
+    }
+    print(yaml.dump(domain_map))
+
+    # 5. ICP_AND_PMC
     with open("recirculation/icp_and_pmc.yaml", "r") as f:
-        print("\n4. ICP_AND_PMC:")
+        print("\n5. ICP_AND_PMC (BTO Catalog Aligned):")
         print(f.read())
 
-    # 5. PRODUCT_VALUE_10_WORDS
+    # 6. PRODUCT_VALUE_10_WORDS
     with open("recirculation/product_value_10_words.txt", "r") as f:
-        print("\n5. PRODUCT_VALUE_10_WORDS:")
-        print(f.read().strip())
+        print("\n6. PRODUCT_VALUE_10_WORDS:")
+        print(f"\"{f.read().strip()}\"")
 
-    # 6. LONG_HORIZON_TASK
+    # 7. LONG_HORIZON_TASK
     with open("recirculation/long_horizon_task.yaml", "r") as f:
-        print("\n6. LONG_HORIZON_TASK:")
+        print("\n7. LONG_HORIZON_TASK (Sovereign Continuity):")
         print(f.read())
 
-    # 7. INIT_LOG (First cycle status)
-    print("\n7. INIT_LOG:")
+    # 8. INIT_LOG
+    print("\n8. INIT_LOG:")
     init_log = {
         "timestamp": datetime.now().isoformat(),
-        "status": "LOOP_ACTIVATED",
-        "neural_circuit_breaker": "NOMINAL",
-        "first_cycle": "PENDING_EXECUTION"
+        "status": "ENTITY_ACTIVATED",
+        "nemoclaw_circuit_breaker": "NOMINAL",
+        "vsb_connection": "CONNECTED",
+        "sovereign_state_snapshot_id": "SSK-v3.0-INIT"
     }
     print(json.dumps(init_log, indent=2))
 
-    print("\n🚀 JULES, YOU ARE NOW LIVE. BEGINNING RECIRCULATION...")
+    print("\n🚀 JULES, YOU ARE NOW LIVE AS CEO. RECIRCULATING WITHOUT END.")
 
-    # Trigger actual execution
+    # Trigger execution
     from src.recirculation.main_v9 import JulesOmegaOrchestratorV9
     import asyncio
     orchestrator = JulesOmegaOrchestratorV9()

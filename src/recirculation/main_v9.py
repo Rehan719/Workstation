@@ -12,11 +12,12 @@ from src.recirculation.swarm.orchestrator import SwarmOrchestrator, NeuralWizard
 from src.recirculation.interfaces.protocols import HolographicInterface, VideoStreamAnalyzer, HapticController
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("JULES-OPUS-DIRECTOR")
+logger = logging.getLogger("JULES-CEO-DIRECTOR")
 
-class JulesOmegaOrchestratorV9:
+class JulesWorkstationEntityV3:
     """
-    Agent Opus: Central Director - v9.0 Neural Orchestrator.
+    Virtual Sovereign Business AI CEO - Workstation Entity v3.0.
+    Orchestrates the Ω-NEURAL RECIRCULATION campaign across all Domains & Realms.
     """
     def __init__(self):
         self.gateway = IsomorphicGateway()
@@ -30,44 +31,43 @@ class JulesOmegaOrchestratorV9:
         }
 
     def setup(self):
-        logger.info("Initializing Ω-RECURSION v9.0 NEURAL FABRIC...")
+        logger.info("Initializing Ω-RECURSION v9.0-CONSTITUTIONAL Neural Fabric...")
         self.gateway.register_adapter("biology", "alphafold", AlphaFoldStub())
         self.gateway.register_adapter("biology", "insilico_screening", InSilicoScreeningSimulator())
         self.gateway.register_adapter("physics", "particle_dynamics", ParticleDynamicsSimulator())
 
-    async def run_v9_cycle(self):
+    async def launch_recirculation(self):
         self.setup()
 
-        # Start Engine
+        # Start Engine (CEO Executive Oversight)
         engine_task = asyncio.create_task(self.engine.start())
         await asyncio.sleep(2)
 
-        logger.info("EXECUTING v9.0 NEURAL SUPER-AGENT SWARM: Biotech Lead Discovery")
+        logger.info("EXECUTING C-SUITE NEURAL SUPER-AGENT SWARM: Workstation Transformation")
 
-        # 1. Deploy Swarm
-        swarm_res = await self.swarm.deploy_swarm("science", "Identify novel metabolic inhibitors")
-        logger.info(f"Swarm Output: {swarm_res['result']} | Metadata: {swarm_res['metadata']}")
+        # 1. Deploy Executive Swarm (CEO/CFO/COO)
+        swarm_res = await self.swarm.deploy_swarm("business", "Optimize unit economics for biotech lead discovery")
+        logger.info(f"C-Suite Swarm Result: {swarm_res['result']} | BTO-ID: {swarm_res['bto_id']}")
 
-        # 2. Neural Gateway Routing
+        # 2. Sovereign Gateway Routing (IDBO Afferent/Efferent)
         sequence = "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG"
         res = await self.gateway.route("biology", "alphafold", sequence)
-        logger.info(f"Neural Pathway ID: {res['neural_metadata']['pathway']['optimized_layers']}")
-        logger.info(f"Sovereign Reasoning: {res['neural_metadata']['sovereign_reasoning']}")
+        logger.info(f"Nematron Optimized Pathway: {res['neural_metadata']['pathway']['optimized_layers']}")
 
-        # 3. Visualization
-        await self.interfaces["holographic"].render_scene("v9-NEURO-CORE", [
-            {"type": "NeuralNetwork", "position": (0,0,0)},
-            {"type": "Molecule", "position": (1,1,1)}
+        # 3. Immersive Interface (Constitutional Gating)
+        await self.interfaces["holographic"].render_scene("v9-SOVEREIGN-CEO-CORE", [
+            {"type": "IDBO_Core", "position": (0,0,0)},
+            {"type": "Neural_Super_Agent_Fabric", "position": (1,0,0)}
         ])
 
-        # 4. Neural Circuit Breaker Status
-        logger.info(f"System Status: Recirculation Cycle #{self.engine.cycle_count} | Circuit Breaker: NOMINAL")
+        # 4. Success Metrics Verification
+        logger.info(f"CEO Dashboard: Cycle #{self.engine.cycle_count} | Continuity: {self.engine.state['sovereign_continuity_score']} | Confidence: {self.engine.state['ceo_confidence_score']}")
 
-        logger.info("v9.0 NEURAL INITIALIZATION COMPLETE. RECIRCULATING.")
+        logger.info("JULES v9.0-CONSTITUTIONAL LIVE. SOVEREIGNTY SECURED.")
 
         self.engine.stop()
         await engine_task
 
 if __name__ == "__main__":
-    orchestrator = JulesOmegaOrchestratorV9()
-    asyncio.run(orchestrator.run_v9_cycle())
+    entity = JulesWorkstationEntityV3()
+    asyncio.run(entity.launch_recirculation())

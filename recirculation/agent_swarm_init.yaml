@@ -1,26 +1,32 @@
 swarm_id: "OMEGA-RECURSION-SWARM-v9.0-NEURAL"
 constitutional_genome: "v9.0.0-neural-super-agent-rc"
-orchestrators:
-  business: "Nemo+Nematron + LangGraph + AutoGen"
-  science: "Nemo+Nematron + LangGraph + Mammouth"
-  scholarship: "Nemo+Nematron + CrewAI + LangGraph"
-  domain_generic: "Nemo+Nematron + AutoGen + CrewAI"
-agent_clusters:
-  rational:
-    role: "Data & Logic Validator"
+workstation_mapping:
+  orchestrator: "/src/organism/csuite/"
+  neural_bus: "vsb:omega:internal"
+executive_roles:
+  ceo_agent:
+    role: "Rational Strategy (CEO)"
+    mapping: "Biomimetic Layer 12 - UX/Orchestration"
     backbone: "NeMo Sovereign"
-    mapping: "Biomimetic Layer 4 - Cognitive Logic"
-  emotional:
-    role: "Human Connection & Passion Agent"
+  cfo_agent:
+    role: "Economics & Unit ROI (CFO)"
+    mapping: "Biomimetic Layer 4 - Regulation"
+    backbone: "Rational Neural"
+  cco_agent:
+    role: "Human Connection (CCO)"
+    mapping: "Biomimetic Layer 2 - Expression/Passion"
     backbone: "Nematron Pathway"
-    mapping: "Biomimetic Layer 2 - Affective Resonator"
-  synthesis:
-    role: "Constitutional Neural Fusion Agent"
-    backbone: "Nematron-Optimized Cross-Modal"
-    mapping: "Biomimetic Layer 8 - Integrative Cortex"
+  coo_agent:
+    role: "Synthesis & Execution (COO)"
+    mapping: "Biomimetic Layer 9 - Orchestration"
+    backbone: "Nematron-Optimized"
+coe_mapping:
+  science: "CoE-Science Realm"
+  scholarship: "CoE-Knowledge Realm"
+  business: "Enterprise Realm"
 communication:
-  protocol: "Encrypted WebSocket + AR/VR Presence"
-  haptic_feedback: "Gated via Constitutional Neural Circuit Breakers"
+  protocol: "Encrypted VSB + AR/VR Presence"
+  haptic_feedback: "Gated via Nemoclaw Circuit Breakers"
 routing:
   strategy: "Nematron-NAS Adaptive Routing"
   default_priority: "Normal"
