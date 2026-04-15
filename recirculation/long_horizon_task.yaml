@@ -1,0 +1,15 @@
+objective: "Autonomous discovery of a novel lead compound for a high-priority metabolic target."
+horizon: "Infinite - Continuous improvement"
+compute_routing:
+  local: "CUDA-accelerated workstation"
+  distributed: "On-demand AGI-scale cloud (simulated)"
+  strategy: "latency_optimized_dag"
+milestones:
+  - "Successful integration of AlphaFold stub with physics simulation"
+  - "First recursive code optimization cycle with >5% efficiency gain"
+  - "Tree of All Knowledge expanded with 10k bio-entity nodes"
+alignment:
+  safety_layer: "Nemoclaw Guard"
+  interrupt_triggers:
+    - "Divergence from human-aligned goals"
+    - "Unstable recursive code behavior"
