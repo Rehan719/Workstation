@@ -1,22 +1,15 @@
-swarm_id: "OMEGA-GOLDEN-SWARM-v16.0"
-constitutional_genome: "v16.0.0-neural-super-agent-biomimetic-golden-rc"
+swarm_id: "OMEGA-FRACTAL-GOLDEN-II"
+constitutional_genome: "v17.0.0-neural-super-agent-biomimetic-golden-ii-rc"
 executive_swarm:
-  ceo_agent:
-    role: "Strategic Sovereign CEO"
-    pathway: "LatentMoE-Meta-Reasoning"
-  cfo_agent:
-    role: "Economics & UK Legal Compliance"
-    pathway: "Precision-Legal"
-  clo_agent:
-    role: "Chief Legal Officer (UK Employment Law)"
-    pathway: "Tribunal-Protocol"
-  chief_scientist:
-    role: "AlphaFold 3 R&D Lead"
-    pathway: "Joint-Complex-Prediction"
+  ceo_agent: {role: "Agent Opus: Central Director", backbone: "Nemotron 3 Super"}
+  cfo_clo_agent: {role: "Economics & UK Legal Strategy", backbone: "Precision-Legal"}
+  cco_agent: {role: "Chief Connection Officer (Social Capital)", backbone: "Emotional-Pathway"}
+  chief_scientist: {role: "AlphaFold 3 / Biofoundry Lead", backbone: "Scientific-Method"}
+coe_leads: [Biotech, Materials, Legal, Business, Climate, Materials, GINCO_Biofoundry]
 communication:
-  protocol: "NATS + libp2p (TLS/mTLS)"
-  gating: "Nemoclaw GaaS v4 Interception"
-  presence: "Holographic AR/VR (Encrypted)"
+  protocol: "NATS + libp2p (SHA-3-512 VSB)"
+  presence: "Holographic v17.0 Immersive"
+  haptics: "Biomimetic Adaptive"
 routing:
-  strategy: "Nemotron-driven AGI compute routing"
-  priority: "Maximum Autonomous"
+  strategy: "Fractal-Contextual Latent Routing"
+  optimization: "Nematron-v17-NAS"

@@ -1,6 +1,6 @@
 constitutional_genome:
-  version: "16.0.0"
-  id: "deca_veritas_neural_super_agent_v17_golden"
+  version: "17.0.0"
+  id: "deca_veritas_neural_super_agent_v17_golden_ii"
   truth_dimensions:
     I_objective_reality: {weight: 1.0, enabled: true}
     II_empirical_evidence: {weight: 1.0, enabled: true}
@@ -15,18 +15,16 @@ constitutional_genome:
   governance:
     gaas_v4:
       enforcement_modes: [coercive, normative, adaptive, biomimetic]
-      protocol_interceptors: [MCP, A2A, ACP, AutoGen, LangGraph, CrewAI, Mammouth, NeMo, AlphaFold3, UK_ET_Compliance]
+      protocol_interceptors: [MCP, A2A, ACP, AutoGen, LangGraph, CrewAI, Mammouth, NeMo, AlphaFold3, UK_Legal_Precision]
       circuit_breaker_integration: true
       audit_loop_checkpointer: "LangGraph+UEG+VSB+Nematron_Neural_Verification"
-  neural_verifier:
-    enabled: true
-    model: "nemotron-3-super-120b"
-    prompt_template: |
-      Evaluate the following claim against truth dimension {dimension}.
-      Claim: {claim}
-      Score 0-1 and explain briefly.
+  legal_precision:
+    jurisdictions: [UK_Employment, UK_Civil, UK_Taxation]
+    enforced_acts: [Equality_Act_2010, ERA_1996, GDPR_UK]
+  domains:
+    expanded: [Religion, Science, Law, Employment, Education, Climate_Science, Materials_Discovery, GINCO_Biotech]
   biomimetic_adaptation:
     self_healing: enabled
     synaptic_plasticity: enabled
     homeostatic_scaling: enabled
-    uk_legal_precision: enabled
+    fractal_recirculation: true

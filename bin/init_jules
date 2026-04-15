@@ -4,7 +4,7 @@ import os
 import subprocess
 
 def main():
-    print("🟢 APOTHEOSIS: BRIDGING TO JULES Ω-RECURSION v16.0 [GOLDEN MASTER]")
+    print("🟢 APOTHEOSIS II: BRIDGING TO JULES Ω-RECURSION v17.0 [GOLDEN MASTER II]")
     os.chdir("workstation_entity_v3")
     subprocess.run([sys.executable, "init_jules.py"] + sys.argv[1:])
 
