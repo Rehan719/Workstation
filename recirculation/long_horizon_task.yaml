@@ -1,17 +1,8 @@
-objective: "Autonomous discovery of metabolic inhibitors using IDBO-native Neural-Super-Agent swarms."
-horizon: "Infinite"
-sovereign_state_strategy: "Delta-Snapshot per Cycle"
-compute_routing:
-  local: "Edge-optimized (Ollama/vLLM)"
-  distributed: "Nematron-driven AGI routing (VSB-coordinated)"
-  neural_pathway_targets: ["binding_affinity_precision", "simulation_latency"]
+objective: "Establish v16.0 Golden Master as the global standard for sovereign R&D organisms."
+long_term_target: "Solve 100+ orphan diseases by 2028 with full legal/ethical verification."
+compute_routing: "NATS-coordinated distributed fractal mesh"
 milestones:
-  - "Nemo-integrated AlphaFold v9.0 deployment in CoE-Bio"
-  - "First VSB-verified scientific debate loop"
-  - "15% performance gain via Nematron NAS evolution"
-alignment:
-  safety_layer: "Nemoclaw Guard v9.0 (GaaS v3)"
-  neural_circuit_breakers:
-    - "Hallucination detection > 1% (NC-GOV-001)"
-    - "Policy divergence from Constitutional Genome"
-    - "VSB integrity failure"
+  - "AlphaFold 3 joint structure prediction live"
+  - "First UK ET compliant autonomous witness statement"
+  - "Biomimetic self-healing threshold > 95%"
+continuity: "SovereignState v16 snapshotting active"
