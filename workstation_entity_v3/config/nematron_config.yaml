@@ -1,0 +1,14 @@
+nematron:
+  neural_architecture_search:
+    search_space: "LatentMoE"
+    optimization_metric: "FLOP-per-accuracy"
+    max_pathway_depth: 24
+    population_size: 50
+    generations: 20
+  circuit_breaker:
+    failure_threshold: 3
+    recovery_timeout_seconds: 30
+    nemoclaw_runtime_governance: enabled
+  verification:
+    hallucination_threshold: 0.005
+    confidence_threshold: 0.90

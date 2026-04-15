@@ -1,0 +1,14 @@
+edge_stack:
+  llm:
+    primary: "vllm"
+    fallback: "ollama"
+    models:
+      - "nemotron3:120b-nvfp4"
+      - "llama3.1:70b"
+  vector_db: "qdrant"
+  biomimetic_engine: "OpenClaw-IDBO"
+  governance_bus: "VSB-libp2p"
+  monitoring:
+    prometheus: true
+    grafana: true
+    biomimetic_health: enabled

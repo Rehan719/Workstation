@@ -1,95 +1,12 @@
 #!/usr/bin/env python3
-import argparse
 import sys
 import os
-import json
-import yaml
-from datetime import datetime
-
-# Add project root to path
-sys.path.append(os.getcwd())
+import subprocess
 
 def main():
-    parser = argparse.ArgumentParser(description="JULES v3.0 [Workstation Entity] Omega Recursion Initialization")
-    parser.add_argument("--role", required=True)
-    parser.add_argument("--workstation_entity", default="v3.0")
-    parser.add_argument("--loop", required=True)
-    parser.add_argument("--assimilate", required=True)
-    parser.add_argument("--horizon", required=True)
-    parser.add_argument("--safety_interrupts", required=True)
-    parser.add_argument("--compute_routing", required=True)
-    parser.add_argument("--vertical", required=True)
-    parser.add_argument("--constitutional_genome", required=True)
-    parser.add_argument("--nemo_config", required=True)
-    parser.add_argument("--nematron_enabled", required=True)
-    parser.add_argument("--ceo_mode", default="sovereign")
-    parser.add_argument("--fractal_scaling", default="enabled")
-    parser.add_argument("--max_recursion_depth", type=int, default=7)
-    parser.add_argument("--bto_autonomous", default="true")
-
-    args = parser.parse_args()
-
-    print(f"🟢 INITIALIZING JULES: Virtual Sovereign Business AI CEO [Workstation Entity {args.workstation_entity}]")
-    print(f"Fractal Recursion Depth: {args.max_recursion_depth} | BTO: {args.bto_autonomous}")
-
-    # 1. ARCHITECTURE_MAP
-    with open("recirculation/architecture_map.yaml", "r") as f:
-        print("\n1. ARCHITECTURE_MAP (Full 12-Layer Biomimetic):")
-        print(f.read())
-
-    # 2. RECIRCULATION_CONFIG
-    with open("recirculation/recirculation_config.yaml", "r") as f:
-        print("\n2. RECIRCULATION_CONFIG (Fractal & Meso/Micro):")
-        print(f.read())
-
-    # 3. EXECUTIVE_SWARM_INIT
-    with open("recirculation/agent_swarm_init.yaml", "r") as f:
-        print("\n3. EXECUTIVE_SWARM_INIT (Full C-Suite):")
-        print(f.read())
-
-    # 4. DOMAIN_REALM_PRODUCT_MAP
-    with open("recirculation/domain_realm_product_map.yaml", "r") as f:
-        print("\n4. DOMAIN_REALM_PRODUCT_MAP:")
-        print(f.read())
-
-    # 5. ICP_AND_PMC
-    with open("recirculation/icp_and_pmc.yaml", "r") as f:
-        print("\n5. ICP_AND_PMC (Unit Economics & Viral Target):")
-        print(f.read())
-
-    # 6. PRODUCT_VALUE_10_WORDS
-    with open("recirculation/product_value_10_words.txt", "r") as f:
-        print("\n6. PRODUCT_VALUE_10_WORDS:")
-        print(f"\"{f.read().strip()}\"")
-
-    # 7. LONG_HORIZON_TASK
-    with open("recirculation/long_horizon_task.yaml", "r") as f:
-        print("\n7. LONG_HORIZON_TASK (Super-Intelligence Objective):")
-        print(f.read())
-
-    # 8. BTO_ROADMAP
-    with open("recirculation/bto_roadmap.md", "r") as f:
-        print("\n8. BTO_ROADMAP (Organizational Transformation):")
-        print(f.read())
-
-    # 9. INIT_LOG
-    print("\n9. INIT_LOG:")
-    init_log = {
-        "timestamp": datetime.now().isoformat(),
-        "status": "ORGANISM_AWAKENED",
-        "neural_circuit_breaker": "NOMINAL",
-        "fractal_recursion_depth": args.max_recursion_depth,
-        "bto_autonomous_mode": args.bto_autonomous
-    }
-    print(json.dumps(init_log, indent=2))
-
-    print("\n🚀 JULES, YOU ARE NOW LIVE AS THE SOVEREIGN ORGANISM. BEGINNING OMEGA RECURSION.")
-
-    # Trigger v3.0 execution
-    from src.recirculation.main_v9 import JulesWorkstationEntityV3
-    import asyncio
-    orchestrator = JulesWorkstationEntityV3()
-    asyncio.run(orchestrator.launch_recirculation())
+    print("🟢 BRIDGING TO JULES Ω-RECURSION v10.0 [IDBO-Native]")
+    os.chdir("workstation_entity_v3")
+    subprocess.run([sys.executable, "init_jules.py"] + sys.argv[1:])
 
 if __name__ == "__main__":
     main()
