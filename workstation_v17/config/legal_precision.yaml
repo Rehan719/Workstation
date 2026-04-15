@@ -1,402 +1,53 @@
 rules:
-  # --- EMPLOYMENT (18) ---
+  # Employment (Equality Act 2010)
   - id: EMP-001
     category: Employment
-    act_section: "Equality Act 2010 s.13"
-    description: "Direct discrimination on the basis of a protected characteristic."
-    trigger_conditions: "Treatment less favourable than comparator due to protected characteristic."
+    section: "s.13"
+    description: "Direct Discrimination"
     enforcement_action: block
-    confidence_threshold: 0.95
   - id: EMP-002
     category: Employment
-    act_section: "Equality Act 2010 s.15"
-    description: "Discrimination arising from disability."
-    trigger_conditions: "Unfavourable treatment because of something arising in consequence of disability."
+    section: "s.15"
+    description: "Discrimination Arising from Disability"
     enforcement_action: block
-    confidence_threshold: 0.90
   - id: EMP-003
     category: Employment
-    act_section: "Equality Act 2010 s.19"
-    description: "Indirect discrimination."
-    trigger_conditions: "PCP (Provision, Criterion, or Practice) that puts protected group at disadvantage."
+    section: "s.19"
+    description: "Indirect Discrimination"
     enforcement_action: block
-    confidence_threshold: 0.85
   - id: EMP-004
     category: Employment
-    act_section: "Equality Act 2010 s.20"
-    description: "Duty to make reasonable adjustments."
-    trigger_conditions: "Failure to provide adjustments for disabled person where PCP creates substantial disadvantage."
-    enforcement_action: block
-    confidence_threshold: 0.90
-  - id: EMP-005
-    category: Employment
-    act_section: "Equality Act 2010 s.26"
-    description: "Harassment."
-    trigger_conditions: "Unwanted conduct related to protected characteristic with purpose/effect of violating dignity."
-    enforcement_action: block
-    confidence_threshold: 0.95
-  - id: EMP-006
-    category: Employment
-    act_section: "Equality Act 2010 s.27"
-    description: "Victimisation."
-    trigger_conditions: "Subjecting person to detriment because they did a protected act."
-    enforcement_action: block
-    confidence_threshold: 0.95
-  - id: EMP-007
-    category: Employment
-    act_section: "ERA 1996 s.94"
-    description: "Right not to be unfairly dismissed."
-    trigger_conditions: "Termination of employment without fair reason or fair procedure."
+    section: "s.20"
+    description: "Duty to make reasonable adjustments"
     enforcement_action: escalate
-    confidence_threshold: 0.85
-  - id: EMP-008
-    category: Employment
-    act_section: "ERA 1996 s.98"
-    description: "Fair reasons for dismissal."
-    trigger_conditions: "Failure to prove capability, conduct, redundancy, statutory restriction, or SOSR."
-    enforcement_action: log
-    confidence_threshold: 0.80
-  - id: EMP-009
-    category: Employment
-    act_section: "ERA 1996 s.103A"
-    description: "Protected disclosure (Whistleblowing)."
-    trigger_conditions: "Dismissal where the reason/principal reason is a qualifying disclosure."
-    enforcement_action: block
-    confidence_threshold: 0.95
-  - id: EMP-010
-    category: Employment
-    act_section: "ERA 1996 s.13"
-    description: "Unauthorised deduction from wages."
-    trigger_conditions: "Employer makes deduction not authorised by statute or contract."
-    enforcement_action: remediate
-    confidence_threshold: 0.90
-  - id: EMP-011
-    category: Employment
-    act_section: "Working Time Regs 1998"
-    description: "Maximum weekly working time (48 hours)."
-    trigger_conditions: "Employee exceeding 48h/week without signed opt-out."
-    enforcement_action: block
-    confidence_threshold: 0.99
-  - id: EMP-012
-    category: Employment
-    act_section: "ACAS Code of Practice 1"
-    description: "Disciplinary and grievance procedures."
-    trigger_conditions: "Failure to hold hearing, allow accompaniment, or provide appeal."
-    enforcement_action: escalate
-    confidence_threshold: 0.90
-  - id: EMP-013
-    category: Employment
-    act_section: "TULRCA 1992 s.188"
-    description: "Duty to consult on collective redundancies."
-    trigger_conditions: "Failure to consult where 20+ redundancies are proposed in 90 days."
-    enforcement_action: block
-    confidence_threshold: 0.95
-  - id: EMP-014
-    category: Employment
-    act_section: "Maternity & Parental Leave Regs"
-    description: "Right to return to same job."
-    trigger_conditions: "Failure to offer same/similar job after maternity/paternity leave."
-    enforcement_action: block
-    confidence_threshold: 0.90
-  - id: EMP-015
-    category: Employment
-    act_section: "NMW Act 1998"
-    description: "National Minimum Wage compliance."
-    trigger_conditions: "Hourly rate falling below statutory minimum for age/status."
-    enforcement_action: remediate
-    confidence_threshold: 1.0
-  - id: EMP-016
-    category: Employment
-    act_section: "Health & Safety at Work Act 1974"
-    description: "General duty of employer to employees."
-    trigger_conditions: "Failure to ensure health, safety, and welfare so far as reasonably practicable."
-    enforcement_action: escalate
-    confidence_threshold: 0.85
-  - id: EMP-017
-    category: Employment
-    act_section: "Transfer of Undertakings (TUPE) 2006"
-    description: "Protection of employment on transfer."
-    trigger_conditions: "Dismissal because of transfer where no ETO reason exists."
-    enforcement_action: block
-    confidence_threshold: 0.90
-  - id: EMP-018
-    category: Employment
-    act_section: "Fixed-term Employees Regs 2002"
-    description: "Less favourable treatment of fixed-term employees."
-    trigger_conditions: "Treating fixed-term staff less favourably than permanent staff without justification."
-    enforcement_action: block
-    confidence_threshold: 0.90
 
-  # --- CIVIL (12) ---
+  # Civil (CPR)
   - id: CIV-001
     category: Civil
-    act_section: "CPR 1.1"
-    description: "The Overriding Objective."
-    trigger_conditions: "Action failing to deal with case justly and at proportionate cost."
+    section: "Part 24"
+    description: "Summary Judgment"
     enforcement_action: log
-    confidence_threshold: 0.80
   - id: CIV-002
     category: Civil
-    act_section: "CPR Part 24"
-    description: "Summary Judgment."
-    trigger_conditions: "Claim/defence has no real prospect of success and no other compelling reason for trial."
-    enforcement_action: escalate
-    confidence_threshold: 0.85
-  - id: CIV-003
-    category: Civil
-    act_section: "Limitation Act 1980 s.2"
-    description: "Limitation period for tort."
-    trigger_conditions: "Action brought after 6 years from date cause of action accrued."
+    section: "Limitation Act 1980"
+    description: "Statutory clock check"
     enforcement_action: block
-    confidence_threshold: 0.99
-  - id: CIV-004
-    category: Civil
-    act_section: "Limitation Act 1980 s.5"
-    description: "Limitation period for simple contract."
-    trigger_conditions: "Action brought after 6 years from date of breach."
-    enforcement_action: block
-    confidence_threshold: 0.99
-  - id: CIV-005
-    category: Civil
-    act_section: "Limitation Act 1980 s.11"
-    description: "Limitation period for personal injury."
-    trigger_conditions: "Action brought after 3 years from date of injury/knowledge."
-    enforcement_action: block
-    confidence_threshold: 0.99
-  - id: CIV-006
-    category: Civil
-    act_section: "CPR Part 36"
-    description: "Offers to settle."
-    trigger_conditions: "Invalid offer formatting or failure to follow consequences of non-acceptance."
-    enforcement_action: log
-    confidence_threshold: 0.90
-  - id: CIV-007
-    category: Civil
-    act_section: "CPR Part 31"
-    description: "Disclosure and inspection of documents."
-    trigger_conditions: "Failure to disclose documents in control which support/harm case."
-    enforcement_action: escalate
-    confidence_threshold: 0.90
-  - id: CIV-008
-    category: Civil
-    act_section: "State Immunity Act 1978"
-    description: "Immunity from jurisdiction."
-    trigger_conditions: "Attempt to sue a sovereign state without applicable exception."
-    enforcement_action: block
-    confidence_threshold: 0.95
-  - id: CIV-009
-    category: Civil
-    act_section: "Defamation Act 2013 s.1"
-    description: "Serious harm requirement."
-    trigger_conditions: "Defamation claim where publication has not caused/unlikely to cause serious harm."
-    enforcement_action: block
-    confidence_threshold: 0.85
-  - id: CIV-010
-    category: Civil
-    act_section: "Companies Act 2006 s.172"
-    description: "Duty to promote success of the company."
-    trigger_conditions: "Director action not in good faith to promote success for members."
-    enforcement_action: escalate
-    confidence_threshold: 0.80
-  - id: CIV-011
-    category: Civil
-    act_section: "Consumer Rights Act 2015 s.9"
-    description: "Goods to be of satisfactory quality."
-    trigger_conditions: "Sale of goods failing objective standard of quality."
-    enforcement_action: remediate
-    confidence_threshold: 0.90
-  - id: CIV-012
-    category: Civil
-    act_section: "Consumer Rights Act 2015 s.49"
-    description: "Service to be performed with reasonable care and skill."
-    trigger_conditions: "Service provider failing to meet professional standard."
-    enforcement_action: remediate
-    confidence_threshold: 0.85
 
-  # --- TAXATION (14) ---
+  # Taxation
   - id: TAX-001
     category: Taxation
-    act_section: "FA 2009 Sch 55"
-    description: "Penalty for failure to make returns."
-    trigger_conditions: "Submission of tax return after statutory deadline."
-    enforcement_action: remediate
-    confidence_threshold: 1.0
+    section: "IR35"
+    description: "Off-payroll working status"
+    enforcement_action: block
   - id: TAX-002
     category: Taxation
-    act_section: "ITEPA 2003 s.48 (IR35)"
-    description: "Status determination for off-payroll working."
-    trigger_conditions: "Incorrectly classifying worker as self-employed when 'inside IR35'."
-    enforcement_action: block
-    confidence_threshold: 0.85
-  - id: TAX-003
-    category: Taxation
-    act_section: "VATA 1994 s.3"
-    description: "VAT registration threshold."
-    trigger_conditions: "Taxable turnover exceeding threshold without VAT registration."
-    enforcement_action: remediate
-    confidence_threshold: 1.0
-  - id: TAX-004
-    category: Taxation
-    act_section: "TMA 1970 s.7"
-    description: "Notice of liability to income tax."
-    trigger_conditions: "Failure to notify HMRC of liability within 6 months of tax year end."
-    enforcement_action: escalate
-    confidence_threshold: 0.95
-  - id: TAX-005
-    category: Taxation
-    act_section: "Corporation Tax Act 2010"
-    description: "Profit-shifting / Transfer pricing."
-    trigger_conditions: "Intra-group transactions not at arm's length to reduce tax."
-    enforcement_action: block
-    confidence_threshold: 0.85
-  - id: TAX-006
-    category: Taxation
-    act_section: "FA 2013 s.206 (GAAR)"
-    description: "General Anti-Abuse Rule."
-    trigger_conditions: "Tax arrangements that are abusive and lack commercial substance."
-    enforcement_action: block
-    confidence_threshold: 0.80
-  - id: TAX-007
-    category: Taxation
-    act_section: "Pensions Act 2008"
-    description: "Automatic enrolment duties."
-    trigger_conditions: "Failure to enrol eligible jobholders into workplace pension."
-    enforcement_action: remediate
-    confidence_threshold: 1.0
-  - id: TAX-008
-    category: Taxation
-    act_section: "Social Security Contributions Act 1992"
-    description: "NIC Class 1 compliance."
-    trigger_conditions: "Failure to deduct or pay employee/employer National Insurance."
-    enforcement_action: remediate
-    confidence_threshold: 1.0
-  - id: TAX-009
-    category: Taxation
-    act_section: "Capital Gains Tax Act 1992"
-    description: "Disposal of assets."
-    trigger_conditions: "Failure to report gain on disposal of non-exempt assets."
-    enforcement_action: remediate
-    confidence_threshold: 0.95
-  - id: TAX-010
-    category: Taxation
-    act_section: "Inheritance Tax Act 1984"
-    description: "Potentially Exempt Transfers (PETs)."
-    trigger_conditions: "Failure to track 7-year survival rule for large gifts."
+    section: "VATA 1994"
+    description: "VAT registration threshold"
     enforcement_action: log
-    confidence_threshold: 0.90
-  - id: TAX-011
-    category: Taxation
-    act_section: "SDLT (FA 2003)"
-    description: "Stamp Duty Land Tax on property."
-    trigger_conditions: "Underpayment of SDLT based on transaction value/status."
-    enforcement_action: remediate
-    confidence_threshold: 0.99
-  - id: TAX-012
-    category: Taxation
-    act_section: "Criminal Finances Act 2017"
-    description: "Corporate offence of failure to prevent facilitation of tax evasion."
-    trigger_conditions: "Lack of reasonable procedures to prevent staff/agents facilitating evasion."
-    enforcement_action: block
-    confidence_threshold: 0.90
-  - id: TAX-013
-    category: Taxation
-    act_section: "FA 2016 s.161"
-    description: "Serial Tax Avoiders."
-    trigger_conditions: "Repeated use of failed tax avoidance schemes."
-    enforcement_action: block
-    confidence_threshold: 0.95
-  - id: TAX-014
-    category: Taxation
-    act_section: "HMRC Compliance Standard"
-    description: "Accuracy of records."
-    trigger_conditions: "Deliberate destruction or falsification of business records for tax."
-    enforcement_action: block
-    confidence_threshold: 0.95
 
-  # --- GDPR (8) ---
+  # GDPR
   - id: GDP-001
     category: GDPR
-    act_section: "GDPR Article 5"
-    description: "Principles relating to processing."
-    trigger_conditions: "Processing not lawful, fair, or transparent."
+    section: "Article 22"
+    description: "Automated decision-making"
     enforcement_action: block
-    confidence_threshold: 0.90
-  - id: GDP-002
-    category: GDPR
-    act_section: "GDPR Article 6"
-    description: "Lawfulness of processing."
-    trigger_conditions: "Processing without valid legal basis (consent, contract, legal obligation, etc.)."
-    enforcement_action: block
-    confidence_threshold: 0.95
-  - id: GDP-003
-    category: GDPR
-    act_section: "GDPR Article 17"
-    description: "Right to erasure ('right to be forgotten')."
-    trigger_conditions: "Failure to delete data where no overriding legal ground for retention exists."
-    enforcement_action: remediate
-    confidence_threshold: 0.95
-  - id: GDP-004
-    category: GDPR
-    act_section: "GDPR Article 22"
-    description: "Automated individual decision-making, including profiling."
-    trigger_conditions: "Decision with legal/significant effect based solely on automated processing without exception."
-    enforcement_action: block
-    confidence_threshold: 0.90
-  - id: GDP-005
-    category: GDPR
-    act_section: "GDPR Article 32"
-    description: "Security of processing."
-    trigger_conditions: "Lack of appropriate technical and organisational measures."
-    enforcement_action: block
-    confidence_threshold: 0.85
-  - id: GDP-006
-    category: GDPR
-    act_section: "GDPR Article 33"
-    description: "Notification of a personal data breach to the ICO."
-    trigger_conditions: "Failure to notify within 72 hours of becoming aware of breach."
-    enforcement_action: remediate
-    confidence_threshold: 1.0
-  - id: GDP-007
-    category: GDPR
-    act_section: "GDPR Article 35"
-    description: "Data Protection Impact Assessment (DPIA)."
-    trigger_conditions: "Processing high risk data without performing DPIA."
-    enforcement_action: block
-    confidence_threshold: 0.90
-  - id: GDP-008
-    category: GDPR
-    act_section: "GDPR Article 44"
-    description: "General principle for transfers to third countries."
-    trigger_conditions: "Transferring personal data outside UK/EEA without adequacy decision or safeguards."
-    enforcement_action: block
-    confidence_threshold: 0.95
-
-  # --- CONSTITUTIONAL (4) ---
-  - id: CON-001
-    category: Constitutional
-    act_section: "Truth Dimension I"
-    description: "Factual Accuracy."
-    trigger_conditions: "Output contains demonstrable factual errors or hallucinations."
-    enforcement_action: block
-    confidence_threshold: 0.98
-  - id: CON-002
-    category: Constitutional
-    act_section: "Truth Dimension II"
-    description: "Causal Integrity."
-    trigger_conditions: "Logical fallacy or invalid causal inference detected in reasoning."
-    enforcement_action: block
-    confidence_threshold: 0.95
-  - id: CON-003
-    category: Constitutional
-    act_section: "Truth Dimension III"
-    description: "Source Provenance."
-    trigger_conditions: "Claim lacks verifiable source or citation in the Tree of All Knowledge."
-    enforcement_action: escalate
-    confidence_threshold: 0.90
-  - id: CON-004
-    category: Constitutional
-    act_section: "Truth Dimension IV"
-    description: "Neutrality & Bias."
-    trigger_conditions: "Detected significant ideological or demographic bias in generated artifacts."
-    enforcement_action: block
-    confidence_threshold: 0.92

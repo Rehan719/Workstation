@@ -1,31 +1,52 @@
 import yaml
 import logging
-from typing import Dict, List, Any
+import hashlib
+import json
+from typing import Dict, Any, List
 
 class GaaSValidatorV4:
-    """Constitutional GaaS Validator v4."""
+    """
+    IDBO Layer 4: Regulation (Epigenetic State).
+    Enforces UK Legal Precision and Constitutional GaaS Intercepts.
+    """
     def __init__(self, genome_path: str, legal_path: str):
-        self.logger = logging.getLogger("GaaSValidatorV4")
+        self.logger = logging.getLogger("GaaS_v4")
         with open(genome_path, 'r') as f:
             self.genome = yaml.safe_load(f)
         with open(legal_path, 'r') as f:
             self.legal_rules = yaml.safe_load(f).get("rules", [])
-        self.min_confidence = self.genome.get("gaas_v4_config", {}).get("min_confidence_score", 0.85)
+        self.merkle_root = "0" * 64
 
-    async def validate_action(self, action: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
-        """Intercepts and audits an agent action."""
-        self.logger.info(f"Constitutional Audit: {action.get('type')}")
-        score = 0.95
-        blocked = False
-        triggered = []
+    async def validate_intent(self, intent: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Gated constitutional audit of agent intent.
+        """
+        self.logger.info(f"GaaS: Auditing intent '{intent.get('type')}'")
+
+        # 1. Statutory Rule Matching
+        violations = []
         for rule in self.legal_rules:
-            if rule["id"] in action.get("potential_violations", []):
-                triggered.append(rule["id"])
-                if rule["enforcement_action"] == "block":
-                    blocked = True
+            if rule["id"] in intent.get("potential_flags", []):
+                violations.append(rule)
 
-        passed = (score >= self.min_confidence) and not blocked
-        return {"passed": passed, "confidence_score": score, "legal_audit": {"blocked": blocked, "triggered_rules": triggered}}
+        # 2. Truth Dimension Scoring
+        min_conf = self.genome["gaas_v4_config"]["min_confidence_score"]
+        intent_conf = intent.get("confidence", 0.95)
 
-    async def neural_verify(self, claim: str) -> float:
-        return 0.985
+        blocked = any(v["enforcement_action"] == "block" for v in violations)
+        passed = (intent_conf >= min_conf) and not blocked
+
+        # 3. Merkle DAG Update
+        self._update_merkle_dag(intent, passed)
+
+        return {
+            "passed": passed,
+            "blocked": blocked,
+            "violations": [v["id"] for v in violations],
+            "merkle_root": self.merkle_root
+        }
+
+    def _update_merkle_dag(self, intent: Dict, passed: bool):
+        payload = json.dumps({"intent": intent, "result": passed}, sort_keys=True)
+        new_hash = hashlib.sha3_512(payload.encode() + self.merkle_root.encode()).hexdigest()
+        self.merkle_root = new_hash

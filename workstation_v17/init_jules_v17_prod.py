@@ -12,7 +12,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
-logger = logging.getLogger("InitJulesV17")
+logger = logging.getLogger("InitJules")
 
 async def main(args):
     logger.info("Initializing JULES v17.0 Production Beta Organism...")
@@ -20,21 +20,21 @@ async def main(args):
     organism = JulesOmegaOrganismV17()
     await organism.initialize()
 
-    recirculation = FractalRecirculation(organism)
+    fractal = FractalRecirculation(organism)
 
     if args.dry_run:
         logger.info("Dry run: Executing one Macro cycle and shutting down.")
-        await organism.run_macro_cycle({"dry_run": True})
+        await organism.run_macro_cycle()
         await organism.shutdown()
         return
 
-    # Shutdown handlers
+    # Signal handlers
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, lambda: asyncio.create_task(organism.shutdown()))
 
     try:
-        await recirculation.start()
+        await fractal.start_loops()
     except asyncio.CancelledError:
         logger.info("Organism task cancelled.")
     finally:

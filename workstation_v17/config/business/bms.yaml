@@ -1,3 +1,4 @@
 strategy:
-  target_roi: 2.5
-  icp_resonance_threshold: 0.85
+  target_viral_coeff: 1.2
+  max_unit_cost_usd: 0.01
+  pmf_threshold: 0.85

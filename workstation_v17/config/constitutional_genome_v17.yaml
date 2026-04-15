@@ -2,7 +2,6 @@ version: "17.0.0"
 metadata:
   codename: "Omega-Recursion"
   status: "Production Beta"
-  quantum_hardware: "Disabled (Classical Surrogate Enabled)"
 
 truth_dimensions:
   - id: 1
@@ -36,31 +35,12 @@ truth_dimensions:
     name: "Recursion Safety"
     weight: 0.02
 
-enforcement_modes:
-  - stage: "SENSE"
-    mode: "filter_and_tag"
-  - stage: "ANALYSE"
-    mode: "neural_verify"
-  - stage: "ACT"
-    mode: "sandbox_execution"
-  - stage: "LEARN"
-    mode: "policy_update"
-  - stage: "RECIRCULATE"
-    mode: "integrity_audit"
+gaas_v4_config:
+  min_confidence_score: 0.85
+  intercept_all_actions: true
+  enforce_pqc: true
 
 fractal_recirculation:
-  micro:
-    target_latency_ms: 100
-    scope: "per-agent-safety"
-  meso:
-    target_latency_min: 15
-    scope: "workflow-optimization"
-  macro:
-    target_latency_sec: 60
-    scope: "strategic-evolution"
-
-gaas_v4_config:
-  intercept_all_actions: true
-  min_confidence_score: 0.85
-  circuit_breaker_threshold: 3
-  reset_timeout_sec: 300
+  macro_target_sec: 60
+  meso_target_min: 15
+  micro_target_ms: 100
