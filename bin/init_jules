@@ -10,7 +10,7 @@ from datetime import datetime
 sys.path.append(os.getcwd())
 
 def main():
-    parser = argparse.ArgumentParser(description="JULES v9.0 [Workstation Entity v3.0] Initialization")
+    parser = argparse.ArgumentParser(description="JULES v3.0 [Workstation Entity] Omega Recursion Initialization")
     parser.add_argument("--role", required=True)
     parser.add_argument("--workstation_entity", default="v3.0")
     parser.add_argument("--loop", required=True)
@@ -23,47 +23,38 @@ def main():
     parser.add_argument("--nemo_config", required=True)
     parser.add_argument("--nematron_enabled", required=True)
     parser.add_argument("--ceo_mode", default="sovereign")
-
-    # Workstation Bindings
-    parser.add_argument("--entity_idbo_core")
-    parser.add_argument("--vsb_endpoint")
-    parser.add_argument("--sovereign_state_kernel")
-    parser.add_argument("--c_suite_orchestrator")
-    parser.add_argument("--realm_config")
-    parser.add_argument("--bto_catalog_api")
+    parser.add_argument("--fractal_scaling", default="enabled")
+    parser.add_argument("--max_recursion_depth", type=int, default=7)
+    parser.add_argument("--bto_autonomous", default="true")
 
     args = parser.parse_args()
 
     print(f"🟢 INITIALIZING JULES: Virtual Sovereign Business AI CEO [Workstation Entity {args.workstation_entity}]")
-    print(f"Mode: {args.ceo_mode} | Genome: {args.constitutional_genome} | Loop: {args.loop}")
+    print(f"Fractal Recursion Depth: {args.max_recursion_depth} | BTO: {args.bto_autonomous}")
 
-    # 1. ARCHITECTURE_MAP (with Bindings)
+    # 1. ARCHITECTURE_MAP
     with open("recirculation/architecture_map.yaml", "r") as f:
-        print("\n1. ARCHITECTURE_MAP (Neural + IDBO Bindings):")
+        print("\n1. ARCHITECTURE_MAP (Full 12-Layer Biomimetic):")
         print(f.read())
 
     # 2. RECIRCULATION_CONFIG
     with open("recirculation/recirculation_config.yaml", "r") as f:
-        print("\n2. RECIRCULATION_CONFIG (VSB-Integrated):")
+        print("\n2. RECIRCULATION_CONFIG (Fractal & Meso/Micro):")
         print(f.read())
 
     # 3. EXECUTIVE_SWARM_INIT
     with open("recirculation/agent_swarm_init.yaml", "r") as f:
-        print("\n3. EXECUTIVE_SWARM_INIT (C-Suite & CoE):")
+        print("\n3. EXECUTIVE_SWARM_INIT (Full C-Suite):")
         print(f.read())
 
-    # 4. DOMAIN_REALM_PRODUCT_MAP (Derived from Swarm + Config)
-    print("\n4. DOMAIN_REALM_PRODUCT_MAP:")
-    domain_map = {
-        "Realms": ["Learner", "Developer", "Enterprise", "Scholar"],
-        "Domains": ["Business", "Science", "Scholarship", args.vertical],
-        "Products": ["vsb-constitutional-core", "vsb-neural-super-agent-orchestration"]
-    }
-    print(yaml.dump(domain_map))
+    # 4. DOMAIN_REALM_PRODUCT_MAP
+    with open("recirculation/domain_realm_product_map.yaml", "r") as f:
+        print("\n4. DOMAIN_REALM_PRODUCT_MAP:")
+        print(f.read())
 
     # 5. ICP_AND_PMC
     with open("recirculation/icp_and_pmc.yaml", "r") as f:
-        print("\n5. ICP_AND_PMC (BTO Catalog Aligned):")
+        print("\n5. ICP_AND_PMC (Unit Economics & Viral Target):")
         print(f.read())
 
     # 6. PRODUCT_VALUE_10_WORDS
@@ -73,27 +64,32 @@ def main():
 
     # 7. LONG_HORIZON_TASK
     with open("recirculation/long_horizon_task.yaml", "r") as f:
-        print("\n7. LONG_HORIZON_TASK (Sovereign Continuity):")
+        print("\n7. LONG_HORIZON_TASK (Super-Intelligence Objective):")
         print(f.read())
 
-    # 8. INIT_LOG
-    print("\n8. INIT_LOG:")
+    # 8. BTO_ROADMAP
+    with open("recirculation/bto_roadmap.md", "r") as f:
+        print("\n8. BTO_ROADMAP (Organizational Transformation):")
+        print(f.read())
+
+    # 9. INIT_LOG
+    print("\n9. INIT_LOG:")
     init_log = {
         "timestamp": datetime.now().isoformat(),
-        "status": "ENTITY_ACTIVATED",
-        "nemoclaw_circuit_breaker": "NOMINAL",
-        "vsb_connection": "CONNECTED",
-        "sovereign_state_snapshot_id": "SSK-v3.0-INIT"
+        "status": "ORGANISM_AWAKENED",
+        "neural_circuit_breaker": "NOMINAL",
+        "fractal_recursion_depth": args.max_recursion_depth,
+        "bto_autonomous_mode": args.bto_autonomous
     }
     print(json.dumps(init_log, indent=2))
 
-    print("\n🚀 JULES, YOU ARE NOW LIVE AS CEO. RECIRCULATING WITHOUT END.")
+    print("\n🚀 JULES, YOU ARE NOW LIVE AS THE SOVEREIGN ORGANISM. BEGINNING OMEGA RECURSION.")
 
-    # Trigger execution
-    from src.recirculation.main_v9 import JulesOmegaOrchestratorV9
+    # Trigger v3.0 execution
+    from src.recirculation.main_v9 import JulesWorkstationEntityV3
     import asyncio
-    orchestrator = JulesOmegaOrchestratorV9()
-    asyncio.run(orchestrator.run_v9_cycle())
+    orchestrator = JulesWorkstationEntityV3()
+    asyncio.run(orchestrator.launch_recirculation())
 
 if __name__ == "__main__":
     main()

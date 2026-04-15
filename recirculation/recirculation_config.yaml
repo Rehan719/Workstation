@@ -2,46 +2,43 @@ engine:
   cycle_target_ms: 60000
   confidence_threshold: 0.85
   hallucination_suppression: true
+  fractal_scaling:
+    enabled: true
+    max_recursion_depth: 7
+    micro_cycle_ms: 1000
+    meso_cycle_ms: 10000
+    macro_cycle_ms: 60000
   neural_circuit_breaker:
     enabled: true
-    policy_id: "NC-GOV-001"
-    threshold_hallucination: 0.01
+    hallucination_threshold: 0.005
+    divergence_threshold: 0.10
   nemo_config: "edge_optimised"
   nematron_enabled: true
 stages:
   sense:
-    name: "SENSE_SCAN"
     timeout_ms: 180000
-    vsb_topic: "omega:ingest:multimodal"
     fallback: "cached_vector_index"
   analyze:
-    name: "ANALYZE_REASON"
     timeout_ms: 240000
-    vsb_topic: "omega:analysis:causal"
-    neural_verification: true
     fallback: "route_to_human_review"
   act:
-    name: "ACT_SIMULATE"
     timeout_ms: 300000
-    vsb_topic: "omega:execution:openclaw"
-    speed_multiplier: 1000.0
     fallback: "low_fidelity_sim"
   learn:
-    name: "LEARN_ENHANCE"
     timeout_ms: 120000
-    vsb_topic: "omega:learning:nematron"
-    nas_optimization: "nematron_pathway_nas"
     fallback: "snapshot_rollback"
   recirculate:
-    name: "RECIRCULATE_EVOLVE"
     timeout_ms: 60000
-    vsb_topic: "omega:evolution:idbo"
-    recursion_hook: "ueg_integrated_feedback"
     fallback: "differential_patch"
 telemetry:
   enabled: true
-  vsb_broadcast: true
-  vsb_topic: "omega:metrics"
-  metrics: ["velocity", "sophistication", "truth_score", "viral_coefficient", "neural_gain", "sovereign_continuity"]
-vsb_event_schemas:
-  cycle_complete: "/config/schemas/omega_cycle.json"
+  ueg_integration: true
+  metrics:
+    - fractal_recirculation_velocity
+    - neural_sophistication_index
+    - truth_alignment_score
+    - viral_coefficient
+    - cataclysmic_shift_rate
+    - neural_pathway_optimisation_gain
+    - unit_cost_reduction
+    - ceo_confidence_score

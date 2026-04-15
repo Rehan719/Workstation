@@ -1,32 +1,51 @@
-swarm_id: "OMEGA-RECURSION-SWARM-v9.0-NEURAL"
+swarm_id: "OMEGA-FRACTAL-SWARM-v9.0"
 constitutional_genome: "v9.0.0-neural-super-agent-rc"
-workstation_mapping:
-  orchestrator: "/src/organism/csuite/"
-  neural_bus: "vsb:omega:internal"
-executive_roles:
+reporting_hierarchy: "CEO_Agent → MultiSigCouncil"
+executive_swarm:
   ceo_agent:
-    role: "Rational Strategy (CEO)"
-    mapping: "Biomimetic Layer 12 - UX/Orchestration"
-    backbone: "NeMo Sovereign"
+    role: "Strategy & Fractal Governance (CEO)"
+    mapping: "Layer 12 - UX / Orchestration"
+    pathway: "Meta-Reasoning"
   cfo_agent:
-    role: "Economics & Unit ROI (CFO)"
-    mapping: "Biomimetic Layer 4 - Regulation"
-    backbone: "Rational Neural"
-  cco_agent:
-    role: "Human Connection (CCO)"
-    mapping: "Biomimetic Layer 2 - Expression/Passion"
-    backbone: "Nematron Pathway"
+    role: "Financial Modeling & ROI (CFO)"
+    mapping: "Layer 4 - Regulation"
+    pathway: "Risk-Reward"
   coo_agent:
-    role: "Synthesis & Execution (COO)"
-    mapping: "Biomimetic Layer 9 - Orchestration"
-    backbone: "Nematron-Optimized"
-coe_mapping:
-  science: "CoE-Science Realm"
-  scholarship: "CoE-Knowledge Realm"
-  business: "Enterprise Realm"
+    role: "Operational Workflows & Scaling (COO)"
+    mapping: "Layer 9 - Orchestration"
+    pathway: "Operations"
+  cro_agent:
+    role: "Risk Assessment & Circuit Breakers (CRO)"
+    mapping: "Layer 5 - Resilience"
+    pathway: "Risk"
+  cto_agent:
+    role: "Tech Stack & Sovereign AI (CTO)"
+    mapping: "Layer 2 - Hardware / Sovereignty"
+    pathway: "Tech"
+  chief_scientist:
+    role: "R&D & Falsification (Chief Scientist)"
+    mapping: "Layer 3 - Expression"
+    pathway: "Discovery"
+  cso_agent:
+    role: "Knowledge Curation (Scholarship Officer)"
+    mapping: "Layer 7 - Module Library"
+    pathway: "Scholarship"
+  cpo_agent:
+    role: "Product-Market Fit & Value (CPO)"
+    mapping: "Layer 12 - User Experience"
+    pathway: "Product"
+  bto_director:
+    role: "Continuous Transformation (BTO Director)"
+    mapping: "Layer 10 - Evolution"
+    pathway: "Transformation"
+coe_leads:
+  - Biotech
+  - Materials
+  - Legal
+  - Finance
 communication:
-  protocol: "Encrypted VSB + AR/VR Presence"
-  haptic_feedback: "Gated via Nemoclaw Circuit Breakers"
+  protocol: "Encrypted WebSocket + libp2p + AR/VR Presence"
+  haptic_feedback: "Gated via Nematron Neural Circuit Breakers"
 routing:
   strategy: "Nematron-NAS Adaptive Routing"
   default_priority: "Normal"

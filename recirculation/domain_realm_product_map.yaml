@@ -1,0 +1,27 @@
+domains:
+  Business: "Strategic decision-making, market entry, M&A, pricing, go-viral"
+  Science: "Hypothesis generation, experimental design, peer review, reproducibility"
+  Scholarship: "Literature mining, citation validation, knowledge graph grafting"
+  Biotech: "Lead optimization, in-silico screening, protein folding"
+realms:
+  Learner: "Personalised AI tutor, skill acquisition"
+  Developer: "Code generation, API integration, agent building"
+  Enterprise: "C-Suite dashboards, KPIs, risk heatmaps"
+  Scholar: "Research assistant, citation manager, open science"
+products:
+  vsb-constitutional-core: "GaaS v3, Neural Circuit Breakers, UEG Merkle-DAG"
+  vsb-neural-super-agent-orchestration: "Nemo/Nematron + Multi-Framework Swarm"
+  vsb-core-business-intelligence: "CFO/COO/CRO Executive Swarm"
+  vsb-core-science-intelligence: "Research Swarm, Chief Scientist"
+  vsb-core-scholarship-intelligence: "Scholarship Swarm, CSO"
+  vsb-core-domain-specific: "Neural Wizard, Infinite Verticals"
+tools:
+  - Ollama
+  - vLLM
+  - Qdrant
+  - Llama.cpp
+  - Temporal.io
+  - Omniverse
+  - Cosmos
+  - OpenClaw
+  - NemoClaw
