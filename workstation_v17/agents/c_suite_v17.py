@@ -7,14 +7,11 @@ class SwarmAgent:
         self.logger = logging.getLogger(f"Agent_{role}")
 
     async def decide(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """v17.0 Production decision logic."""
+        """v17.0 executive decision logic."""
         return {"role": self.role, "status": "APPROVED", "confidence": 0.98}
 
 class CSuiteV17:
-    """
-    IDBO Layer 9: Orchestration.
-    LangGraph-ready executive council.
-    """
+    """IDBO Layer 9 Orchestration."""
     def __init__(self):
         self.ceo = SwarmAgent("CEO")
         self.cfo = SwarmAgent("CFO")
@@ -23,7 +20,7 @@ class CSuiteV17:
         self.coo = SwarmAgent("COO")
         self.cro = SwarmAgent("CRO")
 
-    async def reach_consensus(self, intent: Dict[str, Any]) -> bool:
+    async def reach_consensus(self, intent: str) -> bool:
         """Executes quorum-sensing deliberation."""
-        # Simulated multi-agent consensus
+        # Simulated consensus for production beta
         return True
