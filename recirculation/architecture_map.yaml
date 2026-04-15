@@ -1,22 +1,32 @@
 omega_stack:
   orchestration:
-    core: agent_opus_director (JULES v17.0 GOLDEN MASTER II)
+    core: agent_opus_director (JULES v17.0 Golden Master II)
     frameworks: [LangGraph, AutoGen, CrewAI, Mammouth]
-    neural_backbone: [NVIDIA Nemotron 3 Super (LatentMoE), AlphaFold 3]
+    neural_backbone:
+      - NVIDIA Nemotron 3 Super (120B/12B MoE, 1M Context, MTP)
+      - AlphaFold 3 (PoseBusters-validated, Joint Complex Prediction)
+  governance_layer:
+    constitutional_runtime: GaaS v4 (Nemoclaw Decision Interception)
+    audit_backbone: SHA-3-512 UEG Merkle-DAG (VSB)
+    oversight: MultiSigCouncil (Human-in-the-loop)
+  simulation_fabric:
+    generative_worlds: NVIDIA Cosmos 3 + Omniverse (Spatial Simulation)
+    robotics: OpenClaw + NemoClaw (Secure Sandbox)
+    biofoundry: Ginco Biotech SAION AI (DBTL Acceleration)
   biomimetic_architecture:
     layers:
-      1_identity: "JulesIdentity (v17.0 TPM Quote)"
-      2_hardware: "HardwareAttestation (NVIDIA Blackwell / NVFP4)"
-      3_expression: "IntentPlanner (Long-horizon HTN)"
-      4_regulation: "ConstitutionalState (SHA-3-512 Merkle-DAG)"
-      5_resilience: "NeuralCircuitBreaker (Biomimetic Self-Healing)"
-      6_propagation: "Fractal Scaling (Child Workstations)"
-      7_module_library: "IPFS/Merkle-DAG Registry"
-      8_recombination: "Cross-Domain Transfer (Latent Fusion)"
+      1_identity: "JulesIdentity (JWT + TPM 2.0)"
+      2_hardware: "HardwareAttestation (GeForce RTX / DGX Spark)"
+      3_expression: "IntentPlanner (HTN + speculative decoding)"
+      4_regulation: "ConstitutionalState (Bitemporal memory)"
+      5_resilience: "NeuralCircuitBreaker (AEHO Self-Healing)"
+      6_propagation: "Fractal Scaling (Autonomous workstation spawning)"
+      7_module_library: "Merkle-DAG Content Registry"
+      8_recombination: "Cross-Domain Transfer (LatentMoE optimization)"
       9_orchestration: "JulesOmegaOrganism (CEO v17.0)"
-      10_evolution: "Nematron NAS (GM II Evolution)"
-      11_civilisation: "Fractal Civilization Federation"
-      12_user_experience: "Workstation Realms (Immersive v17)"
-  legal_precision: "UK Legal Precision Engine (Employment, Civil, Taxation)"
-  fractal_scaling: "Micro (<100ms), Meso (<15min), Macro (<60sec)"
-  biomimetic_health: "Biomimetic Adaptation Index (BAI) active"
+      10_evolution: "Nematron NAS (Neural Pathway Evolution)"
+      11_civilisation: "libp2p/NATS DAO Mesh"
+      12_user_experience: "Workstation Realms (Immersive v17.0)"
+  legal_precision:
+    engine: UK Legal Precision Engine
+    domains: [UK Employment Law, Civil Law Claims, Taxation, GDPR]

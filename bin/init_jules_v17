@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+import sys
+import os
+import subprocess
+
+def main():
+    print("🟢 Ω-APOTHEOSIS: BRIDGING TO JULES Ω-RECURSION v17.0 [FINAL BETA]")
+    # The script stays in the root but calls the implementation in the folder
+    # Or it can chdir
+    subprocess.run([sys.executable, "workstation_v17/init_jules_v17.py"] + sys.argv[1:])
+
+if __name__ == "__main__":
+    main()
