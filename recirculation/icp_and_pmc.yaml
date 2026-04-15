@@ -1,0 +1,19 @@
+vertical: "Computational Biotech - Materials Discovery"
+market_segment: "R&D-focused Biotech Startups"
+vertical_niche: "AI-driven small molecule lead optimization"
+pain_points:
+  - "High cost of wet-lab validation"
+  - "Long iteration cycles between synthesis and testing"
+  - "Data silos between biology and physics simulations"
+ideal_customer_profile:
+  - "Series A biotech companies"
+  - "Academic labs with commercial spin-offs"
+unit_economics:
+  cost_per_simulation: "$0.05"
+  insight_value_multiplier: "100x"
+  latency_reduction: "90%"
+distribution_channels:
+  - "Open-source breakthroughs"
+  - "Scientific publications"
+  - "Direct B2B outreach"
+go_viral_trigger: "Real-time transparent protein-folding breakthrough live stream"

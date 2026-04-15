@@ -1,0 +1,12 @@
+[
+  {
+    "timestamp": "2026-04-15T03:10:41.205641",
+    "cycle": 1,
+    "duration_s": 0.0001728534698486328,
+    "status": "SUCCESS",
+    "metrics": {
+      "velocity_ms": 0.1728534698486328,
+      "confidence": 0.0
+    }
+  }
+]

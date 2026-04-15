@@ -1,0 +1,27 @@
+domains:
+  biology:
+    alphafold:
+      input: "string" # Protein sequence
+      output_tensor: [1, 1024]
+      projection_to_shared: "random_linear_stub"
+    insilico_screening:
+      input: "string" # SMILES
+      output_tensor: [1, 1024]
+      projection_to_shared: "random_linear_stub"
+  physics:
+    particle_dynamics:
+      input: "json"
+      output_tensor: [1, 1024]
+      projection_to_shared: "random_linear_stub"
+  business:
+    market_intelligence:
+      input: "json"
+      output_tensor: [1, 1024]
+      projection_to_shared: "random_linear_stub"
+cross_domain_routing:
+  - from: biology.alphafold
+    to: physics.particle_dynamics
+    similarity_threshold: 0.85
+  - from: biology.insilico_screening
+    to: business.market_intelligence
+    similarity_threshold: 0.70

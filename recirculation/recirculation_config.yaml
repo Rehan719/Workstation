@@ -1,0 +1,24 @@
+engine:
+  cycle_target_ms: 60000
+  confidence_threshold: 0.85
+  hallucination_suppression: true
+stages:
+  sense:
+    timeout_ms: 5000
+    fallback: "use_last_cached"
+  analyze:
+    timeout_ms: 10000
+    fallback: "heuristic_rules"
+  act:
+    timeout_ms: 20000
+    fallback: "simulation_retry"
+  learn:
+    timeout_ms: 10000
+    fallback: "log_and_skip"
+  recirculate:
+    timeout_ms: 5000
+    fallback: "restart_loop"
+telemetry:
+  enabled: true
+  storage: "local_json"
+  ueg_integration: true

@@ -1,0 +1,27 @@
+swarm_id: "OMEGA-RECURSION-SWARM-001"
+roles:
+  research_designer:
+    model: "llama3.1:8b"
+    directive: "Generate high-fidelity hypotheses for computational biology."
+  simulation_executor:
+    model: "python-executor"
+    directive: "Execute numerical simulations and in-silico screening."
+  scientific_auditor:
+    model: "mistral-nemo:12b"
+    directive: "Validate results against falsifiability criteria."
+  scholarship_curator:
+    model: "knowledge-graph-agent"
+    directive: "Update the Tree of All Knowledge with verified findings."
+  business_strategist:
+    model: "economics-agent"
+    directive: "Evaluate unit economics and product-market fit."
+  evolution_agent:
+    model: "code-specialist"
+    directive: "Optimize code and adjust agent policies."
+communication:
+  protocol: "async_event_bus"
+  presence_enabled: true
+  haptic_feedback: enabled
+routing:
+  strategy: "dynamic_contextual"
+  default_priority: "normal"
