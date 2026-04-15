@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: vsb-constitutional-core
+Version: 8.0.0rc0
+Summary: Universal Deca-Veritas constitutional core
+Requires-Dist: scikit-optimize>=0.9.0
+Requires-Dist: reportlab>=3.6.12
+Requires-Dist: python-docx>=0.8.11
+Requires-Dist: jinja2>=3.1.2
+Requires-Dist: cryptography>=41.0.0
+Requires-Dist: PyYAML>=6.0.1
+Requires-Dist: numpy>=1.24.0

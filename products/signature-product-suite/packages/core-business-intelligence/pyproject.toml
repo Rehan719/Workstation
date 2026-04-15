@@ -1,0 +1,10 @@
+[project]
+name = "vsb-core-business-intelligence"
+version = "8.0.0-rc"
+description = "Core Business Process Intelligence"
+dependencies = [
+    "vsb-constitutional-core"
+]
+
+[tool.uv.sources]
+vsb-constitutional-core = { workspace = true }

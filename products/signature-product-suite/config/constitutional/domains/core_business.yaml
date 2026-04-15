@@ -1,0 +1,65 @@
+# config/constitutional/domains/core_business.yaml
+extends: base_schema
+domain:
+  id: "core_business_process"
+  name: "Core Business Process Intelligence"
+  description: "Strategic decision‑making, risk assessment, commercial strategy, operational optimization under constitutional governance"
+  version: "8.0.0"
+
+# Deca‑Veritas Truth Dimensions (I‑X)
+truth_dimensions:
+  I_objective_record: {enabled: true, immutable_provenance: true}
+  II_subjective_narrative: {enabled: true, perspective_tracking: true}
+  III_procedural: {enabled: true, workflow_integrity: true}
+  IV_temporal_dynamic: {enabled: true, causal_temporal_graph: true}
+  V_predictive: {enabled: true, confidence_intervals: true}
+  VI_systemic_ethical: {enabled: true, ethical_constraint_engine: true}
+  VII_integrative: {enabled: true, cross_domain_synthesis: true}
+  VIII_sovereign_multimodal: {enabled: true, omnimedia_injection: true}
+  IX_operational_convergence: {enabled: true, feedback_loop_orchestration: true}
+  X_adaptive_constitutional: {enabled: true, rule_weight_tuning: true}
+
+mushahida:
+  allowed_sources: [market_data_apis, financial_reports, competitor_analysis, regulatory_filings, internal_metrics, entity_vsb_query]
+  constitutional_evidence_schema:
+    properties:
+      constitutional_metadata:
+        properties:
+          business_impact_category: {enum: [strategic, operational, financial, reputational, compliance]}
+          stakeholder_groups: {type: array, items: {enum: [shareholders, employees, customers, regulators, community]}}
+          risk_horizon: {enum: [short_term, medium_term, long_term]}
+
+jaiza:
+  pattern_libraries: [market_trend_patterns, risk_indicator_patterns, competitive_advantage_patterns, regulatory_change_patterns]
+  constitutional_risk_assessment:
+    criteria_schema:
+      properties:
+        criteria:
+          - name: "strategic_alignment"
+            weight: 0.3
+            constitutional_bounds: {min: 0.1, max: 0.5}
+            ethical_alignment: required
+          - name: "financial_viability"
+            weight: 0.25
+            constitutional_bounds: {min: 0.1, max: 0.4}
+          - name: "stakeholder_impact"
+            weight: 0.25
+            constitutional_bounds: {min: 0.1, max: 0.4}
+          - name: "regulatory_compliance"
+            weight: 0.2
+            constitutional_bounds: {min: 0.15, max: 0.3}
+            ethical_alignment: required
+  predictive_arbitration:
+    conflict_scenarios: ["profit_vs_ethics", "short_term_vs_long_term", "shareholder_vs_stakeholder"]
+
+muaina:
+  output_templates: [executive_brief, board_presentation, risk_register, strategic_roadmap, stakeholder_communication]
+  omnimedia_injection:
+    supported_formats: [PDF, DOCX, HTML, PPTX, XLSX, PNG, SVG, MP4, MP3]
+    constitutional_narrative_generation: true
+    cross_domain_synthesis: ["core_science", "core_scholarship"]  # e.g., R&D + Science + Scholarly Impact
+
+adaptive_constitutional_intelligence:
+  cross_domain_transfer_learning:
+    compatible_domains: ["core_science", "core_scholarship", "domain_specific:legal", "domain_specific:regulatory"]
+    transfer_rules: ["risk_assessment_methods", "stakeholder_analysis_frameworks", "regulatory_compliance_patterns"]

@@ -1,0 +1,52 @@
+# config/constitutional/domains/core_scholarship.yaml
+extends: base_schema
+domain:
+  id: "core_scholarship_process"
+  name: "Core Scholarship Process Intelligence"
+  description: "Academic research workflows, literature synthesis, citation integrity, knowledge contribution, scholarly communication"
+  version: "8.0.0"
+
+mushahida:
+  allowed_sources: [academic_databases, citation_indices, institutional_repositories, preprint_servers, entity_vsb_query, scholarly_networks]
+  constitutional_evidence_schema:
+    properties:
+      constitutional_metadata:
+        properties:
+          scholarly_domain: {enum: [humanities, social_sciences, natural_sciences, engineering, interdisciplinary]}
+          publication_type: {enum: [journal_article, conference_paper, book_chapter, thesis, preprint, dataset]}
+          citation_integrity_status: {enum: [verified, needs_verification, flagged]}
+          open_access_status: {enum: [gold, green, bronze, hybrid, closed]}
+
+jaiza:
+  pattern_libraries: [literature_gap_patterns, citation_network_patterns, scholarly_impact_patterns, methodological_rigor_patterns]
+  constitutional_risk_assessment:
+    criteria_schema:
+      properties:
+        criteria:
+          - name: "scholarly_rigor"
+            weight: 0.35
+            constitutional_bounds: {min: 0.2, max: 0.5}
+            ethical_alignment: required
+          - name: "citation_integrity"
+            weight: 0.3
+            constitutional_bounds: {min: 0.2, max: 0.4}
+            ethical_alignment: required
+          - name: "knowledge_contribution"
+            weight: 0.2
+            constitutional_bounds: {min: 0.1, max: 0.3}
+          - name: "accessibility_impact"
+            weight: 0.15
+            constitutional_bounds: {min: 0.05, max: 0.25}
+  predictive_arbitration:
+    conflict_scenarios: ["academic_freedom_vs_ethical_constraints", "speed_of_publication_vs_rigor", "open_access_vs_sustainability"]
+
+muaina:
+  output_templates: [literature_review, research_synthesis, citation_analysis_report, scholarly_communication_plan, knowledge_contribution_statement]
+  omnimedia_injection:
+    constitutional_narrative_generation: true
+    cross_domain_synthesis: ["core_business", "core_science"]
+
+adaptive_constitutional_intelligence:
+  cross_domain_transfer_learning:
+    compatible_domains: ["core_business", "core_science", "domain_specific:education", "domain_specific:legal"]
+    transfer_rules: ["literature_synthesis_methods", "citation_integrity_frameworks", "scholarly_communication_strategies"]

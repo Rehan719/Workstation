@@ -1,0 +1,11 @@
+[project]
+name = "signature-product-suite"
+version = "8.0.0-rc"
+description = "Constitutional, biomimetic, domain-agnostic intelligence fabric"
+dependencies = []
+
+[tool.uv]
+workspace = { members = ["packages/*"] }
+
+[tool.uv.workspace]
+members = ["packages/*"]
