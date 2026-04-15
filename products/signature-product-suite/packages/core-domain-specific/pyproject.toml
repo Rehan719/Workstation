@@ -1,0 +1,10 @@
+[project]
+name = "vsb-core-domain-specific"
+version = "8.0.0-rc"
+description = "Template for domain‑specific intelligence"
+dependencies = [
+    "vsb-constitutional-core"
+]
+
+[tool.uv.sources]
+vsb-constitutional-core = { workspace = true }

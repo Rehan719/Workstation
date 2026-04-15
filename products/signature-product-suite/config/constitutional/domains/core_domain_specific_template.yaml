@@ -1,0 +1,42 @@
+# config/constitutional/domains/core_domain_specific_template.yaml
+extends: base_schema
+domain:
+  id: "core_domain_specific_template"
+  name: "Core Domain‑Specific Process Intelligence Template"
+  description: "Configurable constitutional intelligence for any vertical domain (legal, regulatory, healthcare, education, etc.)"
+  version: "8.0.0"
+  template_instructions: |
+    Copy to config/constitutional/domains/{your_domain}.yaml
+    Customize constitutional_metadata, pattern libraries, output templates.
+    Ensure constitutional rules align with domain‑specific ethics and regulations.
+
+mushahida:
+  allowed_sources: [web_search, domain_specific_apis, file_upload, entity_vsb_query, manual_entry]
+  constitutional_evidence_schema:
+    properties:
+      constitutional_metadata:
+        properties:
+          your_domain_field_1: {type: string, description: "What this field captures"}
+          your_domain_field_2: {enum: [option1, option2, option3]}
+
+jaiza:
+  pattern_libraries: [default, your_domain_specific_patterns]
+  constitutional_risk_assessment:
+    criteria_schema:
+      properties:
+        criteria:
+          - name: "your_domain_criterion_1"
+            weight: 0.3
+            constitutional_bounds: {min: 0.1, max: 0.5}
+            ethical_alignment: required
+
+muaina:
+  output_templates: [markdown, pdf, your_domain_specific_format]
+  omnimedia_injection:
+    constitutional_narrative_generation: true
+    cross_domain_synthesis: ["core_business", "core_science", "core_scholarship"]
+
+adaptive_constitutional_intelligence:
+  cross_domain_transfer_learning:
+    compatible_domains: ["core_business", "core_science", "core_scholarship", "other_domain_specific_domains"]
+    transfer_rules: ["your_domain_transfer_rule_1", "your_domain_transfer_rule_2"]

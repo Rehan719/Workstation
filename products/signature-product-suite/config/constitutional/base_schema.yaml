@@ -1,0 +1,134 @@
+# config/constitutional/base_schema.yaml
+# REQUIRED for all Core Process domains: universal Deca‑Veritas genome
+# Inherited by all phenotypic expressions (Business, Science, Scholarship, Domain‑Specific)
+
+constitutional_genome:
+  version: "8.0.0"
+  id: "deca_veritas_core_v8"
+  description: "Universal constitutional intelligence framework – core process agnostic"
+
+  # Deca‑Veritas Truth Dimensions (I‑X) – fully implemented
+  truth_dimensions:
+    I_objective_record: {enabled: true, immutable_provenance: true}
+    II_subjective_narrative: {enabled: true, perspective_tracking: true}
+    III_procedural: {enabled: true, workflow_integrity: true}
+    IV_temporal_dynamic: {enabled: true, causal_temporal_graph: true}
+    V_predictive: {enabled: true, confidence_intervals: true}
+    VI_systemic_ethical: {enabled: true, ethical_constraint_engine: true}
+    VII_integrative: {enabled: true, cross_domain_synthesis: true}
+    VIII_sovereign_multimodal: {enabled: true, omnimedia_injection: true}
+    IX_operational_convergence: {enabled: true, feedback_loop_orchestration: true}
+    X_adaptive_constitutional: {enabled: true, rule_weight_tuning: true}  # Truth X
+
+  # Constitutional Governance (GaaS v3 + UEG + MultiSigCouncil)
+  governance:
+    gaas_v3:
+      enforcement_modes: [coercive, normative, adaptive]
+      trust_factor_scoring: true
+      protocol_interceptors: [MCP, A2A, ACP]
+      adaptive_rule_tuning: true  # Truth X integration
+    ueg:
+      event_graph_type: "merkle_dag"
+      logging_levels: [full, selective, disabled]
+      cryptographic_anchoring: "SHA-3-512"
+    multisig_council:
+      required_for: [irreversible_actions, high_risk_decisions, constitutional_amendments]
+      signature_threshold: 3
+      wyoming_dao_integration: true
+
+  # Core Process Stream Configuration (Extensible)
+  core_process_streams:
+    business:
+      enabled: true
+      default_modes: [strategic_assessment, risk_analysis, commercial_optimization]
+      constitutional_rules: ["commercial_ethics", "fiduciary_duty", "stakeholder_balance"]
+    science:
+      enabled: true
+      default_modes: [hypothesis_generation, experimental_design, evidence_synthesis, peer_review_sim]
+      constitutional_rules: ["scientific_integrity", "reproducibility", "falsifiability"]
+    scholarship:
+      enabled: true
+      default_modes: [literature_synthesis, citation_integrity, knowledge_contribution, scholarly_communication]
+      constitutional_rules: ["academic_freedom", "citation_ethics", "knowledge_stewardship"]
+    domain_specific:
+      enabled: true
+      configurable_modes: true
+      constitutional_rules: ["domain_ethics", "regulatory_compliance", "stakeholder_protection"]
+
+  # Mushahida‑Jaiza‑Muaina Intelligence Lifecycle (Constitutional Implementation)
+  intelligence_lifecycle:
+    mushahida:
+      constitutional_evidence_schema:
+        type: object
+        required: [content, source, timestamp, confidence, provenance_hash, constitutional_metadata]
+        properties:
+          constitutional_metadata:
+            type: object
+            properties:
+              truth_dimensions_applied: {type: array, items: {enum: [I, II, III, IV, V, VI, VII, VIII, IX, X]}}
+              governance_validated: {type: boolean}
+              cross_domain_transferable: {type: boolean}
+      adaptive_source_weighting: true
+      constitutional_provenance_chain: true
+    jaiza:
+      constitutional_pattern_library:
+        default_patterns: [risk_indicator, regulatory_requirement, ethical_principle, success_factor]
+        cross_domain_patterns: {enabled: true, propagation_threshold: 0.85}
+      constitutional_risk_assessment:
+        criteria_schema:
+          type: object
+          properties:
+            criteria:
+              type: array
+              items:
+                name: string
+                weight: number  # Adaptive within constitutional bounds
+                constitutional_bounds: {min: 0, max: 1}
+                ethical_alignment: {enum: [required, recommended, optional]}
+      predictive_arbitration:  # Truth X
+        enabled: true
+        confidence_interval_required: true
+        stakeholder_impact_analysis: true
+    muaina:
+      constitutional_proposal_schema:
+        type: object
+        required: [executive_summary, analysis, recommendations, implementation_plan, verification_protocol, constitutional_audit]
+        properties:
+          constitutional_audit:
+            type: object
+            properties:
+              rules_applied: {type: array}
+              conflicts_resolved: {type: array}
+              stakeholder_consensus: {type: object}
+              adaptive_tuning_applied: {type: boolean}
+      omnimedia_injection:
+        enabled: true
+        supported_formats: [PPTX, PDF, DOCX, XLSX, HTML, MP4, MP3, PNG, SVG]
+        constitutional_narrative_generation: true
+
+  # Cross‑Domain Constitutional Intelligence (Truth X Core)
+  adaptive_constitutional_intelligence:
+    cross_domain_transfer_learning:
+      enabled: true
+      constitutional_constraints: ["no_sensitive_data_transfer", "explicit_consent_required", "jurisdictional_compliance"]
+      similarity_metric: "constitutional_embedding"
+    predictive_rule_arbitration:
+      enabled: true
+      training_data: "historical_council_decisions"
+      model_type: "random_forest_with_explainability"
+      confidence_threshold: 0.85
+    multi_stakeholder_consensus:
+      enabled: true
+      voting_mechanism: "asynchronous_weighted"
+      expertise_weighting: true
+      deadlock_resolution: "constitutional_hierarchy_fallback"
+    adaptive_rule_tuning:
+      enabled: true
+      telemetry_source: "constitutional_outcome_monitor"
+      tuning_algorithm: "bayesian_optimization_within_bounds"
+      council_notification_required: true
+    constitutional_narrative_generation:
+      enabled: true
+      llm_integration: "local_or_api_with_guardrails"
+      constitutional_guardrails: ["no_hallucination", "citation_required", "bias_mitigation"]
+      cross_domain_synthesis: true

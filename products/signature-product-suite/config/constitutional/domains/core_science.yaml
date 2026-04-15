@@ -1,0 +1,52 @@
+# config/constitutional/domains/core_science.yaml
+extends: base_schema
+domain:
+  id: "core_science_process"
+  name: "Core Science Process Intelligence"
+  description: "Scientific method automation, hypothesis generation, experimental design, evidence synthesis, peer review simulation"
+  version: "8.0.0"
+
+mushahida:
+  allowed_sources: [pubmed_api, clinicaltrials_api, preprint_servers, lab_data_apis, entity_vsb_query, experimental_protocols]
+  constitutional_evidence_schema:
+    properties:
+      constitutional_metadata:
+        properties:
+          scientific_domain: {enum: [biomedical, physical, social, computational, interdisciplinary]}
+          evidence_level: {enum: [theoretical, preclinical, clinical_phase1, clinical_phase2, clinical_phase3, post_market, meta_analysis]}
+          reproducibility_status: {enum: [replicated, partially_replicated, not_replicated, not_applicable]}
+          ethical_approval: {type: boolean}
+
+jaiza:
+  pattern_libraries: [hypothesis_generation_patterns, experimental_design_patterns, statistical_analysis_patterns, bias_detection_patterns]
+  constitutional_risk_assessment:
+    criteria_schema:
+      properties:
+        criteria:
+          - name: "scientific_rigor"
+            weight: 0.4
+            constitutional_bounds: {min: 0.2, max: 0.6}
+            ethical_alignment: required
+          - name: "reproducibility_potential"
+            weight: 0.25
+            constitutional_bounds: {min: 0.1, max: 0.4}
+          - name: "ethical_compliance"
+            weight: 0.2
+            constitutional_bounds: {min: 0.15, max: 0.3}
+            ethical_alignment: required
+          - name: "societal_impact"
+            weight: 0.15
+            constitutional_bounds: {min: 0.05, max: 0.25}
+  predictive_arbitration:
+    conflict_scenarios: ["innovation_vs_safety", "open_science_vs_ip_protection", "speed_vs_rigor"]
+
+muaina:
+  output_templates: [research_proposal, experimental_protocol, peer_review_report, publication_manuscript, grant_application]
+  omnimedia_injection:
+    constitutional_narrative_generation: true
+    cross_domain_synthesis: ["core_business", "core_scholarship"]
+
+adaptive_constitutional_intelligence:
+  cross_domain_transfer_learning:
+    compatible_domains: ["core_business", "core_scholarship", "domain_specific:regulatory", "domain_specific:healthcare"]
+    transfer_rules: ["evidence_evaluation_frameworks", "risk_assessment_methods", "ethical_review_processes"]
