@@ -335,8 +335,1758 @@
             },
             "previous_hash": "d0be9d8ec718403e7e4cbb525751cc742b9fca3990a3299881b91fdb04fce8cb7d0eac0461ee7a53bdf20097fa5173a99c5153ac6acba3d1f388b30813d898c7",
             "hash": "f7e4621637e8d8e0d5206db00b9d02e267e5372776db1a91f5af696342fd620e9bc26a843e85dc2f47dd88d4e1c5cef5c866f42ca157ade10f9222b9e9413f89"
+        },
+        {
+            "id": "event_31",
+            "timestamp": 1776220825.277699,
+            "data": {
+                "type": "policy_gate_halt",
+                "domain": "core_business_process",
+                "action": "swarm_orchestration",
+                "reason": "Unconsented PII export prohibited by constitution."
+            },
+            "previous_hash": "f7e4621637e8d8e0d5206db00b9d02e267e5372776db1a91f5af696342fd620e9bc26a843e85dc2f47dd88d4e1c5cef5c866f42ca157ade10f9222b9e9413f89",
+            "hash": "8c2ef1554f234a5e7adaf0b9a39753dc40a16d16b217dc5f9415dadb93ea26fe4e85b4c3b0d4fc8e7b6cbdb294dffb140e07017ac151d2b62454f51ce7b14163"
+        },
+        {
+            "id": "event_32",
+            "timestamp": 1776220825.279521,
+            "data": {
+                "type": "domain_genesis",
+                "prompt": "Assessing AI bias in legal drafting",
+                "domain_id": "assessing_ai_bia"
+            },
+            "previous_hash": "8c2ef1554f234a5e7adaf0b9a39753dc40a16d16b217dc5f9415dadb93ea26fe4e85b4c3b0d4fc8e7b6cbdb294dffb140e07017ac151d2b62454f51ce7b14163",
+            "hash": "5d7b3e3d24b4e0c2c85feb41fe8b36c457673c3a65afa9c5294a8f0492c8adb34c9443a5ced95979af805175f806680ae674de461b50ac583e3b343949395ce2"
+        },
+        {
+            "id": "event_33",
+            "timestamp": 1776220825.281019,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "5d7b3e3d24b4e0c2c85feb41fe8b36c457673c3a65afa9c5294a8f0492c8adb34c9443a5ced95979af805175f806680ae674de461b50ac583e3b343949395ce2",
+            "hash": "f2482f6862cd0ca19fb827f01ce547ee323fd242e58e92a983a605630909af915bdaecb17a52d3592b8259683c51faa9fd6dd0428e20da48b89140736ceca211"
+        },
+        {
+            "id": "event_34",
+            "timestamp": 1776220825.2821736,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f2482f6862cd0ca19fb827f01ce547ee323fd242e58e92a983a605630909af915bdaecb17a52d3592b8259683c51faa9fd6dd0428e20da48b89140736ceca211",
+            "hash": "96e1ea0a7544c78ef4a14c2c505032fff0e33e3105f3b4f91a4709a272b9a3b6f1710e989675ac40d85c6c97d0f3d3c8e351009fb5c64932a78a1257839e51bf"
+        },
+        {
+            "id": "event_35",
+            "timestamp": 1776220825.283479,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "96e1ea0a7544c78ef4a14c2c505032fff0e33e3105f3b4f91a4709a272b9a3b6f1710e989675ac40d85c6c97d0f3d3c8e351009fb5c64932a78a1257839e51bf",
+            "hash": "93a2a4b4a92063e7f69d01ad2413342262b9c7173b530d7cfb7568989a424a813dd3306e7970b3bfc7a9da5820ceed1b24855a90755fecdd6453d3f6ed6a3929"
+        },
+        {
+            "id": "event_36",
+            "timestamp": 1776220825.2851222,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "93a2a4b4a92063e7f69d01ad2413342262b9c7173b530d7cfb7568989a424a813dd3306e7970b3bfc7a9da5820ceed1b24855a90755fecdd6453d3f6ed6a3929",
+            "hash": "f3f6c1186f3b58b3a42f64c80145019115434b7378285f236aee384749c6cf7574cf98347171f68e70995a4965cf0f33ec0ecf3bac9df9bafe2cebd89ae339b5"
+        },
+        {
+            "id": "event_37",
+            "timestamp": 1776220825.2865644,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f3f6c1186f3b58b3a42f64c80145019115434b7378285f236aee384749c6cf7574cf98347171f68e70995a4965cf0f33ec0ecf3bac9df9bafe2cebd89ae339b5",
+            "hash": "338c772ced45013f891b06254d5b32057930e5c32046057337c228ac1a8202eddacf5747bbbe905626ec22b7b61f0fd2dbbab22b19b819cf1669aa6e8fd485ae"
+        },
+        {
+            "id": "event_38",
+            "timestamp": 1776220825.2878985,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "338c772ced45013f891b06254d5b32057930e5c32046057337c228ac1a8202eddacf5747bbbe905626ec22b7b61f0fd2dbbab22b19b819cf1669aa6e8fd485ae",
+            "hash": "940f56ea80cc2e8206d88f84808e6e1bbdbd8046d678b6c273c32f036d49f6866247e816f1a378065b86548fdcbce5088481e16c4fb1d1bbc82a65daf60edc32"
+        },
+        {
+            "id": "event_39",
+            "timestamp": 1776220825.2892294,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "940f56ea80cc2e8206d88f84808e6e1bbdbd8046d678b6c273c32f036d49f6866247e816f1a378065b86548fdcbce5088481e16c4fb1d1bbc82a65daf60edc32",
+            "hash": "f970c5788f92c4f614a91d731f6db4857d44d23ab9ed5a4e81302511bfdbc873dd7bf27b9d7bd0c35e1856130877704ac5eb15e55dfbec30e1011e5049a00c2a"
+        },
+        {
+            "id": "event_40",
+            "timestamp": 1776220825.2905269,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f970c5788f92c4f614a91d731f6db4857d44d23ab9ed5a4e81302511bfdbc873dd7bf27b9d7bd0c35e1856130877704ac5eb15e55dfbec30e1011e5049a00c2a",
+            "hash": "49d4537dad343887c022655787273d071a52d991de9fc6677310ef6336b38585089117b36fadeb6e3776ed421dca8a68da1b0db284974619a0c5aaee3ac6e4d4"
+        },
+        {
+            "id": "event_41",
+            "timestamp": 1776220825.2920144,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "49d4537dad343887c022655787273d071a52d991de9fc6677310ef6336b38585089117b36fadeb6e3776ed421dca8a68da1b0db284974619a0c5aaee3ac6e4d4",
+            "hash": "f0aec28e733d03b9dec6c06b0e61d41844a96a91700513fd3a7234a0f96bab1abeeb6b5056e2940fb312b373ccc442219b4de988051c66a43e706d5f97171a13"
+        },
+        {
+            "id": "event_42",
+            "timestamp": 1776220825.2934842,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f0aec28e733d03b9dec6c06b0e61d41844a96a91700513fd3a7234a0f96bab1abeeb6b5056e2940fb312b373ccc442219b4de988051c66a43e706d5f97171a13",
+            "hash": "74c2f0cc1f9e91f4ddce173a35abb04e25e001c864a922eb253066716eb773435966ab344bf2d532e4d250b8ab520058fbc7074f7813eca9c4ca02042816eb46"
+        },
+        {
+            "id": "event_43",
+            "timestamp": 1776220825.29492,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "74c2f0cc1f9e91f4ddce173a35abb04e25e001c864a922eb253066716eb773435966ab344bf2d532e4d250b8ab520058fbc7074f7813eca9c4ca02042816eb46",
+            "hash": "c025473d03c2046b602a4f00dc7bca91f715e73e3652fb02a14b7ac5d53283bd5127b1a5f64a0024f3743e4916a9a4f4a30b75978db944dfb0ccf98e0c38c39e"
+        },
+        {
+            "id": "event_44",
+            "timestamp": 1776220825.2962713,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c025473d03c2046b602a4f00dc7bca91f715e73e3652fb02a14b7ac5d53283bd5127b1a5f64a0024f3743e4916a9a4f4a30b75978db944dfb0ccf98e0c38c39e",
+            "hash": "c68cd954366132e0ed222b99b44b44ee01e8da9f872794bfa6ed535a38f5fcc71550c66d2afee7bcf8210b5c8246c31dda717de8667d2f2ae4ba4afb97cdb71d"
+        },
+        {
+            "id": "event_45",
+            "timestamp": 1776220825.2977102,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c68cd954366132e0ed222b99b44b44ee01e8da9f872794bfa6ed535a38f5fcc71550c66d2afee7bcf8210b5c8246c31dda717de8667d2f2ae4ba4afb97cdb71d",
+            "hash": "508b1ae6a13fecec48940b7f9a5c236c7c561201adfba443eff3ef16f2f8ba97051af3c4241c3ffc2b0dc9a495ed53505608fbe0c13f5e8f1808fe38687489b5"
+        },
+        {
+            "id": "event_46",
+            "timestamp": 1776220825.299378,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "508b1ae6a13fecec48940b7f9a5c236c7c561201adfba443eff3ef16f2f8ba97051af3c4241c3ffc2b0dc9a495ed53505608fbe0c13f5e8f1808fe38687489b5",
+            "hash": "5b4ec7db4cc5002efe2e470b9072d7fd5f66ea728fb42d4c4a819f40ac41eb5cb57a1c1ad2622b9476ab53ea4a3a74e74f34f6fc72069c1322f74279806d9706"
+        },
+        {
+            "id": "event_47",
+            "timestamp": 1776220825.3012342,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "5b4ec7db4cc5002efe2e470b9072d7fd5f66ea728fb42d4c4a819f40ac41eb5cb57a1c1ad2622b9476ab53ea4a3a74e74f34f6fc72069c1322f74279806d9706",
+            "hash": "f1b321b15f79067cea867d83c0b43f9d569b224a9ebcb4ebdd151c3ba426dbc2b4291b8ce2b48f2c4469dfa4db5decfd37c8f3fd3a5153e1c0f37f00658acb62"
+        },
+        {
+            "id": "event_48",
+            "timestamp": 1776220825.302663,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f1b321b15f79067cea867d83c0b43f9d569b224a9ebcb4ebdd151c3ba426dbc2b4291b8ce2b48f2c4469dfa4db5decfd37c8f3fd3a5153e1c0f37f00658acb62",
+            "hash": "d42fa6a0c1f8a00662fa633b1db28aa354748c5ccd72f69129c24daa90722a02b21b6c3f4981f341b72542429eed47a2ff44b47d61bb65fc510561151d352f20"
+        },
+        {
+            "id": "event_49",
+            "timestamp": 1776220825.3043675,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "d42fa6a0c1f8a00662fa633b1db28aa354748c5ccd72f69129c24daa90722a02b21b6c3f4981f341b72542429eed47a2ff44b47d61bb65fc510561151d352f20",
+            "hash": "ce54e7849d69b8f998b8c96cb35fad3a5028c57a691f83a10b329d757d72e25fa9a4cea1abd16f8e5c7c89546519ed8c9d408d19936b5603d71c0a823308b899"
+        },
+        {
+            "id": "event_50",
+            "timestamp": 1776220825.3058693,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "ce54e7849d69b8f998b8c96cb35fad3a5028c57a691f83a10b329d757d72e25fa9a4cea1abd16f8e5c7c89546519ed8c9d408d19936b5603d71c0a823308b899",
+            "hash": "9c65f8319e27e4adcaa310ea266f49a46bbd7ebdbcd451fd4ff06948bc168d9f803636ac9379b70c443eab3f37a8e9e03cf5b2c1d9b7070ac548b9539428067a"
+        },
+        {
+            "id": "event_51",
+            "timestamp": 1776220825.3076484,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "9c65f8319e27e4adcaa310ea266f49a46bbd7ebdbcd451fd4ff06948bc168d9f803636ac9379b70c443eab3f37a8e9e03cf5b2c1d9b7070ac548b9539428067a",
+            "hash": "d347ea55d8165e9992431577ef12f551c16f12e253d67d9119305eeb498204f56ad17e386ec16f8f719f753d47ab38d8dbeacad47d954079b7339c002578a4e1"
+        },
+        {
+            "id": "event_52",
+            "timestamp": 1776220825.3093328,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "d347ea55d8165e9992431577ef12f551c16f12e253d67d9119305eeb498204f56ad17e386ec16f8f719f753d47ab38d8dbeacad47d954079b7339c002578a4e1",
+            "hash": "a4fd73a577322289787d4764a915cb09f7905649e831884b6c714481239a387840785982ffaa5babcebe6ab840ab4e8dc2af1c9c905e483f684e2987dfcc3079"
+        },
+        {
+            "id": "event_53",
+            "timestamp": 1776220825.3110363,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "a4fd73a577322289787d4764a915cb09f7905649e831884b6c714481239a387840785982ffaa5babcebe6ab840ab4e8dc2af1c9c905e483f684e2987dfcc3079",
+            "hash": "db5765c6252d0964fd6ab97aec5d0cbd0394c126ba40762049c46c98039faca2f41043cf03f2999d358ac9de5d9c9a2001533b87c57cc2eb1249a5a302491a2b"
+        },
+        {
+            "id": "event_54",
+            "timestamp": 1776220825.3125973,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "db5765c6252d0964fd6ab97aec5d0cbd0394c126ba40762049c46c98039faca2f41043cf03f2999d358ac9de5d9c9a2001533b87c57cc2eb1249a5a302491a2b",
+            "hash": "6bdad3f56d40386feaeda5b58b5f98809531220a08661daf203d34ae17f720f20829cc3e55f2899d4bdee00add593d6d2f61e007d16bb92300484799f413d915"
+        },
+        {
+            "id": "event_55",
+            "timestamp": 1776220825.3142388,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "6bdad3f56d40386feaeda5b58b5f98809531220a08661daf203d34ae17f720f20829cc3e55f2899d4bdee00add593d6d2f61e007d16bb92300484799f413d915",
+            "hash": "f956ba58720a5d45897d655a45b31bbf0a498f9269a2044d7c7d60d1dd9ec4fa31b084986c3b930977f583c38af8ac47c9447e8d1f9e89491c528e9bb390abc5"
+        },
+        {
+            "id": "event_56",
+            "timestamp": 1776220825.3158371,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f956ba58720a5d45897d655a45b31bbf0a498f9269a2044d7c7d60d1dd9ec4fa31b084986c3b930977f583c38af8ac47c9447e8d1f9e89491c528e9bb390abc5",
+            "hash": "e357cd7c8a1b466e2a8303d2658bb959780d86a2282a457cd8dd26700616d08c8380c0bf08bdb9606db2c190d7f92925fdbdc66edd5f959162d134f14c5ee12b"
+        },
+        {
+            "id": "event_57",
+            "timestamp": 1776220825.3174875,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "e357cd7c8a1b466e2a8303d2658bb959780d86a2282a457cd8dd26700616d08c8380c0bf08bdb9606db2c190d7f92925fdbdc66edd5f959162d134f14c5ee12b",
+            "hash": "683d885311e37839378d06e514801bc16c44ec1670b74455dda548496832157af9d0be5aa9ccbd262a1af08d1bcb8697f6384bddd0abfe6a9397ceb80b8aafc9"
+        },
+        {
+            "id": "event_58",
+            "timestamp": 1776220825.319235,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "683d885311e37839378d06e514801bc16c44ec1670b74455dda548496832157af9d0be5aa9ccbd262a1af08d1bcb8697f6384bddd0abfe6a9397ceb80b8aafc9",
+            "hash": "8b9fe75b6fd29fd9914392b0568a46442e44fc4fcf5e4feb308cb339aed05755db61175baa06296f90c800ae5e9959fce5274a8cf290dcd71ae6fdc50ed2d5b8"
+        },
+        {
+            "id": "event_59",
+            "timestamp": 1776220825.320919,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "8b9fe75b6fd29fd9914392b0568a46442e44fc4fcf5e4feb308cb339aed05755db61175baa06296f90c800ae5e9959fce5274a8cf290dcd71ae6fdc50ed2d5b8",
+            "hash": "858be1f9fc1e41002b5fccf5b33356f4f71c187c79b5c3c225a4d092f98d5cf93e193a72d3c6e4f32f14b23f027e0daa68bb0f53bc2a853ef683ee171343223b"
+        },
+        {
+            "id": "event_60",
+            "timestamp": 1776220825.3226979,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "858be1f9fc1e41002b5fccf5b33356f4f71c187c79b5c3c225a4d092f98d5cf93e193a72d3c6e4f32f14b23f027e0daa68bb0f53bc2a853ef683ee171343223b",
+            "hash": "c942080c1e49cd5aaab37c86a13d69e34963eb4d3a81d88e99235557b9ac7a943527c749646447be9961603610b50462b5203af11cfcfc6f7946c89348c8e916"
+        },
+        {
+            "id": "event_61",
+            "timestamp": 1776220825.3244345,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c942080c1e49cd5aaab37c86a13d69e34963eb4d3a81d88e99235557b9ac7a943527c749646447be9961603610b50462b5203af11cfcfc6f7946c89348c8e916",
+            "hash": "6237bb6f256b2e853cc67543faccdc19b9c30e24812266eb935e06b6dd741dcfe0b5985d018e51cfbe25b4351adf83c257983aa4294b3fe9f6096a9a7382b106"
+        },
+        {
+            "id": "event_62",
+            "timestamp": 1776220825.3261964,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "6237bb6f256b2e853cc67543faccdc19b9c30e24812266eb935e06b6dd741dcfe0b5985d018e51cfbe25b4351adf83c257983aa4294b3fe9f6096a9a7382b106",
+            "hash": "2ed1bfc8d48eda8a66bc79050a3942833ed70de56dba0c30e319b2b56b07cde6593cd711d2c0093eca3c1cb3374acc599030ae09f4be6902189f8a0ddee33871"
+        },
+        {
+            "id": "event_63",
+            "timestamp": 1776220825.3280056,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "2ed1bfc8d48eda8a66bc79050a3942833ed70de56dba0c30e319b2b56b07cde6593cd711d2c0093eca3c1cb3374acc599030ae09f4be6902189f8a0ddee33871",
+            "hash": "c8e69696c3d97458efe4d9a7fa1a9cf52b8495dddc29b4c491db3e6cf404af3899fe08abe1de40ef35a40444aaa8302dd25706062423c185f6a147b129844a19"
+        },
+        {
+            "id": "event_64",
+            "timestamp": 1776220825.3296943,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c8e69696c3d97458efe4d9a7fa1a9cf52b8495dddc29b4c491db3e6cf404af3899fe08abe1de40ef35a40444aaa8302dd25706062423c185f6a147b129844a19",
+            "hash": "ae8926438be5ddfa2ea16bec9f6db1c7d5c3e4a920f006a8a8fe2942b0f0a6b730d6b26cb232e690b9505f6237b54cac3df46c52f1b62690c690faabe507cb52"
+        },
+        {
+            "id": "event_65",
+            "timestamp": 1776220825.331652,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "ae8926438be5ddfa2ea16bec9f6db1c7d5c3e4a920f006a8a8fe2942b0f0a6b730d6b26cb232e690b9505f6237b54cac3df46c52f1b62690c690faabe507cb52",
+            "hash": "829a5566ce2bd837b0c66b52b716c71483d659f0f96c3cf8c01f95e3737ee430f9c7fc7eaf879ec2313bcaf475834e6fff93ca6d716c99e92b5d2e03fb2dcef2"
+        },
+        {
+            "id": "event_66",
+            "timestamp": 1776220825.3338223,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "829a5566ce2bd837b0c66b52b716c71483d659f0f96c3cf8c01f95e3737ee430f9c7fc7eaf879ec2313bcaf475834e6fff93ca6d716c99e92b5d2e03fb2dcef2",
+            "hash": "d633407d550273bc2f9cf125a487a88aac5f1f46d6f6629004967b348c5091d3d775d1b00a0fe9a2f330d706e732a3cdf498f98e0356de1b08d45c1650d30f3f"
+        },
+        {
+            "id": "event_67",
+            "timestamp": 1776220825.3357987,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "d633407d550273bc2f9cf125a487a88aac5f1f46d6f6629004967b348c5091d3d775d1b00a0fe9a2f330d706e732a3cdf498f98e0356de1b08d45c1650d30f3f",
+            "hash": "de236aee644adea4abd4ee13b7a9d5a461954f253e59f5eb763780ef06f39e6c743b9f0202aa42c4d57e5ceeae9700143ea6c93712c70b87947c3259a47f5496"
+        },
+        {
+            "id": "event_68",
+            "timestamp": 1776220825.3375695,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "de236aee644adea4abd4ee13b7a9d5a461954f253e59f5eb763780ef06f39e6c743b9f0202aa42c4d57e5ceeae9700143ea6c93712c70b87947c3259a47f5496",
+            "hash": "94d1fb765100c4a283437ea2ebbc73e5fdc0bf23fefc8dd95f160587160db80fcad1514bd581da9fee1ae23ef008b03f8e75b451dbd2f38979d32ca28c2dc45b"
+        },
+        {
+            "id": "event_69",
+            "timestamp": 1776220825.339474,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "94d1fb765100c4a283437ea2ebbc73e5fdc0bf23fefc8dd95f160587160db80fcad1514bd581da9fee1ae23ef008b03f8e75b451dbd2f38979d32ca28c2dc45b",
+            "hash": "3ceef40987329ef07808f20ab5a541f43e1c7808f2fd2840883289eceb85499678f7e2fa3a6f0e1fba50a63cc8f4bf90f569fc0aa79fa361211432e9f00a5614"
+        },
+        {
+            "id": "event_70",
+            "timestamp": 1776220825.3414257,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "3ceef40987329ef07808f20ab5a541f43e1c7808f2fd2840883289eceb85499678f7e2fa3a6f0e1fba50a63cc8f4bf90f569fc0aa79fa361211432e9f00a5614",
+            "hash": "fb2f7f1f46c6d13308b9a94bd640ec7f3f87919053bf8ddff11a3519272459757fd85f39918ecf9ef01172e2a7cc85efb54f02b12ed48eaf03442e9897962bca"
+        },
+        {
+            "id": "event_71",
+            "timestamp": 1776220825.3434215,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "fb2f7f1f46c6d13308b9a94bd640ec7f3f87919053bf8ddff11a3519272459757fd85f39918ecf9ef01172e2a7cc85efb54f02b12ed48eaf03442e9897962bca",
+            "hash": "ebce1b1b9f7124407ebbf0f1089df87f926bef11532cfd981a436ad5ca2401dec3d4ab78efc7864e829f673aaec55816ce2f6ebb6f2de4ade5797a86137e210f"
+        },
+        {
+            "id": "event_72",
+            "timestamp": 1776220825.3453374,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "ebce1b1b9f7124407ebbf0f1089df87f926bef11532cfd981a436ad5ca2401dec3d4ab78efc7864e829f673aaec55816ce2f6ebb6f2de4ade5797a86137e210f",
+            "hash": "76e25d9fccc173c17c8fef81fd461c5ed79be91e8cffacb8424585b31337b022620ffcbcabaea6e7f7233371a61dae503bc56f38f799aa5e2a85df686f9beeae"
+        },
+        {
+            "id": "event_73",
+            "timestamp": 1776220825.3478708,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "76e25d9fccc173c17c8fef81fd461c5ed79be91e8cffacb8424585b31337b022620ffcbcabaea6e7f7233371a61dae503bc56f38f799aa5e2a85df686f9beeae",
+            "hash": "0d3fc60d780c6167c80a626aac3c67e577637f75b7b63498ec435ba9970d9a860ee39293fe43d093721580332699eb4cb1120f0ff24f571fa517328fe2466331"
+        },
+        {
+            "id": "event_74",
+            "timestamp": 1776220825.3503182,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "0d3fc60d780c6167c80a626aac3c67e577637f75b7b63498ec435ba9970d9a860ee39293fe43d093721580332699eb4cb1120f0ff24f571fa517328fe2466331",
+            "hash": "34fa981dc9450702ee653cf8f0e78f18107d53d8173d515d969fd651768fe8c41c454d3b47c825495a219b11552c3166fb3f8c0395495947667c74102952378c"
+        },
+        {
+            "id": "event_75",
+            "timestamp": 1776220825.3528953,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "34fa981dc9450702ee653cf8f0e78f18107d53d8173d515d969fd651768fe8c41c454d3b47c825495a219b11552c3166fb3f8c0395495947667c74102952378c",
+            "hash": "4ca5aac09b85f561cf2833ca4a7aeed3933fcb2ecaa6ad243ea37e019194f55db58f8d3b0fe9669c1dd0ad8e55806a9983d569a4e42e86d717fb02965073b118"
+        },
+        {
+            "id": "event_76",
+            "timestamp": 1776220825.3553126,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "4ca5aac09b85f561cf2833ca4a7aeed3933fcb2ecaa6ad243ea37e019194f55db58f8d3b0fe9669c1dd0ad8e55806a9983d569a4e42e86d717fb02965073b118",
+            "hash": "fe50dda7e033ccd4d440e05d7fd2b60810627fbfd683feb8376372051db5eab1d79816cfbaf20a778565c847db3c268426a7c4537065d468f6304e44967d37b0"
+        },
+        {
+            "id": "event_77",
+            "timestamp": 1776220825.3574731,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "fe50dda7e033ccd4d440e05d7fd2b60810627fbfd683feb8376372051db5eab1d79816cfbaf20a778565c847db3c268426a7c4537065d468f6304e44967d37b0",
+            "hash": "f2ebf8bbc1e00cd1ec042629b0fbb4c82d597463fcafce4e83892165f873a2cd66d358c1ed564f4b01a500a244b6f4e9a5d423da1ab1b0465ca18f57e05bf9b6"
+        },
+        {
+            "id": "event_78",
+            "timestamp": 1776220825.3601515,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f2ebf8bbc1e00cd1ec042629b0fbb4c82d597463fcafce4e83892165f873a2cd66d358c1ed564f4b01a500a244b6f4e9a5d423da1ab1b0465ca18f57e05bf9b6",
+            "hash": "76133e77f4923ef1f35807118639099f9fb5cfebda187707afc3eda29ed5f9322709101d235fa80b8ad25d10bd592f1998f23b029225d4b80fb78a33132c039f"
+        },
+        {
+            "id": "event_79",
+            "timestamp": 1776220825.3622687,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "76133e77f4923ef1f35807118639099f9fb5cfebda187707afc3eda29ed5f9322709101d235fa80b8ad25d10bd592f1998f23b029225d4b80fb78a33132c039f",
+            "hash": "49ac3dc15892c41bce8c16a0b035f82a6fbefb5bd210ed40510862f034f8a82eefad9a67d19cdbcb285175b7c9d4a6af0b755608c7feb16ce79c35e0c2cecb59"
+        },
+        {
+            "id": "event_80",
+            "timestamp": 1776220825.3644128,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "49ac3dc15892c41bce8c16a0b035f82a6fbefb5bd210ed40510862f034f8a82eefad9a67d19cdbcb285175b7c9d4a6af0b755608c7feb16ce79c35e0c2cecb59",
+            "hash": "b9e015f8d0e32c4edbce1c3a1c25d14cb39f02e55d389303b76c347edbbf674bc3cd2f4dde364b3ab2d22d05e3723bbef24b715b2e7d63512b07da1f77818ab9"
+        },
+        {
+            "id": "event_81",
+            "timestamp": 1776220825.36665,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "b9e015f8d0e32c4edbce1c3a1c25d14cb39f02e55d389303b76c347edbbf674bc3cd2f4dde364b3ab2d22d05e3723bbef24b715b2e7d63512b07da1f77818ab9",
+            "hash": "ecbd6e1ecc841426add87dff7f075f894226a45964dd2114ec52a026423fe682ce27bb553077a77a3ac492347e27faa5e41da17ac874d59b99f8c8c5115f61a2"
+        },
+        {
+            "id": "event_82",
+            "timestamp": 1776220825.368768,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "ecbd6e1ecc841426add87dff7f075f894226a45964dd2114ec52a026423fe682ce27bb553077a77a3ac492347e27faa5e41da17ac874d59b99f8c8c5115f61a2",
+            "hash": "8316baf1f2e2f8b37540ad05de84e8f7d39e57fe92e8f8eb06faeacadad8073876bb6590232383b9d2d870eed32fce6350f6009f0ce64a47ef5497d4ebc05fbf"
+        },
+        {
+            "id": "event_83",
+            "timestamp": 1776220825.3711858,
+            "data": {
+                "type": "evolution_proposal_generated"
+            },
+            "previous_hash": "8316baf1f2e2f8b37540ad05de84e8f7d39e57fe92e8f8eb06faeacadad8073876bb6590232383b9d2d870eed32fce6350f6009f0ce64a47ef5497d4ebc05fbf",
+            "hash": "f420dd69dc2ca55ee75751f6d7c12b3a1eb03f867e6891569484e2452c9a8bb89b817f5c6d651c67206f836839137139c15081132532094aca5ee5374822cd0a"
+        },
+        {
+            "id": "event_84",
+            "timestamp": 1776220825.3733435,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f420dd69dc2ca55ee75751f6d7c12b3a1eb03f867e6891569484e2452c9a8bb89b817f5c6d651c67206f836839137139c15081132532094aca5ee5374822cd0a",
+            "hash": "8ea38eb97b089745ec1967e26b95a952acf6feae2bd5151166cfd78d696cf76913b5fe969e3dc617d43828b348386c31297dcbb91e0f3dfa3fb7b4486ce3426d"
+        },
+        {
+            "id": "event_85",
+            "timestamp": 1776220825.375504,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "8ea38eb97b089745ec1967e26b95a952acf6feae2bd5151166cfd78d696cf76913b5fe969e3dc617d43828b348386c31297dcbb91e0f3dfa3fb7b4486ce3426d",
+            "hash": "30c960f23cadf3def0446dd21a47504cbdfef54d7a484e09507813f4e4c0cdf427e542e4880d877666244bd2840701a61fe2c0e50e3ca8d2dadd09164038850d"
+        },
+        {
+            "id": "event_86",
+            "timestamp": 1776220825.3775887,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "30c960f23cadf3def0446dd21a47504cbdfef54d7a484e09507813f4e4c0cdf427e542e4880d877666244bd2840701a61fe2c0e50e3ca8d2dadd09164038850d",
+            "hash": "0866e73ce8faff73e540a9392ba2c05ea0036c326605092a5544bb5656dd5c6749c1b5b5c4a1521cc47753725a171942ad0e65b1e0992fa9f36c2c3234e4ee87"
+        },
+        {
+            "id": "event_87",
+            "timestamp": 1776220825.3798447,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "0866e73ce8faff73e540a9392ba2c05ea0036c326605092a5544bb5656dd5c6749c1b5b5c4a1521cc47753725a171942ad0e65b1e0992fa9f36c2c3234e4ee87",
+            "hash": "9d5058889a3b540a0e097369a5446aeec870fc4e8cbe5544abfd3c695dac1102bd6a78821c52227672595b45a82de7c4669308412e71575fbd6c09f2aae8bde2"
+        },
+        {
+            "id": "event_88",
+            "timestamp": 1776220825.3821018,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "9d5058889a3b540a0e097369a5446aeec870fc4e8cbe5544abfd3c695dac1102bd6a78821c52227672595b45a82de7c4669308412e71575fbd6c09f2aae8bde2",
+            "hash": "95a64e18462dc6616cd455713e1127de5d5fec248440d718759cf611d989fe945197e620a01a776cd036cd969c8fcc77a407056e18c89eb603dbcdbdb1f4c666"
+        },
+        {
+            "id": "event_89",
+            "timestamp": 1776220885.4712448,
+            "data": {
+                "type": "policy_gate_halt",
+                "domain": "core_business_process",
+                "action": "swarm_orchestration",
+                "reason": "Unconsented PII export prohibited by constitution."
+            },
+            "previous_hash": "95a64e18462dc6616cd455713e1127de5d5fec248440d718759cf611d989fe945197e620a01a776cd036cd969c8fcc77a407056e18c89eb603dbcdbdb1f4c666",
+            "hash": "b38fad1ca7731268cb3db831f43e1414e4268ea15676908f8409acad622f3bdac70185c05a7010f99bfe4765fb58d3bedc3eb62aa5b1355edbda800f845b08fa"
+        },
+        {
+            "id": "event_90",
+            "timestamp": 1776220885.4742057,
+            "data": {
+                "type": "domain_genesis",
+                "prompt": "Assessing AI bias in legal drafting",
+                "domain_id": "assessing_ai_bia"
+            },
+            "previous_hash": "b38fad1ca7731268cb3db831f43e1414e4268ea15676908f8409acad622f3bdac70185c05a7010f99bfe4765fb58d3bedc3eb62aa5b1355edbda800f845b08fa",
+            "hash": "104a6426523215efe3750ca71e1e9629a18f0499b1585b81c2edf7377b3715bebaba10a44f671aa28d4cdae740ab232f951f057fd09df0e1d61083d1b1267507"
+        },
+        {
+            "id": "event_91",
+            "timestamp": 1776220885.4769,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "104a6426523215efe3750ca71e1e9629a18f0499b1585b81c2edf7377b3715bebaba10a44f671aa28d4cdae740ab232f951f057fd09df0e1d61083d1b1267507",
+            "hash": "d0c5bbd274dd7a80fd6808d776c3e7e8fb15785a36123c7f49f01bfec6a8f0af064a6a8064a556fa86de2cabdb7a8ec3d5faffe24f83b7c134874b60bdfdfacc"
+        },
+        {
+            "id": "event_92",
+            "timestamp": 1776220885.4803097,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "d0c5bbd274dd7a80fd6808d776c3e7e8fb15785a36123c7f49f01bfec6a8f0af064a6a8064a556fa86de2cabdb7a8ec3d5faffe24f83b7c134874b60bdfdfacc",
+            "hash": "85b52cf3d37adcd3be03ac439172f130ff7bf855464f7bc5f84dc823e7732d1cfe337fe5b0207b71c5ee73159cb940fea9c5d82d2450d6616d75c75bc31b9ed3"
+        },
+        {
+            "id": "event_93",
+            "timestamp": 1776220885.4829168,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "85b52cf3d37adcd3be03ac439172f130ff7bf855464f7bc5f84dc823e7732d1cfe337fe5b0207b71c5ee73159cb940fea9c5d82d2450d6616d75c75bc31b9ed3",
+            "hash": "da0d91ba7a153b3a30fc4f0e9e253bef2781e342f000a5e598cc745bc9224aa09400fe21e3256d050ae6b7a7a256a3366b2e6b02d6c489a26c04900eece54794"
+        },
+        {
+            "id": "event_94",
+            "timestamp": 1776220885.4861479,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "da0d91ba7a153b3a30fc4f0e9e253bef2781e342f000a5e598cc745bc9224aa09400fe21e3256d050ae6b7a7a256a3366b2e6b02d6c489a26c04900eece54794",
+            "hash": "e6ceef4c375c1b987076976e74ed9f577c988745a53a86f274d842971202ead2db659566d1393aac10ef06aa38deecc4eca93e686b150fb9a41b5f67b3b075a6"
+        },
+        {
+            "id": "event_95",
+            "timestamp": 1776220885.488938,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "e6ceef4c375c1b987076976e74ed9f577c988745a53a86f274d842971202ead2db659566d1393aac10ef06aa38deecc4eca93e686b150fb9a41b5f67b3b075a6",
+            "hash": "19592989901e93694ae71fbfb74129cd3fe97942a3b56ffd61d6275b6ec66e37b1d23a583a252ebd9f1df5b52936051974150e95e091c8d660f43e409feca7e9"
+        },
+        {
+            "id": "event_96",
+            "timestamp": 1776220885.4918041,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "19592989901e93694ae71fbfb74129cd3fe97942a3b56ffd61d6275b6ec66e37b1d23a583a252ebd9f1df5b52936051974150e95e091c8d660f43e409feca7e9",
+            "hash": "e841b4a9c67b160f60d1b207ac6cfb995cbdf13d88c3716423a970ac78a6f91ed3d7bfb31b3d149d7ace54af6f5b49ac16d05454d8f60488d3c15cf6dcec2161"
+        },
+        {
+            "id": "event_97",
+            "timestamp": 1776220885.494373,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "e841b4a9c67b160f60d1b207ac6cfb995cbdf13d88c3716423a970ac78a6f91ed3d7bfb31b3d149d7ace54af6f5b49ac16d05454d8f60488d3c15cf6dcec2161",
+            "hash": "f4630284068d39e15e1190c60af469f490ab8dfde47bc29b3916f8e19bb58478260aa18f50786d950bd4ecdebae438ce26a762fa08a8140b23b7154317f87b67"
+        },
+        {
+            "id": "event_98",
+            "timestamp": 1776220885.497998,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f4630284068d39e15e1190c60af469f490ab8dfde47bc29b3916f8e19bb58478260aa18f50786d950bd4ecdebae438ce26a762fa08a8140b23b7154317f87b67",
+            "hash": "8ef16e026b67fca59e7ae96be0c5bd5ec0574992bdd96025f6b71b698010066d1034e6a1e140d73fc5328c6d55b2819b625491681f71afaf44d4e9faf0081808"
+        },
+        {
+            "id": "event_99",
+            "timestamp": 1776220885.5014381,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "8ef16e026b67fca59e7ae96be0c5bd5ec0574992bdd96025f6b71b698010066d1034e6a1e140d73fc5328c6d55b2819b625491681f71afaf44d4e9faf0081808",
+            "hash": "471532f2a1ba63f3cfdce2eaf48086ea56d59ef3d30c89b4333b5a675e05a105d3c05cc913efc2d82c55cc0a119cb520de184a9f6c71f3341504dee2866db642"
+        },
+        {
+            "id": "event_100",
+            "timestamp": 1776220885.5049155,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "471532f2a1ba63f3cfdce2eaf48086ea56d59ef3d30c89b4333b5a675e05a105d3c05cc913efc2d82c55cc0a119cb520de184a9f6c71f3341504dee2866db642",
+            "hash": "c966d7c7d42c58073471a9def8dca271eaca91a35b05ee576d15c39bd2665ab280127c0c67bb5a21bc23d124c37a99f6f2effba61c3b928325821c6463f90404"
+        },
+        {
+            "id": "event_101",
+            "timestamp": 1776220885.5086145,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c966d7c7d42c58073471a9def8dca271eaca91a35b05ee576d15c39bd2665ab280127c0c67bb5a21bc23d124c37a99f6f2effba61c3b928325821c6463f90404",
+            "hash": "5a1dd44d63ad374fb077854af71e785f90cb748bb5b16ad45de113946069cebedd18d2d7cb1dbbbee7deda570332b4cc05df38cbf6debeb2745888f564a5ee55"
+        },
+        {
+            "id": "event_102",
+            "timestamp": 1776220885.5122871,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "5a1dd44d63ad374fb077854af71e785f90cb748bb5b16ad45de113946069cebedd18d2d7cb1dbbbee7deda570332b4cc05df38cbf6debeb2745888f564a5ee55",
+            "hash": "99e4361b39fcc506efcc0b432235b8bbf5e2f1f428c9d9a1340db185445e1815ded4cf09c53c362db9aaf8737823b803f92c5b371a385c70295ee29f55075c7d"
+        },
+        {
+            "id": "event_103",
+            "timestamp": 1776220885.5156221,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "99e4361b39fcc506efcc0b432235b8bbf5e2f1f428c9d9a1340db185445e1815ded4cf09c53c362db9aaf8737823b803f92c5b371a385c70295ee29f55075c7d",
+            "hash": "e949a4b9e28341692751e5e107728a8b104b2944c17d28cbede10471c6f32523f5fa65d2fc85bbdd6187ae0520ac16a9c76f9bf09c362bb682d36204c96aa94c"
+        },
+        {
+            "id": "event_104",
+            "timestamp": 1776220885.5190928,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "e949a4b9e28341692751e5e107728a8b104b2944c17d28cbede10471c6f32523f5fa65d2fc85bbdd6187ae0520ac16a9c76f9bf09c362bb682d36204c96aa94c",
+            "hash": "5e658a121d87a3157870bb27c2204c0ef029139ec4e07b887b7bd72c8094e1dc0a95318b853900fccfd7cbff86dd94a8d9c8927d4007312a0ba385285c220b09"
+        },
+        {
+            "id": "event_105",
+            "timestamp": 1776220885.5228543,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "5e658a121d87a3157870bb27c2204c0ef029139ec4e07b887b7bd72c8094e1dc0a95318b853900fccfd7cbff86dd94a8d9c8927d4007312a0ba385285c220b09",
+            "hash": "c9833f93c7efc82250eaa6afab59f45cbc82f1576f027c83a50ba0294c8f0a3fb30da91a211d23cafdb17e19ab7fdb9578c62f4bf1fde97c906994c4734a3707"
+        },
+        {
+            "id": "event_106",
+            "timestamp": 1776220885.5261693,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c9833f93c7efc82250eaa6afab59f45cbc82f1576f027c83a50ba0294c8f0a3fb30da91a211d23cafdb17e19ab7fdb9578c62f4bf1fde97c906994c4734a3707",
+            "hash": "fae9c6984f584b9ddc1979ae71a307b57483c6cc4602bebf840482b451b0b7e29eb12b60f2b730fab6a35b664d79dbe8de2edd0215894c3f645bc9a8267cdd5f"
+        },
+        {
+            "id": "event_107",
+            "timestamp": 1776220885.5296755,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "fae9c6984f584b9ddc1979ae71a307b57483c6cc4602bebf840482b451b0b7e29eb12b60f2b730fab6a35b664d79dbe8de2edd0215894c3f645bc9a8267cdd5f",
+            "hash": "35f6cbab51d208c3f7f5858040fba260b7cc52e53a011c09fc79abc4baa08116f80e04bd2baca79024e02e9752deb43f04014b86fb833c886df7387feac6687c"
+        },
+        {
+            "id": "event_108",
+            "timestamp": 1776220885.5330896,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "35f6cbab51d208c3f7f5858040fba260b7cc52e53a011c09fc79abc4baa08116f80e04bd2baca79024e02e9752deb43f04014b86fb833c886df7387feac6687c",
+            "hash": "ee16911edcbc5c2a1a1280fda5ebc4b75c198f3243134b2cf44b3cbdacac5ed9bbd701d062ce54cd648b0ecf67958afa80618379040125ae52ccab613689d550"
+        },
+        {
+            "id": "event_109",
+            "timestamp": 1776220885.5368025,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "ee16911edcbc5c2a1a1280fda5ebc4b75c198f3243134b2cf44b3cbdacac5ed9bbd701d062ce54cd648b0ecf67958afa80618379040125ae52ccab613689d550",
+            "hash": "88b0984df8291e3e72d26e0a7dcc9bcb335e74f1438e8dfb439fc8a00da847c6cd5c3a721b7bf3d4091c946970d139852b0ca10d2203fa232785ce578b46695f"
+        },
+        {
+            "id": "event_110",
+            "timestamp": 1776220885.5403159,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "88b0984df8291e3e72d26e0a7dcc9bcb335e74f1438e8dfb439fc8a00da847c6cd5c3a721b7bf3d4091c946970d139852b0ca10d2203fa232785ce578b46695f",
+            "hash": "2a2d545e2e389b5a83ee7ff61fbab6e513c4ca06f60c57149c0456f9e17d191aee9e85b9e7d8e52128aabefa5e99cdbf47153421a8276ae23a3dca6daa452f0e"
+        },
+        {
+            "id": "event_111",
+            "timestamp": 1776220885.5442092,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "2a2d545e2e389b5a83ee7ff61fbab6e513c4ca06f60c57149c0456f9e17d191aee9e85b9e7d8e52128aabefa5e99cdbf47153421a8276ae23a3dca6daa452f0e",
+            "hash": "c09e261f429b9fd48bd427e8258cbf59e195717084e611b10acc8fcee369c0adab2af8c8be36b8430c7cd62a1e512365b352c289e5b9741139a5a4f61dc2e14c"
+        },
+        {
+            "id": "event_112",
+            "timestamp": 1776220885.5477302,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c09e261f429b9fd48bd427e8258cbf59e195717084e611b10acc8fcee369c0adab2af8c8be36b8430c7cd62a1e512365b352c289e5b9741139a5a4f61dc2e14c",
+            "hash": "ae41c33cef2f0b908a5fe6efb65fdeeac93ab54660572479ecb76e47ed231c6868ab9a8f076f9f92182e4b3b5c6d7f15c7f4d643747e10a329ada971622c9920"
+        },
+        {
+            "id": "event_113",
+            "timestamp": 1776220885.551421,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "ae41c33cef2f0b908a5fe6efb65fdeeac93ab54660572479ecb76e47ed231c6868ab9a8f076f9f92182e4b3b5c6d7f15c7f4d643747e10a329ada971622c9920",
+            "hash": "55fdb88df0c2ff5e86a2455309176ff87801e37abdefcae97fbfac96d0633ecf3bd519635131bc12440d2408a8d0fe1822129028e55079d0513a3eef6abf58e3"
+        },
+        {
+            "id": "event_114",
+            "timestamp": 1776220885.5548756,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "55fdb88df0c2ff5e86a2455309176ff87801e37abdefcae97fbfac96d0633ecf3bd519635131bc12440d2408a8d0fe1822129028e55079d0513a3eef6abf58e3",
+            "hash": "b9a53b4825b96aeeb3213a6843d08e42cf2631acb828004a11970ba20194e52491c32f1d484c4fc7fdd307f827bb463d4d6d3e09517e540e65e565ae52f1aad3"
+        },
+        {
+            "id": "event_115",
+            "timestamp": 1776220885.558116,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "b9a53b4825b96aeeb3213a6843d08e42cf2631acb828004a11970ba20194e52491c32f1d484c4fc7fdd307f827bb463d4d6d3e09517e540e65e565ae52f1aad3",
+            "hash": "f65d9f5e0d9b1a70a5ba0a455910027cf123374b68a76914704f9d4e50c9b8b96cf5c8a8541600ff704641ffe621bda50c09791e6111f8921572c1407636fe6b"
+        },
+        {
+            "id": "event_116",
+            "timestamp": 1776220885.562103,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f65d9f5e0d9b1a70a5ba0a455910027cf123374b68a76914704f9d4e50c9b8b96cf5c8a8541600ff704641ffe621bda50c09791e6111f8921572c1407636fe6b",
+            "hash": "90c95680f5e8f7b7570be3a438cded7eb985607217778b03141e787a566a21968a89e48e8cd6b3ad160d7691bdb21258e14df8552f22f6e060b78a3334766646"
+        },
+        {
+            "id": "event_117",
+            "timestamp": 1776220885.5657687,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "90c95680f5e8f7b7570be3a438cded7eb985607217778b03141e787a566a21968a89e48e8cd6b3ad160d7691bdb21258e14df8552f22f6e060b78a3334766646",
+            "hash": "ab69ebf02748f8882c553928df27152b8ec91c512d4924e8ed0f703cc49847bcae8e3b1b96a0049f1bcdc7b70ebe3bb13e872413077238f4afa3c98603b6a442"
+        },
+        {
+            "id": "event_118",
+            "timestamp": 1776220885.569672,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "ab69ebf02748f8882c553928df27152b8ec91c512d4924e8ed0f703cc49847bcae8e3b1b96a0049f1bcdc7b70ebe3bb13e872413077238f4afa3c98603b6a442",
+            "hash": "3ab65b2aebafcf554f08eb32b24aa4a20bf7d01f2b0d68e235041ea0c7694835b085b5dcac96249afaab43bbed7403ac4b8a8800b44da9a3da6abe3db9839214"
+        },
+        {
+            "id": "event_119",
+            "timestamp": 1776220885.573862,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "3ab65b2aebafcf554f08eb32b24aa4a20bf7d01f2b0d68e235041ea0c7694835b085b5dcac96249afaab43bbed7403ac4b8a8800b44da9a3da6abe3db9839214",
+            "hash": "193f74d5e3124d502a051c8975288f7207add6016ef65b289b6f2a6ee2ded05f2a18b5446c638f6e8dec573e2b0173f8027d85ca2442a5881e6ed57d26741779"
+        },
+        {
+            "id": "event_120",
+            "timestamp": 1776220885.577184,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "193f74d5e3124d502a051c8975288f7207add6016ef65b289b6f2a6ee2ded05f2a18b5446c638f6e8dec573e2b0173f8027d85ca2442a5881e6ed57d26741779",
+            "hash": "c89788baa89380b34a45080bae6c953635fe95a3dd226abe638ce3627d993769c435d79c28cdd8893f04ec76730a5bf6a582497e438af9782248556e40be12c0"
+        },
+        {
+            "id": "event_121",
+            "timestamp": 1776220885.5803783,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c89788baa89380b34a45080bae6c953635fe95a3dd226abe638ce3627d993769c435d79c28cdd8893f04ec76730a5bf6a582497e438af9782248556e40be12c0",
+            "hash": "f1fe8e83c8a13746740817a733486eac1ab5a7dcb5680f7db9748d4528fab679c98dcaf70a9d3e9449ff46583aa5c5cafc81e681e2249bdcc4162dd6f70371a6"
+        },
+        {
+            "id": "event_122",
+            "timestamp": 1776220885.5835776,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f1fe8e83c8a13746740817a733486eac1ab5a7dcb5680f7db9748d4528fab679c98dcaf70a9d3e9449ff46583aa5c5cafc81e681e2249bdcc4162dd6f70371a6",
+            "hash": "9f1565a244b69229ad8ac44193e3fb62b0d14be1466bcc9e97f1a16575dc4ced0679112bf8d6ff6456682b675beab58c478929bbf90ca1fab3c5d00340c10f4f"
+        },
+        {
+            "id": "event_123",
+            "timestamp": 1776220885.587241,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "9f1565a244b69229ad8ac44193e3fb62b0d14be1466bcc9e97f1a16575dc4ced0679112bf8d6ff6456682b675beab58c478929bbf90ca1fab3c5d00340c10f4f",
+            "hash": "212bd820b82cc000c1254ad205828485625af1c1b155409648a50ddd4d4080c8130c7910d70441bddd5b198ed5fd8670200b483e797c9453aa53de57ba73b2ac"
+        },
+        {
+            "id": "event_124",
+            "timestamp": 1776220885.5905545,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "212bd820b82cc000c1254ad205828485625af1c1b155409648a50ddd4d4080c8130c7910d70441bddd5b198ed5fd8670200b483e797c9453aa53de57ba73b2ac",
+            "hash": "16613ea09b786f6da29a87daa2617875b3599e44b7d12264750ebebe5308d6d7f9aeaa787beb5a54a74d09834c4b10ab1d50d86be7eaf42c279983f74dce7323"
+        },
+        {
+            "id": "event_125",
+            "timestamp": 1776220885.5938344,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "16613ea09b786f6da29a87daa2617875b3599e44b7d12264750ebebe5308d6d7f9aeaa787beb5a54a74d09834c4b10ab1d50d86be7eaf42c279983f74dce7323",
+            "hash": "cd94263104d31d1534681b4b55a849399bfa1386727732a20e3ffdfbe2031ad0dad91b82f409689e00a655925a3aec2177d9f24c761758f4cae3ebc49cf8d7dc"
+        },
+        {
+            "id": "event_126",
+            "timestamp": 1776220885.5974982,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "cd94263104d31d1534681b4b55a849399bfa1386727732a20e3ffdfbe2031ad0dad91b82f409689e00a655925a3aec2177d9f24c761758f4cae3ebc49cf8d7dc",
+            "hash": "29891c26bc8677b45388cfcd7811ab69b0ffabd503caf83e5b92f14a0881f904f2a278330f7b42e1da082fc9e8af1b604d1b6af9fd1fe19a4e5cb48d6cfaed40"
+        },
+        {
+            "id": "event_127",
+            "timestamp": 1776220885.6007793,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "29891c26bc8677b45388cfcd7811ab69b0ffabd503caf83e5b92f14a0881f904f2a278330f7b42e1da082fc9e8af1b604d1b6af9fd1fe19a4e5cb48d6cfaed40",
+            "hash": "2f455e0ceb44822631cb33c9c717e4830077f62332720e3e38a62f0bf39e59e8218267bad9f0afe359b70950b4c9521e64f0dcb483b3893099cdebc08d6cfeb5"
+        },
+        {
+            "id": "event_128",
+            "timestamp": 1776220885.60413,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "2f455e0ceb44822631cb33c9c717e4830077f62332720e3e38a62f0bf39e59e8218267bad9f0afe359b70950b4c9521e64f0dcb483b3893099cdebc08d6cfeb5",
+            "hash": "3eb37b75898a8ede3fd33a2417ea72c42e84e05a29337fb547327b3c049c706f4087cfc3150f2013dc90732eb7b67cd728cdffb7bc1960501c31dce57a8271aa"
+        },
+        {
+            "id": "event_129",
+            "timestamp": 1776220885.607348,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "3eb37b75898a8ede3fd33a2417ea72c42e84e05a29337fb547327b3c049c706f4087cfc3150f2013dc90732eb7b67cd728cdffb7bc1960501c31dce57a8271aa",
+            "hash": "bb65f92da9582bdb81eea1808fc16fdb7f6f3baa240877588f5237379af3d97fbc68358044014bee88a2a4e61c8e21e46f6396412bd590862ded9e7a45880de5"
+        },
+        {
+            "id": "event_130",
+            "timestamp": 1776220885.6106076,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "bb65f92da9582bdb81eea1808fc16fdb7f6f3baa240877588f5237379af3d97fbc68358044014bee88a2a4e61c8e21e46f6396412bd590862ded9e7a45880de5",
+            "hash": "9a98ee2886ebf3fc71577b711ab601fc19034e6e3cab457c31e5f80ce2c5ef5155e0bb642678a437fc92938cd0ae0e9e9e330670626fab44c2923a1b29a6a276"
+        },
+        {
+            "id": "event_131",
+            "timestamp": 1776220885.613965,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "9a98ee2886ebf3fc71577b711ab601fc19034e6e3cab457c31e5f80ce2c5ef5155e0bb642678a437fc92938cd0ae0e9e9e330670626fab44c2923a1b29a6a276",
+            "hash": "f0680b3f5ea7bede63f76945e0c6340b7d4a1432c436c7504aae164a83a82fe6a4e84affe3884d27ffbb766a06fe41d67714a9cf4723d10d1abb42ddb68fd3de"
+        },
+        {
+            "id": "event_132",
+            "timestamp": 1776220885.6174846,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f0680b3f5ea7bede63f76945e0c6340b7d4a1432c436c7504aae164a83a82fe6a4e84affe3884d27ffbb766a06fe41d67714a9cf4723d10d1abb42ddb68fd3de",
+            "hash": "9aaad967a199f1e71c987f4d3cc7bbe9a3c9f127bbcb2c152378019706f4b64f4a6fae0f1b3c5c69198b77af87fc945b146f058b3bcf1b61e0fe333c26d1371d"
+        },
+        {
+            "id": "event_133",
+            "timestamp": 1776220885.6209009,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "9aaad967a199f1e71c987f4d3cc7bbe9a3c9f127bbcb2c152378019706f4b64f4a6fae0f1b3c5c69198b77af87fc945b146f058b3bcf1b61e0fe333c26d1371d",
+            "hash": "fed9c3d75e9225b6f9b49c3a4060a5891e4b2a99d12d4af1ae50482ee84a476f94135e4a6fff544a6640202e0903040cc16a2bb3e96ae898f4709ce5f6da14e5"
+        },
+        {
+            "id": "event_134",
+            "timestamp": 1776220885.6247826,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "fed9c3d75e9225b6f9b49c3a4060a5891e4b2a99d12d4af1ae50482ee84a476f94135e4a6fff544a6640202e0903040cc16a2bb3e96ae898f4709ce5f6da14e5",
+            "hash": "4e63618939313b85f3098e2746bf8b955036da72eab177a0d789a7cee6018de3121f165dd6e136940a0f1fda8ba60857fcad49ad203420dbb1f19c597a6eee50"
+        },
+        {
+            "id": "event_135",
+            "timestamp": 1776220885.6282163,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "4e63618939313b85f3098e2746bf8b955036da72eab177a0d789a7cee6018de3121f165dd6e136940a0f1fda8ba60857fcad49ad203420dbb1f19c597a6eee50",
+            "hash": "cdee30253e381634dbd16557f957d5e97f55533275b57a41e4b4e47827f3d393ea61de1cdb2324f47536d9a9fe1e217203a6bde88ba98a51d575f37ae41aae6a"
+        },
+        {
+            "id": "event_136",
+            "timestamp": 1776220885.6317859,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "cdee30253e381634dbd16557f957d5e97f55533275b57a41e4b4e47827f3d393ea61de1cdb2324f47536d9a9fe1e217203a6bde88ba98a51d575f37ae41aae6a",
+            "hash": "675cf57cd9a651fe9cc2034050ade94c69263a00610f84388875455e1c1ebab65f67023ee49f7662a4d356c51d0812d682b69b945083e81c727ce7974cc70e3b"
+        },
+        {
+            "id": "event_137",
+            "timestamp": 1776220885.6353269,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "675cf57cd9a651fe9cc2034050ade94c69263a00610f84388875455e1c1ebab65f67023ee49f7662a4d356c51d0812d682b69b945083e81c727ce7974cc70e3b",
+            "hash": "23b6faff6445fd93b399fad9b90f0cbeff98b4f31c0a3e7cbbcde10dbc7b064bf538b13aa500fa97ff3750db4471b561851566e5195d1cfaa8f3461176c177b7"
+        },
+        {
+            "id": "event_138",
+            "timestamp": 1776220885.6390507,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "23b6faff6445fd93b399fad9b90f0cbeff98b4f31c0a3e7cbbcde10dbc7b064bf538b13aa500fa97ff3750db4471b561851566e5195d1cfaa8f3461176c177b7",
+            "hash": "894055def5667a50259d7282e0627e5de64966e421c8e56f6c0ddf56da771d925756edec3b80ee8cb5560d0f9e2a69e46dde83577db96156f6bee4c33564136a"
+        },
+        {
+            "id": "event_139",
+            "timestamp": 1776220885.6434,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "894055def5667a50259d7282e0627e5de64966e421c8e56f6c0ddf56da771d925756edec3b80ee8cb5560d0f9e2a69e46dde83577db96156f6bee4c33564136a",
+            "hash": "fae17fdc04fddd294810eb7441a77963104ee33ef9eaf5080ba1f554001a665f651ef16cfa6163b51ac35971935935614ea3f12a5c88382b387983c95d7ecd0b"
+        },
+        {
+            "id": "event_140",
+            "timestamp": 1776220885.6477387,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "fae17fdc04fddd294810eb7441a77963104ee33ef9eaf5080ba1f554001a665f651ef16cfa6163b51ac35971935935614ea3f12a5c88382b387983c95d7ecd0b",
+            "hash": "8236c578ce32d3d127bc828d65a60eaf8a65140eedd2990c32e74da3638106eefbbd771a99579165ddac5ac6c92c3b0ad37633eeffdf07f86e8848ef8d1da340"
+        },
+        {
+            "id": "event_141",
+            "timestamp": 1776220885.6518183,
+            "data": {
+                "type": "evolution_proposal_generated"
+            },
+            "previous_hash": "8236c578ce32d3d127bc828d65a60eaf8a65140eedd2990c32e74da3638106eefbbd771a99579165ddac5ac6c92c3b0ad37633eeffdf07f86e8848ef8d1da340",
+            "hash": "367323f6b35d76324b61fa49d7a8a270bd84dd4495a67c837fd08996239beebc5a63094f791111d7338071f53886b1e2fa7a094c1125405fde18973e6b66f837"
+        },
+        {
+            "id": "event_142",
+            "timestamp": 1776220885.6557062,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "367323f6b35d76324b61fa49d7a8a270bd84dd4495a67c837fd08996239beebc5a63094f791111d7338071f53886b1e2fa7a094c1125405fde18973e6b66f837",
+            "hash": "6d89de64885b4e2de16d809bf7ad1689ca3bd9d4ebb6eb557ddcb422147ed3065f18d3db998b9589528ee24eba86e569f8dd89721eac768c9affed92486e4494"
+        },
+        {
+            "id": "event_143",
+            "timestamp": 1776220885.6595852,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "6d89de64885b4e2de16d809bf7ad1689ca3bd9d4ebb6eb557ddcb422147ed3065f18d3db998b9589528ee24eba86e569f8dd89721eac768c9affed92486e4494",
+            "hash": "fcb207bcd35662dd552211269f0af28105d6384dd6c70dac03eb4d01b66daa30fc2c74933229ae2f4e2941990c8fceab9b5c8208d72cc06868363545875c70ee"
+        },
+        {
+            "id": "event_144",
+            "timestamp": 1776220885.663135,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "fcb207bcd35662dd552211269f0af28105d6384dd6c70dac03eb4d01b66daa30fc2c74933229ae2f4e2941990c8fceab9b5c8208d72cc06868363545875c70ee",
+            "hash": "7e3b20ad395d542dcd942edffe7f8ad6356516bfc6ed173a759df8dbf645dde9fadf91accedaf2b76a4c9fef9769e3751b00b845e5342b4a5c8e8bd7ee1371cf"
+        },
+        {
+            "id": "event_145",
+            "timestamp": 1776220885.6666887,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "7e3b20ad395d542dcd942edffe7f8ad6356516bfc6ed173a759df8dbf645dde9fadf91accedaf2b76a4c9fef9769e3751b00b845e5342b4a5c8e8bd7ee1371cf",
+            "hash": "a799f438b4c0a3799770a48b66b08481c2ff56722bf67a1bbac9e9437d513a2fc79e7af20358efcc3dd21e2a6236237eec244caf1a0d62150984a3afd4e3f5c4"
+        },
+        {
+            "id": "event_146",
+            "timestamp": 1776220885.6703098,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "a799f438b4c0a3799770a48b66b08481c2ff56722bf67a1bbac9e9437d513a2fc79e7af20358efcc3dd21e2a6236237eec244caf1a0d62150984a3afd4e3f5c4",
+            "hash": "7d459db9f15e8cd7d798da612309fe0a6a0d159a8a411a5d25daaaa910b3aeba673817f604181cdc04d478742329e90e3d65d39685ab6654664a3dec902d3eb7"
+        },
+        {
+            "id": "event_147",
+            "timestamp": 1776220964.4478219,
+            "data": {
+                "type": "policy_gate_halt",
+                "domain": "core_business_process",
+                "action": "swarm_orchestration",
+                "reason": "Unconsented PII export prohibited by constitution."
+            },
+            "previous_hash": "7d459db9f15e8cd7d798da612309fe0a6a0d159a8a411a5d25daaaa910b3aeba673817f604181cdc04d478742329e90e3d65d39685ab6654664a3dec902d3eb7",
+            "hash": "bf025b9226131ba196de0b5bc1dd0e2dfd1685667c9c68407bb375676ba3ded7cc29b5aa81cf40768dc1f3a84816c9fb0e62845ce61d9d6e77b4a99fe62dc9d4"
+        },
+        {
+            "id": "event_148",
+            "timestamp": 1776220964.4526906,
+            "data": {
+                "type": "domain_genesis",
+                "prompt": "Assessing AI bias in legal drafting",
+                "domain_id": "assessing_ai_bia"
+            },
+            "previous_hash": "bf025b9226131ba196de0b5bc1dd0e2dfd1685667c9c68407bb375676ba3ded7cc29b5aa81cf40768dc1f3a84816c9fb0e62845ce61d9d6e77b4a99fe62dc9d4",
+            "hash": "f729c9e6cc83316b9da599fed6bc6a1a6839765c2870d0084c5158d4102c95baf2ed51a31ba5e8b371443f2c767622cbc88a4a78fcbaf6ab78cd9c203c01479a"
+        },
+        {
+            "id": "event_149",
+            "timestamp": 1776220964.45736,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f729c9e6cc83316b9da599fed6bc6a1a6839765c2870d0084c5158d4102c95baf2ed51a31ba5e8b371443f2c767622cbc88a4a78fcbaf6ab78cd9c203c01479a",
+            "hash": "e4236bc47005ae46929bab074b6f925bd2d5a552035e165a2632f55e34b0ce16099ad90aa327091107227f12b73624e7708f9bdc14ab5f7fbbc993d8902874c7"
+        },
+        {
+            "id": "event_150",
+            "timestamp": 1776220964.461611,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "e4236bc47005ae46929bab074b6f925bd2d5a552035e165a2632f55e34b0ce16099ad90aa327091107227f12b73624e7708f9bdc14ab5f7fbbc993d8902874c7",
+            "hash": "25f8779ead66ecf77ea0ac912db0e204b6ad4a86e436992fc71a8040fb72fc87ce7e082440c0d56b621ceebe33e6629857112551266eb56c602f4eda1eaeb891"
+        },
+        {
+            "id": "event_151",
+            "timestamp": 1776220964.4659014,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "25f8779ead66ecf77ea0ac912db0e204b6ad4a86e436992fc71a8040fb72fc87ce7e082440c0d56b621ceebe33e6629857112551266eb56c602f4eda1eaeb891",
+            "hash": "a4750dded2637254838dc7a088dd47f07f3c37e45e6eba76c94afa9d11118075adf5addb18d5c45c83c3284e5773694399d6fea40e8ebc076bc795829fa875d3"
+        },
+        {
+            "id": "event_152",
+            "timestamp": 1776220964.4705327,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "a4750dded2637254838dc7a088dd47f07f3c37e45e6eba76c94afa9d11118075adf5addb18d5c45c83c3284e5773694399d6fea40e8ebc076bc795829fa875d3",
+            "hash": "c10253baa06778a29ea8c233e3c20793f152bbf52cfa196967251e4f182307d696a93c033fa8aecb6835c87d5140ac46151d19def4a84e49459eab1f8422416a"
+        },
+        {
+            "id": "event_153",
+            "timestamp": 1776220964.4750888,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c10253baa06778a29ea8c233e3c20793f152bbf52cfa196967251e4f182307d696a93c033fa8aecb6835c87d5140ac46151d19def4a84e49459eab1f8422416a",
+            "hash": "3364b27e3927b183227c999679dc12faed3743d1b52014d26156979c73e0892790266c7ac474525d67b18f549ea231e9bb0c4a192d378acd5e959fbec7ae6387"
+        },
+        {
+            "id": "event_154",
+            "timestamp": 1776220964.4796562,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "3364b27e3927b183227c999679dc12faed3743d1b52014d26156979c73e0892790266c7ac474525d67b18f549ea231e9bb0c4a192d378acd5e959fbec7ae6387",
+            "hash": "bcc305ce4e5192051976bdd5ce628c4ab3b73525358a5f5ddc3a13387d9906a66247003e3789e0e6272fc2fedb6bab800460fd90b160c34d95712702ed470f2e"
+        },
+        {
+            "id": "event_155",
+            "timestamp": 1776220964.4843042,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "bcc305ce4e5192051976bdd5ce628c4ab3b73525358a5f5ddc3a13387d9906a66247003e3789e0e6272fc2fedb6bab800460fd90b160c34d95712702ed470f2e",
+            "hash": "46b18031e403b8b636616ae963b5799866b96eb0d32e6ffecc7e121105cf17b4565d42ae1f891753b0da84ae09b37ba50112f6f8a180ac888f96fec32192c694"
+        },
+        {
+            "id": "event_156",
+            "timestamp": 1776220964.489312,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "46b18031e403b8b636616ae963b5799866b96eb0d32e6ffecc7e121105cf17b4565d42ae1f891753b0da84ae09b37ba50112f6f8a180ac888f96fec32192c694",
+            "hash": "5706c13a38311ec21b31e669a760e789b7efffcd7831cc8fa784dd628fbf9f8dabffe076fd7ddacf3e59ecf31b7c5607d55ce85454e553c983f4ae976857390b"
+        },
+        {
+            "id": "event_157",
+            "timestamp": 1776220964.4943285,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "5706c13a38311ec21b31e669a760e789b7efffcd7831cc8fa784dd628fbf9f8dabffe076fd7ddacf3e59ecf31b7c5607d55ce85454e553c983f4ae976857390b",
+            "hash": "c312f4fc8114cbd6dc440689e67cb67aaf3643d31e73f5af1e8c2fccc8efde91703b829759cb9a654da101f2104bba4e21ea4cba76519b362ebe238fbcbf5c81"
+        },
+        {
+            "id": "event_158",
+            "timestamp": 1776220964.499189,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c312f4fc8114cbd6dc440689e67cb67aaf3643d31e73f5af1e8c2fccc8efde91703b829759cb9a654da101f2104bba4e21ea4cba76519b362ebe238fbcbf5c81",
+            "hash": "905d28e40f25d9ed4cab474b7c812c47eb6390571bd402d88629d6f4b398f69f5ed6cf4314bb0f36ecb21bb62ba21ce36f9ea519d0dbe71b0c8a29db09ce74a5"
+        },
+        {
+            "id": "event_159",
+            "timestamp": 1776220964.5037935,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "905d28e40f25d9ed4cab474b7c812c47eb6390571bd402d88629d6f4b398f69f5ed6cf4314bb0f36ecb21bb62ba21ce36f9ea519d0dbe71b0c8a29db09ce74a5",
+            "hash": "ed21aff1bd355741a27b22065e88a085407ec1e92ba7adac2e61d1e8bdd0cda105a7c10ad19776fc943d55da40a290bd8dfbb5e9a28d5d558d8c1fc6c5abe04c"
+        },
+        {
+            "id": "event_160",
+            "timestamp": 1776220964.5084288,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "ed21aff1bd355741a27b22065e88a085407ec1e92ba7adac2e61d1e8bdd0cda105a7c10ad19776fc943d55da40a290bd8dfbb5e9a28d5d558d8c1fc6c5abe04c",
+            "hash": "b1bf147530847b12f82341ad1f5833d4b5a2da848e8ae65b878671bdf96cb6c2a1a60897b61f05f6cbc8a413e2902d601324537d7727f1cdf1cedccac9f256be"
+        },
+        {
+            "id": "event_161",
+            "timestamp": 1776220964.5131063,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "b1bf147530847b12f82341ad1f5833d4b5a2da848e8ae65b878671bdf96cb6c2a1a60897b61f05f6cbc8a413e2902d601324537d7727f1cdf1cedccac9f256be",
+            "hash": "f83e45c4afab57a4b5aa43642a9b648c7a4e31fd499930e614b7efc4cbb31eca458f480ed8f233f789b179c0b676eead6eed95ff58158a8ace2dacf8c08f7efe"
+        },
+        {
+            "id": "event_162",
+            "timestamp": 1776220964.5176647,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f83e45c4afab57a4b5aa43642a9b648c7a4e31fd499930e614b7efc4cbb31eca458f480ed8f233f789b179c0b676eead6eed95ff58158a8ace2dacf8c08f7efe",
+            "hash": "ec438dba199eb28a57c644394dd0fe3cfafc8a1744dbb3b8a7132e8bddc055ff47a6aec2d206d28b54e2cab3a715852c20198291ac1bea47d70087a15dfa4040"
+        },
+        {
+            "id": "event_163",
+            "timestamp": 1776220964.5226343,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "ec438dba199eb28a57c644394dd0fe3cfafc8a1744dbb3b8a7132e8bddc055ff47a6aec2d206d28b54e2cab3a715852c20198291ac1bea47d70087a15dfa4040",
+            "hash": "eeb5d555aa27d35785172079b4b8cbd5fb6e9857d0ef37c557f571afe5e1ba3bdccbb73fa1b7910a84c62e1159dc128f5e37ab21ad1fe29729240087a2c1ae11"
+        },
+        {
+            "id": "event_164",
+            "timestamp": 1776220964.5272553,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "eeb5d555aa27d35785172079b4b8cbd5fb6e9857d0ef37c557f571afe5e1ba3bdccbb73fa1b7910a84c62e1159dc128f5e37ab21ad1fe29729240087a2c1ae11",
+            "hash": "46f3d438804c0f53519effa67f7038b696276d84c34956fd648848544f0d7ebd9c6c65521474f3c336581310a237683c25a18d50ec3030ca6c2ff81ac31834c0"
+        },
+        {
+            "id": "event_165",
+            "timestamp": 1776220964.5317671,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "46f3d438804c0f53519effa67f7038b696276d84c34956fd648848544f0d7ebd9c6c65521474f3c336581310a237683c25a18d50ec3030ca6c2ff81ac31834c0",
+            "hash": "84fb595fcd7891a821b0672bd96ce4e1c0707e395edecd1b40ebffe74a7a12ba4c8b3915a72836c9ae9fefe4ee9c1644b11640ca04753bc38c957f4df0f007c9"
+        },
+        {
+            "id": "event_166",
+            "timestamp": 1776220964.536412,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "84fb595fcd7891a821b0672bd96ce4e1c0707e395edecd1b40ebffe74a7a12ba4c8b3915a72836c9ae9fefe4ee9c1644b11640ca04753bc38c957f4df0f007c9",
+            "hash": "a5e9385d04b97f9c6c93f13d0d7e27e0dd349e6f829ae5edff78fb8f52004b4e08da334f4f52b84e96335e5a212b43eb6d5d351f541a08cc756e4d478857c561"
+        },
+        {
+            "id": "event_167",
+            "timestamp": 1776220964.5410364,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "a5e9385d04b97f9c6c93f13d0d7e27e0dd349e6f829ae5edff78fb8f52004b4e08da334f4f52b84e96335e5a212b43eb6d5d351f541a08cc756e4d478857c561",
+            "hash": "51c4c68104e985f620ef23fdc08e9f0c14df5af3eca146d3bff6ee9f4151743ab04a1400714a2b170897c941a0302f13cb9882f4bf959a571965f9686edc52e6"
+        },
+        {
+            "id": "event_168",
+            "timestamp": 1776220964.5458505,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "51c4c68104e985f620ef23fdc08e9f0c14df5af3eca146d3bff6ee9f4151743ab04a1400714a2b170897c941a0302f13cb9882f4bf959a571965f9686edc52e6",
+            "hash": "b3e621aff8374b2909a4a31a9561e570367f4e7ad3b7200d2c8a57e53f3ed04cdfa8eea7015c341f943bc4a484c75f4bf2f749a130d6b731200efd0685b6dfe0"
+        },
+        {
+            "id": "event_169",
+            "timestamp": 1776220964.5506055,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "b3e621aff8374b2909a4a31a9561e570367f4e7ad3b7200d2c8a57e53f3ed04cdfa8eea7015c341f943bc4a484c75f4bf2f749a130d6b731200efd0685b6dfe0",
+            "hash": "a0beb353b49754821e675247187199a552be627825f16e315cf6636dffe1078527e47319d8b2d416f5d72508f58dcc172da06b4017bcae2b95d76cdbb3a250ed"
+        },
+        {
+            "id": "event_170",
+            "timestamp": 1776220964.5556402,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "a0beb353b49754821e675247187199a552be627825f16e315cf6636dffe1078527e47319d8b2d416f5d72508f58dcc172da06b4017bcae2b95d76cdbb3a250ed",
+            "hash": "544cf2b9b52212985305b0d231b434fa1ed3ad2cd4b376ff5632fa776dd651fb086dbb245c2ec43e2ecb3a411525b97ace09bd1c77fa8a71bf6361ab30160cfc"
+        },
+        {
+            "id": "event_171",
+            "timestamp": 1776220964.5603228,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "544cf2b9b52212985305b0d231b434fa1ed3ad2cd4b376ff5632fa776dd651fb086dbb245c2ec43e2ecb3a411525b97ace09bd1c77fa8a71bf6361ab30160cfc",
+            "hash": "38a88f69c18c4690ae75c3a94b47e2b04ad772bf3b1ba8c1d3878e49af5c8d278d669d6a9a353bd1c4136fb8b3c905dee296cc7e6f8fdd2f60432dd31cb34733"
+        },
+        {
+            "id": "event_172",
+            "timestamp": 1776220964.5651963,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "38a88f69c18c4690ae75c3a94b47e2b04ad772bf3b1ba8c1d3878e49af5c8d278d669d6a9a353bd1c4136fb8b3c905dee296cc7e6f8fdd2f60432dd31cb34733",
+            "hash": "405dfa038ed91068c70785b60bfac9d66e52235ad6fe2c39637c0e366c7df48baeca3eb25486778d8b0193f9a42f7d24c9e69fda5712d780bb7059cc4ede1737"
+        },
+        {
+            "id": "event_173",
+            "timestamp": 1776220964.5701733,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "405dfa038ed91068c70785b60bfac9d66e52235ad6fe2c39637c0e366c7df48baeca3eb25486778d8b0193f9a42f7d24c9e69fda5712d780bb7059cc4ede1737",
+            "hash": "642dfabea20a1486b3fd3a8129f6288b239bbc050e72859fd04fecb4017a6fa7a680ded7a3256114306bcba654417129b2adc5665956840eb9343b5cda118130"
+        },
+        {
+            "id": "event_174",
+            "timestamp": 1776220964.5749784,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "642dfabea20a1486b3fd3a8129f6288b239bbc050e72859fd04fecb4017a6fa7a680ded7a3256114306bcba654417129b2adc5665956840eb9343b5cda118130",
+            "hash": "cd2ac0e5eec8b5cb3c4b660cdcc1102abcb7f105798261f09f4ffc77ab101ca36deeb51088138b2a81f8383e7f004829dbe6e08f17d767d6bec894070ad3f9f4"
+        },
+        {
+            "id": "event_175",
+            "timestamp": 1776220964.580202,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "cd2ac0e5eec8b5cb3c4b660cdcc1102abcb7f105798261f09f4ffc77ab101ca36deeb51088138b2a81f8383e7f004829dbe6e08f17d767d6bec894070ad3f9f4",
+            "hash": "04b01aa3716538381caac3a2444460e2ebd8f2e9afffdfa92b8659afb9d546996ef8c197e14838268cd4cbfaca95ad0ec11963c8d3875cd449c1dc19fb10bb46"
+        },
+        {
+            "id": "event_176",
+            "timestamp": 1776220964.5852056,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "04b01aa3716538381caac3a2444460e2ebd8f2e9afffdfa92b8659afb9d546996ef8c197e14838268cd4cbfaca95ad0ec11963c8d3875cd449c1dc19fb10bb46",
+            "hash": "b79c2144d2facf16026835f819ecb68c5b4d7c7d460d6898a5045e0460c3757b03b53626b3988c47da8853bf49af6f51dc1c38da14aee217efc98e6dfa46b74f"
+        },
+        {
+            "id": "event_177",
+            "timestamp": 1776220964.5903964,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "b79c2144d2facf16026835f819ecb68c5b4d7c7d460d6898a5045e0460c3757b03b53626b3988c47da8853bf49af6f51dc1c38da14aee217efc98e6dfa46b74f",
+            "hash": "1157051da0fb866cf5bd2b5e1fb1ca45de6a55d6a9304355308067e08c7a394090d95dee7d9132665e3f54632a2734b41450c4d9b8d86883125a15ed4cb5c40e"
+        },
+        {
+            "id": "event_178",
+            "timestamp": 1776220964.5954878,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "1157051da0fb866cf5bd2b5e1fb1ca45de6a55d6a9304355308067e08c7a394090d95dee7d9132665e3f54632a2734b41450c4d9b8d86883125a15ed4cb5c40e",
+            "hash": "fc402d6e3753b59ad86ca775e42402c119185a6f95ef7fd7dda2ca6b256bd03c713f4e2f81358e7119f0a7a96396f52992f3ecae90d3bf65da29b564cb5c23d4"
+        },
+        {
+            "id": "event_179",
+            "timestamp": 1776220964.600839,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "fc402d6e3753b59ad86ca775e42402c119185a6f95ef7fd7dda2ca6b256bd03c713f4e2f81358e7119f0a7a96396f52992f3ecae90d3bf65da29b564cb5c23d4",
+            "hash": "d276fc509ce36139a009e8ba69e6f9ff91cdbab9c01bb35fdbdf7f410e398af0fe127c7204ff7a2df3ff9a3a82e9c6a054571574caa20f376f32a9c3a844aa48"
+        },
+        {
+            "id": "event_180",
+            "timestamp": 1776220964.6064925,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "d276fc509ce36139a009e8ba69e6f9ff91cdbab9c01bb35fdbdf7f410e398af0fe127c7204ff7a2df3ff9a3a82e9c6a054571574caa20f376f32a9c3a844aa48",
+            "hash": "bdbfa0aa8d2c43c1476ee3725593989b252858e1a93735546078c8fd520e5a121ba17bfe8814ffb0bff08e939070009326e1d79ce73da964021cd9b601528371"
+        },
+        {
+            "id": "event_181",
+            "timestamp": 1776220964.611687,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "bdbfa0aa8d2c43c1476ee3725593989b252858e1a93735546078c8fd520e5a121ba17bfe8814ffb0bff08e939070009326e1d79ce73da964021cd9b601528371",
+            "hash": "3ed40e988af8e6896a8a9021905636d1326ce74c8593f6470165cc322e7b3e7ef95a5d07afbf881dbcee8b935f81e286a0efe2118b45c9069cc05a8a2ada3542"
+        },
+        {
+            "id": "event_182",
+            "timestamp": 1776220964.6168203,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "3ed40e988af8e6896a8a9021905636d1326ce74c8593f6470165cc322e7b3e7ef95a5d07afbf881dbcee8b935f81e286a0efe2118b45c9069cc05a8a2ada3542",
+            "hash": "378ef3eb87472ba9fbff0e2abf450a06a296aed4122c387c0cfba177033523e92dfe11ca22f9980ce39d671284bd9bfb0e83f380090eaa4794332bf439f259ad"
+        },
+        {
+            "id": "event_183",
+            "timestamp": 1776220964.6234267,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "378ef3eb87472ba9fbff0e2abf450a06a296aed4122c387c0cfba177033523e92dfe11ca22f9980ce39d671284bd9bfb0e83f380090eaa4794332bf439f259ad",
+            "hash": "6badc2d7fdeb0824ec1a244524e15c6aba08c6781a847d9adffdbfde2a23f077a16be729c77d86f284db332ae9771cbef193b3f1ff76709114b07ecc960f1ab4"
+        },
+        {
+            "id": "event_184",
+            "timestamp": 1776220964.6286488,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "6badc2d7fdeb0824ec1a244524e15c6aba08c6781a847d9adffdbfde2a23f077a16be729c77d86f284db332ae9771cbef193b3f1ff76709114b07ecc960f1ab4",
+            "hash": "272e0d96d620a599cf592e8f568ffd922e305d50025e27ebcbfe200d52aeec57598eb61d418d1397f890f73468c22700cccb8eda16ed4c38ef8eb014ae200f86"
+        },
+        {
+            "id": "event_185",
+            "timestamp": 1776220964.6337836,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "272e0d96d620a599cf592e8f568ffd922e305d50025e27ebcbfe200d52aeec57598eb61d418d1397f890f73468c22700cccb8eda16ed4c38ef8eb014ae200f86",
+            "hash": "da74dce39a6144d80c528bbbd51d0e1ce74791ad390d0e2b911a580ec0608f295cb01481926ded2798eb4bde5a9394b93455b29691ca2f3a0d6d494a15114c23"
+        },
+        {
+            "id": "event_186",
+            "timestamp": 1776220964.6389875,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "da74dce39a6144d80c528bbbd51d0e1ce74791ad390d0e2b911a580ec0608f295cb01481926ded2798eb4bde5a9394b93455b29691ca2f3a0d6d494a15114c23",
+            "hash": "a30c320d49d2f4433f5e4c43ad4674ac2f360bd3bbbee1c2d4afad39b25989ffd10c00a844b133d61574566e6e74f310abfcc26afe3a5da072bed133066fe7f5"
+        },
+        {
+            "id": "event_187",
+            "timestamp": 1776220964.644422,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "a30c320d49d2f4433f5e4c43ad4674ac2f360bd3bbbee1c2d4afad39b25989ffd10c00a844b133d61574566e6e74f310abfcc26afe3a5da072bed133066fe7f5",
+            "hash": "b2bb4ebf9db437f7ce3a27069c9c44d56f4a68591b41e35745116f51e870f0ede576dbc9c980aee88c8baa58b7cd4ae03b8f98e4c5fcc41fcfa9e131f2b3bc93"
+        },
+        {
+            "id": "event_188",
+            "timestamp": 1776220964.6498587,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "b2bb4ebf9db437f7ce3a27069c9c44d56f4a68591b41e35745116f51e870f0ede576dbc9c980aee88c8baa58b7cd4ae03b8f98e4c5fcc41fcfa9e131f2b3bc93",
+            "hash": "f3f6308c49644025c634332c503d213e040e5bdc114415969c54d93d07a6b1f2ed55663ac9996f560c7c9347f16eedef07c74a1acc5a07ef8e14e4e8a7879d5a"
+        },
+        {
+            "id": "event_189",
+            "timestamp": 1776220964.6553395,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "f3f6308c49644025c634332c503d213e040e5bdc114415969c54d93d07a6b1f2ed55663ac9996f560c7c9347f16eedef07c74a1acc5a07ef8e14e4e8a7879d5a",
+            "hash": "c1c0656360a201b1b6b30ebf90a91ea3a544f6f4679ae0b25d522eac780a0bc9aa5dd37181858105afc3db8c68a6a2e0c5415e4b19e3224cd3f2010fc2c6ac09"
+        },
+        {
+            "id": "event_190",
+            "timestamp": 1776220964.660214,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "c1c0656360a201b1b6b30ebf90a91ea3a544f6f4679ae0b25d522eac780a0bc9aa5dd37181858105afc3db8c68a6a2e0c5415e4b19e3224cd3f2010fc2c6ac09",
+            "hash": "d0390aca601ee7378151b7d48973cba86d5539032bc5c59be052e289e12e33864be801505a0aac3c6407dcbf346b1916a821b7fafec825fd5813b8e085b4688a"
+        },
+        {
+            "id": "event_191",
+            "timestamp": 1776220964.6650078,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "d0390aca601ee7378151b7d48973cba86d5539032bc5c59be052e289e12e33864be801505a0aac3c6407dcbf346b1916a821b7fafec825fd5813b8e085b4688a",
+            "hash": "4b78c2d59a387edc8e3c41f5d61ad8fc9a41b512d00fa37e797fdfc081d8c279dd4ca5ba589932a91567e0931d16ef0f14ec3b85ac24b60f73dda326998b6c93"
+        },
+        {
+            "id": "event_192",
+            "timestamp": 1776220964.6701689,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "4b78c2d59a387edc8e3c41f5d61ad8fc9a41b512d00fa37e797fdfc081d8c279dd4ca5ba589932a91567e0931d16ef0f14ec3b85ac24b60f73dda326998b6c93",
+            "hash": "6a9dcab545042f5e7a81b3c933fd21907ec3cee7bfce64e1315698590a42cb95e8df80e56f299b5ffc5c0efc1eb8096ccd03d600f92777718c0d7fb0df5fe3a3"
+        },
+        {
+            "id": "event_193",
+            "timestamp": 1776220964.675062,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "6a9dcab545042f5e7a81b3c933fd21907ec3cee7bfce64e1315698590a42cb95e8df80e56f299b5ffc5c0efc1eb8096ccd03d600f92777718c0d7fb0df5fe3a3",
+            "hash": "3e6fd70d7081d6b41256e5822e10ed0cd7fe8842c123319614fc3ba61beed32d8e76a9c43b824a467344db2a7b1a9a21988290444cc29db78d10076e26ffc261"
+        },
+        {
+            "id": "event_194",
+            "timestamp": 1776220964.6804268,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "3e6fd70d7081d6b41256e5822e10ed0cd7fe8842c123319614fc3ba61beed32d8e76a9c43b824a467344db2a7b1a9a21988290444cc29db78d10076e26ffc261",
+            "hash": "6b8bb0a5c7210b9bc5fa180d6962a9160a1ad9e2e1829b272c781f19764de8e3fd18aafcb70182efe6e34da4b5c9a90f2d3f1378b7d02e83bd97cc4ada38a264"
+        },
+        {
+            "id": "event_195",
+            "timestamp": 1776220964.685399,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "6b8bb0a5c7210b9bc5fa180d6962a9160a1ad9e2e1829b272c781f19764de8e3fd18aafcb70182efe6e34da4b5c9a90f2d3f1378b7d02e83bd97cc4ada38a264",
+            "hash": "051da235fb2032031be5182e8b5921197d423379a65da46321a873e23d3b5495d9be495856532bfbdc7c73d75ed3f43660aa0a1513f1fc1d7986bdd27a6fa590"
+        },
+        {
+            "id": "event_196",
+            "timestamp": 1776220964.6905107,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "051da235fb2032031be5182e8b5921197d423379a65da46321a873e23d3b5495d9be495856532bfbdc7c73d75ed3f43660aa0a1513f1fc1d7986bdd27a6fa590",
+            "hash": "46a06a231adc596b7d01834f957ab346c7926a0924749381ebc259142291ab0f9675e25be0581e88a38de924ec152c4d4266005eeb5cb2291c048ceca11ff3f4"
+        },
+        {
+            "id": "event_197",
+            "timestamp": 1776220964.6955135,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "46a06a231adc596b7d01834f957ab346c7926a0924749381ebc259142291ab0f9675e25be0581e88a38de924ec152c4d4266005eeb5cb2291c048ceca11ff3f4",
+            "hash": "be895762a2abdf6509312eaa6aab8ac1b5a34bbbf86d084b3544b2d18de674fa8fb4e342bc3c6e772dab14a7f33a7aee763b49ca6c967cadb7903a44e47e7ee9"
+        },
+        {
+            "id": "event_198",
+            "timestamp": 1776220964.7004,
+            "data": {
+                "type": "learning_signal_ingested",
+                "signal_type": "performance_metric"
+            },
+            "previous_hash": "be895762a2abdf6509312eaa6aab8ac1b5a34bbbf86d084b3544b2d18de674fa8fb4e342bc3c6e772dab14a7f33a7aee763b49ca6c967cadb7903a44e47e7ee9",
+            "hash": "fae2e6f966c2e1529b15a129366b502eb1e3f183c1033a6bb00f06440740efcc2947e18daf79acf2aa37ce98b5a5261f0297f20d4fa405a0040d843ae3e7e922"
+        },
+        {
+            "id": "event_199",
+            "timestamp": 1776220964.7052798,
+            "data": {
+                "type": "evolution_proposal_generated"
+            },
+            "previous_hash": "fae2e6f966c2e1529b15a129366b502eb1e3f183c1033a6bb00f06440740efcc2947e18daf79acf2aa37ce98b5a5261f0297f20d4fa405a0040d843ae3e7e922",
+            "hash": "06fd828f0656f29b20883037473db02c32f3856c53eada7838b95d793e736c2295ee7ff3a5a27c4d7f7278cba26bd490341c404d95fa3aceddcfe3bdd1de241e"
+        },
+        {
+            "id": "event_200",
+            "timestamp": 1776220964.7226079,
+            "data": {
+                "type": "mushahida_complete",
+                "node_count": 1
+            },
+            "previous_hash": "06fd828f0656f29b20883037473db02c32f3856c53eada7838b95d793e736c2295ee7ff3a5a27c4d7f7278cba26bd490341c404d95fa3aceddcfe3bdd1de241e",
+            "hash": "3f545aeaaa3bdb4ba68a93f9ea7d230b0dada4b2d75c9b53cbc2f986308c8800a33d5151ec6bdd114cb61f166936a7daca88eeb68ee7fc37e526282f48c4d5f7"
+        },
+        {
+            "id": "event_201",
+            "timestamp": 1776220964.7277849,
+            "data": {
+                "type": "jaiza_complete",
+                "risk_score": 0.15
+            },
+            "previous_hash": "3f545aeaaa3bdb4ba68a93f9ea7d230b0dada4b2d75c9b53cbc2f986308c8800a33d5151ec6bdd114cb61f166936a7daca88eeb68ee7fc37e526282f48c4d5f7",
+            "hash": "8ddb4381b43f4594f0be6126eea0f15c2b722218ae52509fd14f4f4cba8bfa1d5663ded38639015d454a53cb38963406f4eb18f7576f0000494911e20c29f570"
+        },
+        {
+            "id": "event_202",
+            "timestamp": 1776220964.7328198,
+            "data": {
+                "type": "muaina_complete",
+                "proposal_id": "PROP-1776220964731"
+            },
+            "previous_hash": "8ddb4381b43f4594f0be6126eea0f15c2b722218ae52509fd14f4f4cba8bfa1d5663ded38639015d454a53cb38963406f4eb18f7576f0000494911e20c29f570",
+            "hash": "4a7658695eee5bc5ccc62db969d1cdc7f90929ab0c9d3f29bf8a9a08099613031daf2176f677fcf73544374fe18cfb5a501b3c4a27703c2d145ef74a46920877"
+        },
+        {
+            "id": "event_203",
+            "timestamp": 1776220964.789572,
+            "data": {
+                "type": "gaas_validation",
+                "domain": "core_business_process",
+                "is_valid": true,
+                "violations": []
+            },
+            "previous_hash": "4a7658695eee5bc5ccc62db969d1cdc7f90929ab0c9d3f29bf8a9a08099613031daf2176f677fcf73544374fe18cfb5a501b3c4a27703c2d145ef74a46920877",
+            "hash": "12b6ffa07e5412f4a94f66e7e1d4af93ed006bd9fac02de5f166ed398ca56240ab4b749fc6f2de4ce4ede47d2b85895b446eb10641e7954e776aac47c315095e"
+        },
+        {
+            "id": "event_204",
+            "timestamp": 1776220964.7950082,
+            "data": {
+                "type": "process_complete",
+                "domain": "core_business_process",
+                "proposal_id": "PROP-1776220964731",
+                "bundle_hash": "3312b7d0a250bf951a17f33bc800ebeea00fc81f117b69fc69cd35d98a247886"
+            },
+            "previous_hash": "12b6ffa07e5412f4a94f66e7e1d4af93ed006bd9fac02de5f166ed398ca56240ab4b749fc6f2de4ce4ede47d2b85895b446eb10641e7954e776aac47c315095e",
+            "hash": "fe3059f88081ef55c6e9d3c13db6d6f1909ed1241a79d7d71d620cbd2349ce1d1919e0b57ada94eb2ecb5acd336f33d7493d8847109d8b0cc78eb2184a3fd361"
         }
     ],
     "edges": [],
-    "root_hash": "f7e4621637e8d8e0d5206db00b9d02e267e5372776db1a91f5af696342fd620e9bc26a843e85dc2f47dd88d4e1c5cef5c866f42ca157ade10f9222b9e9413f89"
+    "root_hash": "fe3059f88081ef55c6e9d3c13db6d6f1909ed1241a79d7d71d620cbd2349ce1d1919e0b57ada94eb2ecb5acd336f33d7493d8847109d8b0cc78eb2184a3fd361"
 }

@@ -1,18 +1,19 @@
 import yaml
 import asyncio
 import argparse
-from vsb_constitutional import TruthEngine, DecaVeritasOrchestrator
-from vsb_multi_agent import MammouthConstitutionalOrchestrator
+from vsb_constitutional import TruthEngine, DecaVeritasOrchestrator, MJMLearningEngine
+from vsb_multi_agent import MammouthNeoOrchestrator
 
 class CoreBusinessIntelligence:
-    """Core Business Process Intelligence Phenotype v10.0."""
+    """Core Business Process Intelligence Phenotype v11.0 Ultimate."""
     def __init__(self, config_path: str):
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
 
-        # v10.0 Multi-Agent Orchestration
+        # v11.0 Ultimate Architecture
         self.orchestrator = DecaVeritasOrchestrator(self.config, {})
-        self.swarm_orchestrator = MammouthConstitutionalOrchestrator(self.config, self.orchestrator.governance)
+        self.swarm_orchestrator = MammouthNeoOrchestrator(self.config, self.orchestrator.governance)
+        self.learning_engine = MJMLearningEngine(self.config, self.orchestrator.ueg)
 
     async def run(self, input_data: dict):
         # 1. Load business patterns

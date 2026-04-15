@@ -5,8 +5,10 @@ from .adaptive_learning import AdaptiveLearning
 from .multi_stakeholder_consensus import MultiStakeholderConsensus
 from .omnimedia_injector import OmnimediaInjector
 from .mjm_lifecycle import MJMIntelligenceLifecycle
-from .circuit_breaker import CircuitBreaker
+from .learning_engine import MJMLearningEngine
+from .self_tuning_breaker import SelfTuningCircuitBreaker
 from .policy_gate import PolicyGate
+from .unified_interceptor import UnifiedConstitutionalInterceptor, InterceptionContext, InterceptionResult
 from .adapters.constitutional.deca_veritas_orchestrator import DecaVeritasOrchestrator
 
 __all__ = [
@@ -18,7 +20,11 @@ __all__ = [
     "MultiStakeholderConsensus",
     "OmnimediaInjector",
     "MJMIntelligenceLifecycle",
-    "CircuitBreaker",
+    "MJMLearningEngine",
+    "SelfTuningCircuitBreaker",
     "PolicyGate",
+    "UnifiedConstitutionalInterceptor",
+    "InterceptionContext",
+    "InterceptionResult",
     "DecaVeritasOrchestrator"
 ]
