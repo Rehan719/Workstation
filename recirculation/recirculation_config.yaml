@@ -2,23 +2,36 @@ engine:
   cycle_target_ms: 60000
   confidence_threshold: 0.85
   hallucination_suppression: true
+  neural_circuit_breaker:
+    enabled: true
+    threshold_hallucination: 0.01
+    threshold_divergence: 0.15
+  nemo_config: "edge_optimised"
+  nematron_enabled: true
 stages:
   sense:
-    timeout_ms: 5000
-    fallback: "use_last_cached"
+    timeout_ms: 180000
+    extractor: "nemo_semantic_v2"
+    fallback: "cached_vector_index"
   analyze:
-    timeout_ms: 10000
-    fallback: "heuristic_rules"
+    timeout_ms: 240000
+    process: "causal_graph_traversal + multi_agent_debate"
+    neural_verification: true
+    fallback: "route_to_human_review"
   act:
-    timeout_ms: 20000
-    fallback: "simulation_retry"
+    timeout_ms: 300000
+    simulation: "omniverse_cosmos_v9"
+    speed_multiplier: 1000.0
+    fallback: "low_fidelity_sim"
   learn:
-    timeout_ms: 10000
-    fallback: "log_and_skip"
+    timeout_ms: 120000
+    nas_optimization: "nematron_pathway_nas"
+    fallback: "snapshot_rollback"
   recirculate:
-    timeout_ms: 5000
-    fallback: "restart_loop"
+    timeout_ms: 60000
+    recursion_hook: "ueg_integrated_feedback"
+    fallback: "differential_patch"
 telemetry:
   enabled: true
-  storage: "local_json"
   ueg_integration: true
+  metrics: ["velocity", "sophistication", "truth_score", "viral_coefficient", "neural_gain"]

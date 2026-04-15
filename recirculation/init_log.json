@@ -8,5 +8,17 @@
       "velocity_ms": 0.1728534698486328,
       "confidence": 0.0
     }
+  },
+  {
+    "timestamp": "2026-04-15T03:18:31.797208",
+    "cycle": 1,
+    "duration_s": 0.00018978118896484375,
+    "status": "SUCCESS",
+    "circuit_breaker": "GREEN",
+    "metrics": {
+      "velocity_ms": 0.18978118896484375,
+      "neural_gain": 0.16,
+      "truth_score": 0.95
+    }
   }
 ]

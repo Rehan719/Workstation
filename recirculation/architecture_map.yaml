@@ -1,27 +1,35 @@
-domains:
-  biology:
-    alphafold:
-      input: "string" # Protein sequence
-      output_tensor: [1, 1024]
-      projection_to_shared: "random_linear_stub"
-    insilico_screening:
-      input: "string" # SMILES
-      output_tensor: [1, 1024]
-      projection_to_shared: "random_linear_stub"
-  physics:
-    particle_dynamics:
-      input: "json"
-      output_tensor: [1, 1024]
-      projection_to_shared: "random_linear_stub"
-  business:
-    market_intelligence:
-      input: "json"
-      output_tensor: [1, 1024]
-      projection_to_shared: "random_linear_stub"
-cross_domain_routing:
-  - from: biology.alphafold
-    to: physics.particle_dynamics
-    similarity_threshold: 0.85
-  - from: biology.insilico_screening
-    to: business.market_intelligence
-    similarity_threshold: 0.70
+omega_stack:
+  orchestration:
+    core: agent_opus_director
+    frameworks:
+      - LangGraph (stateful audit loops)
+      - AutoGen (modular conversational agents)
+      - CrewAI (collaborative crews)
+      - Mammouth (process intelligence templating)
+    neural_backbone:
+      - Nvidia NeMo Sovereign (adaptive reasoning)
+      - Nematron (neural architecture search, circuit breakers)
+  compute_fabric:
+    gpu_routing: cuda_stream_multiplexer
+    edge_optimization:
+      - Ollama
+      - vLLM
+      - Llama.cpp
+  domain_modules:
+    bio_engine:
+      - alphafold_microservice (v9.0 neural-enhanced)
+      - alphagenome_pipeline
+      - digital_wetlab_twin
+    physics_engine:
+      - omniverse_cosmos_api (generative worlds)
+      - openclaw_nemoclaw (embodied control)
+    science_intelligence:
+      - Mammouth-integrated hypothesis generator
+      - Nematron causal discovery
+  knowledge_infra:
+    tree_of_knowledge: Neo4j + Qdrant (hybrid vector-graph)
+    causal_layer: Do-calculus engine + counterfactual simulator
+  security_safety:
+    constitutional_governance: GaaS v3
+    circuit_breakers: Nematron-driven neural interrupts
+    audit: Immutable UEG logging (SHA-3-512)

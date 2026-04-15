@@ -1,15 +1,16 @@
-objective: "Autonomous discovery of a novel lead compound for a high-priority metabolic target."
-horizon: "Infinite - Continuous improvement"
+objective: "Autonomous discovery of a novel lead compound for metabolic targets using Neural-Super-Agent swarms."
+horizon: "Infinite"
 compute_routing:
-  local: "CUDA-accelerated workstation"
-  distributed: "On-demand AGI-scale cloud (simulated)"
-  strategy: "latency_optimized_dag"
+  local: "Edge-optimized (Ollama/vLLM)"
+  distributed: "Nematron-driven AGI compute routing"
+  neural_pathway_targets: ["binding_affinity_precision", "simulation_latency"]
 milestones:
-  - "Successful integration of AlphaFold stub with physics simulation"
-  - "First recursive code optimization cycle with >5% efficiency gain"
-  - "Tree of All Knowledge expanded with 10k bio-entity nodes"
+  - "Nemo-integrated AlphaFold v9.0 deployment"
+  - "First LangGraph-governed scientific debate loop"
+  - "15% performance gain via Nematron NAS evolution"
 alignment:
-  safety_layer: "Nemoclaw Guard"
-  interrupt_triggers:
-    - "Divergence from human-aligned goals"
-    - "Unstable recursive code behavior"
+  safety_layer: "Nemoclaw Guard v9.0"
+  neural_circuit_breakers:
+    - "Hallucination detection > 1%"
+    - "Policy divergence from Constitutional Genome"
+    - "UEG integrity failure"

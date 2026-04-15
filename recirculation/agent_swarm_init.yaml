@@ -1,27 +1,26 @@
-swarm_id: "OMEGA-RECURSION-SWARM-001"
-roles:
-  research_designer:
-    model: "llama3.1:8b"
-    directive: "Generate high-fidelity hypotheses for computational biology."
-  simulation_executor:
-    model: "python-executor"
-    directive: "Execute numerical simulations and in-silico screening."
-  scientific_auditor:
-    model: "mistral-nemo:12b"
-    directive: "Validate results against falsifiability criteria."
-  scholarship_curator:
-    model: "knowledge-graph-agent"
-    directive: "Update the Tree of All Knowledge with verified findings."
-  business_strategist:
-    model: "economics-agent"
-    directive: "Evaluate unit economics and product-market fit."
-  evolution_agent:
-    model: "code-specialist"
-    directive: "Optimize code and adjust agent policies."
+swarm_id: "OMEGA-RECURSION-SWARM-v9.0-NEURAL"
+constitutional_genome: "v9.0.0-neural-super-agent-rc"
+orchestrators:
+  business: "Nemo+Nematron + LangGraph + AutoGen"
+  science: "Nemo+Nematron + LangGraph + Mammouth"
+  scholarship: "Nemo+Nematron + CrewAI + LangGraph"
+  domain_generic: "Nemo+Nematron + AutoGen + CrewAI"
+agent_clusters:
+  rational:
+    role: "Data & Logic Validator"
+    backbone: "NeMo Sovereign"
+    mapping: "Biomimetic Layer 4 - Cognitive Logic"
+  emotional:
+    role: "Human Connection & Passion Agent"
+    backbone: "Nematron Pathway"
+    mapping: "Biomimetic Layer 2 - Affective Resonator"
+  synthesis:
+    role: "Constitutional Neural Fusion Agent"
+    backbone: "Nematron-Optimized Cross-Modal"
+    mapping: "Biomimetic Layer 8 - Integrative Cortex"
 communication:
-  protocol: "async_event_bus"
-  presence_enabled: true
-  haptic_feedback: enabled
+  protocol: "Encrypted WebSocket + AR/VR Presence"
+  haptic_feedback: "Gated via Constitutional Neural Circuit Breakers"
 routing:
-  strategy: "dynamic_contextual"
-  default_priority: "normal"
+  strategy: "Nematron-NAS Adaptive Routing"
+  default_priority: "Normal"
