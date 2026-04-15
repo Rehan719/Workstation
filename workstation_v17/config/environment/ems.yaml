@@ -1,0 +1,3 @@
+stewardship:
+  target_power_efficiency: 0.8
+  carbon_tracking: enabled

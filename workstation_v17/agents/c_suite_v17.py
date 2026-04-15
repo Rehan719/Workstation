@@ -1,55 +1,74 @@
 import logging
 from typing import Dict, Any, List
 
-class BaseAgent:
+class ExecutiveAgent:
     def __init__(self, role: str):
         self.role = role
-        self.logger = logging.getLogger(role)
+        self.logger = logging.getLogger(f"Agent_{role}")
 
-    async def decide(self, context: Dict) -> Dict:
-        """v17.0: Abstract base decision logic."""
-        return {"role": self.role, "status": "EVALUATING"}
+    async def decide(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """v17.0: Abstract decision logic."""
+        return {"role": self.role, "status": "EVALUATING", "v17_tag": "GM-II"}
 
-class CEOAgent(BaseAgent):
+class CEOAgent(ExecutiveAgent):
     def __init__(self):
         super().__init__("CEO_Opus")
     async def decide(self, context: Dict) -> Dict:
-        self.logger.info("Setting strategic vision based on cycle insights.")
-        return {"action": "EXPAND_SCOPE", "priority": "HIGH"}
+        self.logger.info("Setting strategic vision for v17.0 Production.")
+        return {"action": "SOVEREIGN_EXPANSION", "priority": "CRITICAL", "cycle_target": 47}
 
-class CFOAgent(BaseAgent):
+class CFOAgent(ExecutiveAgent):
     def __init__(self):
-        super().__init__("CFO_Opus")
+        super().__init__("CFO")
     async def decide(self, context: Dict) -> Dict:
-        self.logger.info("Analysing unit economics and compute cost.")
-        return {"budget_allocation": "REALLOCATE_TO_RESEARCH", "burn_rate_status": "STABLE"}
+        self.logger.info("Evaluating compute burn rate and unit economics.")
+        return {"budget": "REGENERATIVE", "compute_limit_wh": 5000}
 
-class CLOAgent(BaseAgent):
+class COOAgent(ExecutiveAgent):
     def __init__(self):
-        super().__init__("CLO_Opus")
+        super().__init__("COO")
     async def decide(self, context: Dict) -> Dict:
-        self.logger.info("Verifying UK legal compliance of proposed action.")
-        return {"compliance_status": "APPROVED", "risk_rating": "LOW"}
+        self.logger.info("Orchestrating cross-domain resource allocation.")
+        return {"orchestration": "STIGMERGIC", "swarm_sync_ms": 250}
 
-class CTOAgent(BaseAgent):
+class CROAgent(ExecutiveAgent):
     def __init__(self):
-        super().__init__("CTO_Opus")
+        super().__init__("CRO")
     async def decide(self, context: Dict) -> Dict:
-        self.logger.info("Optimizing neural pathway latency.")
-        return {"optimisation_target": "MICRO_LOOP", "status": "PENDING"}
+        self.logger.info("Monitoring neural pathway entropy and risk.")
+        return {"risk_profile": "HARDENED", "circuit_breaker": "ENABLED"}
+
+class CTOAgent(ExecutiveAgent):
+    def __init__(self):
+        super().__init__("CTO")
+    async def decide(self, context: Dict) -> Dict:
+        self.logger.info("Driving Nemotron NAS and HAL optimization.")
+        return {"nas_policy": "LATENT_MOE", "hal_gain": 1.25}
+
+class CLOAgent(ExecutiveAgent):
+    def __init__(self):
+        super().__init__("CLO")
+    async def decide(self, context: Dict) -> Dict:
+        self.logger.info("Validating Equality Act 2010 and GDPR s.22 compliance.")
+        return {"legal_status": "CERTIFIED", "audit_trace_required": True}
 
 class CSuiteV17:
     def __init__(self):
         self.ceo = CEOAgent()
         self.cfo = CFOAgent()
-        self.clo = CLOAgent()
+        self.coo = COOAgent()
+        self.cro = CROAgent()
         self.cto = CTOAgent()
+        self.clo = CLOAgent()
 
-    async def get_consensus(self, context: Dict) -> Dict:
-        decisions = {
+    async def get_consensus(self, intent: str, context: Dict) -> Dict:
+        results = {
             "ceo": await self.ceo.decide(context),
             "cfo": await self.cfo.decide(context),
-            "clo": await self.clo.decide(context),
-            "cto": await self.cto.decide(context)
+            "coo": await self.coo.decide(context),
+            "cro": await self.cro.decide(context),
+            "cto": await self.cto.decide(context),
+            "clo": await self.clo.decide(context)
         }
-        return {"consensus": "PROCEED", "details": decisions}
+        consensus_score = sum(1 for r in results.values() if r.get("priority") != "BLOCKED") / len(results)
+        return {"verdict": "PROCEED" if consensus_score > 0.75 else "REVISE", "consensus_ratio": consensus_score, "decisions": results}

@@ -1,15 +1,9 @@
-# Product Value & BTO Catalog
+# Product Value Proposition
 
-## 💎 Value Proposition
 > **"Sovereign constitutional AI for automated biofoundry and UK legal precision."**
 
-## 📈 Unit Economics
-The **BTO Director** (`agents/bto_director.py`) optimizes the following:
-- **CAC (Cost Per Acquisition)**: Target < £500.
-- **LTV (Lifetime Value)**: Target > £5000.
-- **K-Factor (Virality)**: Goal > 1.2 via open-source breakthroughs.
+## 📈 Unit Economics (BMS)
+The Business Management System tracks ROI per cycle. High-truth outputs accelerate discovery, reducing cost-per-insight.
 
-## 📦 Core Offerings
-1.  **AF3-S (AlphaFold 3 Surrogate)**: High-speed molecular structural prediction for materials and biotech.
-2.  **UKLPE-G (UK Legal Precision Engine - GaaS)**: Autonomous compliance and legal drafting for enterprises.
-3.  **Omega-Realm Swarms**: Adaptive multi-agent teams for Climate, Education, and Religion domains.
+- **K-Factor Target**: >1.2 (Recursive Growth).
+- **Compute Marginal Cost**: Targeted < $0.01 per molecular simulation.

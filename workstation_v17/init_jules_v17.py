@@ -15,7 +15,7 @@ logging.basicConfig(
 logger = logging.getLogger("InitJulesV17")
 
 async def main(args):
-    logger.info("Starting Workstation Sovereign Digital Organism v17.0...")
+    logger.info("Initializing JULES v17.0 Production Beta Organism...")
 
     organism = JulesOmegaOrganismV17()
     await organism.initialize()
@@ -23,12 +23,12 @@ async def main(args):
     recirculation = FractalRecirculation(organism)
 
     if args.dry_run:
-        logger.info("Dry run mode: Executing one cycle then exiting.")
-        await organism.run_cycle()
+        logger.info("Dry run: Executing one Macro cycle and shutting down.")
+        await organism.run_macro_cycle({"dry_run": True})
         await organism.shutdown()
         return
 
-    # Graceful shutdown handling
+    # Shutdown handlers
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, lambda: asyncio.create_task(organism.shutdown()))
@@ -42,13 +42,11 @@ async def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Jules v17.0 Initializer")
-    parser.add_argument("--dry-run", action="store_true", help="Run one cycle and exit")
-    parser.add_argument("--role", type=str, default="opus_director")
-    parser.add_argument("--vertical", type=str, default="biotech_materials")
-
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--deploy", type=str, default="beta")
     args = parser.parse_args()
 
     try:
         asyncio.run(main(args))
-    except KeyboardInterrupt:
-        logger.info("Keyboard interrupt received.")
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Received exit signal.")

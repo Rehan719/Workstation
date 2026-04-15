@@ -1,0 +1,3 @@
+quality_gates:
+  min_test_coverage: 0.95
+  enforce_zero_placeholder: true

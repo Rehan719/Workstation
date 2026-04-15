@@ -1,0 +1,35 @@
+services:
+  jules:
+    build:
+      context: .
+      dockerfile: workstation_v17/Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - MJM_SECRET_KEY=production_beta_master_key
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "3000:3000"
+    restart: always
+
+  temporal:
+    image: temporalio/auto-setup
+    ports:
+      - "7233:7233"
+
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"
+
+  nats:
+    image: nats
+    ports:
+      - "4222:4222"
