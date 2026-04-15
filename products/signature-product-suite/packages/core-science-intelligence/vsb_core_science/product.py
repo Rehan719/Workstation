@@ -1,15 +1,16 @@
 import yaml
 import asyncio
-from vsb_constitutional import DecaVeritasOrchestrator
-from vsb_multi_agent import MammouthConstitutionalOrchestrator
+from vsb_constitutional import DecaVeritasOrchestrator, MJMLearningEngine
+from vsb_multi_agent import MammouthNeoOrchestrator
 
 class CoreScienceIntelligence:
-    """Core Science Process Intelligence Phenotype v10.0."""
+    """Core Science Process Intelligence Phenotype v11.0 Ultimate."""
     def __init__(self, config_path: str):
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
         self.orchestrator = DecaVeritasOrchestrator(self.config, {})
-        self.swarm_orchestrator = MammouthConstitutionalOrchestrator(self.config, self.orchestrator.governance)
+        self.swarm_orchestrator = MammouthNeoOrchestrator(self.config, self.orchestrator.governance)
+        self.learning_engine = MJMLearningEngine(self.config, self.orchestrator.ueg)
 
     async def run(self, input_data: dict):
         # Enhance input with science-specific parameters

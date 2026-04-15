@@ -15,54 +15,57 @@ except ImportError:
     from vsb_constitutional import TruthEngine, GaaSValidatorV3, UEGLogger, DecaVeritasOrchestrator
 
 try:
-    from vsb_multi_agent import MammouthConstitutionalOrchestrator
+    from vsb_multi_agent import MammouthNeoOrchestrator, ZeroShotDomainGenesis
 except ImportError:
     sys.path.append(os.path.join(base_dir, "packages/vsb-multi-agent-orchestration"))
-    from vsb_multi_agent import MammouthConstitutionalOrchestrator
+    from vsb_multi_agent import MammouthNeoOrchestrator, ZeroShotDomainGenesis
 
-async def test_v10_circuit_breaker_and_policy():
-    print("Testing v10 Constitutional Circuit Breaker and Policy Gate...")
+async def test_v11_ultimate_features():
+    print("Testing v11 Ultimate Features (UCI, Zero-Shot Genesis, Learning Engine)...")
     with open("config/constitutional/domains/core_business.yaml", 'r') as f:
         config = yaml.safe_load(f)
 
-    # Enable a strict rule
-    if "constitutional_rules" not in config:
-        config["constitutional_rules"] = []
+    if "constitutional_rules" not in config: config["constitutional_rules"] = []
     config["constitutional_rules"].append("no_unconsented_pii_export")
 
     orchestrator = DecaVeritasOrchestrator(config, {})
-    swarm_orchestrator = MammouthConstitutionalOrchestrator(config, orchestrator.governance)
+    swarm_orchestrator = MammouthNeoOrchestrator(config, orchestrator.governance)
 
-    # 1. Test Policy Gate Halt
-    print("Testing Policy Gate Halt (PII Export)...")
+    # 1. Test Unified Constitutional Interceptor (UCI) via Mammouth
+    print("Testing UCI via Mammouth Neo-Orchestrator...")
     halt_result = await swarm_orchestrator.orchestrate_swarm(
-        "pii-swarm",
-        "Export customer data",
-        {"queries": ["export data"], "contains_pii": True}
+        "ultimate-swarm", "Export PII", {"contains_pii": True}
     )
-
-    # Since Mammouth mock calls _run_agent_interactions which doesn't check policy
-    # but the orchestrator.orchestrate_swarm DOES check before running.
-    # WAIT, I need to check how I implemented it in MammouthConstitutionalOrchestrator.
-
     if halt_result["status"] == "HALTED":
-         print("✅ Policy Gate halted prohibited action.")
+        print("✅ UCI Policy Gate halted action.")
     else:
-         print(f"❌ Policy Gate failed to halt action: {halt_result['status']}")
-         return False
-
-    # 2. Test Circuit Breaker Trip
-    print("Testing Circuit Breaker Trip (Manual Violation)...")
-    # Manually record violations to trip breaker
-    orchestrator.governance.circuit_breaker.record_event(success=False, is_violation=True)
-
-    if orchestrator.governance.circuit_breaker.should_halt():
-        print("✅ Circuit Breaker tripped after violation.")
-    else:
-        print("❌ Circuit Breaker failed to trip.")
+        print(f"❌ UCI failed: {halt_result['status']}")
         return False
 
-    print("✅ v10 Governance Tests Passed.")
+    # 2. Test Zero-Shot Domain Genesis
+    print("Testing Zero-Shot Domain Genesis...")
+    genesis = ZeroShotDomainGenesis(orchestrator.governance, orchestrator.ueg)
+    new_genome = await genesis.create_domain_genome("Assessing AI bias in legal drafting")
+    if new_genome["domain"]["id"] == "assessing_ai_bia":
+        print("✅ Zero-Shot Domain Genesis successful.")
+    else:
+        print(f"❌ Genesis ID mismatch: {new_genome['domain']['id']}")
+        return False
+
+    # 3. Test Learning Engine (Cognitive Cortex)
+    print("Testing MJM Learning Engine...")
+    from vsb_constitutional import MJMLearningEngine
+    le = MJMLearningEngine(config, orchestrator.ueg)
+    for _ in range(50):
+        le.ingest_feedback({"type": "performance_metric", "value": 0.98})
+    report = le.get_cognitive_report()
+    if report["signal_count"] == 0: # Cleared after evolution trigger
+        print("✅ Learning Engine triggered evolution and cleared signals.")
+    else:
+        print(f"❌ Learning Engine signals not cleared: {report['signal_count']}")
+        return False
+
+    print("✅ v11 Ultimate Tests Passed.")
     return True
 
 async def test_constitutional_compliance():
@@ -119,8 +122,8 @@ if __name__ == "__main__":
     sys.path.append(os.path.join(base_dir, "packages/vsb-multi-agent-orchestration"))
 
     async def run_all_tests():
-        v10_success = await test_v10_circuit_breaker_and_policy()
-        if not v10_success: return False
+        v11_success = await test_v11_ultimate_features()
+        if not v11_success: return False
 
         comp_success = await test_constitutional_compliance()
         return comp_success

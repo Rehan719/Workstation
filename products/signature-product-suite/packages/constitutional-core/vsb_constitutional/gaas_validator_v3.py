@@ -3,7 +3,7 @@ import os
 from typing import Dict, Any, List, Optional
 from .truth_engine import TruthEngine
 from .ueg_logger import UEGLogger
-from .circuit_breaker import CircuitBreaker
+from .self_tuning_breaker import SelfTuningCircuitBreaker
 from .policy_gate import PolicyGate
 
 class GaaSValidatorV3:
@@ -16,7 +16,7 @@ class GaaSValidatorV3:
         self.config = config
         self.rules = self._load_domain_rules()
         self.ueg = UEGLogger()
-        self.circuit_breaker = CircuitBreaker(domain)
+        self.circuit_breaker = SelfTuningCircuitBreaker(domain)
         self.policy_gate = PolicyGate(config)
 
     def _load_domain_rules(self) -> List[Dict[str, Any]]:
