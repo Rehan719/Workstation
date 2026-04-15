@@ -48,8 +48,9 @@ class TruthEngine:
     def generate_report(self) -> Dict[str, Any]:
         """Generates a summary of all truth dimensions applied."""
         return {
-            "version": "3.0.0",
+            "version": "10.0.0",
             "dimensions_applied": [d["name"] for d in self.applied_dimensions],
+            "agent_telemetry_enabled": self.config.get("X_adaptive_constitutional", {}).get("agent_telemetry", False),
             "audit_trail": self.applied_dimensions,
             "integrity_hash": self._calculate_integrity_hash()
         }

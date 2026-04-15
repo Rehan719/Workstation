@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: vsb-multi-agent-orchestration
+Version: 10.0.0rc0
+Summary: Constitutional Super-Agent Orchestration Fabric
+Requires-Dist: vsb-constitutional-core
