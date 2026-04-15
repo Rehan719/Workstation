@@ -14,6 +14,6 @@ The organism follows the **12-layer biomimetic** and **6-layer application** arc
 
 ## 🏁 Quick Start
 ```bash
-bash workstation_entity_v3/deployment/deploy.sh
+bash workstation_v17/deployment/deploy.sh
 ./bin/init_jules --vertical biotech_materials_discovery_and_employment_law
 ```

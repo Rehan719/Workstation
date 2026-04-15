@@ -1,15 +1,38 @@
 swarm_id: "OMEGA-FRACTAL-GOLDEN-II"
 constitutional_genome: "v17.0.0-neural-super-agent-biomimetic-golden-ii-rc"
 executive_swarm:
-  ceo_agent: {role: "Agent Opus: Central Director", backbone: "Nemotron 3 Super"}
-  cfo_clo_agent: {role: "Economics & UK Legal Strategy", backbone: "Precision-Legal"}
-  cco_agent: {role: "Chief Connection Officer (Social Capital)", backbone: "Emotional-Pathway"}
-  chief_scientist: {role: "AlphaFold 3 / Biofoundry Lead", backbone: "Scientific-Method"}
-coe_leads: [Biotech, Materials, Legal, Business, Climate, Materials, GINCO_Biofoundry]
+  ceo_agent:
+    role: "Agent Opus: Central Director (Rational)"
+    backbone: "NVIDIA Nemotron 3 Super (120B MoE)"
+    pathway: "LatentMoE-Meta-Reasoning"
+  cco_agent:
+    role: "Chief Connection Officer (Emotional/Passion)"
+    backbone: "Nematron Pathway"
+    pathway: "Human-AI-Co-Creation"
+  coo_agent:
+    role: "Chief Operating Officer (Synthesis)"
+    backbone: "Nematron-Optimized"
+    pathway: "Orchestration-Execution"
+  cfo_clo_agent:
+    role: "Economics & UK Legal Strategy"
+    backbone: "Precision-Legal"
+    pathway: "Compliance-Traceability"
+  cto_agent:
+    role: "Technological Director"
+    backbone: "NemoClaw-Sovereign"
+    pathway: "Compute-Routing"
+realms:
+  - Legal
+  - Climate
+  - Materials
+  - Biofoundry
+  - Religion
+  - Education
 communication:
   protocol: "NATS + libp2p (SHA-3-512 VSB)"
   presence: "Holographic v17.0 Immersive"
-  haptics: "Biomimetic Adaptive"
+  haptics: "Biomimetic Adaptive (AEHO)"
 routing:
   strategy: "Fractal-Contextual Latent Routing"
   optimization: "Nematron-v17-NAS"
+  compute_target: "GeForce RTX / DGX Spark"

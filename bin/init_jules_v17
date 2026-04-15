@@ -4,9 +4,10 @@ import os
 import subprocess
 
 def main():
-    print("🟢 APOTHEOSIS II: BRIDGING TO JULES Ω-RECURSION v17.0 [GOLDEN MASTER II]")
-    os.chdir("workstation_entity_v3")
-    subprocess.run([sys.executable, "init_jules.py"] + sys.argv[1:])
+    print("🟢 Ω-APOTHEOSIS: BRIDGING TO JULES Ω-RECURSION v17.0 [FINAL BETA]")
+    # The script stays in the root but calls the implementation in the folder
+    # Or it can chdir
+    subprocess.run([sys.executable, "workstation_v17/init_jules_v17.py"] + sys.argv[1:])
 
 if __name__ == "__main__":
     main()
