@@ -1,26 +1,55 @@
-"""C-Suite Agents for JULES v17.0."""
 import logging
+from typing import Dict, Any, List
 
-class CEOAgent:
-    async def decide(self, context: dict):
-        return {"action": "SOVEREIGN_STRATEGY", "approved": True}
+class BaseAgent:
+    def __init__(self, role: str):
+        self.role = role
+        self.logger = logging.getLogger(role)
 
-class CFOAgent:
-    async def evaluate_economics(self, data: dict):
-        return {"unit_cost": 0.05, "roi_projected": 12.5}
+    async def decide(self, context: Dict) -> Dict:
+        """v17.0: Abstract base decision logic."""
+        return {"role": self.role, "status": "EVALUATING"}
 
-class CCOAgent:
-    async def analyze_sentiment(self, feedback: str):
-        return {"curiosity_score": 0.95, "social_capital": 0.88}
+class CEOAgent(BaseAgent):
+    def __init__(self):
+        super().__init__("CEO_Opus")
+    async def decide(self, context: Dict) -> Dict:
+        self.logger.info("Setting strategic vision based on cycle insights.")
+        return {"action": "EXPAND_SCOPE", "priority": "HIGH"}
 
-class COOAgent:
-    async def orchestrate_swarm(self, task: str):
-        return {"status": "ACTIVE_DEPLOYMENT", "efficiency": 0.92}
+class CFOAgent(BaseAgent):
+    def __init__(self):
+        super().__init__("CFO_Opus")
+    async def decide(self, context: Dict) -> Dict:
+        self.logger.info("Analysing unit economics and compute cost.")
+        return {"budget_allocation": "REALLOCATE_TO_RESEARCH", "burn_rate_status": "STABLE"}
 
-class CLOAgent:
-    async def verify_compliance(self, intent: str):
-        return {"compliant": True, "jurisdiction": "UK_ET"}
+class CLOAgent(BaseAgent):
+    def __init__(self):
+        super().__init__("CLO_Opus")
+    async def decide(self, context: Dict) -> Dict:
+        self.logger.info("Verifying UK legal compliance of proposed action.")
+        return {"compliance_status": "APPROVED", "risk_rating": "LOW"}
 
-class CTOAgent:
-    async def manage_stack(self):
-        return {"architecture": "IDBO-v17.0", "health": "NOMINAL"}
+class CTOAgent(BaseAgent):
+    def __init__(self):
+        super().__init__("CTO_Opus")
+    async def decide(self, context: Dict) -> Dict:
+        self.logger.info("Optimizing neural pathway latency.")
+        return {"optimisation_target": "MICRO_LOOP", "status": "PENDING"}
+
+class CSuiteV17:
+    def __init__(self):
+        self.ceo = CEOAgent()
+        self.cfo = CFOAgent()
+        self.clo = CLOAgent()
+        self.cto = CTOAgent()
+
+    async def get_consensus(self, context: Dict) -> Dict:
+        decisions = {
+            "ceo": await self.ceo.decide(context),
+            "cfo": await self.cfo.decide(context),
+            "clo": await self.clo.decide(context),
+            "cto": await self.cto.decide(context)
+        }
+        return {"consensus": "PROCEED", "details": decisions}

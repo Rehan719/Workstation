@@ -1,13 +1,22 @@
-nemotron_3_super:
-  architecture: "Mamba-Attention-MoE-120B"
-  latent_moe:
-    experts: 128
-    active_experts: 8
-    optimization: "Latent-Perception-FLOP"
-  capabilities:
-    context_length: 1048576
-    speculative_decoding: "MTP-v2"
-    quantization: "NVFP4"
-  deployment:
-    platform: "DGX-Spark-RTX"
-    sovereignty: "Zero-Cloud-Only"
+model:
+  name: "Nemotron-3-Super"
+  parameters: "120B/12B MoE"
+  architecture: "LatentMoE"
+  mtp: true
+  context_window: 1048576
+  precision: "bf16"
+
+hardware:
+  target: "NVIDIA Blackwell / RTX 5090"
+  acceleration: "CUDA"
+  quantization: "INT8-FP8"
+
+endpoints:
+  ollama: "http://localhost:11434"
+  vllm: "http://localhost:8000"
+  local_fallback: true
+
+routing_policies:
+  reasoning: "nemotron-3-120b"
+  pattern_matching: "nemotron-3-12b"
+  safety_audit: "gaas-v4-validator"

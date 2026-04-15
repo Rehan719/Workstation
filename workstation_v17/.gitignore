@@ -1,0 +1,11 @@
+__pycache__/
+*.log
+*.db
+state_snapshots/
+sandbox/
+.env
+venv/
+*.pdb
+*.json
+!workstation_v17/config/*.json
+!workstation_v17/products/*.json

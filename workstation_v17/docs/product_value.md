@@ -1,19 +1,15 @@
-# Product Value & Use Cases: v17.0 Golden Master II
+# Product Value & BTO Catalog
 
-## 10-Word Value Propositions
-- **Biotech**: "Autonomous AI platform accelerating biofoundry R&D while ensuring legal compliance."
-- **Legal**: "Legally precise AI agent for automated Employment Tribunal case management."
-- **Science**: "Digitized scientific method reducing discovery cycles from years to days."
+## 💎 Value Proposition
+> **"Sovereign constitutional AI for automated biofoundry and UK legal precision."**
 
-## Core Use Cases
+## 📈 Unit Economics
+The **BTO Director** (`agents/bto_director.py`) optimizes the following:
+- **CAC (Cost Per Acquisition)**: Target < £500.
+- **LTV (Lifetime Value)**: Target > £5000.
+- **K-Factor (Virality)**: Goal > 1.2 via open-source breakthroughs.
 
-### GINCO Biotech Biofoundry
-- **Directed Evolution**: Autonomous execution of 100,000+ strain variations per macro-cycle.
-- **In-silico Screening**: AlphaFold 3 joint structure prediction for novel enzyme stabilization.
-
-### UK Employment Tribunal Support
-- **Case Strategy**: Real-time bias stress-testing of corporate disciplinary procedures.
-- **Document Generation**: Automated production of legally defensible ET1/ET3 responses.
-
-### Climate Scenario Modeling
-- **Macro-cycles**: High-fidelity simulation of carbon capture catalyst effectiveness in generative physics worlds.
+## 📦 Core Offerings
+1.  **AF3-S (AlphaFold 3 Surrogate)**: High-speed molecular structural prediction for materials and biotech.
+2.  **UKLPE-G (UK Legal Precision Engine - GaaS)**: Autonomous compliance and legal drafting for enterprises.
+3.  **Omega-Realm Swarms**: Adaptive multi-agent teams for Climate, Education, and Religion domains.

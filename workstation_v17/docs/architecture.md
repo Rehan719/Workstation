@@ -1,32 +1,22 @@
-# Technical Architecture: v17.0 Golden Master II
+# JULES v17.0 Architecture: Sovereign Digital Organism
 
-## 12-Layer Biomimetic IDBO Core
-Exhaustive component mapping of the JULES v17.0 organism:
+## 🧠 12-Layer IDBO implementation
+The organism follows the Integrated Digital Biological Organism (IDBO) architecture, mapped to the `workstation_v17` codebase:
 
-| Layer | Function | Implementation |
-|-------|----------|----------------|
-| 1 | Identity | `JulesIdentity` (signed JWT + TPM attestation) |
-| 2 | Hardware | `HardwareAttestation` (NVIDIA Blackwell / NVFP4) |
-| 3 | Expression | `IntentPlanner` (Long-horizon HTN) |
-| 4 | Regulation | `ConstitutionalState` (SHA-3-512 Merkle-DAG) |
-| 5 | Resilience | `NeuralCircuitBreaker` (Biomimetic Self-Healing) |
-| 6 | Propagation | `FractalScaling` (Workstation spawning) |
-| 7 | Module Library | `AgentRegistry` (Merkle-DAG Content Registry) |
-| 8 | Recombination | `CrossDomainTransfer` (Latent Pathway Fusion) |
-| 9 | Orchestration | `JulesOmegaOrganism` (v17.0 CEO) |
-| 10 | Evolution | `NematronEvolution` (NAS + Synaptic Plasticity) |
-| 11 | Civilisation | `libp2pFederation` (Multi-node mesh) |
-| 12 | UX | `WorkstationRealms` (Immersive v17.0) |
+1.  **Identity (Cellular Genotype)**: Managed in `core/vsb_ueg_logger.py` via SHA-3-512 Merkle-DAG hashes and bitemporal state in `core/sovereign_state_kernel.py`.
+2.  **Hardware (Physiological Substrate)**: Classical surrogates in `core/classical_oam_qkd_surrogate.py` for quantum-derived security.
+3.  **Expression (Nervous System)**: `core/nemotron_integration.py` providing intent-to-action translation via LatentMoE.
+4.  **Regulation (Epigenetics)**: `core/gaas_validator_v4.py` and `core/nemoclaw_runtime.py` enforcing policy-as-code.
+5.  **Resilience (Immune System)**: `core/biomimetic_self_healing.py` implementing AEHO repair layers.
+6.  **Propagation (Reproduction)**: Mesh-ready interfaces (libp2p stubs) for multi-node federation.
+7.  **Module Library (Genetic Code)**: Content-addressed registration of realms in `realms/`.
+8.  **Recombination (Mutation/Fusion)**: `core/self_rewriter.py` for autonomous code evolution.
+9.  **Orchestration (CNS)**: `core/jules_omega_organism_v17.py` CEO orchestrator.
+10. **Evolution (Natural Selection)**: `core/fractal_recirculation.py` managing nested competitive loops.
+11. **Civilisation (Ecosystem)**: Domain Realms (Legal, Bio, etc.) interacting via the Virtual Systems Bridge (VSB).
+12. **UX (Consciousness)**: The 10-word value proposition anchor and CLI/Council interfaces.
 
-## 5-Stage Fractal Recirculation Engine
-The core feedback loop implementation:
-1. **SENSE/SCAN** - afferent ingestion of multimodal VSB topics.
-2. **ANALYZE/REASON** - cognitive synthesis via Nemotron-3 Super.
-3. **ACT/SIMULATE** - efferent execution in Omniverse/Cosmos worlds.
-4. **LEARN/ENHANCE** - synaptic update via reward-driven NAS.
-5. **RECIRCULATE/EVOLVE** - state update and homeostatic loop reset.
-
-## API Specification
-- **VSB Endpoint**: `ws://localhost:8080/vsb`
-- **GaaS API**: `http://localhost:3000/api/gaas/v4`
-- **BTO Catalog**: `http://localhost:3000/api/bto/v1`
+## 🔁 Fractal Recirculation
+- **Micro (<100ms)**: Per-agent safety heartbeats.
+- **Meso (<15min)**: Workflow and unit-economic optimization.
+- **Macro (<60s)**: Strategic evolution and recursive learning.

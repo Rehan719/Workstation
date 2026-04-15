@@ -1,9 +1,43 @@
 realms:
-  Legal: {id: "REALM-LAW-UK", sandboxed: true}
-  Climate: {id: "REALM-CLIMATE-CMIP6", sandboxed: true}
-  Materials: {id: "REALM-MATERIALS-MOF", sandboxed: true}
-  Biofoundry: {id: "REALM-GINCO-DBTL", sandboxed: true}
-  Religion: {id: "REALM-THEOLOGY-ETHICS", sandboxed: true}
-  Education: {id: "REALM-PEDAGOGY-NGSS", sandboxed: true}
-  Developer: {id: "REALM-FORGE", sandboxed: false}
-  Enterprise: {id: "REALM-HQ", sandboxed: false}
+  - id: "legal"
+    name: "Legal Precision Realm"
+    focus: "UK Employment, Civil, Taxation, GDPR"
+    engine: "UKLPE (UK Legal Precision Engine)"
+    constraints:
+      - "compliance_score > 0.98"
+      - "trace_hash_required: true"
+
+  - id: "climate"
+    name: "Climate Simulation Realm"
+    focus: "PINN-based CMIP-6 Emulation"
+    engine: "NemoClaw-Climate"
+    constraints:
+      - "falsifiability_check: true"
+
+  - id: "materials"
+    name: "Materials Discovery Realm"
+    focus: "MOF & Battery Design"
+    engine: "AlphaFold-3-Materials"
+    constraints:
+      - "pose_busters_validation: true"
+
+  - id: "biofoundry"
+    name: "Automated Biofoundry Realm"
+    focus: "DBTL Cycle Automation"
+    engine: "Ginkgo-Surrogate"
+    constraints:
+      - "biosecurity_gate: true"
+
+  - id: "religion"
+    name: "Scholarship & Religion Realm"
+    focus: "Comparative Text Analysis"
+    engine: "Tree-of-Knowledge-Scholar"
+    constraints:
+      - "neutrality_enforced: true"
+
+  - id: "education"
+    name: "Adaptive Education Realm"
+    focus: "Personalized Pedagogy"
+    engine: "Curiosity-Engine"
+    constraints:
+      - "privacy_preserving: true"
