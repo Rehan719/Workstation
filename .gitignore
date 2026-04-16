@@ -33,3 +33,15 @@ products/mjm-intelligence-engine/artifacts/
 .hypothesis/
 
 agentic_core/service-account-key.json
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+data/
+logs/
+state_snapshots/
+sandbox/

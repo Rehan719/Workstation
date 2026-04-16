@@ -26,7 +26,7 @@ class OAM_QKDSurrogate:
         alice_bases = [random.choice(['X', 'Z']) for _ in range(length * 2)]
 
         # 2. Channel Emulation (1.5% stable QBER)
-        qber_prob = 0.015
+        qber_prob = 0.012
         bob_bits = []
         for i in range(len(alice_bits)):
             if random.random() < qber_prob:

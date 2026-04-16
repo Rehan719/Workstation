@@ -1,10 +1,10 @@
 import pytest
 import asyncio
-from workstation_v17.core.jules_omega_organism_v17 import JulesOmegaOrganismV17
+from agentic_core.jules_omega_organism_v138 import JulesOmegaOrganismV138
 
 @pytest.mark.asyncio
 async def test_macro_cycle():
-    organism = JulesOmegaOrganismV17()
+    organism = JulesOmegaOrganismV138()
     await organism.initialize()
     await organism.run_macro_cycle()
     assert organism.macro_cycle_count == 1
