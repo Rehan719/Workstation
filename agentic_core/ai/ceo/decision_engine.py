@@ -1,7 +1,7 @@
 import logging
 from typing import List, Dict, Any
 import random
-from agentic_core.vsb.dual_foundation import WorkstationDualFoundation
+from agentic_core.vbs.dual_foundation import WorkstationDualFoundation
 from agentic_core.cognition.desire_engine import DesireEngine
 from agentic_core.cognition.world_model import WorldModel
 

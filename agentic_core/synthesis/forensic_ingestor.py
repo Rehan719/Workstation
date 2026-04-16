@@ -54,7 +54,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-    with open("config/synthesis_urls.json", "r") as f:
+    with open("configs/synthesis_urls.json", "r") as f:
         urls = json.load(f)["urls"]
 
     ingestor = ForensicURLIngestor()

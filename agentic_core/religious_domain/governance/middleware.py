@@ -11,7 +11,7 @@ class DualMetricMiddleware:
     ARTICLE 247: Dual-Metric Governance Middleware.
     Executes spiritual KPIs and business KPIs in parallel without one superseding the other.
     """
-    def __init__(self, scholar_board_ref: Optional[Any] = None, policy_path: str = "config/qep/policies.json"):
+    def __init__(self, scholar_board_ref: Optional[Any] = None, policy_path: str = "configs/qep/policies.json"):
         self.scholar_board = scholar_board_ref
         self.active_policies = self._load_policies(policy_path)
 
@@ -83,7 +83,7 @@ class TazkiyahEngine:
     ARTICLE 248: Tazkiyah Score Engine.
     Calculates spiritual purification based on Quranic practice metrics.
     """
-    def __init__(self, db_manager: Optional[Any] = None, weights_path: str = "config/qep/policies.json"):
+    def __init__(self, db_manager: Optional[Any] = None, weights_path: str = "configs/qep/policies.json"):
         self.db = db_manager
         self.weights = self._load_weights(weights_path)
 

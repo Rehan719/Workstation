@@ -55,7 +55,7 @@ class SelfImprovementEngine:
         self.genetic_engine = GeneticEvolutionEngine(population_size=12)
         self.reflector = MetaCognitiveReflector(self)
         self.is_running = False
-        self.config_path = "config/evolution/genotype.yaml"
+        self.config_path = "configs/evolution/genotype.yaml"
 
     async def start(self):
         self.is_running = True

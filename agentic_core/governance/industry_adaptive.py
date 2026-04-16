@@ -9,7 +9,7 @@ class GovernanceVerifier:
     v0.9 Verifiable Governance Architecture (VGA).
     Validates module behavior against industry-specific rules.
     """
-    def __init__(self, profile_path: str = "config/governance/profiles.yaml"):
+    def __init__(self, profile_path: str = "configs/governance/profiles.yaml"):
         self.profiles = {
             "healthcare": {"rules": ["PHI_ENCRYPTION_MANDATORY", "CONSENT_TRACEABILITY"]},
             "finance": {"rules": ["SEC_COMPLIANT_LOGGING", "KYC_VERIFIED_TRANSACTIONS"]}

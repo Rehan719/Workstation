@@ -1,12 +1,12 @@
 import pytest
 import asyncio
-from agentic_core.gaas_validator_v4 import GaaSValidatorV4
+from agentic_core.organism.gaas_validator_v4 import GaaSValidatorV4
 
 @pytest.fixture
 def validator():
     return GaaSValidatorV4(
-        "config/constitutional_genome_v138.yaml",
-        "config/legal_precision.yaml"
+        "configs/constitutional_genome_v138.yaml",
+        "configs/legal_precision.yaml"
     )
 
 @pytest.mark.asyncio
