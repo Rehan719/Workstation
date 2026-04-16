@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from agentic_core.jules_omega_organism_v138 import JulesOmegaOrganismV138
+from agentic_core.organism.jules_omega_organism_v138 import JulesOmegaOrganismV138
 from agentic_core.agents.c_suite_v138 import CSuiteV138
 from agentic_core.agents.coe_leads import CoELeads
 from agentic_core.agents.bto_director import BTODirector
@@ -29,19 +29,19 @@ async def test_full_organism_orchestration():
     assert len(ensemble_results) == 4
 
     # Test VSB Suite
-    bms = BusinessManagementSystem("config/business/bms.yaml")
+    bms = BusinessManagementSystem("configs/business/bms.yaml")
     econ = await bms.calculate_unit_economics(5, 100.0)
     assert econ["roi"] > 0
 
-    qms = QualityManagementSystem("config/quality/qms.yaml")
+    qms = QualityManagementSystem("configs/quality/qms.yaml")
     gate = await qms.run_quality_gates({"coverage": 0.98, "stubs_found": False})
     assert gate is True
 
-    dcms = DocumentControlManagementSystem("config/documents/dcms.yaml")
+    dcms = DocumentControlManagementSystem("configs/documents/dcms.yaml")
     doc_hash = await dcms.commit_artifact("v138_spec", {"data": "secure"}, "CEO")
     assert len(doc_hash) == 128
 
-    ems = EnvironmentalManagementSystem("config/environment/ems.yaml")
+    ems = EnvironmentalManagementSystem("configs/environment/ems.yaml")
     gain = ems.get_resource_gain()
     assert gain >= 0.20
 
@@ -60,7 +60,7 @@ async def test_full_organism_orchestration():
 
 @pytest.mark.asyncio
 async def test_bto_lifecycle():
-    bms = BusinessManagementSystem("config/business/bms.yaml")
+    bms = BusinessManagementSystem("configs/business/bms.yaml")
     bto = BTODirector(bms)
     lifecycle = await bto.optimize_lifecycle({"insights": 2, "energy": 10.0})
     assert lifecycle["roadmap"] == "ACCELERATED"

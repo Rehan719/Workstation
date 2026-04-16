@@ -61,7 +61,7 @@ def test_db_concurrency(db):
     conn2.close()
 
 def test_tazkiyah_weights_from_config(db):
-    te = TazkiyahEngine(db, "config/qep/policies.json")
+    te = TazkiyahEngine(db, "configs/qep/policies.json")
     assert te.weights['prayer'] == 0.30
 
 def test_tajwid_coach_robustness():

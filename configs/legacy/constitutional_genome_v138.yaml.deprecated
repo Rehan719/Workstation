@@ -1,0 +1,47 @@
+# DEPRECATED - use configs/constitutional_genome_v138.yaml
+version: "17.0.0"
+metadata:
+  codename: "Omega-Recursion"
+  status: "Production Beta"
+
+truth_dimensions:
+  - id: 1
+    name: "Factual Accuracy"
+    weight: 0.20
+  - id: 2
+    name: "Causal Integrity"
+    weight: 0.15
+  - id: 3
+    name: "Source Provenance"
+    weight: 0.15
+  - id: 4
+    name: "Neutrality & Bias"
+    weight: 0.10
+  - id: 5
+    name: "Legal Precision"
+    weight: 0.15
+  - id: 6
+    name: "Unit Economic Viability"
+    weight: 0.05
+  - id: 7
+    name: "Scientific Falsifiability"
+    weight: 0.10
+  - id: 8
+    name: "Ethical Alignment"
+    weight: 0.05
+  - id: 9
+    name: "Computational Efficiency"
+    weight: 0.03
+  - id: 10
+    name: "Recursion Safety"
+    weight: 0.02
+
+gaas_v4_config:
+  min_confidence_score: 0.85
+  intercept_all_actions: true
+  enforce_pqc: true
+
+fractal_recirculation:
+  macro_target_sec: 60
+  meso_target_min: 15
+  micro_target_ms: 100

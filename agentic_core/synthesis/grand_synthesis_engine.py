@@ -174,7 +174,7 @@ class GrandSynthesisEngine:
     def _get_url_list(self) -> List[str]:
         """ARTICLE 356: Retrieves the authoritative list of LLM Chat URLs from configuration."""
         import json
-        config_path = "config/synthesis_urls.json"
+        config_path = "configs/synthesis_urls.json"
         if os.path.exists(config_path):
             with open(config_path, "r") as f:
                 data = json.load(f)
@@ -258,7 +258,7 @@ class GrandSynthesisEngine:
         if is_global:
             logger.info("ARTICLE 671: Initiating Global Ecosystem Convergence (v126.0).")
             # 1. Identity Check
-            from agentic_core.identity.did_manager import DIDManager
+            from agentic_core.identity.core.did_manager import DIDManager
             did_mgr = DIDManager()
             logger.info(f"Global Convergence: Identity Verified: {did_mgr.get_did()}")
 

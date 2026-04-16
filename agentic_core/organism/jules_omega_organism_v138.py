@@ -2,23 +2,23 @@ import asyncio
 import logging
 import time
 from typing import Dict, Any, List
-from agentic_core.gaas_validator_v4 import GaaSValidatorV4
-from agentic_core.nemoclaw_runtime import NemoclawRuntime
-from agentic_core.identity import SovereignIdentity
-from agentic_core.hardware_abstraction import HardwareAbstractionLayer
+from agentic_core.organism.gaas_validator_v4 import GaaSValidatorV4
+from agentic_core.organism.nemoclaw_runtime import NemoclawRuntime
+from agentic_core.identity.core import SovereignIdentity
+from agentic_core.organism.hardware_abstraction import HardwareAbstractionLayer
 from agentic_core.vbs.bms import BusinessManagementSystem
 from agentic_core.vbs.qms import QualityManagementSystem
 from agentic_core.vbs.dcms import DocumentControlManagementSystem
 from agentic_core.vbs.ems import EnvironmentalManagementSystem
-from agentic_core.sovereign_state_kernel import SovereignStateKernel
-from agentic_core.vsb_ueg_logger import VSBUEGLogger
+from agentic_core.data.kernel import SovereignStateKernel
+from agentic_core.ueg.logger import VSBUEGLogger
 
 class JulesOmegaOrganismV138:
     """
     JULES v138.0 Production Organism (AI CEO).
     The Central Director orchestrating the Ω-Recirculation campaign.
     """
-    def __init__(self, config_root: str = "config"):
+    def __init__(self, config_root: str = "configs"):
         self.logger = logging.getLogger("JULES_CEO")
         self.identity = SovereignIdentity()
         self.hal = HardwareAbstractionLayer()

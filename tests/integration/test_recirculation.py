@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from agentic_core.jules_omega_organism_v138 import JulesOmegaOrganismV138
+from agentic_core.organism.jules_omega_organism_v138 import JulesOmegaOrganismV138
 
 @pytest.mark.asyncio
 async def test_macro_cycle():

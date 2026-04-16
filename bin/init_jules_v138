@@ -2,8 +2,8 @@ import argparse
 import asyncio
 import logging
 import sys
-from agentic_core.jules_omega_organism_v138 import JulesOmegaOrganismV138
-from agentic_core.fractal_recirculation import FractalRecirculation
+from agentic_core.organism.jules_omega_organism_v138 import JulesOmegaOrganismV138
+from agentic_core.organism.fractal_recirculation import FractalRecirculation
 
 logging.basicConfig(
     level=logging.INFO,

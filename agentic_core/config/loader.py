@@ -11,7 +11,7 @@ class ConfigLoader:
     Supports environment variables, JSON files, and default values.
     """
     def __init__(self, config_path: Optional[str] = None):
-        self.config_path = config_path or os.getenv("JULES_CONFIG_PATH", "config/settings.json")
+        self.config_path = config_path or os.getenv("JULES_CONFIG_PATH", "configs/settings.json")
         self.config: Dict[str, Any] = self._load_defaults()
         self._load_from_file()
         self._load_from_env()
