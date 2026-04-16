@@ -1,4 +1,4 @@
-# Workstation Sovereign Digital Organism v17.0 (Final Beta)
+# Workstation Sovereign Digital Organism v138.0 (Final Beta)
 
 **“The Infinite Future Canvas”** – Fully implemented, zero‑stub, sovereign digital organism with UK Legal Precision, AlphaFold 3, Ginco Biotech biofoundry, and fractal recirculation.
 
@@ -7,14 +7,14 @@
 ```bash
 git clone https://github.com/Rehan719/Workstation.git
 cd Workstation
-git checkout v17.0-final-beta
+git checkout v138.0-final-beta
 docker-compose up -d
-python workstation_v17/init_jules_v17.py --ceo_mode sovereign
+python bin/init_jules_v138 --ceo_mode sovereign
 ```
 
 Alternatively, use the convenience bridge:
 ```bash
-./bin/init_jules_v17 --vertical gincobiotech_automated_biofoundry_and_uk_civil_taxation_law
+./bin/init_jules_v138 --vertical gincobiotech_automated_biofoundry_and_uk_civil_taxation_law
 ```
 
 After initialisation, open Grafana at `http://localhost:3000` to monitor Recirculation Velocity, Truth/Alignment Score, Legal Compliance, etc.
@@ -24,19 +24,19 @@ After initialisation, open Grafana at `http://localhost:3000` to monitor Recircu
 The documentation is organised for three distinct audiences:
 
 ### 🔧 Technical (Developers & Admins)
-- **[Technical Architecture](workstation_v17/docs/architecture.md)** – complete 12+6 layer mapping, API endpoints, YAML configs
-- **[Module Reference](workstation_v17/docs/architecture.md)** – every class and function documented
-- **[Contributing Guide](workstation_v17/docs/architecture.md)** – how to extend Realms, CoEs, or add new domains
+- **[Technical Architecture](docs/architecture.md)** – complete 12+6 layer mapping, API endpoints, YAML configs
+- **[Module Reference](docs/architecture.md)** – every class and function documented
+- **[Contributing Guide](docs/architecture.md)** – how to extend Realms, CoEs, or add new domains
 
 ### ⚖️ Legal & Compliance (Regulators, Risk Officers)
-- **[Legal Precision Engine](workstation_v17/docs/legal_compliance.md)** – how the Equality Act 2010, CPR, HMRC rules, and GDPR are encoded
-- **[Audit Trail & UEG](workstation_v17/docs/legal_compliance.md)** – SHA‑3‑512 Merkle‑DAG logs, VSB query examples, immutability proof
-- **[MultiSigCouncil Guide](workstation_v17/docs/legal_compliance.md)** – how to review violations and approve constitutional amendments
+- **[Legal Precision Engine](docs/legal_compliance.md)** – how the Equality Act 2010, CPR, HMRC rules, and GDPR are encoded
+- **[Audit Trail & UEG](docs/legal_compliance.md)** – SHA‑3‑512 Merkle‑DAG logs, VSB query examples, immutability proof
+- **[MultiSigCouncil Guide](docs/legal_compliance.md)** – how to review violations and approve constitutional amendments
 
 ### 📈 Market (Product Managers, Investors)
-- **[Product Value & Use Cases](workstation_v17/docs/product_value.md)** – 10‑word value propositions, case studies
-- **[Unit Economics Dashboard](workstation_v17/docs/product_value.md)** – cost per simulation (<$0.01), ROI projections
-- **[Success Metrics](workstation_v17/docs/product_value.md)** – real‑time tracking of Recirculation Velocity, Truth/Alignment Score
+- **[Product Value & Use Cases](docs/product_value.md)** – 10‑word value propositions, case studies
+- **[Unit Economics Dashboard](docs/product_value.md)** – cost per simulation (<$0.01), ROI projections
+- **[Success Metrics](docs/product_value.md)** – real‑time tracking of Recirculation Velocity, Truth/Alignment Score
 
 ## 📊 Live Success Metrics (30‑day)
 
@@ -59,7 +59,7 @@ SENSE/SCAN → ANALYZE/REASON → ACT/SIMULATE → LEARN/ENHANCE → RECIRCULATE
 
 ```mermaid
 graph TD
-    A[Unified Immersive UI] --> B{JULES v17.0 CEO}
+    A[Unified Immersive UI] --> B{JULES v138.0 CEO}
     B --> C[C‑Suite & CLO Agents]
     B --> D[12‑Layer Biomimetic IDBO]
     B --> E[Expanded Sovereign Domains]
@@ -79,4 +79,15 @@ graph TD
 
 ---
 
-**Codified via JULES Ω‑Neural Recirculation v17.0. CIVILISATION SECURED.**
+**Codified via JULES Ω‑Neural Recirculation v138.0. CIVILISATION SECURED.**
+
+
+---
+
+
+## 🧪 JULES v138.0 Production Beta Integration
+The v138.0 Sovereign Digital Organism is now fully integrated into the main repository structure.
+- **Role**: Agent Opus: Central Director & AI CEO.
+- **Mandate**: Recirculate, Evolve, Scale.
+- **Security**: Classical OAM-QKD Surrogate & PQC-backed DIDs.
+- **Governance**: GaaS v4 + Nemoclaw Precision Engine.

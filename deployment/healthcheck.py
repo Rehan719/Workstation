@@ -5,7 +5,7 @@ import os
 # Verifies VSB, UEG, Qdrant, and NemoClaw status
 
 def run_checks():
-    print("Healthcheck: JULES v17.0 Sovereign Audit commencing...")
+    print("Healthcheck: JULES v138.0 Sovereign Audit commencing...")
 
     # 1. Verify VSB Pub/Sub (NATS)
     vsb_status = "ONLINE" # In production: check nats connection

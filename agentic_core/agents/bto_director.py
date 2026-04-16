@@ -6,7 +6,7 @@ class BTODirector:
     def __init__(self, bms_engine):
         self.logger = logging.getLogger("BTO")
         self.bms = bms_engine
-        self.catalog = {"v17_beta_kit": {"status": "ACTIVE", "roi": 12.5}}
+        self.catalog = {"v138_beta_kit": {"status": "ACTIVE", "roi": 12.5}}
 
     async def optimize_lifecycle(self, cycle_metrics: Dict) -> Dict:
         """Aligns BTO roadmap with BMS economics."""

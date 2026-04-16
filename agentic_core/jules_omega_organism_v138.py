@@ -2,23 +2,23 @@ import asyncio
 import logging
 import time
 from typing import Dict, Any, List
-from workstation_v17.core.gaas_validator_v4 import GaaSValidatorV4
-from workstation_v17.core.nemoclaw_runtime import NemoclawRuntime
-from workstation_v17.core.identity import SovereignIdentity
-from workstation_v17.core.hardware_abstraction import HardwareAbstractionLayer
-from workstation_v17.core.vbs.bms import BusinessManagementSystem
-from workstation_v17.core.vbs.qms import QualityManagementSystem
-from workstation_v17.core.vbs.dcms import DocumentControlManagementSystem
-from workstation_v17.core.vbs.ems import EnvironmentalManagementSystem
-from workstation_v17.core.sovereign_state_kernel import SovereignStateKernel
-from workstation_v17.core.vsb_ueg_logger import VSBUEGLogger
+from agentic_core.gaas_validator_v4 import GaaSValidatorV4
+from agentic_core.nemoclaw_runtime import NemoclawRuntime
+from agentic_core.identity import SovereignIdentity
+from agentic_core.hardware_abstraction import HardwareAbstractionLayer
+from agentic_core.vbs.bms import BusinessManagementSystem
+from agentic_core.vbs.qms import QualityManagementSystem
+from agentic_core.vbs.dcms import DocumentControlManagementSystem
+from agentic_core.vbs.ems import EnvironmentalManagementSystem
+from agentic_core.sovereign_state_kernel import SovereignStateKernel
+from agentic_core.vsb_ueg_logger import VSBUEGLogger
 
-class JulesOmegaOrganismV17:
+class JulesOmegaOrganismV138:
     """
-    JULES v17.0 Production Organism (AI CEO).
+    JULES v138.0 Production Organism (AI CEO).
     The Central Director orchestrating the Ω-Recirculation campaign.
     """
-    def __init__(self, config_root: str = "workstation_v17/config"):
+    def __init__(self, config_root: str = "config"):
         self.logger = logging.getLogger("JULES_CEO")
         self.identity = SovereignIdentity()
         self.hal = HardwareAbstractionLayer()
@@ -26,7 +26,7 @@ class JulesOmegaOrganismV17:
         self.ueg = VSBUEGLogger()
 
         # Governance & VBS
-        self.gaas = GaaSValidatorV4(f"{config_root}/constitutional_genome_v17.yaml", f"{config_root}/legal_precision.yaml")
+        self.gaas = GaaSValidatorV4(f"{config_root}/constitutional_genome_v138.yaml", f"{config_root}/legal_precision.yaml")
         self.nemoclaw = NemoclawRuntime(f"{config_root}/nemotron_config.yaml")
         self.bms = BusinessManagementSystem(f"{config_root}/business/bms.yaml")
         self.qms = QualityManagementSystem(f"{config_root}/quality/qms.yaml")
@@ -38,7 +38,7 @@ class JulesOmegaOrganismV17:
 
     async def initialize(self):
         """Awakens all sovereign subsystems."""
-        self.logger.info("JULES: Initializing Workstation v17.0 GOLDEN MASTER II...")
+        self.logger.info("JULES: Initializing Workstation v138.0 GOLDEN MASTER II...")
         await self.state.load()
         await self.ueg.log_event("SYSTEM_AWAKEN", {"did": self.identity.did}, "CEO")
         self.is_running = True
@@ -53,7 +53,7 @@ class JulesOmegaOrganismV17:
 
         try:
             # 1. SENSE
-            sensed = {"input": "v17_discovery_stream", "confidence": 0.99}
+            sensed = {"input": "v138_discovery_stream", "confidence": 0.99}
 
             # 2. ANALYZE
             audit = await self.gaas.validate_intent({"type": "STRATEGIC", "confidence": 0.99}, {})

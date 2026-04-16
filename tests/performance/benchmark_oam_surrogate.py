@@ -1,7 +1,7 @@
 import asyncio
 import time
 import numpy as np
-from workstation_v17.core.quantum.surrogate import OAM_QKDSurrogate
+from agentic_core.quantum.surrogate import OAM_QKDSurrogate
 
 async def main():
     surrogate = OAM_QKDSurrogate(n_modes=48)

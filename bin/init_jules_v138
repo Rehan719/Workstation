@@ -1,10 +1,9 @@
 import argparse
 import asyncio
 import logging
-import signal
 import sys
-from workstation_v17.core.jules_omega_organism_v17 import JulesOmegaOrganismV17
-from workstation_v17.core.fractal_recirculation import FractalRecirculation
+from agentic_core.jules_omega_organism_v138 import JulesOmegaOrganismV138
+from agentic_core.fractal_recirculation import FractalRecirculation
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,9 +14,9 @@ logging.basicConfig(
 logger = logging.getLogger("InitJules")
 
 async def main(args):
-    logger.info("Initializing JULES v17.0 Production Beta Organism...")
+    logger.info("Initializing JULES v138.0 Production Beta Organism...")
 
-    organism = JulesOmegaOrganismV17()
+    organism = JulesOmegaOrganismV138()
     await organism.initialize()
 
     fractal = FractalRecirculation(organism)
@@ -28,20 +27,16 @@ async def main(args):
         await organism.shutdown()
         return
 
-    # Signal handlers
-    loop = asyncio.get_running_loop()
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, lambda: asyncio.create_task(organism.shutdown()))
-
+    # Windows-compatible signal handling
     try:
         await fractal.start_loops()
-    except asyncio.CancelledError:
-        logger.info("Organism task cancelled.")
+    except (asyncio.CancelledError, KeyboardInterrupt):
+        logger.info("Shutdown requested.")
     finally:
         await organism.shutdown()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Jules v17.0 Initializer")
+    parser = argparse.ArgumentParser(description="Jules v138.0 Initializer")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--deploy", type=str, default="beta")
     args = parser.parse_args()

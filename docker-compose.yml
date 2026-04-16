@@ -45,3 +45,16 @@ services:
 
 volumes:
   pgdata:
+
+  jules_organism:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - MJM_SECRET_KEY=production_beta_master_key
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "3000:3000"
+    restart: always
