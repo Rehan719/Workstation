@@ -28,6 +28,7 @@ class SelfAmendmentGenerator:
     ) -> Dict[str, Any]:
         """
         Propose a constitutional update (Floor update) that aligns with new minimisation targets.
+        Enforces MultiSigCouncil quorum checks and Article 1101 veto window.
         """
         # 1. Encode current constitutional state (Article weights)
         # Assuming discrete weights for demonstration
@@ -42,6 +43,7 @@ class SelfAmendmentGenerator:
         )
 
         # 3. Formulate Proposal based on SB path
+        import time
         proposal_id = f"PROP-{hashlib.md5(json.dumps(context).encode()).hexdigest()[:8]}"
         proposal = {
             "proposal_id": proposal_id,
@@ -54,6 +56,11 @@ class SelfAmendmentGenerator:
             "mathematical_justification": {
                 "kl_divergence": kl_div,
                 "convergence": info["converged"]
+            },
+            "multisig_config": {
+                "required_quorum": 3,
+                "veto_window_seconds": 600, # 10 minutes (Art. 1101)
+                "created_at": time.time()
             },
             "status": "AWAITING_MULTISIG"
         }

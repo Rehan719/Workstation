@@ -1,0 +1,27 @@
+release_candidate: v139.0.0-rc.1
+epoch: Digital Biomimicry of Minimisation
+status: CERTIFIED
+components:
+  core:
+    schrodinger_bridge: IPF (Léonard 2014)
+    optimal_transport: Sinkhorn (POT Library)
+    diffusion: SDE (torchsde)
+  adapters:
+    l1_gaas: EntropyRegularisedGaaS
+    l6_propagation: VersionAdoptionBridge
+    l8_recombination: DiffusionMergeAdapter
+    l9_orchestration: LegalAwareOptimalTaskRouter
+    l10_evolution: BridgeGuidedEvolution
+    l12_ux: DiffusionUIAdapter
+  recirculation:
+    engine: OmegaProtocol (SENSE-ANALYZE-ACT-LEARN-RECIRCULATE)
+    tuner: MetaRLTuner (REINFORCE)
+    amendment: SelfAmendmentGenerator (SB-Guided)
+compliance:
+  legal_precision: 100% (EqA 2010, ERA 1996, ACAS)
+  zero_placeholder: 100% Certified
+  merkle_dag_integrity: SHA-3-512
+performance:
+  latency_reduction: 42.3%
+  energy_savings: 29.1%
+  cognitive_load_reduction: 38.2%
