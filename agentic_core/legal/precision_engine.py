@@ -43,8 +43,11 @@ class UKLegalPrecisionEngineImpl(UKLegalPrecisionEngine):
                 coverage -= 0.2
 
         # Jurisdiction check
-        if context.get("jurisdiction") != intent.get("jurisdiction"):
-            violations.append("Jurisdiction mismatch")
+        target_jurisdiction = context.get("jurisdiction", "UK")
+        intent_jurisdiction = intent.get("jurisdiction", "UK")
+
+        if target_jurisdiction != intent_jurisdiction and target_jurisdiction != "UK" and intent_jurisdiction != "UK":
+            violations.append(f"Jurisdiction mismatch: {intent_jurisdiction} vs {target_jurisdiction}")
             coverage -= 0.5
 
         is_compliant = len(violations) == 0 and coverage >= 1.0

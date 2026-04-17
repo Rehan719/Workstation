@@ -37,7 +37,7 @@ def test_uklpe_validate_intent_mismatch():
     context = {"required_statutes": ["EqualityAct2010"], "jurisdiction": "England_Wales"}
     res = engine.validate(intent, context)
     assert not res.is_compliant
-    assert "Jurisdiction mismatch" in res.violations
+    assert any("Jurisdiction mismatch" in v for v in res.violations)
     assert res.coverage_score < 1.0
 
 def test_uklpe_validate_assignment_missing():

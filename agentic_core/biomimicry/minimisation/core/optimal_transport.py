@@ -67,7 +67,9 @@ class OptimalTransportRouter:
         plan = xp.diag(u) @ K @ xp.diag(v)
 
         # Wasserstein distance (primal objective)
-        wasserstein = float(xp.sum(plan * C))
+        # Use finite mask for infinite cost matrix to avoid NaN in sum
+        C_finite = xp.where(xp.isinf(C), 0.0, C)
+        wasserstein = float(xp.sum(plan * C_finite))
 
         return (
             torch.from_numpy(to_numpy(plan)),

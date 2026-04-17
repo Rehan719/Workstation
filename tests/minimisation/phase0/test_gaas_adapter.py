@@ -54,8 +54,9 @@ async def test_entropy_regularised_gaas_legal_gate(mock_configs):
     assert res2["reason"] == "LEGAL_PRECISION_VIOLATION"
 
     # 3. High entropy should be logged (Article 1104)
-    intent_high_entropy = {"type": "general", "confidence": 0.95, "entropy": 0.9}
-    context_high_entropy = {"layer": "L7_Library", "domain": "general", "entropy_threshold": 0.5}
+    # Note: Phase 1 adapter uses 'transport_cost' instead of 'entropy'
+    intent_high_entropy = {"type": "general", "confidence": 0.95, "profile": [0.5]*10}
+    context_high_entropy = {"layer": "L7_Library", "domain": "general", "entropy_threshold": 0.1}
     res3 = await adapter.validate_intent(intent_high_entropy, context_high_entropy)
     assert res3["passed"]
-    assert res3["entropy"] == 0.9
+    assert "transport_cost" in res3
