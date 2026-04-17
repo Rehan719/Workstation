@@ -37,6 +37,7 @@ class MinimisationPipeline:
         1. Assign tasks to agents (OT)
         2. Evolve agent parameters for high-fitness path (SB)
         3. Merge necessary modules (Diffusion)
+        4. Validate global state via GaaS
         """
         # 1. Optimal Transport: Task Assignment
         assignment = await self.ot.assign_tribunal_tasks(tasks, agents)
@@ -61,12 +62,22 @@ class MinimisationPipeline:
             merged = await self.diffusion.merge_adapters(a, b, context)
             merged_adapters.append(merged)
 
-        # 4. Success Tracking
+        # 4. Global Constitutional Gate (Phase 2 Synergy)
+        # Use an Intent formed from the pipeline outcome
+        pipeline_intent = {
+            "type": "minimisation_pipeline_sync",
+            "assignments": assignment,
+            "modules": [self._hash_adapter(m) for m in merged_adapters]
+        }
+        compliance = await self.sb.gaas.validate_intent(pipeline_intent, context)
+
+        # 5. Success Tracking
         result = {
             "assignments": assignment,
             "agent_parameter_updates": len(evolved_params),
             "merged_modules": len(merged_adapters),
-            "legal_coverage": 1.0 # Enforced by sub-components
+            "legal_coverage": compliance.get("legal_coverage", 1.0),
+            "global_compliance": compliance.get("passed", False)
         }
 
         await self.ueg.log_minimisation_event("pipeline_workflow_execution", {
@@ -77,3 +88,7 @@ class MinimisationPipeline:
         }, context={"layer": "Cross-Layer", "workflow": "End-to-End"})
 
         return result
+
+    def _hash_adapter(self, adapter: Adapter) -> str:
+        import hashlib
+        return hashlib.sha3_512(adapter.params.cpu().numpy().tobytes()).hexdigest()
