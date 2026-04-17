@@ -51,9 +51,6 @@ class EntropyRegularisedGaaS:
                     "legal_coverage": legal_coverage,
                     "merkle_root": base_result.get("merkle_root")
                 }
-        else:
-            # For coverage of non-legal path
-            pass
 
         # 3. Entropy-Regularised Constitutional Validation via OT
         # Compute "transport cost" from intent to constitutional baseline
@@ -84,8 +81,6 @@ class EntropyRegularisedGaaS:
                     "suggested_profile": suggested_profile.tolist(),
                     "merkle_root": base_result.get("merkle_root")
                 }
-        else:
-            suggested_profile = None
 
         # Merge results
         final_result = base_result.copy()

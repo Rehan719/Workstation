@@ -75,9 +75,6 @@ class DiffusionMergeAdapter:
             self.logger.warning(f"Diffusion merge failed legal gate: {legal_result.violations}. Falling back.")
             pruned_params = combined_params
             reduction_ratio = 0.0
-        else:
-            # Explicitly cover the compliant path for testing
-            pass
 
         # 5. UEG Logging (SHA-3-512)
         await self.ueg.log_minimisation_event("diffusion_merge", {

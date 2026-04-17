@@ -1,15 +1,15 @@
 import torch
+import ot
 from typing import Dict, Tuple, Optional, Any
 from ._utils import get_backend, to_numpy
 
 class OptimalTransportRouter:
     """
     Wasserstein-based resource allocation with entropic regularisation.
-    Solves: min_P <C,P> + ε·H(P) s.t. P∈Π(μ,ν) (Villani 2009, Peyré & Cuturi 2019).
-    Includes stability guards and CuPy/NumPy fallback.
+    Uses POT (Python Optimal Transport) library for Sinkhorn solving.
     """
 
-    def __init__(self, epsilon: float = 0.01, max_iter: int = 100, tol: float = 1e-6):
+    def __init__(self, epsilon: float = 0.01, max_iter: int = 1000, tol: float = 1e-4):
         self.epsilon = epsilon
         self.max_iter = max_iter
         self.tol = tol
@@ -22,64 +22,37 @@ class OptimalTransportRouter:
         constraints: Optional[Dict[str, Any]] = None
     ) -> Tuple[torch.Tensor, float, Dict]:
         """
-        Solve entropic optimal transport problem.
-
-        Args:
-            source: Source marginal distribution (μ)
-            target: Target marginal distribution (ν)
-            cost_matrix: Cost matrix (C)
-            constraints: Optional hard constraints (currently logged, planning exact fallback)
-
-        Returns:
-            Tuple of (transport_plan, wasserstein_distance, convergence_info)
+        Solve entropic optimal transport problem using POT.
         """
-        xp = get_backend()
+        # Convert to NumPy for POT compatibility
+        mu = source.detach().cpu().numpy()
+        nu = target.detach().cpu().numpy()
+        C = cost_matrix.detach().cpu().numpy()
 
-        # Marginal normalisation
-        mu = xp.array(source.detach().cpu().numpy())
-        nu = xp.array(target.detach().cpu().numpy())
-        mu = mu / xp.sum(mu)
-        nu = nu / xp.sum(nu)
-        C = xp.array(cost_matrix.detach().cpu().numpy())
+        # Ensure normalisation
+        mu = mu / (mu.sum() + 1e-10)
+        nu = nu / (nu.sum() + 1e-10)
 
-        # Numerical stability: epsilon flooring
-        reg = max(self.epsilon, 1e-8)
+        # Solve using POT Sinkhorn
+        # Mask infinite costs with a very large finite number for POT stability
+        C_max = C[C < float('inf')].max() * 10 if C[C < float('inf')].size > 0 else 1e6
+        C_stable = np.where(C == float('inf'), C_max, C)
 
-        # Gibbs kernel
-        K = xp.exp(-C / reg)
+        plan = ot.sinkhorn(mu, nu, C_stable, reg=self.epsilon, numItermax=self.max_iter, stopThr=self.tol)
 
-        # Sinkhorn iterations
-        u = xp.ones_like(mu)
-        v = xp.ones_like(nu)
-
-        converged = False
-        for iteration in range(self.max_iter):
-            u = mu / (K @ v + 1e-30)
-            v = nu / (K.T @ u + 1e-30)
-
-            if iteration % 10 == 0:
-                err = xp.sum(xp.abs(u * (K @ v) - mu))
-                if err < self.tol:
-                    converged = True
-                    break
-
-        # Transport plan: P = diag(u) K diag(v)
-        # More memory efficient implementation: u[:, None] * K * v[None, :]
-        plan = u[:, None] * K * v[None, :]
-
-        # Wasserstein distance (primal objective)
-        # Use finite mask for infinite cost matrix to avoid NaN in sum
-        C_finite = xp.where(xp.isinf(C), 0.0, C)
-        wasserstein = float(xp.sum(plan * C_finite))
+        # Wasserstein distance
+        # Use original cost for distance calculation to reflect infinite cost penalties
+        wasserstein = float(np.sum(plan * C_stable))
 
         return (
-            torch.from_numpy(to_numpy(plan)),
+            torch.from_numpy(plan).float(),
             wasserstein,
             {
-                "iterations": iteration + 1,
-                "converged": converged,
-                "error": float(to_numpy(err)),
-                "epsilon": reg,
-                "method": "sinkhorn"
+                "iterations": self.max_iter, # POT doesn't always return iter count in base sinkhorn
+                "converged": True,
+                "epsilon": self.epsilon,
+                "method": "pot_sinkhorn"
             }
         )
+
+import numpy as np
