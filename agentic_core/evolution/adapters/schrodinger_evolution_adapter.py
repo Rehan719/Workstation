@@ -88,9 +88,9 @@ class BridgeGuidedEvolution:
 
     def _estimate_source_distribution(self, params: torch.Tensor) -> torch.Tensor:
         """Create a source distribution (marginal) around current parameters."""
-        # For Phase 1, we assume a discrete binning of parameter space
-        # Here just returning a dummy uniform-centered peak for the solver demo
-        return torch.ones(params.shape[0]) / params.shape[0]
+        # Models current parameter importance as a softmax distribution
+        # Higher magnitude params are more 'important' in the source distribution
+        return torch.softmax(torch.abs(params), dim=0)
 
     def _compute_evolution_cost_matrix(self, params: torch.Tensor, context: Dict[str, Any]) -> torch.Tensor:
         """

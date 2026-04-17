@@ -1,70 +1,66 @@
 import torch
 import torch.nn as nn
-from typing import Callable, Optional
+import torchsde
+from typing import Callable, Optional, Tuple
+
+class SDEWrapper(nn.Module):
+    """Bridge between functional drift/diffusion and torchsde Interface."""
+    def __init__(self, drift: Callable, diffusion: Callable, sde_type: str = "ito"):
+        super().__init__()
+        self.drift_fn = drift
+        self.diffusion_fn = diffusion
+        self.sde_type = sde_type
+        self.noise_type = "diagonal"
+
+    def f(self, t, y):
+        return self.drift_fn(t, y)
+
+    def g(self, t, y):
+        return self.diffusion_fn(t, y)
 
 class DiffusionEngine:
     """
-    Stochastic Differential Equation (SDE) integrator for diffusion processes.
-    Uses Euler-Maruyama for structural evolution and morphogenesis (Ho et al. 2020).
-    Zero-placeholder implementation with adaptive timestep support.
+    SDE integrator for structural evolution using torchsde.
+    Supports Itô and Stratonovich integration.
     """
 
     def __init__(self, drift: Callable, diffusion: Callable):
-        """
-        Args:
-            drift: f(t, y) - Deterministic drift function
-            diffusion: g(t, y) - Stochastic diffusion function
-        """
-        self.drift = drift
-        self.diffusion = diffusion
+        self.sde = SDEWrapper(drift, diffusion)
 
     def integrate(
         self,
         y0: torch.Tensor,
         t_span: torch.Tensor,
         dt: float = 0.01,
-        adaptive: bool = False
+        adaptive: bool = True
     ) -> torch.Tensor:
         """
-        Integrate SDE: dy = f(t, y)dt + g(t, y)dWt
-
-        Args:
-            y0: Initial state
-            t_span: Time steps to evaluate at
-            dt: Base time step
-            adaptive: Placeholder for adaptive stepping (currently fixed)
-
-        Returns:
-            Tensor of states along trajectory [len(t_span), *y0.shape]
+        Integrate SDE using torchsde's optimized solvers.
         """
-        results = [y0]
-        y = y0
+        # Ensure y0 has batch dimension for torchsde
+        if y0.dim() == 1:
+            y_in = y0.unsqueeze(0)
+        else:
+            y_in = y0
 
-        for i in range(len(t_span) - 1):
-            t = t_span[i]
-            t_next = t_span[i+1]
+        trajectory = torchsde.sdeint(
+            self.sde,
+            y_in,
+            t_span,
+            dt=dt,
+            adaptive=adaptive,
+            method="srk" # Strong order 1.5 solver
+        )
 
-            # Sub-steps if necessary
-            curr_t = t
-            while curr_t < t_next:
-                step = min(dt, float(t_next - curr_t))
-
-                # Euler-Maruyama step
-                f = self.drift(curr_t, y)
-                g = self.diffusion(curr_t, y)
-                dw = torch.randn_like(y) * (step ** 0.5)
-
-                y = y + f * step + g * dw
-                curr_t += step
-
-            results.append(y)
-
-        return torch.stack(results)
+        # Remove batch dim if it was added
+        if y0.dim() == 1:
+            return trajectory.squeeze(1)
+        return trajectory
 
 class ScoreBasedDiffusion(nn.Module):
     """
-    Score-based generative model for structural adaptation.
-    Reverse-SDE implementation: dy = [f(y,t) - g(t)^2 ∇log p(y)]dt + g(t)dWt
+    Score-based generative model for structural adaptation using torchsde.
+    Inverse-diffusion implementation (Art. 1106).
     """
     def __init__(self, score_network: nn.Module, beta_min: float = 0.1, beta_max: float = 20.0):
         super().__init__()
@@ -76,13 +72,23 @@ class ScoreBasedDiffusion(nn.Module):
         return self.beta_min + t * (self.beta_max - self.beta_min)
 
     def reverse_step(self, y: torch.Tensor, t: float, dt: float) -> torch.Tensor:
-        """Perform a single reverse diffusion step."""
+        """Perform a single reverse diffusion step (discrete approximation)."""
         beta = self._get_beta(t)
-        score = self.score_net(y, torch.tensor(t))
+        # Score network grad log p(y)
+        score = self.score_net(y, torch.tensor(t, device=y.device))
 
-        # dy = -0.5 * beta * (y + 2 * score) * dt + sqrt(beta) * dWt
+        # Reverse SDE drift: f_rev = -0.5 * beta * (y + 2 * score)
         drift = -0.5 * beta * (y + 2 * score)
         diffusion = beta ** 0.5
-        dw = torch.randn_like(y) * (dt ** 0.5)
 
+        dw = torch.randn_like(y) * (abs(dt) ** 0.5)
         return y + drift * dt + diffusion * dw
+
+    def rollback(self, y_final: torch.Tensor, steps: int = 50) -> torch.Tensor:
+        """Explicit Article 1106 Reversibility implementation."""
+        y = y_final
+        dt = -1.0 / steps
+        for i in range(steps, 0, -1):
+            t = i / steps
+            y = self.reverse_step(y, t, dt)
+        return y
