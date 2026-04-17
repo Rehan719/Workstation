@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from typing import List, Dict, Any, Tuple
-from agentic_core.orchestration.adapters.ot_router import LegalAwareOptimalTaskRouter
+from agentic_core.orchestration.adapters.legal_aware_ot_router import LegalAwareOptimalTaskRouter
 from agentic_core.evolution.adapters.schrodinger_evolution_adapter import BridgeGuidedEvolution
 from agentic_core.recombination.adapters.diffusion_merge_adapter import DiffusionMergeAdapter, Adapter
 from agentic_core.legal.types import TribunalTask, LegalAgent

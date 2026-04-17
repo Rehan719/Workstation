@@ -2,7 +2,7 @@ import pytest
 import time
 import torch
 import numpy as np
-from agentic_core.orchestration.adapters.ot_router import LegalAwareOptimalTaskRouter
+from agentic_core.orchestration.adapters.legal_aware_ot_router import LegalAwareOptimalTaskRouter
 from agentic_core.biomimicry.minimisation.core.optimal_transport import OptimalTransportRouter
 from agentic_core.legal.precision_engine import UKLegalPrecisionEngineImpl
 from agentic_core.legal.types import TribunalTask, LegalAgent

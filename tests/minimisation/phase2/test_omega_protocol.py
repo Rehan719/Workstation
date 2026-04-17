@@ -4,7 +4,7 @@ from agentic_core.minimisation.recirculation.omega_protocol import OmegaProtocol
 from agentic_core.minimisation.recirculation.meta_rl_tuner import MetaRLTuner
 from agentic_core.minimisation.recirculation.self_amendment import SelfAmendmentGenerator
 from agentic_core.minimisation.pipeline import MinimisationPipeline
-from agentic_core.orchestration.adapters.ot_router import LegalAwareOptimalTaskRouter
+from agentic_core.orchestration.adapters.legal_aware_ot_router import LegalAwareOptimalTaskRouter
 from agentic_core.evolution.adapters.schrodinger_evolution_adapter import BridgeGuidedEvolution
 from agentic_core.recombination.adapters.diffusion_merge_adapter import DiffusionMergeAdapter
 from agentic_core.biomimicry.minimisation.core.optimal_transport import OptimalTransportRouter
