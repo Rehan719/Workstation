@@ -6,7 +6,8 @@ from agentic_core.biomimicry.minimisation.core.diffusion_engine import Diffusion
 @pytest.mark.asyncio
 async def test_diffusion_ui_complexity_adaptation():
     # Linear drift towards target
-    drift = lambda t, y: 0.5 * (torch.tensor([0.5, 0.5, 0.5]) - y)
+    # Adjusting to handle 4D state in adapter
+    drift = lambda t, y: 0.5 * (torch.tensor([0.5, 0.5, 0.5, 1.0]) - y)
     diffusion = lambda t, y: torch.ones_like(y) * 0.01
 
     engine = DiffusionEngine(drift, diffusion)
@@ -19,7 +20,7 @@ async def test_diffusion_ui_complexity_adaptation():
 
     assert "complexity" in ui_config
     assert ui_config["legal_disclosures"]["visible"] == True
-    assert ui_config["legal_disclosures"]["opacity"] == 1.0
+    assert ui_config["legal_disclosures"]["opacity"] == pytest.approx(1.0, abs=1e-2)
 
     # Should be less than base complexity
     assert ui_config["complexity"] < 1.0

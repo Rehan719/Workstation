@@ -76,10 +76,11 @@ class DiffusionMergeAdapter:
             pruned_params = combined_params
             reduction_ratio = 0.0
 
-        # 5. UEG Logging (SHA-3-512)
+        # 5. UEG Logging (SHA-3-512) with Art. 1106 Rollback Token
         await self.ueg.log_minimisation_event("diffusion_merge", {
             "params_reduced_pct": reduction_ratio * 100,
             "legal_coverage": 1.0 if legal_result.is_compliant else 0.5,
+            "rollback_token": hashlib.sha3_512(z.cpu().numpy().tobytes()).hexdigest(),
             "integrity_hash": self._hash_params(pruned_params)
         }, context={"layer": "L8_Recombination", "task": target_task_context.get("type")})
 

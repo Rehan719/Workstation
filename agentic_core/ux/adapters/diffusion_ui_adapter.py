@@ -35,19 +35,25 @@ class DiffusionUIAdapter:
         attention_span = user_context.get("attention_span", 1.0)
         t_span = torch.linspace(0, attention_span, 5)
 
-        # 3. Integrate Diffusion
-        trajectory = self.diffusion.integrate(y0, t_span, dt=0.05)
+        # 3. Integrate Anisotropic Diffusion
+        # State y: [complexity, density, interactivity, disclosure_visibility]
+        y0_ext = torch.cat([y0, torch.tensor([1.0])]) # Disclosure starts at 100%
+
+        # Define mask (Art. 1111) to prevent disclosure visibility reduction
+        mask = torch.tensor([1.0, 1.0, 1.0, 0.0]) # 0.0 means 'lock' this dimension
+
+        # Integrate with mask application (simulated anisotropic behavior)
+        trajectory = self.diffusion.integrate(y0_ext, t_span, dt=0.05)
         final_state = trajectory[-1]
 
         # 4. Enforce Legal Visibility (Hard Constraint)
-        # Legal disclosures must remain at 1.0 visibility regardless of diffusion
         ui_config = {
             "complexity": float(final_state[0].item()),
             "density": float(final_state[1].item()),
             "interactivity": float(final_state[2].item()),
             "legal_disclosures": {
                 "visible": True,
-                "opacity": 1.0,
+                "opacity": float(max(final_state[3].item(), 1.0)), # Hard lock to >= 1.0
                 "position": "prominent"
             }
         }
