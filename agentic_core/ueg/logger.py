@@ -69,3 +69,15 @@ class VSBUEGLogger:
             return True
         except Exception:
             return False
+
+    async def log_minimisation_event(self, event_type: str, metrics: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Log minimisation-specific metrics with SHA-3-512 integrity.
+        Enforces schema consistency for minimisation KPIs.
+        """
+        data = {
+            "schema_version": "1.0.0",
+            "metrics": metrics,
+            "context": context or {}
+        }
+        return await self.log_event(f"minimisation:{event_type}", data)

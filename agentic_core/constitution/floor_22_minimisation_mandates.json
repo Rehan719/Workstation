@@ -1,0 +1,16 @@
+{
+  "floor_id": 22,
+  "name": "Digital Biomimicry of Minimisation Floor",
+  "immutable": true,
+  "articles": [
+    {"number": 1104, "title": "Entropy Regularisation Mandate", "mandate": "All agent evolution, recombination, and policy updates must use entropy-regularised objectives (ε ≥ 0.01)"},
+    {"number": 1105, "title": "Optimal Transport Compliance", "mandate": "Resource allocation must solve entropic OT with verifiable Wasserstein distance metrics"},
+    {"number": 1106, "title": "Diffusion Reversibility", "mandate": "All structural changes must be denoising-diffusion reversible with logged score functions"},
+    {"number": 1107, "title": "Minimal Intervention Principle", "mandate": "Error correction must use gradient-descent-like minimal changes; intervention entropy logged to UEG"},
+    {"number": 1108, "title": "Thermodynamic Accountability", "mandate": "Energy usage must be logged per ATP-analog budgeting; system must demonstrate net entropy export"},
+    {"number": 1109, "title": "Bridge Path Auditability", "mandate": "Schrödinger bridge trajectories must be UEG-logged with SHA-3-512 integrity"},
+    {"number": 1110, "title": "Entropy Export Verification", "mandate": "System must demonstrate net entropy export (dS_export > |dS_internal|) per macro-cycle"},
+    {"number": 1111, "title": "UK Legal Efficiency Mandate", "mandate": "All Employment Tribunal workflows must achieve ≥40% latency reduction via minimisation principles WHILE maintaining 100% legal compliance (hard constraint)"},
+    {"number": 1112, "title": "Legal Precision Non-Negotiable", "mandate": "Efficiency gains must never compromise statutory coverage, precedent completeness, or constitutional compliance. Legal precision weight in Ω-functional is fixed at ≥0.15 for legal domains."}
+  ]
+}

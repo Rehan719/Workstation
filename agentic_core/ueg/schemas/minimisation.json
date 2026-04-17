@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-04-16T23:32:52.183575",
+  "types": [
+    "minimisation_kpis",
+    "legal_coverage_metrics"
+  ],
+  "integrity": "sha3-512",
+  "schema_hash": "ecf71327be77fb2911ca574e5e06bef8e25ed70f061d45bd7371012601cce1e253d3ea842d3c2fe1a71a8956c79e95bb48e18d9b9cf2e49b4c3719abda8c3316"
+}
