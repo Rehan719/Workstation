@@ -21,7 +21,7 @@ class EntropyRegularisedGaaS:
         self.legal_engine = legal_engine
         self.ot = ot_solver or OptimalTransportRouter(epsilon=0.01)
         self.logger = logging.getLogger("EntropyRegularisedGaaS")
-        # Constitutional articles as target distribution (uniform for Phase 1)
+        # Constitutional articles represented as a distribution over intent space
         self.const_embs = torch.ones(10) / 10.0
 
     async def validate_intent(self, intent: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
