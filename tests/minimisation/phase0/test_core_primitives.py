@@ -22,7 +22,7 @@ def test_schrodinger_bridge_convergence():
     assert torch.allclose(plan.sum(dim=0), target, atol=1e-5)
 
 def test_optimal_transport_router():
-    router = OptimalTransportRouter(epsilon=0.1, max_iter=1000)
+    router = OptimalTransportRouter(epsilon=0.1, max_iter=2000, tol=1e-4)
 
     source = torch.tensor([1.0, 1.0])
     target = torch.tensor([1.0, 1.0])
@@ -30,7 +30,7 @@ def test_optimal_transport_router():
 
     plan, dist, info = router.solve(source, target, cost)
 
-    # assert info["converged"]
+    assert info["converged"]
     # Should favour [0,0] and [1,1]
     assert plan[0, 0] > plan[0, 1]
     assert plan[1, 1] > plan[1, 0]
