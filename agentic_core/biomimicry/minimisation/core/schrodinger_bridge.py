@@ -66,7 +66,8 @@ class SchrödingerBridgeEngine:
                 break
 
         # Compute optimal transport plan: π = diag(u) K diag(v)
-        plan = xp.diag(u) @ K @ xp.diag(v)
+        # More memory efficient implementation: u[:, None] * K * v[None, :]
+        plan = u[:, None] * K * v[None, :]
 
         # Compute KL Divergence: KL(π||K) = <π, log(π/K)>
         # plan / K = u @ v.T

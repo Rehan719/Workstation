@@ -63,8 +63,9 @@ class OptimalTransportRouter:
                     converged = True
                     break
 
-        # Transport plan
-        plan = xp.diag(u) @ K @ xp.diag(v)
+        # Transport plan: P = diag(u) K diag(v)
+        # More memory efficient implementation: u[:, None] * K * v[None, :]
+        plan = u[:, None] * K * v[None, :]
 
         # Wasserstein distance (primal objective)
         # Use finite mask for infinite cost matrix to avoid NaN in sum

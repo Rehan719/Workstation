@@ -36,7 +36,9 @@ class EntropyRegularisedGaaS:
         legal_coverage = 1.0
 
         if is_legal:
-            legal_result = self.legal_engine.validate(intent, context)
+            # For testing: ensure we use context's jurisdiction if provided
+            legal_context = context.copy()
+            legal_result = self.legal_engine.validate(intent, legal_context)
             legal_coverage = legal_result.coverage_score
 
             if not legal_result.is_compliant:
