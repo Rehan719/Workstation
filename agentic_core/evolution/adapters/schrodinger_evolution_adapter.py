@@ -109,7 +109,13 @@ class BridgeGuidedEvolution:
 
     def _sample_from_plan(self, plan: torch.Tensor, current: torch.Tensor) -> torch.Tensor:
         """Sample new parameters proportional to the optimal transport plan."""
-        # Selection based on highest probability path
-        best_indices = torch.argmax(plan, dim=1)
-        # Simplified sampling for demo
-        return current[best_indices]
+        # Stochastic sampling: each row of plan is a distribution over target indices
+        # We sample one index for each source 'particle'
+        # For simplicity in 1D demo, we treat current as the basis
+        # In multi-dim, this would be a linear combination or choice.
+
+        # Ensure plan rows are distributions
+        probs = plan / (plan.sum(dim=1, keepdim=True) + 1e-10)
+        sampled_indices = torch.multinomial(probs, num_samples=1).squeeze()
+
+        return current[sampled_indices]

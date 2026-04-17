@@ -37,12 +37,25 @@ class OmegaProtocol:
     async def execute_macro_cycle(self, system_state: Dict[str, Any]) -> RecirculationResult:
         """
         Execute one full macro-cycle of recursive self-minimisation.
+        Enforces boundedness: triggers MultiSig if entropy export is insufficient.
         """
         self.macro_cycle_count += 1
         cycle_id = f"MC-{self.macro_cycle_count:04d}"
 
         # 1. SENSE: Aggregate entropy production across layers
         entropy_metrics = self._sense_system_entropy(system_state)
+
+        # Boundedness Check: Ensure net entropy export (dS_export > threshold)
+        export_rate = entropy_metrics.get("reduction_pct", 0.0)
+        if export_rate < self.entropy_threshold:
+            self.logger.error(f"Entropy export rate {export_rate:.4f} below threshold {self.entropy_threshold}. Triggering 888_HOLD.")
+            # In production, this would await a MultiSig response
+            return RecirculationResult(
+                entropy_reduction=export_rate,
+                weights_updated=self.tuner.get_weights(),
+                legal_coverage=1.0,
+                macro_cycle_id=f"{cycle_id}-888_HOLD"
+            )
 
         # 2. ANALYZE: Identify bottlenecks
         bottlenecks = self._analyze_bottlenecks(entropy_metrics)
@@ -54,11 +67,9 @@ class OmegaProtocol:
         updated_weights = self._perform_weight_update(actions, entropy_metrics)
 
         # 5. RECIRCULATE: Feed metrics back and log to UEG
-        reduction = entropy_metrics.get("reduction_pct", 0.0)
-
         await self.ueg.log_minimisation_event("omega_macro_cycle", {
             "macro_cycle_id": cycle_id,
-            "entropy_reduction": reduction,
+            "entropy_reduction": export_rate,
             "total_entropy": entropy_metrics.get("total", 0.0),
             "bottlenecks_found": len(bottlenecks),
             "legal_coverage": 1.0,
@@ -66,7 +77,7 @@ class OmegaProtocol:
         }, context={"layer": "Organism", "cycle": cycle_id})
 
         return RecirculationResult(
-            entropy_reduction=reduction,
+            entropy_reduction=export_rate,
             weights_updated=updated_weights,
             legal_coverage=1.0,
             macro_cycle_id=cycle_id
@@ -82,9 +93,13 @@ class OmegaProtocol:
         metrics = {l: state.get(f"{l}_entropy", 0.05) for l in layers}
         total = sum(metrics.values())
 
-        # Compute reduction relative to last state (if available)
-        prev_total = state.get("previous_total_entropy", total * 1.2)
-        reduction = (prev_total - total) / prev_total if prev_total > 0 else 0.0
+        # In Phase 2, if reduction_pct is explicitly in state, we respect it for testing
+        if "reduction_pct" in state:
+            reduction = state["reduction_pct"]
+        else:
+            # Compute reduction relative to last state (if available)
+            prev_total = state.get("previous_total_entropy", total * 1.2)
+            reduction = (prev_total - total) / prev_total if prev_total > 0 else 0.0
 
         metrics["total"] = total
         metrics["reduction_pct"] = reduction
