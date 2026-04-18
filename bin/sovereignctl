@@ -56,6 +56,11 @@ def main():
     subparsers.add_parser("announce", help="Public announcement")
     subparsers.add_parser("release", help="Release candidate management")
 
+    confirm_parser = subparsers.add_parser("confirm", help="Confirm epoch completion")
+    confirm_parser.add_argument("--epoch", required=True)
+    confirm_parser.add_argument("--release", required=True)
+    confirm_parser.add_argument("--phase", required=True)
+
     args = parser.parse_args()
 
     if args.command == "status":
@@ -95,6 +100,9 @@ def main():
 
     elif args.command == "announce":
         print("ANNOUNCEMENT: Workstation v139.0.0 is live. The Digital Biomimicry of Minimisation epoch has commenced. The organism is now self-optimising.")
+
+    elif args.command == "confirm":
+        print(f"CONFIRMED: Epoch {args.epoch} reached. Release {args.release} is STABLE. System is {args.phase}.")
 
     else:
         if args.command:
