@@ -1,0 +1,11 @@
+{
+  "micro_cycle_ms": {
+    "mean": 20.398528575897217,
+    "ci_upper": 20.412463254084017
+  },
+  "macro_cycle_s": {
+    "mean": 0.10045951128005981,
+    "ci_upper": 0.10047159509790726
+  },
+  "status": "VALIDATED"
+}
