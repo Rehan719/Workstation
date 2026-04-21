@@ -9,7 +9,7 @@ from agentic_core.mjm.hyperdimensional import MJMv4OmniLearner
 @pytest.mark.asyncio
 async def test_reconfigulator_replication():
     rc = Reconfigulator()
-    genome = {"identity": "AgentOpus", "layers": 12}
+    genome = "{\"identity\": \"AgentOpus\", \"layers\": 12}"
     ghash = await rc.replicate_genome(genome)
     assert ghash is not None
     assert await rc.translate_to_runtime(ghash) is True
@@ -17,9 +17,9 @@ async def test_reconfigulator_replication():
 @pytest.mark.asyncio
 async def test_regulator_repair():
     reg = Regulator()
-    corrupted = {"cpu_limit": "corrupted", "memory": 1024}
-    repaired = await reg.repair_state(corrupted, repair_tier="HDR")
-    assert repaired["cpu_limit"] == "fixed_via_HDR"
+    corrupted = {"cpu_limit": None, "memory": 1024}
+    repaired = await reg.repair_corrupted_state(corrupted, repair_tier="HDR")
+    assert repaired["cpu_limit"] == "recovered_from_template"
 
 @pytest.mark.asyncio
 async def test_immune_defense():
@@ -28,8 +28,8 @@ async def test_immune_defense():
     assert detector is not None
     # Threat simulation
     threat = {"id": "rogue_1", "action": "exfiltrate"}
-    # In a real test we'd mock the matching, here we just verify flow
-    assert await imm.scan_for_threats(threat) is False # No matches yet
+    # Verify scan_agent_activity (the correct method name)
+    assert await imm.scan_agent_activity("agent_0", threat) is False # No matches yet
 
 @pytest.mark.asyncio
 async def test_hd_omni_learner():
