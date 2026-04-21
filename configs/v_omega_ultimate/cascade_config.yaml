@@ -1,0 +1,16 @@
+cascade_controller:
+  weights:
+    free_energy: 0.15
+    optimal_transport: 0.15
+    schrodinger_bridge: 0.12
+    entropy_export: 0.12
+    murray_law: 0.08
+    quantum_security: 0.04
+    hyperdimensional_transfer: 0.08
+    biomimetic_fidelity: 0.04
+    genetic_integrity: 0.12
+    immune_defense: 0.10
+  hard_constraints:
+    biomimetic_fidelity_threshold: 0.9
+    immune_defense_threshold: 0.95
+    genetic_integrity_mandatory: true

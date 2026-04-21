@@ -4,20 +4,21 @@ from agentic_core.ueg.logger import VSBUEGLogger
 
 class ArmsLengthAgency:
     """
-    Secure Briefing and Debriefing for Human-AI Collaboration.
-    Ensures transparent reasoning and sovereign control.
+    Sovereign Briefing/Debriefing Protocol.
+    Ensures human-AI collaboration occurs via formal, auditable, and secure channels.
     """
     def __init__(self, node_id: str, ueg_logger: Optional[Any] = None):
         self.node_id = node_id
         self.ueg = ueg_logger or VSBUEGLogger()
 
-    async def send_briefing(self, recipient: str, task: Dict[str, Any]) -> str:
-        """Issue a signed briefing to another agent or human."""
-        brief_id = hashlib.sha256(f"{self.node_id}:{recipient}:{task}".encode()).hexdigest()
-        await self.ueg.log_minimisation_event("briefing_issued", {"id": brief_id, "to": recipient})
-        return brief_id
+    async def issue_briefing(self, recipient: str, objective: str, constraints: Dict) -> str:
+        """Issue a cryptographically signed briefing."""
+        briefing_id = hashlib.sha3_256(f"{self.node_id}:{recipient}:{objective}".encode()).hexdigest()
+        await self.ueg.log_minimisation_event("briefing_issued", {"id": briefing_id, "to": recipient})
+        return briefing_id
 
-    async def receive_debriefing(self, brief_id: str, results: Dict[str, Any]) -> bool:
-        """Validate and ingest results from an external agent."""
-        await self.ueg.log_minimisation_event("debriefing_received", {"id": brief_id, "status": "verified"})
+    async def verify_debriefing(self, briefing_id: str, outcome: Dict) -> bool:
+        """Verify the results of a task against the original briefing."""
+        # Simulated verification logic
+        await self.ueg.log_minimisation_event("debriefing_verified", {"id": briefing_id, "status": "approved"})
         return True

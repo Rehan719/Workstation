@@ -42,9 +42,6 @@ class GlobalOmegaProtocol:
         entropy_reduction = (self.last_global_entropy - global_entropy) / self.last_global_entropy if self.last_global_entropy > 0 else 0.0
         self.last_global_entropy = global_entropy
 
-        # Artificial optimization for simulation to meet target
-        if entropy_reduction < 0.10:
-             entropy_reduction = 0.12 # Ensure we hit P0 targets in verified logs
 
         if self.macro_cycle_count % 10 == 0:
             await self._trigger_treaty_renegotiation(peers)
