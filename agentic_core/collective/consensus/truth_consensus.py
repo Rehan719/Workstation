@@ -1,28 +1,24 @@
-from typing import List, Dict, Any, Optional
-from agentic_core.ueg.logger import VSBUEGLogger
+from typing import List, Dict
 
 class TruthConsensusEngine:
-    """
-    Emergent consensus on ground truth across the mesh.
-    Uses weighted confidence aggregation and calibration.
-    """
-    def __init__(self, threshold: float = 0.85, ueg_logger: Optional[Any] = None):
-        self.threshold = threshold
-        self.ueg = ueg_logger or VSBUEGLogger()
+    """Emergent truth consensus with confidence calibration (Phase 7)."""
 
-    async def reach_truth_consensus(self, claims: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        results = []
+    async def reach_consensus(self, claims: List[Dict], threshold: float = 0.85) -> List[Dict]:
         unique_claims = {}
-        for c in claims:
-            unique_claims.setdefault(c["claim"], []).append(c)
-        for claim_text, observations in unique_claims.items():
-            total_weight = sum(o["reputation"] for o in observations)
-            weighted_conf = sum(o["confidence"] * o["reputation"] for o in observations) / total_weight if total_weight > 0 else 0
-            is_accepted = weighted_conf >= self.threshold
+        for claim in claims:
+            text = claim["claim"]
+            unique_claims.setdefault(text, []).append(claim)
+
+        results = []
+        for text, variants in unique_claims.items():
+            total_weight = sum(v.get("reputation", 1.0) for v in variants)
+            weighted_conf = sum(v["confidence"] * v.get("reputation", 1.0) for v in variants) / total_weight
+
             results.append({
-                "claim": claim_text,
-                "consensus_confidence": float(weighted_conf),
-                "accepted": is_accepted
+                "claim": text,
+                "consensus_confidence": weighted_conf,
+                "accepted": weighted_conf >= threshold,
+                "evidence_count": len(variants)
             })
-        await self.ueg.log_minimisation_event("truth_consensus_cycle", {"results": results})
+
         return results

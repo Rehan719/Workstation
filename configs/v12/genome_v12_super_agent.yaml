@@ -1,0 +1,30 @@
+constitutional_genome:
+  version: "12.0.0"
+  id: "deca_veritas_unified_v12"
+  description: "Universal constitutional super‑agent intelligence framework – core process agnostic"
+
+  truth_dimensions:
+    X_adaptive_constitutional: {enabled: true, rule_weight_tuning: true, agent_telemetry: true, self_tuning_circuit_breakers: true}
+
+  governance:
+    gaas_v3:
+      unified_constitutional_interceptor: true
+      protocol_interceptors: [MCP, A2A, ACP, AutoGen_GroupChat, LangGraph_Checkpointer, CrewAI_Flow, Mammouth_Process, NeMo_Guardrails, Nematron_Agent]
+      circuit_breaker_self_tuning: true
+
+  multi_agent_orchestration:
+    unified_interceptor: true
+    agent_generation: "mammouth_zero_shot"
+    agent_evolution: "constitutional_tournament_arena"
+
+  core_process_streams:
+    business: {enabled: true, orchestrator: "langgraph+autogen+nematron"}
+    science: {enabled: true, orchestrator: "langgraph+mammouth+nemo"}
+    scholarship: {enabled: true, orchestrator: "crewai+langgraph"}
+    domain_specific: {enabled: true, orchestrator: "autogen+crewai+nematron"}
+
+  architecture_mapping:
+    biomimetic_layers: 12
+    application_layers: 6
+    edge_first: true
+    zero_placeholder: true
