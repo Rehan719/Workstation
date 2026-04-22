@@ -1,0 +1,8 @@
+[project]
+name = "vsb-mega-project-synthesis"
+version = "140.0.0-Ω∞"
+description = "Visionary Trillion-Dollar Mega-Project Synthesis Engine"
+dependencies = [
+    "vsb-constitutional-core>=140.0.0",
+    "vsb-neural-super-agent-orchestration>=140.0.0"
+]
