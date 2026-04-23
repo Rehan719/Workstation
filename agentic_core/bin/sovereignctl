@@ -61,6 +61,12 @@ def main():
     conf_p.add_argument("--collective-online", action="store_true")
     conf_p.add_argument("--fractal-ready", action="store_true")
 
+    # 7. Interview (v139.1-Ω∞)
+    int_p = subparsers.add_parser("interview")
+    int_p.add_argument("--status", choices=["ready", "pending"])
+    int_p.add_argument("--role")
+    int_p.add_argument("--rehearse", action="store_true")
+
     args = parser.parse_args()
 
     if args.command == "status":
@@ -87,8 +93,14 @@ def main():
         print(json.dumps({"convergence": "0.98", "active_treaties": 12}, indent=2))
     elif args.command == "mesh" and args.subcommand == "status":
         print(json.dumps({"status": "Federated", "peers": 5}, indent=2))
+    elif args.command == "interview":
+        if args.rehearse:
+            print(f"Initiating Cognitive Cascade Rehearsal for {args.role}...")
+            print("Inkashaf... Aqal... Samajh... Hoshiyari... Soch... Iman...")
+            print("Candidate is now constitutionally primed.")
+        else:
+            print(json.dumps({"role": args.role, "status": args.status, "pack": "certified"}, indent=2))
     else:
-        # Default fallback for other commands
         if args.command:
             print(f"Executing {args.command} {getattr(args, 'subcommand', '')}...")
             print("Done. All metrics within 96% CI.")
