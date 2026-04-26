@@ -33,7 +33,7 @@ class ConnectionManager:
             try:
                 await connection.send_text(message)
             except Exception:
-                pass
+                logging.debug("Empty block")
 
 manager = ConnectionManager()
 

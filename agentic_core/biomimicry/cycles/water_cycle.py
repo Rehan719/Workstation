@@ -1,37 +1,69 @@
 import time
-from typing import Dict, Any, Optional
+import hashlib
+from typing import Dict, Any, Optional, Tuple
+from datetime import datetime
+from agentic_core.crypto.entropy_pool import EntropyPool
+
+class StirlingEnergyRecovery:
+    """
+    Physically-inspired Stirling Engine model for heat-to-electricity recovery.
+    Uses Curzon-Ahlborn efficiency for power-optimised heat engines.
+    """
+    def __init__(self, t_cold: float = 298.15):
+        self.t_cold = t_cold # K (Ambient)
+        self.mechanical_loss = 0.15
+
+    def recover(self, heat_load: float, t_hot: float) -> float:
+        """
+        Recover energy from thermal gradients.
+        Formula: P = Q_in * (1 - sqrt(T_cold/T_hot))
+        """
+        if t_hot <= self.t_cold:
+            return 0.0
+        # Curzon-Ahlborn efficiency for maximum power output
+        efficiency = 1 - (self.t_cold / t_hot)**0.5
+        recovered = heat_load * efficiency * (1 - self.mechanical_loss)
+        return max(0.0, recovered)
 
 class HydrologicResourceManager:
-    """
-    Models resource flow as hydrologic cycle:
-    dR/dt = E(P) - T(R) + P(A) - R(O)
-    Where: E=evaporation (heat→energy), T=transpiration (active use),
-           P=precipitation (task completion), R=runoff (resource release)
-
-    Constitutional Constraint: All thermal operations validated via GaaS v4.
-    """
-    def __init__(self, target_temp: float = 75.0):
+    def __init__(self, target_temp: float = 348.15, entropy_pool: Optional[EntropyPool] = None):
         self.setpoint = target_temp
-        self.reservoirs = {"ocean": 1.0, "atmosphere": 0.001, "land": 0.02, "groundwater": 0.01}
+        self.reservoirs = {
+            "ocean": 1.0,
+            "atmosphere": 0.001,
+            "land": 0.02,
+            "groundwater": 0.01
+        }
         self.efficiency = 0.85
-        self.condensation_efficiency = 0.92
+        self.stirling = StirlingEnergyRecovery()
+        self.entropy_pool = entropy_pool
 
-    def evaporate(self, heat_load: float) -> float:
-        """Generation of 'atmospheric' potential from thermal load."""
-        evaporation_rate = heat_load * 0.1 # Simplified modeling
-        self.reservoirs["atmosphere"] += evaporation_rate
-        return evaporation_rate * self.efficiency
+    def evaporate(self, heat_load: float, current_temp: float) -> Dict[str, float]:
+        evap_rate = (heat_load * 0.1) * (current_temp / self.setpoint)
+        actual_evap = min(evap_rate, self.reservoirs["ocean"])
+        self.reservoirs["ocean"] -= actual_evap
+        self.reservoirs["atmosphere"] += actual_evap
 
-    def condense(self) -> float:
-        """Reclamation of resources into the primary pool."""
-        condensable = self.reservoirs["atmosphere"]
-        reclaimed = condensable * self.condensation_efficiency
-        self.reservoirs["ocean"] += reclaimed
-        self.reservoirs["atmosphere"] -= condensable
-        return reclaimed
+        # L2 Hardware Hardening: Stirling recovery
+        recovered_j = self.stirling.recover(heat_load, current_temp)
 
-    def balance_resources(self, system_load: float) -> Dict[str, float]:
-        """Dynamically rebalances resources based on 'evaporation' (usage patterns)."""
-        if system_load > 0.8:
-            return {"mode": "high_flux", "cooling_gain": 1.2}
-        return {"mode": "steady_flow", "cooling_gain": 1.0}
+        # Credit to Entropy Pool if linked
+        if self.entropy_pool and recovered_j > 0:
+            self.entropy_pool.add_entropy({
+                "source": "stirling_recovery",
+                "energy_j": recovered_j,
+                "timestamp": time.time()
+            })
+
+        return {
+            "evaporation_rate": actual_evap,
+            "energy_recovered_j": recovered_j,
+            "atmosphere_density": self.reservoirs["atmosphere"]
+        }
+
+    def get_homeostasis_score(self, current_temp: float) -> float:
+        deviation = abs(current_temp - self.setpoint) / self.setpoint
+        return max(0.0, 1.0 - deviation)
+
+    def get_output(self) -> float:
+        return self.reservoirs["atmosphere"] * self.efficiency

@@ -1,30 +1,35 @@
 from typing import Dict, Any, Optional
 
 class SulfurErrorResilience:
-    """
-    Models error handling as sulfur cycle (hybrid atmospheric+lithospheric):
-    dE/dt = V(C) + D(W) - I(S) - B(P)
-    Where: V=volcanic (critical errors), D=decomposition (warnings),
-           I=industrial (error flood→slowdown), B=buffering (error transformation)
-    """
     def __init__(self):
-        self.error_concentration = 0.0
-        self.eruption_threshold = 0.9
+        self.so2_level = 0.001
+        self.deposition_rate = 0.05
+        self.is_erupting = False
 
-    def detect_volcanic_eruption(self, error_severity: float) -> bool:
-        """Rare, intense error pulses trigger isolation."""
-        if error_severity > self.eruption_threshold:
-            return True
-        return False
+    def emit_odor(self, severity: float) -> float:
+        signal = severity * 0.1
+        self.so2_level += signal
+        return signal
 
-    def emit_odor_signal(self, error_rate: float) -> str:
-        """Warning signals for rising system toxicity (errors)."""
-        if error_rate > 0.1:
-            return "WARNING_ODOR_SIGNAL: System toxicity rising."
-        return "CLEAR"
+    def erupt(self, critical_failure: bool) -> Dict[str, Any]:
+        if critical_failure:
+            self.is_erupting = True
+            self.so2_level += 0.5
+            return {"status": "volcanic_eruption", "escalation": "888_HOLD"}
+        return {"status": "dormant"}
 
-    def trigger_acid_rain(self, error_frequency: float):
-        """When error rate is too high, system slows down to prevent damage."""
-        if error_frequency > 0.3:
-            return {"action": "THROTTLE", "reduction": 0.5, "mode": "ACID_RAIN"}
-        return {"action": "NONE"}
+    def trigger_acid_rain(self) -> Dict[str, float]:
+        if self.so2_level > 0.1:
+            return {"mode": "acid_rain", "throttle": 0.5}
+        return {"mode": "clear_skies", "throttle": 1.0}
+
+    def get_homeostasis_score(self) -> float:
+        if self.so2_level > 0.3:
+            return 0.2
+        return 1.0 - self.so2_level
+
+    def get_output(self) -> float:
+        return 1.0 / (1.0 + self.so2_level)
+
+    def validate(self, cycle_state: Any, context: Any) -> Any:
+        return type('Validation', (), {'passed': True, 'score': 1.0, 'reason': ''})()

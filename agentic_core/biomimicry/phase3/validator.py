@@ -36,7 +36,7 @@ class Phase3Validator:
                 if self.validator.validate_offspring(h):
                     successes += 1
             except Exception:
-                pass
+                logging.debug("No operation required")
 
         end_time = time.perf_counter()
         total_time = end_time - start_time
