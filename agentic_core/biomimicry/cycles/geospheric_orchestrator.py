@@ -1,61 +1,76 @@
+import os
+import yaml
+import numpy as np
+from typing import Dict, Any, Optional
 from .water_cycle import HydrologicResourceManager
 from .carbon_cycle import CarbonDataMetabolism
 from .nitrogen_cycle import NitrogenTaskMediator
-from .oxygen_cycle import OxygenComputationalMetabolism
+from .oxygen_cycle import MetabolicScheduler
 from .phosphorus_cycle import PhosphorusMemoryHierarchy
 from .sulfur_cycle import SulfurErrorResilience
 from .psi_functional import EcosystemHealthObjective
-from typing import Dict, Any
+from agentic_core.crypto.entropy_pool import EntropyPool
 
 class GeosphericHomeostaticOrchestrator:
-    """
-    Coordinates Earth's six biogeochemical cycles as a converged digital fabric.
-    Enforces Ψ-Functional health targets and cycle coupling feedback.
-    """
-    def __init__(self, target_psi: float = 0.90):
-        self.water = HydrologicResourceManager()
+    def __init__(self, target_psi: float = 0.90, entropy_pool: Optional[EntropyPool] = None):
+        self.entropy_pool = entropy_pool or EntropyPool()
+        self.water = HydrologicResourceManager(entropy_pool=self.entropy_pool)
         self.carbon = CarbonDataMetabolism()
         self.nitrogen = NitrogenTaskMediator()
-        self.oxygen = OxygenComputationalMetabolism()
+        self.oxygen = MetabolicScheduler()
         self.phosphorus = PhosphorusMemoryHierarchy()
         self.sulfur = SulfurErrorResilience()
         self.psi_objective = EcosystemHealthObjective()
         self.target_psi = target_psi
+        self.coupling_weights = self._load_coupling_config()
 
-    def step(self, system_load: float, error_rate: float, data_size: float) -> Dict[str, Any]:
-        """Executes one homeostatic step of the geospheric ecosystem."""
+    def _load_coupling_config(self) -> Dict[str, float]:
+        config_path = "config/geospheric/coupling_weights.yaml"
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r") as f:
+                    data = yaml.safe_load(f)
+                    return data.get("coupling", {})
+            except Exception:
+                return {}
+        return {}
 
-        # 1. Regulate Cycles
-        water_res = self.water.balance_resources(system_load)
-        carbon_burial = self.carbon.respire_unused_data(data_size)
-        oxygen_mode = self.oxygen.regulate_metabolic_rate(system_load)
+    def step(self, inputs: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        temp = inputs.get("current_temp", 348.15)
+        w_out = self.water.evaporate(inputs.get("heat_load", 0.0), temp)
+        c_out = self.carbon.photosynthesize(inputs.get("raw_data_size", 0.0))
+        self.nitrogen.fix_input(inputs.get("input_count", 0))
+        o_out = self.oxygen.respire(inputs.get("process_load", 0.0), inputs.get("metabolic_state", "active"))
+        m_out = self.phosphorus.uptake(inputs.get("data_to_memory", 0.0))
+        self.sulfur.emit_odor(inputs.get("error_severity", 0.0))
 
-        # 2. Cycle Coupling (Feedback)
-        # Oxygen (compute) produces heat (Water)
-        thermal_load = system_load * 50.0
-        evap_energy = self.water.evaporate(thermal_load)
+        rain = self.sulfur.trigger_acid_rain()
+        if rain["mode"] == "acid_rain":
+             throttle = self.coupling_weights.get("sulfur_to_oxygen", 0.15)
+             self.oxygen.o2_level *= (1 - throttle)
 
-        # Sulfur (errors) triggers Acid Rain (Slowdown)
-        sulfur_response = self.sulfur.trigger_acid_rain(error_rate)
+        self.water.evaporate(o_out["heat_generated"], temp)
 
-        # 3. Health Evaluation
-        metrics = {
-            "water": 0.95,
-            "carbon": 0.92,
-            "nitrogen": 0.98,
-            "oxygen": 0.94,
-            "phosphorus": 0.96,
-            "sulfur": 1.0 - error_rate
+        cycle_scores = {
+            "water": self.water.get_homeostasis_score(temp),
+            "carbon": self.carbon.get_homeostasis_score(),
+            "nitrogen": self.nitrogen.get_homeostasis_score(),
+            "oxygen": self.oxygen.get_homeostasis_score(temp),
+            "phosphorus": self.phosphorus.get_homeostasis_score(),
+            "sulfur": self.sulfur.get_homeostasis_score()
         }
 
-        psi_score = self.psi_objective.evaluate(metrics)
+        psi = self.psi_objective.evaluate(
+            cycle_scores, context.get("system_metrics", {}),
+            context.get("legal_compliance", 1.0), context.get("closed_loop_waste", 0.0),
+            context.get("biomimetic_fidelity", 1.0), context.get("genetic_integrity", 1.0)
+        )
+
+        stability_index = np.mean(list(cycle_scores.values())) - 1.0
 
         return {
-            "psi_score": psi_score,
-            "status": "HOMEOSTATIC" if psi_score >= self.target_psi else "PERTURBED",
-            "cycle_states": {
-                "oxygen": oxygen_mode,
-                "water": water_res["mode"],
-                "sulfur": sulfur_response["action"]
-            }
+            "psi_score": psi,
+            "stability_index": float(stability_index),
+            "status": "HOMEOSTATIC" if (psi >= self.target_psi and stability_index < 0) else "PERTURBED",
+            "cycle_scores": cycle_scores
         }

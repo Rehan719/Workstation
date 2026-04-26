@@ -1,35 +1,49 @@
 from typing import Dict, Any, List, Optional
+import numpy as np
 
 class EcosystemHealthObjective:
-    """
-    Unified ecosystem health evaluation combining all six biogeochemical cycles (Ψ-Functional).
-    Ψ(π) = α·η_water + β·η_carbon + γ·η_nitrogen + δ·η_oxygen + ε·η_phosphorus + ζ·η_sulfur
-    """
     def __init__(self, weights: Optional[Dict[str, float]] = None):
         self.weights = weights or {
-            "water": 0.15,
-            "carbon": 0.20,
-            "nitrogen": 0.15,
-            "oxygen": 0.15,
-            "phosphorus": 0.15,
-            "sulfur": 0.10,
-            "divine_alignment": 0.10 # Included as per mandate
+            "free_energy": 0.10,
+            "optimal_transport": 0.10,
+            "schrodinger_bridge": 0.08,
+            "entropy_export": 0.08,
+            "murray_law": 0.05,
+            "quantum_security": 0.03,
+            "hyperdimensional_transfer": 0.07,
+            "biomimetic_fidelity": 0.03,
+            "genetic_integrity": 0.08,
+            "immune_defense": 0.07,
+            "geospheric_homeostasis": 0.13,
+            "closed_loop_transformation": 0.18
         }
 
     def evaluate(
         self,
-        metrics: Dict[str, float],
-        closed_loop_compliance: float = 1.0,
-        biomimetic_fidelity: float = 1.0
+        cycle_scores: Dict[str, float],
+        system_metrics: Dict[str, float],
+        legal_compliance: float = 1.0,
+        closed_loop_waste: float = 0.0,
+        biomimetic_fidelity: float = 1.0,
+        genetic_integrity: float = 1.0
     ) -> float:
-        """Evaluates health with hard constraints."""
-
-        # Hard constraints
-        if closed_loop_compliance < 1.0 or biomimetic_fidelity < 0.9:
+        if legal_compliance < 1.0 or closed_loop_waste > 0.0 or biomimetic_fidelity < 0.9 or genetic_integrity < 1.0:
             return float('-inf')
 
-        score = 0.0
-        for cycle, weight in self.weights.items():
-            score += weight * metrics.get(cycle, 1.0)
+        gh = np.mean(list(cycle_scores.values()))
 
-        return score
+        comps = {
+            "free_energy": system_metrics.get("free_energy", 1.0),
+            "optimal_transport": system_metrics.get("optimal_transport", 1.0),
+            "schrodinger_bridge": system_metrics.get("schrodinger_bridge", 1.0),
+            "entropy_export": system_metrics.get("entropy_export", 1.0),
+            "murray_law": system_metrics.get("murray_law", 1.0),
+            "quantum_security": system_metrics.get("quantum_security", 1.0),
+            "hyperdimensional_transfer": system_metrics.get("hyperdimensional_transfer", 1.0),
+            "biomimetic_fidelity": biomimetic_fidelity,
+            "genetic_integrity": genetic_integrity,
+            "immune_defense": system_metrics.get("immune_defense", 1.0),
+            "geospheric_homeostasis": gh,
+            "closed_loop_transformation": 1.0 - closed_loop_waste
+        }
+        return sum(self.weights[k] * comps[k] for k in self.weights)
