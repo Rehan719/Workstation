@@ -1,5 +1,5 @@
 import pytest
-from agentic_core.homeostasis.resilience import ResilienceManager
+from agentic_core.biomimicry.geospheric.resilience import ResilienceManager
 
 def test_self_healing():
     mgr = ResilienceManager()

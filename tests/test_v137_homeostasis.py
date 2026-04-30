@@ -1,5 +1,5 @@
 import pytest
-from agentic_core.homeostasis.orchestrator_v137 import HomeostaticOrchestratorV137
+from agentic_core.biomimicry.geospheric.orchestrator_v137 import HomeostaticOrchestratorV137
 
 def test_v137_homeostasis_initialization():
     orchestrator = HomeostaticOrchestratorV137()

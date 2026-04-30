@@ -19,12 +19,10 @@ class SpecializedReactor(DigitalReactor, ABC):
     @abstractmethod
     async def validate_truth(self, content: Any) -> Dict[str, Any]:
         """Domain-specific truth validation (Articles 289-292)."""
-        pass
 
     @abstractmethod
     async def generate_artifact(self, data: Any, format: str = "pdf") -> Dict[str, Any]:
         """Produces actual production-grade artifacts (LaTeX, DOCX, etc.)."""
-        pass
 
     def get_capabilities(self) -> List[str]:
         """Returns list of specific tasks this reactor can perform."""

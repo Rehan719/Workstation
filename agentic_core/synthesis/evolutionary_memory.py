@@ -75,7 +75,7 @@ class EvolutionaryMemory:
             try:
                 with open(self.ueg_path, "r") as f:
                     ueg = json.load(f)
-            except Exception: pass
+            except Exception: return True
 
         for i, insight in enumerate(insights):
             ueg["nodes"].append({

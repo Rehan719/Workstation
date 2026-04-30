@@ -1,6 +1,6 @@
 import pytest
 import time
-from agentic_core.homeostasis.orchestrator_v136 import HomeostaticOrchestratorV136
+from agentic_core.biomimicry.geospheric.orchestrator_v136 import HomeostaticOrchestratorV136
 
 def test_homeostatic_orchestrator_initialization():
     orchestrator = HomeostaticOrchestratorV136()

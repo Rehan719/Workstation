@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from typing import Optional
-from agentic_core.homeostasis.resilience import ResilienceManager
+from agentic_core.biomimicry.geospheric.resilience import ResilienceManager
 from src.organism.python.neural.event_bus import AsyncEventBus
 from src.organism.python.neural.event_types import HomeostasisEvent, BiomimeticEvent
 

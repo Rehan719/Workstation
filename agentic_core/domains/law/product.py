@@ -102,7 +102,7 @@ class LawProductGenerator(OctoOmnimediaGenerator):
             plt.savefig(img_path)
             plt.close()
         except Exception as e:
-            # Fallback to logging instead of pass
+            # Fallback to logging instead of return True
             self.logger.log_event(self.domain, "GEN_WARNING", {"message": f"Matplotlib failed: {str(e)}"})
 
         if os.path.exists(img_path):

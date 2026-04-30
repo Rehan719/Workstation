@@ -28,7 +28,7 @@ from .documentation_generator import DocumentationGenerator
 from .uviap import UVIAP
 from .introspection_engine import IntrospectionEngine
 from agentic_core.ueg.ueg_manager import UEGManager
-from agentic_core.genetics.genomic_registry import GenomicRegistry
+from agentic_core.genetic_immune.genomic_registry import GenomicRegistry
 
 logger = logging.getLogger(__name__)
 

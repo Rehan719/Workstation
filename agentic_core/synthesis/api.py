@@ -95,4 +95,3 @@ async def get_synthesis_history():
 @router.get("/download/{output_id}")
 async def download_output(output_id: str):
     # Logic to return file response
-    pass

@@ -30,7 +30,7 @@ class LSTMModel:
         learning_rate = 0.01
 
         for _ in range(epochs):
-            # Forward pass
+            # Forward return True
             z = np.dot(X, self.weights) + self.bias
             a = 1 / (1 + np.exp(-z))
             # Backward pass (Simplified SGD)

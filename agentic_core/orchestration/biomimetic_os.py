@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Dict, Any, List, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
 from agentic_core.network.discovery import Libp2pDiscoveryRegistry
-from agentic_core.immune.anomaly_scorer import RealTimeAnomalyScorer
+from agentic_core.genetic_immune.anomaly_scorer import RealTimeAnomalyScorer
 
 logger = logging.getLogger(__name__)
 

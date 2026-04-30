@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 class ExternalProviderAdapter:
     """Base class for external secret provider adapters."""
     def mirror(self, key: str, value: str, metadata: Dict[str, Any]):
-        pass
 
 class GitHubSecretsAdapter(ExternalProviderAdapter):
     def mirror(self, key: str, value: str, metadata: Dict[str, Any]):

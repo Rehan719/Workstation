@@ -1,6 +1,6 @@
 import pytest
 from agentic_core.security.pqc_hardening import pqc_hardener
-from agentic_core.homeostasis.resilience import resilience_manager
+from agentic_core.biomimicry.geospheric.resilience import resilience_manager
 
 def test_pqc_jwt_enforcement():
     payload = {"user": "jules", "role": "CEO"}
