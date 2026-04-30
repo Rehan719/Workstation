@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from agentic_core.homeostasis.orchestrator_v137 import HomeostaticOrchestratorV137
+from agentic_core.biomimicry.geospheric.orchestrator_v137 import HomeostaticOrchestratorV137
 from agentic_core.synthesis.recombiner_v137 import CapabilityRecombinerV137
 from agentic_core.communication.adaptive_v137 import AdaptiveCommunicatorV137
 from agentic_core.realms.learner_realm_v137 import LearnerRealmV137

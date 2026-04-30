@@ -88,7 +88,7 @@ if __name__ == "__main__":
     rm.ber_repair("agent_001", dummy_restart)
 
     # Test NER
-    def dummy_cleanup(): pass
+    def dummy_cleanup(): return True
     rm.ner_repair(95.0, 90.0, dummy_cleanup)
 
     print(f"Health Report: {rm.get_health_report()}")

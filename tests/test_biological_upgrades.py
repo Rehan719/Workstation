@@ -1,6 +1,6 @@
 from agentic_core.digestion.nutrient_quality import NutrientQualityScore
-from agentic_core.immune.memory_b_cells import MemoryBCells
-from agentic_core.immune.t_cell_regulation import TCellRegulator
+from agentic_core.genetic_immune.memory_b_cells import MemoryBCells
+from agentic_core.genetic_immune.t_cell_regulation import TCellRegulator
 from agentic_core.pulse.pulse_clock import PulseClock
 from agentic_core.pulse.clock_distribution import ClockDistributionNetwork
 

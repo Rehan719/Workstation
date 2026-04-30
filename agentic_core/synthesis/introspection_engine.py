@@ -3,7 +3,7 @@ import datetime
 import json
 import os
 from typing import Dict, Any, List
-from agentic_core.genetics.genomic_registry import GenomicRegistry
+from agentic_core.genetic_immune.genomic_registry import GenomicRegistry
 from agentic_core.ueg.ueg_manager import UEGManager
 
 logger = logging.getLogger(__name__)

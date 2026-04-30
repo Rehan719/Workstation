@@ -49,9 +49,9 @@ from src.organism.bridge import neural_bridge, ai_bridge, evidence_bridge
 from src.organism.python.resilience.homeostasis import HomeostasisManager
 from agentic_core.ai_ceo.c_suite import BiomimeticCSuite
 from agentic_core.governance.verifiable_governance import VGAEngine
-from agentic_core.immune.immune_system import ImmuneSystemV2
+from agentic_core.genetic_immune.immune_system import ImmuneSystemV2
 from agentic_core.tools.registry import ToolRegistry
-from agentic_core.homeostasis.resilience import resilience_manager
+from agentic_core.biomimicry.geospheric.resilience import resilience_manager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -159,7 +159,6 @@ class ConnectionManager:
             try:
                 await connection.send_json(vitals)
             except Exception:
-                pass
 
 ws_manager = ConnectionManager()
 

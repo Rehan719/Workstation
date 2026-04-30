@@ -11,7 +11,7 @@ from agentic_core.p53.genomic_integrity import P53Oscillator, GenomicIntegrity
 from agentic_core.ubiquitin.autophagy import UbiquitinSystem, AutophagyEngine
 from agentic_core.hsp.stress_response import HeatShockResponse
 from agentic_core.quorum.sensing import QuorumSensing
-from agentic_core.epigenetics.plasticity import EpigeneticSystem
+from agentic_core.genetic_immune.plasticity import EpigeneticSystem
 from agentic_core.circadian.scheduler import CircadianScheduler
 from agentic_core.predictive_allostasis.engine import AllostasisEngine2_0
 

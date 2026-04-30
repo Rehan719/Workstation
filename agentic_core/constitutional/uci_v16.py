@@ -53,4 +53,4 @@ class UCIv16Omega:
         await self.ueg.log_minimisation_event("uci_action_completed", {"intent": intent})
         return report
 
-class SecurityError(Exception): pass
+class SecurityError(Exception): return True

@@ -3,21 +3,21 @@ import time
 from typing import Dict, Any
 
 from agentic_core.survival.survival_engine import SurvivalEngine
-from agentic_core.immunity.immune_system import ImmuneSystem
+from agentic_core.genetic_immune.immune_system import ImmuneSystem
 from agentic_core.pulse.pulse_clock import PulseClock
 from agentic_core.survival.survival_engine import SurvivalEngineV2 as SurvivalEngine
-from agentic_core.immune.immune_system import ImmuneSystemV2 as ImmuneSystem
+from agentic_core.genetic_immune.immune_system import ImmuneSystemV2 as ImmuneSystem
 from agentic_core.pulse.pulse_clock import PulseClock
 from agentic_core.survival.survival_engine import SurvivalEngineV2 as SurvivalEngine
-from agentic_core.immune.immune_system import ImmuneSystemV2 as ImmuneSystem
+from agentic_core.genetic_immune.immune_system import ImmuneSystemV2 as ImmuneSystem
 from agentic_core.nervous_system.nervous_system import NervousSystem
 from agentic_core.cardiovascular.cardiovascular_system import CardiovascularSystem
 from agentic_core.digestion.digestive_system import DigestiveSystem
 from agentic_core.aging.longevity_engine import LongevityEngine
 from agentic_core.ethics.constitutional_enforcer import ConstitutionalEnforcer
-from agentic_core.homeostasis.homeostatic_regulator import HomeostaticRegulator
+from agentic_core.biomimicry.geospheric.homeostatic_regulator import HomeostaticRegulator
 from agentic_core.ethics.constitutional_enforcer import ConstitutionalEnforcer
-from agentic_core.homeostasis.homeostatic_regulator import HomeostaticRegulator
+from agentic_core.biomimicry.geospheric.homeostatic_regulator import HomeostaticRegulator
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 from typing import Dict, Any, List
-from agentic_core.organism.gaas_validator_v4 import GaaSValidatorV4
+from agentic_core.governance.gaas.gaas_validator import GaaSValidatorV4
 from agentic_core.organism.nemoclaw_runtime import NemoclawRuntime
 from agentic_core.identity.core import SovereignIdentity
 from agentic_core.organism.hardware_abstraction import HardwareAbstractionLayer

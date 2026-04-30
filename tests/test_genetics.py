@@ -1,8 +1,8 @@
 import asyncio
 from agentic_core.pulse.pulse_clock import PulseClock
-from agentic_core.genetics.genome_encoder import GenomeEncoder
-from agentic_core.genetics.transcription_engine import TranscriptionEngine
-from agentic_core.genetics.translation_engine import TranslationEngine
+from agentic_core.genetic_immune.genome_encoder import GenomeEncoder
+from agentic_core.genetic_immune.transcription_engine import TranscriptionEngine
+from agentic_core.genetic_immune.translation_engine import TranslationEngine
 
 async def test_central_dogma_engine():
     clock = PulseClock()

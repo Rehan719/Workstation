@@ -4,7 +4,7 @@ import time
 from typing import Dict, Any
 from agentic_core.molecular.triad_integration import TriadIntegrator
 from agentic_core.consciousness.workspace_integration import ConsciousnessEngine
-from agentic_core.genetics.genomic_registry import GenomicRegistry
+from agentic_core.genetic_immune.genomic_registry import GenomicRegistry
 from agentic_core.governance.danger_signaling import DangerSignaling
 from agentic_core.interface.behavioral_proxies import BehavioralProxyPipeline
 from agentic_core.validation.biomimetic_fidelity import BiomimeticFidelityScorer
@@ -14,7 +14,7 @@ from agentic_core.competencies.rd_pipeline import ResearchDevelopment
 from agentic_core.triad.quantum.qnlp_processor import QNLPProcessor
 from agentic_core.verification.multi_prover import MultiProverFramework
 from agentic_core.digestion.appetite_engine import AppetiteEngine
-from agentic_core.immunity.immune_checkpoint import ImmuneCheckpoint
+from agentic_core.genetic_immune.immune_checkpoint import ImmuneCheckpoint
 
 logger = logging.getLogger(__name__)
 

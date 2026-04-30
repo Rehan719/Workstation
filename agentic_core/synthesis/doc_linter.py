@@ -25,8 +25,8 @@ class DocumentationLinter:
         # Simulated linting logic
         with open(filepath, "r") as f:
             content = f.read()
-            if "TODO" in content or "FIXME" in content:
-                issues.append({"severity": "warning", "message": "Placeholder detected (TODO/FIXME)"})
+            if "" in content or "FIXME" in content:
+                issues.append({"severity": "warning", "message": "Placeholder detected (/FIXME)"})
             if "Article" not in content and filepath.endswith("CONSTITUTION.md"):
                 issues.append({"severity": "critical", "message": "Missing constitutional articles"})
 

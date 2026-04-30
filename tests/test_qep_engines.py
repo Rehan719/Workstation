@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from agentic_core.simulation.ese import get_ese_instance
 from agentic_core.optimization.aro import get_aro_instance
-from agentic_core.homeostasis.drad import get_drad_instance
+from agentic_core.biomimicry.geospheric.drad import get_drad_instance
 from agentic_core.bto.religion_bto import get_religion_bto
 from agentic_core.swarm.signaling_protocol import SignalingProtocol
 

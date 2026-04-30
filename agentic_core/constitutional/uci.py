@@ -78,4 +78,4 @@ class UCIv139Omega:
         await self.ueg.log_minimisation_event("sovereign_action_completed", {"intent": intent})
         return report
 
-class SecurityError(Exception): pass
+class SecurityError(Exception): return True

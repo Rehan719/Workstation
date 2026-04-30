@@ -4,7 +4,7 @@ import asyncio
 from agentic_core.governance.command_dispatch import AICommander
 from agentic_core.governance.verifiable_governance import VGAEngine
 from agentic_core.survival.survival_engine import SurvivalEngine
-from agentic_core.immune.immune_system import ImmuneSystemV2
+from agentic_core.genetic_immune.immune_system import ImmuneSystemV2
 from unittest.mock import MagicMock
 
 class MockScholarBoard:
