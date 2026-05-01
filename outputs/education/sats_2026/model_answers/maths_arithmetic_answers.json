@@ -1,0 +1,242 @@
+[
+    {
+        "question_id": "MA_1",
+        "question": "124 + 690",
+        "answer": 814,
+        "worked_solution": "Line up the digits in columns. 124 + 690 = 814."
+    },
+    {
+        "question_id": "MA_2",
+        "question": "248 + 1035",
+        "answer": 1283,
+        "worked_solution": "Line up the digits in columns. 248 + 1035 = 1283."
+    },
+    {
+        "question_id": "MA_3",
+        "question": "372 + 1380",
+        "answer": 1752,
+        "worked_solution": "Line up the digits in columns. 372 + 1380 = 1752."
+    },
+    {
+        "question_id": "MA_4",
+        "question": "496 + 1725",
+        "answer": 2221,
+        "worked_solution": "Line up the digits in columns. 496 + 1725 = 2221."
+    },
+    {
+        "question_id": "MA_5",
+        "question": "620 + 345",
+        "answer": 965,
+        "worked_solution": "Line up the digits in columns. 620 + 345 = 965."
+    },
+    {
+        "question_id": "MA_6",
+        "question": "744 + 690",
+        "answer": 1434,
+        "worked_solution": "Line up the digits in columns. 744 + 690 = 1434."
+    },
+    {
+        "question_id": "MA_7",
+        "question": "868 + 1035",
+        "answer": 1903,
+        "worked_solution": "Line up the digits in columns. 868 + 1035 = 1903."
+    },
+    {
+        "question_id": "MA_8",
+        "question": "992 + 1380",
+        "answer": 2372,
+        "worked_solution": "Line up the digits in columns. 992 + 1380 = 2372."
+    },
+    {
+        "question_id": "MA_9",
+        "question": "1116 + 1725",
+        "answer": 2841,
+        "worked_solution": "Line up the digits in columns. 1116 + 1725 = 2841."
+    },
+    {
+        "question_id": "MA_10",
+        "question": "1240 + 345",
+        "answer": 1585,
+        "worked_solution": "Line up the digits in columns. 1240 + 345 = 1585."
+    },
+    {
+        "question_id": "MA_11",
+        "question": "1364 + 690",
+        "answer": 2054,
+        "worked_solution": "Line up the digits in columns. 1364 + 690 = 2054."
+    },
+    {
+        "question_id": "MA_12",
+        "question": "1488 + 1035",
+        "answer": 2523,
+        "worked_solution": "Line up the digits in columns. 1488 + 1035 = 2523."
+    },
+    {
+        "question_id": "MA_13",
+        "question": "1612 + 1380",
+        "answer": 2992,
+        "worked_solution": "Line up the digits in columns. 1612 + 1380 = 2992."
+    },
+    {
+        "question_id": "MA_14",
+        "question": "1736 + 1725",
+        "answer": 3461,
+        "worked_solution": "Line up the digits in columns. 1736 + 1725 = 3461."
+    },
+    {
+        "question_id": "MA_15",
+        "question": "1860 + 345",
+        "answer": 2205,
+        "worked_solution": "Line up the digits in columns. 1860 + 345 = 2205."
+    },
+    {
+        "question_id": "MA_16",
+        "question": "1984 + 690",
+        "answer": 2674,
+        "worked_solution": "Line up the digits in columns. 1984 + 690 = 2674."
+    },
+    {
+        "question_id": "MA_17",
+        "question": "2108 + 1035",
+        "answer": 3143,
+        "worked_solution": "Line up the digits in columns. 2108 + 1035 = 3143."
+    },
+    {
+        "question_id": "MA_18",
+        "question": "2232 + 1380",
+        "answer": 3612,
+        "worked_solution": "Line up the digits in columns. 2232 + 1380 = 3612."
+    },
+    {
+        "question_id": "MA_19",
+        "question": "2356 + 1725",
+        "answer": 4081,
+        "worked_solution": "Line up the digits in columns. 2356 + 1725 = 4081."
+    },
+    {
+        "question_id": "MA_20",
+        "question": "2480 + 345",
+        "answer": 2825,
+        "worked_solution": "Line up the digits in columns. 2480 + 345 = 2825."
+    },
+    {
+        "question_id": "MA_21",
+        "question": "Convert 2 and 1/5 to an improper fraction.",
+        "answer": "11/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (1). (2 * 5) + 1 = 11."
+    },
+    {
+        "question_id": "MA_22",
+        "question": "Convert 2 and 2/5 to an improper fraction.",
+        "answer": "12/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (2). (2 * 5) + 2 = 12."
+    },
+    {
+        "question_id": "MA_23",
+        "question": "Convert 2 and 3/5 to an improper fraction.",
+        "answer": "13/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (3). (2 * 5) + 3 = 13."
+    },
+    {
+        "question_id": "MA_24",
+        "question": "Convert 2 and 4/5 to an improper fraction.",
+        "answer": "14/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (4). (2 * 5) + 4 = 14."
+    },
+    {
+        "question_id": "MA_25",
+        "question": "Convert 2 and 5/5 to an improper fraction.",
+        "answer": "15/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (5). (2 * 5) + 5 = 15."
+    },
+    {
+        "question_id": "MA_26",
+        "question": "Convert 2 and 6/5 to an improper fraction.",
+        "answer": "16/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (6). (2 * 5) + 6 = 16."
+    },
+    {
+        "question_id": "MA_27",
+        "question": "Convert 2 and 7/5 to an improper fraction.",
+        "answer": "17/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (7). (2 * 5) + 7 = 17."
+    },
+    {
+        "question_id": "MA_28",
+        "question": "Convert 2 and 8/5 to an improper fraction.",
+        "answer": "18/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (8). (2 * 5) + 8 = 18."
+    },
+    {
+        "question_id": "MA_29",
+        "question": "Convert 2 and 9/5 to an improper fraction.",
+        "answer": "19/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (9). (2 * 5) + 9 = 19."
+    },
+    {
+        "question_id": "MA_30",
+        "question": "Convert 2 and 10/5 to an improper fraction.",
+        "answer": "20/5",
+        "worked_solution": "Multiply the whole number (2) by the denominator (5), then add the numerator (10). (2 * 5) + 10 = 20."
+    },
+    {
+        "question_id": "MA_31",
+        "question": "3/4 of 100 - 15.5",
+        "answer": 59.5,
+        "worked_solution": "Find 1/4 of 100 (100/4 = 25.0), multiply by 3 (25.0 * 3 = 75.0), then subtract 15.5."
+    },
+    {
+        "question_id": "MA_32",
+        "question": "3/4 of 200 - 15.5",
+        "answer": 134.5,
+        "worked_solution": "Find 1/4 of 200 (200/4 = 50.0), multiply by 3 (50.0 * 3 = 150.0), then subtract 15.5."
+    },
+    {
+        "question_id": "MA_33",
+        "question": "3/4 of 300 - 15.5",
+        "answer": 209.5,
+        "worked_solution": "Find 1/4 of 300 (300/4 = 75.0), multiply by 3 (75.0 * 3 = 225.0), then subtract 15.5."
+    },
+    {
+        "question_id": "MA_34",
+        "question": "3/4 of 400 - 15.5",
+        "answer": 284.5,
+        "worked_solution": "Find 1/4 of 400 (400/4 = 100.0), multiply by 3 (100.0 * 3 = 300.0), then subtract 15.5."
+    },
+    {
+        "question_id": "MA_35",
+        "question": "3/4 of 500 - 15.5",
+        "answer": 359.5,
+        "worked_solution": "Find 1/4 of 500 (500/4 = 125.0), multiply by 3 (125.0 * 3 = 375.0), then subtract 15.5."
+    },
+    {
+        "question_id": "MA_36",
+        "question": "3/4 of 600 - 15.5",
+        "answer": 434.5,
+        "worked_solution": "Find 1/4 of 600 (600/4 = 150.0), multiply by 3 (150.0 * 3 = 450.0), then subtract 15.5."
+    },
+    {
+        "question_id": "MA_37",
+        "question": "3/4 of 700 - 15.5",
+        "answer": 509.5,
+        "worked_solution": "Find 1/4 of 700 (700/4 = 175.0), multiply by 3 (175.0 * 3 = 525.0), then subtract 15.5."
+    },
+    {
+        "question_id": "MA_38",
+        "question": "3/4 of 800 - 15.5",
+        "answer": 584.5,
+        "worked_solution": "Find 1/4 of 800 (800/4 = 200.0), multiply by 3 (200.0 * 3 = 600.0), then subtract 15.5."
+    },
+    {
+        "question_id": "MA_39",
+        "question": "3/4 of 900 - 15.5",
+        "answer": 659.5,
+        "worked_solution": "Find 1/4 of 900 (900/4 = 225.0), multiply by 3 (225.0 * 3 = 675.0), then subtract 15.5."
+    },
+    {
+        "question_id": "MA_40",
+        "question": "3/4 of 1000 - 15.5",
+        "answer": 734.5,
+        "worked_solution": "Find 1/4 of 1000 (1000/4 = 250.0), multiply by 3 (250.0 * 3 = 750.0), then subtract 15.5."
+    }
+]

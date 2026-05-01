@@ -1,0 +1,242 @@
+[
+    {
+        "id": "MA_1",
+        "type": "arithmetic",
+        "question": "124 + 690",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_2",
+        "type": "arithmetic",
+        "question": "248 + 1035",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_3",
+        "type": "arithmetic",
+        "question": "372 + 1380",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_4",
+        "type": "arithmetic",
+        "question": "496 + 1725",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_5",
+        "type": "arithmetic",
+        "question": "620 + 345",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_6",
+        "type": "arithmetic",
+        "question": "744 + 690",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_7",
+        "type": "arithmetic",
+        "question": "868 + 1035",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_8",
+        "type": "arithmetic",
+        "question": "992 + 1380",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_9",
+        "type": "arithmetic",
+        "question": "1116 + 1725",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_10",
+        "type": "arithmetic",
+        "question": "1240 + 345",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_11",
+        "type": "arithmetic",
+        "question": "1364 + 690",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_12",
+        "type": "arithmetic",
+        "question": "1488 + 1035",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_13",
+        "type": "arithmetic",
+        "question": "1612 + 1380",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_14",
+        "type": "arithmetic",
+        "question": "1736 + 1725",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_15",
+        "type": "arithmetic",
+        "question": "1860 + 345",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_16",
+        "type": "arithmetic",
+        "question": "1984 + 690",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_17",
+        "type": "arithmetic",
+        "question": "2108 + 1035",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_18",
+        "type": "arithmetic",
+        "question": "2232 + 1380",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_19",
+        "type": "arithmetic",
+        "question": "2356 + 1725",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_20",
+        "type": "arithmetic",
+        "question": "2480 + 345",
+        "topic": "Addition"
+    },
+    {
+        "id": "MA_21",
+        "type": "arithmetic",
+        "question": "Convert 2 and 1/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_22",
+        "type": "arithmetic",
+        "question": "Convert 2 and 2/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_23",
+        "type": "arithmetic",
+        "question": "Convert 2 and 3/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_24",
+        "type": "arithmetic",
+        "question": "Convert 2 and 4/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_25",
+        "type": "arithmetic",
+        "question": "Convert 2 and 5/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_26",
+        "type": "arithmetic",
+        "question": "Convert 2 and 6/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_27",
+        "type": "arithmetic",
+        "question": "Convert 2 and 7/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_28",
+        "type": "arithmetic",
+        "question": "Convert 2 and 8/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_29",
+        "type": "arithmetic",
+        "question": "Convert 2 and 9/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_30",
+        "type": "arithmetic",
+        "question": "Convert 2 and 10/5 to an improper fraction.",
+        "topic": "Fractions"
+    },
+    {
+        "id": "MA_31",
+        "type": "arithmetic",
+        "question": "3/4 of 100 - 15.5",
+        "topic": "Fractions/Decimals"
+    },
+    {
+        "id": "MA_32",
+        "type": "arithmetic",
+        "question": "3/4 of 200 - 15.5",
+        "topic": "Fractions/Decimals"
+    },
+    {
+        "id": "MA_33",
+        "type": "arithmetic",
+        "question": "3/4 of 300 - 15.5",
+        "topic": "Fractions/Decimals"
+    },
+    {
+        "id": "MA_34",
+        "type": "arithmetic",
+        "question": "3/4 of 400 - 15.5",
+        "topic": "Fractions/Decimals"
+    },
+    {
+        "id": "MA_35",
+        "type": "arithmetic",
+        "question": "3/4 of 500 - 15.5",
+        "topic": "Fractions/Decimals"
+    },
+    {
+        "id": "MA_36",
+        "type": "arithmetic",
+        "question": "3/4 of 600 - 15.5",
+        "topic": "Fractions/Decimals"
+    },
+    {
+        "id": "MA_37",
+        "type": "arithmetic",
+        "question": "3/4 of 700 - 15.5",
+        "topic": "Fractions/Decimals"
+    },
+    {
+        "id": "MA_38",
+        "type": "arithmetic",
+        "question": "3/4 of 800 - 15.5",
+        "topic": "Fractions/Decimals"
+    },
+    {
+        "id": "MA_39",
+        "type": "arithmetic",
+        "question": "3/4 of 900 - 15.5",
+        "topic": "Fractions/Decimals"
+    },
+    {
+        "id": "MA_40",
+        "type": "arithmetic",
+        "question": "3/4 of 1000 - 15.5",
+        "topic": "Fractions/Decimals"
+    }
+]

@@ -1,0 +1,312 @@
+{
+    "revision_plan": [
+        {
+            "day": 1,
+            "date": "2026-05-01",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: English GPS & Spelling Set 1",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: English Reading Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 2,
+            "date": "2026-05-02",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: English Reading Set 1",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: Maths Arithmetic Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 3,
+            "date": "2026-05-03",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: Maths Arithmetic Set 1",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: Maths Reasoning Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 4,
+            "date": "2026-05-04",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: Maths Reasoning Set 1",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: English GPS & Spelling Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 5,
+            "date": "2026-05-05",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: English GPS & Spelling Set 2",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: English Reading Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 6,
+            "date": "2026-05-06",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: English Reading Set 2",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: Maths Arithmetic Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 7,
+            "date": "2026-05-07",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: Maths Arithmetic Set 2",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: Maths Reasoning Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 8,
+            "date": "2026-05-08",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: Maths Reasoning Set 2",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: English GPS & Spelling Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 9,
+            "date": "2026-05-09",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: English GPS & Spelling Set 3",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: English Reading Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 10,
+            "date": "2026-05-10",
+            "sessions": [
+                {
+                    "time": "09:00 - 09:30",
+                    "activity": "Practice: English Reading Set 3",
+                    "goal": "Focus and Accuracy"
+                },
+                {
+                    "time": "11:00 - 11:30",
+                    "activity": "Sensory Break / Minecraft / Football",
+                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Review: Maths Arithmetic Model Answers",
+                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                }
+            ],
+            "status": "Intensive Revision"
+        },
+        {
+            "day": 11,
+            "date": "2026-05-11",
+            "sessions": [
+                {
+                    "time": "09:00 - 11:00",
+                    "activity": "SATs EXAM: English GPS",
+                    "goal": "Perform best"
+                },
+                {
+                    "time": "13:00 - 14:00",
+                    "activity": "Arsenal / Minecraft Rest",
+                    "goal": "Recover (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Light Review for Tomorrow",
+                    "goal": "Final Prep"
+                }
+            ],
+            "status": "SATs EXAM WEEK"
+        },
+        {
+            "day": 12,
+            "date": "2026-05-12",
+            "sessions": [
+                {
+                    "time": "09:00 - 11:00",
+                    "activity": "SATs EXAM: English Reading",
+                    "goal": "Perform best"
+                },
+                {
+                    "time": "13:00 - 14:00",
+                    "activity": "Arsenal / Minecraft Rest",
+                    "goal": "Recover (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Light Review for Tomorrow",
+                    "goal": "Final Prep"
+                }
+            ],
+            "status": "SATs EXAM WEEK"
+        },
+        {
+            "day": 13,
+            "date": "2026-05-13",
+            "sessions": [
+                {
+                    "time": "09:00 - 11:00",
+                    "activity": "SATs EXAM: Maths Arithmetic & Reasoning 1",
+                    "goal": "Perform best"
+                },
+                {
+                    "time": "13:00 - 14:00",
+                    "activity": "Arsenal / Minecraft Rest",
+                    "goal": "Recover (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Light Review for Tomorrow",
+                    "goal": "Final Prep"
+                }
+            ],
+            "status": "SATs EXAM WEEK"
+        },
+        {
+            "day": 14,
+            "date": "2026-05-14",
+            "sessions": [
+                {
+                    "time": "09:00 - 11:00",
+                    "activity": "SATs EXAM: Maths Reasoning 2",
+                    "goal": "Perform best"
+                },
+                {
+                    "time": "13:00 - 14:00",
+                    "activity": "Arsenal / Minecraft Rest",
+                    "goal": "Recover (Oxygen Cycle)"
+                },
+                {
+                    "time": "16:00 - 16:30",
+                    "activity": "Light Review for Tomorrow",
+                    "goal": "Final Prep"
+                }
+            ],
+            "status": "SATs EXAM WEEK"
+        }
+    ]
+}

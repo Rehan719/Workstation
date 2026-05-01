@@ -1,0 +1,37 @@
+{
+    "operation_name": "Education Grand Operation - SATs 2026",
+    "target_pupil": {
+        "name": "Norbury Pupil",
+        "school": "Norbury School, Harrow",
+        "age": 10
+    },
+    "deliverables": {
+        "predicted_questions": [
+            "maths_arithmetic.json",
+            "maths_reasoning_1.json",
+            "maths_reasoning_2.json",
+            "english_gps.json",
+            "english_reading.json"
+        ],
+        "model_answers": [
+            "maths_arithmetic_answers.json",
+            "maths_reasoning_1_answers.json",
+            "maths_reasoning_2_answers.json",
+            "english_gps_answers.json",
+            "english_reading_answers.json"
+        ],
+        "revision_schedule": "schedule.json",
+        "final_bundle": "Norbury_School_SATs_Prep_Pack_2026.pdf"
+    },
+    "stats": {
+        "total_questions": 90,
+        "total_model_answers": 90,
+        "revision_days": 14
+    },
+    "compliance": {
+        "ueg_logging": "ACTIVE",
+        "constitutional_guard": "VERIFIED",
+        "zero_placeholder": "PASSED"
+    },
+    "timestamp": "2026-05-01T15:35:00Z"
+}
