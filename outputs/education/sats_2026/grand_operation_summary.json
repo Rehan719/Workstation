@@ -47,5 +47,81 @@
         "constitutional_guard": "VERIFIED",
         "zero_placeholder": "PASSED"
     },
-    "timestamp": "2026-05-01T15:35:00Z"
+    "timestamp": "2026-05-01T15:35:00Z",
+    "verified_pdf_deliverables": [
+        {
+            "name": "english_gps.pdf",
+            "path": "outputs/education/sats_2026/predicted_questions/english_gps.pdf",
+            "size": 1961,
+            "hash": "e953f8f02ae602b9f42722022030ac4a87f152cb90db3513cf6db1bb46983936"
+        },
+        {
+            "name": "maths_reasoning_1.pdf",
+            "path": "outputs/education/sats_2026/predicted_questions/maths_reasoning_1.pdf",
+            "size": 1941,
+            "hash": "467eb730136f569958a38545261715012bd45c947cd98136cf8125ae13546222"
+        },
+        {
+            "name": "maths_arithmetic.pdf",
+            "path": "outputs/education/sats_2026/predicted_questions/maths_arithmetic.pdf",
+            "size": 2767,
+            "hash": "f0b2537a35e4f3ac3ab6f0da0f086251c0441b40bfe289bf23911f5c4db008f7"
+        },
+        {
+            "name": "english_reading.pdf",
+            "path": "outputs/education/sats_2026/predicted_questions/english_reading.pdf",
+            "size": 1806,
+            "hash": "a45d16de81b2772f1313e1c912bb82b8da15bba915d51564fcbf3ef377b6bb24"
+        },
+        {
+            "name": "maths_reasoning_2.pdf",
+            "path": "outputs/education/sats_2026/predicted_questions/maths_reasoning_2.pdf",
+            "size": 1941,
+            "hash": "44527a120c6a30311977e783a28cf05794df58e163451ab1e08123e74314bc1e"
+        },
+        {
+            "name": "english_reading_answers.pdf",
+            "path": "outputs/education/sats_2026/model_answers/english_reading_answers.pdf",
+            "size": 2260,
+            "hash": "cbc92654b6f76e2e43a460a90d1df59e778674f3ec916a4653d5287e9a4cfcdf"
+        },
+        {
+            "name": "maths_arithmetic_answers.pdf",
+            "path": "outputs/education/sats_2026/model_answers/maths_arithmetic_answers.pdf",
+            "size": 4374,
+            "hash": "094685c2b8b67ca2d03820f6af0efba802c0db7c04d285b91440ad81228e8966"
+        },
+        {
+            "name": "english_gps_answers.pdf",
+            "path": "outputs/education/sats_2026/model_answers/english_gps_answers.pdf",
+            "size": 2233,
+            "hash": "2677ac14f686bffabd400179cf2a0ef17571acb6446cc9820f4f3e3406acc6b0"
+        },
+        {
+            "name": "maths_reasoning_2_answers.pdf",
+            "path": "outputs/education/sats_2026/model_answers/maths_reasoning_2_answers.pdf",
+            "size": 2039,
+            "hash": "a80d4957ae33d6e87d45fc94d4d8b274f7be8fdb126f6b2f86f11144ac3cb4e0"
+        },
+        {
+            "name": "maths_reasoning_1_answers.pdf",
+            "path": "outputs/education/sats_2026/model_answers/maths_reasoning_1_answers.pdf",
+            "size": 2039,
+            "hash": "dd9d21e7cad6c738cfea8c5c592e239a07c1414f61c9148690c83ea0a047823d"
+        },
+        {
+            "name": "schedule.pdf",
+            "path": "outputs/education/sats_2026/revision_schedule/schedule.pdf",
+            "size": 3417,
+            "hash": "458db6a35bc148b6d74898ac9524f61bfa286177832d5b70c2d712e9b84f28a3"
+        },
+        {
+            "name": "Norbury_School_SATs_Prep_Pack_2026.pdf",
+            "path": "outputs/education/sats_2026/deliverable/Norbury_School_SATs_Prep_Pack_2026.pdf",
+            "size": 20031,
+            "hash": "1c80804ea2cc603bd6c34a2c1e3fc4cef5d888bf65560068bf4e3f6bf09eaffd"
+        }
+    ],
+    "total_pdf_count": 12,
+    "verification_status": "PASSED"
 }
