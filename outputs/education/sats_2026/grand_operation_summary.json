@@ -21,7 +21,21 @@
             "english_reading_answers.json"
         ],
         "revision_schedule": "schedule.json",
-        "final_bundle": "Norbury_School_SATs_Prep_Pack_2026.pdf"
+        "final_bundle": "Norbury_School_SATs_Prep_Pack_2026.pdf",
+        "pdf_resources": [
+            "maths_arithmetic.pdf",
+            "maths_reasoning_1.pdf",
+            "maths_reasoning_2.pdf",
+            "english_gps.pdf",
+            "english_reading.pdf",
+            "maths_arithmetic_answers.pdf",
+            "maths_reasoning_1_answers.pdf",
+            "maths_reasoning_2_answers.pdf",
+            "english_gps_answers.pdf",
+            "english_reading_answers.pdf",
+            "schedule.pdf",
+            "Norbury_School_SATs_Prep_Pack_2026.pdf"
+        ]
     },
     "stats": {
         "total_questions": 90,
