@@ -38,6 +38,11 @@ class FractalRecirculation:
 
     async def macro_loop(self):
         """ORGANISM EVOLUTION & STRATEGIC ADAPTATION (<60s)"""
+        from agentic_core.payment.billing_bridge import BillingBridge
         while self.organism.is_running:
-            await self.organism.run_macro_cycle()
+            # Check quota before macro-cycle execution
+            if await BillingBridge.validate_execution(self.organism.uid, "executions"):
+                await self.organism.run_macro_cycle()
+            else:
+                self.logger.warning("Macro loop throttled due to billing quota.")
             await asyncio.sleep(55) # Throttle to ~60s target
