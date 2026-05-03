@@ -11,7 +11,7 @@ from pathlib import Path
 # In a real environment, we'd use tensorflow.js (frontend) and real stripe/paypal SDKs.
 # Here we implement the backend logic that would support them.
 
-from agentic_core.config.paths import DATA_DIR
+from config.paths import DATA_DIR
 from agentic_core.security.pqc_hardening import pqc_service
 
 logger = logging.getLogger(__name__)

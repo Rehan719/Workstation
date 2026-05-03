@@ -38,7 +38,7 @@ class FractalRecirculation:
 
     async def macro_loop(self):
         """ORGANISM EVOLUTION & STRATEGIC ADAPTATION (<60s)"""
-        from agentic_core.payment.billing_bridge import BillingBridge
+        from backend.stripe.billing_bridge import BillingBridge
         while self.organism.is_running:
             # Check quota before macro-cycle execution
             if await BillingBridge.validate_execution(self.organism.uid, "executions"):

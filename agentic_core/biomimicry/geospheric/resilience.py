@@ -5,7 +5,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import os
 import json
-from agentic_core.config.paths import MODELS_DIR
+from config.paths import MODELS_DIR
 
 logger = logging.getLogger(__name__)
 

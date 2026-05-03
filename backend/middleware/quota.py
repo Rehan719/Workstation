@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException
-from agentic_core.governance.economy.usage_meter import async_check_quota, evaluate_context_rules
+from backend.usage.usage_meter import async_check_quota, evaluate_context_rules
 # from .auth import get_current_user_id # Mock or use existing
 
 def require_quota(operation: str):

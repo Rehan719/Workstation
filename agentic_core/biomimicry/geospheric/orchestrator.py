@@ -52,7 +52,7 @@ class GeosphericHomeostaticOrchestrator:
     @constitutional_guard
     async def orchestrate(self, telemetry: CycleTelemetry, uid: str = "system_master") -> Dict[str, Any]:
         # 1. Billing Compliance Check (Nexus)
-        from agentic_core.payment.billing_bridge import BillingBridge
+        from backend.stripe.billing_bridge import BillingBridge
         if not await BillingBridge.validate_execution(uid, "executions"):
             return {
                 "status": "402_PAYMENT_REQUIRED",

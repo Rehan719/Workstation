@@ -7,7 +7,7 @@ import uuid
 import json
 import os
 
-from agentic_core.config.paths import DATA_DIR
+from config.paths import DATA_DIR
 from agentic_core.synthesis.scientific_review import review_generator
 from agentic_core.synthesis.presentation import presentation_gen
 from agentic_core.synthesis.business_model import business_simulator

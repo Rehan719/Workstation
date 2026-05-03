@@ -5,7 +5,7 @@ import json
 import logging
 from datetime import datetime
 from typing import List, Dict, Any
-from agentic_core.config.paths import DATA_DIR, CHROMA_DB_PATH, MEETING_LOG_FILE
+from config.paths import DATA_DIR, CHROMA_DB_PATH, MEETING_LOG_FILE
 
 logger = logging.getLogger(__name__)
 

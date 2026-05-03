@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 import json
 import os
-from agentic_core.config.paths import MEMORY_FILE
+from config.paths import MEMORY_FILE
 
 class VectorMemory:
     """v1.0 Production: Unified Absolute Path Memory."""

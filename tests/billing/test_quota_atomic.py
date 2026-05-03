@@ -1,5 +1,5 @@
 import concurrent.futures
-from agentic_core.governance.economy.usage_meter import check_quota
+from backend.usage.usage_meter import check_quota
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -8,7 +8,7 @@ def test_quota_atomic():
     # Note: This requires a real or local emulator Firestore to truly test atomicity.
     # In sandbox, we verify the transactional structure.
 
-    with patch("agentic_core.governance.economy.usage_meter.db") as mock_db:
+    with patch("backend.usage.usage_meter.db") as mock_db:
         mock_transaction = MagicMock()
         mock_db.transaction.return_value = mock_transaction
 

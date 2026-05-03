@@ -2,7 +2,7 @@ import os
 import json
 import sqlite3
 from pathlib import Path
-from agentic_core.config.paths import DATA_DIR, L7_REGISTRY_FILE, INTERACTIONS_DB, MEETING_LOG_FILE, MEMORY_FILE, ensure_dirs
+from config.paths import DATA_DIR, L7_REGISTRY_FILE, INTERACTIONS_DB, MEETING_LOG_FILE, MEMORY_FILE, ensure_dirs
 
 def init_data():
     print("🚀 Initializing Workstation v1.0 Unified Production Data...")

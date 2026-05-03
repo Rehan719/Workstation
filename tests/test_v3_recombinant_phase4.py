@@ -4,7 +4,7 @@ from agentic_core.layers.l1_identity.validator import validator_l1
 from agentic_core.layers.l6_propagation.propagation import replication_engine
 from agentic_core.layers.l11_civilisation.civilisation import mesh_controller
 from agentic_core.layers.l1_identity.genome_engine import genome_engine
-from agentic_core.governance.economy import economic_hub
+from backend.usage import economic_hub
 from agentic_core.governance.dao import dao_framework
 
 def test_autonomous_replication():

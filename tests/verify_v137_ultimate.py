@@ -3,7 +3,7 @@ import logging
 from agentic_core.biomimicry.geospheric.orchestrator_v137 import HomeostaticOrchestratorV137
 from agentic_core.synthesis.recombiner_v137 import CapabilityRecombinerV137
 from agentic_core.communication.adaptive_v137 import AdaptiveCommunicatorV137
-from agentic_core.realms.learner_realm_v137 import LearnerRealmV137
+from realms.learner_realm_v137 import LearnerRealmV137
 from agentic_core.evolution.ueg_merkle_dag import MerkleDAGV137
 from agentic_core.governance.credentials.vault_v137 import SecureCredentialVaultV137
 from agentic_core.evolution.epigenetic_v3 import UnifiedEventGraph, EpigeneticEvolutionEngineV3

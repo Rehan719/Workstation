@@ -1,10 +1,10 @@
 import concurrent.futures
-from agentic_core.governance.economy.usage_meter import check_quota
+from backend.usage.usage_meter import check_quota
 import unittest
 from unittest.mock import MagicMock, patch
 
 class TestAtomicQuota(unittest.TestCase):
-    @patch("agentic_core.governance.economy.usage_meter.db")
+    @patch("backend.usage.usage_meter.db")
     def test_atomic_quota(self, mock_db):
         uid = "test-user-atomic"
 

@@ -1,7 +1,7 @@
 import logging
 import torch
 from typing import Dict, Any, Optional, List
-from agentic_core.organism.gaas_validator_v4 import GaaSValidatorV4
+from core.gaas_validator_v4 import GaaSValidatorV4
 from agentic_core.legal.precision_engine import UKLegalPrecisionEngineImpl
 from agentic_core.biomimicry.minimisation.core.optimal_transport import OptimalTransportRouter
 

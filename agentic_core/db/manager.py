@@ -2,7 +2,7 @@ import logging
 import sqlite3
 import os
 from typing import Dict, Any, List, Optional
-from agentic_core.config.loader import settings
+from config.loader import settings
 
 logger = logging.getLogger(__name__)
 
