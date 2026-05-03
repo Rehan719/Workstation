@@ -1,0 +1,48 @@
+{
+    "name": "Norbury Pupil",
+    "age": 10,
+    "school": "Norbury School, Harrow",
+    "strengths": [
+        "Arithmetic (four operations)",
+        "Spelling patterns (-tion, -sion)",
+        "Reading literal comprehension"
+    ],
+    "areas_for_improvement": [
+        "Algebra (simple equations)",
+        "Fractions (mixed to improper)",
+        "3-mark comparison (LINK structure)",
+        "Possessive apostrophes"
+    ],
+    "interests": [
+        "Football (Arsenal)",
+        "Minecraft",
+        "Space/Planets"
+    ],
+    "learning_style": {
+        "session_duration": "20-30 minutes",
+        "approach": "Visual/Hands-on",
+        "needs": "Clear worked examples"
+    },
+    "context_mapping": {
+        "maths_reasoning": {
+            "entities": [
+                "Bukayo Saka",
+                "Arsenal matches",
+                "Minecraft blocks",
+                "Space rovers"
+            ],
+            "scenarios": [
+                "Calculating goal averages",
+                "Building a Minecraft fortress",
+                "Fuel for Mars mission"
+            ]
+        },
+        "reading": {
+            "topics": [
+                "Space exploration",
+                "History of football",
+                "Digital world construction"
+            ]
+        }
+    }
+}

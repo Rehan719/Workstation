@@ -2,7 +2,9 @@
 # outputs/
 outputs_v2/
 outputs_final/
+# Deny all PDFs by default but allow Education SATs outputs
 *.pdf
+!outputs/education/sats_2026/**/*.pdf
 *.tex
 *.png
 *.gif
