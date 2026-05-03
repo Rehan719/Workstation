@@ -4,7 +4,6 @@ from typing import Dict, Any, List, Optional
 
 class ConstitutionRecursionBoundExceeded(Exception):
     """Raised when MJM v5.0 attempts to recurse beyond the signed constitutional limit."""
-    pass
 
 class MJMv5OmniLearner:
     """

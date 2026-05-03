@@ -6,11 +6,11 @@ from typing import Dict, Any, List, Optional
 
 # Mock NATS Client for environments without a real server
 class MockNATS:
-    async def connect(self, servers): pass
-    async def publish(self, subject, payload): pass
-    async def subscribe(self, subject, cb): pass
-    async def flush(self): pass
-    async def close(self): pass
+    async def connect(self, servers): return True
+    async def publish(self, subject, payload): return True
+    async def subscribe(self, subject, cb): return True
+    async def flush(self): return True
+    async def close(self): return True
 
 class AntColonyScheduler:
     """

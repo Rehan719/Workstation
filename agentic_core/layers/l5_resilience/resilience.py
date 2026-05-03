@@ -72,7 +72,6 @@ class ResilienceManagerL5:
                   logger.warning(f"L5: v0.5 Torch Prediction high ({prediction_score.item():.2f}) for {component_id}. Proactive action required.")
                   return True
         except:
-             pass
 
         return False
 

@@ -8,7 +8,7 @@ import datetime
 import uuid
 import json
 
-from agentic_core.config.paths import DATA_DIR
+from config.paths import DATA_DIR
 from agentic_core.ai_ceo.memory_v01 import memory_v01
 
 logger = logging.getLogger(__name__)

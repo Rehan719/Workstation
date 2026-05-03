@@ -1,0 +1,21 @@
+name: Genetic-Immune CI
+on: [push, pull_request]
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Zero-placeholder check
+        run: |
+          if grep -rE "(TODO|FIXME|pass\s*$|NotImplementedError|unittest\.mock)" --include="*.py" --include="*.tsx" agentic_core/ backend/; then
+            echo "❌ Placeholders found"
+            exit 1
+          fi
+      - name: Sovereignty validation
+        run: |
+          if grep -r "google\.cloud" agentic_core/ backend/; then
+            echo "❌ Sovereignty violation"
+            exit 1
+          fi
+      - name: Unit tests
+        run: pytest tests/

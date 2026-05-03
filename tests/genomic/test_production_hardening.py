@@ -8,7 +8,7 @@ for mod_name in ['shap', 'jwt', 'casbin', 'alembic', 'pygit2', 'sigstore']:
         sys.modules[mod_name] = mock
 
 import pytest
-from agentic_core.config.loader import settings
+from config.loader import settings
 from agentic_core.builder.conversational_engine import ConversationalEngine
 from agentic_core.builder.refinement_engine import RefinementEngine
 

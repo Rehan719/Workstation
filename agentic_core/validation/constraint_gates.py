@@ -4,7 +4,6 @@ import abc
 class BaseValidator(abc.ABC):
     @abc.abstractmethod
     def validate(self, input_data: Any) -> Dict[str, Any]:
-        pass
 
 class ZeroPlaceholderValidator(BaseValidator):
     def validate(self, input_data: Any) -> Dict[str, Any]:

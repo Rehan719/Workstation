@@ -11,7 +11,7 @@ from agentic_core.biomimicry.minimisation.core.optimal_transport import OptimalT
 from agentic_core.biomimicry.minimisation.core.schrodinger_bridge import SchrödingerBridgeEngine
 from agentic_core.biomimicry.minimisation.core.diffusion_engine import ScoreBasedDiffusion
 from agentic_core.gaas.adapters.entropy_regularised_gaas import EntropyRegularisedGaaS
-from agentic_core.organism.gaas_validator_v4 import GaaSValidatorV4
+from core.gaas_validator_v4 import GaaSValidatorV4
 from agentic_core.legal.precision_engine import UKLegalPrecisionEngineImpl
 from agentic_core.ueg.logger import VSBUEGLogger
 import torch.nn as nn

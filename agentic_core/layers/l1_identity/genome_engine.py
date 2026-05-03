@@ -133,7 +133,7 @@ class GenomeMutationWorkflow:
         return params
 
 # Initialize Engine
-from agentic_core.config.paths import GENOME_DIR
+from config.paths import GENOME_DIR
 
 GENOME_FILE = GENOME_DIR / "constitution.work"
 

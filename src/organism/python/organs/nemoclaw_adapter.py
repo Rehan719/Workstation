@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from agentic_core.governance.verifiable_governance import VGAEngine
-from agentic_core.immune.immune_system import ImmuneSystemV2
+from agentic_core.genetic_immune.immune_system import ImmuneSystemV2
 from src.organism.python.neural.event_bus import AsyncEventBus
 from src.organism.python.neural.event_types import (
     IntentGenerated, GovernanceValidated, ValidationResult

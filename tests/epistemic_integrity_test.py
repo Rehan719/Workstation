@@ -3,7 +3,7 @@ import unittest
 import os
 import json
 from agentic_core.orchestration.conscious_organism_v70_0 import ConsciousOrganismV70_0
-from agentic_core.genetics.genomic_registry import GenomicRegistry
+from agentic_core.genetic_immune.genomic_registry import GenomicRegistry
 
 class TestV70Organism(unittest.IsolatedAsyncioTestCase):
 

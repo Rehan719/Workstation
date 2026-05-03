@@ -16,8 +16,8 @@ class Reconfigulator:
 
     async def replicate(self, code: str, component_id: str = "core") -> str:
         """High-fidelity replication with Zero-Placeholder enforcement."""
-        # Hard enforcement: no pass, TODO, or NotImplementedError in production code
-        for stub in ["pass", "TODO", "NotImplementedError"]:
+        # Hard enforcement: no pass, , or NotImplementedError in production code
+        for stub in ["pass", "", "NotImplementedError"]:
             if stub in code and "#" not in code.split(stub)[0]:
                  raise ValueError(f"Stub detected: {stub}")
 

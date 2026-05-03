@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 from src.organism.python.resilience.homeostasis import HomeostasisManager
 from src.organism.python.neural.event_bus import AsyncEventBus
 from src.organism.python.neural.event_types import HomeostasisEvent, BiomimeticEvent
-from agentic_core.homeostasis.resilience import ResilienceManager
+from agentic_core.biomimicry.geospheric.resilience import ResilienceManager
 
 @pytest.mark.asyncio
 async def test_homeostasis_recovery_flow():

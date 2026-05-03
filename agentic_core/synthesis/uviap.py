@@ -7,7 +7,7 @@ import json
 import uuid
 from typing import List, Dict, Any, Optional
 from agentic_core.ueg.ueg_manager import UEGManager
-from agentic_core.genetics.genomic_registry import GenomicRegistry
+from agentic_core.genetic_immune.genomic_registry import GenomicRegistry
 from agentic_core.biochemical.rectification_engine import WorkstationAsymmetricDrive
 from agentic_core.simulation.evolutionary_topology import PhylogeneticDiversityTwin
 from agentic_core.governance.credentials.vault import CredentialVault

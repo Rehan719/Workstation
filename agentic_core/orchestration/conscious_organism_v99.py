@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from agentic_core.molecular.triad_integration import TriadIntegrator
 from agentic_core.consciousness.global_workspace import GlobalWorkspace
 from agentic_core.consciousness.meta_cognitive_executive import MetaCognitiveExecutive
-from agentic_core.genetics.genomic_registry import GenomicRegistry
+from agentic_core.genetic_immune.genomic_registry import GenomicRegistry
 from agentic_core.cognition.minimax_optimizer import MinimaxOptimizer, default_utility_func
 from agentic_core.cognition.qwen_integration import QwenReasoningEngine
 from agentic_core.cognition.retro_causal_processor import RetroCausalProcessor
@@ -56,9 +56,9 @@ from agentic_core.validation.digital_twin_orchestrator import DigitalTwinOrchest
 from agentic_core.validation.benchmarks import BenchmarkSuite
 from agentic_core.governance.trustworthiness_engine import TrustworthinessEngine
 from agentic_core.nlp.nli_engine import NLIEngine
-from agentic_core.config.loader import settings
+from config.loader import settings
 from agentic_core.db.manager import DatabaseManager
-from agentic_core.immunity.immune_system import ImmuneSystem
+from agentic_core.genetic_immune.immune_system import ImmuneSystem
 
 # v99 Platform Assimilation Modules
 from agentic_core.builder.conversational_engine import ConversationalEngine

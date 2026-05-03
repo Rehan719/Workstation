@@ -3,7 +3,7 @@ import asyncio
 from unittest.mock import MagicMock
 from agentic_core.ai_ceo.c_suite import BiomimeticCSuite
 from agentic_core.governance.verifiable_governance import VGAEngine
-from agentic_core.immune.immune_system import ImmuneSystemV2
+from agentic_core.genetic_immune.immune_system import ImmuneSystemV2
 from agentic_core.tools.registry import ToolRegistry
 
 from src.organism.python.core.state_kernel import SovereignState
