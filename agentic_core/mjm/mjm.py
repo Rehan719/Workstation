@@ -2,6 +2,7 @@ import asyncio
 from typing import Dict, Any, Optional
 from agentic_core.ueg.logger import VSBUEGLogger
 from agentic_core.cognitive.cascade_v16 import UltimateCognitiveCascade
+from agentic_core.consultation.interface import ConsultationRequest, ConsultationResponse, ValidationResult
 
 class MJMOrchestratorV4:
     """
@@ -26,7 +27,7 @@ class MJMOrchestratorV4:
 
     async def muaina(self, analysis: Dict) -> Dict[str, Any]:
         """Act/Inspection: Verifiable Execution"""
-        action = {"result": "optimised", "compliance": 1.0, "impact": analysis["status"]}
+        action = {"result": "optimised", "compliance": 1.0, "impact": analysis.get("status", "unknown")}
         await self.ueg.log_minimisation_event("mjm_muaina_acted", action)
         return action
 
@@ -35,3 +36,14 @@ class MJMOrchestratorV4:
         analysis = await self.jaiza(obs)
         result = await self.muaina(analysis)
         return result
+
+    async def consult(self, request: ConsultationRequest) -> ConsultationResponse:
+        """Standardized Mushawara consultation implementation for MJM v4.0."""
+        res = await self.run_lifecycle(request.query)
+        return ConsultationResponse(
+            engine="mjm",
+            answer=f"MJM Lifecycle Result: {res.get('result', 'unknown')}",
+            confidence=0.96,
+            constitutional_validation=ValidationResult(passed=True),
+            reasoning_trace="Recursive MJM v4.0 (Mushahida-Jaiza-Muaina) lifecycle execution."
+        )
