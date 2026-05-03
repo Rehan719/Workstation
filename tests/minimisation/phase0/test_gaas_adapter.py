@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 from agentic_core.gaas.adapters.entropy_regularised_gaas import EntropyRegularisedGaaS
-from agentic_core.organism.gaas_validator_v4 import GaaSValidatorV4
+from core.gaas_validator_v4 import GaaSValidatorV4
 from agentic_core.legal.precision_engine import UKLegalPrecisionEngineImpl
 import yaml
 import os

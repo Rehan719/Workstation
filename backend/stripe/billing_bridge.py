@@ -1,5 +1,5 @@
 import logging
-from agentic_core.governance.economy.usage_meter import check_quota
+from backend.usage.usage_meter import check_quota
 from agentic_core.ueg.logger import VSBUEGLogger
 
 logger = logging.getLogger("BillingBridge")

@@ -3,7 +3,7 @@ from fastapi import Request, HTTPException, APIRouter
 import stripe
 from firebase_admin import firestore
 from datetime import datetime, timedelta
-from agentic_core.payment.billing_bridge import BillingBridge
+from backend.stripe.billing_bridge import BillingBridge
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 db = firestore.client()

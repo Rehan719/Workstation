@@ -3,9 +3,9 @@ import logging
 import time
 from typing import Dict, Any, List
 from agentic_core.governance.gaas.gaas_validator import GaaSValidatorV4
-from agentic_core.organism.nemoclaw_runtime import NemoclawRuntime
+from core.nemoclaw_runtime import NemoclawRuntime
 from agentic_core.identity.core import SovereignIdentity
-from agentic_core.organism.hardware_abstraction import HardwareAbstractionLayer
+from core.hardware_abstraction import HardwareAbstractionLayer
 from agentic_core.vbs.bms import BusinessManagementSystem
 from agentic_core.vbs.qms import QualityManagementSystem
 from agentic_core.vbs.dcms import DocumentControlManagementSystem

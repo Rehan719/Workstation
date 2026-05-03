@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from agentic_core.agents.diplomatic_outreach import OutreachCampaignManager
+from agents.diplomatic_outreach import OutreachCampaignManager
 from agentic_core.commercial.marketplace import MarketplaceIntegrator
 from agentic_core.collaboration.scholar_portal import ScholarOnboardingPortal
 from agentic_core.analytics.impact_tracker import GlobalImpactTracker

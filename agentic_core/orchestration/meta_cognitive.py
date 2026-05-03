@@ -3,7 +3,7 @@ import json
 import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from agentic_core.config.paths import LOG_DIR, DATA_DIR
+from config.paths import LOG_DIR, DATA_DIR
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ import uuid
 import jwt
 import datetime
 from typing import Dict, Any, List, Optional
-from agentic_core.config.loader import settings
+from config.loader import settings
 
 logger = logging.getLogger(__name__)
 
