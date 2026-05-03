@@ -1,0 +1,23 @@
+[
+    {
+        "id": "MR2_1",
+        "type": "reasoning",
+        "question": "In an Arsenal match, the ratio of home fans to away fans is 5:2. If there are 60,000 home fans, how many away fans are there?",
+        "topic": "Ratio",
+        "context": "Football (Arsenal)"
+    },
+    {
+        "id": "MR2_2",
+        "type": "reasoning",
+        "question": "In Minecraft, a wall is made of 'x' stone blocks and 5 iron blocks. If the total blocks are 27, write an equation and solve for x.",
+        "topic": "Algebra",
+        "context": "Minecraft"
+    },
+    {
+        "id": "MR2_3",
+        "type": "reasoning",
+        "question": "A Mars rover travels 4.5km on Monday and 2,300m on Tuesday. What is the total distance in meters?",
+        "topic": "Measurement",
+        "context": "Space"
+    }
+]

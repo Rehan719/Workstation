@@ -1,0 +1,19 @@
+[
+    {
+        "question_id": "RD_1",
+        "question": "How do you know that the astronaut was feeling nervous before the launch? Give two reasons from the text.",
+        "answer": "Reason 1: They were shaking. Reason 2: They were breathing deeply.",
+        "method_or_worked_solution": "Inference (Domain 2d): Look for clues in the text that suggest an emotion even if it isn't stated directly."
+    },
+    {
+        "question_id": "RD_2",
+        "question": "Compare the character's feelings about football at the start of the story to the end. Use evidence from the text.",
+        "answer": {
+            "Link": "The character feels excited at the start but disappointed at the end.",
+            "Evidence 1": "Text says 'he ran to the pitch with a grin'.",
+            "Evidence 2": "Text says 'he slumped his shoulders on the way home'.",
+            "Explain": "The contrast between 'grin' and 'slumped shoulders' shows his shift in mood."
+        },
+        "method_or_worked_solution": "Comparison (LINK): Link the two points, provide evidence for both, and explain the difference."
+    }
+]

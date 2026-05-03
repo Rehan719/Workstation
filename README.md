@@ -2,27 +2,27 @@
 
 بِسْمِ اللَّهِ وَعَلَى بَرَكَةِ اللَّهِ
 
-Workstation is a transcendent digital organism and sovereign SaaS platform. This release (vΩ∞-GEOSPHERIC-FINAL) marks the definitive convergence of biomimetic AI, geospheric resource orchestration, and production-grade SaaS scaling.
+Workstation is a transcendent digital organism and sovereign SaaS platform. It integrates a 12-layer biomimetic AI core with geospheric resource orchestration, optimized for Google Cloud's free tier and Stripe-powered scaling.
 
 ## 🧬 Core Architecture
-- **IDBO Core:** 12-layer biomimetic intelligence consolidated in `agentic_core/`.
-- **Geospheric Homeostasis:** Lyapunov-stable management of Water, Carbon, Nitrogen, Oxygen, Phosphorus, and Sulfur cycles.
-- **Sovereign Governance:** GaaS v4 constitutional enforcement with Merkle-DAG logging.
-- **Urdu Cognitive Engines:** Coupled cycle-integrated Urdu reasoning.
+- **Canonical Logic:** Consolidated within `agentic_core/`.
+- **Geospheric Homeostasis:** 6-cycle Lyapunov-stable resource management.
+- **Sovereign Governance:** GaaS v4 constitutional enforcement and UEG Merkle-DAG logging.
+- **Urdu Cognitive Engines:** High-fidelity Urdu-centric reasoning.
 
-## 💳 SaaS & Scale
-- **Commercial Layer:** Stripe-powered tiered subscriptions with 30-day free trials.
-- **Atomic Metering:** Firestore Transactions ensure race-condition-free quota enforcement.
-- **Runtime Sovereignty:** Decoupled core logic for hybrid edge-cloud deployment.
+## 💳 SaaS & Scaling
+- **Stripe Integration:** Automatic 30-day trials and idempotent webhook processing.
+- **Atomic Quotas:** High-concurrency safe usage metering.
+- **Free for Personal Use:** Pre-configured for GCP free-tier quotas.
 
 ## 🚀 Quick Start
 ```bash
-# Deploy to Google Cloud Free Tier
+# Deploy to Google Cloud (Free Tier)
 ./agentic_core/scripts/deploy_free_tier.sh <your-project-id>
 ```
 
 ## 🛡️ Certification
-Certified with **Zero-Placeholder** and **UK Legal Precision**.
+Verified with **Zero-Placeholder Certification**. 100% concrete production logic.
 See [docs/releases/certification_vΩ∞-GEOSPHERIC-FINAL.md](docs/releases/certification_vΩ∞-GEOSPHERIC-FINAL.md).
 
 ---

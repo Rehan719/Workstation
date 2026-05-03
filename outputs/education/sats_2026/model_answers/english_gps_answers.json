@@ -1,0 +1,44 @@
+[
+    {
+        "question_id": "GPS_1",
+        "question": "Rewrite this sentence using a possessive apostrophe: The boots belonging to Bukayo Saka were muddy.",
+        "answer": "Bukayo Saka's boots were muddy.",
+        "rule_or_justification": "The boots belong to one person (Bukayo Saka), so we add 's to the name."
+    },
+    {
+        "question_id": "GPS_2",
+        "question": "Identify the main clause in this sentence: Although it was raining, the Arsenal fans continued to cheer loudly.",
+        "answer": "the Arsenal fans continued to cheer loudly",
+        "rule_or_justification": "A main clause can stand alone as a sentence. 'Although it was raining' is a subordinate clause."
+    },
+    {
+        "question_id": "SP_1",
+        "question": "Spell the word: celebration",
+        "answer": "celebration",
+        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for celebration."
+    },
+    {
+        "question_id": "SP_2",
+        "question": "Spell the word: division",
+        "answer": "division",
+        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for division."
+    },
+    {
+        "question_id": "SP_3",
+        "question": "Spell the word: mission",
+        "answer": "mission",
+        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for mission."
+    },
+    {
+        "question_id": "SP_4",
+        "question": "Spell the word: television",
+        "answer": "television",
+        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for television."
+    },
+    {
+        "question_id": "SP_5",
+        "question": "Spell the word: prediction",
+        "answer": "prediction",
+        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for prediction."
+    }
+]
