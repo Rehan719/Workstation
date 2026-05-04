@@ -1,17 +1,19 @@
 import logging
 import math
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
+from .immune_defense import ImmuneDefense
 
 logger = logging.getLogger(__name__)
 
 class ImmuneSystem:
     """
     L-C-VI: Multi-layered Immune Defense.
-    Innate, adaptive, and humoral immunity with sigmoidal checkpoint calibration.
+    Enhanced with twin-prediction logic and real-time defense.
     """
-    def __init__(self):
+    def __init__(self, validator: Optional[Any] = None):
         self.threat_database = []
         self.ic50_perplexity = 42.3
+        self.defense = ImmuneDefense(validator)
 
     def evaluate_threat(self, sample: Dict[str, Any]) -> float:
         """
@@ -21,7 +23,6 @@ class ImmuneSystem:
         perplexity = sample.get("perplexity", 0)
 
         # Sigmoidal inhibition curve
-        # Score = 1 / (1 + exp(-k * (p - IC50)))
         k = 0.5
         score = 1.0 / (1.0 + math.exp(-k * (perplexity - self.ic50_perplexity)))
 
@@ -29,6 +30,13 @@ class ImmuneSystem:
             logger.warning(f"IMMUNE RESPONSE: High threat detected (score: {score:.2f})")
 
         return score
+
+    async def scan_threats(self, orchestrator: Any) -> List[Dict[str, Any]]:
+        """
+        Public interface to scan for threats using the internal defense module.
+        Integrates with the digital twin's predictive simulation.
+        """
+        return await self.defense.scan_threats(orchestrator)
 
     def heal(self, component_id: str):
         logger.info(f"Regenerative healing initiated for {component_id}")
