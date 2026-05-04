@@ -2,13 +2,13 @@ import os
 import yaml
 import numpy as np
 from typing import Dict, Any, Optional
-from .water_cycle import HydrologicResourceManager
-from .carbon_cycle import CarbonDataMetabolism
-from .nitrogen_cycle import NitrogenTaskMediator
-from .oxygen_cycle import MetabolicScheduler
-from .phosphorus_cycle import PhosphorusMemoryHierarchy
-from .sulfur_cycle import SulfurErrorResilience
-from .psi_functional import EcosystemHealthObjective
+from agentic_core.biomimicry.cycles.water_cycle import HydrologicResourceManager
+from agentic_core.biomimicry.cycles.carbon_cycle import CarbonDataMetabolism
+from agentic_core.biomimicry.cycles.nitrogen_cycle import NitrogenTaskMediator
+from agentic_core.biomimicry.cycles.oxygen_cycle import MetabolicScheduler
+from agentic_core.biomimicry.cycles.phosphorus_cycle import PhosphorusMemoryHierarchy
+from agentic_core.biomimicry.cycles.sulfur_cycle import SulfurErrorResilience
+from agentic_core.biomimicry.cycles.psi_functional import EcosystemHealthObjective
 from agentic_core.crypto.entropy_pool import EntropyPool
 from agentic_core.ueg.logger import VSBUEGLogger
 from agentic_core.divine.v2.alignment_v2 import DivineAlignmentEngineV2

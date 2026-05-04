@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 from agentic_core.ueg.logger import VSBUEGLogger
-from agentic_core.biomimicry.cycles.geospheric_orchestrator import GeosphericHomeostaticOrchestrator
+from agentic_core.biomimicry.geospheric.orchestrator_legacy import GeosphericHomeostaticOrchestrator
 
 class EnrichedArchitecturalLayerManager:
     """
