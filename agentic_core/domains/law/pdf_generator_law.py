@@ -72,6 +72,16 @@ class LawPDFGenerator:
             content = f.read()
         return self._create_pdf("Schedule_of_Evidence_Integrity_v19.pdf", content, "Schedule of Evidence Integrity")
 
+    def generate_skeleton(self, md_path: str):
+        with open(md_path, 'r') as f:
+            content = f.read()
+        return self._create_pdf("Skeleton_Argument_Liability_v20.pdf", content, "Skeleton Argument: Liability (v20)")
+
+    def generate_sol(self, md_path: str):
+        with open(md_path, 'r') as f:
+            content = f.read()
+        return self._create_pdf("Schedule_of_Loss_v20.pdf", content, "Schedule of Loss (v20)")
+
 if __name__ == "__main__":
     gen = LawPDFGenerator()
     base = "outputs/Law/EmploymentTribunal/v19_et1_clarification/"

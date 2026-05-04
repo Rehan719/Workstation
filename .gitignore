@@ -6,6 +6,8 @@ outputs_final/
 *.pdf
 !outputs/education/sats_2026/**/*.pdf
 !outputs/Law/EmploymentTribunal/v19_et1_clarification/**/*.pdf
+!outputs/Law/EmploymentTribunal/v19.1_et1_clarification/**/*.pdf
+!outputs/GrandOperation_vInfinity/**/*.pdf
 *.tex
 *.png
 *.gif

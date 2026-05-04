@@ -1,0 +1,21 @@
+{
+    "@context": "https://schema.org/",
+    "@type": "Dataset",
+    "name": "Incident-Evidence Matrix v19.1",
+    "description": "Forensic mapping of ET incidents to evidence sources for case 6045461/2025",
+    "hasPart": [
+        {
+            "@type": "ListItem",
+            "item": {
+                "name": "INC-001",
+                "claim": "s.15 EqA",
+                "evidence": "Log p.3",
+                "hash": "sha3-512:6d5c95403f527b9189a2a96aec57b983142931bb481afe7c729092f990a77bf4aae074136443076194d7cd3d8400afb05dbd52d487b7d0590abc4fdbdadd8a32"
+            }
+        }
+    ],
+    "author": {
+        "@type": "Organization",
+        "name": "Jules Sovereign AI"
+    }
+}
