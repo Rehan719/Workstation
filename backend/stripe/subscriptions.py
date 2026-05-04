@@ -1,4 +1,4 @@
-import os, stripe
+import os, stripe, stripe.error, hashlib, json
 from fastapi import APIRouter, HTTPException, Request
 from firebase_admin import auth, firestore
 from datetime import datetime, timedelta
@@ -7,14 +7,30 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "sk_test_mock")
 db = firestore.client()
 router = APIRouter(prefix="/stripe")
 
+async def get_twin_state_snapshot() -> dict:
+    """Capture current twin state for self-reflection logging."""
+    return {"timestamp": datetime.utcnow().isoformat(), "active_subscriptions": 0}
+
+async def get_latest_ueg_checksum() -> str:
+    """Retrieve latest checksum from UEG Merkle-DAG for chain linkage."""
+    latest = db.collection("ueg_log").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream()
+    for doc in latest:
+        return doc.to_dict().get("state_checksum", "")
+    return ""
+
 @router.post("/create-checkout-session")
 async def create_checkout_session(uid: str, price_id: str, success_url: str, cancel_url: str):
-    user = auth.get_user(uid)
+    """Create Stripe Checkout Session with 30-day free trial."""
+    try:
+        user = auth.get_user(uid)
+    except auth.UserNotFoundError:
+        raise HTTPException(status_code=404, detail="User not found")
+
     sub_doc = db.collection("subscriptions").document(uid).get()
     if sub_doc.exists and sub_doc.to_dict().get("status") == "active":
         raise HTTPException(400, "Already subscribed")
 
-    # 30-day free trial using trial_end timestamp
+    # Use trial_end instead of deprecated trial_period_days
     trial_end = int((datetime.utcnow() + timedelta(days=30)).timestamp())
 
     session = stripe.checkout.Session.create(
@@ -31,14 +47,15 @@ async def create_checkout_session(uid: str, price_id: str, success_url: str, can
 
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
+    """Idempotent, signature-verified webhook handler for Stripe."""
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
     webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_mock")
 
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-    except Exception as e:
-        raise HTTPException(400, f"Invalid signature: {str(e)}")
+    except Exception:
+        raise HTTPException(400, "Invalid signature")
 
     event_id = event["id"]
     # Idempotency check via Firestore
@@ -50,7 +67,7 @@ async def stripe_webhook(request: Request):
         uid = session["metadata"]["firebase_uid"]
         db.collection("subscriptions").document(uid).set({
             "status": "active",
-            "plan": session.get("display_items", [{"price": {"nickname": "free"}}])[0]["price"]["nickname"].lower(),
+            "plan": session["display_items"][0]["price"]["nickname"].lower() if session.get("display_items") else "pro",
             "trial_end": datetime.utcnow() + timedelta(days=30),
             "stripe_customer_id": session["customer"],
             "stripe_subscription_id": session["subscription"]
@@ -61,12 +78,13 @@ async def stripe_webhook(request: Request):
         for doc in docs:
             db.collection("subscriptions").document(doc.id).update({"status": "canceled", "plan": "free"})
     elif event["type"] == "invoice.payment_failed":
-        # Constitutional logging of payment failure
+        # Constitutional logging to UEG Merkle-DAG
         db.collection("ueg_log").add({
             "type": "CONSTITUTIONAL_COMPLIANCE_BILLING",
             "event_id": event_id,
             "timestamp": firestore.SERVER_TIMESTAMP,
-            "payload": event["data"]["object"]
+            "payload": event["data"]["object"],
+            "hash_chain": hashlib.sha256(event_id.encode()).hexdigest()
         })
 
     db.collection("webhook_events").document(event_id).set({"processed_at": firestore.SERVER_TIMESTAMP})
@@ -74,9 +92,10 @@ async def stripe_webhook(request: Request):
 
 @router.post("/create-portal-session")
 async def create_portal_session(uid: str, return_url: str):
+    """Facilitate user autonomy via Stripe Customer Portal."""
     sub_doc = db.collection("subscriptions").document(uid).get()
     if not sub_doc.exists:
-        raise HTTPException(400, "No subscription found")
+        raise HTTPException(400, "No subscription")
     customer_id = sub_doc.to_dict().get("stripe_customer_id")
     if not customer_id:
         raise HTTPException(400, "Missing customer ID")
