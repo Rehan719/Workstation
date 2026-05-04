@@ -1,4 +1,6 @@
 # config/constraints/absolute_constraints.yaml
+# vΩ∞-CONVERGED: Definitive Constitutional Mandates
+
 zero_placeholder:
   description: "No TODO, pass, NotImplementedError, unittest.mock, placeholder in production code"
   enforcement: "AST-level grep + CI gate + human review"
@@ -35,7 +37,7 @@ statistical_rigor:
   action_on_violation: "flag_for_review_require_revalidation"
 
 edge_first_sovereignty:
-  description: "Zero cloud dependencies; NVIDIA RTX/DGX local; TPM 2.0 attestation; PQC-agile"
+  description: "Zero cloud dependencies in core; NVIDIA RTX/DGX local; TPM 2.0 attestation; PQC-agile"
   enforcement: "EdgeValidator with hardware_profile verification"
   action_on_violation: "fallback_to_cpu_alert_admin"
 
@@ -50,7 +52,7 @@ oam_qkd_software_only:
   action_on_violation: "fallback_to_pqc_log_to_ueg"
 
 divine_alignment:
-  description: "All workflows calibrated via Niyyah engine; measured via ukhrawi metrics"
+  description: "All workflows calibrated via Niyyah engine; measured via ukhrawi metrics; sincerity threshold >= 0.8"
   enforcement: "DivineAlignmentValidator + Islamic ethics framework"
   action_on_violation: "halt_escalate_to_multisigcouncil"
 
@@ -71,3 +73,18 @@ predictive_integrity:
   enforcement: "Validation suite fails if prediction confidence < 0.85 for 3 consecutive cycles."
   action_on_violation: "degrade_to_rule_based_fallback"
   fallback_mode: "constitutional_rule_engine_v3"
+
+mushawara_deliberation:
+  description: "All consultation outcomes require ≥3 cognitive engine perspectives + MJM meta‑validation before commitment."
+  enforcement: "PerspectiveAggregator + ConsensusTracker"
+  action_on_violation: "quarantine_redeliberate_log_to_ueg"
+
+stripe_monetization_trial:
+  description: "All commercial subscriptions must offer a 30-day free trial enforced via trial_end timestamp."
+  enforcement: "backend/stripe/subscriptions.py checkout logic"
+  action_on_violation: "reject_checkout_session"
+
+atomic_quota_management:
+  description: "Quota enforcement must be race-condition free using Firestore transactions."
+  enforcement: "backend/usage/meter.py logic"
+  action_on_violation: "block_operation_log_conflict"
