@@ -12,8 +12,8 @@
 The Respondent treated the Claimant unfavourably because of something arising in consequence of his disability (mental health condition and medication side-effects, specifically episodic diarrhoea and anxiety).
 
 **Key Incidents:**
-1. **Late August – Early September 2025:** Claimant reported 2-3 episodes of diarrhoea via UKSL 425 to SD. No OH referral or adjustments followed. Managers RJ and SD began public shaming, asserting Claimant was "off-plant every other day." [Minhas_Contemporaneous_Log_6Oct20252.pdf, p.1]
-2. **13 September 2025:** Following a confidential disclosure of his disability, RJ immediately extended the Claimant’s probation to six months and imposed onerous targets not required of peers (95% CSOD completion). [Minhas_Contemporaneous_Log_6Oct20252.pdf, p.3]
+1. **Late August – Early September 2025:** Claimant reported 2-3 episodes of diarrhoea via UKSL 425 to SD. No OH referral or adjustments followed. Managers RJ and SD began public shaming, asserting Claimant was "off-plant every other day." [Minhas_Contemporaneous_Log_6Oct20252.pdf, p.1].
+2. **13 September 2025:** Following a confidential disclosure of his disability, RJ immediately extended the Claimant’s probation to six months and imposed onerous targets not required of peers (95% CSOD completion). [Minhas_Contemporaneous_Log_6Oct20252.pdf, p.3]. The Respondent's later contention (ET3, para 8) that training was "paused" due to resource issues is a pretext; the extension and targets were specifically linked to the disability disclosure.
 3. **26 September 2025:** SD publicly admonished the Claimant in an open-plan office for a 20-minute lateness caused by a disability-related health episode reported earlier that day. Peers (TNO, ADY) were not shamed for similar lateness. [Minhas_Contemporaneous_Log_6Oct20252.pdf, p.4]
 4. **94% Punctuality Contradiction:** Internal HR logs (Exhibit Q-1) show a 94% punctuality rate, yet the Respondent used "attendance" as the pretext for dismissal, disregarding the disability link to the remaining 6%.
 

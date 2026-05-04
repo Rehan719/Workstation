@@ -15,6 +15,9 @@ def verify_law_operation():
         "ET1_v19_updated.pdf",
         "Hillingdon_Legal_Aid_Clarity_Letter_v19.pdf",
         "health_impact_timeline_v19.pdf",
+        "Response_to_ET3_Grounds_of_Resistance_v19.pdf",
+        "Draft_List_of_Issues_Watford_v19.pdf",
+        "Schedule_of_Evidence_Integrity_v19.pdf",
         "incident_evidence_matrix_v19.md",
         "incident_evidence_matrix_v19.csv"
     ]
