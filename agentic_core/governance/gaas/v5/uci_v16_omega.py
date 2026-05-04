@@ -2,14 +2,14 @@ import asyncio
 import time
 from typing import Dict, Any, List, Optional, Callable
 from agentic_core.ueg.logger import VSBUEGLogger
-from agentic_core.change_control.v2.reconfigulator_v140 import ReconfigulatorV140
-from agentic_core.change_control.v2.regulator_v140 import RegulatorV140
+from agentic_core.change_control.reconfigulator import Reconfigulator as ReconfigulatorV140
+from agentic_core.change_control.regulator import Regulator as RegulatorV140
 from agentic_core.defense.v2.immune_v140 import ImmuneDefenseV140
 from agentic_core.legal.v2.precision_engine_v2 import LegalPrecisionEngineV2
 from agentic_core.cognitive.v2.meta_cognition_v2 import MetaCognitionEngineV2
 from agentic_core.cognitive.v2.cascade_controller_v2 import BiomimeticCascadeControllerV2
 from agentic_core.divine.v2.alignment_v2 import DivineAlignmentEngineV2
-from agentic_core.gaas.v5.hallucination_sandbox import HallucinationSandbox
+from agentic_core.governance.gaas.v5.hallucination_sandbox import HallucinationSandbox
 from agentic_core.architecture.enriched_layers import EnrichedArchitecturalLayerManager
 
 class UnifiedConstitutionalInterceptorV16Omega:
