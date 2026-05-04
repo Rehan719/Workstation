@@ -1,23 +1,20 @@
 [
     {
-        "id": "MR3_1",
         "type": "reasoning",
-        "question": "In an Arsenal match, the ratio of home fans to away fans is 5:2. If there are 60,000 home fans, how many away fans are there?",
-        "topic": "Ratio",
-        "context": "Football (Arsenal)"
+        "question": "The temperature on Mars is -55C. It rises by 12C. What is the new temperature?",
+        "topic": "Negative Numbers",
+        "id": "MR3_1"
     },
     {
-        "id": "MR3_2",
         "type": "reasoning",
-        "question": "In Minecraft, a wall is made of 'x' stone blocks and 5 iron blocks. If the total blocks are 27, write an equation and solve for x.",
-        "topic": "Algebra",
-        "context": "Minecraft"
+        "question": "Calculate the area of a rectangular Minecraft farm that is 15 blocks long and 8 blocks wide.",
+        "topic": "Area",
+        "id": "MR3_2"
     },
     {
-        "id": "MR3_3",
         "type": "reasoning",
-        "question": "A Mars rover travels 4.5km on Monday and 2,300m on Tuesday. What is the total distance in meters?",
+        "question": "Bukayo Saka ran 9.8km in a match. Write this distance in meters.",
         "topic": "Measurement",
-        "context": "Space"
+        "id": "MR3_3"
     }
 ]
