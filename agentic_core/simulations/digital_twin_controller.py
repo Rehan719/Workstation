@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any, Optional
 from agentic_core.biomimicry.geospheric.digital_twin_orchestrator import DigitalTwinOrchestrator
-from agentic_core.genetic_immune.reconfigulator import ConstitutionalReconfigulator
+from agentic_core.change_control.reconfigulator import ConstitutionalReconfigulator
 from agentic_core.genetic_immune.immune_system import ImmuneSystem
 from agentic_core.mjm.twin_learner import MJMRecursiveLearner
 from agents.coe_improvement import CoeImprovementAgent

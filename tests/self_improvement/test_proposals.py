@@ -19,7 +19,7 @@ sys.modules['ot'] = unittest.mock.MagicMock()
 import pytest
 import asyncio
 from unittest.mock import MagicMock
-from agentic_core.genetic_immune.reconfigulator import ConstitutionalReconfigulator
+from agentic_core.change_control.reconfigulator import ConstitutionalReconfigulator
 
 @pytest.fixture
 def mock_validator():

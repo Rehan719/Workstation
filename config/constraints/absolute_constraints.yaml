@@ -1,3 +1,59 @@
+# config/constraints/absolute_constraints.yaml
+zero_placeholder:
+  description: "No TODO, pass, NotImplementedError, unittest.mock, placeholder in production code"
+  enforcement: "AST-level grep + CI gate + human review"
+  action_on_violation: "immediate_halt_rollback_notification"
+
+constitutional_compliance:
+  description: "100% of actions validated by GaaS v4 against Articles 1-1127+"
+  enforcement: "Pre/post‑execution interception via UCI + Nemoclaw"
+  action_on_violation: "block_log_escalate_to_multisigcouncil"
+
+legal_precision_hard:
+  description: "UK Employment Law coverage = 1.0 (Equality Act 2010, ERA 1996, ACAS Code, GDPR)"
+  enforcement: "LegalPrecisionMinimiser + Nemoclaw runtime"
+  action_on_violation: "reject_with_detailed_reasoning_trace"
+
+biomimetic_fidelity:
+  description: "≥90% functional equivalence to biological reference systems for all six cycles"
+  enforcement: "BiomimeticValidator with biological_analogues mapping"
+  action_on_violation: "reject_optimize_within_biological_bounds"
+
+closed_loop_transformation:
+  description: "Zero unreclaimed waste outputs; all byproducts harvested, transformed, or reintegrated"
+  enforcement: "ClosedLoopValidator + UEG audit"
+  action_on_violation: "halt_log_escalate_corrective_action_plan"
+
+geospheric_homeostasis:
+  description: "All six cycles maintain homeostatic setpoints within ±5% tolerance"
+  enforcement: "GeosphericHomeostaticOrchestrator + GaaS v4 validation"
+  action_on_violation: "trigger_coupled_feedback_correction"
+
+statistical_rigor:
+  description: "All metrics with 95% CI, hypothesis testing, power analysis, effect size reporting"
+  enforcement: "StatisticalValidator with scipy/hypothesis/pytest-statistical"
+  action_on_violation: "flag_for_review_require_revalidation"
+
+edge_first_sovereignty:
+  description: "Zero cloud dependencies; NVIDIA RTX/DGX local; TPM 2.0 attestation; PQC-agile"
+  enforcement: "EdgeValidator with hardware_profile verification"
+  action_on_violation: "fallback_to_cpu_alert_admin"
+
+human_ai_collaborative_empowerment:
+  description: "Transparent reasoning traces, override mechanisms, co‑creation workspaces"
+  enforcement: "UCI interception + Realm-specific UI validation"
+  action_on_violation: "log_warning_require_human_review"
+
+oam_qkd_software_only:
+  description: "Classical emulation of OAM‑QKD; no physical quantum hardware"
+  enforcement: "OAM_QKDSurrogate validation + statistical benchmarking"
+  action_on_violation: "fallback_to_pqc_log_to_ueg"
+
+divine_alignment:
+  description: "All workflows calibrated via Niyyah engine; measured via ukhrawi metrics"
+  enforcement: "DivineAlignmentValidator + Islamic ethics framework"
+  action_on_violation: "halt_escalate_to_multisigcouncil"
+
 self_reflection_mandate:
   description: "System must run a digital twin that continuously simulates and critiques its own behaviour."
   enforcement: "CI checks for twin sync errors; fail if twin fails to run for >5 minutes."

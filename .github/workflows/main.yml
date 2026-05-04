@@ -1,31 +1,70 @@
-name: Genetic-Immune CI
-on: [push, pull_request]
+name: Genetic-Immune CI - vΩ∞-MASTER
+on:
+  push:
+    branches: [main, master, feature/vΩ∞-self-reflective]
+  pull_request:
+    branches: [main, master]
+
 jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Zero-placeholder check
-        run: ! grep -rE "(TODO|FIXME|pass\s*$|NotImplementedError|unittest\.mock)" --include="*.py" --include="*.tsx" agentic_core/
-      - name: Sovereignty validation (no GCP SDK in core)
-        run: ! grep -r "google\.cloud" --include="*.py" agentic_core/
-      - name: Unit tests
-        run: pytest tests/
-  self_improvement:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+
+      # 1. Zero‑placeholder check (AST-level grep)
+      - name: Zero‑placeholder check
+        run: |
+          if grep -rE "(TODO|FIXME|pass\s*$|NotImplementedError|unittest\.mock)" \
+            --include="*.py" --include="*.tsx" agentic_core/ agents/ config/ scripts/; then
+            echo "❌ Placeholder strings found – code DNA incomplete"
+            exit 1
+          fi
+
+      # 2. Sovereignty validation (no GCP SDK in core)
+      - name: Sovereignty validation
+        run: |
+          if grep -r "google\.cloud" --include="*.py" agentic_core/; then
+            echo "❌ GCP SDK detected in core – runtime sovereignty violated"
+            exit 1
+          fi
+
+      # 3. Environment Setup
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Install dependencies
-        run: pip install pyyaml pydantic numpy cryptography PyJWT pytest pytest-asyncio pandas scipy
-      - name: Run digital twin simulation
+        run: |
+          pip install pyyaml pydantic numpy cryptography PyJWT pytest pytest-asyncio pandas scipy
+
+      # 4. Unit & Integration tests
+      - name: Run Test Suite
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest tests/ -v
+
+      # 5. Geospheric Homeostasis Validation
+      - name: Geospheric Homeostasis Check
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          python3 -c "from agentic_core.biomimicry.geospheric.orchestrator import GeosphericHomeostaticOrchestrator; import asyncio; orch = GeosphericHomeostaticOrchestrator(); print('Orchestrator online')"
+
+      # 6. Digital Twin simulation
+      - name: Digital Twin Simulation
         run: |
           export PYTHONPATH=$PYTHONPATH:.
           python3 scripts/bootstrap_digital_twin.py
-      - name: Evaluate improvement proposals
+
+      # 7. Mushāwara consensus validation
+      - name: Mushāwara Consultation Check
         run: |
           export PYTHONPATH=$PYTHONPATH:.
           pytest tests/self_improvement/test_proposals.py
+
+      # 8. Build & deploy (main branch only)
+      - name: Deploy to Cloud Run
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: |
+          echo "Simulating deployment..."
+          # ./scripts/deploy_free_tier.sh ${{ secrets.GCP_PROJECT_ID }}
