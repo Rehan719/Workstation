@@ -75,8 +75,15 @@ class SATsPDFGenerator:
                 with open(a_path, "r") as f:
                     answers = json.load(f)
                 for a in answers:
-                    ans_text = str(a['answer'])
-                    a_elements.append(Paragraph(f"A: {ans_text}", self.styles['Normal']))
+                    ans_text = a['answer']
+                    if isinstance(ans_text, dict):
+                        # Handle LINK structure
+                        a_elements.append(Paragraph("A:", self.styles['Normal']))
+                        for key, value in ans_text.items():
+                            a_elements.append(Paragraph(f"<b>{key}:</b> {value}", self.styles['Normal']))
+                    else:
+                        a_elements.append(Paragraph(f"A: {ans_text}", self.styles['Normal']))
+
                     sol_key = 'worked_solution' if 'worked_solution' in a else ('rule_or_justification' if 'rule_or_justification' in a else 'method_or_worked_solution')
                     a_elements.append(Paragraph(f"Method: {a.get(sol_key, 'Standard')}", self.styles['Italic']))
                     a_elements.append(Spacer(1, 5))

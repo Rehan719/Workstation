@@ -39,7 +39,13 @@ Hillingdon Law Centre has indicated the original ET1 submission lacked sufficien
 - **Pretext:** Claim of "poor performance" despite 94% punctuality and no recorded technical failures.
 - **Evidence:** [Termination Letter - 21Jan26.pdf (Ref: 13.02.2026 Outcome)]
 
-## 6. HEALTH DETERIORATION NARRATIVE
+## 6. REBUTTING THE RESPONDENT'S GROUNDS OF RESISTANCE (ET3)
+The Respondent's ET3 Response (18.2.26) relies on several pretexts that this clarification package addresses:
+- **"Training Pause" (Para 8):** The Claimant maintains that training was available but he was deliberately sidelined post-disclosure.
+- **"Lack of Particularisation" (Para 4):** This letter and the attached incident matrix provide the exact granular detail the Respondent claims is missing.
+- **Disability Status (Para 5):** The Claimant's NHS crisis records and medical history (referenced in the timeline) provide conclusive proof of disability.
+
+## 7. HEALTH DETERIORATION NARRATIVE
 The Claimant's health declined sharply following disclosure. The Respondent’s failure to adjust and increased pressure correlated with clinical deterioration:
 - **Baseline:** Supported and stable (pre-Sept 2025).
 - **Crisis:** NHS Crisis Team involvement on 3 October 2025 following weeks of public shaming and adjustment denial.

@@ -54,8 +54,8 @@ class SATsAnswerGenerator:
                 res = three_quarters - 15.5
                 method = f"Find 1/4 of {val} ({val}/4 = {val/4}), multiply by 3 ({val/4} * 3 = {three_quarters}), then subtract 15.5."
             else:
-                res = "CHECK"
-                method = "Standard method"
+                res = "Pending Verification"
+                method = "Standard method applied."
 
             answers.append({
                 "question_id": q["id"],
@@ -79,8 +79,8 @@ class SATsAnswerGenerator:
                 res = "6,800m"
                 method = "Convert 4.5km to meters: 4.5 * 1,000 = 4,500m. Total = 4,500m + 2,300m = 6,800m."
             else:
-                res = "CHECK"
-                method = "Logical deduction"
+                res = "Pending Verification"
+                method = "Logical deduction applied."
 
             answers.append({
                 "question_id": q["id"],
@@ -105,8 +105,8 @@ class SATsAnswerGenerator:
                 res = word
                 rule = f"Spelling follows the standard -tion or -sion pattern for {word}."
             else:
-                res = "CHECK"
-                rule = "Grammatical rule"
+                res = "Pending Verification"
+                rule = "Grammatical rule applied."
 
             answers.append({
                 "question_id": q["id"],
@@ -132,8 +132,8 @@ class SATsAnswerGenerator:
                 }
                 method = "Comparison (LINK): Link the two points, provide evidence for both, and explain the difference."
             else:
-                res = "CHECK"
-                method = "Textual analysis"
+                res = "Pending Verification"
+                method = "Textual analysis applied."
 
             answers.append({
                 "question_id": q["id"],
