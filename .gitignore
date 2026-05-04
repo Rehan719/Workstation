@@ -5,6 +5,7 @@ outputs_final/
 # Deny all PDFs by default but allow Education SATs outputs
 *.pdf
 !outputs/education/sats_2026/**/*.pdf
+!outputs/Law/EmploymentTribunal/v19_et1_clarification/**/*.pdf
 *.tex
 *.png
 *.gif

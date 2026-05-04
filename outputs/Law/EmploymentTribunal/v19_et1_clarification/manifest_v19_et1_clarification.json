@@ -1,0 +1,44 @@
+{
+    "operation": "law_grand_operation_v19_et1_clarification",
+    "timestamp": "2026-05-01T16:20:00Z",
+    "case": "Minhas v Lonza Biologics Plc",
+    "reference": "6045461/2025",
+    "verified_deliverables": [
+        {
+            "name": "ET1_v19_updated.pdf",
+            "path": "outputs/Law/EmploymentTribunal/v19_et1_clarification/ET1_v19_updated.pdf",
+            "size": 5468,
+            "hash": "8dd14babb777b1da5d52c588978eb59a1c8b26e3dd7486dfea8ab6fe1582860e"
+        },
+        {
+            "name": "Hillingdon_Legal_Aid_Clarity_Letter_v19.pdf",
+            "path": "outputs/Law/EmploymentTribunal/v19_et1_clarification/Hillingdon_Legal_Aid_Clarity_Letter_v19.pdf",
+            "size": 4704,
+            "hash": "bcf5052f2a11ab551d6bb9747c787e8bfd6b31f14e9c316c2ab1df0dc442508a"
+        },
+        {
+            "name": "health_impact_timeline_v19.pdf",
+            "path": "outputs/Law/EmploymentTribunal/v19_et1_clarification/health_impact_timeline_v19.pdf",
+            "size": 2984,
+            "hash": "ddb05ec2292f2a5000c3074ac11939e3c6cbb6b8643876cc6bf85fa4d4608b37"
+        },
+        {
+            "name": "incident_evidence_matrix_v19.md",
+            "path": "outputs/Law/EmploymentTribunal/v19_et1_clarification/incident_evidence_matrix_v19.md",
+            "size": 1017,
+            "hash": "adca4cd4b21e8c51bc7a5bcc7c7d4255c9e1ace4d015df2ae2ca8b115e0db304"
+        },
+        {
+            "name": "incident_evidence_matrix_v19.csv",
+            "path": "outputs/Law/EmploymentTribunal/v19_et1_clarification/incident_evidence_matrix_v19.csv",
+            "size": 558,
+            "hash": "05ab0e18701c79290fb43c5aa0c462216857564838cb360cf98c7788f33981ca"
+        }
+    ],
+    "compliance": {
+        "forensic_citations": "ACTIVE",
+        "legal_aid_ready": "YES",
+        "zero_placeholder": "PASSED"
+    },
+    "sovereign_signature": "VSB-SIG-LAW-19.0-ET1-CLARIFICATION-COMPLETE"
+}
