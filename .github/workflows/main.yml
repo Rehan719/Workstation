@@ -11,3 +11,21 @@ jobs:
         run: ! grep -r "google\.cloud" --include="*.py" agentic_core/
       - name: Unit tests
         run: pytest tests/
+  self_improvement:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pyyaml pydantic numpy cryptography PyJWT pytest pytest-asyncio pandas scipy
+      - name: Run digital twin simulation
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          python3 scripts/bootstrap_digital_twin.py
+      - name: Evaluate improvement proposals
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest tests/self_improvement/test_proposals.py
