@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Request
 from firebase_admin import auth, firestore
 from datetime import datetime, timedelta
 
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "sk_test_placeholder")
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "sk_test_mock")
 db = firestore.client()
 router = APIRouter(prefix="/stripe")
 
@@ -13,7 +13,10 @@ async def create_checkout_session(uid: str, price_id: str, success_url: str, can
     sub_doc = db.collection("subscriptions").document(uid).get()
     if sub_doc.exists and sub_doc.to_dict().get("status") == "active":
         raise HTTPException(400, "Already subscribed")
+
+    # 30-day free trial using trial_end timestamp
     trial_end = int((datetime.utcnow() + timedelta(days=30)).timestamp())
+
     session = stripe.checkout.Session.create(
         customer_email=user.email,
         payment_method_types=["card"],
@@ -30,19 +33,24 @@ async def create_checkout_session(uid: str, price_id: str, success_url: str, can
 async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_mock")
+
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_placeholder"))
-    except Exception:
-        raise HTTPException(400, "Invalid signature")
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+    except Exception as e:
+        raise HTTPException(400, f"Invalid signature: {str(e)}")
+
     event_id = event["id"]
+    # Idempotency check via Firestore
     if db.collection("webhook_events").document(event_id).get().exists:
-        return {"status": "ok"}   # idempotent
+        return {"status": "ok"}
+
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         uid = session["metadata"]["firebase_uid"]
         db.collection("subscriptions").document(uid).set({
             "status": "active",
-            "plan": session["display_items"][0]["price"]["nickname"].lower() if "display_items" in session and session["display_items"] else "pro",
+            "plan": session.get("display_items", [{"price": {"nickname": "free"}}])[0]["price"]["nickname"].lower(),
             "trial_end": datetime.utcnow() + timedelta(days=30),
             "stripe_customer_id": session["customer"],
             "stripe_subscription_id": session["subscription"]
@@ -53,12 +61,14 @@ async def stripe_webhook(request: Request):
         for doc in docs:
             db.collection("subscriptions").document(doc.id).update({"status": "canceled", "plan": "free"})
     elif event["type"] == "invoice.payment_failed":
+        # Constitutional logging of payment failure
         db.collection("ueg_log").add({
             "type": "CONSTITUTIONAL_COMPLIANCE_BILLING",
             "event_id": event_id,
             "timestamp": firestore.SERVER_TIMESTAMP,
             "payload": event["data"]["object"]
         })
+
     db.collection("webhook_events").document(event_id).set({"processed_at": firestore.SERVER_TIMESTAMP})
     return {"status": "ok"}
 
@@ -66,7 +76,7 @@ async def stripe_webhook(request: Request):
 async def create_portal_session(uid: str, return_url: str):
     sub_doc = db.collection("subscriptions").document(uid).get()
     if not sub_doc.exists:
-        raise HTTPException(400, "No subscription")
+        raise HTTPException(400, "No subscription found")
     customer_id = sub_doc.to_dict().get("stripe_customer_id")
     if not customer_id:
         raise HTTPException(400, "Missing customer ID")

@@ -8,7 +8,7 @@ from typing import Dict, List, Any, Optional
 from agentic_core.ueg.logger import VSBUEGLogger
 from agentic_core.mjm.twin_learner import MJMRecursiveLearner
 from agentic_core.mjm.self_reflection_engine import SelfReflectionEngine
-from agentic_core.genetic_immune.reconfigulator import ConstitutionalReconfigulator
+from agentic_core.change_control.reconfigulator import ConstitutionalReconfigulator
 
 logger = logging.getLogger(__name__)
 
