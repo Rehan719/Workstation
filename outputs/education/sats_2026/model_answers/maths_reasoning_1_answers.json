@@ -1,20 +1,20 @@
 [
     {
         "question_id": "MR2_1",
-        "question": "In an Arsenal match, the ratio of home fans to away fans is 5:2. If there are 60,000 home fans, how many away fans are there?",
-        "answer": "24,000 away fans",
-        "worked_solution": "If 5 parts = 60,000, then 1 part = 60,000 / 5 = 12,000. 2 parts = 12,000 * 2 = 24,000."
+        "question": "Arsenal played 38 matches. They won 24, drew 6 and lost the rest. What fraction of matches did they lose?",
+        "answer": "8/38 or 4/19",
+        "worked_solution": "Total matches = 38. Wins+Draws = 24+6 = 30. Losses = 38 - 30 = 8. Fraction is 8/38."
     },
     {
         "question_id": "MR2_2",
-        "question": "In Minecraft, a wall is made of 'x' stone blocks and 5 iron blocks. If the total blocks are 27, write an equation and solve for x.",
-        "answer": "x = 22",
-        "worked_solution": "Equation: x + 5 = 27. Subtract 5 from both sides: x = 27 - 5. x = 22."
+        "question": "In Minecraft, 1 stack of cobblestone is 64 blocks. How many blocks are in 12 stacks?",
+        "answer": 768,
+        "worked_solution": "Multiply stacks (12) by blocks per stack (64). 12 * 64 = 768 blocks."
     },
     {
         "question_id": "MR2_3",
-        "question": "A Mars rover travels 4.5km on Monday and 2,300m on Tuesday. What is the total distance in meters?",
-        "answer": "6,800m",
-        "worked_solution": "Convert 4.5km to meters: 4.5 * 1,000 = 4,500m. Total = 4,500m + 2,300m = 6,800m."
+        "question": "A bag of space-dust weighs 1.2kg. If 3.6kg is shared into 4 equal rover-packs, how many grams in each?",
+        "answer": "900g",
+        "worked_solution": "Total weight 3.6kg = 3600g. Share by 4: 3600 / 4 = 900g."
     }
 ]

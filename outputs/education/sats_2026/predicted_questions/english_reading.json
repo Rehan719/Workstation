@@ -1,16 +1,14 @@
 [
     {
-        "id": "RD_1",
         "type": "inference",
-        "question": "How do you know that the astronaut was feeling nervous before the launch? Give two reasons from the text.",
+        "question": "Give two pieces of evidence that show the character was excited about the Arsenal match.",
         "topic": "Domain 2d",
-        "context": "Space"
+        "id": "RD_1"
     },
     {
-        "id": "RD_2",
         "type": "comparison",
-        "question": "Compare the character's feelings about football at the start of the story to the end. Use evidence from the text.",
+        "question": "Compare the description of the Earth from space at the start and end of the text. Use the LINK structure.",
         "topic": "LINK Structure",
-        "context": "Football"
+        "id": "RD_2"
     }
 ]

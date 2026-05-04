@@ -1,19 +1,19 @@
 [
     {
         "question_id": "RD_1",
-        "question": "How do you know that the astronaut was feeling nervous before the launch? Give two reasons from the text.",
-        "answer": "Reason 1: They were shaking. Reason 2: They were breathing deeply.",
-        "method_or_worked_solution": "Inference (Domain 2d): Look for clues in the text that suggest an emotion even if it isn't stated directly."
+        "question": "Give two pieces of evidence that show the character was excited about the Arsenal match.",
+        "answer": "Reason 1: He was singing on the bus. Reason 2: He arrived 2 hours early.",
+        "method_or_worked_solution": "Inference (Domain 2d): Support with explicit textual evidence."
     },
     {
         "question_id": "RD_2",
-        "question": "Compare the character's feelings about football at the start of the story to the end. Use evidence from the text.",
+        "question": "Compare the description of the Earth from space at the start and end of the text. Use the LINK structure.",
         "answer": {
-            "Link": "The character feels excited at the start but disappointed at the end.",
-            "Evidence 1": "Text says 'he ran to the pitch with a grin'.",
-            "Evidence 2": "Text says 'he slumped his shoulders on the way home'.",
-            "Explain": "The contrast between 'grin' and 'slumped shoulders' shows his shift in mood."
+            "Link": "The character's view of Earth changes from distant to fragile.",
+            "Evidence 1": "Text says 'a tiny blue marble'.",
+            "Evidence 2": "Text says 'a delicate jewel in the dark'.",
+            "Explain": "The shift in vocabulary from 'marble' to 'jewel' shows increased appreciation."
         },
-        "method_or_worked_solution": "Comparison (LINK): Link the two points, provide evidence for both, and explain the difference."
+        "method_or_worked_solution": "Comparison (LINK): Link, Evidence 1, Evidence 2, Explain."
     }
 ]

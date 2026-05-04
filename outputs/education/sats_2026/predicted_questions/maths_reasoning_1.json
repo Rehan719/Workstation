@@ -1,23 +1,20 @@
 [
     {
-        "id": "MR2_1",
         "type": "reasoning",
-        "question": "In an Arsenal match, the ratio of home fans to away fans is 5:2. If there are 60,000 home fans, how many away fans are there?",
-        "topic": "Ratio",
-        "context": "Football (Arsenal)"
+        "question": "Arsenal played 38 matches. They won 24, drew 6 and lost the rest. What fraction of matches did they lose?",
+        "topic": "Fractions/Context",
+        "id": "MR2_1"
     },
     {
-        "id": "MR2_2",
         "type": "reasoning",
-        "question": "In Minecraft, a wall is made of 'x' stone blocks and 5 iron blocks. If the total blocks are 27, write an equation and solve for x.",
-        "topic": "Algebra",
-        "context": "Minecraft"
+        "question": "In Minecraft, 1 stack of cobblestone is 64 blocks. How many blocks are in 12 stacks?",
+        "topic": "Multiplication",
+        "id": "MR2_2"
     },
     {
-        "id": "MR2_3",
         "type": "reasoning",
-        "question": "A Mars rover travels 4.5km on Monday and 2,300m on Tuesday. What is the total distance in meters?",
+        "question": "A bag of space-dust weighs 1.2kg. If 3.6kg is shared into 4 equal rover-packs, how many grams in each?",
         "topic": "Measurement",
-        "context": "Space"
+        "id": "MR2_3"
     }
 ]

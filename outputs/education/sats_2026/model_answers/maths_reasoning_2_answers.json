@@ -1,20 +1,20 @@
 [
     {
         "question_id": "MR3_1",
-        "question": "In an Arsenal match, the ratio of home fans to away fans is 5:2. If there are 60,000 home fans, how many away fans are there?",
-        "answer": "24,000 away fans",
-        "worked_solution": "If 5 parts = 60,000, then 1 part = 60,000 / 5 = 12,000. 2 parts = 12,000 * 2 = 24,000."
+        "question": "The temperature on Mars is -55C. It rises by 12C. What is the new temperature?",
+        "answer": "-43C",
+        "worked_solution": "Start at -55. Rise means add. -55 + 12 = -43."
     },
     {
         "question_id": "MR3_2",
-        "question": "In Minecraft, a wall is made of 'x' stone blocks and 5 iron blocks. If the total blocks are 27, write an equation and solve for x.",
-        "answer": "x = 22",
-        "worked_solution": "Equation: x + 5 = 27. Subtract 5 from both sides: x = 27 - 5. x = 22."
+        "question": "Calculate the area of a rectangular Minecraft farm that is 15 blocks long and 8 blocks wide.",
+        "answer": "120 blocks squared",
+        "worked_solution": "Area = length * width. 15 * 8 = 120."
     },
     {
         "question_id": "MR3_3",
-        "question": "A Mars rover travels 4.5km on Monday and 2,300m on Tuesday. What is the total distance in meters?",
-        "answer": "6,800m",
-        "worked_solution": "Convert 4.5km to meters: 4.5 * 1,000 = 4,500m. Total = 4,500m + 2,300m = 6,800m."
+        "question": "Bukayo Saka ran 9.8km in a match. Write this distance in meters.",
+        "answer": "9,800m",
+        "worked_solution": "Multiply km by 1,000. 9.8 * 1,000 = 9,800."
     }
 ]
