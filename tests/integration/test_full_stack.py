@@ -1,17 +1,17 @@
 import pytest
 import asyncio
-from agentic_core.organism.jules_omega_organism_v138 import JulesOmegaOrganismV138
-from agentic_core.agents.c_suite_v138 import CSuiteV138
-from agentic_core.agents.coe_leads import CoELeads
-from agentic_core.agents.bto_director import BTODirector
+from core.jules_omega_organism_v138 import JulesOmegaOrganismV138
+from agents.c_suite_v138 import CSuiteV138
+from agents.coe_leads import CoELeads
+from agents.bto_director import BTODirector
 from agentic_core.vbs.bms import BusinessManagementSystem
 from agentic_core.vbs.qms import QualityManagementSystem
 from agentic_core.vbs.dcms import DocumentControlManagementSystem
 from agentic_core.vbs.ems import EnvironmentalManagementSystem
 from agentic_core.quantum.surrogate import OAM_QKDSurrogate
-from agentic_core.realms.legal_realm_v138 import LegalRealmV138
-from agentic_core.realms.biofoundry_realm import BiofoundryRealm
-from agentic_core.realms.climate_realm import ClimateRealm
+from realms.legal_realm_v138 import LegalRealmV138
+from realms.biofoundry_realm import BiofoundryRealm
+from realms.climate_realm import ClimateRealm
 
 @pytest.mark.asyncio
 async def test_full_organism_orchestration():

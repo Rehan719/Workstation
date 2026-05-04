@@ -1,0 +1,13 @@
+name: Genetic-Immune CI
+on: [push, pull_request]
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Zero-placeholder check
+        run: ! grep -rE "(TODO|FIXME|pass\s*$|NotImplementedError|unittest\.mock)" --include="*.py" --include="*.tsx" agentic_core/
+      - name: Sovereignty validation (no GCP SDK in core)
+        run: ! grep -r "google\.cloud" --include="*.py" agentic_core/
+      - name: Unit tests
+        run: pytest tests/

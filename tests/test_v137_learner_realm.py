@@ -1,5 +1,5 @@
 import pytest
-from agentic_core.realms.learner_realm_v137 import LearnerRealmV137
+from realms.learner_realm_v137 import LearnerRealmV137
 
 def test_v137_pacing_adaptation():
     realm = LearnerRealmV137()

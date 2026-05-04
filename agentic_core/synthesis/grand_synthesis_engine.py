@@ -263,7 +263,7 @@ class GrandSynthesisEngine:
             logger.info(f"Global Convergence: Identity Verified: {did_mgr.get_did()}")
 
             # 2. Partnership Negotiation Simulation
-            from agentic_core.agents.global_agents import DiplomatAgent
+            from agents.global_agents import DiplomatAgent
             diplomat = DiplomatAgent()
             await diplomat.negotiate_partnership("GlobalAI_Research", {"value": 0.9})
 

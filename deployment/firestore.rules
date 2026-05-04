@@ -6,14 +6,15 @@ service cloud.firestore {
     }
     match /subscriptions/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if false; // only backend service account
+      allow write: if false;
     }
     match /usage/{docId} {
-      allow read: if request.auth != null && docId.startsWith(request.auth.uid);
-      allow write: if false; // only backend service account
+      allow read: if request.auth != null && docId.split('_')[0] == request.auth.uid;
+      allow write: if false;
     }
-    match /webhook_events/{eventId} {
-      allow read, write: if false; // only backend service account
+    match /ueg_log/{doc} {
+      allow read: if request.auth != null && request.auth.token.admin == true;
+      allow write: if false;
     }
   }
 }
