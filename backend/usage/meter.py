@@ -1,22 +1,19 @@
 from firebase_admin import firestore
 from datetime import datetime
-from typing import Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 db = firestore.client()
-
-# Canonical Quotas for vΩ∞-CONVERGED
-QUOTAS: Dict[str, Dict[str, int]] = {
-    "free": {"executions": 50, "projects": 1},
-    "pro": {"executions": 2000, "projects": 10},
-    "team": {"executions": 10000, "projects": 999}
-}
+QUOTAS = {"free": {"executions": 50, "projects": 1},
+          "pro": {"executions": 2000, "projects": 10},
+          "team": {"executions": 10000, "projects": 999}}
 
 def _get_effective_plan(uid: str) -> str:
-    """Determine user's effective plan considering active status and trials."""
-    sub_doc = db.collection("subscriptions").document(uid).get()
-    if not sub_doc.exists:
+    sub = db.collection("subscriptions").document(uid).get()
+    if not sub.exists:
         return "free"
-    data = sub_doc.to_dict()
+    data = sub.to_dict()
     if data.get("status") != "active":
         return "free"
     trial_end = data.get("trial_end")
@@ -26,9 +23,10 @@ def _get_effective_plan(uid: str) -> str:
 
 def check_quota(uid: str, operation: str) -> bool:
     """
-    Atomic quota enforcement via Firestore transaction.
-    Guarantees race-condition-free increments.
+    Atomic quota check with circuit breaker for high contention.
     """
+    max_retries = 5
+
     def tx_logic(transaction):
         counter_ref = db.collection("usage").document(f"{uid}_{operation}")
         doc = transaction.get(counter_ref)
@@ -37,12 +35,18 @@ def check_quota(uid: str, operation: str) -> bool:
         limit = QUOTAS.get(plan, {}).get(operation, 0)
 
         if count < limit:
-            transaction.set(counter_ref, {"count": count + 1, "last_updated": firestore.SERVER_TIMESTAMP}, merge=True)
+            transaction.set(counter_ref, {"count": count + 1}, merge=True)
             return True
         return False
 
-    return db.run_transaction(tx_logic)
+    try:
+        # db.run_transaction handles up to 5 retries by default
+        return db.run_transaction(tx_logic)
+    except Exception as e:
+        logger.error(f"Quota transaction failed after retries: {e}")
+        # Circuit Breaker: Fail Open for safety (or Closed for strictness)
+        # Choosing strictness for v∞-MASTER
+        return False
 
 async def async_check_quota(uid: str, operation: str) -> bool:
-    """Async wrapper for FastAPI compatibility."""
     return check_quota(uid, operation)

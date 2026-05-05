@@ -1,54 +1,32 @@
-from typing import Dict, Any, Optional
-from datetime import datetime
-from agentic_core.biomimicry.cycles.utils import constitutional_guard
+from .water_cycle import PIDController
 
 class NitrogenFixationDaemon:
-    """
-    Models Task Lifecycle as the Nitrogen Cycle.
-    Analogues: Fixation (Queueing), Nitrification (Processing), Denitrification (Completion).
-    """
-    def __init__(self, task_queue, ueg, validator):
-        self.queue = task_queue
+    """Task fixation and processing management."""
+    def __init__(self, task_system, ueg, validator):
+        self.pid = PIDController(setpoint=10.0, kp=0.8, ki=0.05, kd=0.1)
+        self.task_system = task_system
         self.ueg = ueg
         self.validator = validator
-        self.target_depth = 100
-        self.homeostasis_tolerance = 0.05 # ±5%
-        self.reservoirs = {
-            "atmospheric_n2": 1000.0, # Available Task Space
-            "ammonia": 0.0,          # Queued Tasks
-            "nitrate": 0.0           # Processing Tasks
-        }
+        self.reservoirs = {"atmospheric_tasks": 1000.0, "fixed_tasks": 0.0, "denitrified_tasks": 0.0}
 
-    @constitutional_guard
-    async def get_state(self) -> Dict[str, Any]:
-        queue_depth = self.reservoirs["ammonia"]
-        return {
-            "queue_depth": queue_depth,
-            "reservoirs": self.reservoirs.copy(),
-            "within_tolerance": abs(queue_depth - self.target_depth) <= (self.target_depth * self.homeostasis_tolerance)
-        }
+    async def fix_tasks(self, task_volume: float) -> float:
+        """Convert pending tasks to active processing."""
+        self.reservoirs["atmospheric_tasks"] -= task_volume
+        self.reservoirs["fixed_tasks"] += task_volume
+        if self.ueg:
+            await self.ueg.log_event("nitrogen_fixation", {"task_volume": task_volume})
+        return task_volume
 
-    @constitutional_guard
-    async def fixate_tasks(self, task_count: int):
-        """Fixation of raw inputs into executable tasks (Atmospheric -> Ammonia)."""
-        await self.validator.validate_task_load(task_count)
-        self.reservoirs["atmospheric_n2"] -= task_count
-        self.reservoirs["ammonia"] += task_count
-        await self.ueg.log_minimisation_event("nitrogen_fixation", {"tasks": task_count})
-        return True
+    async def denitrify(self, completion_volume: float):
+        """Release completed tasks from the system."""
+        self.reservoirs["fixed_tasks"] -= completion_volume
+        self.reservoirs["denitrified_tasks"] += completion_volume
+        return completion_volume
 
-    @constitutional_guard
-    async def nitrify(self, process_count: int):
-        """Task processing (Ammonia -> Nitrate)."""
-        self.reservoirs["ammonia"] -= process_count
-        self.reservoirs["nitrate"] += process_count
-        await self.ueg.log_minimisation_event("nitrogen_nitrification", {"processing": process_count})
-        return True
+    async def regulate_homeostasis(self, queue_depth: float) -> float:
+        error = self.pid.setpoint - queue_depth
+        correction = self.pid.compute(error)
+        return correction
 
-    @constitutional_guard
-    async def denitrify(self, complete_count: int):
-        """Task completion (Nitrate -> Atmospheric)."""
-        self.reservoirs["nitrate"] -= complete_count
-        self.reservoirs["atmospheric_n2"] += complete_count
-        await self.ueg.log_minimisation_event("nitrogen_denitrification", {"completed": complete_count})
-        return True
+    async def get_state(self):
+        return {"reservoirs": self.reservoirs, "setpoint": self.pid.setpoint}

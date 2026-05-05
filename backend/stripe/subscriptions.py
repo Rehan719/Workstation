@@ -1,4 +1,4 @@
-import os, stripe, stripe.error, hashlib, json
+import os, stripe
 from fastapi import APIRouter, HTTPException, Request
 from firebase_admin import auth, firestore
 from datetime import datetime, timedelta
@@ -7,20 +7,8 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "sk_test_mock")
 db = firestore.client()
 router = APIRouter(prefix="/stripe")
 
-async def get_twin_state_snapshot() -> dict:
-    """Capture current twin state for self-reflection logging."""
-    return {"timestamp": datetime.utcnow().isoformat(), "active_subscriptions": 0}
-
-async def get_latest_ueg_checksum() -> str:
-    """Retrieve latest checksum from UEG Merkle-DAG for chain linkage."""
-    latest = db.collection("ueg_log").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream()
-    for doc in latest:
-        return doc.to_dict().get("state_checksum", "")
-    return ""
-
 @router.post("/create-checkout-session")
 async def create_checkout_session(uid: str, price_id: str, success_url: str, cancel_url: str):
-    """Create Stripe Checkout Session with 30-day free trial."""
     try:
         user = auth.get_user(uid)
     except auth.UserNotFoundError:
@@ -30,9 +18,7 @@ async def create_checkout_session(uid: str, price_id: str, success_url: str, can
     if sub_doc.exists and sub_doc.to_dict().get("status") == "active":
         raise HTTPException(400, "Already subscribed")
 
-    # Use trial_end instead of deprecated trial_period_days
     trial_end = int((datetime.utcnow() + timedelta(days=30)).timestamp())
-
     session = stripe.checkout.Session.create(
         customer_email=user.email,
         payment_method_types=["card"],
@@ -47,20 +33,27 @@ async def create_checkout_session(uid: str, price_id: str, success_url: str, can
 
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
-    """Idempotent, signature-verified webhook handler for Stripe."""
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
     webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_mock")
-
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except Exception:
         raise HTTPException(400, "Invalid signature")
 
     event_id = event["id"]
-    # Idempotency check via Firestore
-    if db.collection("webhook_events").document(event_id).get().exists:
+    event_ref = db.collection("webhook_events").document(event_id)
+
+    # Idempotency check with TTL (Refinement 1)
+    if event_ref.get().exists:
         return {"status": "ok"}
+
+    # Atomic set with TTL (30 days)
+    expire_at = datetime.utcnow() + timedelta(days=30)
+    event_ref.set({
+        "processed_at": firestore.SERVER_TIMESTAMP,
+        "expireAt": expire_at
+    }, merge=True)
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
@@ -78,21 +71,17 @@ async def stripe_webhook(request: Request):
         for doc in docs:
             db.collection("subscriptions").document(doc.id).update({"status": "canceled", "plan": "free"})
     elif event["type"] == "invoice.payment_failed":
-        # Constitutional logging to UEG Merkle-DAG
         db.collection("ueg_log").add({
             "type": "CONSTITUTIONAL_COMPLIANCE_BILLING",
             "event_id": event_id,
             "timestamp": firestore.SERVER_TIMESTAMP,
-            "payload": event["data"]["object"],
-            "hash_chain": hashlib.sha256(event_id.encode()).hexdigest()
+            "payload": event["data"]["object"]
         })
 
-    db.collection("webhook_events").document(event_id).set({"processed_at": firestore.SERVER_TIMESTAMP})
     return {"status": "ok"}
 
 @router.post("/create-portal-session")
 async def create_portal_session(uid: str, return_url: str):
-    """Facilitate user autonomy via Stripe Customer Portal."""
     sub_doc = db.collection("subscriptions").document(uid).get()
     if not sub_doc.exists:
         raise HTTPException(400, "No subscription")

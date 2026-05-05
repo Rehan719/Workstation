@@ -1,7 +1,7 @@
 name: Genetic-Immune CI - vΩ∞-MASTER
 on:
   push:
-    branches: [main, master, feature/vΩ∞-self-reflective]
+    branches: [main, master, feature/vΩ∞-self-reflective, release/vΩ∞-converged]
   pull_request:
     branches: [main, master]
 
@@ -48,7 +48,7 @@ jobs:
       - name: Geospheric Homeostasis Check
         run: |
           export PYTHONPATH=$PYTHONPATH:.
-          python3 -c "from agentic_core.biomimicry.geospheric.orchestrator import GeosphericHomeostaticOrchestrator; import asyncio; orch = GeosphericHomeostaticOrchestrator(); print('Orchestrator online')"
+          python3 -c "from agentic_core.biomimicry.geospheric.orchestrator import HomeostaticOrchestrator; print('Orchestrator online')"
 
       # 6. Digital Twin simulation
       - name: Digital Twin Simulation

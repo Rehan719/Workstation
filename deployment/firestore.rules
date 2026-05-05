@@ -1,34 +1,27 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User data isolation: Owner-only access
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-
-    // Subscription data: Owner-only access
     match /subscriptions/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-
-    // Atomic usage counters: UID-isolated
     match /usage/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == docId.split('_')[0];
     }
-
-    // Webhook idempotency: Backend-only (service account)
     match /webhook_events/{eventId} {
       allow read, write: if false;
     }
-
-    // UEG constitutional log: Admin read, Backend write
     match /ueg_log/{doc} {
       allow read: if request.auth != null && request.auth.token.admin == true;
       allow write: if false;
     }
-
-    // Geospheric state: Public read (observability), Backend write
-    match /geospheric_state/{cycleName} {
+    match /geospheric/{cycle}/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    match /council_proposals/{proposalId} {
       allow read: if request.auth != null;
       allow write: if false;
     }

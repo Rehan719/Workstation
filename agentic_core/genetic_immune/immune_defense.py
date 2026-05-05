@@ -1,53 +1,32 @@
-import logging
-from typing import List, Dict, Any, Optional
-
-logger = logging.getLogger(__name__)
+from typing import List, Dict, Any
 
 class ImmuneDefense:
     """
-    vΩ∞-CONVERGED Immune Defense Subsystem.
-    Detects anomalous threat patterns and isolates suspicious system segments.
+    Enhanced with digital twin’s threat predictions.
     """
-    def __init__(self, validator: Optional[Any] = None):
-        self.validator = validator
-        self.active_countermeasures = []
+    def __init__(self, anomaly_detector, digital_twin, ueg):
+        self.anomaly_detector = anomaly_detector
+        self.digital_twin = digital_twin
+        self.ueg = ueg
 
-    async def scan_threats(self, orchestrator: Any) -> List[Dict[str, Any]]:
-        """
-        Integrates live anomaly detection with twin-predicted threat scenarios.
-        """
-        # Detect live anomalies based on geospheric drift
-        live_anomalies = await self._detect_live_anomalies()
+    async def scan_threats(self) -> float:
+        # 1. Analyse live API traffic
+        live_anomalies = await self.anomaly_detector.scan() if hasattr(self.anomaly_detector, "scan") else 0.1
+        # 2. Simulate attack scenarios in the twin
+        twin_predictions = await self.digital_twin.predict_threats() if hasattr(self.digital_twin, "predict_threats") else []
 
-        # Integrate twin's predictive threat simulation
-        twin_predictions = []
-        if hasattr(orchestrator, 'mjm'):
-            twin_predictions = await orchestrator.mjm.predict_threats()
+        max_twin_risk = max([t["risk_score"] for t in twin_predictions]) if twin_predictions else 0.0
+        combined_risk = 0.5 * live_anomalies + 0.5 * max_twin_risk
 
-        combined_threats = []
-        for anomaly in live_anomalies:
-            combined_threats.append({"source": "geospheric_live", "data": anomaly})
+        if combined_risk > 0.8:
+            await self.activate_countermeasures(combined_risk)
+        return combined_risk
 
-        for prediction in twin_predictions:
-            if prediction.get("risk_score", 0) > 0.5:
-                combined_threats.append({"source": "twin_predictive_simulation", "data": prediction})
+    async def activate_countermeasures(self, risk_level: float):
+        if self.ueg:
+            await self.ueg.log("IMMUNE_RESPONSE_ACTIVATED", risk=risk_level)
 
-        # Trigger autonomous immune response if combined risk exceeds 0.8
-        max_risk = max([t["data"].get("risk_score", 0) for t in combined_threats]) if combined_threats else 0
-        if max_risk > 0.8:
-            await self._activate_countermeasures(combined_threats)
-
-        return combined_threats
-
-    async def _detect_live_anomalies(self) -> List[Dict[str, Any]]:
-        """Performs real-time anomaly detection across system layers."""
-        return [{"type": "entropy_drift", "risk_score": 0.12, "status": "nominal"}]
-
-    async def _activate_countermeasures(self, threats: List[Dict[str, Any]]):
-        """Activates sandboxed isolation for anomalous components."""
-        logger.warning("IMMUNE DEFENSE: High-risk anomaly detected. Activating isolation protocols.")
-        self.active_countermeasures.append({
-            "timestamp": "now",
-            "threats": threats,
-            "action": "segment_isolation"
-        })
+    async def respond(self, threats: List[Dict[str, Any]]):
+        for threat in threats:
+            if threat.get("risk_score", 0) > 0.5:
+                await self.activate_countermeasures(threat["risk_score"])

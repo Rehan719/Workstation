@@ -1,44 +1,30 @@
-from typing import Dict, Any, Optional
-from agentic_core.biomimicry.cycles.utils import constitutional_guard
+from .water_cycle import PIDController
 
 class PhosphorusMemoryManager:
-    """
-    Models Memory Hierarchy as the Phosphorus Cycle.
-    Analogues: Weathering (Allocation), Uptake (Caching), Sedimentation (Persistence).
-    """
+    """Memory hierarchy and persistence management."""
     def __init__(self, memory_system, ueg, validator):
-        self.memory = memory_system
+        self.pid = PIDController(setpoint=80.0, kp=0.5, ki=0.01, kd=0.05)
+        self.memory_system = memory_system
         self.ueg = ueg
         self.validator = validator
-        self.target_hit_ratio = 0.85
-        self.homeostasis_tolerance = 0.05
-        self.reservoirs = {
-            "lithosphere": 1000.0, # Disk/Persistent
-            "soil": 100.0,         # RAM/Heap
-            "water": 10.0          # Cache/L1
-        }
+        self.reservoirs = {"weathered_memory": 0.0, "sedimented_data": 1000.0}
 
-    @constitutional_guard
-    async def get_state(self) -> Dict[str, Any]:
-        total = sum(self.reservoirs.values())
-        return {
-            "hit_ratio": self.reservoirs["water"] / total,
-            "reservoirs": self.reservoirs.copy(),
-            "within_tolerance": abs((self.reservoirs["water"] / total) - self.target_hit_ratio) <= self.homeostasis_tolerance
-        }
+    async def weather_memory(self, fetch_volume: float):
+        """Fetch data from persistent storage (sediment) into memory."""
+        self.reservoirs["sedimented_data"] -= fetch_volume
+        self.reservoirs["weathered_memory"] += fetch_volume
+        return fetch_volume
 
-    @constitutional_guard
-    async def weather_memory(self, migration_amt: float):
-        """Allocation/Migration: Persistent -> RAM (Weathering)."""
-        self.reservoirs["lithosphere"] -= migration_amt
-        self.reservoirs["soil"] += migration_amt
-        await self.ueg.log_minimisation_event("phosphorus_weathering", {"migrated": migration_amt})
-        return True
+    async def sediment_memory(self, flush_volume: float):
+        """Flush data from memory into persistent storage."""
+        self.reservoirs["weathered_memory"] -= flush_volume
+        self.reservoirs["sedimented_data"] += flush_volume
+        return flush_volume
 
-    @constitutional_guard
-    async def uptake_memory(self, cache_amt: float):
-        """Caching: RAM -> Cache (Uptake)."""
-        self.reservoirs["soil"] -= cache_amt
-        self.reservoirs["water"] += cache_amt
-        await self.ueg.log_minimisation_event("phosphorus_uptake", {"cached": cache_amt})
-        return True
+    async def regulate_homeostasis(self, memory_pressure: float) -> float:
+        error = self.pid.setpoint - memory_pressure
+        correction = self.pid.compute(error)
+        return correction
+
+    async def get_state(self):
+        return {"reservoirs": self.reservoirs, "setpoint": self.pid.setpoint}
