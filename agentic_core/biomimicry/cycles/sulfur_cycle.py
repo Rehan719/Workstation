@@ -1,41 +1,30 @@
-from typing import Dict, Any, Optional
-from agentic_core.biomimicry.cycles.utils import constitutional_guard
+from .water_cycle import PIDController
 
 class SulfurErrorManager:
-    """
-    Models Error Signaling and Resilience as the Sulfur Cycle.
-    Analogues: Volcanic Eruption (Major Error), Odor Signal (Alert), Acid Rain (Throttle).
-    """
-    def __init__(self, error_bus, ueg, validator):
-        self.bus = error_bus
+    """Error handling and self-diagnostic signaling."""
+    def __init__(self, error_system, ueg, validator):
+        self.pid = PIDController(setpoint=1.0, kp=2.0, ki=0.5, kd=1.0)
+        self.error_system = error_system
         self.ueg = ueg
         self.validator = validator
-        self.target_error_rate = 0.01
-        self.homeostasis_tolerance = 0.005 # Strict tolerance
-        self.reservoirs = {
-            "lithosphere": 0.0, # Stored errors/logs
-            "atmosphere": 0.0   # Active error signaling
-        }
+        self.reservoirs = {"error_emissions": 0.0, "acid_rain_throttle": 0.0}
 
-    @constitutional_guard
-    async def get_state(self) -> Dict[str, Any]:
-        return {
-            "error_rate": self.reservoirs["atmosphere"],
-            "within_tolerance": self.reservoirs["atmosphere"] <= self.target_error_rate
-        }
+    async def erupt_error(self, severity: float):
+        """Signal a major error event (volcanic eruption)."""
+        self.reservoirs["error_emissions"] += severity
+        if self.ueg:
+            await self.ueg.log_event("sulfur_eruption", {"severity": severity})
+        return severity
 
-    @constitutional_guard
-    async def erupt_errors(self, error_data: dict):
-        """Major error signaling (Volcanic Eruption)."""
-        self.reservoirs["atmosphere"] += 0.05
-        await self.ueg.log_minimisation_event("sulfur_eruption", error_data)
-        return True
+    async def apply_acid_rain(self, throttle_intensity: float):
+        """Throttle performance in response to stress."""
+        self.reservoirs["acid_rain_throttle"] = throttle_intensity
+        return throttle_intensity
 
-    @constitutional_guard
-    async def precipitate(self):
-        """Error resolution/cleanup (Precipitation)."""
-        reclaimed = self.reservoirs["atmosphere"]
-        self.reservoirs["lithosphere"] += reclaimed
-        self.reservoirs["atmosphere"] = 0.0
-        await self.ueg.log_minimisation_event("sulfur_precipitation", {"reclaimed": reclaimed})
-        return reclaimed
+    async def regulate_homeostasis(self, error_rate: float) -> float:
+        error = self.pid.setpoint - error_rate
+        correction = self.pid.compute(error)
+        return correction
+
+    async def get_state(self):
+        return {"reservoirs": self.reservoirs, "setpoint": self.pid.setpoint}

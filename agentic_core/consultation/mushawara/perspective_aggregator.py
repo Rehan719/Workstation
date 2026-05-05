@@ -1,93 +1,54 @@
-import logging
-import hashlib
-from typing import List, Dict, Any, Optional
-
 import numpy as np
-from agentic_core.consultation.interface import ConsultationResponse, ValidationResult
-
-logger = logging.getLogger("PerspectiveAggregator")
+from typing import List, Dict, Any
 
 class PerspectiveAggregator:
     """
-    Ultimate Mushawara Perspective Aggregator.
-    Synthesizes multi-engine inputs using 10,000-D Hyperdimensional (HD) operations.
-    Leverages Bipolar Thresholding for majority-rule consensus in HD space.
+     Mushāwara Perspective Aggregator (vΩ∞-MASTER).
+     Uses 10,000-dimensional Hyperdimensional (HD) vector bundling
+     as the primary consensus mechanism.
     """
+    def __init__(self, mjm_learner):
+        self.mjm = mjm_learner
+        self.consensus_threshold = 0.85
 
-    def __init__(self, dimension: int = 10000):
-        self.dim = dimension
-
-    async def synthesize(
-        self, responses: List[ConsultationResponse], original_query: str
-    ) -> ConsultationResponse:
+    async def synthesize(self, responses: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Aggregates multiple engine responses into a single HD consensus response.
+        Aggregate perspectives using HD bundling and Bayesian confidence weighting.
+        Algorithm: V_consensus = sign(sum(w_i * V_i))
         """
         if not responses:
-            return ConsultationResponse(
-                engine="perspective_aggregator",
-                answer="No responses to synthesize.",
-                confidence=0.0,
-                constitutional_validation=ValidationResult(
-                    passed=False, violations=["NO_RESPONSES"]
-                ),
-            )
+            return {"consensus_vector": None, "agreement_score": 0.0}
 
-        # 1. Map responses to HD space (Bipolar Encoding)
-        bundled_vector = np.zeros(self.dim)
-        valid_responses = [r for r in responses if r.constitutional_validation.passed]
+        vectors = []
+        weights = []
+        for r in responses:
+            # responses should contain a 10,000-D HD vector
+            v = r.get("vector")
+            if v is None:
+                continue
+            vectors.append(np.array(v))
+            # weights can be dynamically adjusted based on historical accuracy
+            weights.append(r.get("confidence", 0.9))
 
-        if not valid_responses:
-            return ConsultationResponse(
-                engine="perspective_aggregator",
-                answer="All responses failed constitutional validation.",
-                confidence=0.0,
-                constitutional_validation=ValidationResult(
-                    passed=False, violations=["ALL_RESPONSES_FAILED"]
-                ),
-            )
+        if not vectors:
+             return {"consensus_vector": None, "agreement_score": 0.0}
 
-        for resp in valid_responses:
-            # Deterministic vector encoding based on response content
-            vec = self._encode_to_hd(resp.answer)
-            # Bundling (+) with Bayesian confidence weighting
-            bundled_vector += resp.confidence * vec
+        # 1. Perspective bundling: sign(sum(w_i * V_i))
+        v_sum = np.zeros(10000)
+        for v, w in zip(vectors, weights):
+            v_sum += w * v
 
-        # 2. Derive consensus via Bipolar Thresholding
-        # result = sign(sum(weighted_vectors))
-        consensus_vector = np.sign(bundled_vector)
-        consensus_vector[consensus_vector == 0] = 1 # Deterministic tie-break
+        v_consensus = np.sign(v_sum).tolist()
 
-        # 3. Associate consensus with best matching source
-        best_response = self._find_best_match(consensus_vector, valid_responses)
+        # 2. Agreement Score Calculation (Bayesian calibration logic placeholder)
+        agreement = float(np.mean(np.abs(v_sum)) / len(responses))
 
-        # 4. Calculate aggregate consensus metric (weighted agreement factor)
-        avg_confidence = sum(r.confidence for r in valid_responses) / len(valid_responses)
-        agreement_factor = len(valid_responses) / len(responses)
-        synthesized_confidence = avg_confidence * agreement_factor
+        # 3. Status Assessment
+        status = "CONSENSUS_REACHED" if agreement >= self.consensus_threshold else "LOW_AGREEMENT"
 
-        return ConsultationResponse(
-            engine="mushawara_consensus",
-            answer=best_response.answer,
-            confidence=synthesized_confidence,
-            constitutional_validation=ValidationResult(passed=True),
-            reasoning_trace=f"HD consensus achieved from {len(valid_responses)} engine perspectives. Consensus Weight: {synthesized_confidence:.4f}",
-            metadata={
-                "participant_engines": [r.engine for r in responses],
-                "valid_participants": [r.engine for r in valid_responses],
-                "hd_dimension": self.dim,
-                "consensus_metric": synthesized_confidence
-            },
-        )
-
-    def _encode_to_hd(self, text: str) -> np.ndarray:
-        """Deterministic mapping from text to 10,000-D bipolar vector."""
-        seed_hash = hashlib.sha256(text.encode()).digest()
-        seed = int.from_bytes(seed_hash[:4], "big")
-        rng = np.random.Generator(np.random.PCG64(seed))
-        return rng.choice([-1, 1], size=self.dim)
-
-    def _find_best_match(self, consensus_vec: np.ndarray, responses: List[ConsultationResponse]) -> ConsultationResponse:
-        """Finds the source response that contributes most to the achieved consensus."""
-        # Simulated associative memory lookup
-        return max(responses, key=lambda x: x.confidence)
+        return {
+            "consensus_vector": v_consensus,
+            "agreement_score": agreement,
+            "engine_count": len(responses),
+            "status": status
+        }

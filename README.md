@@ -1,8 +1,8 @@
-# Workstation vΩ∞-CONVERGED: Sovereign Digital Organism
+# Workstation vΩ∞-MASTER: Sovereign Digital Organism
 
 بِسْمِ اللَّهِ وَعَلَى بَرَكَةِ اللَّهِ
 
-Workstation vΩ∞-CONVERGED is the definitive, production-ready incarnation of the sovereign digital organism. It assimilates every prior version into a unified, self-reflective, and geospherically intelligent architecture.
+Workstation vΩ∞-MASTER is the definitive, production-ready incarnation of the sovereign digital organism. It assimilates every prior version into a unified, self-reflective, and geospherically intelligent architecture.
 
 ## 🧬 Architectural Pillars
 
@@ -24,10 +24,14 @@ Continuously runs parallel simulations (Fractal Recirculation v2.0) to:
 ### 3. Mushāwara (Consultative) Governance
 Bridges MJM v4.0 and six Urdu-centric cognitive engines (Inkashaf, Aqal, Samajh, Hoshiyari, Soch, Iman) via a deliberative consensus protocol requiring ≥3 engines for commitment.
 
-### 4. Genetic-Immune Change Control
+### 4. Divine Alignment Engine
+Hard-enforces Niyyah calibration and ukhrawi-weighted metrics (70% eternal / 30% temporal) via the Iman cognitive engine.
+
+### 5. Genetic-Immune Change Control
 - **Reconfigulator:** AST-based code mutation and sandbox testing.
 - **Regulator:** Constitutional impact assessment (GaaS v4).
 - **Immune Defense:** VDJ recombination logic for threat detection.
+- **MultiSigCouncil:** Simulated quorum-based approval for high-risk mutations.
 
 ## 💳 Sovereign SaaS & Free-Tier Optimization
 - **Stripe Integration:** Idempotent webhooks and 30-day free trials.

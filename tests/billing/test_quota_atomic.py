@@ -1,20 +1,32 @@
 import concurrent.futures
-from backend.usage.meter import check_quota
 import pytest
 from unittest.mock import MagicMock, patch
+from backend.usage.meter import check_quota
 
-def test_quota_atomic():
-    uid = "test-atomic-user"
-    # Note: This requires a real or local emulator Firestore to truly test atomicity.
-    # In sandbox, we verify the transactional structure.
+@pytest.mark.asyncio
+async def test_quota_atomic_simulation():
+    # Mocking firestore client and transaction
+    mock_db = MagicMock()
+    mock_transaction = MagicMock()
 
-    with patch("backend.usage.meter.db") as mock_db:
-        mock_transaction = MagicMock()
-        mock_db.transaction.return_value = mock_transaction
+    # Simulate free tier limit 50
+    mock_doc = MagicMock()
+    mock_doc.exists = True
+    mock_doc.to_dict.return_value = {"count": 49}
 
-        # Simulate 100 concurrent attempts
-        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-            futures = [executor.submit(check_quota, uid, "executions") for _ in range(100)]
+    mock_transaction.get.return_value = mock_doc
 
-        # In a real test with emulator, we'd assert sum(results) == 50
-        assert mock_db.run_transaction.called
+    # We mock the db.run_transaction to just call our logic
+    def run_tx(logic):
+        return logic(mock_transaction)
+
+    mock_db.run_transaction = run_tx
+
+    with patch("backend.usage.meter.db", mock_db):
+        with patch("backend.usage.meter._get_effective_plan", return_value="free"):
+            # Should succeed for the 50th call
+            assert check_quota("user123", "executions") is True
+
+            # Now mock 50 calls
+            mock_doc.to_dict.return_value = {"count": 50}
+            assert check_quota("user123", "executions") is False

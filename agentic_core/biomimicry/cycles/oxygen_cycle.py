@@ -1,41 +1,25 @@
-from typing import Dict, Any, Optional
-from agentic_core.biomimicry.cycles.utils import constitutional_guard
+from .water_cycle import PIDController
 
 class MetabolicScheduler:
-    """
-    Models CPU/Metabolic Scaling as the Oxygen Cycle.
-    Analogues: Photosynthesis (Scaling Up), Respiration (Scaling Down).
-    """
-    def __init__(self, cpu_manager, ueg, validator):
-        self.cpu = cpu_manager
+    """CPU/metabolic scaling management."""
+    def __init__(self, cpu_system, ueg, validator):
+        self.pid = PIDController(setpoint=60.0, kp=1.5, ki=0.2, kd=0.3)
+        self.cpu_system = cpu_system
         self.ueg = ueg
         self.validator = validator
-        self.target_load = 0.8
-        self.homeostasis_tolerance = 0.05
-        self.reservoirs = {
-            "atmosphere": 0.21, # Oxygen level (Load capacity)
-            "biomass": 0.0      # Consumed resources
-        }
+        self.reservoirs = {"oxygen_supply": 100.0, "metabolic_rate": 0.0}
 
-    @constitutional_guard
-    async def get_state(self) -> Dict[str, Any]:
-        return {
-            "load_average": self.reservoirs["biomass"],
-            "capacity": self.reservoirs["atmosphere"],
-            "within_tolerance": abs(self.reservoirs["biomass"] - self.target_load) <= self.homeostasis_tolerance
-        }
+    async def respire(self, scaling_factor: float):
+        """Scale computational respiration based on factor."""
+        self.reservoirs["metabolic_rate"] = scaling_factor * 10.0
+        if self.ueg:
+            await self.ueg.log_event("oxygen_respiration", {"scaling": scaling_factor})
+        return scaling_factor
 
-    @constitutional_guard
-    async def scale_metabolism(self, load: float):
-        """Metabolic scaling of CPU resources."""
-        await self.validator.validate_metabolic_rate(load)
-        self.reservoirs["biomass"] = load
-        await self.ueg.log_minimisation_event("oxygen_metabolism", {"load": load})
-        return True
+    async def regulate_homeostasis(self, cpu_utilization: float) -> float:
+        error = self.pid.setpoint - cpu_utilization
+        correction = self.pid.compute(error)
+        return correction
 
-    async def regulate_homeostasis(self, current_load: float) -> float:
-        """Maintains metabolic load within ±5%."""
-        error = self.target_load - current_load
-        # Implementation of metabolic adjustment (e.g. dynamic scaling)
-        await self.ueg.log_minimisation_event("oxygen_homeostasis", {"error": error})
-        return error
+    async def get_state(self):
+        return {"reservoirs": self.reservoirs, "setpoint": self.pid.setpoint}
