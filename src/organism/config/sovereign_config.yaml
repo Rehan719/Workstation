@@ -1,0 +1,49 @@
+enable_sovereign_mode: true
+tier: proposal # observational | proposal | delegated | sovereign
+storage_dir: data/organism/state
+log_level: INFO
+audit_trail_path: data/organism/activity.jsonl
+neural_bus:
+  max_queue_size: 1000
+  worker_count: 1
+realms_config_path: src/organism/config/realms.yaml
+
+sovereignty:
+  escalation_policy:
+    # If Tier 2 (Proposal) is rejected 3x by human sovereign:
+    - trigger: "proposal_rejected_count >= 3"
+      action: "enter_learning_mode"  # Pause autonomous proposals, log for analysis
+      notification: "human_sovereign + ai_ethics_review"
+
+    # If Tier 3 (Delegated) action fails validation:
+    - trigger: "delegated_action_validation_failed"
+      action: "revoke_realm_auto_execute"  # Temporarily disable auto-execute for that realm
+      cooldown: "24h"  # Require human re-approval before re-enabling
+
+ai_features:
+  ai_integration_experimental: { enabled: true, mode: "proposal" }
+  deepseek_ingestion: { enabled: true, realm: "legal", requires_approval: true }
+  qwen_legal_research: { enabled: true, realm: "legal", requires_approval: true }
+  minimax_code_assist: { enabled: true, realm: "development", requires_approval: false }
+  semantic_caching: { enabled: true, similarity_threshold: 0.95 }
+  hybrid_orchestration: { enabled: true }
+
+ai_providers:
+  deepseek:
+    monthly_tokens: 5000000
+    rate_limit_rpm: 20
+  qwen:
+    monthly_tokens: 1000000
+    rate_limit_rpm: 10
+  minimax:
+    monthly_tokens: 500000
+    rate_limit_rpm: 5
+
+ai_security:
+  credential_storage: "github_secrets_only"
+  audit_requirement: "all_ai_actions_logged"
+  realm_isolation: true
+  human_approval_threshold:
+    legal_analysis: "always"
+    code_suggestion: "risk_based"
+    ingestion: "batch_approval"
