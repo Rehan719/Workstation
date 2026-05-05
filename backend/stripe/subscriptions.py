@@ -1,4 +1,5 @@
-import os, stripe
+import os
+import stripe
 from fastapi import APIRouter, HTTPException, Request
 from firebase_admin import auth, firestore
 from datetime import datetime, timedelta
@@ -9,15 +10,10 @@ router = APIRouter(prefix="/stripe")
 
 @router.post("/create-checkout-session")
 async def create_checkout_session(uid: str, price_id: str, success_url: str, cancel_url: str):
-    try:
-        user = auth.get_user(uid)
-    except auth.UserNotFoundError:
-        raise HTTPException(status_code=404, detail="User not found")
-
+    user = auth.get_user(uid)
     sub_doc = db.collection("subscriptions").document(uid).get()
     if sub_doc.exists and sub_doc.to_dict().get("status") == "active":
         raise HTTPException(400, "Already subscribed")
-
     trial_end = int((datetime.utcnow() + timedelta(days=30)).timestamp())
     session = stripe.checkout.Session.create(
         customer_email=user.email,
@@ -40,11 +36,9 @@ async def stripe_webhook(request: Request):
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except Exception:
         raise HTTPException(400, "Invalid signature")
-
     event_id = event["id"]
     if db.collection("webhook_events").document(event_id).get().exists:
         return {"status": "ok"}
-
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         uid = session["metadata"]["firebase_uid"]
