@@ -42,18 +42,8 @@ async def stripe_webhook(request: Request):
         raise HTTPException(400, "Invalid signature")
 
     event_id = event["id"]
-    event_ref = db.collection("webhook_events").document(event_id)
-
-    # Idempotency check with TTL (Refinement 1)
-    if event_ref.get().exists:
+    if db.collection("webhook_events").document(event_id).get().exists:
         return {"status": "ok"}
-
-    # Atomic set with TTL (30 days)
-    expire_at = datetime.utcnow() + timedelta(days=30)
-    event_ref.set({
-        "processed_at": firestore.SERVER_TIMESTAMP,
-        "expireAt": expire_at
-    }, merge=True)
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
@@ -77,7 +67,7 @@ async def stripe_webhook(request: Request):
             "timestamp": firestore.SERVER_TIMESTAMP,
             "payload": event["data"]["object"]
         })
-
+    db.collection("webhook_events").document(event_id).set({"processed_at": firestore.SERVER_TIMESTAMP})
     return {"status": "ok"}
 
 @router.post("/create-portal-session")

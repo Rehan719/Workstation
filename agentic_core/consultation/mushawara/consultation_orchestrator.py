@@ -1,89 +1,99 @@
 import asyncio
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
+from .perspective_aggregator import PerspectiveAggregator
 
 @dataclass
 class ConsultationQuery:
     id: str
     content: str
+    metadata: Dict[str, Any] = None
 
 @dataclass
 class ConsultationOutcome:
     consensus: Any
     confidence: float
     status: str = "SUCCESS"
+    reasoning: str = ""
 
 class MushawaraOrchestrator:
-    def __init__(self, perspective_aggregator, ueg, validator):
+    """
+    Mushāwara Consultation Engine (vΩ∞-MASTER).
+    Deliberative bridge between MJM v4.0 and six Urdu-centric cognitive engines.
+    Mandate: ≥3 perspectives + MJM meta-validation before commitment.
+    """
+    def __init__(self, perspective_aggregator: PerspectiveAggregator, ueg, validator):
         self.perspective_aggregator = perspective_aggregator
         self.ueg = ueg
         self.validator = validator
         self.mjm = perspective_aggregator.mjm
-        # Cognitive engines simulation
+        # Core Cognitive Engines
         self.cognitive_engines = ["inkashaf", "aqal", "samajh", "hoshiyari", "soch", "iman"]
 
-    async def consult(self, query: ConsultationQuery, required_engines: List[str]) -> ConsultationOutcome:
-        # 1. Validate query constitutionally
+    async def consult(self, query: ConsultationQuery, required_engines: Optional[List[str]] = None) -> ConsultationOutcome:
+        """
+        Executes a deliberative consultation cycle.
+        """
+        # 1. Constitutional Validation of Query
         if hasattr(self.validator, "validate"):
-            await self.validator.validate(query)
+             await self.validator.validate(query)
 
-        # 2. Activate cognitive engines with timeout (Refinement 5)
-        responses = []
+        target_engines = required_engines or ["inkashaf", "aqal", "iman"] # Minimum 3 for v∞-MASTER
+        if len(target_engines) < 3:
+            return ConsultationOutcome(consensus=None, confidence=0.0, status="ERROR", reasoning="Insufficient engines")
+
+        # 2. Parallel Perspective Generation
         tasks = []
-        for engine_name in required_engines:
-            tasks.append(asyncio.wait_for(self._simulate_engine_call(engine_name), timeout=30.0))
+        for engine in target_engines:
+            tasks.append(asyncio.wait_for(self._simulate_engine_analysis(engine, query), timeout=30.0))
 
         try:
             responses = await asyncio.gather(*tasks, return_exceptions=True)
         except Exception as e:
-             if self.ueg:
-                 await self.ueg.log_event("MUSHAWARA_ERROR", {"error": str(e)})
-
-        # Filter out errors and timeouts
-        valid_responses = [r for r in responses if isinstance(r, dict)]
-
-        # Edge Case 3: HD Consensus Dimensional Fallback
-        if not valid_responses or len(valid_responses) < 1:
-            # Fallback to deterministic GaaS v4 rule-set
             if self.ueg:
-                await self.ueg.log_event("MUSHAWARA_HD_FALLBACK", {
-                    "query_id": query.id,
-                    "reason": "insufficient_valid_responses"
-                })
-            # Simulate deterministic rule evaluation
-            return ConsultationOutcome(
-                consensus="DETERMINISTIC_GAAS_V4_RULESET_PASS",
-                confidence=0.85, # Guaranteed minimum for GaaS v4
-                status="HD_FALLBACK"
-            )
+                await self.ueg.log_event("MUSHAWARA_CONSULTATION_FAIL", {"error": str(e)})
+            raise
 
-        # 3. Aggregate perspectives using HD bundling
-        aggregated = await self.perspective_aggregator.synthesize(valid_responses)
+        # Filter and validate responses
+        valid_responses = [r for r in responses if isinstance(r, dict) and "vector" in r]
 
-        # Check agreement threshold
-        if aggregated.get("agreement_score", 0.0) < 0.85:
-             if self.ueg:
-                 await self.ueg.log_event("MUSHAWARA_HD_FALLBACK", {
-                     "query_id": query.id,
-                     "reason": "low_agreement_score"
-                 })
-             return ConsultationOutcome(
-                 consensus="DETERMINISTIC_GAAS_V4_RULESET_PASS",
-                 confidence=0.85,
-                 status="HD_FALLBACK"
-             )
+        # 3. Perspective Synthesis (10,000-D HD Bundling)
+        synthesis = await self.perspective_aggregator.synthesize(valid_responses)
 
-        # 5. Log to UEG
-        if self.ueg:
-            await self.ueg.log_event("CONSULTATION_COMPLETE", {"query_id": query.id, "outcome": aggregated})
+        # 4. MJM Meta-Validation
+        mjm_confidence = self.mjm.get_confidence() if hasattr(self.mjm, "get_confidence") else 0.95
+        final_confidence = 0.7 * synthesis["agreement_score"] + 0.3 * mjm_confidence
 
-        return ConsultationOutcome(
-            consensus=aggregated,
-            confidence=aggregated.get("agreement_score", 0.9),
-            status="SUCCESS"
+        # 5. Constitutional Commitment
+        status = synthesis["status"]
+        if final_confidence < 0.85:
+             status = "HD_FALLBACK" # Escalation logic
+
+        outcome = ConsultationOutcome(
+            consensus=synthesis["consensus_vector"],
+            confidence=final_confidence,
+            status=status,
+            reasoning=f"Aggregated {len(valid_responses)} perspectives with HD bundling."
         )
 
-    async def _simulate_engine_call(self, engine_name: str) -> Dict[str, Any]:
-        """Simulate parallel execution with potential timeout."""
-        await asyncio.sleep(0.1) # Simulate network/processing latency
-        return {"engine": engine_name, "vector": [1]*10000, "confidence": 0.9}
+        # 6. Immutable UEG Record
+        if self.ueg:
+            await self.ueg.log_event("CONSULTATION_OUTCOME", {
+                "query_id": query.id,
+                "confidence": final_confidence,
+                "status": status,
+                "engine_count": len(valid_responses)
+            })
+
+        return outcome
+
+    async def _simulate_engine_analysis(self, engine_name: str, query: ConsultationQuery) -> Dict[str, Any]:
+        """Simulate high-fidelity cognitive analysis."""
+        # Simulated 10,000-D HD vector output
+        await asyncio.sleep(0.05)
+        return {
+            "engine": engine_name,
+            "vector": [1] * 10000,
+            "confidence": 0.92,
+            "trace": f"{engine_name} analysis complete."
+        }

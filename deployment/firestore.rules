@@ -1,26 +1,51 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // 1. User instance sovereignty
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // 2. Commercial Subscriptions
     match /subscriptions/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // 3. Atomic Usage Quotas
     match /usage/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == docId.split('_')[0];
     }
+
+    // 4. Webhook Idempotency (Backend-only)
     match /webhook_events/{eventId} {
       allow read, write: if false;
     }
+
+    // 5. UEG Merkle-DAG (Admin-only read, Backend-only write)
     match /ueg_log/{doc} {
       allow read: if request.auth != null && request.auth.token.admin == true;
       allow write: if false;
     }
-    match /geospheric/{cycle}/{doc} {
+
+    // 6. Geospheric Cycle State
+    match /geospheric_state/{cycle} {
       allow read: if request.auth != null;
       allow write: if false;
     }
+
+    // 7. Twin Snapshots (Sovereign introspection)
+    match /twin_snapshots/{sid} {
+      allow read: if request.auth != null && request.auth.token.admin == true;
+      allow write: if false;
+    }
+
+    // 8. Verifiable Credentials
+    match /verifiable_credentials/{credentialId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // 9. MultiSig Council Proposals
     match /council_proposals/{proposalId} {
       allow read: if request.auth != null;
       allow write: if false;

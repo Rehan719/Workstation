@@ -1,0 +1,28 @@
+{
+  "enabled_pipelines": [
+    "Scraping",
+    "Ingestion",
+    "Knowledge",
+    "Introspection",
+    "Retrospection",
+    "Extrospection",
+    "Learning"
+  ],
+  "default_mode": "jaiza",
+  "csuite_overrides": {},
+  "coe_requirements": [
+    "Security",
+    "AI Ethics"
+  ],
+  "format_whitelist": [
+    "PDF",
+    "DOCX",
+    "PPTX",
+    "XLSX",
+    "HTML",
+    "MP4",
+    "MP3",
+    "PNG",
+    "SVG"
+  ]
+}

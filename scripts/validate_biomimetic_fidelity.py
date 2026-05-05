@@ -11,7 +11,7 @@ async def main():
 
     print(f"🔍 Starting Geospheric Fidelity Audit (Threshold: {args.threshold})")
 
-    # Mock systems for validation
+    # Mock systems for validation at setpoints
     class MockSystem:
         def __init__(self):
             self.water_metric = 75.0
@@ -25,17 +25,22 @@ async def main():
 
     # Test stability
     state = MockSystem()
-    corrections = await orchestrator.step(state)
+    decision = await orchestrator.step(state)
 
     print("📊 Audit Results:")
     all_passed = True
-    for cycle, correction in corrections.items():
-        # In mock system at setpoint, correction should be near 0
-        fidelity = 1.0 - abs(correction) / 100.0 # Simplified fidelity metric
-        status = "✅ PASS" if fidelity >= args.threshold else "❌ FAIL"
-        print(f"  - {cycle.capitalize()} Cycle: {fidelity:.4f} {status}")
-        if fidelity < args.threshold:
-            all_passed = False
+    if not decision.approved:
+        print(f"❌ ORCHESTRATOR REJECTED STATE: {decision.reason}")
+        all_passed = False
+    else:
+        corrections = decision.adjusted_setpoints
+        for cycle, correction in corrections.items():
+            # In mock system at setpoint, correction should be near 0
+            fidelity = 1.0 - abs(correction) / 100.0
+            status = "✅ PASS" if fidelity >= args.threshold else "❌ FAIL"
+            print(f"  - {cycle.capitalize()} Cycle: {fidelity:.4f} {status}")
+            if fidelity < args.threshold:
+                all_passed = False
 
     if all_passed:
         print("\n🎉 ALL CYCLES PASSED FIDELITY AUDIT")
