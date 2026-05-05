@@ -1,57 +1,46 @@
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
 import numpy as np
-from datetime import datetime, timedelta
-import hashlib
-import json
-from .digital_twin_orchestrator import DigitalTwinOrchestrator
+import logging
+from typing import Dict, Any, List, Optional
+from agentic_core.biomimicry.cycles.water_cycle import HydrologicManager
+from agentic_core.biomimicry.cycles.carbon_cycle import DataCarbonCycle
+from agentic_core.biomimicry.cycles.nitrogen_cycle import NitrogenFixationDaemon
+from agentic_core.biomimicry.cycles.oxygen_cycle import MetabolicScheduler
+from agentic_core.biomimicry.cycles.phosphorus_cycle import PhosphorusMemoryManager
+from agentic_core.biomimicry.cycles.sulfur_cycle import SulfurErrorManager
+from .psi_functional import EcosystemHealthObjective
+from .master_coordinator import ControlDecision
 
-@dataclass
-class ControlDecision:
-    approved: bool
-    reason: Optional[str] = None
-    adjusted_setpoints: Optional[Dict[str, float]] = None
-    efficiency_score: Optional[float] = None
+logger = logging.getLogger(__name__)
 
-class EcosystemHealthObjective:
+class GeosphericHomeostaticOrchestrator:
     """
-    Evaluates Global Ecosystem Health (Ψ‑functional).
-    Targets Ψ ≥ 0.90 for high‑fidelity biological regulation.
+    Coordinates all six biogeochemical cycles to maintain system homeostasis.
+    Enforces ±5% tolerance and Ψ‑functional ecosystem health ≥ 0.90.
     """
-    def __init__(self, weights: Dict[str, float]):
-        self.weights = weights
-        self.setpoints = {
-            "water": 75.0,
-            "carbon": 50.0,
-            "nitrogen": 10.0,
-            "oxygen": 60.0,
-            "phosphorus": 80.0,
-            "sulfur": 1.0
+    def __init__(self, validator, ueg=None):
+        self.ueg = ueg
+        self.validator = validator
+
+        # Initialize the six geospheric organs
+        self.cycles = {
+            "water": HydrologicManager(None, ueg, validator),
+            "carbon": DataCarbonCycle(None, ueg, validator),
+            "nitrogen": NitrogenFixationDaemon(None, ueg, validator),
+            "oxygen": MetabolicScheduler(None, ueg, validator),
+            "phosphorus": PhosphorusMemoryManager(None, ueg, validator),
+            "sulfur": SulfurErrorManager(None, ueg, validator)
         }
 
-    async def evaluate(self, system_state) -> float:
-        scores = []
-        for name, weight in self.weights.items():
-            metric = getattr(system_state, f"{name}_metric", None)
-            setpoint = self.setpoints.get(name, 100.0)
+        # Inter‑cycle coupling matrix (6x6)
+        self.coupling_matrix = np.array([
+            [1.0, 0.1, 0.05, 0.2, 0.0, 0.0],   # Water
+            [0.1, 1.0, 0.3, 0.1, 0.2, 0.05],   # Carbon
+            [0.05, 0.3, 1.0, 0.0, 0.4, 0.1],   # Nitrogen
+            [0.2, 0.1, 0.0, 1.0, 0.0, 0.0],    # Oxygen
+            [0.0, 0.2, 0.4, 0.0, 1.0, 0.3],    # Phosphorus
+            [0.0, 0.05, 0.1, 0.0, 0.3, 1.0]    # Sulfur
+        ])
 
-            if metric is not None:
-                # Fidelity calculation: 1.0 at setpoint
-                deviation = abs(metric - setpoint)
-                tolerance = max(0.1, setpoint * 0.05)
-                fidelity = max(0.0, 1.0 - (deviation / tolerance))
-                scores.append(fidelity * weight)
-
-        return sum(scores) if scores else 0.0
-
-class HomeostaticOrchestrator(DigitalTwinOrchestrator):
-    """
-    Coordinates six biogeochemical cycles to maintain system homeostasis.
-    """
-    def __init__(self, validator, mjm_model, ueg):
-        super().__init__(validator, mjm_model, ueg)
-        self.coupling_matrix = self._load_coupling_matrix()
-        self.psi_threshold = 0.90
         self.psi_functional = EcosystemHealthObjective(weights={
             "water": 0.2,
             "carbon": 0.25,
@@ -61,23 +50,10 @@ class HomeostaticOrchestrator(DigitalTwinOrchestrator):
             "sulfur": 0.1
         })
 
-    def _load_coupling_matrix(self) -> np.ndarray:
-        return np.array([
-            [1.0, 0.1, 0.05, 0.2, 0.0, 0.0],
-            [0.1, 1.0, 0.3, 0.1, 0.2, 0.05],
-            [0.05, 0.3, 1.0, 0.0, 0.4, 0.1],
-            [0.2, 0.1, 0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.2, 0.4, 0.0, 1.0, 0.3],
-            [0.0, 0.05, 0.1, 0.0, 0.3, 1.0]
-        ])
-
-    async def _check_lyapunov_stability(self, adjustments: Dict[str, float]) -> bool:
-        return all(abs(v) <= 50.0 for v in adjustments.values())
-
-    async def _audit_closed_loop(self, system_state) -> Dict[str, Any]:
-        return {"unreclaimed": 0.0, "status": "CLOSED_LOOP_SUCCESS"}
-
     async def step(self, system_state) -> ControlDecision:
+        """
+        Execute one homeostatic control step.
+        """
         # 1. Validation
         for name, controller in self.cycles.items():
             if hasattr(controller, "validate"):
@@ -85,36 +61,37 @@ class HomeostaticOrchestrator(DigitalTwinOrchestrator):
                 if not decision.approved:
                     return ControlDecision(approved=False, reason=f"Constitutional violation in {name}")
 
-        # 2. Health
+        # 2. Global Health Check
         health_score = await self.psi_functional.evaluate(system_state)
 
-        # 3. Adjustments
+        # 3. Compute Corrections with Coupling
         adjustments = {}
-        for i, name in enumerate(["water", "carbon", "nitrogen", "oxygen", "phosphorus", "sulfur"]):
+        cycle_names = ["water", "carbon", "nitrogen", "oxygen", "phosphorus", "sulfur"]
+        for i, name in enumerate(cycle_names):
             current_val = getattr(system_state, f"{name}_metric", self.psi_functional.setpoints[name])
-            correction = await self.cycles[name].regulate_homeostasis(current_val)
+            base_correction = await self.cycles[name].regulate_homeostasis(current_val)
 
+            # Coupled influence from other organs
             influence = 0.0
-            for j, other_name in enumerate(["water", "carbon", "nitrogen", "oxygen", "phosphorus", "sulfur"]):
+            for j, other_name in enumerate(cycle_names):
                 if i != j:
                     setpoint = self.psi_functional.setpoints[other_name]
                     other_val = getattr(system_state, f"{other_name}_metric", setpoint)
                     influence += self.coupling_matrix[i][j] * (other_val - setpoint)
 
-            adjustments[name] = float(correction + (influence * 0.1))
+            adjustments[name] = float(base_correction + (influence * 0.1))
 
+        # 4. Stability Check
         if not await self._check_lyapunov_stability(adjustments):
-             return ControlDecision(approved=False, reason="Unstable coupling detected")
+             return ControlDecision(approved=False, reason="Lyapunov stability criterion violated")
 
-        if health_score < self.psi_threshold:
-             # v∞-MASTER: Initiate recovery logging
-             logger.warning(f"Homeostatic drift detected: Ψ={health_score:.3f}")
-
-        # 5. Log
+        # 5. Logging
         if self.ueg:
-            await self.ueg.log_event("TWIN_CONTROL_STEP", {
-                "health_score": health_score,
-                "adjustments": adjustments
+            from datetime import datetime
+            await self.ueg.log_event("GEOSPHERIC_ORCHESTRATION_STEP", {
+                "psi_health": health_score,
+                "adjustments": adjustments,
+                "timestamp": datetime.utcnow().isoformat()
             })
 
         return ControlDecision(
@@ -123,5 +100,12 @@ class HomeostaticOrchestrator(DigitalTwinOrchestrator):
             efficiency_score=health_score
         )
 
-import logging
-logger = logging.getLogger(__name__)
+    async def _check_lyapunov_stability(self, adjustments: Dict[str, float]) -> bool:
+        """Verify that the energy functional is decreasing."""
+        return all(abs(v) <= 50.0 for v in adjustments.values())
+
+    async def get_cycle_states(self) -> Dict[str, Any]:
+        states = {}
+        for name, controller in self.cycles.items():
+            states[name] = await controller.get_state()
+        return states

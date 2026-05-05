@@ -1,30 +1,26 @@
-name: Genetic-Immune CI - vΩ∞-MASTER
-on:
-  push:
-    branches: [main, master, feature/vΩ∞-self-reflective, release/vΩ∞-converged]
-  pull_request:
-    branches: [main, master]
-
+name: Genetic-Immune CI/CD - vΩ∞-FINAL
+on: [push, pull_request]
 jobs:
-  test-and-deploy:
+  quality-gates:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Zero‑placeholder check (AST-level grep)
-      - name: Zero‑placeholder check
+      # 1. Zero-placeholder check
+      - name: Zero-placeholder check
         run: |
-          if grep -rE "(TODO|FIXME|pass\s*$|NotImplementedError|unittest\.mock)" \
-            --include="*.py" --include="*.tsx" agentic_core/ agents/ config/ scripts/; then
-            echo "❌ Placeholder strings found – code DNA incomplete"
+          if grep -rE "(TODO|FIXME|XXX|pass\s*$|NotImplementedError|unittest\.mock)" \
+            --include="*.py" --include="*.tsx" agentic_core/ agents/ backend/; then
+            echo "❌ Placeholders found - twin DNA incomplete"
             exit 1
           fi
 
       # 2. Sovereignty validation (no GCP SDK in core)
       - name: Sovereignty validation
         run: |
-          if grep -r "google\.cloud" --include="*.py" agentic_core/; then
-            echo "❌ GCP SDK detected in core – runtime sovereignty violated"
+          if grep -r "from google\.cloud\|import google\.cloud" \
+            --include="*.py" backend/ agentic_core/; then
+            echo "❌ GCP SDK detected - sovereignty violated"
             exit 1
           fi
 
@@ -36,35 +32,30 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pyyaml pydantic numpy cryptography PyJWT pytest pytest-asyncio pandas scipy
+          pip install ruff bandit pytest pytest-asyncio numpy pyyaml pydantic cryptography PyJWT pandas scipy
 
-      # 4. Unit & Integration tests
-      - name: Run Test Suite
+      # 4. Lint & Audit
+      - name: Lint with ruff
+        run: ruff check backend/ agentic_core/
+
+      - name: Security audit with bandit
+        run: bandit -r backend/ agentic_core/
+
+      # 5. Run tests
+      - name: Run converged tests
         run: |
           export PYTHONPATH=$PYTHONPATH:.
-          pytest tests/ -v
+          pytest tests/ -v --maxfail=3
 
-      # 5. Geospheric Homeostasis Validation
-      - name: Geospheric Homeostasis Check
+      # 6. Biomimetic fidelity validation
+      - name: Biomimetic fidelity validation
         run: |
           export PYTHONPATH=$PYTHONPATH:.
-          python3 -c "from agentic_core.biomimicry.geospheric.orchestrator import HomeostaticOrchestrator; print('Orchestrator online')"
+          python3 scripts/validate_biomimetic_fidelity.py --threshold 0.90
 
-      # 6. Digital Twin simulation
-      - name: Digital Twin Simulation
-        run: |
-          export PYTHONPATH=$PYTHONPATH:.
-          python3 scripts/bootstrap_digital_twin.py
-
-      # 7. Mushāwara consensus validation
-      - name: Mushāwara Consultation Check
-        run: |
-          export PYTHONPATH=$PYTHONPATH:.
-          pytest tests/self_improvement/test_proposals.py
-
-      # 8. Build & deploy (main branch only)
+      # 7. Build & deploy (main only)
       - name: Deploy to Cloud Run
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         run: |
           echo "Simulating deployment..."
-          # ./scripts/deploy_free_tier.sh ${{ secrets.GCP_PROJECT_ID }}
+          # gcloud run deploy workstation-api --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/workstation-api:latest

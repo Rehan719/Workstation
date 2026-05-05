@@ -1,53 +1,41 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 1. User instance sovereignty
+    // Standard user data isolation
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 2. Commercial Subscriptions
+    // Subscription data with twin reflection access
     match /subscriptions/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 3. Atomic Usage Quotas
+    // Usage counters with twin predictive access
     match /usage/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == docId.split('_')[0];
     }
 
-    // 4. Webhook Idempotency (Backend-only)
+    // Webhook idempotency log
     match /webhook_events/{eventId} {
       allow read, write: if false;
     }
 
-    // 5. UEG Merkle-DAG (Admin-only read, Backend-only write)
+    // UEG log: immutable twin memory
     match /ueg_log/{doc} {
       allow read: if request.auth != null && request.auth.token.admin == true;
       allow write: if false;
     }
 
-    // 6. Geospheric Cycle State
-    match /geospheric_state/{cycle} {
+    // Geospheric state: twin organs
+    match /geospheric/{cycle}/{stateDoc} {
       allow read: if request.auth != null;
       allow write: if false;
     }
 
-    // 7. Twin Snapshots (Sovereign introspection)
-    match /twin_snapshots/{sid} {
+    // Twin state snapshots
+    match /twin_snapshots/{doc} {
       allow read: if request.auth != null && request.auth.token.admin == true;
-      allow write: if false;
-    }
-
-    // 8. Verifiable Credentials
-    match /verifiable_credentials/{credentialId} {
-      allow read: if request.auth != null;
-      allow write: if false;
-    }
-
-    // 9. MultiSig Council Proposals
-    match /council_proposals/{proposalId} {
-      allow read: if request.auth != null;
       allow write: if false;
     }
   }
