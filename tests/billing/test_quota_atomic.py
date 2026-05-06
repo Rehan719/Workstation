@@ -1,32 +1,35 @@
-import concurrent.futures
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, AsyncMock, patch
 from backend.usage.meter import check_quota
 
 @pytest.mark.asyncio
-async def test_quota_atomic_simulation():
-    # Mocking firestore client and transaction
-    mock_db = MagicMock()
-    mock_transaction = MagicMock()
+async def test_quota_atomic_with_repo():
+    # 1. Setup Mock Repository
+    mock_repo = AsyncMock()
 
-    # Simulate free tier limit 50
-    mock_doc = MagicMock()
-    mock_doc.exists = True
-    mock_doc.to_dict.return_value = {"count": 49}
+    # Simulate user has a free plan
+    mock_repo.get_subscription.return_value = {"status": "active", "plan": "free"}
 
-    mock_transaction.get.return_value = mock_doc
+    # Case A: Within limit
+    mock_repo.increment_quota.return_value = (True, 10)
+    allowed = await check_quota("user123", "executions", mock_repo)
+    assert allowed is True
+    mock_repo.increment_quota.assert_called_with("user123", "executions", 50)
 
-    # We mock the db.run_transaction to just call our logic
-    def run_tx(logic):
-        return logic(mock_transaction)
+    # Case B: Exceeds limit
+    mock_repo.increment_quota.return_value = (False, 50)
+    allowed = await check_quota("user456", "executions", mock_repo)
+    assert allowed is False
 
-    mock_db.run_transaction = run_tx
+@pytest.mark.asyncio
+async def test_quota_predictive_buffer():
+    mock_repo = AsyncMock()
+    mock_repo.get_subscription.return_value = {"status": "active", "plan": "free"}
+    mock_repo.increment_quota.return_value = (True, 52)
 
-    with patch("backend.usage.meter.db", mock_db):
-        with patch("backend.usage.meter._get_effective_plan", return_value="free"):
-            # Should succeed for the 50th call
-            assert check_quota("user123", "executions") is True
+    # Twin predicts upgrade: should use 10% buffer (50 -> 55)
+    prediction = {"likelihood_to_upgrade": 0.85}
+    allowed = await check_quota("user789", "executions", mock_repo, twin_prediction=prediction)
 
-            # Now mock 50 calls
-            mock_doc.to_dict.return_value = {"count": 50}
-            assert check_quota("user123", "executions") is False
+    assert allowed is True
+    mock_repo.increment_quota.assert_called_with("user789", "executions", 55)
