@@ -1,23 +1,43 @@
-from .water_cycle import PIDController
+from .base_cycle import PIDController, GeosphericCycle
+from datetime import datetime
 
-class NitrogenFixationDaemon:
+class NitrogenFixationDaemon(GeosphericCycle):
+    """Manages task fixation via nitrogen cycle analogue."""
     def __init__(self, task_system, ueg, validator):
+        super().__init__(name="nitrogen", setpoint=10.0, tolerance=0.05)
         self.pid = PIDController(setpoint=10.0, kp=0.8, ki=0.05, kd=0.1)
         self.task_system = task_system
         self.ueg = ueg
         self.validator = validator
-        self.reservoirs = {"pending_tasks": 0.0, "completed_tasks": 0.0}
+        self.reservoirs = {
+            "fixed_tasks": 0.0,
+            "nitrified_tasks": 0.0,
+            "denitrified_tasks": 0.0
+        }
 
-    async def fix_tasks(self, task_volume: float) -> float:
-        self.reservoirs["pending_tasks"] += task_volume
-        if hasattr(self.ueg, "log"):
-            await self.ueg.log("nitrogen_fixation", task_volume=task_volume)
-        return task_volume
+    async def sense(self) -> dict:
+        return {
+            "queue_depth": self.reservoirs["fixed_tasks"],
+            "reservoirs": self.reservoirs.copy(),
+            "homeostatic": self.is_homeostatic(self.reservoirs["fixed_tasks"])
+        }
+
+    async def regulate(self) -> dict:
+        queue_depth = self.reservoirs["fixed_tasks"]
+        return await self._regulate_with_val(queue_depth)
 
     async def regulate_homeostasis(self, queue_depth: float) -> float:
-        error = self.pid.setpoint - queue_depth
-        correction = self.pid.compute(error)
-        return correction
+        result = await self._regulate_with_val(queue_depth)
+        return result["correction_applied"]
 
-    async def get_state(self):
-        return {"reservoirs": self.reservoirs, "setpoint": self.pid.setpoint}
+    async def _regulate_with_val(self, queue_depth: float) -> dict:
+        error = self.pid.setpoint - queue_depth
+        dev = self.deviation(queue_depth)
+        status = "within_tolerance" if dev <= self.tolerance else "deviation"
+
+        correction = self.pid.compute(error)
+        return {
+            "status": status,
+            "correction_applied": correction,
+            "new_estimate": queue_depth + (correction * 0.1)
+        }

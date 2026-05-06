@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from agentic_core.mjm.mjm import MJMOrchestratorV4
-from agentic_core.mjm.hyperdimensional import MJMv4OmniLearner
+from .hd_omni_learner import MJMv4OmniLearner
 
 class MJMRecursiveLearner:
     """Twin-aware wrapper for existing MJM logic."""
