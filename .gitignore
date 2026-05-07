@@ -50,3 +50,4 @@ data/
 logs/
 state_snapshots/
 sandbox/
+.env
