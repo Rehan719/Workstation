@@ -38,7 +38,7 @@ class SynchronousConsultationProtocol:
             responses = await self._collect_partial_responses(participants, query)
 
         # 4. Synthesize multi-engine inputs
-        aggregated = await self.perspective_aggregator.synthesize(responses, query.get('confidence_threshold', 0.85))
+        aggregated = await self.perspective_aggregator.synthesize(responses)
 
         # 5. Validate outcome against GaaS v4
         if not await self.constitutional_gate.validate_outcome(aggregated, constitutional_context):
@@ -48,8 +48,8 @@ class SynchronousConsultationProtocol:
         await self.deliberation_logger.log_consultation(query, aggregated, participants)
 
         return ConsultationOutcome(
-            outcome=aggregated.result,
-            consensus_score=aggregated.consensus_metric,
+            outcome=aggregated.get("consensus_vector"),
+            consensus_score=aggregated.get("agreement_score", 0.0),
             participants=participants,
             timestamp=datetime.utcnow().isoformat()
         )
@@ -60,10 +60,11 @@ class SynchronousConsultationProtocol:
 
     async def _broadcast_and_collect(self, participants, query):
         # Simulated broadcast logic
-        return [{"engine": p, "response": "consensus_verified", "confidence": 0.96} for p in participants]
+        # In a real HD system, these would be vectors
+        return [{"engine": p, "response": "consensus_verified", "confidence": 0.96, "vector": [1]*10000} for p in participants]
 
     async def _collect_partial_responses(self, participants, query):
-        return [{"engine": participants[0], "response": "partial", "confidence": 0.7}]
+        return [{"engine": participants[0], "response": "partial", "confidence": 0.7, "vector": [0]*10000}]
 
     async def _handle_consultation_failure(self, query, aggregated, context):
         raise Exception("Mushawara: Deliberation failed constitutional audit")

@@ -8,7 +8,7 @@ from agentic_core.ueg.logger import VSBUEGLogger
 from agentic_core.change_control.reconfigulator import Reconfigulator as ReconfigulatorV140
 from agentic_core.change_control.regulator import Regulator as RegulatorV140
 from agentic_core.genetic_immune.immune_system import ImmuneSystem
-from agentic_core.mjm.twin_learner import MJMRecursiveLearner
+from agentic_core.mjm.recursive_meta_learner import MJMRecursiveLearner
 from agentic_core.mjm.self_reflection_engine import SelfReflectionEngine
 from agentic_core.divine.v2.alignment_v2 import DivineAlignmentEngineV2
 from agentic_core.governance.gaas.v5.hallucination_sandbox import HallucinationSandbox
@@ -28,9 +28,9 @@ class UnifiedConstitutionalInterceptorV16Omega:
         self.ueg = ueg_logger or VSBUEGLogger()
         self.reconfigulator = ReconfigulatorV140(self.ueg)
         self.regulator = RegulatorV140(self.ueg)
-        self.immune = ImmuneSystem()
         self.mjm = MJMRecursiveLearner()
-        self.reflection = SelfReflectionEngine()
+        self.immune = ImmuneSystem(digital_twin=self.mjm, ueg=self.ueg)
+        self.reflection = SelfReflectionEngine(validator=None, biomimetic_validator=None)
         self.divine = DivineAlignmentEngineV2(self.ueg)
         self.hallucination = HallucinationSandbox(self.ueg)
         self.layers = EnrichedArchitecturalLayerManager(self.ueg)
@@ -79,7 +79,7 @@ class UnifiedConstitutionalInterceptorV16Omega:
                 output = await action()
         except Exception as e:
             logger.error(f"Definitive execution failed: {e}. Initiating Self-Healing.")
-            output = await self.regulator.repair_tier({"error": str(e), "context": context}, tier="HDR")
+            output = await self.regulator.repair({"error": str(e), "context": context}, tier="HDR")
             await self.ueg.log_minimisation_event("uci_self_healing", {"error": str(e)})
 
         latency = (time.time() - start_ts) * 1000
