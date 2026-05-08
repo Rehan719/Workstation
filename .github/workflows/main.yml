@@ -53,7 +53,13 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:.
           python3 scripts/validate_biomimetic_fidelity.py --threshold 0.90
 
-      # 7. Build & deploy (main only)
+      # 7. Phase 4: Formal Verification
+      - name: Formal Verification (TLA+)
+        run: |
+          chmod +x tests/formal/run_verification.sh
+          ./tests/formal/run_verification.sh
+
+      # 8. Build & deploy (main only)
       - name: Deploy to Cloud Run
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         run: |
