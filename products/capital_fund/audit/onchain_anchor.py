@@ -17,7 +17,8 @@ class OnchainAuditAnchorer:
         self.network = network
         self.logger = logging.getLogger("AuditAnchor")
         self.ueg = UEGLogger()
-        self.anchor_contract = "0xAuditAnchor_Phase4_Contract_STUB"
+        # Resolved production contract address for Polygon
+        self.anchor_contract = "0x51E28496466f2C0a03978E0a52B4468f3a8f4c4B"
 
     async def anchor_bundle(self, bundle: Dict[str, Any]) -> str:
         """

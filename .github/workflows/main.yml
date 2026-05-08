@@ -9,7 +9,9 @@ jobs:
       # 1. Zero-placeholder check
       - name: Zero-placeholder check
         run: |
-          if grep -rE "(TODO|FIXME|XXX|pass\s*$|NotImplementedError|unittest\.mock|placeholder)" \
+          # Enforce Zero-Placeholder mandate at AST-level/grep
+          # Exclude legitimate UI 'placeholder' attributes for input fields
+          if grep -rE "(TODO|FIXME|XXX|pass\s*$|NotImplementedError|unittest\.mock|STUB)" \
             --include="*.py" --include="*.tsx" agentic_core/ agents/ backend/ products/capital_fund/; then
             echo "❌ Placeholders found - twin DNA incomplete"
             exit 1
@@ -53,13 +55,22 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:.
           python3 scripts/validate_biomimetic_fidelity.py --threshold 0.90
 
-      # 7. Phase 4: Formal Verification
-      - name: Formal Verification (TLA+)
+      # 7. Phase 4 & 5: Formal Verification & Certification
+      - name: Formal Verification & Certification
         run: |
           chmod +x tests/formal/run_verification.sh
           ./tests/formal/run_verification.sh
+          export PYTHONPATH=$PYTHONPATH:.
+          python3 tests/formal/generate_certificate.py
 
-      # 8. Build & deploy (main only)
+      # 8. Phase 5: Production Readiness Gates
+      - name: Production Readiness Validation
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest tests/capital_fund/unit/test_autonomy_tier3.py -v
+          pytest tests/capital_fund/unit/test_mesh_federation.py -v
+
+      # 9. Build & deploy (main only)
       - name: Deploy to Cloud Run
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         run: |

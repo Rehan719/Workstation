@@ -14,6 +14,7 @@ def engine():
 
 @pytest.mark.asyncio
 async def test_configure_autonomy(engine, mock_db):
+    engine.config_ref.set.reset_mock()
     config = await engine.configure_autonomy(enabled=True, risk_tolerance=0.3)
     assert config["enabled"] is True
     assert config["risk_tolerance"] == 0.3
