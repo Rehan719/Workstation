@@ -28,6 +28,7 @@ const allNavItems: NavItem[] = [
     subItems: [
       { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
       { name: 'BTO Catalog', icon: Package, id: 'bto' },
+      { name: 'Capital Fund', icon: DollarSign, id: 'capital' },
       { name: 'File Hub', icon: Package, id: 'file-hub' },
       { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' }
     ]

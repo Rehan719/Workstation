@@ -9,8 +9,8 @@ jobs:
       # 1. Zero-placeholder check
       - name: Zero-placeholder check
         run: |
-          if grep -rE "(TODO|FIXME|XXX|pass\s*$|NotImplementedError|unittest\.mock)" \
-            --include="*.py" --include="*.tsx" agentic_core/ agents/ backend/; then
+          if grep -rE "(TODO|FIXME|XXX|pass\s*$|NotImplementedError|unittest\.mock|placeholder)" \
+            --include="*.py" --include="*.tsx" agentic_core/ agents/ backend/ products/capital_fund/; then
             echo "❌ Placeholders found - twin DNA incomplete"
             exit 1
           fi
@@ -19,7 +19,7 @@ jobs:
       - name: Sovereignty validation
         run: |
           if grep -r "from google\.cloud\|import google\.cloud" \
-            --include="*.py" backend/ agentic_core/; then
+            --include="*.py" backend/ agentic_core/ products/capital_fund/core/; then
             echo "❌ GCP SDK detected - sovereignty violated"
             exit 1
           fi
@@ -32,7 +32,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install ruff bandit pytest pytest-asyncio numpy pyyaml pydantic cryptography PyJWT pandas scipy
+          pip install ruff bandit pytest pytest-asyncio numpy pyyaml pydantic cryptography PyJWT pandas scipy stripe firebase-admin
 
       # 4. Lint & Audit
       - name: Lint with ruff
