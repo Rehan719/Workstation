@@ -1,0 +1,21 @@
+apiVersion: scheduler.cnrm.cloud.google.com/v1beta1
+kind: CloudSchedulerJob
+metadata:
+  name: capital-fund-weekly-twin-simulation
+  namespace: workstation-prod
+spec:
+  description: "Triggers weekly MJM v4.0 digital twin stress simulation for the Capital Fund."
+  schedule: "0 0 * * 0" # Every Sunday at midnight
+  timeZone: "UTC"
+  httpTarget:
+    uri: "https://workstation-api-internal.run.app/internal/twin/simulate-weekly"
+    httpMethod: "POST"
+    oidcToken:
+      serviceAccountEmail: "capital-fund-executor@workstation-prod.iam.gserviceaccount.com"
+      audience: "https://workstation-api-internal.run.app"
+  retryConfig:
+    retryCount: 3
+    maxRetryDuration: "3600s"
+    minBackoffDuration: "5s"
+    maxBackoffDuration: "3600s"
+    maxDoublings: 5
