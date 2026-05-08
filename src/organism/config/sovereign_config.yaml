@@ -47,3 +47,10 @@ ai_security:
     legal_analysis: "always"
     code_suggestion: "risk_based"
     ingestion: "batch_approval"
+
+capital_fund_features:
+  external_markets: { enabled: false, mode: "recommendation" }
+  crypto_gateway: { enabled: false, network: "polygon", pqc_secured: true }
+  semi_autonomous_execution: { enabled: false, max_risk_score: 0.20 }
+  realtime_feeds: { enabled: false, providers: ["binance", "coingecko"] }
+  external_investors: { enabled: false, kyc_required: true }
