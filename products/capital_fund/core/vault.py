@@ -1,0 +1,154 @@
+import hashlib
+from decimal import Decimal
+from typing import Dict, Any, List, Optional
+from datetime import datetime, UTC
+from firebase_admin import firestore
+from agentic_core.governance.gaas.gaas_validator import GaaSValidatorV4 as GaaSValidator
+from agentic_core.ueg.logger import VSBUEGLogger as UEGLogger
+from products.capital_fund.core.multisig_protocol import MultiSigProtocol
+from products.capital_fund.core.audit_manager import AuditManager
+
+db = firestore.client()
+
+class CapitalVault:
+    """
+    Sovereign capital vault for atomic account management.
+    Handles deposits, withdrawals, and transaction history.
+    """
+    def __init__(self, owner_uid: str):
+        self.owner_uid = owner_uid
+        self.validator = GaaSValidator()
+        self.ueg = UEGLogger()
+        self.multisig = MultiSigProtocol()
+        self.audit = AuditManager(self.ueg)
+        self.reserve_ratio = Decimal("0.10")
+        self.large_withdrawal_threshold = Decimal("0.05")
+
+    async def deposit(self, amount: Decimal, tx_id: str, metadata: Optional[Dict] = None) -> Dict[str, Any]:
+        """
+        Atomically deposit funds into the account.
+        Validated by GaaS v4 and logged to UEG.
+        """
+        # 1. Constitutional Validation
+        validation = await self.validator.validate_action(
+            "CAPITAL_DEPOSIT",
+            {"uid": self.owner_uid, "amount": float(amount), "tx_id": tx_id}
+        )
+        if not validation.get("passed"):
+            raise ValueError(f"Constitutional Violation: {validation.get('reason')}")
+
+        # 2. Atomic Firestore Transaction
+        account_ref = db.collection("capital_accounts").document(self.owner_uid)
+
+        def tx_logic(transaction):
+            doc = transaction.get(account_ref)
+            data = doc.to_dict() if doc.exists else {"balance": 0.0, "total_deposited": 0.0}
+
+            current_balance = Decimal(str(data.get("balance", 0.0)))
+            total_deposited = Decimal(str(data.get("total_deposited", 0.0)))
+
+            new_balance = current_balance + amount
+            new_total_deposited = total_deposited + amount
+
+            transaction.set(account_ref, {
+                "balance": float(new_balance),
+                "total_deposited": float(new_total_deposited),
+                "last_deposit_at": firestore.SERVER_TIMESTAMP,
+                "last_tx_id": tx_id
+            }, merge=True)
+            return float(new_balance)
+
+        final_balance = db.run_transaction(tx_logic)
+
+        # 3. UEG Logging & Audit
+        event_id = await self.ueg.log_event(
+            "CAPITAL_DEPOSIT_COMPLETED",
+            {
+                "uid": self.owner_uid,
+                "amount": float(amount),
+                "new_balance": final_balance,
+                "tx_id": tx_id,
+                "constitutional_hash": validation.get("hash")
+            },
+            merkle_link=True
+        )
+
+        # Generate audit bundle
+        await self.audit.generate_transaction_bundle({
+            "event_id": event_id,
+            "type": "CAPITAL_DEPOSIT",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "uid": self.owner_uid,
+            "amount": float(amount),
+            "status": "COMPLETED",
+            "constitutional_hash": validation.get("hash"),
+            "merkle_root": hashlib.sha3_512(f"{event_id}{final_balance}".encode()).hexdigest()
+        })
+
+        return {"balance": final_balance, "event_id": event_id}
+
+    async def withdraw(self, amount: Decimal, signatures: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
+        """
+        Withdraw funds with liquidity guard and MultiSigCouncil for large amounts.
+        """
+        # 1. Fetch current balance
+        account_ref = db.collection("capital_accounts").document(self.owner_uid)
+        doc = account_ref.get()
+        if not doc.exists:
+            raise ValueError("Account not found")
+
+        data = doc.to_dict()
+        current_balance = Decimal(str(data.get("balance", 0.0)))
+
+        # 2. Liquidity Guard (Article 1134)
+        total_fund_value = await self._get_total_fund_value() # Simplified to owner balance for Phase 1
+        reserve_required = total_fund_value * self.reserve_ratio
+        if amount > (current_balance - reserve_required):
+            raise ValueError(f"Liquidity Guard Violation: Withdrawal would breach 10% reserve. Max available: {current_balance - reserve_required}")
+
+        # 3. MultiSigCouncil check (Article 1129)
+        if amount > (total_fund_value * self.large_withdrawal_threshold):
+            if not signatures:
+                raise ValueError("Large withdrawal requires MultiSigCouncil approval.")
+
+            proposal_hash = await self.multisig.initiate_proposal("WITHDRAW", amount, self.owner_uid)
+            if not await self.multisig.verify_quorum(proposal_hash, signatures):
+                raise ValueError("MultiSigCouncil quorum not met or invalid signatures.")
+
+        # 4. Atomic Firestore Transaction
+        def tx_logic(transaction):
+            doc = transaction.get(account_ref)
+            bal = Decimal(str(doc.to_dict().get("balance", 0.0)))
+            if bal < amount:
+                raise ValueError("Insufficient balance")
+
+            new_balance = bal - amount
+            transaction.update(account_ref, {
+                "balance": float(new_balance),
+                "last_withdrawal_at": firestore.SERVER_TIMESTAMP
+            })
+            return float(new_balance)
+
+        final_balance = db.run_transaction(tx_logic)
+
+        # 5. UEG Logging & Audit
+        event_id = await self.ueg.log_event(
+            "CAPITAL_WITHDRAWAL_COMPLETED",
+            {
+                "uid": self.owner_uid,
+                "amount": float(amount),
+                "new_balance": final_balance,
+                "council_approved": amount > (total_fund_value * self.large_withdrawal_threshold)
+            },
+            merkle_link=True
+        )
+
+        return {"balance": final_balance, "event_id": event_id}
+
+    async def _get_total_fund_value(self) -> Decimal:
+        """In Phase 1, total fund value is the owner's balance."""
+        account_ref = db.collection("capital_accounts").document(self.owner_uid)
+        doc = account_ref.get()
+        if not doc.exists:
+            return Decimal("0.0")
+        return Decimal(str(doc.to_dict().get("balance", 0.0)))

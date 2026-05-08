@@ -33,6 +33,7 @@ import { OffspringManagement } from './pages/enterprise/OffspringManagement';
 import { TreatyDashboard } from './pages/enterprise/TreatyDashboard';
 import { SeedingInterface } from './pages/enterprise/SeedingInterface';
 import { InterstellarDiplomacy } from './pages/enterprise/InterstellarDiplomacy';
+import { CapitalDashboard } from './pages/enterprise/CapitalDashboard';
 import { GlobalFederationMap } from './pages/federation/GlobalFederationMap';
 import { OrbitalDashboard } from './pages/federation/OrbitalDashboard';
 import { CosmicMeshDashboard } from './pages/federation/CosmicMeshDashboard';
@@ -134,6 +135,7 @@ function App() {
           <Route path="/diplomacy" element={<InterstellarDiplomacy />} />
           <Route path="/treaties" element={<TreatyDashboard />} />
           <Route path="/offspring" element={<OffspringManagement />} />
+          <Route path="/capital" element={<CapitalDashboard />} />
           <Route path="/vault" element={<CredentialsVault />} />
           <Route path="/forge" element={<Forge />} />
           <Route path="/visual-composer" element={<VisualAgentComposer />} />
