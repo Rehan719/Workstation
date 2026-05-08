@@ -73,6 +73,10 @@ class CapitalCycleOrchestrator:
             if cycle == "water": actual = current_metrics.get("reserve_ratio", 0.10)
             elif cycle == "carbon": actual = current_metrics.get("growth_rate", 0.08)
             elif cycle == "nitrogen": actual = current_metrics.get("drawdown", 0.15)
+            elif cycle == "oxygen": actual = current_metrics.get("compute_load", 0.50)
+            elif cycle == "phosphorus": actual = current_metrics.get("max_allocation", 0.20)
+            elif cycle == "sulfur": actual = current_metrics.get("error_rate", 0.005)
+            else: actual = setpoint
 
             deviation = abs(actual - setpoint) / setpoint if setpoint != 0 else 0
             deviations[cycle] = {
