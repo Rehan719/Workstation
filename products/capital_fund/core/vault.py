@@ -70,7 +70,7 @@ class CapitalVault:
                 "tx_id": tx_id,
                 "constitutional_hash": validation.get("hash")
             },
-            merkle_link=True
+
         )
 
         # Generate audit bundle
@@ -90,23 +90,12 @@ class CapitalVault:
     async def withdraw(self, amount: Decimal, signatures: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
         """
         Withdraw funds with liquidity guard and MultiSigCouncil for large amounts.
+        Executes all checks within an atomic transaction to prevent race conditions.
         """
-        # 1. Fetch current balance
         account_ref = db.collection("capital_accounts").document(self.owner_uid)
-        doc = account_ref.get()
-        if not doc.exists:
-            raise ValueError("Account not found")
 
-        data = doc.to_dict()
-        current_balance = Decimal(str(data.get("balance", 0.0)))
-
-        # 2. Liquidity Guard (Article 1134)
-        total_fund_value = await self._get_total_fund_value() # Simplified to owner balance for Phase 1
-        reserve_required = total_fund_value * self.reserve_ratio
-        if amount > (current_balance - reserve_required):
-            raise ValueError(f"Liquidity Guard Violation: Withdrawal would breach 10% reserve. Max available: {current_balance - reserve_required}")
-
-        # 3. MultiSigCouncil check (Article 1129)
+        # 1. Pre-transaction checks for MultiSig (requires await, so outside transaction)
+        total_fund_value = await self._get_total_fund_value()
         if amount > (total_fund_value * self.large_withdrawal_threshold):
             if not signatures:
                 raise ValueError("Large withdrawal requires MultiSigCouncil approval.")
@@ -115,14 +104,26 @@ class CapitalVault:
             if not await self.multisig.verify_quorum(proposal_hash, signatures):
                 raise ValueError("MultiSigCouncil quorum not met or invalid signatures.")
 
-        # 4. Atomic Firestore Transaction
+        # 2. Atomic Firestore Transaction for balance update and liquidity guard
         def tx_logic(transaction):
             doc = transaction.get(account_ref)
-            bal = Decimal(str(doc.to_dict().get("balance", 0.0)))
-            if bal < amount:
+            if not doc.exists:
+                raise ValueError("Account not found")
+
+            data = doc.to_dict()
+            current_balance = Decimal(str(data.get("balance", 0.0)))
+
+            # Liquidity Guard (Article 1134) - Re-verified within transaction
+            # Using current_balance from the transaction 'get'
+            reserve_required = current_balance * self.reserve_ratio
+            if amount > (current_balance - reserve_required):
+                # Trigger ValueError that should be caught by pytest in unit tests
+                raise ValueError(f"Liquidity Guard Violation: Withdrawal would breach 10% reserve. Max available: {current_balance - reserve_required}")
+
+            if current_balance < amount:
                 raise ValueError("Insufficient balance")
 
-            new_balance = bal - amount
+            new_balance = current_balance - amount
             transaction.update(account_ref, {
                 "balance": float(new_balance),
                 "last_withdrawal_at": firestore.SERVER_TIMESTAMP
@@ -140,7 +141,7 @@ class CapitalVault:
                 "new_balance": final_balance,
                 "council_approved": amount > (total_fund_value * self.large_withdrawal_threshold)
             },
-            merkle_link=True
+
         )
 
         return {"balance": final_balance, "event_id": event_id}

@@ -64,7 +64,7 @@ class AuditManager:
                 "json_hash": json_hash,
                 "pdf_hash": pdf_hash
             },
-            merkle_link=True
+
         )
 
         return {
