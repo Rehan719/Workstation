@@ -10,10 +10,10 @@ class ImmuneSystem:
     L-C-VI: Multi-layered Immune Defense.
     Enhanced with twin-prediction logic and real-time defense.
     """
-    def __init__(self, validator: Optional[Any] = None, digital_twin: Optional[Any] = None, ueg: Optional[Any] = None):
+    def __init__(self, validator: Optional[Any] = None):
         self.threat_database = []
         self.ic50_perplexity = 42.3
-        self.defense = ImmuneDefense(validator, digital_twin, ueg)
+        self.defense = ImmuneDefense(validator)
 
     def evaluate_threat(self, sample: Dict[str, Any]) -> float:
         """
@@ -36,8 +36,7 @@ class ImmuneSystem:
         Public interface to scan for threats using the internal defense module.
         Integrates with the digital twin's predictive simulation.
         """
-        risk = await self.defense.scan_threats()
-        return [{"source": "system_scan", "data": {"risk_score": risk}}]
+        return await self.defense.scan_threats(orchestrator)
 
     def heal(self, component_id: str):
         logger.info(f"Regenerative healing initiated for {component_id}")
