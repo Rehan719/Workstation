@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 from agentic_core.ueg.logger import VSBUEGLogger
-from agentic_core.biomimicry.geospheric.orchestrator import GeosphericHomeostaticOrchestrator
+from agentic_core.biomimicry.geospheric.orchestrator_legacy import GeosphericHomeostaticOrchestrator
 
 class EnrichedArchitecturalLayerManager:
     """
@@ -9,7 +9,7 @@ class EnrichedArchitecturalLayerManager:
     """
     def __init__(self, ueg_logger: Optional[Any] = None):
         self.ueg = ueg_logger or VSBUEGLogger()
-        self.geospheric = GeosphericHomeostaticOrchestrator(validator=None, ueg=self.ueg)
+        self.geospheric = GeosphericHomeostaticOrchestrator(ueg_logger=self.ueg)
 
     async def mycelial_propagation(self, data: Any):
         """Layer 0: Decentralized mesh routing (libp2p DHT + Gossipsub)."""

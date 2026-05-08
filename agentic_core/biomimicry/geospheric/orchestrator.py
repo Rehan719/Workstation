@@ -17,30 +17,18 @@ class GeosphericHomeostaticOrchestrator:
     Coordinates all six biogeochemical cycles to maintain system homeostasis.
     Enforces ±5% tolerance and Ψ‑functional ecosystem health ≥ 0.90.
     """
-    def __init__(self, validator=None, ueg=None):
+    def __init__(self, validator, ueg=None):
         self.ueg = ueg
         self.validator = validator
 
-        # Mock hardware/system references to satisfy production-ready wrappers
-        mock_system = type('MockSystem', (), {
-            'apply_correction': lambda *args, **kwargs: None,
-            'max_evaporation_rate': 100.0,
-            'condensation_efficiency': 0.9,
-            'harvest_carbon': lambda *args, **kwargs: 1.0,
-            'fix_nitrogen': lambda *args, **kwargs: 1.0,
-            'scale_metabolism': lambda *args, **kwargs: 1.0,
-            'optimize_memory': lambda *args, **kwargs: 1.0,
-            'signal_error': lambda *args, **kwargs: None
-        })()
-
         # Initialize the six geospheric organs
         self.cycles = {
-            "water": HydrologicManager(mock_system, ueg, validator),
-            "carbon": DataCarbonCycle(mock_system, ueg, validator),
-            "nitrogen": NitrogenFixationDaemon(mock_system, ueg, validator),
-            "oxygen": MetabolicScheduler(mock_system, ueg, validator),
-            "phosphorus": PhosphorusMemoryManager(mock_system, ueg, validator),
-            "sulfur": SulfurErrorManager(mock_system, ueg, validator)
+            "water": HydrologicManager(None, ueg, validator),
+            "carbon": DataCarbonCycle(None, ueg, validator),
+            "nitrogen": NitrogenFixationDaemon(None, ueg, validator),
+            "oxygen": MetabolicScheduler(None, ueg, validator),
+            "phosphorus": PhosphorusMemoryManager(None, ueg, validator),
+            "sulfur": SulfurErrorManager(None, ueg, validator)
         }
 
         # Inter‑cycle coupling matrix (6x6)
@@ -62,7 +50,7 @@ class GeosphericHomeostaticOrchestrator:
             "sulfur": 0.1
         })
 
-    async def step(self, system_state, context=None) -> ControlDecision:
+    async def step(self, system_state) -> ControlDecision:
         """
         Execute one homeostatic control step.
         """
