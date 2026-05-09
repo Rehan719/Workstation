@@ -13,3 +13,11 @@ max_investor_pro_rata_rights: 0.49  # Owner must retain majority (51%+)
 autonomous_risk_tolerance_limit: 0.35 # Absolute ceiling for any auto-action
 institutional_api_rate_limit_rpm: 60
 onchain_audit_anchor_network: "polygon_mumbai"
+
+# Phase 5 Production Release Configuration
+production_mode: true
+full_autonomy_enabled_default: false  # owner must opt‑in
+multisig_mainnet_address: "0x32A3E090F8e87498c56e30D723B64654929D3d37"
+mesh_enabled: false
+council_dashboard_enabled: true
+federation_treaty_id: "treaty_v1_global"
