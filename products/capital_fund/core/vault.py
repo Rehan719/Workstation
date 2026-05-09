@@ -87,7 +87,7 @@ class CapitalVault:
 
         return {"balance": final_balance, "event_id": event_id}
 
-    async def withdraw(self, amount: Decimal, signatures: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
+    async def withdraw(self, amount: Decimal, signatures: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """
         Withdraw funds with liquidity guard and MultiSigCouncil for large amounts.
         Executes all checks within an atomic transaction to prevent race conditions.
@@ -97,13 +97,28 @@ class CapitalVault:
         # 1. Pre-transaction checks for MultiSig (requires await, so outside transaction)
         total_fund_value = await self._get_total_fund_value()
         if amount > (total_fund_value * self.large_withdrawal_threshold):
-            if not signatures:
-                raise ValueError("Large withdrawal requires MultiSigCouncil approval.")
+            if not signatures or len(signatures) < self.multisig.quorum_threshold:
+                raise ValueError(f"Large withdrawal requires {self.multisig.quorum_threshold} MultiSigCouncil signatures.")
 
             proposal_id = await self.multisig.submit_proposal("WITHDRAW", amount, self.owner_uid, {"signatures_provided": len(signatures)})
-            # For Phase 3, we simulate that the provided signatures are enough to approve if they were verified.
-            # In production, each signature would be verified individually.
-            if not await self.multisig.approve_proposal(proposal_id, "SYSTEM", b"pqc_sig_verified", b"pk"):
+
+            approved = False
+            for sig_data in signatures:
+                signer_did = sig_data.get("signer_did")
+                signature = sig_data.get("signature")
+                public_key = sig_data.get("public_key")
+
+                # Convert from hex if needed
+                if isinstance(signature, str):
+                    signature = bytes.fromhex(signature)
+                if isinstance(public_key, str):
+                    public_key = bytes.fromhex(public_key)
+
+                if await self.multisig.approve_proposal(proposal_id, signer_did, signature, public_key):
+                    approved = True
+                    break
+
+            if not approved:
                 raise ValueError("MultiSigCouncil quorum not met or invalid signatures.")
 
         # 2. Atomic Firestore Transaction for balance update and liquidity guard
