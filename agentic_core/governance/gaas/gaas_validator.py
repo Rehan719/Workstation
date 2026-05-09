@@ -93,3 +93,14 @@ class GaaSValidatorV4:
             payload.encode() + self.merkle_root.encode()
         ).hexdigest()
         self.merkle_root = new_hash
+
+    async def validate_action(self, action_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generic action validation against constitutional rules.
+        """
+        intent = {
+            "type": action_type,
+            "payload": payload,
+            "confidence": 1.0
+        }
+        return await self.validate_intent(intent, {"domain": "capital"})

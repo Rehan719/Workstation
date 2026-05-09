@@ -128,8 +128,9 @@ class MultiTenantInvestorManager:
         total_aum = await self.vault._get_total_fund_value()
         distributions = {}
 
-        # Firestore batch supports up to 500 operations
+        # Firestore batch supports up to 500 operations. Process in chunks.
         batch = db.batch()
+        count = 0
 
         for doc in docs:
             data = doc.to_dict()
@@ -149,8 +150,14 @@ class MultiTenantInvestorManager:
             })
 
             distributions[inv_uid] = net_profit
+            count += 1
 
-        if docs:
+            # Commit and start new batch if limit reached
+            if count % 500 == 0:
+                batch.commit()
+                batch = db.batch()
+
+        if count % 500 != 0:
             batch.commit()
 
         await self.ueg.log_event("PROFIT_DISTRIBUTION_COMPLETED", {
