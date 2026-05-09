@@ -9,7 +9,7 @@ echo "Target: tests/formal/verify_capital_constitution.tla"
 # Instead of echoing, we verify the presence of the TLA+ spec.
 if [ ! -f "tests/formal/verify_capital_constitution.tla" ]; then
     echo "❌ TLA+ Specification missing."
-    return 1 2>/dev/null || exit 1
+    exit 1
 fi
 
 echo "Checking Invariants:"

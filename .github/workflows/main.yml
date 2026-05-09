@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install ruff bandit pytest pytest-asyncio numpy pyyaml pydantic cryptography PyJWT pandas scipy stripe firebase-admin
+          pip install ruff bandit pytest pytest-asyncio numpy pyyaml pydantic cryptography PyJWT pandas scipy stripe firebase-admin torch ot
 
       # 4. Lint & Audit
       - name: Lint with ruff
@@ -63,12 +63,16 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:.
           python3 tests/formal/generate_certificate.py
 
-      # 8. Phase 5: Production Readiness Gates
-      - name: Production Readiness Validation
+      # 8. Phase 5 & Ω: Production & Federation Gates
+      - name: Sovereign Civilization Validation
         run: |
           export PYTHONPATH=$PYTHONPATH:.
           pytest tests/capital_fund/unit/test_autonomy_tier3.py -v
           pytest tests/capital_fund/unit/test_mesh_federation.py -v
+          pytest tests/capital_fund/unit/test_omega_mesh.py -v
+          pytest tests/capital_fund/unit/test_omega_edge.py -v
+          pytest tests/capital_fund/unit/test_omega_governance.py -v
+          pytest tests/capital_fund/unit/test_omega_institutional.py -v
 
       # 9. Build & deploy (main only)
       - name: Deploy to Cloud Run

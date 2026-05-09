@@ -21,3 +21,14 @@ multisig_mainnet_address: "0x32A3E090F8e87498c56e30D723B64654929D3d37"
 mesh_enabled: false
 council_dashboard_enabled: true
 federation_treaty_id: "treaty_v1_global"
+
+# Phase 6 / Omega Sovereign Civilization Configuration
+federation_mesh_enabled: true
+edge_sovereignty_active: true
+mainnet_settlement_active: false # Requires explicit owner unlock
+dao_governance_enabled: true
+regulatory_api_v1_enabled: true
+libp2p_mainnet_bootstrap: ["/dnsaddr/seed1.workstation.mesh", "/dnsaddr/seed2.workstation.mesh"]
+differential_privacy_epsilon: 0.1
+veto_timeout_ms: 200
+pqc_agile_mode: "STRICT"
