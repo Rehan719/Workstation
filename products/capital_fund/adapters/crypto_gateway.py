@@ -78,8 +78,10 @@ class CryptoGateway:
         # 2. PQC Transaction Signing
         # Sign the withdrawal intent using Dilithium
         withdrawal_intent = f"WITHDRAW_{self.owner_uid}_{amount}_{asset_type}_{destination}".encode()
-        # In Phase 3, we use a constant representing the owner's PQC identity
-        owner_pqc_identity = b"VSB_SOVEREIGN_ID_v1"
+        # Load sovereign PQC identity from environment/Secret Manager (Article 1133)
+        owner_pqc_identity = os.environ.get("VSB_SOVEREIGN_PQC_ID", "").encode()
+        if not owner_pqc_identity:
+            raise ValueError("Sovereign PQC Identity not found in secure environment.")
         pqc_signature = pqc.sign_instruction(withdrawal_intent, owner_pqc_identity)
 
         # 3. Constitutional Validation
