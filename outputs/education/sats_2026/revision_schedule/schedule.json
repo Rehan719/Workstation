@@ -6,20 +6,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: English GPS & Spelling Set 1",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: Maths: Algebra & Equations",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: English Reading Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "Keep going, Ayaan \u2013 you\u2019ve got this!",
             "status": "Intensive Revision"
         },
         {
@@ -28,20 +32,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: English Reading Set 1",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: Reading: 3-mark LINK structure",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: Maths Arithmetic Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "Well done, Ayaan! You\u2019re making great progress.",
             "status": "Intensive Revision"
         },
         {
@@ -50,20 +58,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: Maths Arithmetic Set 1",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: Maths: Fractions (Mixed/Improper)",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: Maths Reasoning Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "Great work! Arsenal would be proud of this effort.",
             "status": "Intensive Revision"
         },
         {
@@ -72,20 +84,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: Maths Reasoning Set 1",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: English: Possessive Apostrophes",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: English GPS & Spelling Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "You're building your knowledge like a Minecraft pro!",
             "status": "Intensive Revision"
         },
         {
@@ -94,20 +110,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: English GPS & Spelling Set 2",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: Maths: Algebra & Equations",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: English Reading Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "Every session brings you closer to your goal, Ayaan.",
             "status": "Intensive Revision"
         },
         {
@@ -116,20 +136,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: English Reading Set 2",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: Reading: 3-mark LINK structure",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: Maths Arithmetic Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "Stay focused \u2013 you're doing amazing!",
             "status": "Intensive Revision"
         },
         {
@@ -138,20 +162,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: Maths Arithmetic Set 2",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: Maths: Fractions (Mixed/Improper)",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: Maths Reasoning Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "Nearly there! One final push.",
             "status": "Intensive Revision"
         },
         {
@@ -160,20 +188,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: Maths Reasoning Set 2",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: English: Possessive Apostrophes",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: English GPS & Spelling Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "Keep going, Ayaan \u2013 you\u2019ve got this!",
             "status": "Intensive Revision"
         },
         {
@@ -182,20 +214,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: English GPS & Spelling Set 3",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: Maths: Algebra & Equations",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: English Reading Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "Well done, Ayaan! You\u2019re making great progress.",
             "status": "Intensive Revision"
         },
         {
@@ -204,20 +240,24 @@
             "sessions": [
                 {
                     "time": "09:00 - 09:30",
-                    "activity": "Practice: English Reading Set 3",
-                    "goal": "Focus and Accuracy"
+                    "activity": "Topic Focus: Reading: 3-mark LINK structure",
+                    "goal": "Bridge gaps",
+                    "engine": "Inkashaf (Water)"
                 },
                 {
                     "time": "11:00 - 11:30",
-                    "activity": "Sensory Break / Minecraft / Football",
-                    "goal": "Rest & Recharge (Oxygen Cycle)"
+                    "activity": "Sensory Break / Physical Activity",
+                    "goal": "Prevent fatigue",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Review: Maths Arithmetic Model Answers",
-                    "goal": "Knowledge Consistency (Carbon Cycle)"
+                    "activity": "Practice Paper Set & Model Answer Review",
+                    "goal": "Consistency",
+                    "engine": "Aqal (Carbon)"
                 }
             ],
+            "motivation": "Great work! Arsenal would be proud of this effort.",
             "status": "Intensive Revision"
         },
         {
@@ -227,19 +267,23 @@
                 {
                     "time": "09:00 - 11:00",
                     "activity": "SATs EXAM: English GPS",
-                    "goal": "Perform best"
+                    "goal": "Perform best",
+                    "engine": "Iman (Sulphur)"
                 },
                 {
                     "time": "13:00 - 14:00",
-                    "activity": "Arsenal / Minecraft Rest",
-                    "goal": "Recover (Oxygen Cycle)"
+                    "activity": "Rest & Recover: Arsenal/Minecraft time",
+                    "goal": "Recharge",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Light Review for Tomorrow",
-                    "goal": "Final Prep"
+                    "activity": "Light Review for tomorrow's paper",
+                    "goal": "Confidence",
+                    "engine": "Samajh (Nitrogen)"
                 }
             ],
+            "motivation": "You're building your knowledge like a Minecraft pro!",
             "status": "SATs EXAM WEEK"
         },
         {
@@ -249,19 +293,23 @@
                 {
                     "time": "09:00 - 11:00",
                     "activity": "SATs EXAM: English Reading",
-                    "goal": "Perform best"
+                    "goal": "Perform best",
+                    "engine": "Iman (Sulphur)"
                 },
                 {
                     "time": "13:00 - 14:00",
-                    "activity": "Arsenal / Minecraft Rest",
-                    "goal": "Recover (Oxygen Cycle)"
+                    "activity": "Rest & Recover: Arsenal/Minecraft time",
+                    "goal": "Recharge",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Light Review for Tomorrow",
-                    "goal": "Final Prep"
+                    "activity": "Light Review for tomorrow's paper",
+                    "goal": "Confidence",
+                    "engine": "Samajh (Nitrogen)"
                 }
             ],
+            "motivation": "Every session brings you closer to your goal, Ayaan.",
             "status": "SATs EXAM WEEK"
         },
         {
@@ -271,19 +319,23 @@
                 {
                     "time": "09:00 - 11:00",
                     "activity": "SATs EXAM: Maths Arithmetic & Reasoning 1",
-                    "goal": "Perform best"
+                    "goal": "Perform best",
+                    "engine": "Iman (Sulphur)"
                 },
                 {
                     "time": "13:00 - 14:00",
-                    "activity": "Arsenal / Minecraft Rest",
-                    "goal": "Recover (Oxygen Cycle)"
+                    "activity": "Rest & Recover: Arsenal/Minecraft time",
+                    "goal": "Recharge",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Light Review for Tomorrow",
-                    "goal": "Final Prep"
+                    "activity": "Light Review for tomorrow's paper",
+                    "goal": "Confidence",
+                    "engine": "Samajh (Nitrogen)"
                 }
             ],
+            "motivation": "Stay focused \u2013 you're doing amazing!",
             "status": "SATs EXAM WEEK"
         },
         {
@@ -293,19 +345,23 @@
                 {
                     "time": "09:00 - 11:00",
                     "activity": "SATs EXAM: Maths Reasoning 2",
-                    "goal": "Perform best"
+                    "goal": "Perform best",
+                    "engine": "Iman (Sulphur)"
                 },
                 {
                     "time": "13:00 - 14:00",
-                    "activity": "Arsenal / Minecraft Rest",
-                    "goal": "Recover (Oxygen Cycle)"
+                    "activity": "Rest & Recover: Arsenal/Minecraft time",
+                    "goal": "Recharge",
+                    "engine": "Hoshiyari (Oxygen)"
                 },
                 {
                     "time": "16:00 - 16:30",
-                    "activity": "Light Review for Tomorrow",
-                    "goal": "Final Prep"
+                    "activity": "Light Review for tomorrow's paper",
+                    "goal": "Confidence",
+                    "engine": "Samajh (Nitrogen)"
                 }
             ],
+            "motivation": "Nearly there! One final push.",
             "status": "SATs EXAM WEEK"
         }
     ]

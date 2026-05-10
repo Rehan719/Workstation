@@ -1,14 +1,26 @@
 [
     {
         "type": "inference",
-        "question": "Give two pieces of evidence that show the character was excited about the Arsenal match.",
+        "question": "Give two pieces of evidence from the text that show Ayaan was excited about visiting Headstone Manor Park.",
         "topic": "Domain 2d",
         "id": "RD_1"
     },
     {
         "type": "comparison",
-        "question": "Compare the description of the Earth from space at the start and end of the text. Use the LINK structure.",
+        "question": "Compare the description of the Emirates Stadium at the beginning of the match to the description at the end. Use the LINK structure.",
         "topic": "LINK Structure",
         "id": "RD_2"
+    },
+    {
+        "type": "inference",
+        "question": "How does the author show that the Minecraft world felt real to the players? Use quotes to support your answer.",
+        "topic": "Domain 2d",
+        "id": "RD_3"
+    },
+    {
+        "type": "vocabulary",
+        "question": "What does the word 'immense' mean in the context of the rocket's launch?",
+        "topic": "Vocabulary",
+        "id": "RD_4"
     }
 ]

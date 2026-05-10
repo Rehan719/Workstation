@@ -1,20 +1,26 @@
 [
     {
         "question_id": "MR3_1",
-        "question": "The temperature on Mars is -55C. It rises by 12C. What is the new temperature?",
-        "answer": "-43C",
-        "worked_solution": "Start at -55. Rise means add. -55 + 12 = -43."
+        "question": "The temperature on Mars is -63C. It rises by 15C. What is the new temperature for Ayaan's rover?",
+        "answer": "-48C",
+        "worked_solution": "Step 1: Start at -63. Step 2: 'Rises' means add. -63 + 15. Step 3: Moving 15 steps towards zero from -63 gives -48."
     },
     {
         "question_id": "MR3_2",
-        "question": "Calculate the area of a rectangular Minecraft farm that is 15 blocks long and 8 blocks wide.",
-        "answer": "120 blocks squared",
-        "worked_solution": "Area = length * width. 15 * 8 = 120."
+        "question": "Calculate the area of a rectangular farm in Minecraft that is 12 blocks long and 9 blocks wide.",
+        "answer": "108 blocks squared",
+        "worked_solution": "Step 1: Area = length * width. Step 2: 12 * 9 = 108. Don't forget the 'squared' unit!"
     },
     {
         "question_id": "MR3_3",
-        "question": "Bukayo Saka ran 9.8km in a match. Write this distance in meters.",
-        "answer": "9,800m",
-        "worked_solution": "Multiply km by 1,000. 9.8 * 1,000 = 9,800."
+        "question": "Bukayo Saka ran 10.5km in a match. Write this distance in meters.",
+        "answer": "10,500m",
+        "worked_solution": "Step 1: Multiply km by 1,000 to get meters. Step 2: 10.5 * 1,000 = 10,500."
+    },
+    {
+        "question_id": "MR3_4",
+        "question": "Ayaan walks from Norbury School to Headstone Manor Park. It takes 18 minutes. If he arrives at 16:05, what time did he leave school?",
+        "answer": "15:47",
+        "worked_solution": "Step 1: Start at 16:05 and count back 18 minutes. Step 2: 5 minutes back to 16:00, then 13 more minutes back to 15:47."
     }
 ]

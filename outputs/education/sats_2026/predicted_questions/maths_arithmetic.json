@@ -1,241 +1,241 @@
 [
     {
         "type": "arithmetic",
-        "question": "467 + 246",
+        "question": "1025 + 1000",
         "topic": "Addition",
         "id": "MA_1"
     },
     {
         "type": "arithmetic",
-        "question": "478 + 369",
+        "question": "1050 + 1500",
         "topic": "Addition",
         "id": "MA_2"
     },
     {
         "type": "arithmetic",
-        "question": "489 + 123",
+        "question": "1075 + 2000",
         "topic": "Addition",
         "id": "MA_3"
     },
     {
         "type": "arithmetic",
-        "question": "500 + 246",
+        "question": "1100 + 500",
         "topic": "Addition",
         "id": "MA_4"
     },
     {
         "type": "arithmetic",
-        "question": "511 + 369",
+        "question": "1125 + 1000",
         "topic": "Addition",
         "id": "MA_5"
     },
     {
         "type": "arithmetic",
-        "question": "522 + 123",
+        "question": "1150 + 1500",
         "topic": "Addition",
         "id": "MA_6"
     },
     {
         "type": "arithmetic",
-        "question": "533 + 246",
+        "question": "1175 + 2000",
         "topic": "Addition",
         "id": "MA_7"
     },
     {
         "type": "arithmetic",
-        "question": "544 + 369",
+        "question": "1200 + 500",
         "topic": "Addition",
         "id": "MA_8"
     },
     {
         "type": "arithmetic",
-        "question": "555 + 123",
+        "question": "1225 + 1000",
         "topic": "Addition",
         "id": "MA_9"
     },
     {
         "type": "arithmetic",
-        "question": "566 + 246",
+        "question": "1250 + 1500",
         "topic": "Addition",
         "id": "MA_10"
     },
     {
         "type": "arithmetic",
-        "question": "577 + 369",
+        "question": "1275 + 2000",
         "topic": "Addition",
         "id": "MA_11"
     },
     {
         "type": "arithmetic",
-        "question": "588 + 123",
+        "question": "1300 + 500",
         "topic": "Addition",
         "id": "MA_12"
     },
     {
         "type": "arithmetic",
-        "question": "599 + 246",
+        "question": "1325 + 1000",
         "topic": "Addition",
         "id": "MA_13"
     },
     {
         "type": "arithmetic",
-        "question": "610 + 369",
+        "question": "1350 + 1500",
         "topic": "Addition",
         "id": "MA_14"
     },
     {
         "type": "arithmetic",
-        "question": "621 + 123",
+        "question": "1375 + 2000",
         "topic": "Addition",
         "id": "MA_15"
     },
     {
         "type": "arithmetic",
-        "question": "632 + 246",
+        "question": "1400 + 500",
         "topic": "Addition",
         "id": "MA_16"
     },
     {
         "type": "arithmetic",
-        "question": "643 + 369",
+        "question": "1425 + 1000",
         "topic": "Addition",
         "id": "MA_17"
     },
     {
         "type": "arithmetic",
-        "question": "654 + 123",
+        "question": "1450 + 1500",
         "topic": "Addition",
         "id": "MA_18"
     },
     {
         "type": "arithmetic",
-        "question": "665 + 246",
+        "question": "1475 + 2000",
         "topic": "Addition",
         "id": "MA_19"
     },
     {
         "type": "arithmetic",
-        "question": "676 + 369",
+        "question": "1500 + 500",
         "topic": "Addition",
         "id": "MA_20"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 1/8 to an improper fraction.",
+        "question": "Convert 5 and 1/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_21"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 2/8 to an improper fraction.",
+        "question": "Convert 5 and 2/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_22"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 3/8 to an improper fraction.",
+        "question": "Convert 5 and 3/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_23"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 4/8 to an improper fraction.",
+        "question": "Convert 5 and 4/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_24"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 5/8 to an improper fraction.",
+        "question": "Convert 5 and 5/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_25"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 6/8 to an improper fraction.",
+        "question": "Convert 5 and 6/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_26"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 7/8 to an improper fraction.",
+        "question": "Convert 5 and 7/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_27"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 8/8 to an improper fraction.",
+        "question": "Convert 5 and 8/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_28"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 9/8 to an improper fraction.",
+        "question": "Convert 5 and 9/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_29"
     },
     {
         "type": "arithmetic",
-        "question": "Convert 3 and 10/8 to an improper fraction.",
+        "question": "Convert 5 and 10/9 to an improper fraction.",
         "topic": "Fractions",
         "id": "MA_30"
     },
     {
         "type": "arithmetic",
-        "question": "480.5 - 69.8",
-        "topic": "Decimals",
+        "question": "Convert 5 and 11/9 to an improper fraction.",
+        "topic": "Fractions",
         "id": "MA_31"
     },
     {
         "type": "arithmetic",
-        "question": "496.0 - 72.0",
-        "topic": "Decimals",
+        "question": "Convert 5 and 12/9 to an improper fraction.",
+        "topic": "Fractions",
         "id": "MA_32"
     },
     {
         "type": "arithmetic",
-        "question": "511.5 - 74.2",
-        "topic": "Decimals",
+        "question": "Convert 5 and 13/9 to an improper fraction.",
+        "topic": "Fractions",
         "id": "MA_33"
     },
     {
         "type": "arithmetic",
-        "question": "527.0 - 76.5",
-        "topic": "Decimals",
+        "question": "Convert 5 and 14/9 to an improper fraction.",
+        "topic": "Fractions",
         "id": "MA_34"
     },
     {
         "type": "arithmetic",
-        "question": "542.5 - 78.8",
-        "topic": "Decimals",
+        "question": "Convert 5 and 15/9 to an improper fraction.",
+        "topic": "Fractions",
         "id": "MA_35"
     },
     {
         "type": "arithmetic",
-        "question": "558.0 - 81.0",
+        "question": "738.0 - 63.0",
         "topic": "Decimals",
         "id": "MA_36"
     },
     {
         "type": "arithmetic",
-        "question": "573.5 - 83.2",
+        "question": "758.5 - 64.8",
         "topic": "Decimals",
         "id": "MA_37"
     },
     {
         "type": "arithmetic",
-        "question": "589.0 - 85.5",
+        "question": "779.0 - 66.5",
         "topic": "Decimals",
         "id": "MA_38"
     },
     {
         "type": "arithmetic",
-        "question": "604.5 - 87.8",
+        "question": "799.5 - 68.2",
         "topic": "Decimals",
         "id": "MA_39"
     },
     {
         "type": "arithmetic",
-        "question": "620.0 - 90.0",
+        "question": "820.0 - 70.0",
         "topic": "Decimals",
         "id": "MA_40"
     }

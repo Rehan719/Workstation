@@ -2,12 +2,12 @@ import os
 import yaml
 import numpy as np
 from typing import Dict, Any, Optional
-from agentic_core.biomimicry.cycles.water_cycle import HydrologicResourceManager
-from agentic_core.biomimicry.cycles.carbon_cycle import CarbonDataMetabolism
-from agentic_core.biomimicry.cycles.nitrogen_cycle import NitrogenTaskMediator
-from agentic_core.biomimicry.cycles.oxygen_cycle import MetabolicScheduler
-from agentic_core.biomimicry.cycles.phosphorus_cycle import PhosphorusMemoryHierarchy
-from agentic_core.biomimicry.cycles.sulfur_cycle import SulfurErrorResilience
+from agentic_core.biomimicry.cycles.water_cycle import WaterCycle as HydrologicResourceManager
+from agentic_core.biomimicry.cycles.carbon_cycle import CarbonCycle as CarbonDataMetabolism
+from agentic_core.biomimicry.cycles.nitrogen_cycle import NitrogenCycle as NitrogenTaskMediator
+from agentic_core.biomimicry.cycles.oxygen_cycle import OxygenCycle as MetabolicScheduler
+from agentic_core.biomimicry.cycles.phosphorus_cycle import PhosphorusCycle as PhosphorusMemoryHierarchy
+from agentic_core.biomimicry.cycles.sulfur_cycle import SulfurCycle as SulfurErrorResilience
 from agentic_core.biomimicry.cycles.psi_functional import EcosystemHealthObjective
 from agentic_core.crypto.entropy_pool import EntropyPool
 from agentic_core.ueg.logger import VSBUEGLogger

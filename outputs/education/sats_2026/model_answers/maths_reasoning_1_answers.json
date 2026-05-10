@@ -1,20 +1,26 @@
 [
     {
         "question_id": "MR2_1",
-        "question": "Arsenal played 38 matches. They won 24, drew 6 and lost the rest. What fraction of matches did they lose?",
-        "answer": "8/38 or 4/19",
-        "worked_solution": "Total matches = 38. Wins+Draws = 24+6 = 30. Losses = 38 - 30 = 8. Fraction is 8/38."
+        "question": "Ayaan's favorite team Arsenal played 38 matches. If they win 'w' matches and lose 5, write an algebraic expression for the matches they drew.",
+        "answer": "38 - w - 5",
+        "worked_solution": "Step 1: Start with total matches (38). Step 2: Subtract wins (w) and losses (5). The remaining matches are draws. Expression: 38 - w - 5 (or 33 - w)."
     },
     {
         "question_id": "MR2_2",
-        "question": "In Minecraft, 1 stack of cobblestone is 64 blocks. How many blocks are in 12 stacks?",
-        "answer": 768,
-        "worked_solution": "Multiply stacks (12) by blocks per stack (64). 12 * 64 = 768 blocks."
+        "question": "In a Minecraft world, the ratio of diamonds to emeralds in a chest is 3:5. If Ayaan finds 15 diamonds, how many emeralds are there?",
+        "answer": "25 emeralds",
+        "worked_solution": "Step 1: Ratio is 3:5. Step 2: Ayaan found 15 diamonds. 15 is 3 * 5. Step 3: Multiply the emerald part by the same number (5): 5 * 5 = 25."
     },
     {
         "question_id": "MR2_3",
-        "question": "A bag of space-dust weighs 1.2kg. If 3.6kg is shared into 4 equal rover-packs, how many grams in each?",
-        "answer": "900g",
-        "worked_solution": "Total weight 3.6kg = 3600g. Share by 4: 3600 / 4 = 900g."
+        "question": "A bus from Harrow town centre to Norbury School travels 2.4 miles. How many metres is that?",
+        "answer": "3,862.4m (approx) or 3,840m if using 1.6km conversion",
+        "worked_solution": "Step 1: 1 mile is approx 1.6km. 2.4 miles * 1.6 = 3.84km. Step 2: Convert km to m by multiplying by 1000. 3.84 * 1000 = 3,840m."
+    },
+    {
+        "question_id": "MR2_4",
+        "question": "If x + 15 = 40, what is the value of x in Ayaan's Minecraft score calculation?",
+        "answer": "25",
+        "worked_solution": "Step 1: To find x, subtract 15 from both sides of the equation. Step 2: 40 - 15 = 25. So, x = 25."
     }
 ]

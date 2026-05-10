@@ -8,7 +8,7 @@ import logging
 import random
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from config.paths import DATA_DIR
+from agentic_core.config.paths import DATA_DIR
 from pydantic import BaseModel
 from agentic_core.ai_ceo.memory_v01 import memory_v01, meeting_log
 from agentic_core.layers.ueg import ueg

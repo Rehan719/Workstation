@@ -1,0 +1,8 @@
+{
+  "trials": 10000,
+  "execution_time_s": 1.5408878326416016,
+  "qber_ci_upper": 0.012076485005066915,
+  "key_rate_ci_lower": 5.517515784827336,
+  "power": 0.85,
+  "status": "VALIDATED"
+}

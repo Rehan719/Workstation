@@ -1,7 +1,7 @@
 import os
 import datetime
 from typing import Dict, Any, List
-from config.paths import DATA_DIR
+from agentic_core.config.paths import DATA_DIR
 
 class ScientificReviewGenerator:
     """v1.0 Production: Generates structured scientific reviews from ingested dossiers."""

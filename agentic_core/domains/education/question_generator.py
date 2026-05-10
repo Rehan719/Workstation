@@ -47,53 +47,56 @@ class SATsQuestionGenerator:
 
     @constitutional_guard
     async def generate_maths_arithmetic(self) -> List[Dict[str, Any]]:
-        """Mathematics Paper 1 - Refined with Mushawara."""
-        await self.mushawara.deliberate("Maths Arithmetic", "Focus on sequential difficulty")
+        """Mathematics Paper 1 - Refined for Ayaan."""
+        await self.mushawara.deliberate("Maths Arithmetic", "Sequential difficulty build-up")
         questions = []
 
-        # 1-20: Strengths (Addition/Subtraction/Multiplication)
+        # 1-20: Confidence builders (Addition/Subtraction/Multiplication)
         for i in range(1, 21):
-            questions.append({"type": "arithmetic", "question": f"{456 + (i*11)} + {123 * (i%3 + 1)}", "topic": "Addition"})
+            questions.append({"type": "arithmetic", "question": f"{1000 + (i*25)} + {500 * (i%4 + 1)}", "topic": "Addition"})
 
-        # 21-30: Fractions (Improvement area)
-        for i in range(21, 31):
-            questions.append({"type": "arithmetic", "question": f"Convert 3 and {i-20}/8 to an improper fraction.", "topic": "Fractions"})
+        # 21-35: Fractions (Targeted improvement)
+        for i in range(21, 36):
+            questions.append({"type": "arithmetic", "question": f"Convert 5 and {i-20}/9 to an improper fraction.", "topic": "Fractions"})
 
-        # 31-40: Decimals & Long Division
-        for i in range(31, 41):
-            questions.append({"type": "arithmetic", "question": f"{(i*15.5):.1f} - {i*2.25:.1f}", "topic": "Decimals"})
+        # 36-40: Decimals
+        for i in range(36, 41):
+            questions.append({"type": "arithmetic", "question": f"{(i*20.5):.1f} - {i*1.75:.1f}", "topic": "Decimals"})
 
         final_set = self._dedup_and_sequence(questions, "MA")
-        self._log_to_ueg("generate_maths_arithmetic_refined", {"count": len(final_set)})
+        self._log_to_ueg("generate_maths_arithmetic_personalised", {"count": len(final_set)})
         return final_set
 
     @constitutional_guard
     async def generate_maths_reasoning(self, paper_num: int) -> List[Dict[str, Any]]:
-        """Mathematics Paper 2 & 3 - Personalised with MJM."""
+        """Mathematics Paper 2 & 3 - High context for Ayaan."""
         questions = []
-        # Paper 2 focus: Number & Ratio
-        # Paper 3 focus: Measurement & Geometry
 
         if paper_num == 2:
-            questions.append({"type": "reasoning", "question": f"Arsenal played 38 matches. They won 24, drew 6 and lost the rest. What fraction of matches did they lose?", "topic": "Fractions/Context"})
-            questions.append({"type": "reasoning", "question": f"In Minecraft, 1 stack of cobblestone is 64 blocks. How many blocks are in 12 stacks?", "topic": "Multiplication"})
-            questions.append({"type": "reasoning", "question": f"A bag of space-dust weighs 1.2kg. If 3.6kg is shared into 4 equal rover-packs, how many grams in each?", "topic": "Measurement"})
+            # Number, Ratio & Algebra (Ayaan's focus)
+            questions.append({"type": "reasoning", "question": "Ayaan's favorite team Arsenal played 38 matches. If they win 'w' matches and lose 5, write an algebraic expression for the matches they drew.", "topic": "Algebra"})
+            questions.append({"type": "reasoning", "question": "In a Minecraft world, the ratio of diamonds to emeralds in a chest is 3:5. If Ayaan finds 15 diamonds, how many emeralds are there?", "topic": "Ratio"})
+            questions.append({"type": "reasoning", "question": "A bus from Harrow town centre to Norbury School travels 2.4 miles. How many metres is that?", "topic": "Measurement"})
+            questions.append({"type": "reasoning", "question": "If x + 15 = 40, what is the value of x in Ayaan's Minecraft score calculation?", "topic": "Algebra"})
         else:
-            questions.append({"type": "reasoning", "question": f"The temperature on Mars is -55C. It rises by 12C. What is the new temperature?", "topic": "Negative Numbers"})
-            questions.append({"type": "reasoning", "question": f"Calculate the area of a rectangular Minecraft farm that is 15 blocks long and 8 blocks wide.", "topic": "Area"})
-            questions.append({"type": "reasoning", "question": f"Bukayo Saka ran 9.8km in a match. Write this distance in meters.", "topic": "Measurement"})
+            # Measurement, Geometry & Statistics
+            questions.append({"type": "reasoning", "question": "The temperature on Mars is -63C. It rises by 15C. What is the new temperature for Ayaan's rover?", "topic": "Negative Numbers"})
+            questions.append({"type": "reasoning", "question": "Calculate the area of a rectangular farm in Minecraft that is 12 blocks long and 9 blocks wide.", "topic": "Area"})
+            questions.append({"type": "reasoning", "question": "Bukayo Saka ran 10.5km in a match. Write this distance in meters.", "topic": "Measurement"})
+            questions.append({"type": "reasoning", "question": "Ayaan walks from Norbury School to Headstone Manor Park. It takes 18 minutes. If he arrives at 16:05, what time did he leave school?", "topic": "Time"})
 
         final_set = self._dedup_and_sequence(questions, f"MR{paper_num}")
-        self._log_to_ueg(f"generate_maths_reasoning_refined_p{paper_num}", {"count": len(final_set)})
+        self._log_to_ueg(f"generate_maths_reasoning_personalised_p{paper_num}", {"count": len(final_set)})
         return final_set
 
     @constitutional_guard
     async def generate_english_gps(self) -> List[Dict[str, Any]]:
-        """English GPS - Refined."""
+        """English GPS - Contextualized for Ayaan."""
         questions = [
-            {"type": "punctuation", "question": "Circle the possessive apostrophe: The players' boots were lined up by the tunnel.", "topic": "Apostrophe"},
-            {"type": "grammar", "question": "Underline the subordinate clause: While the rocket was fueling, the crew checked their instruments.", "topic": "Clauses"},
-            {"type": "vocabulary", "question": "Which word is a synonym for 'fast'? (Quick / Slow / Heavy)", "topic": "Synonyms"}
+            {"type": "punctuation", "question": "Circle the possessive apostrophe: The Arsenal players' dressing room was ready for the big match.", "topic": "Apostrophe"},
+            {"type": "grammar", "question": "Underline the subordinate clause: While Ayaan was building his Minecraft base, a creeper appeared behind him.", "topic": "Clauses"},
+            {"type": "punctuation", "question": "Which sentence uses the possessive apostrophe correctly? (Ayaan's rocket took off / Ayaans' rocket took off)", "topic": "Apostrophe"},
+            {"type": "grammar", "question": "The pupils of Norbury School ___ (celebrate/celebrates) their SATs achievements. Circle the correct verb.", "topic": "Verb Agreement"}
         ]
         # Spellings
         spellings = ["profession", "exaggeration", "conscience", "queue", "immediately"]
@@ -105,10 +108,12 @@ class SATsQuestionGenerator:
 
     @constitutional_guard
     async def generate_reading(self) -> List[Dict[str, Any]]:
-        """English Reading - Domain 2d & LINK focus."""
+        """English Reading - Domain 2d & LINK focus for Ayaan."""
         questions = [
-            {"type": "inference", "question": "Give two pieces of evidence that show the character was excited about the Arsenal match.", "topic": "Domain 2d"},
-            {"type": "comparison", "question": "Compare the description of the Earth from space at the start and end of the text. Use the LINK structure.", "topic": "LINK Structure"}
+            {"type": "inference", "question": "Give two pieces of evidence from the text that show Ayaan was excited about visiting Headstone Manor Park.", "topic": "Domain 2d"},
+            {"type": "comparison", "question": "Compare the description of the Emirates Stadium at the beginning of the match to the description at the end. Use the LINK structure.", "topic": "LINK Structure"},
+            {"type": "inference", "question": "How does the author show that the Minecraft world felt real to the players? Use quotes to support your answer.", "topic": "Domain 2d"},
+            {"type": "vocabulary", "question": "What does the word 'immense' mean in the context of the rocket's launch?", "topic": "Vocabulary"}
         ]
         return self._dedup_and_sequence(questions, "RD")
 

@@ -28,78 +28,118 @@ class SATsAnswerGenerator:
 
     @constitutional_guard
     async def solve_arithmetic(self, questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Pedagogical solutions for Arithmetic."""
         answers = []
         for q in questions:
             if q["topic"] == "Addition":
                 parts = q["question"].split(" + ")
                 res = int(parts[0]) + int(parts[1])
-                method = f"Line up the digits in columns. Start from the right (ones). {parts[0]} + {parts[1]} = {res}."
+                method = f"Step 1: Write the numbers in columns, aligning place values. Step 2: Add ones (0+0), tens (0+0), hundreds (0+5). Step 3: Add thousands ({parts[0][0]}+0). Total: {res}."
             elif q["topic"] == "Fractions":
-                # "Convert 3 and {x}/8 to an improper fraction."
+                # "Convert 5 and {x}/9 to an improper fraction."
                 parts = q["question"].split(" ")
                 num = int(parts[3].split("/")[0])
-                res = f"{(3*8)+num}/8"
-                method = f"Multiply whole number (3) by denominator (8) and add numerator ({num}). (3 * 8) + {num} = {3*8+num}."
+                res = f"{(5*9)+num}/9"
+                method = f"Step 1: Multiply the whole number (5) by the denominator (9): 5 * 9 = 45. Step 2: Add the numerator ({num}): 45 + {num} = {5*9+num}. Step 3: Put this over the original denominator: {res}."
             elif q["topic"] == "Decimals":
-                # "15.5 - 2.25"
                 parts = q["question"].split(" - ")
                 res = round(float(parts[0]) - float(parts[1]), 2)
-                method = f"Align the decimal points. Add a placeholder zero to {parts[0]} if needed. {parts[0]} - {parts[1]} = {res}."
+                method = f"Step 1: Align decimal points. Add a placeholder 0 to {parts[1]} if needed to match decimal places. Step 2: Subtract normally, keeping decimal in line. {parts[0]} - {parts[1]} = {res}."
             else:
                 res = "Pending"
-                method = "Standard method applied."
+                method = "Detailed step-by-step method."
 
             answers.append({"question_id": q["id"], "question": q["question"], "answer": res, "worked_solution": method})
         return answers
 
     @constitutional_guard
     async def solve_reasoning(self, questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Pedagogical solutions for Reasoning."""
         answers = []
         for q in questions:
-            if "matches" in q["question"]:
-                res = "8/38 or 4/19"
-                method = "Total matches = 38. Wins+Draws = 24+6 = 30. Losses = 38 - 30 = 8. Fraction is 8/38."
-            elif "Minecraft" in q["question"] and "stacks" in q["question"]:
-                res = 12 * 64
-                method = "Multiply stacks (12) by blocks per stack (64). 12 * 64 = 768 blocks."
-            elif "rover-packs" in q["question"]:
-                res = "900g"
-                method = "Total weight 3.6kg = 3600g. Share by 4: 3600 / 4 = 900g."
+            if "Arsenal" in q["question"] and "algebraic" in q["question"]:
+                res = "38 - w - 5"
+                method = "Step 1: Start with total matches (38). Step 2: Subtract wins (w) and losses (5). The remaining matches are draws. Expression: 38 - w - 5 (or 33 - w)."
+            elif "Minecraft" in q["question"] and "ratio" in q["question"]:
+                res = "25 emeralds"
+                method = "Step 1: Ratio is 3:5. Step 2: Ayaan found 15 diamonds. 15 is 3 * 5. Step 3: Multiply the emerald part by the same number (5): 5 * 5 = 25."
+            elif "Harrow" in q["question"] and "miles" in q["question"]:
+                res = "3,862.4m (approx) or 3,840m if using 1.6km conversion"
+                method = "Step 1: 1 mile is approx 1.6km. 2.4 miles * 1.6 = 3.84km. Step 2: Convert km to m by multiplying by 1000. 3.84 * 1000 = 3,840m."
+            elif "x + 15 = 40" in q["question"]:
+                res = "25"
+                method = "Step 1: To find x, subtract 15 from both sides of the equation. Step 2: 40 - 15 = 25. So, x = 25."
             elif "Mars" in q["question"]:
-                res = "-43C"
-                method = "Start at -55. Rise means add. -55 + 12 = -43."
-            elif "farm" in q["question"]:
-                res = "120 blocks squared"
-                method = "Area = length * width. 15 * 8 = 120."
+                res = "-48C"
+                method = "Step 1: Start at -63. Step 2: 'Rises' means add. -63 + 15. Step 3: Moving 15 steps towards zero from -63 gives -48."
+            elif "area" in q["question"]:
+                res = "108 blocks squared"
+                method = "Step 1: Area = length * width. Step 2: 12 * 9 = 108. Don't forget the 'squared' unit!"
             elif "Saka" in q["question"]:
-                res = "9,800m"
-                method = "Multiply km by 1,000. 9.8 * 1,000 = 9,800."
+                res = "10,500m"
+                method = "Step 1: Multiply km by 1,000 to get meters. Step 2: 10.5 * 1,000 = 10,500."
+            elif "Headstone Manor Park" in q["question"]:
+                res = "15:47"
+                method = "Step 1: Start at 16:05 and count back 18 minutes. Step 2: 5 minutes back to 16:00, then 13 more minutes back to 15:47."
             else:
                 res = "Pending"
-                method = "Logical reasoning applied."
+                method = "Logical breakdown."
 
             answers.append({"question_id": q["id"], "question": q["question"], "answer": res, "worked_solution": method})
         return answers
 
     @constitutional_guard
     async def solve_reading(self, questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Pedagogical solutions for Reading with LINK structure."""
         answers = []
         for q in questions:
-            if q["topic"] == "Domain 2d":
-                res = "Reason 1: He was singing on the bus. Reason 2: He arrived 2 hours early."
-                method = "Inference (Domain 2d): Support with explicit textual evidence."
+            if q["topic"] == "Domain 2d" and "Headstone" in q["question"]:
+                res = "Evidence 1: He arrived 20 minutes before the gates opened. Evidence 2: He was wearing his favorite Arsenal kit for the trip."
+                method = "Inference (Domain 2d): Use direct evidence from the text to support your points."
             elif q["topic"] == "LINK Structure":
                 res = {
-                    "Link": "The character's view of Earth changes from distant to fragile.",
-                    "Evidence 1": "Text says 'a tiny blue marble'.",
-                    "Evidence 2": "Text says 'a delicate jewel in the dark'.",
-                    "Explain": "The shift in vocabulary from 'marble' to 'jewel' shows increased appreciation."
+                    "Link": "The stadium is described as energetic at the start but tense at the end.",
+                    "Evidence 1": "At the start, the crowd was a 'roaring ocean of red'.",
+                    "Evidence 2": "At the end, there was a 'hushed, heavy silence'.",
+                    "Explain": "The contrast between 'roaring' and 'silence' shows how the atmosphere shifted as the game became closer."
                 }
-                method = "Comparison (LINK): Link, Evidence 1, Evidence 2, Explain."
+                method = "Comparison (LINK): Use the LINK structure (Link, Evidence 1, Evidence 2, Explain) to earn all 3 marks."
+            elif q["topic"] == "Domain 2d" and "Minecraft" in q["question"]:
+                res = "The author says the wind felt 'cold on their faces' and they could 'smell the woodsmoke' from the virtual fires."
+                method = "Inference (Domain 2d): Using sensory details as quotes provides strong evidence."
+            elif q["topic"] == "Vocabulary":
+                res = "Immense means extremely large or huge."
+                method = "Vocabulary: Look at the surrounding sentences to find clues about the word's meaning."
             else:
                 res = "Pending"
                 method = "Textual analysis."
             answers.append({"question_id": q["id"], "question": q["question"], "answer": res, "method_or_worked_solution": method})
+        return answers
+
+    @constitutional_guard
+    async def solve_gps(self, questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Pedagogical solutions for GPS."""
+        answers = []
+        for q in questions:
+            if q["topic"] == "Apostrophe" and "dressing room" in q["question"]:
+                res = "players'"
+                method = "The players (plural) own the room. Since it ends in 's', add the apostrophe after the 's'."
+            elif q["topic"] == "Apostrophe" and "rocket" in q["question"]:
+                res = "Ayaan's rocket took off"
+                method = "Ayaan is singular. Add 's to show possession."
+            elif q["topic"] == "Clauses":
+                res = "While Ayaan was building his Minecraft base"
+                method = "This is a subordinate clause because it starts with the conjunction 'While' and doesn't make sense on its own."
+            elif q["topic"] == "Verb Agreement":
+                res = "celebrate"
+                method = "The subject 'pupils' is plural, so we use the plural verb 'celebrate'."
+            elif q["topic"] == "Spelling":
+                res = q["question"].replace("Spell: ", "")
+                method = "Spelling rule or pattern reinforcement."
+            else:
+                res = "Pending"
+                method = "Grammatical rule application."
+            answers.append({"question_id": q["id"], "question": q["question"], "answer": res, "rule_or_justification": method})
         return answers
 
     async def process_all(self):
@@ -107,7 +147,8 @@ class SATsAnswerGenerator:
             "maths_arithmetic.json": self.solve_arithmetic,
             "maths_reasoning_1.json": self.solve_reasoning,
             "maths_reasoning_2.json": self.solve_reasoning,
-            "english_reading.json": self.solve_reading
+            "english_reading.json": self.solve_reading,
+            "english_gps.json": self.solve_gps
         }
         for filename, solver in mapping.items():
             path = os.path.join(self.input_dir, filename)

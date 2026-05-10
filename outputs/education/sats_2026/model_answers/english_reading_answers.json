@@ -1,19 +1,31 @@
 [
     {
         "question_id": "RD_1",
-        "question": "Give two pieces of evidence that show the character was excited about the Arsenal match.",
-        "answer": "Reason 1: He was singing on the bus. Reason 2: He arrived 2 hours early.",
-        "method_or_worked_solution": "Inference (Domain 2d): Support with explicit textual evidence."
+        "question": "Give two pieces of evidence from the text that show Ayaan was excited about visiting Headstone Manor Park.",
+        "answer": "Evidence 1: He arrived 20 minutes before the gates opened. Evidence 2: He was wearing his favorite Arsenal kit for the trip.",
+        "method_or_worked_solution": "Inference (Domain 2d): Use direct evidence from the text to support your points."
     },
     {
         "question_id": "RD_2",
-        "question": "Compare the description of the Earth from space at the start and end of the text. Use the LINK structure.",
+        "question": "Compare the description of the Emirates Stadium at the beginning of the match to the description at the end. Use the LINK structure.",
         "answer": {
-            "Link": "The character's view of Earth changes from distant to fragile.",
-            "Evidence 1": "Text says 'a tiny blue marble'.",
-            "Evidence 2": "Text says 'a delicate jewel in the dark'.",
-            "Explain": "The shift in vocabulary from 'marble' to 'jewel' shows increased appreciation."
+            "Link": "The stadium is described as energetic at the start but tense at the end.",
+            "Evidence 1": "At the start, the crowd was a 'roaring ocean of red'.",
+            "Evidence 2": "At the end, there was a 'hushed, heavy silence'.",
+            "Explain": "The contrast between 'roaring' and 'silence' shows how the atmosphere shifted as the game became closer."
         },
-        "method_or_worked_solution": "Comparison (LINK): Link, Evidence 1, Evidence 2, Explain."
+        "method_or_worked_solution": "Comparison (LINK): Use the LINK structure (Link, Evidence 1, Evidence 2, Explain) to earn all 3 marks."
+    },
+    {
+        "question_id": "RD_3",
+        "question": "How does the author show that the Minecraft world felt real to the players? Use quotes to support your answer.",
+        "answer": "The author says the wind felt 'cold on their faces' and they could 'smell the woodsmoke' from the virtual fires.",
+        "method_or_worked_solution": "Inference (Domain 2d): Using sensory details as quotes provides strong evidence."
+    },
+    {
+        "question_id": "RD_4",
+        "question": "What does the word 'immense' mean in the context of the rocket's launch?",
+        "answer": "Immense means extremely large or huge.",
+        "method_or_worked_solution": "Vocabulary: Look at the surrounding sentences to find clues about the word's meaning."
     }
 ]

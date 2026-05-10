@@ -1,20 +1,26 @@
 [
     {
         "type": "reasoning",
-        "question": "Arsenal played 38 matches. They won 24, drew 6 and lost the rest. What fraction of matches did they lose?",
-        "topic": "Fractions/Context",
+        "question": "Ayaan's favorite team Arsenal played 38 matches. If they win 'w' matches and lose 5, write an algebraic expression for the matches they drew.",
+        "topic": "Algebra",
         "id": "MR2_1"
     },
     {
         "type": "reasoning",
-        "question": "In Minecraft, 1 stack of cobblestone is 64 blocks. How many blocks are in 12 stacks?",
-        "topic": "Multiplication",
+        "question": "In a Minecraft world, the ratio of diamonds to emeralds in a chest is 3:5. If Ayaan finds 15 diamonds, how many emeralds are there?",
+        "topic": "Ratio",
         "id": "MR2_2"
     },
     {
         "type": "reasoning",
-        "question": "A bag of space-dust weighs 1.2kg. If 3.6kg is shared into 4 equal rover-packs, how many grams in each?",
+        "question": "A bus from Harrow town centre to Norbury School travels 2.4 miles. How many metres is that?",
         "topic": "Measurement",
         "id": "MR2_3"
+    },
+    {
+        "type": "reasoning",
+        "question": "If x + 15 = 40, what is the value of x in Ayaan's Minecraft score calculation?",
+        "topic": "Algebra",
+        "id": "MR2_4"
     }
 ]

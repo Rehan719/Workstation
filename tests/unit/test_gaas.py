@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from core.gaas_validator_v4 import GaaSValidatorV4
+from agentic_core.organism.gaas_validator_v4 import GaaSValidatorV4
 
 @pytest.fixture
 def validator():

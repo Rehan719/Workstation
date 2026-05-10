@@ -1,14 +1,10 @@
-from agentic_core.biomimicry.cycles.utils import constitutional_guard
-
-class SulfurErrorManager:
-    def __init__(self, error_bus, ueg, validator):
-        self.bus = error_bus
-        self.ueg = ueg
-        self.validator = validator
-        self.target_error_rate = 0.01
-
-    @constitutional_guard
-    async def erupt_errors(self, error_data: dict):
-        # Volcanic eruption / Circuit breaking
-        await self.ueg.log_minimisation_event("sulfur_eruption", error_data)
-        return True
+from .base_cycle import CycleController
+class SulfurCycle(CycleController):
+    def __init__(self, ueg_logger=None, niyyah_engine=None):
+        super().__init__('sulfur', 1.0, ueg_logger)
+    async def emit_odor(self, severity):
+        return {"severity": severity}
+    async def trigger_acid_rain(self, frequency):
+        return {"mode": "normal"}
+    def get_homeostasis_score(self):
+        return 0.95

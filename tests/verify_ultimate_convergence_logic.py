@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from agentic_core.synthesis.grand_synthesis_engine import GrandSynthesisEngine
-from realms.learner_realm_v137 import LearnerRealmV137
+from agentic_core.realms.learner_realm_v137 import LearnerRealmV137
 from agentic_core.synthesis.uviap import UVIAP
 
 logging.basicConfig(level=logging.INFO)

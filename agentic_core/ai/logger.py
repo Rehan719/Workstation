@@ -1,7 +1,7 @@
 import sqlite3
 import datetime
 import os
-from config.paths import INTERACTIONS_DB
+from agentic_core.config.paths import INTERACTIONS_DB
 
 class InteractionLogger:
     def __init__(self):

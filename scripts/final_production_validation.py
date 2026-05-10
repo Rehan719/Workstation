@@ -1,6 +1,6 @@
 import asyncio
 import json
-from core.mjm_v4 import MJMOrchestratorV4
+from agentic_core.organism.mjm_v4 import MJMOrchestratorV4
 from agentic_core.mega_project.synthesizer import MegaProjectSynthesizer
 from agentic_core.ueg.logger import VSBUEGLogger
 

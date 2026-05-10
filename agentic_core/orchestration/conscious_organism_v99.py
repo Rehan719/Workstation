@@ -56,7 +56,7 @@ from agentic_core.validation.digital_twin_orchestrator import DigitalTwinOrchest
 from agentic_core.validation.benchmarks import BenchmarkSuite
 from agentic_core.governance.trustworthiness_engine import TrustworthinessEngine
 from agentic_core.nlp.nli_engine import NLIEngine
-from config.loader import settings
+from agentic_core.config.loader import settings
 from agentic_core.db.manager import DatabaseManager
 from agentic_core.genetic_immune.immune_system import ImmuneSystem
 

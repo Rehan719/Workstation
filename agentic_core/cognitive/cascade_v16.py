@@ -1,12 +1,12 @@
 import asyncio
 from typing import List, Dict, Any, Optional
 from agentic_core.ueg.logger import VSBUEGLogger
-from agentic_core.cognitive.inkashaf_engine import InkashafEngine
-from agentic_core.cognitive.aqal_engine import AqalEngine
-from agentic_core.cognitive.samajh_engine import SamajhEngine
-from agentic_core.cognitive.hoshiyari_engine import HoshiyariEngine
-from agentic_core.cognitive.soch_engine import SochEngine
-from agentic_core.cognitive.iman_engine import ImanEngine
+from agentic_core.cognitive.inkashaf import InkashafEngine
+from agentic_core.cognitive.aqal import AqalEngine
+from agentic_core.cognitive.samajh import SamajhEngine
+from agentic_core.cognitive.hoshiyari import HoshiyariEngine
+from agentic_core.cognitive.soch import SochEngine
+from agentic_core.cognitive.iman import ImanEngine
 
 class UltimateCognitiveCascade:
     """

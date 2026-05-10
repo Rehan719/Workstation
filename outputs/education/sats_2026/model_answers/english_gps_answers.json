@@ -1,44 +1,56 @@
 [
     {
         "question_id": "GPS_1",
-        "question": "Rewrite this sentence using a possessive apostrophe: The boots belonging to Bukayo Saka were muddy.",
-        "answer": "Bukayo Saka's boots were muddy.",
-        "rule_or_justification": "The boots belong to one person (Bukayo Saka), so we add 's to the name."
+        "question": "Circle the possessive apostrophe: The Arsenal players' dressing room was ready for the big match.",
+        "answer": "players'",
+        "rule_or_justification": "The players (plural) own the room. Since it ends in 's', add the apostrophe after the 's'."
     },
     {
         "question_id": "GPS_2",
-        "question": "Identify the main clause in this sentence: Although it was raining, the Arsenal fans continued to cheer loudly.",
-        "answer": "the Arsenal fans continued to cheer loudly",
-        "rule_or_justification": "A main clause can stand alone as a sentence. 'Although it was raining' is a subordinate clause."
+        "question": "Underline the subordinate clause: While Ayaan was building his Minecraft base, a creeper appeared behind him.",
+        "answer": "While Ayaan was building his Minecraft base",
+        "rule_or_justification": "This is a subordinate clause because it starts with the conjunction 'While' and doesn't make sense on its own."
     },
     {
-        "question_id": "SP_1",
-        "question": "Spell the word: celebration",
-        "answer": "celebration",
-        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for celebration."
+        "question_id": "GPS_3",
+        "question": "Which sentence uses the possessive apostrophe correctly? (Ayaan's rocket took off / Ayaans' rocket took off)",
+        "answer": "Ayaan's rocket took off",
+        "rule_or_justification": "Ayaan is singular. Add 's to show possession."
     },
     {
-        "question_id": "SP_2",
-        "question": "Spell the word: division",
-        "answer": "division",
-        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for division."
+        "question_id": "GPS_4",
+        "question": "The pupils of Norbury School ___ (celebrate/celebrates) their SATs achievements. Circle the correct verb.",
+        "answer": "celebrate",
+        "rule_or_justification": "The subject 'pupils' is plural, so we use the plural verb 'celebrate'."
     },
     {
-        "question_id": "SP_3",
-        "question": "Spell the word: mission",
-        "answer": "mission",
-        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for mission."
+        "question_id": "GPS_5",
+        "question": "Spell: profession",
+        "answer": "profession",
+        "rule_or_justification": "Spelling rule or pattern reinforcement."
     },
     {
-        "question_id": "SP_4",
-        "question": "Spell the word: television",
-        "answer": "television",
-        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for television."
+        "question_id": "GPS_6",
+        "question": "Spell: exaggeration",
+        "answer": "exaggeration",
+        "rule_or_justification": "Spelling rule or pattern reinforcement."
     },
     {
-        "question_id": "SP_5",
-        "question": "Spell the word: prediction",
-        "answer": "prediction",
-        "rule_or_justification": "Spelling follows the standard -tion or -sion pattern for prediction."
+        "question_id": "GPS_7",
+        "question": "Spell: conscience",
+        "answer": "conscience",
+        "rule_or_justification": "Spelling rule or pattern reinforcement."
+    },
+    {
+        "question_id": "GPS_8",
+        "question": "Spell: queue",
+        "answer": "queue",
+        "rule_or_justification": "Spelling rule or pattern reinforcement."
+    },
+    {
+        "question_id": "GPS_9",
+        "question": "Spell: immediately",
+        "answer": "immediately",
+        "rule_or_justification": "Spelling rule or pattern reinforcement."
     }
 ]

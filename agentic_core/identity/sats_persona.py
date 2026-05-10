@@ -8,32 +8,48 @@ logger = logging.getLogger(__name__)
 class SATsLearningPersona:
     """
     IDBO Persona for the Year 6 SATs 2026 Education Grand Operation.
+    Personalized for Ayaan at Norbury School.
     """
-    def __init__(self, name: str = "Norbury Pupil"):
+    def __init__(self, name: str = "Ayaan"):
         self.name = name
         self.age = 10
         self.school = "Norbury School, Harrow"
 
-        # Core profile
-        self.strengths = ["Arithmetic (four operations)", "Spelling patterns (-tion, -sion)", "Reading literal comprehension"]
-        self.areas_for_improvement = ["Algebra (simple equations)", "Fractions (mixed to improper)", "3-mark comparison (LINK structure)", "Possessive apostrophes"]
+        # Core profile with specific weights (1-5, 5 being most critical/strongest)
+        self.strengths = {
+            "Arithmetic (four operations)": 5,
+            "Spelling patterns (-tion, -sion)": 4,
+            "Reading literal comprehension": 5
+        }
+        self.areas_for_improvement = {
+            "Algebra (simple equations)": 5,
+            "Fractions (mixed to improper)": 4,
+            "3-mark comparison (LINK structure)": 5,
+            "Possessive apostrophes": 3
+        }
 
         # Personalization data
-        self.interests = ["Football (Arsenal)", "Minecraft", "Space/Planets"]
+        self.interests = ["Football (Arsenal FC)", "Minecraft", "Space/Planets", "Harrow Local Area"]
         self.learning_style = {
             "session_duration": "20-30 minutes",
             "approach": "Visual/Hands-on",
-            "needs": "Clear worked examples"
+            "needs": "Clear worked examples",
+            "break_frequency": "Every 2 sessions"
         }
 
         # Contextual mapping for question generation
         self.context_mapping = {
             "maths_reasoning": {
-                "entities": ["Bukayo Saka", "Arsenal matches", "Minecraft blocks", "Space rovers"],
-                "scenarios": ["Calculating goal averages", "Building a Minecraft fortress", "Fuel for Mars mission"]
+                "entities": ["Bukayo Saka", "Arsenal matches", "Minecraft blocks", "Space rovers", "Harrow on the Hill", "Headstone Manor Park"],
+                "scenarios": [
+                    "Calculating Arsenal goal averages",
+                    "Building a Minecraft fortress with volume/area",
+                    "Fuel calculations for a Mars mission",
+                    "Distance calculations in Harrow"
+                ]
             },
             "reading": {
-                "topics": ["Space exploration", "History of football", "Digital world construction"]
+                "topics": ["History of Arsenal FC", "Space Exploration and the Moon", "A Day at Headstone Manor Park", "Minecraft Engineering"]
             }
         }
 

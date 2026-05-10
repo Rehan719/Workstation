@@ -5,7 +5,7 @@ import json
 import datetime
 from typing import Dict, Any, List
 import matplotlib.pyplot as plt
-from config.paths import DATA_DIR
+from agentic_core.config.paths import DATA_DIR
 
 logger = logging.getLogger(__name__)
 

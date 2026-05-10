@@ -11,6 +11,7 @@ from agentic_core.governance.gaas.v5.uci_v16_omega import UnifiedConstitutionalI
 from agentic_core.domains.education.question_generator import SATsQuestionGenerator
 from agentic_core.domains.education.answer_generator import SATsAnswerGenerator
 from agentic_core.domains.education.schedule_generator import SATsScheduleGenerator
+from agentic_core.domains.education.pdf_generator import SATsPDFGenerator
 from agentic_core.identity.sats_persona import SATsLearningPersona
 
 class UltimateEducationOrchestrator:
@@ -44,7 +45,7 @@ class UltimateEducationOrchestrator:
         return await self.uci.intercept(context, self._execute_generation_logic)
 
     async def _execute_generation_logic(self):
-        """The refined generation logic."""
+        """The refined generation logic including PDF production."""
         # 1. Questions
         await self.q_gen.save_all()
 
@@ -55,7 +56,18 @@ class UltimateEducationOrchestrator:
         data = await self.s_gen.generate_schedule()
         await self.s_gen.save_markdown(data)
 
-        return {"status": "SUCCESS", "domain": "Education", "refinement": "Mushawara-Refined"}
+        # 4. PDFs
+        pdf_gen = SATsPDFGenerator()
+        pdf_gen.generate_schedule_pdf()
+        pdf_gen.generate_exam_pdfs()
+        bundle_path = pdf_gen.concatenate_bundle()
+
+        return {
+            "status": "SUCCESS",
+            "domain": "Education",
+            "refinement": "Ayaan-Personalized-vInfinity",
+            "bundle": bundle_path
+        }
 
 if __name__ == "__main__":
     orchestrator = UltimateEducationOrchestrator()

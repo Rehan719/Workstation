@@ -1,20 +1,26 @@
 [
     {
         "type": "reasoning",
-        "question": "The temperature on Mars is -55C. It rises by 12C. What is the new temperature?",
+        "question": "The temperature on Mars is -63C. It rises by 15C. What is the new temperature for Ayaan's rover?",
         "topic": "Negative Numbers",
         "id": "MR3_1"
     },
     {
         "type": "reasoning",
-        "question": "Calculate the area of a rectangular Minecraft farm that is 15 blocks long and 8 blocks wide.",
+        "question": "Calculate the area of a rectangular farm in Minecraft that is 12 blocks long and 9 blocks wide.",
         "topic": "Area",
         "id": "MR3_2"
     },
     {
         "type": "reasoning",
-        "question": "Bukayo Saka ran 9.8km in a match. Write this distance in meters.",
+        "question": "Bukayo Saka ran 10.5km in a match. Write this distance in meters.",
         "topic": "Measurement",
         "id": "MR3_3"
+    },
+    {
+        "type": "reasoning",
+        "question": "Ayaan walks from Norbury School to Headstone Manor Park. It takes 18 minutes. If he arrives at 16:05, what time did he leave school?",
+        "topic": "Time",
+        "id": "MR3_4"
     }
 ]

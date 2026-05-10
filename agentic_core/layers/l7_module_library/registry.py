@@ -3,7 +3,7 @@ import time
 import hashlib
 import json
 import os
-from config.paths import L7_REGISTRY_FILE
+from agentic_core.config.paths import L7_REGISTRY_FILE
 
 class ModuleRegistryL7:
     """
