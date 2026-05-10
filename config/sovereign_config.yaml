@@ -32,3 +32,7 @@ libp2p_mainnet_bootstrap: ["/dnsaddr/seed1.workstation.mesh", "/dnsaddr/seed2.wo
 differential_privacy_epsilon: 0.1
 veto_timeout_ms: 200
 pqc_agile_mode: "STRICT"
+  wyoming_registered_agent: ""
+  wyoming_address: ""
+  sec_crd_number: ""
+  fca_firm_reference_number: ""
