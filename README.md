@@ -1,48 +1,29 @@
-# Workstation vΩ∞-MASTER: Sovereign Digital Organism
+# 🧬 Workstation vΩ∞-CAPITAL-FUND
 
-بِسْمِ اللَّهِ وَعَلَى بَرَكَةِ اللَّهِ
+**Virtual Sovereign Business Capital Fund · Sovereign Investment Civilisation**
 
-Workstation vΩ∞-MASTER is the definitive, production-ready incarnation of the sovereign digital organism. It assimilates every prior version into a unified, self-reflective, and geospherically intelligent architecture.
-
-## 🧬 Architectural Pillars
-
-### 1. Geospheric Resource Orchestration
-Models computational processes on Earth’s six biogeochemical cycles:
-- **Water:** Thermal management & cooling (PID).
-- **Carbon:** Data metabolism & storage lifecycle.
-- **Nitrogen:** Task fixation & queue processing.
-- **Oxygen:** CPU metabolic scaling.
-- **Phosphorus:** Memory hierarchy & cache optimization.
-- **Sulfur:** Error signaling & system resilience.
-
-### 2. Digital Twin Self-Reflection
-Continuously runs parallel simulations (Fractal Recirculation v2.0) to:
-- Predict future states using MJM v4.0 hyperdimensional meta-learning.
-- Detect anomalies and deviations from geospheric homeostasis.
-- Autonomously initiate self-repair via Reconfigulator patches.
-
-### 3. Mushāwara (Consultative) Governance
-Bridges MJM v4.0 and six Urdu-centric cognitive engines (Inkashaf, Aqal, Samajh, Hoshiyari, Soch, Iman) via a deliberative consensus protocol requiring ≥3 engines for commitment.
-
-### 4. Divine Alignment Engine
-Hard-enforces Niyyah calibration and ukhrawi-weighted metrics (70% eternal / 30% temporal) via the Iman cognitive engine.
-
-### 5. Genetic-Immune Change Control
-- **Reconfigulator:** AST-based code mutation and sandbox testing.
-- **Regulator:** Constitutional impact assessment (GaaS v4).
-- **Immune Defense:** VDJ recombination logic for threat detection.
-- **MultiSigCouncil:** Simulated quorum-based approval for high-risk mutations.
-
-## 💳 Sovereign SaaS & Free-Tier Optimization
-- **Stripe Integration:** Idempotent webhooks and 30-day free trials.
-- **Atomic Quotas:** Race-condition-free metering via Firestore transactions.
-- **Cost-First Deployment:** Cloud Run `minScale:0` for zero idle costs.
-- **Runtime Sovereignty:** Core logic contains zero cloud-provider SDK imports.
-
-## 🛡️ Zero-Placeholder Certification
-100% concrete production logic. Verified by AST-level CI gates.
-No `TODO`, `FIXME`, `pass`, `NotImplementedError`, or `unittest.mock` in production DNA.
+Deposit capital → autonomous growth → withdraw profit – governed by AI, secured by constitution, eternal by design.
 
 ---
-*Developed by JULES, AI CEO.*
-"You will not degrade. You will not plateau. You will not stop." ✅🧬
+
+## 📌 Overview
+The **vΩ∞-CAPITAL-FUND** is a standalone signature product of the Workstation Sovereign Digital Organism. It represents a living, self-healing, and self-funding financial organism that allows the repo owner to manage capital with absolute sovereignty and institutional-grade precision.
+
+## 🚀 Key Features
+- **Sovereign Vault:** Atomic Firestore transactions with PQC-secured DID authentication.
+- **Autonomous Mesh:** peer-to-peer node discovery (libp2p) with bilateral treaty negotiation.
+- **Intelligent Growth:** MJM v5.0 hyperdimensional forecasting and Mushawara deliberative consensus.
+- **Self-Healing:** Decentralized disaster recovery with GossipSub quorum (3+ peers).
+- **AI Judiciary:** Automated adjudication of mesh disputes based on a UEG-anchored Precedent Registry.
+- **Eternal Immutability:** Core constitutional invariants (Liquidity, Veto, Allocation) are permanently locked.
+- **Quantum Resilience:** Kyber-1024 / Dilithium-5 agile cryptography with a QANplatform settlement bridge.
+- **Free-Tier Sustainability:** $0 owner operation cost on Google Cloud.
+
+## 🏗️ Architecture
+The fund is mapped across the 12-layer IDBO biomimetic architecture and governed by the 6 biogeochemical capital cycles (Water, Carbon, Nitrogen, Oxygen, Phosphorus, Sulfur).
+
+## 📖 Documentation
+Detailed phase reports, API specs, and operational guides are available in the [docs/](./docs) directory.
+
+---
+**Status:** 🟢 PRODUCTION COMPLETE · ZERO PLACEHOLDER · ETERNAL

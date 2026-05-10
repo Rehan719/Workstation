@@ -1,0 +1,10 @@
+immutable_articles:
+  - 1128  # liquidity reserve >= 10%
+  - 1129  # multi-sig for large withdrawals
+  - 1130  # single asset allocation <= 20%
+  - 1131  # digital twin weekly simulation
+  - 1135  # owner absolute veto
+  - 1201  # twin-validated capital rebalancing
+  - 1202  # no system shutdown if twin predicts recovery
+  - 1203  # twin desynchronisation < 5s
+  - 1204  # twin simulations must be constitutional

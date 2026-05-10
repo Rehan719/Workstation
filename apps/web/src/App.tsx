@@ -66,6 +66,8 @@ import FacilityControlRoom from './pages/domains/FacilityControlRoom';
 import QEPV9CommandCenter from './pages/domains/QEPV9CommandCenter';
 import HumanOversightQueue from './components/qep/scholar/HumanOversightQueue';
 import { IntrospectionDashboard } from './pages/IntrospectionDashboard';
+import CouncilJudiciary from './pages/council/Judiciary';
+import BugBountyPortal from './pages/security/BugBounty';
 import { ARVRSandbox } from './pages/platforms/ARVRSandbox';
 import { WearableSync } from './pages/platforms/WearableSync';
 import { EmbodimentStudio } from './pages/platforms/EmbodimentStudio';
@@ -177,7 +179,9 @@ function App() {
           <Route path="/qep/oversight" element={<HumanOversightQueue />} />
           <Route path="/constitution" element={<ConstitutionalUI />} />
           <Route path="/council" element={<CouncilInterface />} />
+          <Route path="/council/judiciary" element={<CouncilJudiciary />} />
           <Route path="/debate" element={<DebateLog />} />
+          <Route path="/security/bounty" element={<BugBountyPortal />} />
           <Route path="/marketplace" element={<LivingMarketplace />} />
           <Route path="/introspection" element={<IntrospectionDashboard />} />
           <Route path="/admin" element={<AdminPanel />} />

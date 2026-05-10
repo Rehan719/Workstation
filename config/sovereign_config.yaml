@@ -32,7 +32,15 @@ libp2p_mainnet_bootstrap: ["/dnsaddr/seed1.workstation.mesh", "/dnsaddr/seed2.wo
 differential_privacy_epsilon: 0.1
 veto_timeout_ms: 200
 pqc_agile_mode: "STRICT"
-  wyoming_registered_agent: ""
-  wyoming_address: ""
-  sec_crd_number: ""
-  fca_firm_reference_number: ""
+# Phase 9: Eternal Vigilance & Final Epoch
+phase9:
+  ai_judge_enabled: false
+  precedent_registry_enabled: true
+  bug_bounty_enabled: false
+  disaster_recovery_enabled: true
+  defi_yield_aggregator_enabled: false
+  pq_ledger_bridge_enabled: false
+  pq_simulator_enabled: true
+  eternal_immutability_enabled: true
+  immutable_genome_path: "config/immutable_genome.yaml"
+  appeal_window_days: 7

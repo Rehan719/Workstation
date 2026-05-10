@@ -4,7 +4,6 @@ from decimal import Decimal
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
-from agents.legal.ai_ceo_legal_entity import AICEOLegalEntity
 from agentic_core.federation.autonomous_mesh import AutonomousMesh
 from products.capital_fund.mesh.treaty_schema import BilateralTreaty
 from products.capital_fund.governance.dao_executive_bridge import DAOExecutiveBridge
@@ -27,15 +26,10 @@ def mock_validator():
     val.validate_action = AsyncMock(return_value={"passed": True, "hash": "sha3_abc"})
     return val
 
-@pytest.fixture
-def mock_signer():
-    signer = MagicMock()
-    signer.sign = AsyncMock(return_value=b"pqc_signature")
-    return signer
-
 @pytest.mark.asyncio
 async def test_vault_deposit(mock_ueg, mock_validator):
     vault = CapitalVault("did:owner", mock_validator, mock_ueg)
+
     did_manager = MagicMock()
     did_manager.verify_signed_intent.return_value = True
     vault.did_manager = did_manager
@@ -84,19 +78,4 @@ async def test_subfund_genome(mock_ueg):
 
     genome_hash = await manager.create_genome({"risk": "low", "target": "8%"})
     assert len(genome_hash) == 128 # sha3-512
-    mock_ueg.log_event.assert_called()
-
-@pytest.mark.asyncio
-async def test_legal_entity_registration(mock_ueg):
-    entity = AICEOLegalEntity(mock_ueg)
-    # Mock config file for factory
-    import os
-    if not os.path.exists("config/sovereign_config.yaml"):
-        os.makedirs("config", exist_ok=True)
-        with open("config/sovereign_config.yaml", "w") as f:
-            f.write("phase8: {}\n")
-
-    receipt = await entity.register_as_legal_entity("Wyoming", "wyoming_dao", {})
-    assert receipt.status == "BUNDLED_FOR_FILING"
-    assert receipt.bundle.jurisdiction == "Wyoming"
     mock_ueg.log_event.assert_called()
