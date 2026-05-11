@@ -1,48 +1,29 @@
-# Workstation vΩ∞-MASTER: Sovereign Digital Organism
+# Workstation vΩ∞-GEOSPHERIC-FINAL
 
 بِسْمِ اللَّهِ وَعَلَى بَرَكَةِ اللَّهِ
 
-Workstation vΩ∞-MASTER is the definitive, production-ready incarnation of the sovereign digital organism. It assimilates every prior version into a unified, self-reflective, and geospherically intelligent architecture.
+Workstation is a transcendent digital organism and sovereign SaaS platform. It integrates a 12-layer biomimetic AI core with geospheric resource orchestration, optimized for Google Cloud's free tier and Stripe-powered scaling.
 
-## 🧬 Architectural Pillars
+## 🧬 Core Architecture
+- **Canonical Logic:** Consolidated within `agentic_core/`.
+- **Geospheric Homeostasis:** 6-cycle Lyapunov-stable resource management.
+- **Sovereign Governance:** GaaS v4 constitutional enforcement and UEG Merkle-DAG logging.
+- **Urdu Cognitive Engines:** High-fidelity Urdu-centric reasoning.
 
-### 1. Geospheric Resource Orchestration
-Models computational processes on Earth’s six biogeochemical cycles:
-- **Water:** Thermal management & cooling (PID).
-- **Carbon:** Data metabolism & storage lifecycle.
-- **Nitrogen:** Task fixation & queue processing.
-- **Oxygen:** CPU metabolic scaling.
-- **Phosphorus:** Memory hierarchy & cache optimization.
-- **Sulfur:** Error signaling & system resilience.
+## 💳 SaaS & Scaling
+- **Stripe Integration:** Automatic 30-day trials and idempotent webhook processing.
+- **Atomic Quotas:** High-concurrency safe usage metering.
+- **Free for Personal Use:** Pre-configured for GCP free-tier quotas.
 
-### 2. Digital Twin Self-Reflection
-Continuously runs parallel simulations (Fractal Recirculation v2.0) to:
-- Predict future states using MJM v4.0 hyperdimensional meta-learning.
-- Detect anomalies and deviations from geospheric homeostasis.
-- Autonomously initiate self-repair via Reconfigulator patches.
+## 🚀 Quick Start
+```bash
+# Deploy to Google Cloud (Free Tier)
+./agentic_core/scripts/deploy_free_tier.sh <your-project-id>
+```
 
-### 3. Mushāwara (Consultative) Governance
-Bridges MJM v4.0 and six Urdu-centric cognitive engines (Inkashaf, Aqal, Samajh, Hoshiyari, Soch, Iman) via a deliberative consensus protocol requiring ≥3 engines for commitment.
-
-### 4. Divine Alignment Engine
-Hard-enforces Niyyah calibration and ukhrawi-weighted metrics (70% eternal / 30% temporal) via the Iman cognitive engine.
-
-### 5. Genetic-Immune Change Control
-- **Reconfigulator:** AST-based code mutation and sandbox testing.
-- **Regulator:** Constitutional impact assessment (GaaS v4).
-- **Immune Defense:** VDJ recombination logic for threat detection.
-- **MultiSigCouncil:** Simulated quorum-based approval for high-risk mutations.
-
-## 💳 Sovereign SaaS & Free-Tier Optimization
-- **Stripe Integration:** Idempotent webhooks and 30-day free trials.
-- **Atomic Quotas:** Race-condition-free metering via Firestore transactions.
-- **Cost-First Deployment:** Cloud Run `minScale:0` for zero idle costs.
-- **Runtime Sovereignty:** Core logic contains zero cloud-provider SDK imports.
-
-## 🛡️ Zero-Placeholder Certification
-100% concrete production logic. Verified by AST-level CI gates.
-No `TODO`, `FIXME`, `pass`, `NotImplementedError`, or `unittest.mock` in production DNA.
+## 🛡️ Certification
+Verified with **Zero-Placeholder Certification**. 100% concrete production logic.
+See [docs/releases/certification_vΩ∞-GEOSPHERIC-FINAL.md](docs/releases/certification_vΩ∞-GEOSPHERIC-FINAL.md).
 
 ---
 *Developed by JULES, AI CEO.*
-"You will not degrade. You will not plateau. You will not stop." ✅🧬

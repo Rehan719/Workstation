@@ -3,8 +3,8 @@ import uuid
 import random
 import numpy as np
 from typing import List, Dict, Any, Optional
-from agentic_core.genetic_immune.genome.chromosome import Chromosome
-from agentic_core.genetic_immune.genome.gene import Gene, GeneType
+from agentic_core.genome.chromosome import Chromosome
+from agentic_core.genome.gene import Gene, GeneType
 from agentic_core.incubator.petri_dish import PetriDish
 from agentic_core.incubator.simulation_loop import SimulationLoop
 from agentic_core.incubator.population import Population

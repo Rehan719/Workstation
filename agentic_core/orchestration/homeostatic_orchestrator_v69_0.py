@@ -4,7 +4,7 @@ import numpy as np
 from typing import Dict, Any, List
 
 from agentic_core.orchestration.swarm_organism_v67_0 import SwarmOrganismV67_0
-from agentic_core.genetic_immune.genome.synthetic_genome import SyntheticGenome
+from agentic_core.genome.synthetic_genome import SyntheticGenome
 from agentic_core.cellular_lines.cellular_automaton import CellularAutomaton
 from agentic_core.pathways.metabolism import MetabolicPathway, EnergyChargeMonitor
 from agentic_core.p53.genomic_integrity import P53Oscillator, GenomicIntegrity
