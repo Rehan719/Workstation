@@ -1,8 +1,8 @@
 import logging
 import numpy as np
 from typing import List, Dict, Any
-from agentic_core.genome.polyploid import PolyploidGenome
-from agentic_core.genome.chromosome import Chromosome
+from agentic_core.genetic_immune.genome.polyploid import PolyploidGenome
+from agentic_core.genetic_immune.genome.chromosome import Chromosome
 
 logger = logging.getLogger(__name__)
 

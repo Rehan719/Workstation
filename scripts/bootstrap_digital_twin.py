@@ -1,11 +1,8 @@
 import sys
-import os
-import asyncio
-import logging
 import unittest.mock
 from unittest.mock import MagicMock
 
-# 1. Setup Mock Torch correctly for environments without it
+# 1. Setup Mock Torch correctly for SciPy compatibility
 class MockTorchTensor:
     pass
 
@@ -13,15 +10,14 @@ mock_torch = MagicMock()
 mock_torch.Tensor = MockTorchTensor
 sys.modules['torch'] = mock_torch
 
-# Other mocks for heavyweight dependencies
+# Other mocks
 sys.modules['shap'] = MagicMock()
 sys.modules['qiskit'] = MagicMock()
 sys.modules['web3'] = MagicMock()
 sys.modules['ot'] = MagicMock()
 
-# Ensure we can import from the root
-sys.path.append(os.getcwd())
-
+import asyncio
+import logging
 from agentic_core.simulations.digital_twin_controller import DigitalTwinController
 from agentic_core.biomimicry.geospheric.digital_twin_orchestrator import DigitalTwinOrchestrator
 from agentic_core.mjm.self_reflection_engine import SelfReflectionEngine
@@ -42,8 +38,9 @@ async def main():
     validator.validate_thermal_operation = unittest.mock.AsyncMock()
 
     # Instantiate Orchestrator and Engines
-    mjm_model = MJMRecursiveLearner()
-
+    mock_inner_mjm = MagicMock()
+    mock_inner_mjm.jaiza = unittest.mock.AsyncMock(return_value={})
+    mjm_model = MJMRecursiveLearner(orchestrator=mock_inner_mjm, learner=MagicMock())
     orchestrator = DigitalTwinOrchestrator(
         validator=validator,
         mjm_model=mjm_model,
@@ -61,8 +58,7 @@ async def main():
         reflection_engine=reflection_engine
     )
 
-    # Execute Twin Step: SENSE -> SIMULATE -> REFLECT -> EVOLVE
-    logger.info("Executing bootstrap step...")
+    # Execute Twin Step
     result = await c.step()
 
     # Output Results
@@ -77,11 +73,6 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        # Check for fix_genome_symlink before running
-        if not os.path.exists("agentic_core/genome/chromosome.py"):
-            print("ERROR: Genome path not found. Please run 'python scripts/fix_genome_symlink.py' first.")
-            sys.exit(1)
-
         asyncio.run(main())
     except Exception as e:
         logger.error(f"Bootstrap Failed: {e}", exc_info=True)

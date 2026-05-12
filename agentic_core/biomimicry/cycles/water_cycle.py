@@ -1,54 +1,54 @@
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
-import math
 from datetime import datetime
-from agentic_core.biomimicry.cycles.utils import constitutional_guard
-from .base_cycle import CycleController
 
-class HydrologicManager(CycleController):
+class PIDController:
+    def __init__(self, setpoint: float, kp: float, ki: float, kd: float):
+        self.setpoint = setpoint
+        self.kp, self.ki, self.kd = kp, ki, kd
+        self._integral = 0.0
+        self._last_error = 0.0
+
+    def compute(self, error: float, dt: float = 1.0) -> float:
+        self._integral += error * dt
+        derivative = (error - self._last_error) / dt if dt > 0 else 0
+        self._last_error = error
+        return self.kp * error + self.ki * self._integral + self.kd * derivative
+
+class HydrologicManager:
     def __init__(self, cooling_system, ueg, validator):
-        super().__init__("water", 75.0, ueg)
+        self.pid = PIDController(setpoint=75.0, kp=1.2, ki=0.1, kd=0.5)
         self.cooling = cooling_system
+        self.ueg = ueg
         self.validator = validator
-        self.reservoirs = {
-            "ocean": 97.0,
-            "atmosphere": 0.001,
-            "ice": 2.0,
-            "groundwater": 0.6,
-            "surface": 0.3
-        }
+        self.reservoirs = {"ocean": 97.0, "atmosphere": 0.001, "ice": 2.0, "groundwater": 0.6, "surface": 0.3}
         self.efficiency = 0.85
 
-    @constitutional_guard
     async def evaporate(self, heat_load: float) -> float:
-        if self.validator:
+        if hasattr(self.validator, "validate_thermal_operation"):
             await self.validator.validate_thermal_operation(heat_load)
-        evap = min(heat_load, getattr(self.cooling, "max_evaporation_rate", 100.0))
+        evap = min(heat_load, 100.0) # Simulated max rate
         self.reservoirs["atmosphere"] += evap
         self.reservoirs["ocean"] -= evap * 0.01
-        await self.ueg.log_minimisation_event("water_evaporation", {
-            "evaporation_rate": evap,
-            "atmospheric_moisture": self.reservoirs["atmosphere"]
-        })
+        if self.ueg:
+            await self.ueg.log_event("water_evaporation", {"evaporation_rate": evap})
         return evap * self.efficiency
 
-    @constitutional_guard
     async def condense(self) -> float:
         condensable = self.reservoirs["atmosphere"]
-        reclaimed = condensable * getattr(self.cooling, "condensation_efficiency", 0.9)
+        reclaimed = condensable * 0.9 # Simulated efficiency
         self.reservoirs["ocean"] += reclaimed
         self.reservoirs["atmosphere"] -= condensable
-        await self.ueg.log_minimisation_event("water_condensation", {
-            "reclaimed_energy": reclaimed,
-            "ocean_level": self.reservoirs["ocean"]
-        })
+        if self.ueg:
+            await self.ueg.log_event("water_condensation", {"reclaimed_energy": reclaimed})
         return reclaimed
 
     async def regulate_homeostasis(self, current_temp: float) -> float:
-        correction = await self.regulate(current_temp)
-        if self.cooling:
-            self.cooling.apply_correction(correction)
+        error = self.pid.setpoint - current_temp
+        correction = self.pid.compute(error)
+        if abs(error) > self.pid.setpoint * 0.05:
+            if self.ueg:
+                await self.ueg.log_event("homeostasis_deviation", {"current_temp": current_temp, "setpoint": self.pid.setpoint})
         return correction
 
-    async def validate(self, system_state):
-        return type('Decision', (), {'approved': True})()
+    async def get_state(self):
+        return {"reservoirs": self.reservoirs, "setpoint": self.pid.setpoint}
