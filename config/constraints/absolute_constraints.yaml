@@ -1,0 +1,9 @@
+self_reflection_mandate:
+  description: "System must run a digital twin that continuously simulates and critiques its own behaviour."
+  enforcement: "CI checks for twin sync errors; fail if twin fails to run for >5 minutes."
+  action_on_violation: "trigger_self_repair_audit"
+
+transparent_self_modification:
+  description: "All self-generated patches must be logged to UEG and approved by Regulator before live deployment."
+  enforcement: "Reconfigulator must not apply patches without UEG signature and MultiSigCouncil vote (simulated)."
+  action_on_violation: "reject_patch_escalate"

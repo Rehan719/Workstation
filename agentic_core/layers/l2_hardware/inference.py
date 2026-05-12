@@ -7,9 +7,11 @@ from agentic_core.layers.ueg import ueg
 class CL1Backend(ABC):
     @abstractmethod
     def create_stim_plan(self, pattern: List[int]) -> bool:
+        pass
 
     @abstractmethod
     def record_spikes(self, duration_ms: int) -> List[Dict[str, Any]]:
+        pass
 
 class CL1Production(CL1Backend):
     """
@@ -22,10 +24,12 @@ class CL1Production(CL1Backend):
         self.latency_ms = 4.5
 
     def create_stim_plan(self, pattern: List[int]) -> bool:
+        pass
         print(f"CL1 Production: Stimulating biological units via {self.endpoint}.")
         return True
 
     def record_spikes(self, duration_ms: int) -> List[Dict[str, Any]]:
+        pass
         # Simulation: 25kHz high-fidelity spike train data
         return [{"unit": i % 4, "t": time.time()} for i in range(100)]
 

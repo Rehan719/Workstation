@@ -1,29 +1,34 @@
-# Workstation vΩ∞-GEOSPHERIC-FINAL
+# 🧬 Workstation vΩ∞-SELF-REFLECTIVE
 
 بِسْمِ اللَّهِ وَعَلَى بَرَكَةِ اللَّهِ
 
-Workstation is a transcendent digital organism and sovereign SaaS platform. It integrates a 12-layer biomimetic AI core with geospheric resource orchestration, optimized for Google Cloud's free tier and Stripe-powered scaling.
+Workstation is now its own **internal model self-reflection simulation**. It maintains a self-aware digital twin that continuously simulates, reflects upon, enhances, repairs, and defends its own constitution.
 
-## 🧬 Core Architecture
-- **Canonical Logic:** Consolidated within `agentic_core/`.
-- **Geospheric Homeostasis:** 6-cycle Lyapunov-stable resource management.
-- **Sovereign Governance:** GaaS v4 constitutional enforcement and UEG Merkle-DAG logging.
-- **Urdu Cognitive Engines:** High-fidelity Urdu-centric reasoning.
+## 🎯 Core Capabilities
+- **Self-Reflection:** Models state and critiquies decisions against constitutional constraints.
+- **Digital Twin:** Sandboxed parallel environment for safe experimentation.
+- **Self-Repair:** Autonomously generates and applies patches via the Reconfigulator.
+- **Self-Defence:** Scans for internal/external threats and triggers immune responses.
+- **Geospheric Homeostasis:** 6 biogeochemical cycles maintained within ±5% tolerance.
 
-## 💳 SaaS & Scaling
-- **Stripe Integration:** Automatic 30-day trials and idempotent webhook processing.
-- **Atomic Quotas:** High-concurrency safe usage metering.
-- **Free for Personal Use:** Pre-configured for GCP free-tier quotas.
+## 🧬 Architecture
+Integration of 12-layer IDBO and 6-layer constitutional stack with Fractal Recirculation v2.0.
 
 ## 🚀 Quick Start
 ```bash
+# Setup environment (Windows/Linux)
+python scripts/post_clone_setup.py
+
+# Bootstrap Digital Twin
+python scripts/bootstrap_digital_twin.py
+
 # Deploy to Google Cloud (Free Tier)
-./agentic_core/scripts/deploy_free_tier.sh <your-project-id>
+./scripts/deploy_free_tier.sh workstation-prod-001
 ```
 
 ## 🛡️ Certification
-Verified with **Zero-Placeholder Certification**. 100% concrete production logic.
-See [docs/releases/certification_vΩ∞-GEOSPHERIC-FINAL.md](docs/releases/certification_vΩ∞-GEOSPHERIC-FINAL.md).
+Verified with **Zero-Placeholder Certification**.
+See [docs/CERTIFICATION.md](docs/CERTIFICATION.md).
 
 ---
 *Developed by JULES, AI CEO.*
