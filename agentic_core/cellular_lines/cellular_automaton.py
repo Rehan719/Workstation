@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, List, Any
-from agentic_core.genome.synthetic_genome import SyntheticGenome
+from agentic_core.genetic_immune.genome.synthetic_genome import SyntheticGenome
 
 logger = logging.getLogger(__name__)
 

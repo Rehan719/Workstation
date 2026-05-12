@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 # Base directory (repository root)
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Data directories
 DATA_DIR = BASE_DIR / "data"
