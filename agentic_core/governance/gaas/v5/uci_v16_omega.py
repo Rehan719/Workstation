@@ -1,103 +1,88 @@
 import asyncio
 import time
-import logging
 from typing import Dict, Any, List, Optional, Callable
 from agentic_core.ueg.logger import VSBUEGLogger
-
-# vΩ∞-CONVERGED Canonical Components
 from agentic_core.change_control.reconfigulator import Reconfigulator as ReconfigulatorV140
 from agentic_core.change_control.regulator import Regulator as RegulatorV140
-from agentic_core.genetic_immune.immune_system import ImmuneSystem
-from agentic_core.mjm.twin_learner import MJMRecursiveLearner
-from agentic_core.mjm.self_reflection_engine import SelfReflectionEngine
+from agentic_core.defense.v2.immune_v140 import ImmuneDefenseV140
+from agentic_core.legal.v2.precision_engine_v2 import LegalPrecisionEngineV2
+from agentic_core.cognitive.v2.meta_cognition_v2 import MetaCognitionEngineV2
+from agentic_core.cognitive.v2.cascade_controller_v2 import BiomimeticCascadeControllerV2
 from agentic_core.divine.v2.alignment_v2 import DivineAlignmentEngineV2
 from agentic_core.governance.gaas.v5.hallucination_sandbox import HallucinationSandbox
 from agentic_core.architecture.enriched_layers import EnrichedArchitecturalLayerManager
-from agentic_core.products.signature_suite.core import SignatureProductSuite
-
-logger = logging.getLogger(__name__)
 
 class UnifiedConstitutionalInterceptorV16Omega:
     """
-    Ultimate UCI v16.Omega - Definitive Convergence.
-    Enforces all architectural pillars: geospheric homeostasis, divine alignment,
-    digital twin simulation, and signature suite integrity.
+    Ultimate UCI v16.0.
+    Single middleware for all agentic traffic, integrating all v140 and v139 subsystems.
+    Enforces JULES v∞-FINAL Enriched Architectural Layers and Geospheric Homeostasis.
     """
-    def __init__(self, node_id: str = "MASTER_UCI_001", ueg_logger: Optional[Any] = None):
+    def __init__(self, node_id: str, ueg_logger: Optional[Any] = None):
         self.node_id = node_id
         self.ueg = ueg_logger or VSBUEGLogger()
         self.reconfigulator = ReconfigulatorV140(self.ueg)
         self.regulator = RegulatorV140(self.ueg)
-        self.immune = ImmuneSystem()
-        self.mjm = MJMRecursiveLearner()
-        self.reflection = SelfReflectionEngine()
+        self.immune = ImmuneDefenseV140(self.ueg)
+        self.legal = LegalPrecisionEngineV2(self.ueg)
+        self.meta = MetaCognitionEngineV2(node_id, self.ueg)
+        self.cascade = BiomimeticCascadeControllerV2(self.ueg)
         self.divine = DivineAlignmentEngineV2(self.ueg)
         self.hallucination = HallucinationSandbox(self.ueg)
         self.layers = EnrichedArchitecturalLayerManager(self.ueg)
-        self.signature_suite = SignatureProductSuite(self.ueg)
 
     async def intercept(self, context: Dict[str, Any], action: Callable) -> Dict[str, Any]:
-        """
-        Ultimate definitive interception flow.
-        """
-        # 1. Divine Alignment Gate (ARTICLE 1127 compliance)
-        alignment = await self.divine.calibrate_niyyah(
-            context.get("intent", "unspecified"),
-            context.get("ethical_framework", "islamic_khayr")
-        )
-        if not alignment.get("passed", False):
-            await self.ueg.log_minimisation_event("uci_v16_halt", {"reason": "niyyah_violation"})
-            raise PermissionError("UCI v16: Divine Alignment (Niyyah) threshold not met.")
+        # 0. Divine Alignment (Niyyah)
+        alignment = await self.divine.calibrate_niyyah(context.get("intent", ""), context.get("ethical_framework", "islamic_khayr"))
+        if not alignment["passed"]:
+            await self.ueg.log_minimisation_event("uci_v16_halt", {"reason": "Niyyah calibration failed"})
+            raise ValueError("UCI v16: Niyyah calibration failed")
 
-        # 2. Geospheric Homeostasis Validation (±5% tolerance)
-        geo_inputs = context.get("geospheric", {})
-        geo_res = await self.layers.geospheric_homeostasis(geo_inputs, context)
-        if geo_res.get("status") == "CONSTITUTIONAL_VIOLATION":
-            raise PermissionError("UCI v16: Geospheric Homeostasis Violation")
+        # 1. Geospheric Homeostasis Step (Layer 5)
+        geo_inputs = context.get("geospheric_inputs", {})
+        geo_context = {
+            "intent": context.get("intent", "action"),
+            "system_metrics": context.get("metrics", {}),
+            "legal_compliance": 1.0, # Assumed for pre-check
+            "closed_loop_waste": 0.0,
+            "biomimetic_fidelity": context.get("fidelity", 1.0),
+            "genetic_integrity": 1.0
+        }
+        geo_res = await self.layers.geospheric_homeostasis(geo_inputs, geo_context)
+        if geo_res["status"] == "CONSTITUTIONAL_VIOLATION" or geo_res["psi_score"] == float('-inf'):
+             raise PermissionError(f"UCI v16: Geospheric Homeostasis Violation - PSI: {geo_res['psi_score']}")
 
-        # 3. Digital Twin Predictive Simulation
-        prediction = await self.mjm.predict_next(context.get("state", {}), {"intent": context.get("intent")})
-        if prediction.get("confidence", 0) < 0.85:
-            await self.ueg.log_minimisation_event("uci_warning", {"low_sim_confidence": prediction})
-            if context.get("critical"):
-                raise PermissionError("UCI v16: Simulation confidence insufficient for critical path execution.")
+        # 2. Meta-Cognitive Introspection
+        await self.meta.introspect(context)
 
-        # 4. Immune Defense Scan (VDJ logic)
-        threats = await self.immune.scan_threats(self)
-        for threat in threats:
-            if threat["data"].get("risk_score", 0) > 0.8:
-                await self.layers.immune_resilience(threat)
-                raise PermissionError(f"UCI v16: Immune Defense blocked {threat['source']}")
+        # 3. Immune Defence Scan (Layer 3)
+        if await self.immune.scan_and_eliminate(context.get("activity", {})):
+             await self.layers.immune_resilience(context.get("activity"))
+             raise PermissionError("UCI v16: Immune defence blocked threat")
 
-        # 5. High-Fidelity Execution
+        # 4. Legal Precision Gate
+        if "jurisdiction" in context:
+             legal_res = await self.legal.validate_jurisdiction(context["jurisdiction"], context.get("payload", {}))
+             if not legal_res["passed"]: raise ValueError("UCI v16: Legal precision violation")
+
+        # 5. Execution
         start_ts = time.time()
         try:
-            # Convergence: Support signature tech and standard agent actions
-            if context.get("requires_signature_tech"):
-                output = await self.signature_suite.execute_capability(context.get("tech_id"), context.get("payload", {}))
-            else:
-                output = await action()
+            output = await action()
         except Exception as e:
-            logger.error(f"Definitive execution failed: {e}. Initiating Self-Healing.")
-            output = await self.regulator.repair_tier({"error": str(e), "context": context}, tier="HDR")
-            await self.ueg.log_minimisation_event("uci_self_healing", {"error": str(e)})
+            output = await self.regulator.repair_tier({"error": str(e)}, tier="HDR")
 
         latency = (time.time() - start_ts) * 1000
 
-        # 6. Hallucination Sandbox & Critique
+        # 6. Hallucination Sandbox
         if isinstance(output, str):
             h_res = await self.hallucination.validate_output(output, context)
             if not h_res["passed"]:
-                output = await self.hallucination.regenerate_with_citations(output)
+                 output = await self.hallucination.regenerate_with_citations(output)
 
-        # 7. Reconfigulator Registry
+        # 7. Reconfigulator Logging & Symbiotic Civilisation (Layer 4)
         await self.reconfigulator.replicate(str(output))
+        await self.layers.symbiotic_civilisation({"output_hash": hash(str(output)), "node": self.node_id})
 
-        await self.ueg.log_minimisation_event("uci_v16_converged_complete", {
-            "latency_ms": latency,
-            "sincerity": alignment.get("sincerity", 0.0),
-            "psi": geo_res.get("psi_score", 1.0),
-            "node": self.node_id
-        })
-
+        await self.ueg.log_minimisation_event("uci_v16_action_completed", {"latency_ms": latency, "psi_score": geo_res["psi_score"]})
         return {"status": "success", "result": output, "node": self.node_id}

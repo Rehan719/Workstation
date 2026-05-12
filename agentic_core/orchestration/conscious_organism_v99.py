@@ -25,9 +25,9 @@ from agentic_core.evolution.prompt_evolver import RecursivePromptEvolver
 from agentic_core.ui.granularity_controller import GranularityController
 
 # v99 Genomic Evolution Modules
-from agentic_core.genetic_immune.genome.chromosome import Chromosome
-from agentic_core.genetic_immune.genome.gene import Gene, GeneType
-from agentic_core.genetic_immune.genome.epigenetics import EpigeneticMemory
+from agentic_core.genome.chromosome import Chromosome
+from agentic_core.genome.gene import Gene, GeneType
+from agentic_core.genome.epigenetics import EpigeneticMemory
 from agentic_core.evolution.evolution_engine import GenomeEvolutionEngine
 from agentic_core.evolution.assimilation.executor import AssimilationExecutor
 from agentic_core.evolution.assimilation.evaluator import AssimilationEvaluator

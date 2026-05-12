@@ -1,7 +1,7 @@
 import logging
 import random
 from typing import Dict, Any
-from agentic_core.genetic_immune.genome.decoder import GenomeDecoder
+from agentic_core.genome.decoder import GenomeDecoder
 
 logger = logging.getLogger(__name__)
 

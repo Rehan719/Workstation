@@ -1,7 +1,7 @@
 import logging
 import random
 from typing import List, Optional
-from agentic_core.genetic_immune.genome.chromosome import Chromosome
+from agentic_core.genome.chromosome import Chromosome
 
 logger = logging.getLogger(__name__)
 

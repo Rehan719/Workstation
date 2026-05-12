@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, List
-from agentic_core.genetic_immune.genome.chromosome import Chromosome
+from agentic_core.genome.chromosome import Chromosome
 
 logger = logging.getLogger(__name__)
 

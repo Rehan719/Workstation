@@ -158,7 +158,8 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 await connection.send_json(vitals)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Broadcast failed: {e}")
 
 ws_manager = ConnectionManager()
 

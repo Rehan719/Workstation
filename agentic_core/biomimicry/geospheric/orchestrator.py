@@ -7,7 +7,7 @@ from agentic_core.biomimicry.cycles.nitrogen_cycle import NitrogenFixationDaemon
 from agentic_core.biomimicry.cycles.oxygen_cycle import MetabolicScheduler
 from agentic_core.biomimicry.cycles.phosphorus_cycle import PhosphorusMemoryManager
 from agentic_core.biomimicry.cycles.sulfur_cycle import SulfurErrorManager
-from .psi_functional import EcosystemHealthObjective
+from agentic_core.biomimicry.cycles.psi_functional import EcosystemHealthObjective
 from .master_coordinator import ControlDecision
 
 logger = logging.getLogger(__name__)
