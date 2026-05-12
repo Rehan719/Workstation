@@ -36,23 +36,29 @@ class OctoOmnimediaGenerator(ABC):
     @abstractmethod
     def generate_infographic(self, data: Dict[str, Any]) -> MultimediaAsset:
         """Generates a domain-specific infographic."""
+        return MultimediaAsset(name="error", asset_type="error", content=b"Not implemented")
 
     @abstractmethod
     def generate_video(self, data: Dict[str, Any]) -> MultimediaAsset:
         """Generates a domain-specific explainer video."""
+        return MultimediaAsset(name="error", asset_type="error", content=b"Not implemented")
 
     @abstractmethod
     def generate_audio(self, data: Dict[str, Any]) -> MultimediaAsset:
         """Generates a domain-specific audio recitation or narration."""
+        return MultimediaAsset(name="error", asset_type="error", content=b"Not implemented")
 
     @abstractmethod
     def generate_digital_twin(self, data: Dict[str, Any]) -> MultimediaAsset:
         """Generates a domain-specific digital twin model."""
+        return MultimediaAsset(name="error", asset_type="error", content=b"Not implemented")
 
     @abstractmethod
     def generate_document(self, data: Dict[str, Any], format: OutputFormat) -> MultimediaAsset:
         """Generates a domain-specific structured document."""
+        return MultimediaAsset(name="error", asset_type="error", content=b"Not implemented")
 
     @abstractmethod
     def generate_dashboard(self, data: Dict[str, Any]) -> MultimediaAsset:
         """Generates a domain-specific interactive dashboard component."""
+        return MultimediaAsset(name="error", asset_type="error", content=b"Not implemented")

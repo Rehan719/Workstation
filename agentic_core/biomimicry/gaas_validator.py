@@ -29,7 +29,7 @@ class GaaSValidator:
         with open(self.constitution_path, 'r') as f:
             content = f.read()
 
-        # Updated Regex to find "**ARTICLE XXX: TITLE**" and its serves line
+        # Updated Regex to find "**ARTICLE NUM: TITLE**" and its serves line
         matches = re.finditer(r"\*\*ARTICLE (\d+): (.*?)\*\*\n(.*?)\*Serves: (.*?)\*", content, re.DOTALL)
         for match in matches:
             articles.append({
