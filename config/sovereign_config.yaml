@@ -44,3 +44,13 @@ phase9:
   eternal_immutability_enabled: true
   immutable_genome_path: "config/immutable_genome.yaml"
   appeal_window_days: 7
+
+# vΩ∞-OMNISYNTHESIS-SUPREME Feature Flags
+feature_flags:
+  supreme_enforcement_pattern: true
+  migrate_legacy_patterns: false
+  gemma4_emulation: true
+  stripe_mock_mode: true
+  autonomous_support_enabled: true
+  biofoundry_bridge_enabled: true
+  swf_module_enabled: true

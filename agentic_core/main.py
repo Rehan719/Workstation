@@ -159,6 +159,7 @@ class ConnectionManager:
             try:
                 await connection.send_json(vitals)
             except Exception as e:
+                print(f"Error broadcasting vitals: {e}")
                 logger.debug(f"Broadcast failed: {e}")
 
 ws_manager = ConnectionManager()
