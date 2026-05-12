@@ -1,6 +1,6 @@
 import logging
 from typing import List, Dict, Any
-from agentic_core.genetic_immune.genome.chromosome import Chromosome
+from agentic_core.genome.chromosome import Chromosome
 from .evaluator import AssimilationEvaluator
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,5 @@
 import hashlib
 import json
-import numpy as np
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional

@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Optional
 import random
 import uuid
 from agentic_core.reactor.ecosystem.base import SpecializedReactor
-from agentic_core.orchestrator.symbiosis.connectors import AlQuranCloudConnector
+from agentic_core.orchestration.symbiosis.connectors import AlQuranCloudConnector
 
 logger = logging.getLogger(__name__)
 

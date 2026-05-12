@@ -2,32 +2,22 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: workstation-api
+  annotations:
+    autoscaling.knative.dev/minScale: "0"
+    autoscaling.knative.dev/maxScale: "5"
 spec:
   template:
-    metadata:
-      annotations:
-        # Scale to zero when idle for free-tier optimization
-        autoscaling.knative.dev/minScale: "0"
-        autoscaling.knative.dev/maxScale: "5"
     spec:
       containers:
       - image: gcr.io/${PROJECT_ID}/workstation-api:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: STRIPE_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: stripe-secret
-              key: key
-        - name: STRIPE_WEBHOOK_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: stripe-webhook-secret
-              key: key
-        - name: GOOGLE_CLOUD_PROJECT
-          value: "${PROJECT_ID}"
         resources:
           limits:
             cpu: 1000m
             memory: 512Mi
+        env:
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef: { name: stripe-secret, key: key }
+        - name: STRIPE_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef: { name: stripe-webhook-secret, key: key }

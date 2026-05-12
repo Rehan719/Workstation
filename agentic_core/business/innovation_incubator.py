@@ -1,8 +1,8 @@
 import logging
 import uuid
 from typing import Dict, Any, List
-from agentic_core.genetic_immune.genome.chromosome import Chromosome
-from agentic_core.genetic_immune.genome.gene import Gene, GeneType
+from agentic_core.genome.chromosome import Chromosome
+from agentic_core.genome.gene import Gene, GeneType
 
 logger = logging.getLogger(__name__)
 
