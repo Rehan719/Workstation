@@ -4,11 +4,11 @@ from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-class BERRepairT1:
+class BaseExcisionRepairT1:
     def repair(self, target: str):
         return f"BER repair on {target}"
 
-class MMRRepairT2:
+class MismatchRepairT2:
     def repair(self, target: str):
         return f"MMR repair on {target}"
 
@@ -26,8 +26,8 @@ class ResilienceManagerL5:
     Implements BER, MMR, NER, and HDR strategies.
     """
     def __init__(self):
-        self.t1 = BERRepairT1()
-        self.t2 = MMRRepairT2()
+        self.t1 = BaseExcisionRepairT1()
+        self.t2 = MismatchRepairT2()
         self.t3 = NucleotideExcisionRepairT3()
         self.t4 = HomologyDirectedRepairT4()
         self.repair_history: List[Dict[str, Any]] = []
@@ -89,3 +89,7 @@ class ResilienceManagerL5:
         return True
 
 resilience_manager = ResilienceManagerL5()
+
+# Supreme naming aliases
+BERRepairT1 = BaseExcisionRepairT1
+MMRRepairT2 = MismatchRepairT2

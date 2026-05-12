@@ -1,0 +1,5 @@
+rules:
+  - id: "EU_AI_ACT_ART5"
+    statute: "AI Act"
+    section: "Article 5"
+    text: "Prohibited AI practices."
