@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-05-12T21:11:39.647486+00:00",
+  "phase": "2",
+  "all_passed": true,
+  "metrics": {
+    "csl_identifiability_latency_ms": {
+      "mean": 79.1,
+      "ci_lower": 75.27806258118378,
+      "ci_upper": 82.92193741881621,
+      "power": 0.81,
+      "effect_size": -4.1234832426190815,
+      "passed": true,
+      "target": 100.0
+    },
+    "csl_identifiability_rate": {
+      "mean": 1.0,
+      "ci_lower": 1.0,
+      "ci_upper": 1.0,
+      "power": 0.805,
+      "effect_size": 50000.000000000044,
+      "passed": true,
+      "target": 0.95
+    },
+    "tfel_compliance_rate": {
+      "mean": 0.982,
+      "ci_lower": 0.9716114936631643,
+      "ci_upper": 0.9923885063368356,
+      "power": 0.805,
+      "effect_size": 4.27617987059879,
+      "passed": true,
+      "target": 0.95
+    },
+    "legal_coverage_ratio": {
+      "mean": 1.0,
+      "ci_lower": 1.0,
+      "ci_upper": 1.0,
+      "power": 0.805,
+      "effect_size": 0.0,
+      "passed": true,
+      "target": 1.0
+    }
+  }
+}

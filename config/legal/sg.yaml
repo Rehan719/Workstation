@@ -1,0 +1,5 @@
+rules:
+  - id: "SG_PDPA"
+    statute: "PDPA"
+    section: "General"
+    text: "Data protection rules."

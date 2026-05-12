@@ -1,0 +1,9 @@
+rules:
+  - id: "UK_EQA_S13"
+    statute: "Equality Act 2010"
+    section: "s.13"
+    text: "Direct discrimination prohibited."
+  - id: "UK_GDPR"
+    statute: "DPA 2018"
+    section: "General"
+    text: "Personal data protection."
