@@ -1,0 +1,21 @@
+# Workstation vΩ∞-CAPITAL-FUND Production Deployment Configuration
+service:
+  name: workstation-capital-prod
+  cloud_run:
+    regions: [us-central1, europe-west1]   # active‑passive failover
+    min_instances: 0
+    max_instances: 10
+    memory: 512Mi
+    cpu: 1
+    concurrency: 80
+  database:
+    firestore:
+      replica: true
+      read_replicas: [eur3, us-central1]
+  monitoring:
+    alerts:
+      - cost_anomaly_threshold: 0.10   # 10% unexpected increase
+      - write_quota_alert: 18000       # 18k/day threshold (90% of free tier)
+    dashboards:
+      - capital_health_psi
+      - audit_trail_integrity

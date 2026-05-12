@@ -1,0 +1,46 @@
+# Workstation vΩ∞-CAPITAL-FUND Phase 4 Configuration
+# All Phase 4 capabilities are feature-flagged and default to false.
+
+multi_tenant_enabled: false
+full_autonomy_default: false
+institutional_feeds_enabled: false
+defi_integration_enabled: false
+mobile_app_enabled: false
+formal_verification_ci: false
+
+# Phase 4 Risk Parameters
+max_investor_pro_rata_rights: 0.49  # Owner must retain majority (51%+)
+autonomous_risk_tolerance_limit: 0.35 # Absolute ceiling for any auto-action
+institutional_api_rate_limit_rpm: 60
+onchain_audit_anchor_network: "polygon_mumbai"
+
+# Phase 5 Production Release Configuration
+production_mode: true
+full_autonomy_enabled_default: false  # owner must opt‑in
+multisig_mainnet_address: "0x32A3E090F8e87498c56e30D723B64654929D3d37"
+mesh_enabled: false
+council_dashboard_enabled: true
+federation_treaty_id: "treaty_v1_global"
+
+# Phase 6 / Omega Sovereign Civilization Configuration
+federation_mesh_enabled: true
+edge_sovereignty_active: true
+mainnet_settlement_active: false # Requires explicit owner unlock
+dao_governance_enabled: true
+regulatory_api_v1_enabled: true
+libp2p_mainnet_bootstrap: ["/dnsaddr/seed1.workstation.mesh", "/dnsaddr/seed2.workstation.mesh"]
+differential_privacy_epsilon: 0.1
+veto_timeout_ms: 200
+pqc_agile_mode: "STRICT"
+# Phase 9: Eternal Vigilance & Final Epoch
+phase9:
+  ai_judge_enabled: false
+  precedent_registry_enabled: true
+  bug_bounty_enabled: false
+  disaster_recovery_enabled: true
+  defi_yield_aggregator_enabled: false
+  pq_ledger_bridge_enabled: false
+  pq_simulator_enabled: true
+  eternal_immutability_enabled: true
+  immutable_genome_path: "config/immutable_genome.yaml"
+  appeal_window_days: 7

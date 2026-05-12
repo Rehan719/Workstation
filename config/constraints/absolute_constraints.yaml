@@ -7,3 +7,66 @@ transparent_self_modification:
   description: "All self-generated patches must be logged to UEG and approved by Regulator before live deployment."
   enforcement: "Reconfigulator must not apply patches without UEG signature and MultiSigCouncil vote (simulated)."
   action_on_violation: "reject_patch_escalate"
+  required_logs: ["GENETIC_MUTATION_PROPOSAL", "REGULATOR_DECISION", "UEG_MERKLE_PROOF"]
+
+predictive_integrity:
+  description: "Twin simulations must maintain ≥85% confidence on 1-hour horizon."
+  enforcement: "Validation suite fails if prediction confidence < 0.85 for 3 consecutive cycles."
+  action_on_violation: "degrade_to_rule_based_fallback"
+  fallback_mode: "constitutional_rule_engine_v3"
+
+mushawara_deliberation:
+  description: "All consultation outcomes require ≥3 cognitive engine perspectives + MJM meta‑validation before commitment."
+  enforcement: "PerspectiveAggregator + ConsensusTracker"
+  action_on_violation: "quarantine_redeliberate_log_to_ueg"
+
+stripe_monetization_trial:
+  description: "All commercial subscriptions must offer a 30-day free trial enforced via trial_end timestamp."
+  enforcement: "backend/stripe/subscriptions.py checkout logic"
+  action_on_violation: "reject_checkout_session"
+
+atomic_quota_management:
+  description: "Quota enforcement must be race-condition free using Firestore transactions."
+  enforcement: "backend/usage/meter.py logic"
+  action_on_violation: "block_operation_log_conflict"
+
+capital_governance:
+  article_1128:
+    text: "Deposits must pass AML/KYC verification via LegalPrecisionMinimiser"
+    enforcement: "GaaS v4 pre-transaction validation"
+    action_on_violation: "reject_deposit_log_to_ueg"
+
+  article_1129:
+    text: "Withdrawals >5% of total fund value require MultiSigCouncil approval (≥3/5 signatures)"
+    enforcement: "MultiSig protocol + UEG logging + UI confirmation"
+    action_on_violation: "block_withdrawal_require_approval"
+
+  article_1130:
+    text: "No single investment allocation may exceed 20% of total assets under management"
+    enforcement: "Real-time allocation monitoring via Hoshiyari anomaly detection"
+    action_on_violation: "auto_rebalance_log_to_ueg"
+
+  article_1131:
+    text: "Digital twin simulation must run weekly; predicted drawdown >25% triggers auto-rebalancing proposal"
+    enforcement: "Scheduled twin simulation + Reconfigulator mutation proposal"
+    action_on_violation: "propose_constitutional_amendment"
+
+  article_1132:
+    text: "All investment decisions require Mushāwara consultation (≥3 cognitive engines + MJM meta-validation)"
+    enforcement: "ConsultationOrchestrator pre-execution gate"
+    action_on_violation: "reject_investment_log_to_ueg"
+
+  article_1133:
+    text: "All financial actions must be logged to UEG Merkle-DAG with SHA-3-512 cryptographic integrity"
+    enforcement: "UEG logger mandatory for all capital events"
+    action_on_violation: "halt_transaction_escalate"
+
+  article_1134:
+    text: "Fund must maintain minimum liquidity reserve of 10% of total assets for immediate owner withdrawal"
+    enforcement: "Liquidity guard in CapitalVault.withdraw()"
+    action_on_violation: "block_withdrawal_log_to_ueg"
+
+  article_1135:
+    text: "Owner retains ultimate sovereignty; AI cannot withdraw funds without explicit human approval"
+    enforcement: "MultiSigHuman approval required for all withdrawals"
+    action_on_violation: "reject_unauthorised_withdrawal"

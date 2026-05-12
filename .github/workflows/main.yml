@@ -5,6 +5,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # 1. Zero-placeholder check
+      - name: Zero-placeholder check
+        run: |
+          # Enforce Zero-Placeholder mandate at AST-level/grep
+          # Exclude legitimate UI 'placeholder' attributes for input fields
+          if grep -rE "(TODO|FIXME|XXX|pass\s*$|NotImplementedError|unittest\.mock|STUB)" \
+            --include="*.py" --include="*.tsx" agentic_core/ agents/ backend/ products/capital_fund/; then
+            echo "❌ Placeholders found - twin DNA incomplete"
+            exit 1
+          fi
+
+      # 2. Sovereignty validation (no GCP SDK in core)
+      - name: Sovereignty validation
+        run: |
+          if grep -r "from google\.cloud\|import google\.cloud" \
+            --include="*.py" backend/ agentic_core/ products/capital_fund/core/; then
+            echo "❌ GCP SDK detected - sovereignty violated"
+            exit 1
+          fi
+
+      # 3. Environment Setup
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -19,3 +41,52 @@ jobs:
         run: ! grep -r "google\.cloud" --include="*.py" agentic_core/
       - name: Unit tests
         run: pytest tests/
+
+      - name: Install dependencies
+        run: |
+          pip install ruff bandit pytest pytest-asyncio numpy pyyaml pydantic cryptography PyJWT pandas scipy stripe firebase-admin torch ot
+
+      # 4. Lint & Audit
+      - name: Lint with ruff
+        run: ruff check backend/ agentic_core/
+
+      - name: Security audit with bandit
+        run: bandit -r backend/ agentic_core/
+
+      # 5. Run tests
+      - name: Run converged tests
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest tests/ -v --maxfail=3
+
+      # 6. Biomimetic fidelity validation
+      - name: Biomimetic fidelity validation
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          python3 scripts/validate_biomimetic_fidelity.py --threshold 0.90
+
+      # 7. Phase 4 & 5: Formal Verification & Certification
+      - name: Formal Verification & Certification
+        run: |
+          chmod +x tests/formal/run_verification.sh
+          ./tests/formal/run_verification.sh
+          export PYTHONPATH=$PYTHONPATH:.
+          python3 tests/formal/generate_certificate.py
+
+      # 8. Phase 5 & Ω: Production & Federation Gates
+      - name: Sovereign Civilization Validation
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest tests/capital_fund/unit/test_autonomy_tier3.py -v
+          pytest tests/capital_fund/unit/test_mesh_federation.py -v
+          pytest tests/capital_fund/unit/test_omega_mesh.py -v
+          pytest tests/capital_fund/unit/test_omega_edge.py -v
+          pytest tests/capital_fund/unit/test_omega_governance.py -v
+          pytest tests/capital_fund/unit/test_omega_institutional.py -v
+
+      # 9. Build & deploy (main only)
+      - name: Deploy to Cloud Run
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: |
+          echo "Simulating deployment..."
+          # gcloud run deploy workstation-api --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/workstation-api:latest

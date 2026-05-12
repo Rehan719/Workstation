@@ -33,6 +33,7 @@ import { OffspringManagement } from './pages/enterprise/OffspringManagement';
 import { TreatyDashboard } from './pages/enterprise/TreatyDashboard';
 import { SeedingInterface } from './pages/enterprise/SeedingInterface';
 import { InterstellarDiplomacy } from './pages/enterprise/InterstellarDiplomacy';
+import { CapitalDashboard } from './pages/enterprise/CapitalDashboard';
 import { GlobalFederationMap } from './pages/federation/GlobalFederationMap';
 import { OrbitalDashboard } from './pages/federation/OrbitalDashboard';
 import { CosmicMeshDashboard } from './pages/federation/CosmicMeshDashboard';
@@ -65,6 +66,8 @@ import FacilityControlRoom from './pages/domains/FacilityControlRoom';
 import QEPV9CommandCenter from './pages/domains/QEPV9CommandCenter';
 import HumanOversightQueue from './components/qep/scholar/HumanOversightQueue';
 import { IntrospectionDashboard } from './pages/IntrospectionDashboard';
+import CouncilJudiciary from './pages/council/Judiciary';
+import BugBountyPortal from './pages/security/BugBounty';
 import { ARVRSandbox } from './pages/platforms/ARVRSandbox';
 import { WearableSync } from './pages/platforms/WearableSync';
 import { EmbodimentStudio } from './pages/platforms/EmbodimentStudio';
@@ -134,6 +137,7 @@ function App() {
           <Route path="/diplomacy" element={<InterstellarDiplomacy />} />
           <Route path="/treaties" element={<TreatyDashboard />} />
           <Route path="/offspring" element={<OffspringManagement />} />
+          <Route path="/capital" element={<CapitalDashboard />} />
           <Route path="/vault" element={<CredentialsVault />} />
           <Route path="/forge" element={<Forge />} />
           <Route path="/visual-composer" element={<VisualAgentComposer />} />
@@ -175,7 +179,9 @@ function App() {
           <Route path="/qep/oversight" element={<HumanOversightQueue />} />
           <Route path="/constitution" element={<ConstitutionalUI />} />
           <Route path="/council" element={<CouncilInterface />} />
+          <Route path="/council/judiciary" element={<CouncilJudiciary />} />
           <Route path="/debate" element={<DebateLog />} />
+          <Route path="/security/bounty" element={<BugBountyPortal />} />
           <Route path="/marketplace" element={<LivingMarketplace />} />
           <Route path="/introspection" element={<IntrospectionDashboard />} />
           <Route path="/admin" element={<AdminPanel />} />
