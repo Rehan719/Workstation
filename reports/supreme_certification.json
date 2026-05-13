@@ -1,19 +1,19 @@
 {
-  "timestamp": "2026-05-13T16:59:58.091902+00:00",
+  "timestamp": "2026-05-13T19:12:35.855649+00:00",
   "version": "v\u03a9\u221e-OMNISYNTHESIS-SUPREME",
   "metrics": {
     "macro_recirculation": {
-      "mean": 0.020537535349527996,
+      "mean": 0.020715792973836262,
       "target": "<60s",
       "passed": true
     },
     "intend_ratify_latency": {
-      "mean": 18.988323211669922,
+      "mean": 18.906784057617188,
       "target": "<500ms",
       "passed": true
     },
     "mushawara_vrpr_latency": {
-      "mean": 7.060146331787109,
+      "mean": 7.800436019897461,
       "target": "<500ms",
       "passed": true
     },
@@ -38,7 +38,7 @@
       "passed": true
     },
     "oam_qkd_qber": {
-      "mean": 0.0025,
+      "mean": 0.0034,
       "target": "<5%",
       "passed": true
     },
@@ -63,7 +63,7 @@
       "passed": true
     },
     "cosmos_fidelity": {
-      "mean": 0.9327092288618536,
+      "mean": 0.9383567437935547,
       "target": "\u226590%",
       "passed": true
     },
@@ -80,6 +80,26 @@
     "improvement_rate": {
       "mean": 5.2,
       "target": "\u22655%",
+      "passed": true
+    },
+    "fcc_latency": {
+      "mean": 0.03758500679396093,
+      "target": "<1s",
+      "passed": true
+    },
+    "halo2_verify_latency": {
+      "mean": 0.6416480027837679,
+      "target": "<1ms",
+      "passed": true
+    },
+    "memory_mesh_atomicity": {
+      "mean": 1.0,
+      "target": "100%",
+      "passed": true
+    },
+    "ueg_query_latency": {
+      "mean": 0.0034829863579943776,
+      "target": "<500ms",
       "passed": true
     }
   },
