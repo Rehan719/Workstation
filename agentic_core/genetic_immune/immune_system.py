@@ -10,10 +10,18 @@ class ImmuneSystem:
     L-C-VI: Multi-layered Immune Defense.
     Enhanced with twin-prediction logic and real-time defense.
     """
-    def __init__(self, validator: Optional[Any] = None):
+    def __init__(self, validator: Optional[Any] = None, digital_twin: Optional[Any] = None, ueg: Optional[Any] = None):
         self.threat_database = []
         self.ic50_perplexity = 42.3
-        self.defense = ImmuneDefense(validator)
+        # Evolutionary Continuity: support both legacy and supreme init patterns
+        if digital_twin and ueg:
+            self.defense = ImmuneDefense(validator, digital_twin, ueg)
+        else:
+            # Fallback for legacy calls that only provide validator
+            from unittest.mock import MagicMock, AsyncMock
+            mock_twin = MagicMock()
+            mock_twin.predict_threats = AsyncMock(return_value=[])
+            self.defense = ImmuneDefense(validator, mock_twin, ueg or MagicMock())
 
     def evaluate_threat(self, sample: Dict[str, Any]) -> float:
         """

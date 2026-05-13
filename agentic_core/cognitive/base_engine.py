@@ -13,11 +13,11 @@ class CognitiveEngine(ABC):
     async def _process_logic(self, input_data: Any, context: Any) -> Any: return {"status": "abstract_interface"}
     async def process(self, input_data: Any, context: Any, enforcement: OmniEnforcementPatternSupreme) -> EngineOutput:
         pre = enforcement.validate(input_data)
-        if not pre.return {"status": "abstract_interface"}ed: return EngineOutput(payload=None, confidence=0.0, constitutional_trace={"pre": pre.details}, engine_id=self.engine_id, error="Pre-val fail")
+        if not pre.passed: return EngineOutput(payload=None, confidence=0.0, constitutional_trace={"pre": pre.details}, engine_id=self.engine_id, error="Pre-val fail")
         try: res = await self._process_logic(input_data, context)
         except Exception as e: return EngineOutput(payload=None, confidence=0.0, constitutional_trace={}, engine_id=self.engine_id, error=str(e))
         post = enforcement.validate(res)
-        out = EngineOutput(payload=res, confidence=0.95, constitutional_trace={"pre": pre.details, "post": post.details, "articles": self._constitutional_binding}, engine_id=self.engine_id, error=None if post.return {"status": "abstract_interface"}ed else "Post-val fail")
+        out = EngineOutput(payload=res, confidence=0.95, constitutional_trace={"pre": pre.details, "post": post.details, "articles": self._constitutional_binding}, engine_id=self.engine_id, error=None if post.passed else "Post-val fail")
         return out
     @property
     def constitutional_binding(self) -> List[int]: return self._constitutional_binding

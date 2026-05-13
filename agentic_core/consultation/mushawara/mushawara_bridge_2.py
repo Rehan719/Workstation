@@ -14,6 +14,18 @@ class MushawaraBridge2:
         self.ueg, self.registry = ueg, registry or CognitiveEngineRegistry()
         self.agg = PerspectiveAggregator(None)
         self.enf = OmniEnforcementPatternSupreme({"fail_on_missing_validator": False}, {"task": "mushawara"})
+    async def consult(self, task: Dict[str, Any], mode: str = "sync") -> Dict[str, Any]:
+        """Backward compatible consult API."""
+        query = ConsultationQuery(
+            id=task.get("id", "q1"),
+            query=task.get("task", "Analyze proposal"),
+            domain=task.get("domain", "general"),
+            context=task.get("context", {})
+        )
+        # Default to foundational engines for Phase 4
+        engines = [EngineType.INKASHAF, EngineType.AQAL, EngineType.SAMAJH]
+        return await self.deliberate(query, engines, mode=mode)
+
     async def deliberate(self, query, engines, mode="sync"):
         start = time.time()
         if mode == "sync": ps = await asyncio.gather(*[self._get_p(query, e) for e in engines])
