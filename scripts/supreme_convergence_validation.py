@@ -285,13 +285,48 @@ async def validate_supreme_convergence():
         "passed": bool(query_latency < 500)
     }
 
+    # 21. Empirical Topology β₁ Spike Containment (100%)
+    from agentic_core.topology.defense import TopologyDefense
+    topo = TopologyDefense(ueg)
+    # Inject a known fracture
+    broken_graph = {"nodes": ["A", "B", "C"], "edges": [("A", "B"), ("B", "C"), ("C", "A")]} # has a hole (beta1=1)
+    topo_res = await topo.compute_persistent_homology(broken_graph)
+    repair_res = await topo.simplicial_repair(topo_res)
+    results["metrics"]["topology_beta1_containment"] = {
+        "mean": 1.0 if repair_res["success"] else 0.0,
+        "target": "100%",
+        "passed": bool(repair_res["success"])
+    }
+
+    # 22. Empirical Constitutional Drift (<1%/window)
+    # Measured via Tafakkur engine
+    from agentic_core.cognitive.registry import CognitiveEngineRegistry, EngineType
+    tafakkur = CognitiveEngineRegistry.get(EngineType.TAFAKKUR)
+    drift_res = await tafakkur.process({}, {}, enf)
+    drift_val = drift_res.payload["drift"]
+    results["metrics"]["constitutional_drift"] = {
+        "mean": drift_val * 100, # percentage
+        "target": "<1%",
+        "passed": bool(drift_val < 0.01)
+    }
+
+    # 23. Empirical Ginkgo Biofoundry Screening Accuracy (≥95%)
+    from core.biofoundry.ginkgo_bridge import GinkgoBiofoundryBridge
+    ginkgo = GinkgoBiofoundryBridge(ueg)
+    bio_res = await ginkgo.run_dbtl_cycle({"protein": "target_insulin_v2"})
+    results["metrics"]["biofoundry_accuracy"] = {
+        "mean": bio_res["screening_accuracy"] * 100,
+        "target": "≥95%",
+        "passed": bool(bio_res["screening_accuracy"] >= 0.95)
+    }
+
     # Check overall status
     for m in results["metrics"].values():
         if not m["passed"]:
             results["all_passed"] = False
             break
 
-    # Phase 6 targets check override
+    # Phase 7 targets check override
 
     # Save validation results
     os.makedirs("reports", exist_ok=True)
@@ -326,6 +361,9 @@ async def validate_supreme_convergence():
 | Halo2 Verify Latency | {results['metrics']['halo2_verify_latency']['mean']:.3f}ms | <1ms | {'✅' if results['metrics']['halo2_verify_latency']['passed'] else '❌'} |
 | Memory Mesh Atomicity | {results['metrics']['memory_mesh_atomicity']['mean']*100:.0f}% | 100% | {'✅' if results['metrics']['memory_mesh_atomicity']['passed'] else '❌'} |
 | UEG Query Latency | {results['metrics']['ueg_query_latency']['mean']:.2f}ms | <500ms | {'✅' if results['metrics']['ueg_query_latency']['passed'] else '❌'} |
+| Topology β₁ Containment | {results['metrics']['topology_beta1_containment']['mean']*100:.0f}% | 100% | {'✅' if results['metrics']['topology_beta1_containment']['passed'] else '❌'} |
+| Constitutional Drift | {results['metrics']['constitutional_drift']['mean']:.2f}% | <1% | {'✅' if results['metrics']['constitutional_drift']['passed'] else '❌'} |
+| Biofoundry Accuracy | {results['metrics']['biofoundry_accuracy']['mean']:.1f}% | ≥95% | {'✅' if results['metrics']['biofoundry_accuracy']['passed'] else '❌'} |
 
 ## 🛡️ Hard Constraint Verification
 - **Zero-Placeholder:** AST-scan certified (100% compliance)
