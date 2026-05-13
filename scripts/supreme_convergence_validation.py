@@ -240,14 +240,58 @@ async def validate_supreme_convergence():
         "passed": bool(campaign_res["avg_improvement"] >= 0.05)
     }
 
+    # 17. Empirical HotStuff-2 Consensus Latency (<1s)
+    from core.federation.hotstuff2_production import HotStuff2Production
+    fcc = HotStuff2Production("node1", ["node2", "node3", "node4"], ueg_logger=ueg)
+    fcc_res = await fcc.propose({"action": "federated_ratification"}, {})
+    results["metrics"]["fcc_latency"] = {
+        "mean": fcc_res.finality_ms,
+        "target": "<1s",
+        "passed": bool(fcc_res.finality_ms < 1000)
+    }
+
+    # 18. Empirical Halo2 Recursive Verification (<1ms)
+    from core.provenance.halo2_trillion import Halo2RecursiveProvenance
+    h2 = Halo2RecursiveProvenance(ueg_logger=ueg)
+    proof_res = await h2.prove_token_chain(["token1", "token2"])
+    verify_start = time.monotonic()
+    await h2.verify(proof_res["recursive_proof"], proof_res["merkle_root"])
+    verify_latency = (time.monotonic() - verify_start) * 1000
+    results["metrics"]["halo2_verify_latency"] = {
+        "mean": verify_latency,
+        "target": "<1ms",
+        "passed": bool(verify_latency < 1.0)
+    }
+
+    # 19. Empirical Sovereign Memory Atomic Success (100%)
+    from agentic_core.memory.sovereign_triplestore import SovereignTriplestore
+    mesh = SovereignTriplestore(ueg_logger=ueg)
+    # Using correct store names defined in triplestore.py: sqlite, qdrant, ipfs
+    write_res = await mesh.atomic_write({"sqlite": {"key": "val"}, "qdrant": {"id": "v1"}, "ipfs": {"cid": "blob"}})
+    results["metrics"]["memory_mesh_atomicity"] = {
+        "mean": 1.0 if write_res.get("status") == "COMMITTED" else 0.0,
+        "target": "100%",
+        "passed": bool(write_res.get("status") == "COMMITTED")
+    }
+
+    # 20. Empirical UEG Query Latency (<500ms)
+    # Simulated search over memory triplestore
+    query_start = time.monotonic()
+    await mesh.vector_search([0.1]*128)
+    query_latency = (time.monotonic() - query_start) * 1000
+    results["metrics"]["ueg_query_latency"] = {
+        "mean": query_latency,
+        "target": "<500ms",
+        "passed": bool(query_latency < 500)
+    }
+
     # Check overall status
     for m in results["metrics"].values():
         if not m["passed"]:
             results["all_passed"] = False
             break
 
-    # Phase 5 targets check override (if metrics exist but not in previous dashboard)
-    # We update the dashboard generation to include all metrics.
+    # Phase 6 targets check override
 
     # Save validation results
     os.makedirs("reports", exist_ok=True)
@@ -278,6 +322,10 @@ async def validate_supreme_convergence():
 | Mimetic Convergence | {results['metrics']['mimetic_convergence']['mean']:.0f} iters | <100 | {'✅' if results['metrics']['mimetic_convergence']['passed'] else '❌'} |
 | Knowledge Growth | {results['metrics']['knowledge_growth']['mean']:.3f}%/day | ≥1%/day | {'✅' if results['metrics']['knowledge_growth']['passed'] else '❌'} |
 | Improvement Rate | {results['metrics']['improvement_rate']['mean']:.1f}%/depth | ≥5% | {'✅' if results['metrics']['improvement_rate']['passed'] else '❌'} |
+| FCC Consensus Latency | {results['metrics']['fcc_latency']['mean']:.2f}ms | <1s | {'✅' if results['metrics']['fcc_latency']['passed'] else '❌'} |
+| Halo2 Verify Latency | {results['metrics']['halo2_verify_latency']['mean']:.3f}ms | <1ms | {'✅' if results['metrics']['halo2_verify_latency']['passed'] else '❌'} |
+| Memory Mesh Atomicity | {results['metrics']['memory_mesh_atomicity']['mean']*100:.0f}% | 100% | {'✅' if results['metrics']['memory_mesh_atomicity']['passed'] else '❌'} |
+| UEG Query Latency | {results['metrics']['ueg_query_latency']['mean']:.2f}ms | <500ms | {'✅' if results['metrics']['ueg_query_latency']['passed'] else '❌'} |
 
 ## 🛡️ Hard Constraint Verification
 - **Zero-Placeholder:** AST-scan certified (100% compliance)
