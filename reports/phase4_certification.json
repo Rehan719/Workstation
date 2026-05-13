@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-05-13T09:42:18.628554+00:00",
+  "phase": "4",
+  "all_passed": true,
+  "metrics": {
+    "acet_residual_risk": {
+      "mean": 0.032,
+      "ci": [
+        0.029223554894802207,
+        0.0347764451051978
+      ],
+      "passed": true,
+      "target": 0.05
+    },
+    "simulation_fidelity": {
+      "mean": 0.924,
+      "ci": [
+        0.9098428522301774,
+        0.9381571477698227
+      ],
+      "passed": true,
+      "target": 0.9
+    },
+    "hallucination_containment": {
+      "mean": 0.9960000000000001,
+      "ci": [
+        0.9925995630967088,
+        0.9994004369032914
+      ],
+      "passed": true,
+      "target": 0.99
+    },
+    "repair_success_rate": {
+      "mean": 0.994,
+      "ci": [
+        0.9905995630967087,
+        0.9974004369032913
+      ],
+      "passed": true,
+      "target": 0.99
+    }
+  }
+}

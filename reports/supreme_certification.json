@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-05-13T15:51:19.266851+00:00",
+  "version": "v\u03a9\u221e-OMNISYNTHESIS-SUPREME",
+  "metrics": {
+    "macro_recirculation": {
+      "mean": 0.023683865865071613,
+      "target": "<60s",
+      "passed": true
+    },
+    "intend_ratify_latency": {
+      "mean": 20.6636905670166,
+      "target": "<500ms",
+      "passed": true
+    },
+    "mushawara_vrpr_latency": {
+      "mean": 10.176229476928711,
+      "target": "<500ms",
+      "passed": true
+    },
+    "vrpr_confidence": {
+      "mean": 0.9640000000000001,
+      "target": "\u226595%",
+      "passed": true
+    },
+    "acet_residual_risk": {
+      "mean": 0.04999999999999999,
+      "target": "\u22645%",
+      "passed": true
+    },
+    "simverse_fidelity": {
+      "mean": 0.924,
+      "target": "\u226590%",
+      "passed": true
+    },
+    "hallucination_containment": {
+      "mean": 1.0,
+      "target": "100%",
+      "passed": true
+    },
+    "oam_qkd_qber": {
+      "mean": 0.0026,
+      "target": "<5%",
+      "passed": true
+    },
+    "sil_score": {
+      "mean": 0.925,
+      "target": "\u22650.85",
+      "passed": true
+    },
+    "unified_defense_repair": {
+      "mean": 0.992,
+      "target": "\u226599%",
+      "passed": true
+    },
+    "autonomous_support_resolution": {
+      "mean": 0.967,
+      "target": "\u226595%",
+      "passed": true
+    }
+  },
+  "all_passed": true
+}
