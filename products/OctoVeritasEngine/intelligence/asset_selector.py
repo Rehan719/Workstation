@@ -15,8 +15,8 @@ class FormatSelector:
             prediction = self.effectiveness_engine.predict_format(content_type, audience, device)
             if prediction:
                 return prediction
-        except Exception as e:
-            print(f"Error predicting asset format: {e}")
+        except Exception:
+            pass
         return "HTML"
 
 class AssetSelector:

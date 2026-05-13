@@ -1,5 +1,0 @@
-rules:
-  - id: "US_SEC_ADV"
-    statute: "Investment Advisers Act"
-    section: "Form ADV"
-    text: "Disclosure requirements."

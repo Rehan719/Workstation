@@ -33,5 +33,3 @@ class ContainerManager:
     def teardown_sandbox(self, container_id: str):
         """Tears down an isolated sandbox."""
         # Real logic would remove the container
-        print(f"Teardown sandbox: {container_id}")
-        return True

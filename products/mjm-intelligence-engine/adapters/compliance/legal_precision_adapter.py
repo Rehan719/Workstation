@@ -33,7 +33,7 @@ class LegalPrecisionAdapter:
         return base_guidance
 
     def generate_witness_statement_template(self, chronology: List[Dict[str, Any]]) -> str:
-        statement = "IN THE EMPLOYMENT TRIBUNAL\nCASE NO: [CASENO]\n\nBETWEEN:\n[Claimant Name] -and- [Respondent Name]\n\n"
+        statement = "IN THE EMPLOYMENT TRIBUNAL\nCASE NO: [XXX]\n\nBETWEEN:\n[Claimant Name] -and- [Respondent Name]\n\n"
         statement += "WITNESS STATEMENT OF [Name]\n\nI, [Name], of [Address], WILL SAY AS FOLLOWS:\n\n"
 
         for i, entry in enumerate(chronology, 1):

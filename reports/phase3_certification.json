@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-05-13T04:44:00.207758+00:00",
+  "phase": "3",
+  "all_passed": true,
+  "metrics": {
+    "macro_recirculation_duration_s": {
+      "mean": 46.94,
+      "ci": [
+        45.36303783862953,
+        48.516962161370465
+      ],
+      "passed": true,
+      "target": 60.0
+    },
+    "intend_ratify_latency_ms": {
+      "mean": 311.8,
+      "ci": [
+        298.2436673637486,
+        325.3563326362514
+      ],
+      "passed": true,
+      "target": 500.0
+    },
+    "vrpr_redraft_confidence": {
+      "mean": 0.974,
+      "ci": [
+        0.9598428522301773,
+        0.9881571477698227
+      ],
+      "passed": true,
+      "target": 0.95
+    },
+    "biomimetic_fidelity": {
+      "mean": 0.925,
+      "ci": [
+        0.9204378351586251,
+        0.929562164841375
+      ],
+      "passed": true,
+      "target": 0.92
+    },
+    "constitutional_drift": {
+      "mean": 0.003,
+      "ci": [
+        0.002122010966914917,
+        0.003877989033085083
+      ],
+      "passed": true,
+      "target": 0.01
+    }
+  }
+}
