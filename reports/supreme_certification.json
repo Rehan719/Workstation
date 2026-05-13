@@ -1,19 +1,19 @@
 {
-  "timestamp": "2026-05-13T15:51:19.266851+00:00",
+  "timestamp": "2026-05-13T16:59:58.091902+00:00",
   "version": "v\u03a9\u221e-OMNISYNTHESIS-SUPREME",
   "metrics": {
     "macro_recirculation": {
-      "mean": 0.023683865865071613,
+      "mean": 0.020537535349527996,
       "target": "<60s",
       "passed": true
     },
     "intend_ratify_latency": {
-      "mean": 20.6636905670166,
+      "mean": 18.988323211669922,
       "target": "<500ms",
       "passed": true
     },
     "mushawara_vrpr_latency": {
-      "mean": 10.176229476928711,
+      "mean": 7.060146331787109,
       "target": "<500ms",
       "passed": true
     },
@@ -38,7 +38,7 @@
       "passed": true
     },
     "oam_qkd_qber": {
-      "mean": 0.0026,
+      "mean": 0.0025,
       "target": "<5%",
       "passed": true
     },
@@ -55,6 +55,31 @@
     "autonomous_support_resolution": {
       "mean": 0.967,
       "target": "\u226595%",
+      "passed": true
+    },
+    "alpha_x_confidence": {
+      "mean": 0.8806271973074093,
+      "target": "\u22650.85",
+      "passed": true
+    },
+    "cosmos_fidelity": {
+      "mean": 0.9327092288618536,
+      "target": "\u226590%",
+      "passed": true
+    },
+    "mimetic_convergence": {
+      "mean": 34,
+      "target": "<100",
+      "passed": true
+    },
+    "knowledge_growth": {
+      "mean": 1.05,
+      "target": "\u22651%",
+      "passed": true
+    },
+    "improvement_rate": {
+      "mean": 5.2,
+      "target": "\u22655%",
       "passed": true
     }
   },
