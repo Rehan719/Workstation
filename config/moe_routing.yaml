@@ -1,0 +1,6 @@
+moe_routing:
+  default_top_k: 3
+  tier_overrides:
+    free: {max_k: 2}
+    standard: {max_k: 3}
+    advanced: {max_k: 5}

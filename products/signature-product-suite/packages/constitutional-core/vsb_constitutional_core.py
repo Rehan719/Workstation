@@ -19,7 +19,7 @@ class UCIV12Interceptor(UnifiedConstitutionalInterceptorV16Omega):
 
         # Apply circuit breaker
         if await self.cb.check_health(True):
-            print("Circuit breaker active - applying trip logic")
+            pass # Trip logic
 
         # Execute via base interceptor
         context["routing"] = routing_meta

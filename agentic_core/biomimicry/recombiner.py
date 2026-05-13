@@ -8,8 +8,6 @@ class RecombinationBackend(ABC):
     """Abstract base class for recombination engines."""
     @abstractmethod
     def merge(self, source_hashes: List[str], parameters: Dict[str, Any]) -> Dict[str, Any]:
-        """Base merge method."""
-        return {"error": "Not implemented"}
 
 class TIESMergingBackend(RecombinationBackend):
     """
