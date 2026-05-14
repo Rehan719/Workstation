@@ -1,19 +1,19 @@
 {
-  "timestamp": "2026-05-13T20:34:35.026815+00:00",
+  "timestamp": "2026-05-14T20:02:45.873268+00:00",
   "version": "v\u03a9\u221e-OMNISYNTHESIS-SUPREME",
   "metrics": {
     "macro_recirculation": {
-      "mean": 0.021056254704793293,
+      "mean": 0.02463070551554362,
       "target": "<60s",
       "passed": true
     },
     "intend_ratify_latency": {
-      "mean": 19.44859027862549,
+      "mean": 20.308494567871094,
       "target": "<500ms",
       "passed": true
     },
     "mushawara_vrpr_latency": {
-      "mean": 7.57293701171875,
+      "mean": 10.243082046508789,
       "target": "<500ms",
       "passed": true
     },
@@ -23,7 +23,7 @@
       "passed": true
     },
     "acet_residual_risk": {
-      "mean": 0.04999999999999999,
+      "mean": 0.04049321872358089,
       "target": "\u22645%",
       "passed": true
     },
@@ -38,7 +38,7 @@
       "passed": true
     },
     "oam_qkd_qber": {
-      "mean": 0.0032,
+      "mean": 0.0031,
       "target": "<5%",
       "passed": true
     },
@@ -48,7 +48,7 @@
       "passed": true
     },
     "unified_defense_repair": {
-      "mean": 0.992,
+      "mean": 1.0,
       "target": "\u226599%",
       "passed": true
     },
@@ -63,7 +63,7 @@
       "passed": true
     },
     "cosmos_fidelity": {
-      "mean": 0.9386381648897318,
+      "mean": 0.9230821947461211,
       "target": "\u226590%",
       "passed": true
     },
@@ -83,12 +83,12 @@
       "passed": true
     },
     "fcc_latency": {
-      "mean": 0.03999700129497796,
+      "mean": 0.046582004870288074,
       "target": "<1s",
       "passed": true
     },
     "halo2_verify_latency": {
-      "mean": 0.6697659991914406,
+      "mean": 0.668298001983203,
       "target": "<1ms",
       "passed": true
     },
@@ -98,7 +98,7 @@
       "passed": true
     },
     "ueg_query_latency": {
-      "mean": 0.003565000952221453,
+      "mean": 0.0035950070014223456,
       "target": "<500ms",
       "passed": true
     },
@@ -113,7 +113,7 @@
       "passed": true
     },
     "biofoundry_accuracy": {
-      "mean": 96.36859491454966,
+      "mean": 97.27104835983006,
       "target": "\u226595%",
       "passed": true
     }
