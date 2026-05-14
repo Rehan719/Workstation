@@ -1,19 +1,19 @@
 {
-  "timestamp": "2026-05-13T19:12:35.855649+00:00",
+  "timestamp": "2026-05-13T20:34:35.026815+00:00",
   "version": "v\u03a9\u221e-OMNISYNTHESIS-SUPREME",
   "metrics": {
     "macro_recirculation": {
-      "mean": 0.020715792973836262,
+      "mean": 0.021056254704793293,
       "target": "<60s",
       "passed": true
     },
     "intend_ratify_latency": {
-      "mean": 18.906784057617188,
+      "mean": 19.44859027862549,
       "target": "<500ms",
       "passed": true
     },
     "mushawara_vrpr_latency": {
-      "mean": 7.800436019897461,
+      "mean": 7.57293701171875,
       "target": "<500ms",
       "passed": true
     },
@@ -38,7 +38,7 @@
       "passed": true
     },
     "oam_qkd_qber": {
-      "mean": 0.0034,
+      "mean": 0.0032,
       "target": "<5%",
       "passed": true
     },
@@ -63,7 +63,7 @@
       "passed": true
     },
     "cosmos_fidelity": {
-      "mean": 0.9383567437935547,
+      "mean": 0.9386381648897318,
       "target": "\u226590%",
       "passed": true
     },
@@ -83,12 +83,12 @@
       "passed": true
     },
     "fcc_latency": {
-      "mean": 0.03758500679396093,
+      "mean": 0.03999700129497796,
       "target": "<1s",
       "passed": true
     },
     "halo2_verify_latency": {
-      "mean": 0.6416480027837679,
+      "mean": 0.6697659991914406,
       "target": "<1ms",
       "passed": true
     },
@@ -98,8 +98,23 @@
       "passed": true
     },
     "ueg_query_latency": {
-      "mean": 0.0034829863579943776,
+      "mean": 0.003565000952221453,
       "target": "<500ms",
+      "passed": true
+    },
+    "topology_beta1_containment": {
+      "mean": 1.0,
+      "target": "100%",
+      "passed": true
+    },
+    "constitutional_drift": {
+      "mean": 0.3,
+      "target": "<1%",
+      "passed": true
+    },
+    "biofoundry_accuracy": {
+      "mean": 96.36859491454966,
+      "target": "\u226595%",
       "passed": true
     }
   },
