@@ -12,10 +12,10 @@ from enum import Enum
 
 class ThrottleLevel(Enum):
     GREEN = 0       # < 50% usage: All systems normal
-    YELLOW = 1      # 50% - 80% usage: Optimization warning
-    ORANGE = 2      # 80% - 90% usage: Priority-based throttling
-    RED = 3         # 90% - 95% usage: Hard throttle / queue only
-    CRITICAL = 4    # > 95% usage: Scaling to zero / Edge-fallback
+    YELLOW = 1      # 50% - 85% usage: Optimization warning
+    WARNING = 2     # 85% - 95% usage: Owner notification (Guardian Requirement)
+    THROTTLE = 3    # 95% - 99% usage: Hard throttle / scale to zero (Guardian Requirement)
+    EMERGENCY = 4   # > 99% usage: Circuit breaker / Edge-fallback
 
 @dataclass
 class ServiceQuota:
@@ -57,22 +57,23 @@ class CostGuard:
     async def evaluate_risk(self) -> ThrottleLevel:
         """
         Calculates the current risk level based on quota utilization.
+        Thresholds enforced per Guardian Response.
         """
         max_utilization = 0.0
         for resource, limit in self.FREE_TIER_QUOTAS.items():
-            utilization = self.usage_state[resource] / limit
+            utilization = self.usage_state.get(resource, 0) / limit
             max_utilization = max(max_utilization, utilization)
 
         if max_utilization < 0.50:
             new_level = ThrottleLevel.GREEN
-        elif max_utilization < 0.80:
+        elif max_utilization < 0.85:
             new_level = ThrottleLevel.YELLOW
-        elif max_utilization < 0.90:
-            new_level = ThrottleLevel.ORANGE
         elif max_utilization < 0.95:
-            new_level = ThrottleLevel.RED
+            new_level = ThrottleLevel.WARNING
+        elif max_utilization < 0.99:
+            new_level = ThrottleLevel.THROTTLE
         else:
-            new_level = ThrottleLevel.CRITICAL
+            new_level = ThrottleLevel.EMERGENCY
 
         if new_level != self.current_level:
             await self._on_level_change(new_level)
@@ -92,24 +93,30 @@ class CostGuard:
 
         if level == ThrottleLevel.YELLOW:
             # Notify SIL for proactive optimization
+            logging.info("CostGuard: Usage > 50%. Optimizing.")
+
+        elif level == ThrottleLevel.WARNING:
+            # 85% Threshold: Notify Owner (Guardian Mandate)
+            msg = "CostGuard WARNING: Usage reached 85%. Please review quotas."
             if self.sil:
-                await self.sil.notify_owner("CostGuard Alert: Usage reached 50%. Optimizing background tasks.")
+                await self.sil.notify_owner(msg)
+            if self.ueg:
+                await self.ueg.log_event("cost_guard_warning", {"usage": "85%"})
 
-        elif level == ThrottleLevel.ORANGE:
-            # Start priority-based throttling
-            await self._apply_throttling(priority_threshold=2) # Only high priority
-
-        elif level == ThrottleLevel.RED:
-            # Scale non-critical Cloud Run instances to zero
+        elif level == ThrottleLevel.THROTTLE:
+            # 95% Threshold: Automatically Throttle (Guardian Mandate)
             await self._scale_to_zero(critical_only=True)
+            msg = "CostGuard THROTTLE: Usage >95%. Throttling non-essential services and requesting constitutional override."
             if self.sil:
-                await self.sil.notify_owner("CRITICAL: Usage >90%. Scaled to zero-latency-core only.")
+                await self.sil.notify_owner(msg)
+            if self.ueg:
+                await self.ueg.log_event("cost_guard_throttle", {"usage": "95%"})
 
-        elif level == ThrottleLevel.CRITICAL:
+        elif level == ThrottleLevel.EMERGENCY:
             # Absolute circuit breaker - trigger edge-first fallback
             await self._trigger_edge_fallback()
             if self.sil:
-                await self.sil.notify_owner("EMERGENCY: Usage >95%. Cloud infrastructure SHUTDOWN. Running on Edge-only mode.")
+                await self.sil.notify_owner("EMERGENCY: Usage >99%. Cloud infrastructure SHUTDOWN. Running on Edge-only mode.")
 
     async def _apply_throttling(self, priority_threshold: int):
         """Throttles executions below a certain priority level."""

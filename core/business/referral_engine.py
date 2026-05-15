@@ -43,6 +43,7 @@ class ReferralEngine:
 
         # 2. Issue WORKREP (Soulbound)
         # Higher WORKREP unlocks priority compute without feature gating.
+        # Guardian Mandate: Referrers earn non-transferable WORKREP tokens.
         base_reward = 100.0
         record = ReferralRecord(
             referrer_did=referrer_did,
@@ -67,6 +68,11 @@ class ReferralEngine:
         # 5. Notify SWF for Oxygen Cycle (Metabolism) update
         if self.swf:
             await self.swf.update_viral_metrics(coefficient_delta=0.01)
+
+        # 6. Issue Subscription Credit (Guardian Mandate)
+        # Referral discounts: referrers receive subscription credit (10% of first month).
+        if self.swf:
+            await self.swf.issue_referral_credit(referrer_did, amount_pct=0.10)
 
         return True
 

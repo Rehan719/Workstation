@@ -21,12 +21,12 @@ Workstation is architected as a self-funding startup with **Full Feature Equalit
 - **Viral Growth**: WORKREP reputation staking drives organic adoption (K ≥ 1.34).
 - **Financial Model**: Pure bootstrap ($0 capital); revenue reinvested via SWF Carbon Cycle.
 
-Refer to the [Living Business Plan](outputs/business/business_plan_vΩ∞.md) and [Business Model Canvas](outputs/business/completed_business_model_canvas.md).
+Refer to the [Living Business Plan](outputs/business/self_business_plan.md) and [Business Model Canvas](outputs/business/business_model_canvas_completed.md).
 
 ## 🛠️ SOLE FOUNDER QUICKSTART (WINDOWS)
 Launch your sovereign intelligence fabric with zero capital.
 1. **Prerequisites**: Windows 10/11, WSL2, Docker Desktop, Google Cloud SDK.
-2. **Environment**: Run `.\scripts\check_windows_prerequisites.ps1`.
+2. **Environment**: Run `.\scripts\business\check_windows_prerequisites.ps1`.
 3. **Deployment**: Run `./scripts/deploy_free_tier.sh --project-id [YOUR_PROJECT]` from WSL2.
 4. **Assurance**: `CostGuard` ensures $0 owner billing via automated throttling.
 

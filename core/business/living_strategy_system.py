@@ -24,6 +24,46 @@ class LivingStrategySystem:
         self.current_plan_version = "1.0.0"
         self.last_update = datetime.now()
 
+    async def update_plan(self, current_plan_path: str, telemetry_window_days: int = 7) -> str:
+        """
+        Refines the business plan based on real-time telemetry.
+        Constitutional Interface per Guardian Response.
+        """
+        logging.info(f"🧬 Updating business plan from {current_plan_path}")
+
+        # 1. Fetch latest UEG metrics
+        metrics = await self._gather_business_telemetry(window_days=telemetry_window_days)
+
+        # 2. Run MJM improvement analysis
+        # Using MJM v5.1 to transfer patterns from successful SaaS models
+        improvement_proposals = await self._generate_strategic_proposals(metrics)
+
+        # 3. Generate updated plan (Markdown)
+        # In a real environment, this would involve template rendering or LLM drafting
+        new_plan_content = await self._draft_updated_markdown(current_plan_path, improvement_proposals)
+
+        new_version_path = current_plan_path.replace(".md", f"_v{self.current_plan_version}.md")
+        with open(new_version_path, "w") as f:
+            f.write(new_plan_content)
+
+        # 4. Log to UEG with Halo2 proof
+        await self._log_reflection_to_ueg(metrics, {"proposals": improvement_proposals})
+
+        # 5. Return path to new version
+        return new_version_path
+
+    async def _draft_updated_markdown(self, path: str, proposals: List[Dict[str, Any]]) -> str:
+        """Drafts the new markdown content."""
+        major, minor, patch = map(int, self.current_plan_version.split('.'))
+        self.current_plan_version = f"{major}.{minor}.{patch + 1}"
+
+        with open(path, "r") as f:
+            content = f.read()
+
+        header = f"\n\n## UPDATE v{self.current_plan_version} ({datetime.now().date()})\n"
+        updates = "\n".join([f"- {p['action']}" for p in proposals])
+        return content + header + updates
+
     async def run_reflection_cycle(self):
         """
         Executes a full reflection cycle on the business strategy.
@@ -54,15 +94,21 @@ class LivingStrategySystem:
         # 6. Reflect: Log the cycle results to the UEG
         await self._log_reflection_to_ueg(metrics, drift_report)
 
-    async def _gather_business_telemetry(self) -> Dict[str, Any]:
+    async def _gather_business_telemetry(self, window_days: int = 7) -> Dict[str, Any]:
         """Gathers MRR, Churn, Viral Coefficient, and SWF performance."""
         # In a real environment, this queries the UEG SQL and SWF PID controllers
+        # SWF Config from Guardian Response: Pure bootstrap from $0 capital
+        sweat_equity_hours = 200
+        hourly_value_usd = 50
+        initial_equity_value_usd = sweat_equity_hours * hourly_value_usd
+
         return {
             "mrr": 0.0,
             "user_count": 100,
             "churn_rate": 0.02,
             "viral_coefficient": 1.34,
             "swf_roi": 0.083,
+            "initial_equity_value_usd": initial_equity_value_usd,
             "timestamp": datetime.now().isoformat()
         }
 
