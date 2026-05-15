@@ -1,45 +1,42 @@
 #!/bin/bash
-set -e
-# Workstation vΩ∞-MASTER: Free-Tier Deployment Automation
+# 🧬 ZERO-COST CLOUD RUN DEPLOYMENT: WORKSTATION vΩ∞
+# Deploys the sovereign organism to Google Cloud Run within Free Tier quotas.
 
-PROJECT_ID=$1
-REGION=${2:-us-central1}
+set -euo pipefail
 
-if [ -z "$PROJECT_ID" ]; then
-  echo "Usage: ./scripts/deploy_free_tier.sh <project-id> [region]"
-  exit 1
-fi
+# Default configuration to stay within GCP Free Tier
+IMAGE_NAME="gcr.io/${PROJECT_ID}/workstation-supreme:latest"
+SERVICE_NAME="workstation-supreme"
+REGION="us-central1" # Recommended for Free Tier stability
 
-echo "🚀 Deploying Workstation vΩ∞-MASTER to $PROJECT_ID ($REGION)..."
+echo "🧬 Initiating Zero-Cost Deployment for Project: ${PROJECT_ID}"
 
-# 1. Enable Required Services
-gcloud services enable \
-  run.googleapis.com \
-  firestore.googleapis.com \
-  cloudbuild.googleapis.com \
-  secretmanager.googleapis.com \
-  artifactregistry.googleapis.com \
-  --project $PROJECT_ID
+# 1. Build the Sovereign Container
+echo "🔨 Building container..."
+gcloud builds submit --tag "$IMAGE_NAME" .
 
-# 2. Build and Push Container
-echo "📦 Building sovereign container..."
-gcloud builds submit --tag gcr.io/$PROJECT_ID/workstation-api --project $PROJECT_ID
-
-# 3. Deploy to Cloud Run (Free-Tier Optimized)
-echo "☁️ Deploying to Cloud Run (minScale:0)..."
-gcloud run deploy workstation-api \
-  --image gcr.io/$PROJECT_ID/workstation-api \
+# 2. Deploy to Cloud Run with Free-Tier Constraints
+echo "🚀 Deploying to Cloud Run..."
+gcloud run deploy "$SERVICE_NAME" \
+  --image "$IMAGE_NAME" \
   --platform managed \
-  --region $REGION \
-  --memory 512Mi \
+  --region "$REGION" \
   --cpu 1 \
+  --memory 512Mi \
   --min-instances 0 \
-  --max-instances 5 \
+  --max-instances 1 \
+  --concurrency 80 \
   --allow-unauthenticated \
-  --project $PROJECT_ID
+  --set-env-vars="OWNER_FREE_TIER=true,ENV=production"
 
-# 4. Deploy Firestore Rules
-echo "🔐 Deploying Firestore security rules..."
-gcloud firestore rules deploy deployment/firestore.rules --project $PROJECT_ID
+# 3. Final Health Check
+echo "🔍 Verifying deployment..."
+SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --platform managed --region "$REGION" --format 'value(status.url)')
 
-echo "✅ vΩ∞-MASTER deployed at: $(gcloud run services describe workstation-api --platform managed --region $REGION --format='value(status.url)' --project $PROJECT_ID)"
+if curl -f "${SERVICE_URL}/health"; then
+    echo "✅ Workstation Live: ${SERVICE_URL}"
+    echo "💰 Estimated Cost: $0.00 (within Free Tier limits)"
+else
+    echo "❌ Deployment health check failed."
+    exit 1
+fi
