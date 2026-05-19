@@ -1,6 +1,6 @@
 import pytest
 from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain
-from agentic_core.avatars.core.cognitive_orchestrator import AvatarCognitiveOrchestrator
+from agentic_core.avatars.cognition.orchestrator import AvatarCognitiveOrchestrator
 from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
 from agentic_core.cognitive.bootstrap import bootstrap_engines
 
@@ -38,4 +38,4 @@ async def test_clearance_chain_failure_placeholder():
 
     result = await chain.validate_emission(emission, context)
     assert result.passed is False
-    assert "Tahqeeq: Verification failed: Placeholder detected: TODO" == result.reason
+    assert "Zero-placeholder violation: 'TODO' detected in emission" in result.reason
