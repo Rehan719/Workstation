@@ -1,6 +1,6 @@
 """
-Avatar Tool Effector Registry.
-Constitutional gating for all external environment modifications.
+Avatar Tool Registry (vΩ∞-CONVERGED).
+Constitutional Effector Gate with Pearl-do Causal Proofs.
 """
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
@@ -8,6 +8,10 @@ import hashlib
 import json
 from datetime import datetime, timezone
 import logging
+
+from agentic_core.tools.registry import ToolRegistry as CoreToolRegistry
+from src.organism.python.organs.openclaw_adapter import OpenClawAdapter
+from src.organism.python.neural.event_bus import AsyncEventBus
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +26,12 @@ class ToolResult:
 
 class AvatarToolRegistry:
     """
-    IDBO Layer 4/UCI: Execution & Tool Interceptor.
-    Every tool call is a consequential action requiring:
-    1. Tier validation.
-    2. CSL (Causal Sovereignty) identifiability proof.
-    3. TFEL (Thermodynamic) entropy metering.
-    4. UEG (Unified Event Graph) audit logging.
+    IDBO Layer 4: Regulation / UCI Tool Effector.
+    Enforces the following invariants for all external modifications:
+    1. Tier-based access control.
+    2. Causal Identifiability ( Pearl-do calculus).
+    3. Thermodynamic Free Energy accounting.
+    4. Cryptographic Merkle-linkage in UEG.
     """
     ALLOWED_TOOLS = {
         "file_search": {"tiers": ["free", "standard", "advanced"], "consequential": False},
@@ -43,22 +47,38 @@ class AvatarToolRegistry:
         self.csl = csl_layer
         self.tfel = tfel_ledger
 
+        # Integration with core workstation limbs
+        self.core_registry = CoreToolRegistry()
+        self._register_default_tools()
+        self.bus = AsyncEventBus() # For local dispatch
+        self.limbs = OpenClawAdapter(self.core_registry, self.bus)
+
+    def _register_default_tools(self):
+        """Pre-registers standard tools for the avatar effector."""
+        for tool in self.ALLOWED_TOOLS:
+            self.core_registry.register_tool(
+                name=tool,
+                category="avatar_effector",
+                capabilities=["metabolic_action"],
+                config={}
+            )
+
     async def execute(self, tool_name: str, params: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
         """
-        Execute a tool instruction through the constitutional effector gate.
+        Execute tool with 5-phase validation flow.
         """
         user_tier = context.get("tier", "free")
+        user_id = context.get("user_id", "anonymous")
 
-        # 1. Tier Enforcement
+        # Phase 1: Structural (Tier & Presence)
         if tool_name not in self.ALLOWED_TOOLS:
-            raise ValueError(f"Tool '{tool_name}' not registered in Avatar ecosystem.")
+            raise ValueError(f"CRITICAL: Tool '{tool_name}' unregistered.")
 
         tool_def = self.ALLOWED_TOOLS[tool_name]
         if user_tier not in tool_def["tiers"]:
-            raise PermissionError(f"Access Denied: Tool '{tool_name}' requires {tool_def['tiers'][0]} membership.")
+            raise PermissionError(f"Tier Violation: {tool_name} requires {tool_def['tiers'][0]}+")
 
-        # 2. Causal Sovereignty Gate (Pearl do-calculus)
-        # ARTICLE 1135: Pearl-do verifier for all consequential actions.
+        # Phase 2: Governance (Causal Sovereignty)
         causal_proof = None
         if tool_def["consequential"]:
             causal_proof = await self.csl.generate_identifiability_proof(
@@ -66,44 +86,43 @@ class AvatarToolRegistry:
                 context=context
             )
             if not causal_proof:
-                # Block action if causal path is unidentifiable or violates invariants
-                await self.ueg.log_event("TOOL_CAUSAL_BLOCK", {
-                    "tool": tool_name, "reason": "unidentifiable_causal_path"
-                })
-                raise RuntimeError(f"Pearl-do verification failed for tool: {tool_name}")
+                await self.ueg.log_event("CAUSAL_SOVEREIGNTY_BREACH", {"tool": tool_name})
+                raise RuntimeError("Pearl-do verification failed: Unidentifiable causal path.")
 
-        # 3. Thermodynamic Metering (Landauer Budget)
-        # STAGE: Start entropy tracking
-        entropy_start = 0.1 # Base cost
+        # Phase 3: Physical (Thermodynamic Metering)
+        # Metering bits for the effector operation
+        metering = self.tfel.meter_operation(f"effector_{tool_name}", bits=2e5)
+        entropy_cost = 500.0 # Standard bit cost
 
-        # 4. Execution (Delegated to Core Registry)
-        logger.info(f"Avatar Effector: Executing {tool_name} (Tier: {user_tier})")
-
-        # Simulated tool execution logic
+        # Phase 4: Execution (Sovereign Dispatch through OpenClaw)
+        logger.info(f"Avatar Effector: {tool_name} requested by {user_id}")
         try:
-            # result = await core_tool_registry.dispatch(tool_name, params)
-            output = f"Executed {tool_name} successfully."
-            success = True
+            action_id = f"act_{hashlib.sha256(str(time.time()).encode()).hexdigest()[:8]}"
+            execution_event = await self.limbs.execute_action(action_id, tool_name, params)
+
+            success = execution_event.result.status == "SUCCESS"
+            output = execution_event.result.output if success else execution_event.result.error
+
         except Exception as e:
             output = str(e)
             success = False
-            logger.error(f"Tool Execution Error: {tool_name} -> {e}")
+            logger.error(f"Execution failure: {tool_name} -> {e}")
 
-        # 5. Constitutional Attestation & Logging
-        # Every modification creates a Merkle linkage in the UEG.
+        # Phase 5: Recursive (UEG Merkle Linkage)
         attestation_payload = {
-            "tool": tool_name,
-            "params_hash": hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest(),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "status": "SUCCESS" if success else "FAILED"
+            "t": tool_name,
+            "p": hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest(),
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "s": "SUCCESS" if success else "FAILED",
+            "csl": causal_proof
         }
         attestation = hashlib.sha3_512(json.dumps(attestation_payload, sort_keys=True).encode()).hexdigest()
 
-        await self.ueg.log_event("TOOL_EXECUTED", {
-            "tool_name": tool_name,
+        await self.ueg.log_event("TOOL_METABOLIC_ACTION", {
+            "tool": tool_name,
             "success": success,
             "attestation": attestation,
-            "entropy_bits": 500, # Mock cost
+            "entropy": entropy_cost,
             "causal_proof": causal_proof
         })
 
@@ -115,3 +134,5 @@ class AvatarToolRegistry:
             constitutional_attestation=attestation,
             causal_proof=causal_proof
         )
+
+import time

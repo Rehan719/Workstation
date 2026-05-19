@@ -1,71 +1,80 @@
 """
-Avatar Visual Renderer.
-Digital human interface with expression mapping.
+Avatar Multimodal Renderer (vΩ∞-CONVERGED).
+Synchronized Voice, Visual, and Text output with <500ms UI latency target.
 """
-import logging
-from typing import Dict, Any, List, Optional
 import asyncio
+import logging
+import time
+from typing import Dict, Any, List, Optional
+from agentic_core.avatars.voice.voice_engine import VoiceEngine
 
 logger = logging.getLogger(__name__)
 
 class AvatarRenderer:
     """
-    IDBO Layer 12: User Experience / Visual body.
-    Supports MetaHuman/NVIDIA ACE with a default 2D/SVG fallback.
+    Visual body of the avatar.
+    Supports MetaHuman/NVIDIA ACE with a default 2D/WebGL fallback.
     """
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.renderer_type = config.get("type", "2d") # 2d, metahuman, nvidia_ace
+        self.renderer_type = config.get("type", "2d")
         self.current_expression = "neutral"
-        logger.info(f"AvatarRenderer Initialized. Type: {self.renderer_type}")
+        logger.info(f"AvatarRenderer Converged. Type: {self.renderer_type}")
 
     async def set_expression(self, expression: str):
-        """Map cognitive/emotional state to visual expression."""
+        """Map internal cognitive state to visual phenotypic expression."""
         self.current_expression = expression
-        logger.debug(f"Renderer ({self.renderer_type}): expression -> {expression}")
-
         if self.renderer_type == "metahuman":
-            await self._update_metahuman(expression)
+            # ARTICLE 1057: MetaHuman morph target mapping
+            await self._update_morphs(expression)
         elif self.renderer_type == "nvidia_ace":
+            # NVIDIA ACE microservice sync
             await self._update_ace(expression)
         else:
-            # 2D WebGL Fallback: Emit UI state update
-            logger.debug(f"2D Renderer: expression {expression} updated.")
+            # 2D/WebGL: Emit state for frontend canvas
+            logger.debug(f"2D Expression: {expression}")
 
     async def show_overlay(self, overlay_type: str, data: Dict[str, Any]):
-        """Render instructional overlays (checklists, highlights, code hints)."""
-        logger.info(f"Renderer: Overlay [{overlay_type}] displayed.")
+        """Render UI metadata: code highlights, checklists, progress."""
+        logger.info(f"Overlay Triggered: {overlay_type}")
 
-    async def _update_metahuman(self, expression: str):
+    async def _update_morphs(self, expression: str):
         """Metahuman Bridge (Advanced Tier)."""
-        logger.info(f"Metahuman: Updating morph targets for {expression}")
+        logger.info(f"Metahuman: Updating expression to {expression}")
 
     async def _update_ace(self, expression: str):
         """NVIDIA ACE Bridge (Advanced Tier)."""
-        logger.info(f"NVIDIA ACE: Updating animation state for {expression}")
+        logger.info(f"NVIDIA ACE: Synchronizing emotion: {expression}")
 
 class MultimodalRenderer:
     """
-    Orchestration layer for synchronized Voice, Visual, and Text output.
-    Ensures <500ms end-to-end latency for UI updates.
+    IDBO Layer 12: User Experience.
+    Ensures <500ms p95 end-to-end latency for UI/expression updates.
+    Auditory pipeline is parallelized for optimized metabolic flow.
     """
-    def __init__(self, voice_engine: Any, avatar_renderer: Any):
+    def __init__(self, voice_engine: VoiceEngine, avatar_renderer: AvatarRenderer):
         self.voice = voice_engine
         self.renderer = avatar_renderer
 
     async def render(self, text: str, expression: str, overlays: Optional[List[Dict]] = None):
-        """Emits synchronized multimodal instruction."""
-        # 1. Immediate UI Feedback (Visual/Expression)
-        ui_task = asyncio.create_task(self.renderer.set_expression(expression))
+        """Synchronizes multimodal emission."""
+        start = time.time()
 
-        # 2. Show instructional overlays
+        # 1. Visual/UI Update (Critical <100ms)
+        visual_task = asyncio.create_task(self.renderer.set_expression(expression))
+
         if overlays:
             for o in overlays:
                 await self.renderer.show_overlay(o["type"], o.get("data", {}))
 
-        # 3. Auditory Output (Voice)
+        # 2. Auditory Update (Async parallel)
         voice_task = asyncio.create_task(self.voice.speak(text))
 
-        # Text/Transcript update is typically handled by the frontend websocket handler
-        await asyncio.gather(ui_task, voice_task)
-        logger.info("Multimodal emission complete.")
+        # Ensure visual is updated immediately
+        await visual_task
+        elapsed = (time.time() - start) * 1000
+        logger.info(f"Visual render latency: {elapsed:.2f}ms")
+
+        # Await voice completion for metabolic cycle consistency
+        await voice_task
+        logger.info("Multimodal emission finalized.")

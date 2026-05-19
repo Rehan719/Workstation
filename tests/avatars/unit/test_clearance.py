@@ -38,4 +38,4 @@ async def test_clearance_chain_failure_placeholder():
 
     result = await chain.validate_emission(emission, context)
     assert result.passed is False
-    assert "Zero-placeholder violation: 'TODO' detected in emission" in result.reason
+    assert "Zero-placeholder 'TODO' detected" in result.reason

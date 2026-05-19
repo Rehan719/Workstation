@@ -28,7 +28,7 @@ async def test_tool_tier_restriction():
     from agentic_core.avatars.tools.registry import AvatarToolRegistry
     ueg = MockUEG()
     csl = type('Mock', (), {'generate_identifiability_proof': lambda *a: 'proof'})()
-    tfel = type('Mock', (), {})()
+    tfel = type('Mock', (), {'meter_operation': lambda *a, **k: {'budget_remaining': 100}})()
     registry = AvatarToolRegistry(ueg, csl, tfel)
 
     # code_execution requires advanced tier

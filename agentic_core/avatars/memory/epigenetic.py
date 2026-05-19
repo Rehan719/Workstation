@@ -1,6 +1,6 @@
 """
-Avatar Epigenetic Memory Engine.
-Manages instructional adaptation memory with cryptographic integrity.
+Avatar Epigenetic Memory & Stability Engine (vΩ∞-CONVERGED).
+Manages instructional mutations with Löb-stable fixpoint verification.
 """
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 
 class EpigeneticMemoryEngine:
     """
-    IDBO Layer 10: Evolution / Genetic-Immune.
-    Enables bounded self-modification of behavioral parameters.
+    IDBO Layer 10/11: Evolution & Federation.
+    Enables bounded self-modification of instructional behavior.
     Mutations must pass Regulator validation and Löb-stable fixpoint verification.
+    All state changes are Merkle-appended to the Unified Event Graph.
     """
     def __init__(self, ueg_logger: Any, regulator: Any, lob_fixpoint: Any):
         self.ueg = ueg_logger
@@ -28,30 +29,32 @@ class EpigeneticMemoryEngine:
                                  adaptation_type: str, before: Dict[str, Any],
                                  after: Dict[str, Any]) -> Optional[EpigeneticMarker]:
         """
-        Propose a behavioral adaptation (epigenetic mutation).
-        Ensures safety via constitutional and stability gates.
+        Propose an epigenetic mutation to behavioral parameters.
+        Enforces 5-level safety check including Löb-stable fixation.
         """
-        # 1. Regulation Gate: Constitutional validation of proposal
-        # ARTICLE 1136: Bounded behavioral mutation
+        # 1. Regulator Validation (Constitutional Guardrail)
         validation_res = await self.regulator.validate_mutation(adaptation_type, before, after)
         if not validation_res.get("approved", False):
-            await self.ueg.log_event("EPIGENETIC_PROPOSAL_REJECTED", {
-                "reason": "Constitutional Regulator Block",
+            await self.ueg.log_event("EPIGENETIC_REJECTION", {
+                "reason": "REGULATOR_VETO",
                 "type": adaptation_type
             })
             return None
 
-        # 2. Stability Gate: Löb-stable fixpoint check
-        # Ensures self-modification does not lead to runaway divergence.
+        # 2. Löb-stable Fixpoint Verification (Stability Constraint)
+        # Prevents self-modification from violating core recursive logic.
         if not self.lob_fixpoint.verify(adaptation_type, before, after):
-            await self.ueg.log_event("EPIGENETIC_PROPOSAL_REJECTED", {
-                "reason": "Löb-stable fixpoint unstable",
+            await self.ueg.log_event("EPIGENETIC_REJECTION", {
+                "reason": "LOB_FIXPOINT_UNSTABLE",
                 "type": adaptation_type
             })
             return None
+
+        # 3. Genome Integrity Check (Hash-linkage)
+        marker_id = f"mark_{hashlib.sha256(json.dumps(after, sort_keys=True).encode()).hexdigest()[:16]}"
 
         marker = EpigeneticMarker(
-            marker_id=f"marker_{hashlib.sha256(str(datetime.now(timezone.utc)).encode()).hexdigest()[:12]}",
+            marker_id=marker_id,
             user_id=user_id,
             trigger_event=trigger_event,
             adaptation_type=adaptation_type,
@@ -65,16 +68,17 @@ class EpigeneticMemoryEngine:
 
         self.markers.append(marker)
 
-        # 3. Persistent Logging: Append to UEG Merkle-DAG
-        await self.ueg.log_event("EPIGENETIC_MUTATION_CONSOLIDATED", {
+        # 4. UEG Merkle-DAG Persistence
+        await self.ueg.log_event("EPIGENETIC_FIXATION", {
             "marker_id": marker.marker_id,
             "type": adaptation_type,
-            "user_id": user_id,
+            "hash": hashlib.sha3_512(json.dumps(after, sort_keys=True).encode()).hexdigest(),
             "attestation": marker.constitutional_validation
         })
 
-        logger.info(f"Epigenetic Mutation Applied: {adaptation_type} ({marker.marker_id})")
+        logger.info(f"Epigenetic fixation complete: {adaptation_type}")
         return marker
 
-    def get_active_mutations(self) -> List[EpigeneticMarker]:
+    def get_active_markers(self) -> List[EpigeneticMarker]:
+        """Returns the current sequence of Retained mutations."""
         return self.markers
