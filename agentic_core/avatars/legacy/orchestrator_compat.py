@@ -1,8 +1,8 @@
 import logging
 from typing import Dict, Any, List
-from agentic_core.avatars.core.avatar_identity import AvatarState, AvatarIdentityManager
+from agentic_core.avatars.core.avatar_engine import AvatarState, AvatarIdentityManager
 from agentic_core.avatars.frontend.avatar_interface import AvatarFrontendInterface
-from agentic_core.avatars.core.recirculation_orchestrator import AvatarRecirculationOrchestrator
+from agentic_core.avatars.core.instructor_loop import AvatarRecirculationOrchestrator
 from agentic_core.ueg.logger import VSBUEGLogger
 
 logger = logging.getLogger(__name__)

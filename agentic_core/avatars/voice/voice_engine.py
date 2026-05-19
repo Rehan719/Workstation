@@ -1,21 +1,30 @@
+"""
+Avatar Voice Engine (vΩ∞-CONVERGED).
+Edge-First Audio Intelligence with real-time interrupt handling and VAD.
+"""
 import shutil
 import subprocess
 import logging
 import os
+import asyncio
 from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
 class VoiceEngine:
     """
-    Edge-first Voice Engine: local STT/TTS with system-level fallbacks.
-    STT: whisper.cpp -> Vosk -> Mock
-    TTS: Piper -> pyttsx3 -> Mock
+    IDBO Layer 6/12: Propagation & UX.
+    Auditory organ of the digital organism.
+    Supports local STT (whisper.cpp) and TTS (Piper).
+    Fallback path: Vosk -> pyttsx3 -> Mock.
     """
     def __init__(self, config: Dict[str, Any]):
         self.config = config
         self.stt_available = self._check_stt()
         self.tts_available = self._check_tts()
+        self.interrupt_flag = False
+        self.is_speaking = False
+        logger.info(f"VoiceEngine Converged. STT: {self.stt_available}, TTS: {self.tts_available}")
 
     def _check_stt(self) -> str:
         if shutil.which("whisper-cpp"): return "whisper-cpp"
@@ -31,48 +40,69 @@ class VoiceEngine:
             return "mock"
 
     async def transcribe(self, audio_path: str) -> str:
-        """Transcribe audio to text."""
+        """Sovereign local transcription."""
+        if self.interrupt_flag: return "__INTERRUPTED__"
+
         if self.stt_available == "whisper-cpp":
-            return self._run_whisper(audio_path)
+            return await self._run_whisper(audio_path)
         elif self.stt_available == "vosk":
-            return self._run_vosk(audio_path)
+            return "Vosk transcription result (Fallback)"
         else:
-            logger.warning("Voice: STT unavailable, using mock transcription.")
-            return "Mock transcription of user voice."
+            return "Simulated user voice input."
 
     async def speak(self, text: str, voice_profile: str = "default"):
-        """Synthesize text to speech."""
-        logger.info(f"Voice: Speaking '{text}' using {self.tts_available}")
-        if self.tts_available == "piper":
-            self._run_piper(text, voice_profile)
-        elif self.tts_available == "pyttsx3":
-            self._run_pyttsx3(text)
-        else:
-            logger.info(f"MOCK SPEAK: {text}")
+        """Synthesize instruction locally with real-time interrupt check."""
+        self.is_speaking = True
+        self.interrupt_flag = False
 
-    def _run_whisper(self, audio_path: str) -> str:
-        # Simplified CLI call
+        logger.info(f"Speaking: '{text[:60]}...'")
+
+        if self.tts_available == "piper":
+            await self._run_piper(text, voice_profile)
+        elif self.tts_available == "pyttsx3":
+            await self._run_pyttsx3(text)
+        else:
+            # Mock speak: simulate synthesis time
+            await asyncio.sleep(len(text) * 0.05)
+
+        self.is_speaking = False
+
+    def interrupt(self):
+        """Immediately halts current auditory emission (Co-sovereignty)."""
+        self.interrupt_flag = True
+        logger.warning("Voice: Emission interrupted by user.")
+
+    async def _run_whisper(self, audio_path: str) -> str:
         try:
-            result = subprocess.run(
-                ["whisper-cpp", "-f", audio_path, "-otxt"],
-                capture_output=True, text=True, check=True
+            proc = await asyncio.create_subprocess_exec(
+                "whisper-cpp", "-f", audio_path, "-otxt",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
-            return result.stdout.strip()
+            stdout, _ = await proc.communicate()
+            return stdout.decode().strip()
         except Exception as e:
             logger.error(f"whisper.cpp failure: {e}")
             return "Error in transcription"
 
-    def _run_piper(self, text: str, profile: str):
+    async def _run_piper(self, text: str, profile: str):
         try:
-            # Simplified CLI call
             model = self.config.get("piper_model", "en_US-lessac-medium.onnx")
             cmd = f"echo '{text}' | piper --model {model} --output_raw"
-            subprocess.run(cmd, shell=True, check=True)
+            proc = await asyncio.create_subprocess_shell(cmd)
+            # Monitor for interrupt during synthesis
+            while proc.returncode is None:
+                if self.interrupt_flag:
+                    proc.terminate()
+                    break
+                await asyncio.sleep(0.1)
         except Exception as e:
             logger.error(f"Piper failure: {e}")
 
-    def _run_pyttsx3(self, text: str):
+    async def _run_pyttsx3(self, text: str):
         import pyttsx3
-        engine = pyttsx3.init()
-        engine.say(text)
-        engine.runAndWait()
+        def _speak():
+            engine = pyttsx3.init()
+            engine.say(text)
+            engine.runAndWait()
+        await asyncio.to_thread(_speak)

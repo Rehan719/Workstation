@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from agentic_core.avatars.core.avatar_identity import AvatarIdentityManager, AvatarState
+from agentic_core.avatars.core.avatar_engine import AvatarIdentityManager, AvatarState
 from agentic_core.ueg.logger import VSBUEGLogger
 import os
 
