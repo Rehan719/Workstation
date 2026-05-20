@@ -86,18 +86,23 @@ class VoiceEngine:
             return "Error in transcription"
 
     async def _run_piper(self, text: str, profile: str):
+        """Executes Piper TTS and pipes output to aplay for edge-first audio."""
         try:
             model = self.config.get("piper_model", "en_US-lessac-medium.onnx")
-            cmd = f"echo '{text}' | piper --model {model} --output_raw"
+            # ARTICLE 1137: Real-time audio pipeline using shell pipes for <500ms synthesis.
+            cmd = f"echo '{text}' | piper --model {model} --output_raw | aplay -r 22050 -f S16_LE -t raw"
             proc = await asyncio.create_subprocess_shell(cmd)
-            # Monitor for interrupt during synthesis
+
+            # Monitor for interrupt during synthesis and playback
             while proc.returncode is None:
                 if self.interrupt_flag:
                     proc.terminate()
+                    # Also kill child aplay process if it exists
+                    subprocess.run(["pkill", "-f", "aplay"], capture_output=True)
                     break
                 await asyncio.sleep(0.1)
         except Exception as e:
-            logger.error(f"Piper failure: {e}")
+            logger.error(f"Piper/aplay pipeline failure: {e}")
 
     async def _run_pyttsx3(self, text: str):
         import pyttsx3

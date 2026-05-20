@@ -88,7 +88,6 @@ class LivingInstructorLoop:
         start_time = time.time()
         session_id = f"sess_{self.state.avatar_id[-8:]}"
 
-        # Fixed ctx structure to include 'user_context' explicitly for stages that need it
         ctx = {
             "cycle_id": f"cyc_{int(start_time * 1000)}",
             "session_id": session_id,
@@ -101,25 +100,26 @@ class LivingInstructorLoop:
         }
 
         try:
-            # 1. STAGE: SENSE
+            # 1. STAGE: SENSE (<100ms)
             ctx["state"]["observation"] = await self._stage_sense(ctx)
-            self._check_latency(start_time, limit_ms=100, stage="SENSE")
+            self._assert_latency(start_time, limit_ms=100, stage="SENSE")
 
-            # 2. STAGE: INTEND
+            # 2. STAGE: INTEND (<200ms)
             ctx["state"]["intent"] = await self._stage_intend(ctx)
-            self._check_latency(start_time, limit_ms=200, stage="INTEND")
+            self._assert_latency(start_time, limit_ms=200, stage="INTEND")
 
-            # 3. STAGE: ANALYZE
+            # 3. STAGE: ANALYZE (<500ms)
             ctx["state"]["strategy"] = await self._stage_analyze(ctx)
-            self._check_latency(start_time, limit_ms=500, stage="ANALYZE")
+            self._assert_latency(start_time, limit_ms=500, stage="ANALYZE")
 
-            # 4. STAGE: ACT (Emission + tool execution)
+            # 4. STAGE: ACT (<500ms e2e)
             ctx["state"]["act"] = await self._stage_act(ctx)
+            self._assert_latency(start_time, limit_ms=500, stage="ACT")
 
-            # 5. STAGE: LEARN
+            # 5. STAGE: LEARN (async <1s)
             ctx["state"]["learn"] = await self._stage_learn(ctx)
 
-            # 6. STAGE: REFLECT
+            # 6. STAGE: REFLECT (macro <60s)
             ctx["state"]["reflect"] = await self._stage_reflect(ctx)
 
             total_duration = time.time() - start_time
@@ -199,12 +199,12 @@ class LivingInstructorLoop:
 
         emission["attestations"] = clearance_res.attestations
 
-        # 6. Synchronized Multimodal Render (Non-blocking emit)
+        # 6. Synchronized Multimodal Render
         expression = strategy.get("outcome", {}).get("expression", "neutral")
         overlays = strategy.get("outcome", {}).get("overlays", [])
         await self.renderer.render(personalized_text, expression, overlays)
 
-        # 7. Execute associated tools if strategy mandates
+        # 7. Tool Effector (Pearl-do gated)
         if "suggested_tools" in strategy.get("outcome", {}):
             emission["tool_results"] = []
             for tool_req in strategy["outcome"]["suggested_tools"]:
@@ -221,10 +221,10 @@ class LivingInstructorLoop:
         domain = ctx["domain"]
         success = ctx["user_context"].get("success", True)
 
-        # Update Skill Profiler
+        # Update Skill Profiler (BKT)
         await self.skill_profiler.update_skill(user_id, domain, success)
 
-        # Propose Epigenetic Mutation
+        # Propose Epigenetic Mutation (Merkle-linked)
         return await self.epigenetic_memory.propose_adaptation(
             user_id=user_id,
             trigger_event="interaction_complete",
@@ -238,7 +238,8 @@ class LivingInstructorLoop:
         self.tfel.meter_operation("stage_reflect", bits=1e5)
         return await self.cognitive_orchestrator.process_engine("tafakkur", ctx["state"]["act"], ctx)
 
-    def _check_latency(self, start_time: float, limit_ms: float, stage: str):
+    def _assert_latency(self, start_time: float, limit_ms: float, stage: str):
         elapsed = (time.time() - start_time) * 1000
         if elapsed > limit_ms:
-            logger.warning(f"Latency violation in stage {stage}: {elapsed:.2f}ms > {limit_ms}ms")
+            logger.warning(f"LATENCY ASSERTION FAILED in stage {stage}: {elapsed:.2f}ms > {limit_ms}ms")
+            # In production, this triggers metabolic regulation

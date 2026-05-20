@@ -13,6 +13,8 @@ from agentic_core.quality.vrpr_pipeline import VRPRPipeline
 from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
 from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger
 from agentic_core.recirculation.circuit_breaker import RecirculationCircuitBreaker, HealthStatus
+from agentic_core.avatars.core.instructor_loop import LivingInstructorLoop
+from agentic_core.avatars.core.avatar_engine import AvatarIdentityManager
 
 class FractalRecirculationEngine:
     """
@@ -29,9 +31,15 @@ class FractalRecirculationEngine:
         self.tfel = ThermodynamicFreeEnergyLedger(budget_bits=1e9, ueg_logger=self.ueg)
         self.breaker = RecirculationCircuitBreaker(self.ueg)
         self.stats = {"cycles_completed": 0, "macro_durations": [], "last_drift": 0.0}
+        self.avatar_manager = AvatarIdentityManager(self.ueg)
+        self.avatar = None
 
     async def run_cycle(self, input_signal: Dict[str, Any]) -> Dict[str, Any]:
-        """Executes a single 6-stage macro cycle with active geospheric enforcement."""
+        """Executes a single 6-stage macro cycle with Living Avatar integration."""
+        if not self.avatar:
+            state = await self.avatar_manager.create_avatar(input_signal.get("user_id", "default_owner"))
+            self.avatar = LivingInstructorLoop(self.ueg, state)
+
         health = await self.breaker.validate_loop_health({"last_drift": self.stats["last_drift"]})
         if health == HealthStatus.FAILED:
             await self.ueg.log_minimisation_event("cycle_halted", {"reason": "circuit_breaker_triggered"})
@@ -104,7 +112,11 @@ class FractalRecirculationEngine:
         async def ratify(): return await self.registry.get(EngineType.NIYYAH).process(ctx["input"], ctx, self.enforcement)
         return await self.uci.intercept({"intent": "ratify", "context": ctx}, ratify)
     async def _stage_analyze(self, ctx): return await self.moe.execute_moe_supreme("analyze", np.random.rand(6), ctx, self.enforcement)
-    async def _stage_act(self, ctx): return await self.vrpr.process(f"Action result for {ctx['id']} based on {ctx['state']['analyze']['aggregated_result']}", ctx)
+    async def _stage_act(self, ctx):
+        # Mandatory Living Avatar ACT cycle
+        avatar_res = await self.avatar.execute_cycle(ctx["input"])
+        ctx["avatar_output"] = avatar_res
+        return await self.vrpr.process(f"Action result for {ctx['id']} | Avatar Emission: {avatar_res['output']['text']}", ctx)
     async def _stage_learn(self, ctx): return await self.registry.get(EngineType.IMAN).process(ctx["state"]["act"], ctx, self.enforcement)
     async def _stage_reflect(self, ctx):
         res = await self.registry.get(EngineType.TAFAKKUR).process(ctx["state"], ctx, self.enforcement)
