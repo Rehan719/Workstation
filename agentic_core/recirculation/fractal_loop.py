@@ -13,7 +13,7 @@ from agentic_core.quality.vrpr_pipeline import VRPRPipeline
 from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
 from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger
 from agentic_core.recirculation.circuit_breaker import RecirculationCircuitBreaker, HealthStatus
-from agentic_core.avatars.core.instructor_loop import LivingInstructorLoop
+from agentic_core.avatars.core.recirculation_orchestrator import AvatarRecirculationOrchestrator
 from agentic_core.avatars.core.avatar_engine import AvatarIdentityManager
 
 class FractalRecirculationEngine:
@@ -38,7 +38,7 @@ class FractalRecirculationEngine:
         """Executes a single 6-stage macro cycle with Living Avatar integration."""
         if not self.avatar:
             state = await self.avatar_manager.create_avatar(input_signal.get("user_id", "default_owner"))
-            self.avatar = LivingInstructorLoop(self.ueg, state)
+            self.avatar = AvatarRecirculationOrchestrator(self.ueg, state)
 
         health = await self.breaker.validate_loop_health({"last_drift": self.stats["last_drift"]})
         if health == HealthStatus.FAILED:

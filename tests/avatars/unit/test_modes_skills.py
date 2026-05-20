@@ -1,6 +1,6 @@
 import pytest
 from agentic_core.avatars.modes.mode_controller import AvatarModeManager, AvatarMode
-from agentic_core.avatars.adaptation.profiler import SkillProfiler
+from agentic_core.avatars.memory.skill_profiler import SkillProfiler
 
 class MockUEG:
     async def log_event(self, event_type, data, actor="SYSTEM"):

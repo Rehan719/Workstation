@@ -1,5 +1,5 @@
 """
-Avatar Multimodal Renderer (vΩ∞-CONVERGED).
+Avatar Multimodal Renderer (vΩ∞-LIVING-AVATAR-FINAL).
 Synchronized Voice, Visual, and Text output with <500ms UI latency target.
 """
 import asyncio
