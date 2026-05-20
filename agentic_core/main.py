@@ -159,6 +159,7 @@ class ConnectionManager:
             try:
                 await connection.send_json(vitals)
             except Exception:
+                pass
 
 ws_manager = ConnectionManager()
 
