@@ -1,6 +1,6 @@
 import pytest
 from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain
-from agentic_core.avatars.cognition.orchestrator import AvatarCognitiveOrchestrator
+from agentic_core.avatars.cognition.mushawara_bridge import AvatarCognitiveOrchestrator
 from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
 from agentic_core.cognitive.bootstrap import bootstrap_engines
 

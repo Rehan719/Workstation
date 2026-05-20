@@ -28,13 +28,13 @@ class EpigeneticMarker:
 
 @dataclass
 class AvatarState:
-    """The metabolic state of the living avatar organism (vΩ∞-CONVERGED)."""
+    """The metabolic state of the living avatar organism (vΩ∞-LIVING-AVATAR-FINAL)."""
     avatar_id: str            # PQC DID
     user_id: str              # Bound to user's sovereign identity
     mode: str = "instructor"   # instructor, copilot, inspector, coach, explorer, emergency
     skill_profile: Dict[str, Dict[str, float]] = field(default_factory=dict) # domain -> {p_known, p_learn, etc}
     epigenetic_memory_root: str = "0" * 64
-    constitutional_genome_version: str = "vΩ∞-AVATAR-FINAL-CONVERGED-2026.05.17"
+    constitutional_genome_version: str = "vΩ∞-LIVING-AVATAR-FINAL-2026.05.17"
     state_checksum: str = ""
     merkle_root: str = "0" * 128
     last_active: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

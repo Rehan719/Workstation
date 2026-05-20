@@ -1,5 +1,5 @@
 """
-Constitutional Clearance Chain (vΩ∞-CONVERGED).
+Constitutional Clearance Chain (vΩ∞-LIVING-AVATAR-FINAL).
 Five-gate validation for every avatar instructional emission.
 """
 from dataclasses import dataclass

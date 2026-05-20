@@ -1,6 +1,6 @@
 import pytest
 from agentic_core.avatars.frontend.avatar_interface import AvatarFrontendInterface
-from agentic_core.avatars.core.instructor_loop import LivingInstructorLoop
+from agentic_core.avatars.core.recirculation_orchestrator import AvatarRecirculationOrchestrator
 from agentic_core.avatars.core.avatar_engine import AvatarState
 from agentic_core.cognitive.bootstrap import bootstrap_engines
 
@@ -15,7 +15,7 @@ async def test_constitutional_override():
     ueg = MockUEG()
     bootstrap_engines(ueg)
     state = AvatarState(avatar_id="did:test:override", user_id="user_1")
-    recirc = LivingInstructorLoop(ueg, state)
+    recirc = AvatarRecirculationOrchestrator(ueg, state)
     interface = AvatarFrontendInterface(recirc, ueg)
 
     response = await interface.handle_user_message("CONSTITUTIONAL_OVERRIDE", {})
@@ -25,7 +25,7 @@ async def test_constitutional_override():
 
 @pytest.mark.asyncio
 async def test_tool_tier_restriction():
-    from agentic_core.avatars.tools.registry import AvatarToolRegistry
+    from agentic_core.avatars.tools.tool_registry import AvatarToolRegistry
     ueg = MockUEG()
     csl = type('Mock', (), {'generate_identifiability_proof': lambda *a: 'proof'})()
     tfel = type('Mock', (), {'meter_operation': lambda *a, **k: {'budget_remaining': 100}})()
