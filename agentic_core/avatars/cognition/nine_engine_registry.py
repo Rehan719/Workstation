@@ -1,5 +1,5 @@
 """
-Avatar Engine Registry (vΩ∞-LIVING-AVATAR-FINAL).
+Avatar Engine Registry (vΩ∞-AVATAR-OMNISYNTHESIS).
 Management of the 9-engine distributed nervous system.
 """
 from typing import Dict, Any, List, Optional

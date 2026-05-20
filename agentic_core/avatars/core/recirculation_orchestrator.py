@@ -1,5 +1,5 @@
 """
-Living Workstation Avatar — Persistent Recirculation Orchestrator (vΩ∞-LIVING-AVATAR-FINAL).
+Living Workstation Avatar — Persistent Recirculation Orchestrator (vΩ∞-AVATAR-OMNISYNTHESIS).
 Manages the 6-stage metabolic loop for the persistent instructional cognitive organism.
 """
 import asyncio
@@ -16,7 +16,7 @@ from agentic_core.avatars.modes.mode_controller import AvatarModeManager, Avatar
 from agentic_core.avatars.memory.skill_profiler import SkillProfiler
 from agentic_core.avatars.memory.epigenetic_engine import EpigeneticMemoryEngine
 from agentic_core.avatars.output.multimodal_renderer import MultimodalRenderer, AvatarRenderer
-from agentic_core.avatars.voice.voice_engine import VoiceEngine
+from agentic_core.avatars.output.voice_engine import VoiceEngine
 from agentic_core.avatars.tools.tool_registry import AvatarToolRegistry
 from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
 from agentic_core.quality.vrpr_pipeline import VRPRPipeline
@@ -66,7 +66,7 @@ class AvatarRecirculationOrchestrator:
         self.vrpr = VRPRPipeline(self.ueg, self.enforcement)
         self.sil = SILPersonaliser()
 
-        # Epigenetic gates (vΩ∞-LIVING-AVATAR-FINAL)
+        # Epigenetic gates (vΩ∞-AVATAR-OMNISYNTHESIS)
         async def mock_validate(*args): return {'approved': True, 'confidence': 0.95}
         self.epigenetic_memory = EpigeneticMemoryEngine(
             ueg_logger,

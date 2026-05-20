@@ -1,5 +1,5 @@
 """
-Avatar Tool Registry (vΩ∞-LIVING-AVATAR-FINAL).
+Avatar Tool Registry (vΩ∞-AVATAR-OMNISYNTHESIS).
 Constitutional Effector Gate with Pearl-do Causal Proofs.
 """
 from dataclasses import dataclass

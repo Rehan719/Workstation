@@ -1,5 +1,5 @@
 """
-Avatar Epigenetic Memory & Stability Engine (vΩ∞-LIVING-AVATAR-FINAL).
+Avatar Epigenetic Memory & Stability Engine (vΩ∞-AVATAR-OMNISYNTHESIS).
 Manages instructional mutations with Löb-stable fixpoint verification.
 """
 from typing import Any, Dict, List, Optional

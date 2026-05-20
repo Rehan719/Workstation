@@ -1,5 +1,5 @@
 """
-Avatar Render Adapters (vΩ∞-LIVING-AVATAR-FINAL).
+Avatar Render Adapters (vΩ∞-AVATAR-OMNISYNTHESIS).
 Bridges internal phenotypic state to external rendering engines.
 """
 from typing import Dict, Any, List, Optional
@@ -45,5 +45,5 @@ class OverlayManager:
         return json.dumps({
             "type": overlay_type,
             "payload": data,
-            "version": "vΩ∞-LIVING-AVATAR-FINAL"
+            "version": "vΩ∞-AVATAR-OMNISYNTHESIS"
         })
