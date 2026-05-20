@@ -25,7 +25,7 @@ async def test_attestation():
     state = await manager.create_avatar("user_123")
     attestation = await manager.attest_state(state)
 
-    assert "tpm_quote" in attestation
+    assert "quote" in attestation
     assert "signature" in attestation
 
 @pytest.mark.asyncio
