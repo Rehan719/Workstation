@@ -1,5 +1,5 @@
 """
-Constitutional Tool Gating (vΩ∞-LIVING-AVATAR-FINAL).
+Constitutional Tool Gating (vΩ∞-AVATAR-OMNISYNTHESIS).
 Implements Pearl-do causal verification and tier-based effector isolation.
 """
 from typing import Dict, Any, Optional

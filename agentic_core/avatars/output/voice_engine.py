@@ -1,5 +1,5 @@
 """
-Avatar Voice Engine (vΩ∞-LIVING-AVATAR-FINAL).
+Avatar Voice Engine (vΩ∞-AVATAR-OMNISYNTHESIS).
 Edge-First Audio Intelligence with real-time interrupt handling and VAD.
 """
 import shutil

@@ -1,5 +1,5 @@
 """
-Avatar Mushāwara Bridge (vΩ∞-LIVING-AVATAR-FINAL).
+Avatar Mushāwara Bridge (vΩ∞-AVATAR-OMNISYNTHESIS).
 Deliberative consensus management for cognitive emissions.
 """
 from typing import Dict, Any, List, Optional
@@ -8,7 +8,7 @@ import logging
 import hashlib
 import json
 from agentic_core.consultation.mushawara.mushawara_bridge_2 import MushawaraBridge2
-from agentic_core.avatars.cognition.engine_registry_9 import EngineRegistry9
+from agentic_core.avatars.cognition.nine_engine_registry import EngineRegistry9
 
 logger = logging.getLogger(__name__)
 

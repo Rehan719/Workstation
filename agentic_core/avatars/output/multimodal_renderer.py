@@ -1,12 +1,12 @@
 """
-Avatar Multimodal Renderer (vΩ∞-LIVING-AVATAR-FINAL).
+Avatar Multimodal Renderer (vΩ∞-AVATAR-OMNISYNTHESIS).
 Synchronized Voice, Visual, and Text output with <500ms UI latency target.
 """
 import asyncio
 import logging
 import time
 from typing import Dict, Any, List, Optional
-from agentic_core.avatars.voice.voice_engine import VoiceEngine
+from agentic_core.avatars.output.voice_engine import VoiceEngine
 
 logger = logging.getLogger(__name__)
 

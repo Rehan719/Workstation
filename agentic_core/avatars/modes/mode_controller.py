@@ -1,5 +1,5 @@
 """
-Avatar Mode Controller (vΩ∞-LIVING-AVATAR-FINAL).
+Avatar Mode Controller (vΩ∞-AVATAR-OMNISYNTHESIS).
 Dynamic Phenotype Switching and Cognitive Weight Balancing.
 """
 from enum import Enum

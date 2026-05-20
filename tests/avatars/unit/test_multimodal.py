@@ -1,5 +1,5 @@
 import pytest
-from agentic_core.avatars.voice.voice_engine import VoiceEngine
+from agentic_core.avatars.output.voice_engine import VoiceEngine
 from agentic_core.avatars.output.multimodal_renderer import AvatarRenderer, MultimodalRenderer
 
 @pytest.mark.asyncio
