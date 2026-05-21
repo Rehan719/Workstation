@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from config.paths import DATA_DIR
 from pydantic import BaseModel
-from agentic_core.ai_ceo.memory_v01 import memory_v01, meeting_log
+from agentic_core.ai.ceo.memory_v01 import memory_v01, meeting_log
 from agentic_core.layers.ueg import ueg
 from agentic_core.simulation.ese import get_ese_instance
 from agentic_core.optimization.aro import get_aro_instance
@@ -18,7 +18,7 @@ from agentic_core.biomimicry.geospheric.drad import get_drad_instance
 from agentic_core.bto.religion_bto import get_religion_bto
 from agentic_core.swarm.signaling_protocol import SignalingProtocol
 from agentic_core.reactor.religion.qep_flagship import qep_flagship_service
-from agentic_core.ai_ceo.autonomy_pipelines import autonomy_pipelines
+from agentic_core.ai.ceo.autonomy_pipelines import autonomy_pipelines
 from agentic_core.synthesis.content_production import content_pipeline
 from agentic_core.governance.industry_adaptive import governance_verifier
 from agentic_core.ai.improvement_engine import improvement_engine

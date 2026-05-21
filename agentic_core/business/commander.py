@@ -44,7 +44,7 @@ class AICommander:
 
     async def launch_campaign(self, reactor_domain: str, audience: str):
         """Strategic campaign trigger."""
-        from agentic_core.ai_ceo.marketing_agent import MarketingAgent
+        from agentic_core.ai.ceo.marketing_agent import MarketingAgent
         marketing = MarketingAgent(self.business_id)
         draft = await marketing.generate_campaign(reactor_domain, audience)
         logger.info(f"AICommander: Campaign {draft['campaign_id']} approved for launch.")
@@ -52,7 +52,7 @@ class AICommander:
 
     def get_market_intelligence(self, domain: str) -> Dict[str, Any]:
         """ARTICLE 275: CEO strategic dashboard access."""
-        from agentic_core.ai_ceo.pricing.optimizer import PricingOptimizer
+        from agentic_core.ai.ceo.pricing.optimizer import PricingOptimizer
         po = PricingOptimizer()
         return {
             "optimal_pricing": po.get_optimal_price(domain, 29.99),
@@ -62,7 +62,7 @@ class AICommander:
 
     def trigger_cross_domain_synergy(self, workflow_name: str):
         """ARTICLE 285: Strategic cross-domain workflow activation."""
-        from agentic_core.ai_ceo.strategy.cross_domain import CrossDomainStrategyModule
+        from agentic_core.ai.ceo.strategy.cross_domain import CrossDomainStrategyModule
         strategy = CrossDomainStrategyModule()
         path = strategy.optimize_workflow_path(workflow_name, ["science", "religion", "law", "employment", "education"])
         logger.info(f"AICommander: Triggering synergy workflow '{workflow_name}' across {path}.")

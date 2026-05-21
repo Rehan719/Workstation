@@ -9,7 +9,7 @@ import uuid
 import json
 
 from config.paths import DATA_DIR
-from agentic_core.ai_ceo.memory_v01 import memory_v01
+from agentic_core.ai.ceo.memory_v01 import memory_v01
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ingest", tags=["Content Ingestion"])
