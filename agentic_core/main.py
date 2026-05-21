@@ -47,7 +47,7 @@ from src.organism.python.organs.nemoclaw_adapter import NemoclawAdapter
 from src.organism.python.organs.openclaw_adapter import OpenClawAdapter
 from src.organism.bridge import neural_bridge, ai_bridge, evidence_bridge
 from src.organism.python.resilience.homeostasis import HomeostasisManager
-from agentic_core.ai_ceo.c_suite import BiomimeticCSuite
+from agentic_core.ai.ceo.c_suite import BiomimeticCSuite
 from agentic_core.governance.verifiable_governance import VGAEngine
 from agentic_core.genetic_immune.immune_system import ImmuneSystemV2
 from agentic_core.tools.registry import ToolRegistry

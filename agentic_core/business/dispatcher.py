@@ -12,7 +12,7 @@ class AIDispatcher:
     def __init__(self, commander_ref: Any):
         self.commander = commander_ref
         self.active_tasks = []
-        from agentic_core.ai_ceo.recruitment_engine import RecruitmentEngine, SpanControlEngine
+        from agentic_core.ai.ceo.recruitment_engine import RecruitmentEngine, SpanControlEngine
         self.recruiter = RecruitmentEngine()
         self.span_ctrl = SpanControlEngine()
 
