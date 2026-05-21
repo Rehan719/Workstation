@@ -29,7 +29,12 @@
     "three": "^0.166.1",
     "y-websocket": "^2.0.4",
     "yjs": "^13.6.14",
-    "zustand": "^4.5.2"
+    "zustand": "^4.5.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.3.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-scroll-area": "^1.0.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
