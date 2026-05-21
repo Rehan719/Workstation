@@ -4,7 +4,11 @@ from typing import Dict, Any, List, Optional
 import random
 import uuid
 from agentic_core.reactor.ecosystem.base import SpecializedReactor
-from agentic_core.orchestrator.symbiosis.connectors import AlQuranCloudConnector
+try:
+    from agentic_core.orchestrator.symbiosis.connectors import AlQuranCloudConnector
+except ImportError:
+    AlQuranCloudConnector = None
+    print("Warning: AlQuranCloudConnector not available – Quranic features limited.")
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +76,7 @@ class QuranicStudiesReactor(SpecializedReactor):
     def __init__(self, config: Dict[str, Any] = None):
         config = config or {"capabilities": ["high_fidelity_simulation", "digital_twinning", "domain_optimization", "morphology_analysis"]}
         super().__init__("religion", "quranic_studies", config)
-        self.quran_api = AlQuranCloudConnector()
+        self.quran_api = AlQuranCloudConnector() if AlQuranCloudConnector else None
         self.morphology_service = MorphologyService()
 
     async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -109,6 +113,8 @@ class QuranicStudiesReactor(SpecializedReactor):
         return {"status": "ERROR", "message": f"Unsupported QEP task: {task}"}
 
     async def _handle_get_ayah(self, reference: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.quran_api:
+            return {"status": "FAILED", "message": "Quran API connector not available"}
         reference = str(reference) or "1:1"
         edition = params.get("edition", "en.sahih")
         res = await self.quran_api.get_ayah(reference, edition)
@@ -197,6 +203,8 @@ class QuranicStudiesReactor(SpecializedReactor):
         }
 
     async def _handle_search(self, keyword: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.quran_api:
+            return {"status": "FAILED", "message": "Quran API connector not available"}
         # P2: Advanced Search logic
         res = await self.quran_api.search(str(keyword))
         if res.get("status") == "OK":
