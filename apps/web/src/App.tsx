@@ -79,7 +79,7 @@ import Joyride from 'react-joyride';
 
 function App() {
   const { currentRealm } = useStore();
-  const [runTutorial, setRunTutorial] = useState(true);
+  const [runTutorial, setRunTutorial] = useState(false);
 
   const isQEPStandalone = import.meta.env.VITE_QEP_STANDALONE === 'true';
 
