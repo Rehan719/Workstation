@@ -86,41 +86,48 @@ class VoiceEngine:
             return "Error in transcription"
 
     async def _run_piper(self, text: str, profile: str):
-        """Executes Piper TTS and pipes output for edge-first audio."""
+        """Executes Piper TTS for edge-first audio with shell injection protection."""
         try:
             model = self.config.get("piper_model", "en_US-lessac-medium.onnx")
-            # ARTICLE 1137: Real-time audio pipeline for <500ms synthesis.
-            # Platform-specific command selection
+            # ARTICLE 1137: Real-time audio pipeline with stdin input to prevent injection.
             if os.name == 'nt':
-                # Windows: Use a temporary file and a compatible player (e.g., powershell or ffplay)
                 temp_wav = f"temp_voice_{os.getpid()}.wav"
-                cmd = f"echo {text} | piper --model {model} --output_file {temp_wav}"
-                proc = await asyncio.create_subprocess_shell(cmd)
-                await proc.wait()
+                # Executable path, not shell string, for safety.
+                proc = await asyncio.create_subprocess_exec(
+                    "piper", "--model", model, "--output_file", temp_wav,
+                    stdin=asyncio.subprocess.PIPE
+                )
+                await proc.communicate(input=text.encode())
 
                 if os.path.exists(temp_wav):
-                    # Play using PowerShell to avoid external dependency on ffplay/aplay
-                    play_cmd = f"powershell -c \"(New-Object Media.SoundPlayer '{temp_wav}').PlaySync()\""
-                    play_proc = await asyncio.create_subprocess_shell(play_cmd)
-
+                    # Play using PowerShell SoundPlayer.
+                    play_proc = await asyncio.create_subprocess_exec(
+                        "powershell", "-c", f"(New-Object Media.SoundPlayer '{temp_wav}').PlaySync()"
+                    )
                     while play_proc.returncode is None:
                         if self.interrupt_flag:
                             play_proc.terminate()
                             break
                         await asyncio.sleep(0.1)
-
                     try: os.remove(temp_wav)
                     except: pass
             else:
-                # Linux/Mac: Use aplay pipe
-                cmd = f"echo '{text}' | piper --model {model} --output_raw | aplay -r 22050 -f S16_LE -t raw"
-                proc = await asyncio.create_subprocess_shell(cmd)
+                # Linux/Mac: Pipe piper to aplay safely.
+                piper_proc = await asyncio.create_subprocess_exec(
+                    "piper", "--model", model, "--output_raw",
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE
+                )
+                aplay_proc = await asyncio.create_subprocess_exec(
+                    "aplay", "-r", "22050", "-f", "S16_LE", "-t", "raw",
+                    stdin=piper_proc.stdout
+                )
+                await piper_proc.communicate(input=text.encode())
 
-                # Monitor for interrupt
-                while proc.returncode is None:
+                while aplay_proc.returncode is None:
                     if self.interrupt_flag:
-                        proc.terminate()
-                        subprocess.run(["pkill", "-f", "aplay"], capture_output=True)
+                        aplay_proc.terminate()
+                        piper_proc.terminate()
                         break
                     await asyncio.sleep(0.1)
         except Exception as e:

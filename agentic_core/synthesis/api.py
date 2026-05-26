@@ -1,6 +1,7 @@
 import logging
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import datetime
 import uuid
@@ -94,4 +95,18 @@ async def get_synthesis_history():
 
 @router.get("/download/{output_id}")
 async def download_output(output_id: str):
-    # Logic to return file response
+    """v1.0: Endpoint to download synthesized output files with path traversal protection."""
+    # Sanitize output_id to ensure it's just a filename, not a path
+    clean_id = os.path.basename(output_id)
+
+    # Search for any file matching the clean_id (regardless of extension)
+    files = list(synthesis_manager.output_dir.glob(f"{clean_id}.*"))
+    if not files:
+        raise HTTPException(status_code=404, detail="Output file not found")
+
+    file_path = files[0]
+    # Final check: Ensure the resolved path is actually within the output directory
+    if not str(file_path.resolve()).startswith(str(synthesis_manager.output_dir.resolve())):
+        raise HTTPException(status_code=403, detail="Forbidden: Path traversal detected")
+
+    return FileResponse(path=file_path, filename=file_path.name)
