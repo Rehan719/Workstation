@@ -48,3 +48,6 @@ class ImmuneSystem:
 
     def heal(self, component_id: str):
         logger.info(f"Regenerative healing initiated for {component_id}")
+
+# Alias for backward compatibility and specialized adapter needs
+ImmuneSystemV2 = ImmuneSystem
