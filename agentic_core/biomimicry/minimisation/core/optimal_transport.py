@@ -1,5 +1,8 @@
 import torch
-import ot
+try:
+    import ot
+except ImportError:
+    ot = None
 from typing import Dict, Tuple, Optional, Any
 from ._utils import get_backend, to_numpy
 
@@ -24,6 +27,8 @@ class OptimalTransportRouter:
         """
         Solve entropic optimal transport problem using POT.
         """
+        if ot is None:
+            raise RuntimeError("POT library (ot) not installed - cannot use OptimalTransportRouter")
         # Convert to NumPy for POT compatibility
         mu = source.detach().cpu().numpy()
         nu = target.detach().cpu().numpy()
