@@ -7,9 +7,11 @@ from agentic_core.layers.ueg import ueg
 class CL1Backend(ABC):
     @abstractmethod
     def create_stim_plan(self, pattern: List[int]) -> bool:
+        pass
 
     @abstractmethod
     def record_spikes(self, duration_ms: int) -> List[Dict[str, Any]]:
+        pass
 
 class CL1Production(CL1Backend):
     """
