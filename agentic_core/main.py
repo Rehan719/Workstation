@@ -155,11 +155,15 @@ class ConnectionManager:
                 "latency_ms": 18
             }
         }
+        disconnected = []
         for connection in self.active_connections:
             try:
                 await connection.send_json(vitals)
             except Exception:
-                pass
+                disconnected.append(connection)
+
+        for conn in disconnected:
+            self.disconnect(conn)
 
 ws_manager = ConnectionManager()
 
