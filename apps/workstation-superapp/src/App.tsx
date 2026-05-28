@@ -71,6 +71,9 @@ import BugBountyPortal from './pages/security/BugBounty';
 import { ARVRSandbox } from './pages/platforms/ARVRSandbox';
 import { WearableSync } from './pages/platforms/WearableSync';
 import { EmbodimentStudio } from './pages/platforms/EmbodimentStudio';
+import PatientSafetyDashboard from './pages/Science/PatientSafety/PatientSafetyDashboard';
+import { UCIWrapper } from './lib/constitutional/UCIWrapper';
+import { ConstitutionalGuard } from './lib/constitutional/ConstitutionalGuard';
 import { useStore } from '@workstation/shared';
 import { ThemeProvider } from './theme/ThemeContext';
 import { AdaptiveUIProvider } from './components/AdaptiveUIProvider';
@@ -129,6 +132,16 @@ function App() {
           <Route path="/employment" element={<EmploymentHub />} />
           <Route path="/education" element={<EducationHub />} />
           <Route path="/care" element={<CareHub />} />
+          <Route
+            path="/science/patient-safety"
+            element={
+              <UCIWrapper actionId="science_patient_safety_access">
+                <ConstitutionalGuard requiredClaims={["science_researcher", "clinical_lead"]}>
+                  <PatientSafetyDashboard />
+                </ConstitutionalGuard>
+              </UCIWrapper>
+            }
+          />
           <Route path="/fed-map" element={<GlobalFederationMap />} />
           <Route path="/orchestrator" element={<HomeostaticOrchestrator />} />
           <Route path="/orbital" element={<OrbitalDashboard />} />

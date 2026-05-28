@@ -17,6 +17,27 @@
   }
 }
 
+/* Vision impairment adaptations */
+[data-vision-impairment="true"] {
+  --high-contrast-text: #FFFF00;
+  --high-contrast-bg: #000080;
+  --font-scale: 1.25;
+  --focus-outline-width: 4px;
+}
+
+[data-vision-impairment="true"] body {
+  background-color: var(--high-contrast-bg);
+  color: var(--high-contrast-text);
+  font-size: 1.25rem;
+}
+
+/* Left-handed optimization */
+[data-left-handed="true"] .action-primary {
+  order: -1;
+  margin-right: auto;
+  margin-left: 0;
+}
+
 @layer components {
   .glass-card {
     @apply bg-surface/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] shadow-2xl transition-all duration-700 hover:border-aura/40 hover:shadow-aura/5 hover:bg-surface/60;
