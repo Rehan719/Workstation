@@ -20,7 +20,8 @@
     "paths": {
       "@workstation/ui": ["../../packages/ui/src"],
       "@workstation/shared/*": ["../../packages/shared/*"],
-      "@workstation/shared": ["../../packages/shared"]
+      "@workstation/shared": ["../../packages/shared"],
+      "@superapp/*": ["src/*"]
     }
   },
   "include": ["src"],

@@ -1,0 +1,16 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "ceo": "VSB AI CEO",
+    "introspection": "Self Vision",
+    "extrospection": "World Mind",
+    "evolution": "Mind Forge",
+    "contribute": "Contribute",
+    "settings": "Settings",
+    "system_operational": "System Operational"
+  },
+  "dashboard": {
+    "welcome": "Welcome back, Guardian",
+    "resonance_msg": "The Workstation ecosystem is resonating at optimal frequencies."
+  }
+}

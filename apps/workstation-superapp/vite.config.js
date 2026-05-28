@@ -10,6 +10,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@workstation/shared': path.resolve(__dirname, '../../packages/shared'),
       '@workstation/ui': path.resolve(__dirname, '../../packages/ui/src'),
+      '@superapp': path.resolve(__dirname, './src'),
       'react-native': 'react-native-web',
     },
   },
