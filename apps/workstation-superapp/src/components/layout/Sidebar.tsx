@@ -42,6 +42,7 @@ const allNavItems: NavItem[] = [
       { name: 'QEP Dashboard', icon: LayoutDashboard, id: 'qep' },
       { name: 'Religion Hub', icon: Heart, id: 'qep-religion' },
       { name: 'Science Hub', icon: Microscope, id: 'science' },
+      { name: 'Patient Safety', icon: Activity, id: 'science/patient-safety' },
       { name: 'Education Hub', icon: GraduationCap, id: 'education' },
       { name: 'Law Hub', icon: Gavel, id: 'law' },
       { name: 'Care Hub', icon: HeartPulse, id: 'care' },
