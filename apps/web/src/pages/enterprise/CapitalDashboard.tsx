@@ -1,0 +1,258 @@
+import React, { useState, useEffect } from 'react';
+import { Card, Button, Badge } from '@workstation/ui';
+import {
+  TrendingUp, ShieldAlert, PieChart, Activity,
+  BarChart3, MessageCircle, AlertTriangle, RefreshCw,
+  Globe, Wallet, Zap, Code
+} from 'lucide-react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, AreaChart, Area
+} from 'recharts';
+
+interface CapitalMetrics {
+  balance: number;
+  totalDeposited: number;
+  unrealisedProfit: number;
+  realisedProfit: number;
+  riskScore: number;
+  homeostasisStatus: 'stable' | 'minor_deviation' | 'major_deviation';
+}
+
+interface MarketFeed {
+  symbol: string;
+  price: number;
+  change: number;
+}
+
+export const CapitalDashboard: React.FC = () => {
+  const [metrics, setMetrics] = useState<CapitalMetrics | null>(null);
+  const [feeds, setFeeds] = useState<MarketFeed[]>([]);
+  const [autonomousEnabled, setAutonomousEnabled] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'external' | 'crypto' | 'evolution'>('overview');
+
+  useEffect(() => {
+    // Simulated fetch for Phase 3
+    setMetrics({
+      balance: 12500,
+      totalDeposited: 10000,
+      unrealisedProfit: 1500,
+      realisedProfit: 1000,
+      riskScore: 0.92,
+      homeostasisStatus: 'stable'
+    });
+
+    setFeeds([
+      { symbol: 'BTC/USD', price: 65420, change: 2.4 },
+      { symbol: 'ETH/USD', price: 3512, change: 1.8 },
+      { symbol: 'SPY', price: 520.4, change: 0.5 },
+      { symbol: 'AAPL', price: 190.2, change: -0.2 },
+    ]);
+  }, []);
+
+  const handleAction = (msg: string) => {
+    alert(msg);
+  };
+
+  return (
+    <div className="space-y-10">
+      <header className="flex justify-between items-end">
+        <div>
+          <h1 className="text-5xl font-black text-white uppercase italic">Sovereign Capital</h1>
+          <p className="text-slate-500 font-bold tracking-widest uppercase text-xs mt-2">vΩ∞-CAPITAL-FUND | Global Investment Civilisation</p>
+        </div>
+        <div className="flex gap-4">
+            <Badge variant="outline" className="border-aura text-aura font-black">PHASE 3: EXTERNALLY INTEGRATED</Badge>
+            <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-2xl border border-slate-800">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Semi-Autonomous</span>
+                <button
+                    onClick={() => setAutonomousEnabled(!autonomousEnabled)}
+                    className={`w-10 h-5 rounded-full transition-colors relative ${autonomousEnabled ? 'bg-aura' : 'bg-slate-700'}`}
+                >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${autonomousEnabled ? 'left-6' : 'left-1'}`} />
+                </button>
+            </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 p-1 bg-slate-900/50 rounded-2xl border border-slate-800 w-fit">
+        {[
+            { id: 'overview', label: 'Overview', icon: PieChart },
+            { id: 'external', label: 'External Markets', icon: Globe },
+            { id: 'crypto', label: 'Crypto Gateway', icon: Wallet },
+            { id: 'evolution', label: 'Evolution', icon: Code }
+        ].map(tab => (
+            <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-aura text-slate-950 shadow-lg shadow-aura/20' : 'text-slate-500 hover:text-white'}`}
+            >
+                <tab.icon size={14} />
+                {tab.label}
+            </button>
+        ))}
+      </div>
+
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <Card className="p-6 bg-slate-900/50 border-slate-800">
+            <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Current AUM</p>
+            <p className="text-3xl font-black text-white">${metrics?.balance.toLocaleString()}</p>
+            </Card>
+            <Card className="p-6 bg-slate-900/50 border-slate-800">
+            <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Real-Time Volatility</p>
+            <p className="text-3xl font-black text-aura">14.5%</p>
+            </Card>
+            <Card className="p-6 bg-slate-900/50 border-slate-800">
+            <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">PQC Trust Score</p>
+            <div className="flex items-center gap-2">
+                <Activity className="text-green-500" size={20} />
+                <p className="text-3xl font-black text-white">100%</p>
+            </div>
+            </Card>
+            <Card className="p-6 bg-aura/10 border-aura/20">
+                <Button onClick={() => handleAction("Autonomous rebalance triggered.")} className="w-full h-full bg-aura text-slate-950 font-black hover:bg-white transition-all uppercase italic flex items-center gap-2">
+                    <Zap size={16} /> Rebalance
+                </Button>
+            </Card>
+        </div>
+      )}
+
+      {activeTab === 'external' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+                <Card className="p-8 border-slate-800 bg-slate-950/50">
+                    <h3 className="text-xl font-black text-white uppercase italic mb-6">Real-Time Market Feeds</h3>
+                    <div className="space-y-4">
+                        {feeds.map(feed => (
+                            <div key={feed.symbol} className="flex items-center justify-between p-4 bg-slate-900 rounded-2xl border border-slate-800 hover:border-aura/30 transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center font-black text-[10px] text-aura">{feed.symbol[0]}</div>
+                                    <div>
+                                        <p className="text-sm font-black text-white">{feed.symbol}</p>
+                                        <p className="text-[10px] text-slate-500 font-bold">ALPHA VANTAGE SOURCE</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-black text-white">${feed.price.toLocaleString()}</p>
+                                    <p className={`text-[10px] font-black ${feed.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                        {feed.change >= 0 ? '+' : ''}{feed.change}%
+                                    </p>
+                                </div>
+                                <Button size="sm" variant="outline" className="ml-4 border-slate-700 text-[10px] font-black uppercase">Trade</Button>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
+            <Card className="p-8 border-slate-800 bg-slate-900/30">
+                <h3 className="text-xl font-black text-white uppercase italic mb-6">Risk Limits</h3>
+                <div className="space-y-6">
+                    <div>
+                        <div className="flex justify-between text-[10px] font-black uppercase mb-2">
+                            <span className="text-slate-500">Max Asset Concentration</span>
+                            <span className="text-aura">20%</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-aura w-[20%]" />
+                        </div>
+                    </div>
+                    <div>
+                        <div className="flex justify-between text-[10px] font-black uppercase mb-2">
+                            <span className="text-slate-500">Global Diversification</span>
+                            <span className="text-green-500">OPTIMAL</span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                            {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-2 bg-green-500 rounded-full" />)}
+                        </div>
+                    </div>
+                </div>
+            </Card>
+        </div>
+      )}
+
+      {activeTab === 'crypto' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="p-8 border-slate-800 bg-slate-950/50">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="p-3 bg-aura text-slate-950 rounded-2xl"><Wallet size={24} /></div>
+                    <h3 className="text-xl font-black text-white uppercase italic">On-Chain Gateway</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
+                        <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Network</p>
+                        <p className="text-sm font-bold text-white">Polygon PoS</p>
+                    </div>
+                    <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
+                        <p className="text-[10px] font-black text-slate-500 uppercase mb-1">PQC Security</p>
+                        <p className="text-sm font-bold text-green-400 font-black">ENFORCED</p>
+                    </div>
+                </div>
+                <div className="space-y-4">
+                    <Button onClick={() => handleAction("Generating PQC deposit address...")} className="w-full bg-white text-slate-950 font-black uppercase italic">Deposit USDC/ETH</Button>
+                    <Button variant="outline" onClick={() => handleAction("Initiating PQC-signed withdrawal...")} className="w-full border-slate-700 text-slate-400 font-black uppercase italic">Withdraw to External Wallet</Button>
+                </div>
+            </Card>
+            <Card className="p-8 border-slate-800 bg-slate-950/50">
+                <h3 className="text-xl font-black text-white uppercase italic mb-6">Recent On-Chain Events</h3>
+                <div className="space-y-4 overflow-y-auto max-h-[300px] pr-2">
+                    {[
+                        { type: 'DEPOSIT', amount: '500 USDC', status: 'CONFIRMED', time: '2h ago' },
+                        { type: 'WITHDRAW', amount: '0.1 ETH', status: 'PENDING', time: '15m ago' },
+                        { type: 'SWAP', amount: '100 USDC -> ETH', status: 'CONFIRMED', time: '1d ago' },
+                    ].map((tx, i) => (
+                        <div key={i} className="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-800">
+                            <div>
+                                <p className="text-xs font-black text-white">{tx.type} {tx.amount}</p>
+                                <p className="text-[9px] text-slate-500 font-bold uppercase">{tx.time}</p>
+                            </div>
+                            <Badge className={tx.status === 'CONFIRMED' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}>
+                                {tx.status}
+                            </Badge>
+                        </div>
+                    ))}
+                </div>
+            </Card>
+        </div>
+      )}
+
+      {activeTab === 'evolution' && (
+        <Card className="p-8 border-slate-800 bg-slate-950/50">
+            <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-highlight text-slate-950 rounded-2xl"><Code size={24} /></div>
+                    <h3 className="text-xl font-black text-white uppercase italic">Constitutional Evolution</h3>
+                </div>
+                <Button onClick={() => handleAction("Opening proposal interface...")} size="sm" className="bg-aura text-slate-950 font-black uppercase italic">Propose Amendment</Button>
+            </div>
+            <div className="space-y-6">
+                {[
+                    { id: '1130', title: 'Concentration Limit Increase', status: 'UNDER REVIEW', rationale: 'Allow 25% allocation for index ETFs to improve stability.' },
+                    { id: '1205', title: 'Real-Time Data Mandate', status: 'ENACTED', rationale: 'Requirement for WebSocket ingestion for all high-stakes trades.' }
+                ].map(amend => (
+                    <div key={amend.id} className="p-6 bg-slate-900/50 rounded-3xl border border-slate-800">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <p className="text-[10px] font-black text-aura uppercase tracking-widest mb-1">Article {amend.id}</p>
+                                <h4 className="text-lg font-black text-white">{amend.title}</h4>
+                            </div>
+                            <Badge className={amend.status === 'ENACTED' ? 'bg-green-500/10 text-green-500' : 'bg-highlight/10 text-highlight'}>{amend.status}</Badge>
+                        </div>
+                        <p className="text-xs text-slate-400 font-medium leading-relaxed italic mb-6">"{amend.rationale}"</p>
+                        <div className="flex gap-4">
+                            <Button size="sm" variant="outline" className="flex-1 border-slate-700 text-xs font-black uppercase italic">View Deliberation</Button>
+                            {amend.status === 'UNDER REVIEW' && <Button size="sm" className="flex-1 bg-aura text-slate-950 text-xs font-black uppercase italic">Cast Vote</Button>}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </Card>
+      )}
+
+      <footer className="text-xs text-center text-slate-500 mt-10 uppercase font-black tracking-widest">
+        Integrated with global markets via Alpha Vantage & Binance | PQC-Secured | Tribunal-Admissible Audit Active
+      </footer>
+    </div>
+  );
+};

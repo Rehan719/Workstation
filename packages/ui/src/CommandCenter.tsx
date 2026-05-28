@@ -3,11 +3,11 @@ import { useStore, gaas } from '@workstation/shared';
 import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, MessageCircle, Heart, Brain, Zap, Clock, TrendingUp, Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge } from './index';
-import AgentForge from '../../../apps/web/src/components/organism/AgentForge';
-import OrganismVitals from '../../../apps/web/src/components/organism/OrganismVitals';
-import NeuralLink from '../../../apps/web/src/components/organism/NeuralLink';
-import SpatioTemporal from '../../../apps/web/src/components/organism/SpatioTemporal';
-import HolographicForge from '../../../apps/web/src/components/organism/HolographicForge';
+import AgentForge from '@superapp/components/organism/AgentForge';
+import OrganismVitals from '@superapp/components/organism/OrganismVitals';
+import NeuralLink from '@superapp/components/organism/NeuralLink';
+import SpatioTemporal from '@superapp/components/organism/SpatioTemporal';
+import HolographicForge from '@superapp/components/organism/HolographicForge';
 
 export const CommandCenter = () => {
   const { currentRealm, currentMode } = useStore();
