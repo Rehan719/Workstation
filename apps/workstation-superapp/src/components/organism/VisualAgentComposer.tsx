@@ -8,7 +8,16 @@ import React, { useState } from 'react';
  * and constitutional transparency panel.
  */
 const VisualAgentComposer: React.FC = () => {
-    const [agents, setAgents] = useState([
+    interface Agent {
+        id: string;
+        type: string;
+        name: string;
+        x: number;
+        y: number;
+        params: Record<string, number>;
+    }
+
+    const [agents, setAgents] = useState<Agent[]>([
         { id: 'master-1', type: 'BRAIN', name: 'Nematron-1B', x: 50, y: 50, params: { temp: 0.7 } },
         { id: 'guard-1', type: 'IMMUNE', name: 'Nemoclaw-3B', x: 250, y: 150, params: { threshold: 0.8 } }
     ]);
@@ -41,73 +50,87 @@ const VisualAgentComposer: React.FC = () => {
         a.click();
     };
 
+    const selectedAgent = agents.find(a => a.id === selectedId);
+
     return (
-        <div className="visual-agent-composer" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', background: '#050505', color: '#e0e0e0', padding: '20px', borderRadius: '16px', border: '1px solid #1a1a1a' }}>
+        <div className="visual-agent-composer grid grid-cols-[1fr_300px] gap-5 bg-[#050505] text-[#e0e0e0] p-5 rounded-2xl border border-[#1a1a1a]">
             {/* Main Canvas */}
-            <div style={{ position: 'relative', height: '500px', background: '#0a0a0a', borderRadius: '12px', overflow: 'hidden', border: '1px solid #111' }}>
-                <div style={{ position: 'absolute', top: '15px', left: '15px', zIndex: 10 }}>
-                    <h3 style={{ margin: 0, color: '#00d4ff', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Swarm Topology Designer</h3>
+            <div className="relative h-[500px] bg-[#0a0a0a] rounded-xl overflow-hidden border border-[#111]">
+                <div className="absolute top-[15px] left-[15px] z-10">
+                    <h3 className="m-0 text-[#00d4ff] text-sm uppercase tracking-wider">Swarm Topology Designer</h3>
                 </div>
 
-                <div style={{ position: 'absolute', top: '15px', right: '15px', zIndex: 10, display: 'flex', gap: '8px' }}>
-                    <button onClick={() => addAgent('BRAIN')} style={btnStyle('#ff00ff')}>+ Brain</button>
-                    <button onClick={() => addAgent('IMMUNE')} style={btnStyle('#00d4ff')}>+ Immune</button>
-                    <button onClick={() => addAgent('TOOL')} style={btnStyle('#ffff00')}>+ Tool</button>
+                <div className="absolute top-[15px] right-[15px] z-10 flex gap-2">
+                    <button type="button" onClick={() => addAgent('BRAIN')} className={btnClass('#ff00ff')}>+ Brain</button>
+                    <button type="button" onClick={() => addAgent('IMMUNE')} className={btnClass('#00d4ff')}>+ Immune</button>
+                    <button type="button" onClick={() => addAgent('TOOL')} className={btnClass('#ffff00')}>+ Tool</button>
                 </div>
 
-                <svg style={{ position: 'absolute', width: '100%', height: '100%' }}>
+                <svg className="absolute inset-0 w-full h-full">
                     {/* Simulated neural connections */}
                     {agents.map((a, i) => i > 0 && (
                         <line key={`l-${i}`} x1={agents[i-1].x + 60} y1={agents[i-1].y + 40} x2={a.x + 60} y2={a.y + 40} stroke="#222" strokeWidth="1" strokeDasharray="4" />
                     ))}
                 </svg>
 
-                {agents.map(agent => (
-                    <div
-                        key={agent.id}
-                        onClick={() => setSelectedId(agent.id)}
-                        style={{
-                            position: 'absolute', left: agent.x, top: agent.y,
-                            width: '120px', padding: '12px', background: selectedId === agent.id ? '#1a1a1a' : '#111',
-                            border: `1px solid ${selectedId === agent.id ? '#00d4ff' : '#222'}`,
-                            borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s',
-                            boxShadow: selectedId === agent.id ? '0 0 15px rgba(0, 212, 255, 0.2)' : 'none'
-                        }}
-                    >
-                        <div style={{ fontSize: '9px', fontWeight: 'bold', color: typeColor(agent.type), marginBottom: '4px' }}>{agent.type}</div>
-                        <div style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.name}</div>
-                    </div>
-                ))}
+                {agents.map(agent => {
+                    const isSelected = selectedId === agent.id;
+                    return (
+                        <div
+                            key={agent.id}
+                            onClick={() => setSelectedId(agent.id)}
+                            // left/top are genuinely free-form 2D canvas coordinates (drag-and-drop
+                            // positioning), not a bounded set of values that could be pre-enumerated
+                            // as Tailwind classes — set directly via the DOM through a ref callback
+                            // instead of a JSX `style` attribute.
+                            ref={(el) => {
+                                if (el) {
+                                    el.style.left = `${agent.x}px`;
+                                    el.style.top = `${agent.y}px`;
+                                }
+                            }}
+                            className={`absolute w-[120px] p-3 rounded-lg cursor-pointer transition-all border ${
+                                isSelected ? 'bg-[#1a1a1a] border-[#00d4ff] shadow-[0_0_15px_rgba(0,212,255,0.2)]' : 'bg-[#111] border-[#222] shadow-none'
+                            }`}
+                        >
+                            <div className={`text-[9px] font-bold mb-1 ${typeClass(agent.type)}`}>{agent.type}</div>
+                            <div className="text-[11px] whitespace-nowrap overflow-hidden text-ellipsis">{agent.name}</div>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Sidebar / Transparency Panel */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div style={{ background: '#0a0a0a', padding: '15px', borderRadius: '12px', border: '1px solid #1a1a1a', flex: 1 }}>
-                    <h4 style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#666' }}>Config & Governance</h4>
-                    {selectedId ? (
+            <div className="flex flex-col gap-[15px]">
+                <div className="bg-[#0a0a0a] p-[15px] rounded-xl border border-[#1a1a1a] flex-1">
+                    <h4 className="m-0 mb-2.5 text-xs text-[#666]">Config & Governance</h4>
+                    {selectedAgent ? (
                         <div>
-                            <p style={{ fontSize: '11px', color: '#aaa' }}>Agent ID: <span style={{ color: '#00d4ff' }}>{selectedId}</span></p>
-                            <div style={{ marginTop: '10px' }}>
-                                <label style={{ fontSize: '10px', display: 'block', marginBottom: '4px' }}>Inference Temperature</label>
-                                <input type="range" style={{ width: '100%' }} />
+                            <p className="text-[11px] text-[#aaa]">Agent ID: <span className="text-[#00d4ff]">{selectedAgent.id}</span></p>
+                            <div className="mt-2.5">
+                                <label htmlFor="agent-inference-temp" className="text-[10px] block mb-1">Inference Temperature</label>
+                                <input
+                                    id="agent-inference-temp"
+                                    type="range"
+                                    aria-label="Inference Temperature"
+                                    title="Inference Temperature"
+                                    className="w-full"
+                                />
                             </div>
-                            <div style={{ marginTop: '15px', padding: '10px', background: '#111', borderRadius: '6px', borderLeft: '3px solid #00ff00' }}>
-                                <div style={{ fontSize: '9px', color: '#00ff00', fontWeight: 'bold' }}>GaaS COMPLIANT</div>
-                                <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>Aligns with Article 1101.</div>
+                            <div className="mt-[15px] p-2.5 bg-[#111] rounded-md border-l-[3px] border-[#00ff00]">
+                                <div className="text-[9px] text-[#00ff00] font-bold">GaaS COMPLIANT</div>
+                                <div className="text-[10px] text-[#666] mt-1">Aligns with Article 1101.</div>
                             </div>
                         </div>
                     ) : (
-                        <p style={{ fontSize: '11px', color: '#444', fontStyle: 'italic' }}>Select a node to configure</p>
+                        <p className="text-[11px] text-[#444] italic">Select a node to configure</p>
                     )}
                 </div>
 
                 <button
+                    type="button"
                     onClick={exportBlueprint}
-                    style={{
-                        background: '#00d4ff', color: '#000', border: 'none',
-                        padding: '12px', borderRadius: '8px', fontWeight: 'bold',
-                        cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px'
-                    }}
+                    className="bg-[#00d4ff] text-black border-none p-3 rounded-lg font-bold cursor-pointer uppercase tracking-wider"
                 >
                     Export Swarm Blueprint
                 </button>
@@ -116,23 +139,21 @@ const VisualAgentComposer: React.FC = () => {
     );
 };
 
-const btnStyle = (color: string) => ({
-    background: 'transparent',
-    color: color,
-    border: `1px solid ${color}`,
-    padding: '4px 10px',
-    borderRadius: '4px',
-    fontSize: '10px',
-    cursor: 'pointer',
-    fontWeight: 'bold' as const
-});
+const btnClass = (color: string) => {
+    const colorClasses: Record<string, string> = {
+        '#ff00ff': 'text-[#ff00ff] border-[#ff00ff]',
+        '#00d4ff': 'text-[#00d4ff] border-[#00d4ff]',
+        '#ffff00': 'text-[#ffff00] border-[#ffff00]',
+    };
+    return `bg-transparent border ${colorClasses[color] ?? 'text-white border-white'} px-2.5 py-1 rounded text-[10px] cursor-pointer font-bold`;
+};
 
-const typeColor = (type: string) => {
-    switch(type) {
-        case 'BRAIN': return '#ff00ff';
-        case 'IMMUNE': return '#00d4ff';
-        case 'TOOL': return '#ffff00';
-        default: return '#fff';
+const typeClass = (type: string) => {
+    switch (type) {
+        case 'BRAIN': return 'text-[#ff00ff]';
+        case 'IMMUNE': return 'text-[#00d4ff]';
+        case 'TOOL': return 'text-[#ffff00]';
+        default: return 'text-white';
     }
 };
 

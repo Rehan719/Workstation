@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { ShoppingBag, Star, UserCheck, Search, Filter, TrendingUp } from 'lucide-react';
 import { useTheme } from '../../theme/ThemeContext';
+import { notImplemented } from '@workstation/ui';
 
 export const Marketplace: React.FC = () => {
   const { theme } = useTheme();
@@ -26,7 +27,7 @@ export const Marketplace: React.FC = () => {
             <Search size={16} className="text-slate-500" />
             <input placeholder="Search products..." className="bg-transparent border-none outline-none text-xs w-48 font-bold" />
           </div>
-          <button className={`p-2.5 rounded-xl border transition-all ${
+          <button type="button" onClick={() => notImplemented('Filter products')} className={`p-2.5 rounded-xl border transition-all ${
             isAdvanced ? 'bg-sovereign border-aura/30 hover:border-aura' : 'bg-slate-900 border-slate-700 hover:border-aura'
           }`} aria-label="Filter products">
             <Filter size={18} className="text-aura" />
@@ -43,7 +44,7 @@ export const Marketplace: React.FC = () => {
                <span className="px-3 py-1 bg-aura text-sovereign text-[10px] font-black uppercase rounded-full">Developer Spotlight</span>
                <h2 className="text-4xl font-black italic tracking-tight">NeuroSync Synthesizer</h2>
                <p className="text-slate-400 max-w-xl">Accelerate your knowledge synthesis by 400% with the new NeuroSync reactor. Optimized for Research Mission Mode.</p>
-               <button className="px-8 py-3 bg-white text-sovereign font-black rounded-xl hover:scale-105 transition-all">Claim 30-Day Resonance Trial</button>
+               <button type="button" onClick={() => notImplemented('Claim 30-Day Resonance Trial')} className="px-8 py-3 bg-white text-sovereign font-black rounded-xl hover:scale-105 transition-all">Claim 30-Day Resonance Trial</button>
             </div>
          </div>
          <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-aura/20 rounded-full blur-[100px]"></div>
@@ -74,7 +75,7 @@ export const Marketplace: React.FC = () => {
 
             <div className="flex items-center justify-between mt-auto">
               <span className="text-2xl font-black">{p.price.toLocaleString()} WST</span>
-              <button className="px-6 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold hover:border-aura transition-all">Buy Now</button>
+              <button type="button" onClick={() => notImplemented(`Buy ${p.name}`)} className="px-6 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold hover:border-aura transition-all">Buy Now</button>
             </div>
           </div>
         ))}

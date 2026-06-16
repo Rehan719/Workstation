@@ -135,12 +135,12 @@ export const GenomeExplorer: React.FC = () => {
 
   return (
     <div className="space-y-10">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-5xl font-black text-white uppercase tracking-tighter italic">Sovereign Genome</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black text-white uppercase tracking-tighter italic break-words">Sovereign Genome</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.4em] mt-2">v138.0 Galactic Era • Epigenetic Master Layer</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
            {['EXPLORER', 'GRN', 'METHYLATION', 'TRANSCRIPTIONAL', 'LINEAGE'].map(view => (
              <button
                key={view}

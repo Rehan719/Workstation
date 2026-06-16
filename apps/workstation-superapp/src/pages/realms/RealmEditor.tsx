@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Shield, Users, Globe, ChevronRight, CheckCircle2, Gavel, UserPlus, MessageSquare } from 'lucide-react';
 
 export const RealmEditor: React.FC = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isCreated, setIsCreated] = useState(false);
 
@@ -22,7 +24,7 @@ export const RealmEditor: React.FC = () => {
            <h2 className="text-3xl font-black mb-2">Realm Instantiated</h2>
            <p className="text-slate-500 font-bold max-w-sm mx-auto">Your sovereign domain is now active in the global federation.</p>
         </div>
-        <button className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl">Enter Your Realm</button>
+        <button type="button" onClick={() => navigate('/')} className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl">Enter Your Realm</button>
       </div>
     );
   }

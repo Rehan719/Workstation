@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Badge } from '@workstation/ui';
 import { Play, Pause, SkipForward, SkipBack, Volume2, Maximize2, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,8 +17,17 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
   const [currentIdx, setCurrentIdx] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
+  const playerRef = useRef<HTMLDivElement>(null);
 
   const currentSlide = slides[currentIdx];
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      playerRef.current?.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   useEffect(() => {
     if (!playing) return;
@@ -42,7 +51,7 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
   }, [playing, currentIdx, slides.length]);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-sovereign flex flex-col p-10 animate-in fade-in duration-500">
+    <div ref={playerRef} className="fixed inset-0 z-[100] bg-sovereign flex flex-col p-10 animate-in fade-in duration-500">
       <header className="flex justify-between items-center mb-10">
          <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-aura flex items-center justify-center text-sovereign shadow-2xl shadow-aura/20">
@@ -53,7 +62,7 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
                <p className="text-[10px] text-aura font-black uppercase tracking-widest">Sovereign Studio v1.0 • Autonomous Narration Active</p>
             </div>
          </div>
-         <button type="button" onClick={onClose} className="p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-all">
+         <button type="button" onClick={onClose} aria-label="Close presentation" className="p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-all">
             <X size={24} />
          </button>
       </header>
@@ -119,15 +128,16 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
       {/* Controls */}
       <footer className="mt-10 flex items-center gap-10">
          <div className="flex items-center gap-4">
-            <button type="button" onClick={() => { setCurrentIdx(c => Math.max(0, c - 1)); setProgress(0); }} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><SkipBack size={20} /></button>
+            <button type="button" onClick={() => { setCurrentIdx(c => Math.max(0, c - 1)); setProgress(0); }} aria-label="Previous slide" className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><SkipBack size={20} /></button>
             <button
               type="button"
               onClick={() => setPlaying(!playing)}
+              aria-label={playing ? 'Pause' : 'Play'}
               className="w-20 h-20 rounded-3xl bg-white text-sovereign flex items-center justify-center shadow-2xl shadow-white/10 hover:scale-105 transition-transform"
             >
                {playing ? <Pause size={32} /> : <Play size={32} className="ml-1" />}
             </button>
-            <button type="button" onClick={() => { setCurrentIdx(c => Math.min(slides.length - 1, c + 1)); setProgress(0); }} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><SkipForward size={20} /></button>
+            <button type="button" onClick={() => { setCurrentIdx(c => Math.min(slides.length - 1, c + 1)); setProgress(0); }} aria-label="Next slide" className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><SkipForward size={20} /></button>
          </div>
 
          <div className="flex-1 space-y-3">
@@ -144,7 +154,7 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
             </div>
          </div>
 
-         <button type="button" className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><Maximize2 size={20} /></button>
+         <button type="button" onClick={toggleFullscreen} aria-label="Fullscreen" className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><Maximize2 size={20} /></button>
       </footer>
     </div>
   );

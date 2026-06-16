@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { BarChart3, TrendingUp, Users, Zap, ShieldCheck, PieChart, ArrowUpRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -60,7 +60,7 @@ export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
                <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
                   <div className="h-full bg-aura w-3/4" />
                </div>
-               <Button className="w-full bg-white text-sovereign text-[9px] uppercase font-black py-4">Download Strategy PDF</Button>
+               <Button onClick={() => notImplemented('Download Strategy PDF')} className="w-full bg-white text-sovereign text-[9px] uppercase font-black py-4">Download Strategy PDF</Button>
             </div>
          </Card>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented } from '@workstation/ui';
 import { FileText, Search, Link as LinkIcon, Database, Info, ChevronRight, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -13,12 +13,12 @@ export const BackgroundTextIndex: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black text-white tracking-tighter uppercase italic">Text Archive</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black text-white tracking-tighter uppercase italic break-words">Text Archive</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Indexed Background Knowledge • Forensic Knowledge Hub</p>
         </div>
-        <Button variant="outline" className="border-aura/30 text-aura"><Database size={18} /> Refresh Index</Button>
+        <Button onClick={() => notImplemented('Refresh Index')} variant="outline" className="border-aura/30 text-aura"><Database size={18} /> Refresh Index</Button>
       </header>
 
       <Card className="p-0 overflow-hidden border-white/5">
@@ -28,7 +28,7 @@ export const BackgroundTextIndex: React.FC = () => {
                <input placeholder="Search text artifacts..." className="bg-transparent border-none outline-none text-xs font-bold text-white w-64" />
             </div>
             <div className="flex gap-2">
-               <button className="p-2 bg-slate-950 rounded-lg border border-white/5 text-slate-500"><Filter size={16} /></button>
+               <button type="button" onClick={() => notImplemented('Filter')} aria-label="Filter" title="Filter" className="p-2 bg-slate-950 rounded-lg border border-white/5 text-slate-500"><Filter size={16} /></button>
             </div>
          </div>
 
@@ -49,7 +49,13 @@ export const BackgroundTextIndex: React.FC = () => {
                        <p className="text-[10px] font-black text-slate-700 uppercase mb-1">QEP Align</p>
                        <Badge color={a.qep === 'YES' ? 'aura' : 'sovereign'}>{a.qep}</Badge>
                     </div>
-                    <button className="p-3 bg-slate-900 rounded-xl text-slate-600 hover:text-white transition-colors border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => alert(`${a.path}\n\n${a.obj}`)}
+                      aria-label={`View source for ${a.path}`}
+                      title={`View source for ${a.path}`}
+                      className="p-3 bg-slate-900 rounded-xl text-slate-600 hover:text-white transition-colors border border-slate-800"
+                    >
                        <LinkIcon size={18} />
                     </button>
                  </div>

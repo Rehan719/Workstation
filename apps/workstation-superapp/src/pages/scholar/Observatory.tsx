@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Telescope, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Microscope, Telescope as TelescopeIcon, Lock } from 'lucide-react';
 
 export const Observatory: React.FC = () => {
@@ -16,17 +16,17 @@ export const Observatory: React.FC = () => {
   };
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter uppercase italic">The Observatory</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">The Observatory</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Inter-Realm Observation • Meta-Evolutionary Analysis</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
            <Button variant="outline" onClick={handleOrcidAuth}>
               {orcidConnected ? <ShieldCheck size={18} /> : <Lock size={18} />}
               {orcidConnected ? "ORCID Verified" : "Connect ORCID"}
            </Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+           <Button onClick={() => notImplemented('Update Lens')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <TelescopeIcon size={18} /> Update Lens
            </Button>
         </div>

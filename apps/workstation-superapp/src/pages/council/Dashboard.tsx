@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Vote, FileText, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { notImplemented } from '@workstation/ui';
 
 interface Proposal {
   id: string;
@@ -65,7 +66,7 @@ export default function CouncilDashboard() {
           <p className="text-muted-foreground mt-2">Sovereign Decision Mesh vΩ∞-MASTER</p>
         </div>
         <div className="flex gap-4">
-          <Button variant="outline" className="border-[#00ffcc] text-[#00ffcc] hover:bg-[#00ffcc]/10">
+          <Button onClick={() => notImplemented('SUBMIT PROPOSAL')} variant="outline" className="border-[#00ffcc] text-[#00ffcc] hover:bg-[#00ffcc]/10">
             <FileText className="mr-2 h-4 w-4" /> SUBMIT PROPOSAL
           </Button>
           <Badge variant="secondary" className="bg-[#1a1a1a] text-[#00ffcc] px-4 py-2 border border-[#333]">
@@ -142,7 +143,7 @@ export default function CouncilDashboard() {
               Real-time audit certificates are cryptographically anchored to UEG.
             </p>
           </div>
-          <Button variant="link" className="text-[#00ffcc] font-bold">VIEW LATEST CERTIFICATE</Button>
+          <Button onClick={() => notImplemented('VIEW LATEST CERTIFICATE')} variant="link" className="text-[#00ffcc] font-bold">VIEW LATEST CERTIFICATE</Button>
         </CardContent>
       </Card>
     </div>

@@ -17,6 +17,7 @@
     "jsx": "react-jsx",
     "types": ["vite/client"],
     "paths": {
+      "@/*": ["./src/*"],
       "@workstation/ui": ["../../packages/ui/src"],
       "@workstation/shared/*": ["../../packages/shared/*"],
       "@workstation/shared": ["../../packages/shared"],

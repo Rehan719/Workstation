@@ -53,9 +53,9 @@ export const HomeostaticOrchestrator: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-5xl font-black text-white uppercase tracking-tighter italic">Homeostatic Orchestrator</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black text-white uppercase tracking-tighter italic break-words">Homeostatic Orchestrator</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.4em] mt-2">v138.0 Galactic Era • Autonomous Self-Healing Mesh</p>
         </div>
         <Button

@@ -40,11 +40,11 @@ import { OrbitalDashboard } from './pages/federation/OrbitalDashboard';
 import { CosmicMeshDashboard } from './pages/federation/CosmicMeshDashboard';
 import { HomeostaticOrchestrator } from './pages/federation/Performance';
 import { CredentialsVault } from './pages/governance/CredentialsVault';
+import { Sanctum } from './pages/governance/Sanctum';
 import { FileHub } from './pages/tools/FileHub';
 import { UVAIDDashboard } from './pages/tools/UVAIDDashboard';
 import { BackgroundTextIndex } from './pages/tools/BackgroundTextIndex';
 import { AuditDashboard } from './pages/tools/AuditDashboard';
-import { Ingest } from './pages/tools/Ingest';
 import { SynthesisStudio } from './pages/synthesis/SynthesisStudio';
 import { RealmEditor } from './pages/realms/RealmEditor';
 import { Observatory } from './pages/scholar/Observatory';
@@ -53,6 +53,7 @@ import { ConstitutionalUI } from './pages/governance/ConstitutionalUI';
 import { CouncilInterface } from './pages/governance/CouncilInterface';
 import { DebateLog } from './pages/c-suite/DebateLog';
 import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
+import { ProductCatalog } from './pages/ProductCatalog';
 import { Contribute } from './pages/Contribute';
 import { QEPEngine } from './pages/QEPEngine';
 import { QEPLanding } from './pages/QEPLanding';
@@ -157,10 +158,11 @@ function App() {
           <Route path="/phenotype" element={<PhenotypePreview />} />
           <Route path="/garden" element={<KnowledgeGarden />} />
           <Route path="/observatory" element={<Observatory />} />
-          <Route path="/file-hub" element={<Ingest />} />
           <Route path="/synthesis" element={<SynthesisStudio />} />
           <Route path="/uvaid" element={<UVAIDDashboard />} />
           <Route path="/text-index" element={<BackgroundTextIndex />} />
+          <Route path="/file-hub" element={<FileHub />} />
+          <Route path="/sanctum" element={<Sanctum />} />
           <Route path="/audit" element={<AuditDashboard />} />
           <Route path="/realm-editor" element={<RealmEditor />} />
           <Route path="/contribute" element={<Contribute />} />
@@ -186,6 +188,7 @@ function App() {
           <Route path="/debate" element={<DebateLog />} />
           <Route path="/security/bounty" element={<BugBountyPortal />} />
           <Route path="/marketplace" element={<LivingMarketplace />} />
+          <Route path="/products" element={<ProductCatalog />} />
           <Route path="/introspection" element={<IntrospectionDashboard />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/transparency" element={<AuditDashboard />} />

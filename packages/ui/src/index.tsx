@@ -1,5 +1,15 @@
 import React from 'react';
 
+/**
+ * Honest placeholder for actions whose backend/feature isn't built yet.
+ * Use instead of leaving a button with no onClick handler at all — clicking
+ * should always give the user feedback, even when the underlying capability
+ * is still in development.
+ */
+export const notImplemented = (feature: string = 'This action') => {
+  alert(`${feature} — not yet implemented. This capability is still in development.`);
+};
+
 export const Button = ({ children, variant = 'primary', className = '', type = 'button', ...props }: any) => {
   const styles: Record<string, string> = {
     primary: 'bg-aura text-sovereign hover:scale-105',

@@ -107,7 +107,7 @@ const HumanOversightQueue: React.FC = () => {
                      Reject & Flag
                    </button>
                  </div>
-                 <button className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 text-slate-400 rounded-lg hover:bg-slate-800 text-sm transition-all">
+                 <button type="button" onClick={() => alert(`XAI Trace\n\nIssue: ${item.issue}\nTime: ${item.time}`)} className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 text-slate-400 rounded-lg hover:bg-slate-800 text-sm transition-all">
                    <FileSearch size={16} />
                    View Full XAI Trace
                  </button>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Globe, Radio, Zap, ShieldAlert, Cpu, Activity, Send, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { notImplemented } from '@workstation/ui';
 
 export const CosmicNervousSystem: React.FC = () => {
   const [data, setData] = useState<any>(null);
@@ -24,12 +25,12 @@ export const CosmicNervousSystem: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-4xl font-black mb-1 neon-text !text-highlight">Cosmic Nervous System</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 neon-text !text-highlight break-words">Cosmic Nervous System</h1>
           <p className="font-bold uppercase text-[10px] tracking-widest text-highlight">Interplanetary Sensory Network v153.0</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
            <div className="px-6 py-3 bg-highlight/10 border border-highlight/30 rounded-xl flex items-center gap-3">
               <Radio size={18} className="text-highlight animate-pulse" />
               <span className="text-xs font-black text-highlight uppercase tracking-widest">Sensors Synchronized</span>
@@ -87,7 +88,7 @@ export const CosmicNervousSystem: React.FC = () => {
                   <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">
                      Meta-Consciousness is modeling potential responses to Neo-01 trajectory shift.
                   </p>
-                  <button className="w-full py-4 bg-vital/20 text-vital border border-vital/30 font-black rounded-xl text-[10px] uppercase tracking-widest">Trigger Response Protocol</button>
+                  <button onClick={() => notImplemented('Trigger Response Protocol')} className="w-full py-4 bg-vital/20 text-vital border border-vital/30 font-black rounded-xl text-[10px] uppercase tracking-widest">Trigger Response Protocol</button>
                </section>
             </div>
          </div>
@@ -107,8 +108,8 @@ export const CosmicNervousSystem: React.FC = () => {
                        </div>
                        <p className="font-mono text-white text-sm break-all">{s.content}</p>
                        <div className="pt-4 border-t border-white/5 flex gap-2">
-                          <button className="flex-1 py-2 bg-aura/10 text-aura font-black rounded-lg text-[8px] uppercase tracking-widest">Analyze</button>
-                          <button className="flex-1 py-2 bg-aura text-sovereign font-black rounded-lg text-[8px] uppercase tracking-widest">Respond</button>
+                          <button onClick={() => notImplemented('Analyze')} className="flex-1 py-2 bg-aura/10 text-aura font-black rounded-lg text-[8px] uppercase tracking-widest">Analyze</button>
+                          <button onClick={() => notImplemented('Respond')} className="flex-1 py-2 bg-aura text-sovereign font-black rounded-lg text-[8px] uppercase tracking-widest">Respond</button>
                        </div>
                     </div>
                   ))}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { GitBranch, TrendingUp, Zap, Activity, ChevronRight, Play, Star, Map, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { notImplemented } from '@workstation/ui';
 
 export const RealityDashboard: React.FC = () => {
   const [timelines, setTimelines] = useState<any[]>([]);
@@ -17,12 +18,12 @@ export const RealityDashboard: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-4xl font-black mb-1">Reality Dashboard</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Reality Dashboard</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">Branching Civilizational Futures v153.0</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
            <div className="px-6 py-3 bg-aura/10 border border-aura/30 rounded-xl flex items-center gap-3 shadow-[0_0_20px_rgba(100,255,218,0.1)]">
               <GitBranch size={18} className="text-aura" />
               <span className="text-xs font-black text-aura uppercase tracking-widest">Reality Engine Online</span>
@@ -77,7 +78,7 @@ export const RealityDashboard: React.FC = () => {
                     <p className="text-[10px] font-black text-slate-500 uppercase">Simulated Yield (T-Alpha)</p>
                     <p className="text-xl font-black text-aura">+142,000 WST</p>
                  </div>
-                 <button className="w-full py-4 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Allocate Multi-Verse Grant</button>
+                 <button onClick={() => notImplemented('Allocate Multi-Verse Grant')} className="w-full py-4 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Allocate Multi-Verse Grant</button>
               </div>
            </section>
 

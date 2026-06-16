@@ -4,8 +4,13 @@ import { ShoppingBag, Star, ShieldCheck, TrendingUp, Search, Tag, ArrowUpRight, 
 import { Card, Button, Badge } from '@workstation/ui';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const TAGS = ['LLM', 'ADAPTER', 'TOOL', 'GUARD'];
+
 export const LivingMarketplace: React.FC = () => {
   const [listings, setListings] = useState<any[]>([]);
+  const [search, setSearch] = useState('');
+  const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [walletConnected, setWalletConnected] = useState(false);
 
   useEffect(() => {
     // Simulated fetch of 100+ listings
@@ -16,21 +21,39 @@ export const LivingMarketplace: React.FC = () => {
       price: (0.5 + i * 0.2).toFixed(1),
       rating: 4.8 + (i % 3) * 0.1,
       sales: 142 + i * 5,
-      trust: 0.94 + (i % 5) * 0.01
+      trust: 0.94 + (i % 5) * 0.01,
+      tag: TAGS[i % TAGS.length]
     }));
     setListings(mock);
   }, []);
 
+  const filteredListings = listings.filter(item =>
+    (!search || item.name.toLowerCase().includes(search.toLowerCase())) &&
+    (activeTags.length === 0 || activeTags.includes(item.tag))
+  );
+
+  const toggleTag = (tag: string) => {
+    setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  const handleAction = (msg: string) => alert(msg);
+
+  const handleConnectWallet = () => {
+    if (walletConnected) return;
+    handleAction('Connecting wallet via PQC-secured gateway...');
+    setWalletConnected(true);
+  };
+
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Living Marketplace</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Living Marketplace</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Global Sovereign Economy • Layer 11 Civilisation</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><History size={18} /> Orders</Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button variant="outline" onClick={() => handleAction('Order history: no purchases on this node yet.')}><History size={18} /> Orders</Button>
+           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20" onClick={() => handleAction('Opening agent publishing wizard...')}>
               <Plus size={18} /> Publish Agent
            </Button>
         </div>
@@ -51,7 +74,10 @@ export const LivingMarketplace: React.FC = () => {
             </div>
 
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {listings.map((item) => (
+              {filteredListings.length === 0 && (
+                <p className="text-xs text-slate-500 italic col-span-full">No listings match the current filters.</p>
+              )}
+              {filteredListings.map((item) => (
                 <Card key={item.id} className="group hover:border-aura/50 transition-all flex flex-col relative overflow-hidden">
                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10">
                       <ShoppingBag size={80} />
@@ -83,7 +109,10 @@ export const LivingMarketplace: React.FC = () => {
                             <p className="text-sm font-bold text-slate-400">{item.sales}</p>
                          </div>
                       </div>
-                      <Button className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02]">Acquire Instance</Button>
+                      <Button
+                        onClick={() => handleAction(`Acquiring instance of ${item.name} for ${item.price} WST...`)}
+                        className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02]"
+                      >Acquire Instance</Button>
                    </div>
                 </Card>
               ))}
@@ -100,7 +129,7 @@ export const LivingMarketplace: React.FC = () => {
                         Publish your high-fitness recombinants to the global mesh and earn WST rewards from 100+ sovereign nodes.
                      </p>
                   </div>
-                  <Button variant="outline" className="px-12 py-4">Publisher Portal</Button>
+                  <Button variant="outline" onClick={() => handleAction('Opening Publisher Portal...')} className="px-12 py-4">Publisher Portal</Button>
                </div>
             </Card>
          </main>
@@ -133,7 +162,11 @@ export const LivingMarketplace: React.FC = () => {
                      </div>
                   </div>
                </div>
-               <Button className="w-full bg-white text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Connect Wallet</Button>
+               <Button
+                  onClick={handleConnectWallet}
+                  disabled={walletConnected}
+                  className="w-full bg-white text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest disabled:opacity-60"
+               >{walletConnected ? 'Wallet Connected' : 'Connect Wallet'}</Button>
             </Card>
 
             <Card className="p-8 space-y-6">
@@ -141,12 +174,24 @@ export const LivingMarketplace: React.FC = () => {
                <div className="space-y-4">
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-900">
                      <Search size={14} className="text-slate-700" />
-                     <input placeholder="Search..." className="bg-transparent border-none outline-none text-[10px] text-white font-bold w-full" />
+                     <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search..."
+                        className="bg-transparent border-none outline-none text-[10px] text-white font-bold w-full"
+                     />
                   </div>
                   <div className="flex flex-wrap gap-2">
-                     {['LLM', 'ADAPTER', 'TOOL', 'GUARD'].map(tag => (
-                       <button key={tag} className="px-3 py-1 rounded-lg bg-slate-900 text-[8px] font-black text-slate-500 hover:text-aura uppercase tracking-widest transition-all">{tag}</button>
-                     ))}
+                     {TAGS.map(tag => {
+                       const active = activeTags.includes(tag);
+                       const activeClass = 'px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all bg-aura text-sovereign';
+                       const inactiveClass = 'px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all bg-slate-900 text-slate-500 hover:text-aura';
+                       return active ? (
+                         <button type="button" key={tag} onClick={() => toggleTag(tag)} aria-pressed="true" className={activeClass}>{tag}</button>
+                       ) : (
+                         <button type="button" key={tag} onClick={() => toggleTag(tag)} aria-pressed="false" className={inactiveClass}>{tag}</button>
+                       );
+                     })}
                   </div>
                </div>
             </Card>

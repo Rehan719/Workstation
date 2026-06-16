@@ -29,6 +29,7 @@ class IngestedFile(BaseModel):
     timestamp: str
     extracted_text: str
     status: str
+    category: Optional[str] = None
 
 class IngestionManager:
     def __init__(self):
@@ -47,7 +48,7 @@ class IngestionManager:
         with open(self.registry_path, "w") as f:
             json.dump(self.registry, f, indent=2)
 
-    async def ingest_file(self, file: UploadFile) -> Dict[str, Any]:
+    async def ingest_file(self, file: UploadFile, category: Optional[str] = None) -> Dict[str, Any]:
         file_id = str(uuid.uuid4())
         file_path = self.upload_dir / f"{file_id}_{file.filename}"
 
@@ -89,11 +90,29 @@ class IngestionManager:
             "size": file_path.stat().st_size,
             "timestamp": datetime.datetime.utcnow().isoformat(),
             "extracted_text": extracted_text[:1000], # Preview
-            "status": "INGESTED"
+            "status": "INGESTED",
+            "category": category
         }
         self.registry.append(entry)
         self._save_registry()
 
+        return entry
+
+    def ingest_text(self, text: str, filename: str, category: Optional[str] = None) -> Dict[str, Any]:
+        """Registers raw text content (e.g. a fetched job listing) without requiring a file upload."""
+        file_id = str(uuid.uuid4())
+        entry = {
+            "file_id": file_id,
+            "filename": filename,
+            "content_type": "text/plain",
+            "size": len(text.encode("utf-8")),
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "extracted_text": text[:1000],
+            "status": "INGESTED",
+            "category": category
+        }
+        self.registry.append(entry)
+        self._save_registry()
         return entry
 
 ingestion_manager = IngestionManager()
@@ -102,10 +121,10 @@ class IngestURLRequest(BaseModel):
     url: str
 
 @router.post("/", response_model=IngestedFile)
-async def upload_content(file: UploadFile = File(...)):
+async def upload_content(file: UploadFile = File(...), category: Optional[str] = Form(None)):
     """v1.0: Multi-format Content Ingestion Endpoint."""
     try:
-        return await ingestion_manager.ingest_file(file)
+        return await ingestion_manager.ingest_file(file, category=category)
     except Exception as e:
         logger.error(f"Ingestion Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -157,6 +176,18 @@ async def ingest_url(request: IngestURLRequest):
         return await ingestion_manager.ingest_file(UploadFile(filename="web_extract.txt"))
 
 @router.get("/list", response_model=List[IngestedFile])
-async def list_ingested_content():
-    """Returns all ingested files in the knowledge base."""
+async def list_ingested_content(category: Optional[str] = None):
+    """Returns ingested files in the knowledge base, optionally filtered by category."""
+    if category:
+        return [entry for entry in ingestion_manager.registry if entry.get("category") == category]
     return ingestion_manager.registry
+
+@router.delete("/{file_id}")
+async def delete_ingested_content(file_id: str):
+    """Removes a single ingested item from the registry."""
+    before = len(ingestion_manager.registry)
+    ingestion_manager.registry = [e for e in ingestion_manager.registry if e["file_id"] != file_id]
+    if len(ingestion_manager.registry) == before:
+        raise HTTPException(status_code=404, detail="File not found")
+    ingestion_manager._save_registry()
+    return {"status": "DELETED", "file_id": file_id}

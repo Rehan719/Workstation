@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { notImplemented } from '@workstation/ui';
 
 const AGENT_COUNT = 5;
 const TWO_PI = Math.PI * 2;
@@ -69,13 +70,13 @@ const HolographicForge: React.FC = () => {
             </div>
 
             <div className="mt-4 flex gap-2.5">
-                <button
+                <button onClick={() => notImplemented('INFUSE QUALIA')}
                     type="button"
                     className="bg-slate-900 text-fuchsia-400 border border-fuchsia-500 px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-fuchsia-500/10 transition-colors"
                 >
                     INFUSE QUALIA
                 </button>
-                <button
+                <button onClick={() => notImplemented('PROJECT SWARM')}
                     type="button"
                     className="bg-fuchsia-500 text-white px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-fuchsia-400 transition-colors"
                 >

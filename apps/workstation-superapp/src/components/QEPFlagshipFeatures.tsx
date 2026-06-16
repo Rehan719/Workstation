@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { Card, Button, Badge, notImplemented} from '@workstation/ui';
 import {
   Mic,
   Book,
@@ -130,7 +130,7 @@ export const QEPFlagshipFeatures: React.FC = () => {
                       <Badge color="aura">GaaS Verified</Badge>
                       <Badge color="highlight">v0.9-P0</Badge>
                    </div>
-                   <Button className="bg-aura text-sovereign px-8 py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">
+                   <Button onClick={() => notImplemented('Launch Full Dashboard')} className="bg-aura text-sovereign px-8 py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">
                       Launch Full Dashboard
                    </Button>
                 </div>

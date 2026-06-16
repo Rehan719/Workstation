@@ -13,6 +13,10 @@ export const TreatyStudio: React.FC = () => {
     setDraft(res.data);
   };
 
+  const handleSign = () => {
+    setDraft((prev: any) => prev ? { ...prev, status: 'Signed' } : prev);
+  };
+
   return (
     <div className="space-y-10 max-w-5xl mx-auto">
       <header>
@@ -49,7 +53,7 @@ export const TreatyStudio: React.FC = () => {
                    </div>
                    <h4 className="font-bold mb-2">Protocol: {draft.nodes.join(' ↔ ')}</h4>
                    <p className="text-sm text-slate-400 italic mb-6">"{draft.terms}"</p>
-                   <button className="w-full flex items-center justify-center gap-2 py-3 bg-vital/20 text-vital border border-vital/30 rounded-xl font-bold">
+                   <button type="button" onClick={handleSign} className="w-full flex items-center justify-center gap-2 py-3 bg-vital/20 text-vital border border-vital/30 rounded-xl font-bold">
                       <Check size={18} />
                       Sign Treaty
                    </button>

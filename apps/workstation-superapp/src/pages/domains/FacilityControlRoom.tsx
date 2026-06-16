@@ -20,7 +20,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 
-const FacilityCard = ({ id, name, icon: Icon, status, metrics, onOpen }) => (
+const FacilityCard = ({ id, name, icon: Icon, status, metrics, onOpen }: any) => (
   <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 hover:border-cyan-500/50 transition-all cursor-pointer group" onClick={onOpen}>
     <div className="flex justify-between items-start mb-4">
       <div className="p-3 bg-cyan-500/10 rounded-lg text-cyan-400 group-hover:scale-110 transition-transform">
@@ -37,7 +37,7 @@ const FacilityCard = ({ id, name, icon: Icon, status, metrics, onOpen }) => (
       {Object.entries(metrics).map(([key, val]) => (
         <div key={key} className="flex justify-between text-sm">
           <span className="text-slate-400 capitalize">{key.replace('_', ' ')}:</span>
-          <span className="text-cyan-300 font-mono">{val}</span>
+          <span className="text-cyan-300 font-mono">{String(val)}</span>
         </div>
       ))}
     </div>
@@ -45,9 +45,9 @@ const FacilityCard = ({ id, name, icon: Icon, status, metrics, onOpen }) => (
 );
 
 const FabricationPlantDashboard = () => {
-  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [selectedFacility, setSelectedFacility] = useState<any>(null);
   const [orderProgress, setOrderProgress] = useState(0);
-  const [activeOrder, setActiveOrder] = useState(null);
+  const [activeOrder, setActiveOrder] = useState<any>(null);
   const [orderStep, setOrderStep] = useState('');
   const progressBarRef = useRef<HTMLDivElement>(null);
 
@@ -102,11 +102,26 @@ const FabricationPlantDashboard = () => {
     }
   ];
 
-  const blueprints = [
+  const [blueprints, setBlueprints] = useState([
     { id: 'BP-001', name: 'High-Throughput Engine', domain: 'Science', status: 'Exported' },
     { id: 'BP-002', name: 'Theological Reactor', domain: 'Law', status: 'Exported' },
     { id: 'BP-003', name: 'Concept Incubator', domain: 'Enterprise', status: 'Ready' }
-  ];
+  ]);
+
+  const exportAllBlueprints = () => {
+    const blob = new Blob([JSON.stringify(blueprints, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'blueprints.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const generateIndustrialBlueprint = (domain: string) => {
+    const id = `BP-${String(blueprints.length + 1).padStart(3, '0')}`;
+    setBlueprints(prev => [...prev, { id, name: `${domain} Industrial Blueprint`, domain, status: 'Ready' }]);
+  };
 
   const handlePlaceOrder = () => {
     setActiveOrder({ id: 'BTO-786-ALIF', level: 5, type: 'Tafsir', lang: 'English' });
@@ -236,7 +251,7 @@ const FabricationPlantDashboard = () => {
                 </div>
               ))}
             </div>
-            <button className="w-full mt-6 py-3 border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all">
+            <button type="button" onClick={exportAllBlueprints} className="w-full mt-6 py-3 border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all">
               Export All Blueprints
             </button>
           </div>
@@ -315,7 +330,7 @@ const FabricationPlantDashboard = () => {
             </div>
 
             <div className="space-y-4">
-               <button className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-xl transition-all uppercase tracking-widest text-xs">
+               <button type="button" onClick={() => generateIndustrialBlueprint(selectedFacility.name)} className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-xl transition-all uppercase tracking-widest text-xs">
                   Generate Industrial Blueprint
                </button>
                <button

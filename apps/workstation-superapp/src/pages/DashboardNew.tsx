@@ -1,8 +1,7 @@
 import React from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { Card, Button, Badge, notImplemented} from '@workstation/ui';
 import { useStore } from '@workstation/shared';
 import {
-  Plus,
   FileText,
   Calendar,
   Layout,
@@ -24,10 +23,10 @@ export const DashboardNew: React.FC = () => {
   const navigate = useNavigate();
 
   const actions = [
-    { id: 'file-hub',        name: 'Knowledge Ingest', icon: Plus,      color: 'text-aura',         bg: 'bg-aura/10',         desc: 'Upload and process raw data.',          route: '/file-hub' },
-    { id: 'synthesis',       name: 'Synthesis Studio', icon: Sparkles,  color: 'text-highlight',    bg: 'bg-highlight/10',    desc: 'Generate reports & presentations.',     route: '/synthesis' },
+    { id: 'synthesis',       name: 'Synthesis Studio', icon: Sparkles,  color: 'text-highlight',    bg: 'bg-highlight/10',    desc: 'Ingest knowledge & generate reports.',  route: '/synthesis' },
     { id: 'qep-religion',    name: 'QEP Religion',     icon: BookOpen,  color: 'text-vital',        bg: 'bg-vital/10',        desc: 'Quran Education Platform Hub.',         route: '/qep-religion' },
     { id: 'genome-explorer', name: 'Genome Core',      icon: Binary,    color: 'text-emerald-500',  bg: 'bg-emerald-500/10',  desc: 'System evolution & GRN.',               route: '/genome-explorer' },
+    { id: 'ceo',             name: 'AI CEO',            icon: MessageSquare, color: 'text-aura',     bg: 'bg-aura/10',         desc: 'Consult your autonomous executive.',    route: '/ceo' },
   ];
 
   const recentActivity = [
@@ -40,18 +39,18 @@ export const DashboardNew: React.FC = () => {
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div className="space-y-2">
-          <h1 className="text-6xl font-black tracking-tighter text-white uppercase italic">
+      <header className="flex flex-col @lg:flex-row @lg:items-end justify-between gap-8">
+        <div className="space-y-2 min-w-0">
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black tracking-tighter text-white uppercase italic break-words">
             Command <span className="text-aura">Center</span>
           </h1>
           <p className="text-slate-400 font-bold text-lg max-w-2xl leading-relaxed">
             Welcome, <span className="text-white">{user?.displayName}</span>. System status is <span className="text-emerald-500">Optimal</span>.
-            All {user?.role === 'CEO' ? 'Executive' : 'Sovereign'} channels active.
+            All {user?.role === 'ADMIN' ? 'Executive' : 'Sovereign'} channels active.
           </p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline" className="bg-slate-900 border-slate-800">
+        <div className="flex flex-wrap gap-4 shrink-0">
+           <Button onClick={() => notImplemented('Search Mesh')} variant="outline" className="bg-slate-900 border-slate-800">
               <Search size={18} /> Search Mesh
            </Button>
            <Button onClick={() => { setCurrentTab('ceo'); navigate('/ceo'); }} className="bg-aura text-sovereign shadow-2xl shadow-aura/20">
@@ -60,7 +59,7 @@ export const DashboardNew: React.FC = () => {
         </div>
       </header>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="grid grid-cols-1 @lg:grid-cols-2 @4xl:grid-cols-4 gap-6">
         {actions.map((action, i) => (
           <motion.div
             key={action.id}
@@ -85,8 +84,8 @@ export const DashboardNew: React.FC = () => {
         ))}
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-         <div className="lg:col-span-8 space-y-10">
+      <div className="grid grid-cols-1 @4xl:grid-cols-12 gap-10">
+         <div className="@4xl:col-span-8 space-y-10">
             <Card className="p-10 border-slate-900 bg-slate-950/20">
                <div className="flex justify-between items-center mb-8">
                   <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-4">
@@ -97,23 +96,23 @@ export const DashboardNew: React.FC = () => {
                </div>
                <div className="space-y-4">
                   {recentActivity.map((act) => (
-                    <div key={act.id} className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 flex items-center justify-between group hover:border-aura/20 transition-all">
-                       <div className="flex items-center gap-6">
-                          <div className="w-2 h-2 rounded-full bg-aura animate-pulse" />
-                          <div>
-                             <p className="text-sm font-bold text-white">{act.msg}</p>
-                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{act.type} • {act.time}</p>
+                    <div key={act.id} className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 flex items-center justify-between gap-4 group hover:border-aura/20 transition-all">
+                       <div className="flex items-center gap-6 min-w-0">
+                          <div className="w-2 h-2 rounded-full bg-aura animate-pulse shrink-0" />
+                          <div className="min-w-0">
+                             <p className="text-sm font-bold text-white truncate">{act.msg}</p>
+                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest truncate">{act.type} • {act.time}</p>
                           </div>
                        </div>
-                       <Button variant="outline" className="text-[8px] py-1 px-3">View Audit</Button>
+                       <Button onClick={() => notImplemented('View Audit')} variant="outline" className="text-[8px] py-1 px-3 shrink-0">View Audit</Button>
                     </div>
                   ))}
                </div>
-               <Button variant="secondary" className="w-full mt-8 uppercase font-black tracking-widest text-xs py-4">View All System Activity</Button>
+               <Button onClick={() => notImplemented('View All System Activity')} variant="secondary" className="w-full mt-8 uppercase font-black tracking-widest text-xs py-4">View All System Activity</Button>
             </Card>
          </div>
 
-         <div className="lg:col-span-4 space-y-10">
+         <div className="@4xl:col-span-4 space-y-10">
             <Card className="p-10 bg-aura/5 border-aura/20 space-y-8">
                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-aura flex items-center justify-center text-sovereign shadow-xl shadow-aura/20">

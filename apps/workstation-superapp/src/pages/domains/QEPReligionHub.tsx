@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { Card, Button, Badge, notImplemented} from '@workstation/ui';
 import { Mic, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity } from 'lucide-react';
 
 export const QEPReligionHub: React.FC = () => {
@@ -7,12 +7,12 @@ export const QEPReligionHub: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter uppercase italic">QEP <span className="text-aura">Religion</span></h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">QEP <span className="text-aura">Religion</span></h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Quran Education Platform • Advanced AI Flagship • v1.0</p>
         </div>
-        <div className="flex gap-2 p-1 rounded-2xl bg-slate-900 border border-slate-800">
+        <div className="flex gap-2 p-1 rounded-2xl bg-slate-900 border border-slate-800 flex-wrap shrink-0">
            {[
              { id: 'coach', label: 'AI Coach', icon: Mic },
              { id: 'mem', label: 'Memorization', icon: BookOpen },
@@ -160,7 +160,7 @@ const MemorizationSuite = () => (
             <VitalRow label="Ease Factor" value="2.5" />
             <VitalRow label="Interval" value="4 Days" />
             <VitalRow label="Repetitions" value="12" />
-            <Button className="w-full bg-aura text-sovereign mt-4 font-black uppercase text-[10px]">Mark as Mastered</Button>
+            <Button onClick={() => notImplemented('Mark as Mastered')} className="w-full bg-aura text-sovereign mt-4 font-black uppercase text-[10px]">Mark as Mastered</Button>
          </div>
       </Card>
    </div>
@@ -188,8 +188,8 @@ const ARVRLab = () => (
          </p>
       </div>
       <div className="flex gap-4 justify-center">
-         <Button variant="outline" className="border-slate-800">Launch AR Mouth Model</Button>
-         <Button className="bg-white text-sovereign">Enter VR Mosque</Button>
+         <Button onClick={() => notImplemented('Launch AR Mouth Model')} variant="outline" className="border-slate-800">Launch AR Mouth Model</Button>
+         <Button onClick={() => notImplemented('Enter VR Mosque')} className="bg-white text-sovereign">Enter VR Mosque</Button>
       </div>
    </Card>
 );
@@ -209,6 +209,6 @@ const TournamentCard = ({ title, tier, players, status }: any) => (
      </div>
      <h4 className="text-xl font-black text-white uppercase tracking-tight mb-2">{title}</h4>
      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{tier} • {players} Participants</p>
-     <Button variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">View Leaderboard</Button>
+     <Button onClick={() => notImplemented('View Leaderboard')} variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">View Leaderboard</Button>
   </Card>
 );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Database, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Archive, Network, Binary, Clock, Server, Activity } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,14 +14,14 @@ export const LegacyVault: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter uppercase italic">Legacy Vault</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Legacy Vault</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Millennium-Scale Archival • Autonomous Replication Triggers</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><Archive size={18} /> Deep Storage</Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Deep Storage')} variant="outline"><Archive size={18} /> Deep Storage</Button>
+           <Button onClick={() => notImplemented('Initialize Archive')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Plus size={18} /> Initialize Archive
            </Button>
         </div>

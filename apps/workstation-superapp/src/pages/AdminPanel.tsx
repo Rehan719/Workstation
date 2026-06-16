@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { ShieldCheck, Lock, Activity, History, Info, Globe, AlertTriangle, Zap, RefreshCw, BarChart3, Database } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -127,7 +127,7 @@ export const AdminPanel: React.FC = () => {
                <p className="text-sm text-slate-400 font-bold leading-relaxed">
                   Article 1107: Non-PQC handshakes will result in immediate session termination. This policy is globally enforced.
                </p>
-               <Button className="w-full bg-vital text-white py-6 rounded-2xl font-black uppercase text-xs tracking-widest">Rotate PQC Keys</Button>
+               <Button onClick={() => notImplemented('Rotate PQC Keys')} className="w-full bg-vital text-white py-6 rounded-2xl font-black uppercase text-xs tracking-widest">Rotate PQC Keys</Button>
             </Card>
          </aside>
       </div>

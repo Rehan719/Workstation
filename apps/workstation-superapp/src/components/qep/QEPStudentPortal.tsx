@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
+import { Card, Button, Badge, notImplemented} from '@workstation/ui';
+import { progressWidthClass } from '../../lib/progressWidth';
 import {
   BookOpen,
   Award,
@@ -22,6 +24,7 @@ import HifzProgress from './progress/HifzProgress';
 import TajweedMeter from './progress/TajweedMeter';
 
 const QEPStudentPortal = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('lessons');
   const [currentLevel, setCurrentLevel] = useState(1);
   const [juzMemorized, setJuzMemorized] = useState(1);
@@ -80,7 +83,7 @@ const QEPStudentPortal = () => {
         </nav>
 
         <div className="mt-auto pt-6 border-t border-slate-900">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-white hover:bg-slate-900/50 transition-all text-xs font-black uppercase tracking-widest">
+          <button type="button" onClick={() => navigate('/settings')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-white hover:bg-slate-900/50 transition-all text-xs font-black uppercase tracking-widest">
             <Settings size={16} />
             Settings
           </button>
@@ -107,7 +110,7 @@ const QEPStudentPortal = () => {
                  <p className="text-xs font-black uppercase text-white">Mubtadi Candidate</p>
                </div>
              </div>
-             <Button className="rounded-xl px-6 py-3 font-black text-[10px] uppercase tracking-widest">Resume Learning</Button>
+             <Button onClick={() => notImplemented('Resume Learning')} className="rounded-xl px-6 py-3 font-black text-[10px] uppercase tracking-widest">Resume Learning</Button>
           </div>
         </header>
 
@@ -147,7 +150,7 @@ const QEPStudentPortal = () => {
                     </div>
                     <h3 className="text-sm font-black uppercase tracking-widest mb-1">{lesson.title}</h3>
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6">Level {lesson.level} • {lesson.type}</p>
-                    <Button
+                    <Button onClick={() => notImplemented('This action')}
                       variant={lesson.status === 'Locked' ? 'ghost' : 'outline'}
                       className="w-full py-2 text-[9px] font-black uppercase tracking-widest"
                       disabled={lesson.status === 'Locked'}
@@ -165,7 +168,7 @@ const QEPStudentPortal = () => {
                     <Target size={24} className="text-aura" />
                     Learning Goals
                   </h3>
-                  <Button variant="outline" size="sm" className="rounded-lg gap-2 text-[10px] uppercase font-black tracking-widest border-aura/20">
+                  <Button onClick={() => notImplemented('Add Goal')} variant="outline" size="sm" className="rounded-lg gap-2 text-[10px] uppercase font-black tracking-widest border-aura/20">
                     <Plus size={14} /> Add Goal
                   </Button>
                 </div>
@@ -177,7 +180,7 @@ const QEPStudentPortal = () => {
                         <span className={`text-xs font-black text-${goal.color}-500`}>{goal.progress}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div className={`h-full bg-${goal.color}-500`} style={{ width: `${goal.progress}%` }} />
+                        <div className={`h-full bg-${goal.color}-500 ${progressWidthClass(goal.progress)}`} />
                       </div>
                     </Card>
                   ))}

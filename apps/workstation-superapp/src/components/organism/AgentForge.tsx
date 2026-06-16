@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { notImplemented } from '@workstation/ui';
 
 type AgentNode = { id: string; type: string; name: string; x: number; y: number };
 
@@ -48,7 +49,7 @@ const AgentForge: React.FC = () => {
                     >
                         + Action
                     </button>
-                    <button
+                    <button onClick={() => notImplemented('Deploy Swarm')}
                         type="button"
                         className="bg-fuchsia-500 text-white px-5 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-fuchsia-400 transition-colors"
                     >

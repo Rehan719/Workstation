@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layers, Search, Database, Cpu, Send, LayoutGrid, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Card, Button } from '@workstation/ui';
+import { Card, Button, notImplemented} from '@workstation/ui';
 import { useStore } from '@workstation/shared';
 
 export const QEPEngine: React.FC = () => {
@@ -44,7 +44,7 @@ export const QEPEngine: React.FC = () => {
                <LayoutGrid size={24} className="text-aura" />
                DISD Pipeline Control Panel
             </h3>
-            <Button variant="secondary">Initiate Synthesis</Button>
+            <Button onClick={() => notImplemented('Initiate Synthesis')} variant="secondary">Initiate Synthesis</Button>
          </div>
 
          <div className="space-y-4">
@@ -66,7 +66,7 @@ export const QEPEngine: React.FC = () => {
                        {node.health === 'Healthy' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                        {node.health}
                     </div>
-                    <Button variant="outline" className="px-4 py-2 text-[10px]">Manage</Button>
+                    <Button onClick={() => notImplemented('Manage')} variant="outline" className="px-4 py-2 text-[10px]">Manage</Button>
                  </div>
               </div>
             ))}

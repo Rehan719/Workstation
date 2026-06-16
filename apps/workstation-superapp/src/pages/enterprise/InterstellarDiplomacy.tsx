@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Globe, MessageSquare, ShieldCheck, History, Info, ChevronRight, Zap, Globe2, AlertCircle, Plus, Send, Network, Radio, Sparkles } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,14 +14,14 @@ export const InterstellarDiplomacy: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter uppercase italic">Interstellar Diplomacy</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Interstellar Diplomacy</h1>
           <p className="text-highlight font-black uppercase text-[10px] tracking-[0.3em]">First-Contact Frameworks • Universal Translation Console</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><Radio size={18} /> SETI Feed</Button>
-           <Button className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('SETI Feed')} variant="outline"><Radio size={18} /> SETI Feed</Button>
+           <Button onClick={() => notImplemented('Broadcast Handshake')} className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
               <Sparkles size={18} /> Broadcast Handshake
            </Button>
         </div>
@@ -104,15 +104,15 @@ export const InterstellarDiplomacy: React.FC = () => {
                      Non-interference protocols for development of alien species. Article 1142 enforces ethical first-contact boundaries.
                   </p>
                </div>
-               <Button className="w-full bg-highlight text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest">Configure Contact Rules</Button>
+               <Button onClick={() => notImplemented('Configure Contact Rules')} className="w-full bg-highlight text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest">Configure Contact Rules</Button>
             </Card>
 
             <Card className="p-10 bg-slate-950 border-slate-900 space-y-6">
                <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Contact Templates</h4>
                <div className="space-y-3">
-                  <Button variant="outline" className="w-full text-left py-3 text-[9px] px-4 justify-start">Sovereign Identification</Button>
-                  <Button variant="outline" className="w-full text-left py-3 text-[9px] px-4 justify-start">Resource Neutrality Pact</Button>
-                  <Button variant="outline" className="w-full text-left py-3 text-[9px] px-4 justify-start">Knowledge Exchange Treaty</Button>
+                  <Button onClick={() => notImplemented('Sovereign Identification')} variant="outline" className="w-full text-left py-3 text-[9px] px-4 justify-start">Sovereign Identification</Button>
+                  <Button onClick={() => notImplemented('Resource Neutrality Pact')} variant="outline" className="w-full text-left py-3 text-[9px] px-4 justify-start">Resource Neutrality Pact</Button>
+                  <Button onClick={() => notImplemented('Knowledge Exchange Treaty')} variant="outline" className="w-full text-left py-3 text-[9px] px-4 justify-start">Knowledge Exchange Treaty</Button>
                </div>
             </Card>
          </aside>

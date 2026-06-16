@@ -13,7 +13,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Plus, Save, Play, Rocket, Terminal, Download, FileJson, Search, Sparkles, Wrench } from 'lucide-react';
-import { Button, Card, Badge } from '@workstation/ui';
+import { Button, Card, Badge, notImplemented} from '@workstation/ui';
 import { useStore, gaas } from '@workstation/shared';
 
 const initialNodes: Node[] = [
@@ -90,19 +90,19 @@ export const Forge: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] space-y-6">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-5xl font-black mb-1 text-white tracking-tighter uppercase">The Forge</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 text-white tracking-tighter uppercase break-words">The Forge</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Visual Agent Composer • Galactic Era Standard</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
            <Button onClick={() => setShowToolWizard(true)} variant="outline" className="border-aura/30 text-aura"><Wrench size={16} /> Tool Wizard</Button>
            <Button variant="outline" onClick={exportBlueprint}><Download size={16} /> Export</Button>
            <Button onClick={handleSimulate} disabled={isSimulating}>
               {isSimulating ? <Sparkles size={16} className="animate-spin" /> : <Play size={16} />}
               {isSimulating ? 'Simulating...' : 'Run Reactor'}
            </Button>
-           <Button className="bg-white text-sovereign"><Rocket size={16} /> Deploy</Button>
+           <Button onClick={() => notImplemented('Deploy')} className="bg-white text-sovereign"><Rocket size={16} /> Deploy</Button>
         </div>
       </header>
 

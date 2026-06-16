@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Cpu, Zap, Activity, Globe, Wifi, Settings, Thermometer, Droplets, Wind, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { notImplemented } from '@workstation/ui';
 
 export const PhysicalSymbiosis: React.FC = () => {
   const [devices, setDevices] = useState<any[]>([]);
@@ -17,12 +18,12 @@ export const PhysicalSymbiosis: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-4xl font-black mb-1">Physical-Digital Symbiosis</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Physical-Digital Symbiosis</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">IoT & Smart City Integration v150.0</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
            <div className="px-6 py-3 bg-vital/10 border border-vital/30 rounded-xl flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-vital animate-pulse"></div>
               <span className="text-xs font-black text-vital uppercase tracking-widest">IoT Bridge Active</span>
@@ -65,7 +66,7 @@ export const PhysicalSymbiosis: React.FC = () => {
                    </div>
                    <h4 className="text-xl font-bold mb-1">{dev.name}</h4>
                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">{dev.protocol} Protocol</p>
-                   <button className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all mt-auto">Configure Device</button>
+                   <button onClick={() => notImplemented('Configure Device')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all mt-auto">Configure Device</button>
                 </div>
               ))}
            </div>

@@ -1,16 +1,16 @@
 import React from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Database, Plus, Settings, Archive } from 'lucide-react';
 
 export const Factory: React.FC = () => {
   return (
     <div className="space-y-10">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-4xl font-black text-white uppercase tracking-tighter italic">The Factory</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black text-white uppercase tracking-tighter italic break-words">The Factory</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Mass Production • Automated Deployment • QA Convergence</p>
         </div>
-        <Button className="bg-aura text-sovereign"><Plus size={18} /> New Production Line</Button>
+        <Button onClick={() => notImplemented('New Production Line')} className="bg-aura text-sovereign"><Plus size={18} /> New Production Line</Button>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

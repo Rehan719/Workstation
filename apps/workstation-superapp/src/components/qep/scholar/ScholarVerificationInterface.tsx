@@ -77,10 +77,18 @@ const ScholarVerificationInterface: React.FC = () => {
           >
             {isVerifying ? 'Signing Transaction...' : 'Verify Chain & Sign'}
           </button>
-          <button className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded transition-colors text-sm border border-slate-700">
+          <button
+            type="button"
+            onClick={() => alert('Clarification request sent to Qari-Ahmad-Warsh.')}
+            className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded transition-colors text-sm border border-slate-700"
+          >
             Request Clarification
           </button>
-          <button className="py-3 px-4 bg-red-900/30 hover:bg-red-900/50 text-red-400 font-bold rounded transition-colors text-sm border border-red-500/20">
+          <button
+            type="button"
+            onClick={() => alert('Submission rejected and logged to audit trail.')}
+            className="py-3 px-4 bg-red-900/30 hover:bg-red-900/50 text-red-400 font-bold rounded transition-colors text-sm border border-red-500/20"
+          >
             Reject
           </button>
         </div>

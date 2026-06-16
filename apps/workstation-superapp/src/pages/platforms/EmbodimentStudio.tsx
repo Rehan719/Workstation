@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { User, Cpu, Zap, Activity, ShieldCheck, History, Info, ChevronRight, MousePointer2, Smartphone, Terminal, Radio, Brain, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
@@ -16,14 +16,14 @@ export const EmbodimentStudio: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter uppercase italic">Embodiment Studio</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Embodiment Studio</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Avatar-to-Physical Body Streaming • BCI Mapping • Phase 4</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><Brain size={18} /> Calibrate BCI</Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Calibrate BCI')} variant="outline"><Brain size={18} /> Calibrate BCI</Button>
+           <Button onClick={() => notImplemented('Inhabit Avatar')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Eye size={18} /> Inhabit Avatar
            </Button>
         </div>
@@ -109,7 +109,7 @@ export const EmbodimentStudio: React.FC = () => {
                      <span className="text-emerald-500">CONNECTED</span>
                   </div>
                </div>
-               <Button className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Calibrate Mapping</Button>
+               <Button onClick={() => notImplemented('Calibrate Mapping')} className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Calibrate Mapping</Button>
             </Card>
 
             <Card className="p-10 bg-slate-950 border-slate-900 space-y-6">

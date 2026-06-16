@@ -1,19 +1,19 @@
 import React from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Globe, Users, MessageSquare, Zap, Shield, Camera, MousePointer2, Smartphone, Monitor, Info, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const ARVRSandbox: React.FC = () => {
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Immersive Lab</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Immersive Lab</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">AR/VR Prototypes • WebXR Council Chambers • Phase 3</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><Camera size={18} /> VR Mode</Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('VR Mode')} variant="outline"><Camera size={18} /> VR Mode</Button>
+           <Button onClick={() => notImplemented('Join Council Meeting')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Users size={18} /> Join Council Meeting
            </Button>
         </div>
@@ -48,8 +48,8 @@ export const ARVRSandbox: React.FC = () => {
                </div>
 
                <div className="absolute bottom-10 flex gap-6 z-10">
-                  <Button variant="outline" className="px-8 py-3"><MousePointer2 size={16} /> Hand Tracking</Button>
-                  <Button variant="outline" className="px-8 py-3"><Smartphone size={16} /> Mobile AR Sync</Button>
+                  <Button onClick={() => notImplemented('Hand Tracking')} variant="outline" className="px-8 py-3"><MousePointer2 size={16} /> Hand Tracking</Button>
+                  <Button onClick={() => notImplemented('Mobile AR Sync')} variant="outline" className="px-8 py-3"><Smartphone size={16} /> Mobile AR Sync</Button>
                </div>
             </Card>
          </main>
@@ -65,7 +65,7 @@ export const ARVRSandbox: React.FC = () => {
                      Navigate the planetary mesh in 3D. Click and drag nodes to inspect real-time cytokine propagation paths.
                   </p>
                </div>
-               <Button className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Launch 3D Explorer</Button>
+               <Button onClick={() => notImplemented('Launch 3D Explorer')} className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Launch 3D Explorer</Button>
             </Card>
 
             <Card className="p-10 bg-slate-950 border-slate-900 space-y-6">

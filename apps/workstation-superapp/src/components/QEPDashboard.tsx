@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { Card, Button, Badge, notImplemented} from '@workstation/ui';
 import {
   Zap,
   Search,
@@ -83,7 +83,7 @@ export const QEPDashboard: React.FC<QEPDashboardProps> = ({ domain = 'religion' 
             </div>
             <h3 className="text-lg font-black text-white mb-2">{engine.name}</h3>
             <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">{engine.desc}</p>
-            <Button
+            <Button onClick={() => notImplemented('This action')}
               variant={activeEngine === engine.id ? 'primary' : 'outline'}
               className="w-full py-2 text-[10px] font-black uppercase tracking-widest"
               disabled={loading && activeEngine === engine.id}

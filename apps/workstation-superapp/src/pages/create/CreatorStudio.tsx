@@ -15,6 +15,7 @@ import axios from 'axios';
 import { Wand2, ShieldCheck, Terminal, Cpu, Database, Plus, Save, Play, Sparkles, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import componentRegistry from '@workstation/shared/data/component_registry.json';
+import { notImplemented } from '@workstation/ui';
 
 export const CreatorStudio: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -72,11 +73,11 @@ export const CreatorStudio: React.FC = () => {
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-highlight">Universe Scale Creation v153.0 (ReactFlow Enabled)</p>
         </div>
         <div className="flex gap-4">
-           <button className="px-6 py-3 border border-slate-800 rounded-xl font-bold flex items-center gap-2 text-slate-400 hover:text-white transition-all">
+           <button onClick={() => notImplemented('Save Blueprint')} className="px-6 py-3 border border-slate-800 rounded-xl font-bold flex items-center gap-2 text-slate-400 hover:text-white transition-all">
              <Save size={18} />
              Save Blueprint
            </button>
-           <button className="px-6 py-3 bg-aura text-sovereign font-black rounded-xl flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-aura/20">
+           <button onClick={() => notImplemented('Publish to Marketplace')} className="px-6 py-3 bg-aura text-sovereign font-black rounded-xl flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-aura/20">
              <Database size={18} />
              Publish to Marketplace
            </button>
@@ -142,7 +143,7 @@ export const CreatorStudio: React.FC = () => {
               </ReactFlow>
 
               <div className="absolute bottom-8 right-8">
-                 <button className="flex items-center gap-3 px-8 py-4 bg-vital text-white font-black rounded-2xl hover:scale-105 transition-all shadow-xl shadow-vital/20 uppercase tracking-widest text-xs">
+                 <button onClick={() => notImplemented('Run Sandbox')} className="flex items-center gap-3 px-8 py-4 bg-vital text-white font-black rounded-2xl hover:scale-105 transition-all shadow-xl shadow-vital/20 uppercase tracking-widest text-xs">
                    <Play size={18} fill="currentColor" />
                    Run Sandbox
                  </button>

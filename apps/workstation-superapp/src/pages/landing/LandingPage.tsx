@@ -1,10 +1,12 @@
 import React from 'react';
 import { Globe, Shield, Zap, Users, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../theme/ThemeContext';
 
 export const LandingPage: React.FC = () => {
   const { theme } = useTheme();
   const isAdvanced = theme === 'advanced';
+  const navigate = useNavigate();
 
   return (
     <div className={`min-h-screen bg-sovereign text-white ${isAdvanced ? 'font-mono' : 'font-sans'}`}>
@@ -19,10 +21,10 @@ export const LandingPage: React.FC = () => {
              Scale your digital sovereignty. Connect to millions of nodes. Build your own realms.
            </p>
            <div className="flex flex-col md:flex-row gap-4 justify-center">
-              <button className="px-10 py-5 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all text-xl shadow-[0_0_50px_rgba(100,255,218,0.3)]">
+              <button type="button" onClick={() => navigate('/')} className="px-10 py-5 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all text-xl shadow-[0_0_50px_rgba(100,255,218,0.3)]">
                 Launch My Node
               </button>
-              <button className="px-10 py-5 bg-white/5 border border-white/10 backdrop-blur-xl font-black rounded-2xl hover:bg-white/10 transition-all text-xl">
+              <button type="button" onClick={() => navigate('/fed-map')} className="px-10 py-5 bg-white/5 border border-white/10 backdrop-blur-xl font-black rounded-2xl hover:bg-white/10 transition-all text-xl">
                 Explore the Federation
               </button>
            </div>

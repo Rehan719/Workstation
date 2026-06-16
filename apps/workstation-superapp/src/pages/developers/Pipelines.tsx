@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { Card, Button, Badge, notImplemented } from '@workstation/ui';
 import { Workflow, Play, History, Activity, Terminal, ArrowRight, CheckCircle2, AlertCircle, Info, Settings, LayoutGrid, Users, Zap, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
@@ -9,10 +9,12 @@ export const Pipelines: React.FC = () => {
   const [activeTab, setActiveTab] = useState('pipelines');
   const [activePipeline, setActivePipeline] = useState(0);
 
-  const swarms = [
+  const [swarms, setSwarms] = useState([
     { id: 's-42', name: 'Alpha-Knowledge-Swarm', status: 'Active', agents: 5, tasks: 12, health: 'Healthy' },
     { id: 's-107', name: 'Market-Analysis-Swarm', status: 'Thinking', agents: 3, tasks: 4, health: 'Normal' },
-  ];
+  ]);
+
+  const removeSwarm = (id: string) => setSwarms(prev => prev.filter(s => s.id !== id));
 
   const pipelines = [
     { id: 'p-1', name: 'Knowledge-Synthesis-Main', type: 'QEP Reactor', steps: 4, status: 'Running', health: 'Healthy' },
@@ -29,14 +31,14 @@ export const Pipelines: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Orchestration</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Orchestration</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Workflow Pipelines & Swarm Management • Layer 9 Orchestrator</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><History size={18} /> History</Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20"><Play size={18} /> New Workflow</Button>
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('History')} variant="outline"><History size={18} /> History</Button>
+           <Button onClick={() => notImplemented('New Workflow')} className="bg-aura text-sovereign shadow-xl shadow-aura/20"><Play size={18} /> New Workflow</Button>
         </div>
       </header>
 
@@ -95,7 +97,7 @@ export const Pipelines: React.FC = () => {
                                  </div>
                                  <div className="flex items-center gap-6">
                                     <Badge color={s.status === 'Active' ? 'emerald-500' : 'aura'}>{s.status}</Badge>
-                                    <button className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-vital hover:bg-vital/10 transition-all"><Trash2 size={20} /></button>
+                                    <button type="button" onClick={() => removeSwarm(s.id)} aria-label={`Remove ${s.name}`} title={`Remove ${s.name}`} className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-vital hover:bg-vital/10 transition-all"><Trash2 size={20} /></button>
                                  </div>
                               </div>
                            ))}
@@ -162,7 +164,7 @@ export const Pipelines: React.FC = () => {
                      <span className="text-emerald-500">18ms</span>
                   </div>
                </div>
-               <Button className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Scale Swarm</Button>
+               <Button onClick={() => notImplemented('Scale Swarm')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Scale Swarm</Button>
             </Card>
 
             <Card className="p-8 border-slate-800">

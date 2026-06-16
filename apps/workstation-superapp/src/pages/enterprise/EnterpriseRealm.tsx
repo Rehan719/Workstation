@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button } from '@workstation/ui';
+import { Card, Button, notImplemented} from '@workstation/ui';
 import { Shield, Lock, FileText, CheckCircle } from 'lucide-react';
 
 /**
@@ -42,7 +42,7 @@ export const EnterpriseRealm: React.FC = () => {
         <div className="lg:col-span-2 Card p-8 space-y-6 bg-slate-950/50 border border-slate-800 rounded-3xl">
            <div className="flex justify-between items-center">
               <h3 className="text-xl font-black flex items-center gap-3"><FileText className="text-slate-500" /> Compliance Audit Trail</h3>
-              <Button size="sm" variant="outline">Export GDPR Report</Button>
+              <Button onClick={() => notImplemented('Export GDPR Report')} size="sm" variant="outline">Export GDPR Report</Button>
            </div>
            <div className="overflow-hidden rounded-xl border border-slate-900">
               <table className="w-full text-left text-xs">

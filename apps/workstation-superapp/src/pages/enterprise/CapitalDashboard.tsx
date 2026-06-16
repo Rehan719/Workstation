@@ -30,6 +30,7 @@ export const CapitalDashboard: React.FC = () => {
   const [feeds, setFeeds] = useState<MarketFeed[]>([]);
   const [autonomousEnabled, setAutonomousEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'external' | 'crypto' | 'evolution'>('overview');
+  const [votedAmendments, setVotedAmendments] = useState<string[]>([]);
 
   useEffect(() => {
     // Simulated fetch for Phase 3
@@ -54,14 +55,19 @@ export const CapitalDashboard: React.FC = () => {
     alert(msg);
   };
 
+  const handleCastVote = (id: string, title: string) => {
+    setVotedAmendments(prev => [...prev, id]);
+    alert(`Vote cast for Article ${id}: ${title}`);
+  };
+
   return (
     <div className="space-y-10">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-5xl font-black text-white uppercase italic">Sovereign Capital</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black text-white uppercase italic break-words">Sovereign Capital</h1>
           <p className="text-slate-500 font-bold tracking-widest uppercase text-xs mt-2">vΩ∞-CAPITAL-FUND | Global Investment Civilisation</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
             <Badge variant="outline" className="border-aura text-aura font-black">PHASE 3: EXTERNALLY INTEGRATED</Badge>
             <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-2xl border border-slate-800">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Semi-Autonomous</span>
@@ -143,7 +149,12 @@ export const CapitalDashboard: React.FC = () => {
                                         {feed.change >= 0 ? '+' : ''}{feed.change}%
                                     </p>
                                 </div>
-                                <Button size="sm" variant="outline" className="ml-4 border-slate-700 text-[10px] font-black uppercase">Trade</Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleAction(`Trade order placed: ${feed.symbol} @ $${feed.price.toLocaleString()}`)}
+                                    className="ml-4 border-slate-700 text-[10px] font-black uppercase"
+                                >Trade</Button>
                             </div>
                         ))}
                     </div>
@@ -244,8 +255,20 @@ export const CapitalDashboard: React.FC = () => {
                         </div>
                         <p className="text-xs text-slate-400 font-medium leading-relaxed italic mb-6">"{amend.rationale}"</p>
                         <div className="flex gap-4">
-                            <Button size="sm" variant="outline" className="flex-1 border-slate-700 text-xs font-black uppercase italic">View Deliberation</Button>
-                            {amend.status === 'UNDER REVIEW' && <Button size="sm" className="flex-1 bg-aura text-slate-950 text-xs font-black uppercase italic">Cast Vote</Button>}
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAction(`Opening deliberation thread for Article ${amend.id}: ${amend.title}`)}
+                                className="flex-1 border-slate-700 text-xs font-black uppercase italic"
+                            >View Deliberation</Button>
+                            {amend.status === 'UNDER REVIEW' && (
+                                <Button
+                                    size="sm"
+                                    disabled={votedAmendments.includes(amend.id)}
+                                    onClick={() => handleCastVote(amend.id, amend.title)}
+                                    className="flex-1 bg-aura text-slate-950 text-xs font-black uppercase italic disabled:opacity-50"
+                                >{votedAmendments.includes(amend.id) ? 'Voted' : 'Cast Vote'}</Button>
+                            )}
                         </div>
                     </div>
                 ))}

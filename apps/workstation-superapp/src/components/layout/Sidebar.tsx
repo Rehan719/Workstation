@@ -6,7 +6,8 @@ import {
   Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye,
-  HeartPulse, Workflow, Search, Smartphone, Globe2, Database, Layers, Factory, ChevronDown
+  HeartPulse, Workflow, Search, Smartphone, Globe2, Database, Layers, Factory, ChevronDown,
+  Lock, FolderOpen
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -29,28 +30,30 @@ const allNavItems: NavItem[] = [
       { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
       { name: 'BTO Catalog', icon: Package, id: 'bto' },
       { name: 'Capital Fund', icon: DollarSign, id: 'capital' },
-      { name: 'File Hub', icon: Package, id: 'file-hub' },
-      { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' }
-    ]
-  },
-
-  {
-    name: 'QEP Flagship',
-    icon: Layers,
-    id: 'qep-facet',
-    subItems: [
-      { name: 'QEP Dashboard', icon: LayoutDashboard, id: 'qep' },
-      { name: 'Religion Hub', icon: Heart, id: 'qep-religion' },
-      { name: 'Science Hub', icon: Microscope, id: 'science' },
-      { name: 'Education Hub', icon: GraduationCap, id: 'education' },
-      { name: 'Law Hub', icon: Gavel, id: 'law' },
-      { name: 'Care Hub', icon: HeartPulse, id: 'care' },
-      { name: 'Employment', icon: Briefcase, id: 'employment' },
+      { name: 'Synthesis Studio', icon: Sparkles, id: 'synthesis' },
+      { name: 'Marketplace', icon: ShoppingBag, id: 'marketplace' },
+      { name: 'Product Catalog', icon: Archive, id: 'products' },
+      // Cross-domain platform tooling — not tied to a single subject domain,
+      // so it lives here rather than in Domains Suite.
       { name: 'AI Portal', icon: Cpu, id: 'qep/ai' },
       { name: 'Multi-Domain', icon: Network, id: 'qep/multi-domain' },
       { name: 'Global Scale', icon: Globe, id: 'qep/global' },
       { name: 'Industrial', icon: Factory, id: 'qep/facility' },
       { name: 'Ultimate v9', icon: Zap, id: 'qep/v9' }
+    ]
+  },
+
+  {
+    name: 'Domains Suite',
+    icon: Layers,
+    id: 'qep-facet',
+    subItems: [
+      { name: 'Religion Hub', icon: Heart, id: 'qep-religion' },
+      { name: 'Science Hub', icon: Microscope, id: 'science' },
+      { name: 'Education Hub', icon: GraduationCap, id: 'education' },
+      { name: 'Law Hub', icon: Gavel, id: 'law' },
+      { name: 'Care Hub', icon: HeartPulse, id: 'care' },
+      { name: 'Employment', icon: Briefcase, id: 'employment' }
     ]
   },
 
@@ -74,7 +77,9 @@ const allNavItems: NavItem[] = [
       { name: 'Constitution', icon: FileText, id: 'constitution' },
       { name: 'Transparency', icon: History, id: 'transparency' },
       { name: 'Entity Control', icon: ShieldCheck, id: 'admin' },
-      { name: 'Audit Dashboard', icon: ShieldCheck, id: 'audit' }
+      { name: 'Audit Dashboard', icon: ShieldCheck, id: 'audit' },
+      { name: 'Sovereign Vault', icon: Database, id: 'vault' },
+      { name: 'The Sanctum', icon: Lock, id: 'sanctum' }
     ]
   },
 
@@ -86,6 +91,7 @@ const allNavItems: NavItem[] = [
       { name: 'The Forge', icon: Terminal, id: 'forge' },
       { name: 'AR/VR Lab', icon: Camera, id: 'ar-vr' },
       { name: 'Federation', icon: Map, id: 'fed-map' },
+      { name: 'File Hub', icon: FolderOpen, id: 'file-hub' },
       { name: 'System Settings', icon: Settings, id: 'settings' }
     ]
   }
@@ -116,15 +122,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   });
 
   return (
-    <aside className={`w-full flex flex-col p-6 h-full transition-all duration-500 border-r bg-slate-950 border-slate-900 z-30 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
-      <div className="mb-10 relative">
-        <button type="button" onClick={() => { setCurrentTab('dashboard'); navigate('/'); }} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-aura to-highlight flex items-center justify-center text-sovereign shadow-lg shadow-aura/10 animate-pulse">
+    <aside className={`w-full min-w-0 flex flex-col p-6 h-full transition-all duration-500 border-r bg-slate-950 border-slate-900 z-30 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
+      <div className="mb-10 relative min-w-0">
+        <button type="button" onClick={() => { setCurrentTab('dashboard'); navigate('/'); }} className="flex items-center gap-3 hover:opacity-80 transition-opacity w-full min-w-0">
+           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-aura to-highlight flex items-center justify-center text-sovereign shadow-lg shadow-aura/10 animate-pulse shrink-0">
               <Zap size={24} />
            </div>
-           <div className="text-left">
-              <h2 className="text-xl font-black tracking-tighter text-white uppercase">Workstation</h2>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-aura font-black">v3.0 Ultimate</p>
+           <div className="text-left min-w-0">
+              <h2 className="text-xl font-black tracking-tighter text-white uppercase truncate">Workstation</h2>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-aura font-black truncate">v3.0 Ultimate</p>
            </div>
         </button>
       </div>
@@ -181,13 +187,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         })}
       </nav>
 
-      <div className="pt-6 border-t border-slate-900 flex items-center gap-4 px-2">
-         <div className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center font-black text-[10px] text-aura uppercase tracking-widest">
+      <div className="pt-6 border-t border-slate-900 flex items-center gap-4 px-2 min-w-0">
+         <div className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center font-black text-[10px] text-aura uppercase tracking-widest shrink-0">
             {user?.displayName?.substring(0, 2) || 'VSB'}
          </div>
-         <div>
-            <p className="text-xs font-black text-white uppercase tracking-wider">{user?.displayName || 'Sovereign'}</p>
-            <p className="text-[9px] text-aura/50 uppercase font-black tracking-[0.2em]">{user?.role || 'Guest'}</p>
+         <div className="min-w-0">
+            <p className="text-xs font-black text-white uppercase tracking-wider truncate">{user?.displayName || 'Sovereign'}</p>
+            <p className="text-[9px] text-aura/50 uppercase font-black tracking-[0.2em] truncate">{user?.role || 'Guest'}</p>
          </div>
       </div>
     </aside>

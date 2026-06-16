@@ -21,7 +21,8 @@ export default function CouncilJudiciary() {
   useEffect(() => {
     fetch('/api/council/judge/rulings')
       .then(r => r.json())
-      .then(setRulings);
+      .then(data => setRulings(Array.isArray(data) ? data : []))
+      .catch(() => setRulings([]));
   }, []);
 
   const handleOverride = async (rulingId: string) => {
@@ -45,6 +46,9 @@ export default function CouncilJudiciary() {
       <h1 className="text-3xl font-bold">⚖️ Sovereign Judiciary</h1>
       <ScrollArea className="h-[600px]">
         <div className="space-y-4">
+          {rulings.length === 0 && (
+            <p className="text-sm text-muted-foreground">No rulings on file yet.</p>
+          )}
           {rulings.map(ruling => (
             <Card key={ruling.ruling_id} className={ruling.status === 'OVERRIDDEN' ? 'opacity-60' : ''}>
               <CardHeader className="flex flex-row items-center justify-between">

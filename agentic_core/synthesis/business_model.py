@@ -6,7 +6,7 @@ import random
 class BusinessModelSimulator:
     """v1.0 Production: Generates business models and runs QEP engine simulations."""
 
-    def generate_model(self, data: str) -> Dict[str, Any]:
+    def generate_model(self, data: str, topic: str = "Long-Term Safety Assurance (LTSA)") -> Dict[str, Any]:
         timestamp = datetime.datetime.utcnow().isoformat()
 
         # 1. Market Opportunity (Derived from Dossier)
@@ -34,8 +34,8 @@ class BusinessModelSimulator:
         }
 
         return {
-            "title": "Business Model: Long-Term Safety Assurance (LTSA)",
-            "market_summary": f"Targeting a ${market_size/1e9}B market by 2030 with a focus on Advanced Therapies.",
+            "title": f"Business Model: {topic}",
+            "market_summary": f"Targeting a ${market_size/1e9}B market by 2030 with a focus on {topic}.",
             "projections": {
                 "year_1": 4.5e7,
                 "year_3": 2.1e8,
@@ -43,6 +43,22 @@ class BusinessModelSimulator:
             },
             "roi_analysis": "30% reduction in clinical trial attrition for early adopters.",
             "sim_results": simulation,
+            "timestamp": timestamp
+        }
+
+    def generate_business_model_canvas(self, topic: str) -> Dict[str, Any]:
+        timestamp = datetime.datetime.utcnow().isoformat()
+        return {
+            "title": f"Business Model Canvas: {topic}",
+            "value_proposition": f"Sovereign, AI-orchestrated delivery of {topic} with constitutional compliance built in.",
+            "customer_segments": ["Enterprise R&D teams", "Regulatory bodies", "Independent researchers"],
+            "channels": ["Direct platform access", "API integration", "Federation partners"],
+            "customer_relationships": "Self-serve with AI CEO concierge escalation.",
+            "revenue_streams": ["Subscription tiers", "Usage-based API billing", "Enterprise licensing"],
+            "key_resources": ["Multi-Modal Fabric (L12)", "Genome/Evolution engine", "Constitutional AI layer"],
+            "key_activities": ["Autonomous synthesis", "Continuous evolution", "Compliance auditing"],
+            "key_partners": ["Cloud infrastructure providers", "Regulatory consultancies", "Data providers"],
+            "cost_structure": ["Compute/inference", "Compliance & audit overhead", "Platform engineering"],
             "timestamp": timestamp
         }
 

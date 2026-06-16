@@ -47,8 +47,12 @@ export const useResilientWebSocket = (url: string, onMessage: (data: any) => voi
   };
 
   useEffect(() => {
-    connect();
+    // Deferred so React 18 StrictMode's mount->cleanup->mount dev-only
+    // double-invoke cancels this before a real socket ever opens, instead
+    // of opening one and immediately closing it mid-handshake.
+    const connectTimeout = window.setTimeout(connect, 0);
     return () => {
+      clearTimeout(connectTimeout);
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
       if (ws.current) {
         ws.current.onclose = null; // Prevent reconnect on unmount

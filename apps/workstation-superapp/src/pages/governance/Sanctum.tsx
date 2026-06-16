@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Shield, Gavel, Landmark, ChevronRight, Lock, Eye, Sparkles, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { notImplemented } from '@workstation/ui';
+import { progressWidthClass } from '../../lib/progressWidth';
 
 export const Sanctum: React.FC = () => {
   const [accessGranted, setAccessGranted] = useState(false);
@@ -16,6 +18,14 @@ export const Sanctum: React.FC = () => {
     ]);
   }, []);
 
+  const castSovereignVote = (id: string) => {
+    setProposals(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const next = Math.min(100, parseFloat(p.support) + 1);
+      return { ...p, support: `${next}%` };
+    }));
+  };
+
   if (!accessGranted) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center gap-6">
@@ -23,7 +33,7 @@ export const Sanctum: React.FC = () => {
         <h2 className="text-2xl font-black text-slate-500 uppercase tracking-[0.4em]">The Sanctum</h2>
         <p className="text-slate-600 font-bold max-w-xs">Verification of multi-dimensional resonance in progress. Minimum reputation threshold: 1,000.</p>
         <div className="w-48 h-1 bg-slate-900 rounded-full overflow-hidden mt-4">
-           <div className="h-full bg-aura animate-pulse" style={{ width: '65%' }}></div>
+           <div className={`h-full bg-aura animate-pulse ${progressWidthClass(65)}`}></div>
         </div>
       </div>
     );
@@ -49,7 +59,7 @@ export const Sanctum: React.FC = () => {
                  <Sparkles size={24} className="text-aura" />
                  Meta-Amendments
               </h3>
-              <button className="px-6 py-2 border border-aura/30 text-aura font-black rounded-xl text-xs uppercase tracking-widest hover:bg-aura/10 transition-all">New Meta-Proposal</button>
+              <button type="button" onClick={() => notImplemented('New Meta-Proposal')} className="px-6 py-2 border border-aura/30 text-aura font-black rounded-xl text-xs uppercase tracking-widest hover:bg-aura/10 transition-all">New Meta-Proposal</button>
            </div>
 
            <div className="space-y-6">
@@ -63,8 +73,8 @@ export const Sanctum: React.FC = () => {
                    </div>
                    <h4 className="text-2xl font-black mb-4 leading-tight">{p.title}</h4>
                    <div className="flex gap-4">
-                      <button className="flex-1 py-4 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest">Cast Sovereign Vote</button>
-                      <button className="p-4 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white transition-all"><Eye size={20} /></button>
+                      <button type="button" onClick={() => castSovereignVote(p.id)} className="flex-1 py-4 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest">Cast Sovereign Vote</button>
+                      <button type="button" onClick={() => alert(`${p.title}\nStatus: ${p.status}\nConsensus: ${p.support}`)} aria-label="View proposal details" title="View proposal details" className="p-4 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white transition-all"><Eye size={20} /></button>
                    </div>
                 </div>
               ))}

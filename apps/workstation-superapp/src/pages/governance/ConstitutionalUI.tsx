@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Shield, Sparkles, FileText, Send, History, CheckCircle2, AlertTriangle, Search, Activity, Zap, TrendingUp, Clock, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,12 +28,12 @@ export const ConstitutionalUI: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter uppercase italic">Constitutional Core</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Constitutional Core</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Self-Modification Engine • Universal Governance • Phase 4</p>
         </div>
-        <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
+        <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800 flex-wrap shrink-0">
            {['articles', 'timeline', 'history'].map((tab) => (
              <button
                key={tab}
@@ -65,7 +65,7 @@ export const ConstitutionalUI: React.FC = () => {
                      <div className="h-full bg-aura w-[96%]" />
                   </div>
                </div>
-               <Button className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">
+               <Button onClick={() => notImplemented('Propose Amendment')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">
                   <Sparkles size={18} /> Propose Amendment
                </Button>
             </Card>

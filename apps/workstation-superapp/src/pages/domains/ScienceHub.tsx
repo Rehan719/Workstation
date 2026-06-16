@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { BookOpen, Heart, Sparkles, MessageCircle, History, Info, ShieldCheck, Zap, Globe, HeartPulse, Network, Binary, Compass, Anchor, Wind, Layers, Microscope } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,18 +13,18 @@ export const ScienceHub: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter italic">Frontier of Discovery</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter italic break-words">Frontier of Discovery</h1>
           <div className="flex items-center gap-4">
              <p className="text-highlight font-black uppercase text-[10px] tracking-[0.3em]">Scientific Inquiry • Empirical Mesh • Science Hub</p>
              <Badge color="highlight" className="text-[8px]">{layout} MODE</Badge>
              <Badge color="aura" className="text-[8px]">{emotionalAdjustment} TONE</Badge>
           </div>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><History size={18} /> Lab Notes</Button>
-           <Button className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Lab Notes')} variant="outline"><History size={18} /> Lab Notes</Button>
+           <Button onClick={() => notImplemented('New Experiment')} className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
               <Microscope size={18} /> New Experiment
            </Button>
         </div>

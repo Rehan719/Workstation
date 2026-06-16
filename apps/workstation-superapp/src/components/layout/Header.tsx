@@ -11,6 +11,19 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
   const { currentRealm, setCurrentRealm, currentMode, setCurrentMode, setCurrentTab } = useStore();
   const navigate = useNavigate();
   const [showAssistant, setShowAssistant] = useState(false);
+  const [assistantInput, setAssistantInput] = useState('');
+  const [assistantMessages, setAssistantMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
+
+  const sendAssistantMessage = () => {
+    const text = assistantInput.trim();
+    if (!text) return;
+    setAssistantMessages(prev => [
+      ...prev,
+      { role: 'user', text },
+      { role: 'assistant', text: `Acknowledged: "${text}". Full reasoning is handled in the main Sovereign Mesh panel — open it for a complete response.` },
+    ]);
+    setAssistantInput('');
+  };
 
   const realms: { id: typeof currentRealm; label: string; icon: any }[] = [
     { id: 'LEARNER', label: 'Learner', icon: GraduationCap },
@@ -70,8 +83,6 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
              </button>
            ))}
         </div>
-
-        <div className="h-8 w-px bg-slate-800 mx-2" />
 
         <div className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${
           wsStatus === 'CONNECTED' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' :
@@ -136,12 +147,25 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
               <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5 text-xs leading-relaxed text-slate-300">
                 L12 Multi-Modal Fabric Active. Mesh latency is currently 28ms. How can I assist with your v3.0 operation?
               </div>
+              {assistantMessages.map((m, i) => (
+                <div key={i} className={`p-4 rounded-2xl border text-xs leading-relaxed ${m.role === 'user' ? 'bg-aura/10 border-aura/20 text-white' : 'bg-slate-800/50 border-white/5 text-slate-300'}`}>
+                  {m.text}
+                </div>
+              ))}
            </div>
            <div className="p-4 border-t border-white/10 bg-slate-950 flex gap-2">
-              <input placeholder="Ask the mesh..." className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white" />
+              <input
+                value={assistantInput}
+                onChange={(e) => setAssistantInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') sendAssistantMessage(); }}
+                placeholder="Ask the mesh..."
+                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white"
+              />
               <button
                 type="button"
-                className="p-2 bg-aura text-sovereign rounded-lg"
+                onClick={sendAssistantMessage}
+                disabled={!assistantInput.trim()}
+                className="p-2 bg-aura text-sovereign rounded-lg disabled:opacity-40"
                 title="Send Message"
                 aria-label="Send Message"
               >

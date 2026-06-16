@@ -9,6 +9,8 @@ export const CEOChat: React.FC = () => {
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [sentiment, setSentiment] = useState('analytical');
+  const [showMenu, setShowMenu] = useState(false);
+  const [feedback, setFeedback] = useState<Record<number, 'up' | 'down'>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const getAvatarColor = () => {
@@ -89,6 +91,27 @@ export const CEOChat: React.FC = () => {
     }
   };
 
+  const handleClearConversation = () => {
+    setMessages([{ role: 'assistant', content: 'Greeting, Guardian. I am the VSB AI CEO. Our collective resonance is reaching multi-dimensional thresholds.' }]);
+    setFeedback({});
+    setShowMenu(false);
+  };
+
+  const handleExportTranscript = () => {
+    const blob = new Blob([JSON.stringify(messages, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ceo-transcript-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowMenu(false);
+  };
+
+  const handleFeedback = (index: number, type: 'up' | 'down') => {
+    setFeedback(prev => ({ ...prev, [index]: prev[index] === type ? undefined as any : type }));
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-14rem)] max-w-5xl mx-auto glass-card overflow-hidden">
       <header className="px-10 py-8 border-b border-white/5 flex justify-between items-center bg-surface/60 backdrop-blur-3xl">
@@ -113,14 +136,34 @@ export const CEOChat: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 relative">
           <button
+            type="button"
             aria-label="More options"
             title="More options"
+            onClick={() => setShowMenu(prev => !prev)}
             className="p-3 bg-surface/80 border border-white/10 rounded-xl hover:border-aura/50 transition-colors text-slate-400 hover:text-aura"
           >
              <MoreHorizontal size={20} />
           </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden z-20">
+              <button
+                type="button"
+                onClick={handleExportTranscript}
+                className="w-full text-left px-5 py-3 text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-aura transition-colors"
+              >
+                Export Transcript
+              </button>
+              <button
+                type="button"
+                onClick={handleClearConversation}
+                className="w-full text-left px-5 py-3 text-xs font-bold text-slate-300 hover:bg-white/5 hover:text-vital transition-colors"
+              >
+                Clear Conversation
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -149,8 +192,20 @@ export const CEOChat: React.FC = () => {
                    </div>
                    {m.role === 'assistant' && (
                      <div className="flex gap-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button type="button" aria-label="Helpful" title="Helpful" className="p-2 hover:text-aura transition-colors"><ThumbsUp size={14} /></button>
-                        <button type="button" aria-label="Not helpful" title="Not helpful" className="p-2 hover:text-vital transition-colors"><ThumbsDown size={14} /></button>
+                        <button
+                          type="button"
+                          aria-label="Helpful"
+                          title="Helpful"
+                          onClick={() => handleFeedback(i, 'up')}
+                          className={`p-2 transition-colors ${feedback[i] === 'up' ? 'text-aura' : 'hover:text-aura'}`}
+                        ><ThumbsUp size={14} fill={feedback[i] === 'up' ? 'currentColor' : 'none'} /></button>
+                        <button
+                          type="button"
+                          aria-label="Not helpful"
+                          title="Not helpful"
+                          onClick={() => handleFeedback(i, 'down')}
+                          className={`p-2 transition-colors ${feedback[i] === 'down' ? 'text-vital' : 'hover:text-vital'}`}
+                        ><ThumbsDown size={14} fill={feedback[i] === 'down' ? 'currentColor' : 'none'} /></button>
                      </div>
                    )}
                 </div>

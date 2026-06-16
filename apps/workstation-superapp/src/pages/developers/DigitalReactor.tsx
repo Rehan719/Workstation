@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button } from '@workstation/ui';
+import { Card, Button, notImplemented} from '@workstation/ui';
 import { Play, Shield, Terminal, Zap, Bug, Share2, Info } from 'lucide-react';
 
 export const DigitalReactor: React.FC = () => {
@@ -7,9 +7,9 @@ export const DigitalReactor: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-5xl font-black mb-1 text-aura">Digital Reactor</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 text-aura break-words">Digital Reactor</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">Sandboxed Simulation Environment • Layer A5</p>
         </div>
         <Button onClick={() => setIsRunning(!isRunning)} className={isRunning ? 'bg-vital' : 'bg-aura'}>
@@ -59,7 +59,7 @@ export const DigitalReactor: React.FC = () => {
                     <div className="px-3 py-1 rounded bg-slate-800 text-[8px] font-black text-slate-400 uppercase">CPU: 42%</div>
                     <div className="px-3 py-1 rounded bg-slate-800 text-[8px] font-black text-slate-400 uppercase">MEM: 1.2GB</div>
                  </div>
-                 <Button variant="outline" className="text-[10px] px-4 py-2"><Share2 size={12} /> Export Trace</Button>
+                 <Button onClick={() => notImplemented('Export Trace')} variant="outline" className="text-[10px] px-4 py-2"><Share2 size={12} /> Export Trace</Button>
               </div>
             )}
          </main>

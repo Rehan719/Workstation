@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { notImplemented } from '@workstation/ui';
 import {
   Zap, Shield, Globe, Users, Settings, Database,
   Lock, CheckCircle, Search, Terminal, Activity,
@@ -7,7 +8,7 @@ import {
   Fingerprint, Key, Edit3, Save, ChevronRight, RefreshCcw
 } from 'lucide-react';
 
-const NavTab = ({ id, label, icon: Icon, active, onClick }) => (
+const NavTab = ({ id, label, icon: Icon, active, onClick }: any) => (
   <button
     onClick={() => onClick(id)}
     className={`flex items-center gap-3 px-6 py-4 transition-all border-b-2 font-black uppercase tracking-widest text-[10px] ${
@@ -22,7 +23,7 @@ const QEPV9CommandCenter = () => {
   const [activeTab, setActiveTab] = useState('learning');
   const [signedIn, setSignedIn] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
-  const [signature, setSignature] = useState(null);
+  const [signature, setSignature] = useState<any>(null);
 
   const handleScholarSign = () => {
     setIsSigning(true);
@@ -51,7 +52,7 @@ const QEPV9CommandCenter = () => {
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               SYSTEMS OPTIMAL
            </div>
-           <button type="button" aria-label="Notifications" title="Notifications" className="text-slate-500 hover:text-white transition-colors"><Bell size={20}/></button>
+           <button type="button" onClick={() => alert('No new notifications.')} aria-label="Notifications" title="Notifications" className="text-slate-500 hover:text-white transition-colors"><Bell size={20}/></button>
            <div className="h-8 w-px bg-slate-800" />
            <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
@@ -202,7 +203,7 @@ const QEPV9CommandCenter = () => {
                      </div>
                      <h3 className="font-black text-white mb-2 uppercase">{d.domain}</h3>
                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-6">TARGET: {d.mapping}</p>
-                     <button className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-[10px] uppercase tracking-widest rounded-lg flex items-center justify-center gap-2">
+                     <button type="button" onClick={() => notImplemented(`Execute Adaptation: ${d.domain}`)} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-[10px] uppercase tracking-widest rounded-lg flex items-center justify-center gap-2">
                         Execute Adaptation <ChevronRight size={14} />
                      </button>
                   </div>

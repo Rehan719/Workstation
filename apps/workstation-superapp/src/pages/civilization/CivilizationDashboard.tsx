@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Globe, TrendingUp, Cpu, ShieldCheck, Activity, Zap, Users, ArrowUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { notImplemented } from '@workstation/ui';
 
 export const CivilizationDashboard: React.FC = () => {
   const [insights, setInsights] = useState<any[]>([]);
@@ -14,12 +15,12 @@ export const CivilizationDashboard: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-5xl font-black mb-1 neon-text !text-aura">Civilization Brain</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 neon-text !text-aura break-words">Civilization Brain</h1>
           <p className="text-slate-500 font-bold text-lg mt-2">Real-time planetary intelligence and collective decision mapping.</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
            <div className="px-6 py-3 bg-aura/10 border border-aura/30 rounded-xl flex items-center gap-3 shadow-[0_0_20px_rgba(100,255,218,0.1)]">
               <Activity size={18} className="text-aura animate-pulse" />
               <span className="text-xs font-black text-aura uppercase tracking-widest">Co-Conscious Mode Active</span>
@@ -57,7 +58,7 @@ export const CivilizationDashboard: React.FC = () => {
                    <div className="p-6 bg-sovereign/60 rounded-2xl border border-white/5 space-y-4">
                       <p className="text-[10px] font-black text-aura uppercase tracking-widest">System Recommendation</p>
                       <p className="text-sm font-bold text-white leading-relaxed">{i.recommendation}</p>
-                      <button className="flex items-center gap-2 text-xs font-black uppercase text-aura hover:underline">
+                      <button onClick={() => notImplemented('Trigger Strategic Initiative')} className="flex items-center gap-2 text-xs font-black uppercase text-aura hover:underline">
                          Trigger Strategic Initiative
                          <ArrowUpRight size={14} />
                       </button>

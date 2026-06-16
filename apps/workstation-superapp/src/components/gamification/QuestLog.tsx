@@ -2,18 +2,19 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Star, ChevronRight, CheckCircle2, Lock } from 'lucide-react';
 import { useGamificationStore } from '../../store/gamificationStore';
+import { notImplemented } from '@workstation/ui';
 
 export const QuestLog: React.FC = () => {
   const { quests, stats } = useGamificationStore();
 
   return (
     <div className="space-y-8">
-      <header className="flex justify-between items-end border-b border-white/5 pb-6">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-6">
         <div>
           <h2 className="text-3xl font-black mb-2">Evolution Quests</h2>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em]">Guided Pathways to Sovereignty</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap shrink-0">
            <div className="px-4 py-2 bg-aura/10 border border-aura/30 rounded-xl flex items-center gap-2">
               <Star size={14} className="text-aura" fill="currentColor" />
               <span className="text-xs font-black text-aura">{quests.filter(q => stats.completed_quests.includes(q.id)).length}/{quests.length}</span>
@@ -53,7 +54,7 @@ export const QuestLog: React.FC = () => {
                    Quest Synchronized
                 </div>
               ) : (
-                <button className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">
+                <button onClick={() => notImplemented('Launch Quest')} className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">
                   Launch Quest
                 </button>
               )}

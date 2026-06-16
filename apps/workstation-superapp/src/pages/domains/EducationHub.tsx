@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Layers, GraduationCap, History } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';
@@ -12,18 +12,18 @@ export const EducationHub: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter italic">Aula of Enlightenment</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter italic break-words">Aula of Enlightenment</h1>
           <div className="flex items-center gap-4">
              <p className="text-highlight font-black uppercase text-[10px] tracking-[0.3em]">Adaptive Pedagogy • Knowledge Mesh • Education Hub</p>
              <Badge color="highlight" className="text-[8px]">{layout} MODE</Badge>
              <Badge color="aura" className="text-[8px]">{emotionalAdjustment} TONE</Badge>
           </div>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><History size={18} /> Curriculum</Button>
-           <Button className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Curriculum')} variant="outline"><History size={18} /> Curriculum</Button>
+           <Button onClick={() => notImplemented('New Lesson')} className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
               <GraduationCap size={18} /> New Lesson
            </Button>
         </div>

@@ -14,13 +14,13 @@ export const DelegationDashboard: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-4xl font-black mb-1">Autonomous Governance</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Autonomous Governance</h1>
           <p className="font-bold uppercase text-[10px] tracking-widest text-aura">AI Executor Delegation v152.0</p>
         </div>
         {stats && (
-           <div className="flex gap-4">
+           <div className="flex gap-4 flex-wrap shrink-0">
               <div className="px-6 py-3 bg-aura/10 border border-aura/30 rounded-xl flex items-center gap-3">
                  <UserCheck size={18} className="text-aura" />
                  <span className="text-xs font-black text-aura uppercase tracking-widest">{stats.human_satisfaction_rate * 100}% Satisfaction</span>
@@ -69,7 +69,7 @@ export const DelegationDashboard: React.FC = () => {
                     </div>
                  </div>
 
-                 <button className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-aura hover:text-aura transition-all mt-auto flex items-center justify-center gap-2">
+                 <button type="button" onClick={() => alert(`${del.ai_executor}\nDomain: ${del.category}\nStatus: ${del.status}\nThreshold: ${del.threshold.toLocaleString()} WST`)} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-aura hover:text-aura transition-all mt-auto flex items-center justify-center gap-2">
                     <Play size={14} />
                     Audit Decision Log
                  </button>

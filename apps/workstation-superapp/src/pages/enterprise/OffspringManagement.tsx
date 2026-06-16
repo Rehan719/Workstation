@@ -1,22 +1,33 @@
-import React from 'react';
-import { Card, Button } from '@workstation/ui';
+import React, { useState } from 'react';
+import { Card, Button, notImplemented } from '@workstation/ui';
 import { GitBranch, UserPlus, ShieldCheck, History, Rocket, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const OffspringManagement: React.FC = () => {
-  const offspring = [
+  const [offspring, setOffspring] = useState([
     { id: 'did:vsb:offspring-001', parent: 'did:vsb:sovereign-v3', status: 'Sovereign', age: '12d', health: 0.98 },
     { id: 'did:vsb:offspring-002', parent: 'did:vsb:sovereign-v3', status: 'Federated', age: '4d', health: 0.95 },
-  ];
+  ]);
+
+  const spawnInstance = () => {
+    const n = offspring.length + 1;
+    setOffspring(prev => [...prev, {
+      id: `did:vsb:offspring-${String(n).padStart(3, '0')}`,
+      parent: 'did:vsb:sovereign-v3',
+      status: 'Federated',
+      age: '0d',
+      health: 1.0,
+    }]);
+  };
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-5xl font-black mb-1 text-highlight">Offspring Management</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 text-highlight break-words">Offspring Management</h1>
           <p className="font-bold uppercase text-[10px] tracking-widest text-highlight">NANITE Propagation • Autonomous Replication (Article 1115)</p>
         </div>
-        <Button className="bg-highlight text-sovereign">
+        <Button onClick={spawnInstance} className="bg-highlight text-sovereign">
            <Rocket size={18} /> Spawn New Instance
         </Button>
       </header>
@@ -35,7 +46,7 @@ export const OffspringManagement: React.FC = () => {
             <Card className="bg-highlight/5 border-highlight/20">
                <h4 className="text-xs font-black uppercase text-highlight tracking-widest mb-4">Self-Certification</h4>
                <p className="text-[10px] text-slate-400 font-bold leading-relaxed mb-6">All offspring undergo mandatory v3.0 certification before achieving sovereign status.</p>
-               <Button variant="outline" className="w-full text-[8px]">View Certification Specs</Button>
+               <Button onClick={() => notImplemented('View Certification Specs')} variant="outline" className="w-full text-[8px]">View Certification Specs</Button>
             </Card>
          </aside>
 
@@ -69,7 +80,7 @@ export const OffspringManagement: React.FC = () => {
                              <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase">{item.status}</span>
                           </div>
                           <div className="w-px h-8 bg-slate-900" />
-                          <button type="button" aria-label="Open instance" title="Open instance" className="p-2 text-slate-500 hover:text-highlight transition-colors">
+                          <button type="button" onClick={() => alert(`${item.id}\nParent: ${item.parent}\nStatus: ${item.status}\nAge: ${item.age}\nHealth: ${(item.health * 100).toFixed(0)}%`)} aria-label="Open instance" title="Open instance" className="p-2 text-slate-500 hover:text-highlight transition-colors">
                              <ExternalLink size={18} />
                           </button>
                        </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { Card, Button, Badge, notImplemented} from '@workstation/ui';
 import { Video, Share, Shield, CheckCircle, Microscope, Landmark, Briefcase, HeartPulse, GraduationCap, Zap } from 'lucide-react';
 
 interface QEPImmersiveProps {
@@ -32,7 +32,7 @@ export const QEPImmersiveTools: React.FC<QEPImmersiveProps> = ({ domain = 'relig
             </div>
           </div>
           <div className="space-y-4">
-             <Button className="w-full bg-slate-900 text-aura border border-aura/20 py-4 flex items-center justify-center gap-3">
+             <Button onClick={() => notImplemented('This action')} className="w-full bg-slate-900 text-aura border border-aura/20 py-4 flex items-center justify-center gap-3">
                 <Video size={18} />
                 {config.action}
              </Button>
@@ -62,7 +62,7 @@ export const QEPImmersiveTools: React.FC<QEPImmersiveProps> = ({ domain = 'relig
                 <CheckCircle size={16} className="text-emerald-500" />
                 Context: {domain.toUpperCase()} Domain Profile
              </div>
-             <Button variant="outline" className="w-full text-[10px] py-4 uppercase font-black">Audit Framework</Button>
+             <Button onClick={() => notImplemented('Audit Framework')} variant="outline" className="w-full text-[10px] py-4 uppercase font-black">Audit Framework</Button>
           </div>
         </Card>
       </div>

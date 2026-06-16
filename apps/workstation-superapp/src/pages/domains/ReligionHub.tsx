@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { BookOpen, Heart, Sparkles, MessageCircle, History, Info, ShieldCheck, Zap, Globe, HeartPulse, Network, Binary, Compass, Anchor, Wind, Layers, GraduationCap } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,18 +22,18 @@ export const ReligionHub: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Spire of Inquiry</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Spire of Inquiry</h1>
           <div className="flex items-center gap-4">
              <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Spiritual Inquiry • Ethical Guidance Channel • Religion Hub</p>
              <Badge color="highlight" className="text-[8px]">{layout} MODE</Badge>
              <Badge color="aura" className="text-[8px]">{emotionalAdjustment} TONE</Badge>
           </div>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><History size={18} /> Tradition</Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Tradition')} variant="outline"><History size={18} /> Tradition</Button>
+           <Button onClick={() => notImplemented('Seek Guidance')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Sparkles size={18} /> Seek Guidance
            </Button>
         </div>
@@ -133,7 +133,7 @@ export const ReligionHub: React.FC = () => {
                        </div>
                        <div className="flex items-center gap-6">
                           <Badge color={wisdom.status === 'Ratified' ? 'emerald-500' : 'highlight'}>{wisdom.status}</Badge>
-                          <Button variant="outline" className="px-6">Meditate</Button>
+                          <Button onClick={() => notImplemented('Meditate')} variant="outline" className="px-6">Meditate</Button>
                        </div>
                     </motion.div>
                   ))}
@@ -161,7 +161,7 @@ export const ReligionHub: React.FC = () => {
                      <div className="h-full bg-aura w-[98%]" />
                   </div>
                </div>
-               <Button className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Consult Ethics Council</Button>
+               <Button onClick={() => notImplemented('Consult Ethics Council')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Consult Ethics Council</Button>
             </Card>
 
             <Card className="p-10 bg-slate-950 border-slate-900 space-y-6">

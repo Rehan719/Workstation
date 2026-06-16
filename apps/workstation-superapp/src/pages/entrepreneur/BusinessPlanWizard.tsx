@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Rocket, Target, DollarSign, LineChart, FileText, ChevronRight, CheckCircle2, TrendingUp, Users, ShieldCheck, Sparkles } from 'lucide-react';
 import axios from 'axios';
+import { notImplemented } from '@workstation/ui';
 
 export const BusinessPlanWizard: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -27,12 +28,12 @@ export const BusinessPlanWizard: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-12">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-4xl font-black mb-1">Entrepreneurial Hub</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Entrepreneurial Hub</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Livelihood & Business Synthesis v151.0</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
            {[1, 2, 3].map(s => (
              <div key={s} className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border ${step >= s ? 'bg-aura text-sovereign border-aura' : 'border-slate-800 text-slate-700'}`}>
                 {s}
@@ -108,7 +109,7 @@ export const BusinessPlanWizard: React.FC = () => {
                        <span className="text-xs font-black uppercase text-highlight tracking-widest">AI CEO Validated</span>
                     </div>
                   </div>
-                  <button className="p-4 bg-white/10 rounded-2xl text-white hover:bg-white/20 transition-all border border-white/10">
+                  <button onClick={() => notImplemented('This action')} className="p-4 bg-white/10 rounded-2xl text-white hover:bg-white/20 transition-all border border-white/10">
                      <FileText size={24} />
                   </button>
                </div>
@@ -138,7 +139,7 @@ export const BusinessPlanWizard: React.FC = () => {
                   </div>
                </div>
 
-               <button className="w-full py-5 bg-highlight text-sovereign font-black rounded-2xl hover:scale-[1.02] transition-all shadow-xl shadow-highlight/20 uppercase tracking-widest text-sm">
+               <button onClick={() => notImplemented('Register Business & Open Payouts')} className="w-full py-5 bg-highlight text-sovereign font-black rounded-2xl hover:scale-[1.02] transition-all shadow-xl shadow-highlight/20 uppercase tracking-widest text-sm">
                   Register Business & Open Payouts
                </button>
             </motion.div>
@@ -162,7 +163,7 @@ export const BusinessPlanWizard: React.FC = () => {
                        <p className="font-bold">{m.name}</p>
                        <p className="text-[10px] text-slate-500 uppercase font-black">{m.role}</p>
                     </div>
-                    <button className="text-[10px] font-black uppercase text-aura hover:underline">Match</button>
+                    <button onClick={() => notImplemented('Match')} className="text-[10px] font-black uppercase text-aura hover:underline">Match</button>
                  </div>
                ))}
             </div>
@@ -176,7 +177,7 @@ export const BusinessPlanWizard: React.FC = () => {
             <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">
                Generate AI-assisted Terms of Service and IP Licensing agreements. Verified against the global constitutional floor.
             </p>
-            <button className="w-full py-4 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest hover:border-vital hover:text-vital transition-all">
+            <button onClick={() => notImplemented('Draft Compliance Pack')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest hover:border-vital hover:text-vital transition-all">
                Draft Compliance Pack
             </button>
          </div>

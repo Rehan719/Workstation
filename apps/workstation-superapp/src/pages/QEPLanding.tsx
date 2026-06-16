@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { Card, Button, Badge, notImplemented} from '@workstation/ui';
 import { QEPDashboard } from '../components/QEPDashboard';
 import { Sparkles, ArrowRight, Shield, Globe, Cpu } from 'lucide-react';
 
@@ -42,7 +42,7 @@ export const QEPLanding: React.FC = () => {
               Launch QEP Flagship
               <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
             </Button>
-            <Button variant="outline" className="px-10 py-8 rounded-2xl text-lg font-black uppercase tracking-widest">
+            <Button onClick={() => notImplemented('View Specs')} variant="outline" className="px-10 py-8 rounded-2xl text-lg font-black uppercase tracking-widest">
               View Specs
             </Button>
           </div>

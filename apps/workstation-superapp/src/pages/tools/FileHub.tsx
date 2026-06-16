@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import React, { useRef, useState } from 'react';
+import { Card, Badge, Button, notImplemented } from '@workstation/ui';
 import { File, Folder, Upload, Search, Filter, MoreVertical, Download, Trash2, LayoutGrid, List, Sparkles, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { progressWidthClass } from '../../lib/progressWidth';
 
 export const FileHub: React.FC = () => {
   const [files, setFiles] = useState([
@@ -10,17 +11,46 @@ export const FileHub: React.FC = () => {
     { name: 'merger_config.json', size: '12KB', type: 'CONFIG', date: '1d ago' },
     { name: 'orbital_auth.pqc', size: '84KB', type: 'KEY', date: '3h ago' },
   ]);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const chosen = e.target.files;
+    if (!chosen || chosen.length === 0) return;
+    const additions = Array.from(chosen).map(f => ({
+      name: f.name,
+      size: f.size > 1024 * 1024 ? `${(f.size / (1024 * 1024)).toFixed(1)}MB` : `${Math.max(1, Math.round(f.size / 1024))}KB`,
+      type: (f.name.split('.').pop() || 'FILE').toUpperCase(),
+      date: 'just now',
+    }));
+    setFiles(prev => [...additions, ...prev]);
+    e.target.value = '';
+  };
+
+  const downloadFile = (f: { name: string }) => {
+    const blob = new Blob([`Placeholder content for ${f.name}`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = f.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const deleteFile = (name: string) => {
+    setFiles(prev => prev.filter(f => f.name !== name));
+  };
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black text-white tracking-tighter uppercase italic">Sovereign Files</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black text-white tracking-tighter uppercase italic break-words">Sovereign Files</h1>
           <p className="text-highlight font-black uppercase text-[10px] tracking-[0.3em]">Knowledge Artifact Orchestration • Layer 7 Library</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><Terminal size={18} /> File CLI</Button>
-           <Button className="bg-highlight text-sovereign shadow-xl shadow-highlight/20"><Upload size={18} /> Upload Artifact</Button>
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('File CLI')} variant="outline"><Terminal size={18} /> File CLI</Button>
+           <Button onClick={() => uploadInputRef.current?.click()} className="bg-highlight text-sovereign shadow-xl shadow-highlight/20"><Upload size={18} /> Upload Artifact</Button>
+           <input ref={uploadInputRef} type="file" multiple aria-label="Upload artifact files" title="Upload artifact files" className="hidden" onChange={handleFilesChosen} />
         </div>
       </header>
 
@@ -40,7 +70,7 @@ export const FileHub: React.FC = () => {
                           <span className="text-white">{n.val}%</span>
                        </div>
                        <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                          <div className={`h-full ${n.color}`} style={{ width: `${n.val}%` }} />
+                          <div className={`h-full ${n.color} ${progressWidthClass(n.val)}`} />
                        </div>
                     </div>
                   ))}
@@ -55,7 +85,7 @@ export const FileHub: React.FC = () => {
                <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
                   Generate synthetic training data or neural architectures directly in the hub.
                </p>
-               <button className="w-full py-3 bg-highlight/10 text-highlight border border-highlight/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-highlight hover:text-sovereign transition-all">Launch AI Gen</button>
+               <button type="button" onClick={() => notImplemented('AI Artifact Gen')} className="w-full py-3 bg-highlight/10 text-highlight border border-highlight/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-highlight hover:text-sovereign transition-all">Launch AI Gen</button>
             </div>
          </aside>
 
@@ -67,8 +97,8 @@ export const FileHub: React.FC = () => {
                      <input placeholder="Search artifacts..." className="bg-transparent border-none outline-none text-xs font-bold text-white w-64" />
                   </div>
                   <div className="flex gap-2">
-                     <button className="p-2 bg-slate-950 rounded-lg border border-white/5 text-slate-500"><Filter size={16} /></button>
-                     <button className="p-2 bg-slate-950 rounded-lg border border-white/5 text-slate-500"><LayoutGrid size={16} /></button>
+                     <button type="button" onClick={() => notImplemented('Filter')} aria-label="Filter" title="Filter" className="p-2 bg-slate-950 rounded-lg border border-white/5 text-slate-500"><Filter size={16} /></button>
+                     <button type="button" onClick={() => notImplemented('Grid view')} aria-label="Grid view" title="Grid view" className="p-2 bg-slate-950 rounded-lg border border-white/5 text-slate-500"><LayoutGrid size={16} /></button>
                   </div>
                </div>
 
@@ -90,8 +120,8 @@ export const FileHub: React.FC = () => {
                        </div>
                        <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="text-[10px] font-mono text-slate-600 uppercase mr-4">{f.date}</span>
-                          <button className="p-2 hover:text-highlight transition-colors"><Download size={16} /></button>
-                          <button className="p-2 hover:text-vital transition-colors"><Trash2 size={16} /></button>
+                          <button type="button" onClick={() => downloadFile(f)} aria-label={`Download ${f.name}`} title={`Download ${f.name}`} className="p-2 hover:text-highlight transition-colors"><Download size={16} /></button>
+                          <button type="button" onClick={() => deleteFile(f.name)} aria-label={`Delete ${f.name}`} title={`Delete ${f.name}`} className="p-2 hover:text-vital transition-colors"><Trash2 size={16} /></button>
                        </div>
                     </div>
                   ))}

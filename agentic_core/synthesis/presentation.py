@@ -8,9 +8,9 @@ class PresentationGenerator:
         slides = [
             {
                 "id": 1,
-                "title": "Patient Safety in Advanced Therapies",
-                "content": "Executive Summary of the current gaps in safety monitoring for AAV, CAR-T, and mRNA.",
-                "narration": "Welcome to this executive summary. Today we address the critical safety gaps in next-generation advanced therapies.",
+                "title": topic,
+                "content": f"Executive Summary of {topic}, including current gaps in safety monitoring for AAV, CAR-T, and mRNA.",
+                "narration": f"Welcome to this executive summary on {topic}. Today we address the critical safety gaps in next-generation advanced therapies.",
                 "animation": "fade-in",
                 "sound": "startup"
             },
@@ -79,5 +79,17 @@ class PresentationGenerator:
             }
         ]
         return slides
+
+    def generate_audiobook(self, topic: str) -> List[Dict[str, Any]]:
+        slides = self.generate_presentation(topic)
+        return [
+            {
+                "id": s["id"],
+                "title": s["title"],
+                "narration": s["narration"],
+                "duration_sec": max(10, round(len(s["narration"].split()) / 2.5) + 5)
+            }
+            for s in slides
+        ]
 
 presentation_gen = PresentationGenerator()

@@ -14,13 +14,13 @@ export const SoulRecordExplorer: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div className="flex items-center gap-6">
            <div className="p-5 bg-vital/20 rounded-full text-vital shadow-[0_0_30px_rgba(255,82,82,0.2)]">
               <Fingerprint size={40} />
            </div>
            <div>
-             <h1 className="text-4xl font-black mb-1">Soul-Record</h1>
+             <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Soul-Record</h1>
              <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Multi-Dimensional Identity Explorer v153.0</p>
            </div>
         </div>
@@ -57,7 +57,7 @@ export const SoulRecordExplorer: React.FC = () => {
                    <p className="text-[10px] font-black text-slate-500 uppercase">Reputation</p>
                    <p className="text-xl font-black text-white">{dim.reputation}</p>
                 </div>
-                <button type="button" aria-label={`Explore ${dim.name}`} title={`Explore ${dim.name}`} className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+                <button type="button" onClick={() => alert(`${dim.name}\nReputation: ${dim.reputation}\nContributions: ${dim.contributions}\nBadges: ${dim.badges.length}`)} aria-label={`Explore ${dim.name}`} title={`Explore ${dim.name}`} className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
                    <ChevronRight size={18} />
                 </button>
              </div>

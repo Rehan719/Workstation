@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button } from '@workstation/ui';
+import { Card, Button, notImplemented} from '@workstation/ui';
 import { Database, Search, FlaskConical, Share2 } from 'lucide-react';
 
 /**
@@ -21,9 +21,9 @@ export const ScholarRealm: React.FC = () => {
            <Card className="p-6">
               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Research Tools</h4>
               <div className="space-y-2">
-                 <Button className="w-full justify-start gap-3" variant="ghost"><Database size={16} /> UEG GraphQL</Button>
-                 <Button className="w-full justify-start gap-3" variant="ghost"><FlaskConical size={16} /> Sandbox-X</Button>
-                 <Button className="w-full justify-start gap-3" variant="ghost"><Share2 size={16} /> Export DOI</Button>
+                 <Button onClick={() => notImplemented('UEG GraphQL')} className="w-full justify-start gap-3" variant="ghost"><Database size={16} /> UEG GraphQL</Button>
+                 <Button onClick={() => notImplemented('Sandbox-X')} className="w-full justify-start gap-3" variant="ghost"><FlaskConical size={16} /> Sandbox-X</Button>
+                 <Button onClick={() => notImplemented('Export DOI')} className="w-full justify-start gap-3" variant="ghost"><Share2 size={16} /> Export DOI</Button>
               </div>
            </Card>
         </aside>
@@ -40,7 +40,7 @@ export const ScholarRealm: React.FC = () => {
               <div className="w-full max-w-lg bg-slate-950 p-4 rounded-xl border border-slate-900 font-mono text-left text-aura text-sm">
                  query {"{"} events(limit: 10) {"{ type, source, timestamp }"} {"}"}
               </div>
-              <Button className="bg-aura text-sovereign px-10">Execute Global Discovery</Button>
+              <Button onClick={() => notImplemented('Execute Global Discovery')} className="bg-aura text-sovereign px-10">Execute Global Discovery</Button>
            </Card>
         </main>
       </div>

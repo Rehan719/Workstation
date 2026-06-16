@@ -35,6 +35,12 @@ from agentic_core.api.v138 import ceo as ceo_v138
 from agentic_core.api import v154_unified, v200_unified
 from agentic_core.ingestion import api as ingestion_api
 from agentic_core.synthesis import api as synthesis_api
+from agentic_core.catalog import api as catalog_api
+from agentic_core.catalog import bto as bto_api
+from agentic_core.career import api as career_api
+from agentic_core.api import council_judiciary
+from agentic_core.avatars import api as avatar_api
+from agentic_core.analysis import api as workstation_meta_api
 from prometheus_client import make_asgi_app, Counter, Histogram
 import time
 
@@ -251,6 +257,12 @@ app.include_router(v154_unified.router, prefix="/api")
 app.include_router(v200_unified.router, prefix="/api")
 app.include_router(ingestion_api.router, prefix="/api/v1")
 app.include_router(synthesis_api.router, prefix="/api/v1")
+app.include_router(catalog_api.router, prefix="/api/v1")
+app.include_router(bto_api.router, prefix="/api/v1")
+app.include_router(career_api.router, prefix="/api/v1")
+app.include_router(council_judiciary.router, prefix="/api")
+app.include_router(avatar_api.router, prefix="/api/v1")
+app.include_router(workstation_meta_api.router, prefix="/api/v1")
 
 app.add_middleware(
     CORSMiddleware,

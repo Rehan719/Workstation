@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { Card, Button, Badge, notImplemented } from '@workstation/ui';
 import { Beaker, Trophy, Activity, Target, Zap, Rocket, Layers, ChevronRight, Info, Plus, TrendingUp, FlaskConical, History, Star, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useStore, gaas } from '@workstation/shared';
 
 export const Incubator: React.FC = () => {
   const { user } = useStore();
+  const navigate = useNavigate();
   const [activeTournament, setActiveTournament] = useState(0);
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
 
   const tournaments = [
     { id: 't-1', name: 'Alpha-Summarizer v3', agents: 12, top_fitness: 0.94, time_left: '2h 14m', stage: 'Round 3' },
@@ -16,14 +19,14 @@ export const Incubator: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Evolution Engine</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Evolution Engine</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Agent Evolution Arena • Layer 10 Fitness Selection</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><Target size={18} /> Brackets</Button>
-           <Button className="bg-aura text-sovereign"><Plus size={18} /> Seed Tournament</Button>
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Brackets')} variant="outline"><Target size={18} /> Brackets</Button>
+           <Button onClick={() => notImplemented('Seed Tournament')} className="bg-aura text-sovereign"><Plus size={18} /> Seed Tournament</Button>
         </div>
       </header>
 
@@ -85,8 +88,8 @@ export const Incubator: React.FC = () => {
                      </div>
                   </div>
                   <div className="flex gap-4">
-                     <button className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-500 hover:text-emerald-500 transition-all"><ThumbsUp size={24} /></button>
-                     <button className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-500 hover:text-vital transition-all"><ThumbsDown size={24} /></button>
+                     <button type="button" onClick={() => setFeedback('up')} aria-label="Rate leader positively" title="Rate leader positively" className={`p-4 rounded-2xl bg-slate-900 border transition-all ${feedback === 'up' ? 'border-emerald-500 text-emerald-500' : 'border-slate-800 text-slate-500 hover:text-emerald-500'}`}><ThumbsUp size={24} /></button>
+                     <button type="button" onClick={() => setFeedback('down')} aria-label="Rate leader negatively" title="Rate leader negatively" className={`p-4 rounded-2xl bg-slate-900 border transition-all ${feedback === 'down' ? 'border-vital text-vital' : 'border-slate-800 text-slate-500 hover:text-vital'}`}><ThumbsDown size={24} /></button>
                   </div>
                </div>
             </Card>
@@ -130,7 +133,7 @@ export const Incubator: React.FC = () => {
                      Move high-fitness agents from the Incubator into production or the Living Marketplace.
                   </p>
                </div>
-               <Button className="w-full py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest">Open Factory</Button>
+               <Button onClick={() => navigate('/factory')} className="w-full py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest">Open Factory</Button>
             </Card>
          </div>
       </div>

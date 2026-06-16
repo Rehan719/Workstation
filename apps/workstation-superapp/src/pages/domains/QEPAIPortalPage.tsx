@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrainCircuit, Fingerprint, Network, ShieldCheck, Activity, BarChart3, Lock, Cpu } from 'lucide-react';
+import { notImplemented } from '@workstation/ui';
 
 export const QEPAIPortal: React.FC = () => {
   const [activeModel, setActiveModel] = useState<string | null>('Theological NLP');
@@ -134,7 +135,7 @@ export const QEPAIPortal: React.FC = () => {
                  </div>
                ))}
             </div>
-            <button className="w-full mt-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition-colors">
+            <button onClick={() => notImplemented('Update Recommendation Model')} className="w-full mt-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition-colors">
               Update Recommendation Model
             </button>
           </div>

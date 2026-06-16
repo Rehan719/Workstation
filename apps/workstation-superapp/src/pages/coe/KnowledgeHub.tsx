@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Book, FileText, Globe, Shield, Activity, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { notImplemented } from '@workstation/ui';
 
 const coeData = [
   { name: 'AI Ethics', icon: Shield, articles: 124, scholars: 12, description: 'Alignment and constitutional safety protocols.' },
@@ -73,7 +74,7 @@ export const KnowledgeHub: React.FC = () => {
                 <p className="text-[10px] text-slate-500 font-bold uppercase">AI Ethics • 2 hours ago</p>
               </div>
             </div>
-            <button className="text-xs font-bold text-aura hover:underline">Read Article</button>
+            <button onClick={() => notImplemented('Read Article')} className="text-xs font-bold text-aura hover:underline">Read Article</button>
           </div>
         ))}
       </div>

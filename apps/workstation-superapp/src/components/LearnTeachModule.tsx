@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Button } from '@workstation/ui';
+import { Card, Button, notImplemented} from '@workstation/ui';
 import { GraduationCap, Users, Shield, BookOpen, User } from 'lucide-react';
 
 export const LearnTeachModule: React.FC = () => {
@@ -19,11 +19,11 @@ export const LearnTeachModule: React.FC = () => {
           <div className="space-y-4">
              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex justify-between items-center">
                 <span className="text-sm font-bold text-white">Surah Al-Baqarah (1-5)</span>
-                <Button variant="outline" className="text-[10px]">Resume</Button>
+                <Button onClick={() => notImplemented('Resume')} variant="outline" className="text-[10px]">Resume</Button>
              </div>
              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex justify-between items-center">
                 <span className="text-sm font-bold text-white">Introduction to Tajwid Rules</span>
-                <Button variant="outline" className="text-[10px]">Start</Button>
+                <Button onClick={() => notImplemented('Start')} variant="outline" className="text-[10px]">Start</Button>
              </div>
           </div>
         </Card>
@@ -48,7 +48,7 @@ export const LearnTeachModule: React.FC = () => {
                 <p className="text-2xl font-black text-white">88%</p>
              </div>
           </div>
-          <Button className="w-full mt-6 bg-highlight text-sovereign uppercase font-black text-xs py-4">Generate Class Report</Button>
+          <Button onClick={() => notImplemented('Generate Class Report')} className="w-full mt-6 bg-highlight text-sovereign uppercase font-black text-xs py-4">Generate Class Report</Button>
         </Card>
       </div>
 

@@ -21,12 +21,12 @@ export const UVAIDDashboard: React.FC = () => {
 
   return (
     <div className="space-y-12 animate-in fade-in duration-1000">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-5xl font-black neon-text !text-aura mb-2">UVAID / GSE</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black neon-text !text-aura mb-2 break-words">UVAID / GSE</h1>
           <p className="text-slate-500 font-bold text-lg">Universal Visionary Artificial Intelligence & Grand Synthesis Engine.</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap shrink-0">
            <div className="px-6 py-3 bg-aura/10 border border-aura/30 rounded-xl flex items-center gap-3">
               <Activity size={18} className="text-aura" />
               <span className="text-xs font-black text-aura uppercase tracking-widest">Synthesis Engine Online</span>

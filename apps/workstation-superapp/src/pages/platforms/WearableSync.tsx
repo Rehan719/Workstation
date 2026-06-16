@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Watch, Smartphone, Bluetooth, Wifi, Activity, ShieldCheck, History, Info, ChevronRight, Zap, Bell, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -11,14 +11,14 @@ export const WearableSync: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Wearable Sync</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Wearable Sync</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Glanceable Notifications • Haptic Alerts • Phase 3</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><Bluetooth size={18} /> Pair Device</Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Pair Device')} variant="outline"><Bluetooth size={18} /> Pair Device</Button>
+           <Button onClick={() => notImplemented('Sync Vitals')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Watch size={18} /> Sync Vitals
            </Button>
         </div>
@@ -55,7 +55,7 @@ export const WearableSync: React.FC = () => {
                        </div>
                        <div className="flex items-center gap-6">
                           <Badge color={device.status === 'Connected' ? 'emerald-500' : 'slate-500'}>{device.status}</Badge>
-                          <Button variant="outline" className="px-6 py-3">Configure</Button>
+                          <Button onClick={() => notImplemented('Configure')} variant="outline" className="px-6 py-3">Configure</Button>
                        </div>
                     </motion.div>
                   ))}
@@ -112,7 +112,7 @@ export const WearableSync: React.FC = () => {
                      <span className="text-emerald-500">AES-PQC</span>
                   </div>
                </div>
-               <Button className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Enable Sync</Button>
+               <Button onClick={() => notImplemented('Enable Sync')} className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Enable Sync</Button>
             </Card>
 
             <Card className="p-8 border-slate-800">

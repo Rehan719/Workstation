@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { Vote, FileText, CheckCircle2, XCircle, Users, LayoutDashboard } from 'lucide-react';
+import { progressWidthClass } from '../../../lib/progressWidth';
 
 export const DAOGovernanceInterface: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'source' | 'moderation' | 'ledger'>('source');
 
-  const sourceProposals = [
+  const [sourceProposals, setSourceProposals] = useState([
     { id: 'prop-a1', proposer: 'scholar_01', description: 'Primary Quranic Text (Quran.com)', status: 'Approved', votes: { yes: 120, no: 5 } },
     { id: 'prop-b2', proposer: 'contributor_02', description: 'Tafsir Ibn Kathir (English Translation)', status: 'Pending', votes: { yes: 45, no: 12 } },
     { id: 'prop-c3', proposer: 'scholar_04', description: 'Sahih Muslim (Integrated API)', status: 'Pending', votes: { yes: 88, no: 3 } }
-  ];
+  ]);
+
+  const castVote = (id: string) => {
+    setSourceProposals(prev => prev.map(p => p.id === id ? { ...p, votes: { ...p.votes, yes: p.votes.yes + 1 } } : p));
+  };
 
   const moderationProposals = [
     { id: 'mod-x1', moderator: 'mod_01', content: 'Lesson 10: Advanced Tajweed', status: 'Approved', votes: { yes: 50, no: 2 } },
@@ -60,11 +65,11 @@ export const DAOGovernanceInterface: React.FC = () => {
                  </div>
                  <div className="flex items-center gap-4">
                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden flex">
-                      <div className="bg-emerald-500 h-full" style={{ width: `${(prop.votes.yes / (prop.votes.yes + prop.votes.no)) * 100}%` }}></div>
-                      <div className="bg-rose-500 h-full" style={{ width: `${(prop.votes.no / (prop.votes.yes + prop.votes.no)) * 100}%` }}></div>
+                      <div className={`bg-emerald-500 h-full ${progressWidthClass((prop.votes.yes / (prop.votes.yes + prop.votes.no)) * 100)}`}></div>
+                      <div className={`bg-rose-500 h-full ${progressWidthClass((prop.votes.no / (prop.votes.yes + prop.votes.no)) * 100)}`}></div>
                    </div>
                    <div className="text-xs font-black text-slate-500 uppercase">{prop.votes.yes + prop.votes.no} Votes</div>
-                   <button className="px-4 py-2 bg-slate-900 text-white text-[10px] font-black uppercase rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button type="button" onClick={() => castVote(prop.id)} className="px-4 py-2 bg-slate-900 text-white text-[10px] font-black uppercase rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                      Vote
                    </button>
                  </div>

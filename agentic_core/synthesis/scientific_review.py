@@ -6,12 +6,12 @@ from config.paths import DATA_DIR
 class ScientificReviewGenerator:
     """v1.0 Production: Generates structured scientific reviews from ingested dossiers."""
 
-    def generate_review(self, topic: str, content: str) -> Dict[str, Any]:
+    def generate_review(self, topic: str, content: str, doc_type: str = "Scientific Review") -> Dict[str, Any]:
         timestamp = datetime.datetime.utcnow().isoformat()
 
-        markdown_content = f"""# Scientific Review: {topic}
+        markdown_content = f"""# {doc_type}: {topic}
 ## Abstract
-This report synthesizes current evidence on {topic}, focusing on advanced therapies (AAV, CAR-T, mRNA, ADCs).
+This {doc_type.lower()} synthesizes current evidence on {topic}, focusing on advanced therapies (AAV, CAR-T, mRNA, ADCs).
 
 ## Introduction
 The rapid evolution of advanced therapies necessitates a robust patient safety framework. As identified in the source dossier, gaps in genomic screening and longitudinal tracking pose significant risks.
@@ -38,13 +38,14 @@ Sovereign oversight and ethical AI intervention are essential for the safe scali
 """
 
         # Save Markdown
-        filename = f"review_{topic.lower().replace(' ', '_')}_{timestamp[:10]}.md"
+        slug = doc_type.lower().replace(' ', '_')
+        filename = f"{slug}_{topic.lower().replace(' ', '_')}_{timestamp[:10]}.md"
         file_path = DATA_DIR / "synthesis_outputs" / filename
         with open(file_path, "w") as f:
             f.write(markdown_content)
 
         return {
-            "title": f"Scientific Review: {topic}",
+            "title": f"{doc_type}: {topic}",
             "markdown": markdown_content,
             "file_url": f"/api/v1/synthesis/download/{filename}",
             "timestamp": timestamp

@@ -15,9 +15,9 @@ export const CFO: React.FC = () => {
 
   return (
     <div className="space-y-10">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-4xl font-black mb-2">CFO Agent</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-2 break-words">CFO Agent</h1>
           <p className="text-slate-500">Financial Orchestration & Tokenomics Optimization.</p>
         </div>
         <div className="text-right">

@@ -45,7 +45,7 @@ async def get_genesis_status():
         "entity": "Workstation Sovereign v3.0",
         "epoch": "Genesis (v154.0)",
         "layers": {f"L{i}": "Active (High Fidelity)" for i in range(1, 13)},
-        "governance": dao_framework.legal_status,
+        "governance": dao_framework.status,
         "merkle_root": validator_l1.merkle_root,
         "ueg_root": ueg.merkle_root
     }

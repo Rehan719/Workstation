@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Terminal, Key, BookOpen, Download, ShoppingBag, ShieldCheck, Cpu, Database, Server } from 'lucide-react';
 import { useTheme } from '../../theme/ThemeContext';
+import { notImplemented } from '@workstation/ui';
 
 export const DevPortal: React.FC = () => {
   const { theme } = useTheme();
   const isAdvanced = theme === 'advanced';
+  const [apiKey, setApiKey] = useState('ws_live_0x42f...88');
+
+  const regenerateKey = () => {
+    setApiKey(`ws_live_0x${Math.random().toString(16).slice(2, 8)}...${Math.random().toString(16).slice(2, 4)}`);
+  };
 
   return (
     <div className={`space-y-12 ${isAdvanced ? 'animate-in fade-in slide-in-from-bottom-4 duration-1000' : ''}`}>
@@ -43,8 +49,8 @@ export const DevPortal: React.FC = () => {
           <div className={`p-6 rounded-2xl border transition-all ${
             isAdvanced ? 'bg-sovereign border-aura/20' : 'bg-slate-800/30 border-slate-700'
           }`}>
-             <p className="text-xs text-slate-500 mb-4">Production Key: ws_live_0x42f...88</p>
-             <button className="text-xs font-black text-aura uppercase hover:underline">Regenerate Key</button>
+             <p className="text-xs text-slate-500 mb-4">Production Key: {apiKey}</p>
+             <button type="button" onClick={regenerateKey} className="text-xs font-black text-aura uppercase hover:underline">Regenerate Key</button>
           </div>
         </section>
 
@@ -99,7 +105,7 @@ export const DevPortal: React.FC = () => {
           <Terminal size={48} className="text-aura/50 group-hover:text-aura mb-4 transition-colors" />
           <h3 className="text-xl font-bold mb-2">Enterprise Developer Program</h3>
           <p className="text-slate-500 max-w-md">Apply for dedicated support, custom deployment blueprints, and higher marketplace visibility.</p>
-          <button className="mt-4 text-[10px] font-black text-aura uppercase tracking-widest border border-aura/30 px-4 py-2 rounded-lg hover:bg-aura/10">Apply Now</button>
+          <button type="button" onClick={() => notImplemented('Apply Now')} className="mt-4 text-[10px] font-black text-aura uppercase tracking-widest border border-aura/30 px-4 py-2 rounded-lg hover:bg-aura/10">Apply Now</button>
         </section>
       </div>
     </div>

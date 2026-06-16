@@ -12,9 +12,13 @@
   "dependencies": {
     "@huggingface/transformers": "^3.0.0-alpha.19",
     "@noble/post-quantum": "^0.2.0",
+    "@radix-ui/react-scroll-area": "^1.0.5",
+    "@radix-ui/react-slot": "^1.0.2",
     "@tanstack/react-query": "^5.45.0",
     "@types/three": "^0.166.0",
     "axios": "^1.7.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "ethers": "^6.13.1",
     "framer-motion": "^11.2.10",
@@ -26,17 +30,14 @@
     "react-router-dom": "^7.13.2",
     "reactflow": "^11.11.3",
     "recharts": "^2.15.4",
+    "tailwind-merge": "^2.3.0",
     "three": "^0.166.1",
     "y-websocket": "^2.0.4",
     "yjs": "^13.6.14",
-    "zustand": "^4.5.2",
-    "class-variance-authority": "^0.7.0",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.3.0",
-    "@radix-ui/react-slot": "^1.0.2",
-    "@radix-ui/react-scroll-area": "^1.0.5"
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
@@ -47,4 +48,3 @@
     "vite": "^5.3.1"
   }
 }
-

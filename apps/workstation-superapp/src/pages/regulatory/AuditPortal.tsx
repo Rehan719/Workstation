@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Search, ShieldCheck, Download, ExternalLink, Scale } from 'lucide-react';
+import { notImplemented } from '@workstation/ui';
 
 export default function AuditPortal() {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -12,15 +13,15 @@ export default function AuditPortal() {
   return (
     <div className="p-8 space-y-8 bg-[#fdfdfd] min-h-screen text-slate-900 font-sans">
       <div className="max-w-6xl mx-auto space-y-8">
-        <header className="flex justify-between items-end border-b pb-6 border-slate-200">
+        <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b pb-6 border-slate-200">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Scale className="text-blue-600" size={24} />
-              <h1 className="text-3xl font-bold tracking-tight text-slate-800">REGULATORY AUDIT PORTAL</h1>
+              <h1 className="text-xl @lg:text-2xl @3xl:text-3xl font-bold tracking-tight text-slate-800 break-words">REGULATORY AUDIT PORTAL</h1>
             </div>
             <p className="text-slate-500 font-medium">Virtual Sovereign Business Capital Fund · Institutional Compliance Node</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap shrink-0">
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 py-1.5 px-3">
               LIVE SYSTEM ATTESTED
             </Badge>
@@ -79,13 +80,13 @@ export default function AuditPortal() {
                 <CardTitle className="text-xs font-bold uppercase text-slate-500">Compliance Reports</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-3">
-                <Button variant="outline" className="w-full justify-between text-slate-700 border-slate-200 hover:bg-slate-50">
+                <Button onClick={() => notImplemented('FCA Quarterly (MiFID II)')} variant="outline" className="w-full justify-between text-slate-700 border-slate-200 hover:bg-slate-50">
                   FCA Quarterly (MiFID II) <Download size={16} className="text-slate-400" />
                 </Button>
-                <Button variant="outline" className="w-full justify-between text-slate-700 border-slate-200 hover:bg-slate-50">
+                <Button onClick={() => notImplemented('ESMA Transparency Bundle')} variant="outline" className="w-full justify-between text-slate-700 border-slate-200 hover:bg-slate-50">
                   ESMA Transparency Bundle <Download size={16} className="text-slate-400" />
                 </Button>
-                <Button variant="outline" className="w-full justify-between text-slate-700 border-slate-200 hover:bg-slate-50">
+                <Button onClick={() => notImplemented('Islamic Finance Audit')} variant="outline" className="w-full justify-between text-slate-700 border-slate-200 hover:bg-slate-50">
                   Islamic Finance Audit <Download size={16} className="text-slate-400" />
                 </Button>
               </CardContent>
@@ -98,7 +99,7 @@ export default function AuditPortal() {
                   Institutional regulators can subscribe to the vΩ∞ Audit Stream
                   for real-time P&L and risk monitoring.
                 </p>
-                <Button className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold">
+                <Button onClick={() => notImplemented('REQUEST API KEY')} className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold">
                   REQUEST API KEY <ExternalLink size={14} className="ml-2" />
                 </Button>
               </CardContent>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Globe, FileText, Send, ShieldCheck, History, Info, ChevronRight, Zap, Globe2, AlertCircle, Plus, Network, Gavel, Scale } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
@@ -49,13 +49,13 @@ export const TreatyDashboard: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Diplomacy Hub</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Diplomacy Hub</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Inter-Civilization Treaties & Alliances • Layer 11 Civilisation</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><History size={18} /> Archive</Button>
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Archive')} variant="outline"><History size={18} /> Archive</Button>
            <Button onClick={handleProposeTreaty} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Plus size={18} /> Propose Treaty
            </Button>
@@ -96,7 +96,7 @@ export const TreatyDashboard: React.FC = () => {
                                </div>
                                <div className="flex items-center gap-6">
                                   <Badge color={tr.status === 'Ratified' ? 'emerald-500' : 'highlight'}>{tr.status}</Badge>
-                                  <Button variant="outline" className="px-6 py-3">View Terms</Button>
+                                  <Button onClick={() => notImplemented('View Terms')} variant="outline" className="px-6 py-3">View Terms</Button>
                                </div>
                             </div>
                           ))}
@@ -166,7 +166,7 @@ export const TreatyDashboard: React.FC = () => {
                      <span className="text-emerald-500">92%</span>
                   </div>
                </div>
-               <Button className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Initialize Handshake</Button>
+               <Button onClick={() => notImplemented('Initialize Handshake')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Initialize Handshake</Button>
             </Card>
 
             <Card className="p-8 border-slate-800">

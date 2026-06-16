@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Shield, Globe, Landmark, Fingerprint, CheckCircle2, ArrowRight, Lock } from 'lucide-react';
+import { notImplemented } from '@workstation/ui';
 
 const InstitutionalOnboarding: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -218,7 +219,7 @@ const InstitutionalOnboarding: React.FC = () => {
             </div>
           </CardContent>
           <CardFooter className="p-6 bg-slate-50 border-t-2 border-slate-200 flex flex-col gap-3">
-            <Button className="w-full bg-slate-900 text-white font-black uppercase tracking-widest py-6">
+            <Button onClick={() => notImplemented('Enter Institutional Dashboard')} className="w-full bg-slate-900 text-white font-black uppercase tracking-widest py-6">
               Enter Institutional Dashboard
             </Button>
             <Button variant="ghost" className="text-slate-500 font-bold uppercase text-xs" onClick={() => setStep(1)}>

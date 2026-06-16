@@ -1,19 +1,19 @@
 import React from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Github, Globe, MessageSquare, History, Info, ChevronRight, Zap, Star, Users, Terminal, BookOpen, HeartPulse } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Contribute: React.FC = () => {
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Contributor Portal</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Contributor Portal</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Open Source Leadership • Article 1121 • community governance</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><Github size={18} /> View Source</Button>
-           <Button className="bg-white text-sovereign shadow-xl">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('View Source')} variant="outline"><Github size={18} /> View Source</Button>
+           <Button onClick={() => notImplemented('Star Repository')} className="bg-white text-sovereign shadow-xl">
               <Star size={18} /> Star Repository
            </Button>
         </div>
@@ -55,7 +55,7 @@ export const Contribute: React.FC = () => {
                      <History size={24} className="text-aura" />
                      Recent RFCs
                   </h3>
-                  <Button variant="outline" className="text-[10px]">View RFC Archive</Button>
+                  <Button onClick={() => notImplemented('View RFC Archive')} variant="outline" className="text-[10px]">View RFC Archive</Button>
                </div>
                <div className="space-y-4">
                   {[
@@ -105,8 +105,8 @@ export const Contribute: React.FC = () => {
                   <h4 className="text-xl font-black uppercase tracking-tight">Join the Discussion</h4>
                </div>
                <div className="space-y-4">
-                  <Button variant="outline" className="w-full py-4 text-[10px]">Access Discourse Forum</Button>
-                  <Button variant="outline" className="w-full py-4 text-[10px]">Join Discord Server</Button>
+                  <Button onClick={() => notImplemented('Access Discourse Forum')} variant="outline" className="w-full py-4 text-[10px]">Access Discourse Forum</Button>
+                  <Button onClick={() => notImplemented('Join Discord Server')} variant="outline" className="w-full py-4 text-[10px]">Join Discord Server</Button>
                </div>
             </Card>
 

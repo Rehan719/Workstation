@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Globe, Map, Activity, ShieldCheck, History, Info, ChevronRight, Zap, Globe2, AlertCircle, Plus, Send, Network, Server, Satellite } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,14 +17,14 @@ export const GlobalFederationMap: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter">Global Federation</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Global Federation</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Planetary Mesh Visualisation • Layer 11 Civilisation</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><History size={18} /> Mesh Log</Button>
-           <Button className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Mesh Log')} variant="outline"><History size={18} /> Mesh Log</Button>
+           <Button onClick={() => notImplemented('Register Node')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Plus size={18} /> Register Node
            </Button>
         </div>
@@ -113,7 +113,7 @@ export const GlobalFederationMap: React.FC = () => {
                        </div>
                        <div className="flex items-center gap-6">
                           <Badge color={node.status === 'Healthy' ? 'emerald-500' : 'highlight'}>{node.status}</Badge>
-                          <Button variant="outline" className="px-6 py-3">View Vitals</Button>
+                          <Button onClick={() => notImplemented('View Vitals')} variant="outline" className="px-6 py-3">View Vitals</Button>
                        </div>
                     </motion.div>
                   ))}

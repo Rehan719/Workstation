@@ -11,6 +11,22 @@ export const QEPMultiDomainPortal: React.FC = () => {
     { name: 'Care', icon: <HeartPulse className="w-5 h-5" />, status: 'Federated', activeMechanisms: 5, compatibility: '97.2%', color: 'border-rose-200 text-rose-600 bg-rose-50' }
   ];
 
+  const mechanisms = [
+    { name: 'Ontology Engine v1.2', type: 'Knowledge', status: 'Approved', pipeline: 'Genome' },
+    { name: 'Audit Trail Manager v2.1', type: 'Governance', status: 'Approved', pipeline: 'Introspection' },
+    { name: 'Adaptive Learning Core v3.0', type: 'Pedagogy', status: 'Review', pipeline: 'Learner' }
+  ];
+
+  const exportMechanisms = () => {
+    const blob = new Blob([JSON.stringify({ target_domain: selectedDomain, mechanisms }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mechanisms-to-${selectedDomain || 'domain'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -67,17 +83,13 @@ export const QEPMultiDomainPortal: React.FC = () => {
                   <Share2 className="w-6 h-6 text-indigo-600" />
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Shared Mechanism Exchange ({selectedDomain})</h3>
                </div>
-               <button className="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-800 transition-colors">
+               <button type="button" onClick={exportMechanisms} className="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-800 transition-colors">
                   Export Mechanism to {selectedDomain}
                </button>
             </div>
 
             <div className="space-y-4">
-               {[
-                 { name: 'Ontology Engine v1.2', type: 'Knowledge', status: 'Approved', pipeline: 'Genome' },
-                 { name: 'Audit Trail Manager v2.1', type: 'Governance', status: 'Approved', pipeline: 'Introspection' },
-                 { name: 'Adaptive Learning Core v3.0', type: 'Pedagogy', status: 'Review', pipeline: 'Learner' }
-               ].map((mechanism) => (
+               {mechanisms.map((mechanism) => (
                  <div key={mechanism.name} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between hover:border-indigo-400 group cursor-pointer transition-all">
                     <div className="flex items-center gap-4">
                        <div className="p-3 bg-white border border-slate-200 rounded-xl">

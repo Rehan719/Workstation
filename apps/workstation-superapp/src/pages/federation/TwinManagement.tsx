@@ -22,11 +22,16 @@ export const TwinManagement: React.FC = () => {
     setActiveBlueprint(res.data);
   };
 
+  const handleSyncNow = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setTwins(prev => prev.map(t => t.id === id ? { ...t, status: 'synced', last_sync: 'just now' } : t));
+  };
+
   return (
     <div className="space-y-10">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-4xl font-black mb-2">Digital Twin Management</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-2 break-words">Digital Twin Management</h1>
           <p className="text-slate-500">Replicating application state and epigenetic memory across the federation.</p>
         </div>
         <button
@@ -82,7 +87,7 @@ export const TwinManagement: React.FC = () => {
 
             <div className="pt-6 border-t border-slate-800 flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
                <span>Last Sync: {t.last_sync}</span>
-               <button className="flex items-center gap-1 text-aura hover:underline">
+               <button type="button" onClick={(e) => handleSyncNow(e, t.id)} className="flex items-center gap-1 text-aura hover:underline">
                  <RefreshCw size={12} />
                  Sync Now
                </button>

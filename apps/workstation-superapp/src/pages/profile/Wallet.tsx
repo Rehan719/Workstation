@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, ShieldCheck, PieChart, Activity, Star, Shield, CreditCard, Landmark, DollarSign } from 'lucide-react';
+import { notImplemented } from '@workstation/ui';
 
 export const Wallet: React.FC = () => {
   const [wallet, setWallet] = useState<any>(null);
@@ -13,9 +14,9 @@ export const Wallet: React.FC = () => {
 
   return (
     <div className="space-y-12 animate-in fade-in duration-1000">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-5xl font-black tracking-tight neon-text">Sovereign Economy</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black tracking-tight neon-text break-words">Sovereign Economy</h1>
           <p className="text-slate-500 font-bold text-lg mt-2">Manage your creator earnings, WST liquidity, and fiat payouts.</p>
         </div>
         <div className="text-right flex items-center gap-6">
@@ -48,7 +49,7 @@ export const Wallet: React.FC = () => {
                <p className="text-slate-400 font-bold">Transfer your pending USD balance to your linked Stripe account.</p>
             </div>
          </div>
-         <button className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all">Initiate Payout</button>
+         <button onClick={() => notImplemented('Initiate Payout')} className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all">Initiate Payout</button>
       </div>
 
       <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800">

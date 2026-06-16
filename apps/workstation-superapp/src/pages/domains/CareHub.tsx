@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Layers, HeartPulse, History } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';
@@ -12,18 +12,18 @@ export const CareHub: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter italic">Sanctuary of Healing</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter italic break-words">Sanctuary of Healing</h1>
           <div className="flex items-center gap-4">
              <p className="text-vital font-black uppercase text-[10px] tracking-[0.3em]">Patient Sovereignty • Bio-Digital Mesh • Care Hub</p>
              <Badge color="highlight" className="text-[8px]">{layout} MODE</Badge>
              <Badge color="aura" className="text-[8px]">{emotionalAdjustment} TONE</Badge>
           </div>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><History size={18} /> Diagnostics</Button>
-           <Button className="bg-vital text-white shadow-xl shadow-vital/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Diagnostics')} variant="outline"><History size={18} /> Diagnostics</Button>
+           <Button onClick={() => notImplemented('New Patient Twin')} className="bg-vital text-white shadow-xl shadow-vital/20">
               <HeartPulse size={18} /> New Patient Twin
            </Button>
         </div>

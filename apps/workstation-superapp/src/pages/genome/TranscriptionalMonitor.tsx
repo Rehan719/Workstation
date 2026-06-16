@@ -1,18 +1,18 @@
 import React from 'react';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Radio, ShieldCheck, History, Info, ChevronRight, Zap, Globe, AlertCircle, Plus, Activity } from 'lucide-react';
 
 export const TranscriptionalMonitor: React.FC = () => {
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
         <div>
-          <h1 className="text-6xl font-black mb-1 text-white tracking-tighter uppercase italic">Transcriptional Monitor</h1>
+          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Transcriptional Monitor</h1>
           <p className="text-highlight font-black uppercase text-[10px] tracking-[0.3em]">mRNA Synthesis • Expression Dynamics • Allostatic Load Monitoring</p>
         </div>
-        <div className="flex gap-4">
-           <Button variant="outline"><Activity size={18} /> Expression Plot</Button>
-           <Button className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
+        <div className="flex gap-4 flex-wrap shrink-0">
+           <Button onClick={() => notImplemented('Expression Plot')} variant="outline"><Activity size={18} /> Expression Plot</Button>
+           <Button onClick={() => notImplemented('Add Expression Logic')} className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
               <Plus size={18} /> Add Expression Logic
            </Button>
         </div>

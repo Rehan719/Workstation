@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import { notImplemented } from '@workstation/ui';
 import { Gavel, Landmark, TrendingUp, ChevronRight, Check, X, ShieldAlert, Vote, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,9 +37,9 @@ export const DAODashboard: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex justify-between items-end border-b border-white/5 pb-8">
+      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-5xl font-black mb-1">Creator DAO</h1>
+          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 break-words">Creator DAO</h1>
           <p className="text-slate-500 font-bold text-lg mt-2">Decentralized platform governance and treasury oversight.</p>
         </div>
         {treasury && (
@@ -124,7 +125,7 @@ export const DAODashboard: React.FC = () => {
                      <p className="text-[10px] font-black text-slate-500 uppercase">Delegated Power</p>
                      <p className="text-xl font-black text-slate-400">0.0</p>
                   </div>
-                  <button className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-aura hover:text-aura transition-all">
+                  <button type="button" onClick={() => notImplemented('Delegate Votes')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-aura hover:text-aura transition-all">
                      Delegate Votes
                   </button>
                </div>

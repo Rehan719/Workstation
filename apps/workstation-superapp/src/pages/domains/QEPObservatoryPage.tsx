@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Microscope, Layers, BookOpen, BrainCircuit, Activity, ChevronRight, HelpCircle } from 'lucide-react';
+import { notImplemented } from '@workstation/ui';
 
 export const SovereignXAIObservatory: React.FC = () => {
   const [selectedExplanations, setSelectedExplanations] = useState<string | null>(null);
@@ -126,7 +127,7 @@ export const SovereignXAIObservatory: React.FC = () => {
                </div>
              ))}
           </div>
-          <button className="w-full mt-4 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-black text-slate-400 uppercase hover:border-indigo-400 hover:text-indigo-600 transition-all">
+          <button onClick={() => notImplemented('View All Explanations')} className="w-full mt-4 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-black text-slate-400 uppercase hover:border-indigo-400 hover:text-indigo-600 transition-all">
             View All Explanations
           </button>
         </div>

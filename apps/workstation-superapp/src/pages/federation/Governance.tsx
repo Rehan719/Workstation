@@ -46,7 +46,7 @@ export const FederationGovernance: React.FC = () => {
                 <p className="text-xs text-slate-500 mb-6">Proposal to mandate Kyber-768 for all cross-node heartbeat signatures.</p>
                 <div className="flex justify-between items-center">
                    <span className="text-xs font-black text-aura uppercase">{voters} Guardians Voted</span>
-                   <button className="px-6 py-2 bg-aura text-sovereign font-bold rounded-lg hover:scale-105 transition-all">Cast Resonance</button>
+                   <button type="button" onClick={() => setVoters(v => v + 1)} className="px-6 py-2 bg-aura text-sovereign font-bold rounded-lg hover:scale-105 transition-all">Cast Resonance</button>
                 </div>
              </div>
           </section>
