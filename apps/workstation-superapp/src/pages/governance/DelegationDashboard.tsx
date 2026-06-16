@@ -17,7 +17,7 @@ export const DelegationDashboard: React.FC = () => {
       <header className="flex justify-between items-end border-b border-white/5 pb-8">
         <div>
           <h1 className="text-4xl font-black mb-1">Autonomous Governance</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">AI Executor Delegation v152.0</p>
+          <p className="font-bold uppercase text-[10px] tracking-widest text-aura">AI Executor Delegation v152.0</p>
         </div>
         {stats && (
            <div className="flex gap-4">
@@ -65,7 +65,7 @@ export const DelegationDashboard: React.FC = () => {
                        <span className="text-sm font-black">{del.threshold.toLocaleString()} WST</span>
                     </div>
                     <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                       <div className="h-full bg-aura" style={{ width: '100%' }}></div>
+                       <div className="h-full w-full bg-aura"></div>
                     </div>
                  </div>
 

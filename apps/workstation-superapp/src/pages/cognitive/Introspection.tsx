@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Activity, Brain, ShieldCheck, Zap, Heart, Wind } from 'lucide-react';
@@ -77,29 +77,35 @@ export const Introspection: React.FC = () => {
   );
 };
 
-const ResonanceBall = ({ label, value, color, icon: Icon }: any) => (
-  <div className="glass-card p-10 flex flex-col items-center group cursor-pointer overflow-hidden relative">
-     <motion.div
-        animate={{ y: [0, -10, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="w-20 h-20 rounded-full border-2 flex items-center justify-center mb-6 shadow-2xl relative z-10"
-        style={{ borderColor: color, backgroundColor: `${color}10` }}
-     >
-        <Icon size={32} style={{ color }} />
-     </motion.div>
-     <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] mb-2 z-10">{label} Resonance</p>
-     <div className="text-5xl font-black z-10" style={{ color }}>{(value * 100).toFixed(1)}%</div>
-     <div className="absolute inset-x-0 bottom-0 h-1 bg-white/5 overflow-hidden">
-        <motion.div
-           initial={{ width: 0 }}
-           animate={{ width: `${value * 100}%` }}
-           transition={{ duration: 2, ease: "easeOut" }}
-           className="h-full"
-           style={{ backgroundColor: color }}
-        />
-     </div>
-  </div>
-);
+const ResonanceBall = ({ label, value, color, icon: Icon }: any) => {
+  const textRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (textRef.current) textRef.current.style.color = color;
+  }, [color]);
+  return (
+    <div className="glass-card p-10 flex flex-col items-center group cursor-pointer overflow-hidden relative">
+       <motion.div
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="w-20 h-20 rounded-full border-2 flex items-center justify-center mb-6 shadow-2xl relative z-10"
+          style={{ borderColor: color, backgroundColor: `${color}10` }}
+       >
+          <Icon size={32} style={{ color }} />
+       </motion.div>
+       <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] mb-2 z-10">{label} Resonance</p>
+       <div ref={textRef} className="text-5xl font-black z-10">{(value * 100).toFixed(1)}%</div>
+       <div className="absolute inset-x-0 bottom-0 h-1 bg-white/5 overflow-hidden">
+          <motion.div
+             initial={{ width: 0 }}
+             animate={{ width: `${value * 100}%` }}
+             transition={{ duration: 2, ease: "easeOut" }}
+             className="h-full"
+             style={{ backgroundColor: color }}
+          />
+       </div>
+    </div>
+  );
+};
 
 const LoadVisual = ({ label, value, color }: any) => (
   <div>

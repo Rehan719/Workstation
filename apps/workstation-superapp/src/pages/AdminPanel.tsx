@@ -37,7 +37,7 @@ export const AdminPanel: React.FC = () => {
                   <div className="space-y-4">
                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Algorithms</p>
                      <div className="flex flex-wrap gap-2">
-                        {securityStatus?.active_algorithms.map((alg: string) => (
+                        {securityStatus?.active_algorithms?.map((alg: string) => (
                            <span key={alg} className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-mono text-aura uppercase tracking-widest">{alg}</span>
                         ))}
                      </div>
@@ -51,7 +51,7 @@ export const AdminPanel: React.FC = () => {
                <div className="space-y-6 pt-10">
                   <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Handshake History (v0.8 Logs)</h4>
                   <div className="space-y-3">
-                     {securityStatus?.handshake_history.map((log: any, i: number) => (
+                     {securityStatus?.handshake_history?.map((log: any, i: number) => (
                         <div key={i} className="p-4 rounded-2xl bg-slate-950 border border-slate-900 flex justify-between items-center">
                            <div className="flex items-center gap-4">
                               <ShieldCheck size={16} className={log.status === 'SUCCESS' ? 'text-emerald-500' : 'text-vital'} />

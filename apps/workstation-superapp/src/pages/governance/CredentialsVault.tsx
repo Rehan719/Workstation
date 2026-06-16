@@ -36,8 +36,8 @@ export const CredentialsVault: React.FC = () => {
                 <div className="flex justify-between items-center pt-6 border-t border-white/5">
                    <span className="text-[10px] font-mono text-slate-600">Sync: {s.lastSync}</span>
                    <div className="flex gap-2">
-                      <button className="p-2 text-slate-500 hover:text-white transition-colors"><Eye size={16} /></button>
-                      <button className="p-2 text-slate-500 hover:text-white transition-colors"><Copy size={16} /></button>
+                      <button type="button" aria-label="View credential" title="View credential" className="p-2 text-slate-500 hover:text-white transition-colors"><Eye size={16} /></button>
+                      <button type="button" aria-label="Copy credential" title="Copy credential" className="p-2 text-slate-500 hover:text-white transition-colors"><Copy size={16} /></button>
                    </div>
                 </div>
              </Card>

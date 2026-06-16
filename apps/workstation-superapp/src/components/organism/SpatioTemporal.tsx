@@ -12,17 +12,26 @@ const SpatioTemporal: React.FC = () => {
     }, [timeScale]);
 
     return (
-        <div style={{ padding: '20px', background: '#0a0a0a', color: '#fff', borderRadius: '12px', border: '1px solid #00d4ff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0, color: '#00d4ff' }}>4D Spatio-Temporal Dashboard (L14)</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '10px' }}>Time Scale:</span>
-                    <input type="range" min="1" max="100" value={timeScale} onChange={(e) => setTimeScale(parseInt(e.target.value))} />
+        <div className="p-5 bg-black/90 text-white rounded-xl border border-cyan-400/60">
+            <div className="flex justify-between items-center mb-5">
+                <h2 className="text-xs font-black uppercase tracking-widest text-cyan-400">4D Spatio-Temporal Dashboard (L14)</h2>
+                <div className="flex items-center gap-3">
+                    <label htmlFor="time-scale" className="text-[10px] uppercase tracking-widest text-slate-500 font-black">
+                        Time Scale
+                    </label>
+                    <input
+                        id="time-scale"
+                        type="range"
+                        min="1"
+                        max="100"
+                        value={timeScale}
+                        onChange={(e) => setTimeScale(parseInt(e.target.value))}
+                        className="accent-cyan-400 w-24"
+                    />
                 </div>
             </div>
 
-            <div style={{ position: 'relative', height: '150px', border: '1px solid #111', background: 'linear-gradient(180deg, #050505 0%, #111 100%)', borderRadius: '8px' }}>
-                {/* Simulated temporal trails */}
+            <div className="relative h-36 border border-slate-900 bg-gradient-to-b from-black to-slate-950 rounded-lg overflow-hidden">
                 <svg width="100%" height="100%">
                     <path d="M0 75 Q 100 20, 200 75 T 400 75" fill="none" stroke="#00d4ff" strokeWidth="2" strokeDasharray="10,5" />
                     <circle cx="200" cy="75" r="5" fill="#fff" />
@@ -30,12 +39,12 @@ const SpatioTemporal: React.FC = () => {
                 </svg>
             </div>
 
-            <div style={{ marginTop: '20px', fontSize: '12px', fontFamily: 'monospace' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888' }}>
+            <div className="mt-5 text-xs font-mono">
+                <div className="flex justify-between text-slate-600">
                     <span>Earth Baseline: {new Date(currentTime).toISOString()}</span>
                     <span>Mars Relative: T + 842s</span>
                 </div>
-                <div style={{ marginTop: '10px', color: '#00d4ff' }}>
+                <div className="mt-2.5 text-cyan-400 font-black text-[10px] uppercase tracking-widest">
                     Sovereign Consensus Status: CROSS-PLANETARY SYNC ACTIVE
                 </div>
             </div>

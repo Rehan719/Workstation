@@ -1,15 +1,17 @@
 import React from 'react';
 
-export const Button = ({ children, variant = 'primary', ...props }: any) => {
-  const styles = {
+export const Button = ({ children, variant = 'primary', className = '', type = 'button', ...props }: any) => {
+  const styles: Record<string, string> = {
     primary: 'bg-aura text-sovereign hover:scale-105',
     secondary: 'bg-slate-800 text-white hover:bg-slate-700',
     outline: 'border border-slate-700 text-slate-400 hover:text-white hover:border-aura',
+    ghost: 'text-slate-400 hover:text-white bg-transparent',
   };
 
   return (
     <button
-      className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${styles[variant as keyof typeof styles]}`}
+      type={type}
+      className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${styles[variant] ?? ''} ${className}`}
       {...props}
     >
       {children}
@@ -17,8 +19,8 @@ export const Button = ({ children, variant = 'primary', ...props }: any) => {
   );
 };
 
-export const Card = ({ children, className = '' }: any) => (
-  <div className={`p-8 rounded-3xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm ${className}`}>
+export const Card = ({ children, className = '', ...props }: any) => (
+  <div className={`p-8 rounded-3xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm ${className}`} {...props}>
     {children}
   </div>
 );

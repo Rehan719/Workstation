@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { Package, ChevronRight, Settings2, Box, Cpu, Network } from 'lucide-react';
 import { Card } from '@workstation/ui';
 import { useStore } from '@workstation/shared';
+import { useNavigate } from 'react-router-dom';
 
 export const BTOCatalog: React.FC = () => {
   const { products, setCurrentTab } = useStore();
+  const navigate = useNavigate();
 
   const getIcon = (category: string) => {
     switch (category) {
@@ -61,7 +63,7 @@ export const BTOCatalog: React.FC = () => {
                   <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Cost</p>
                   <p className="text-2xl font-black text-white">{product.price}</p>
                 </div>
-                <button className="flex items-center gap-2 px-6 py-3 bg-aura text-sovereign font-black rounded-xl hover:scale-105 transition-all text-xs uppercase tracking-widest shadow-lg shadow-aura/10">
+                <button type="button" className="flex items-center gap-2 px-6 py-3 bg-aura text-sovereign font-black rounded-xl hover:scale-105 transition-all text-xs uppercase tracking-widest shadow-lg shadow-aura/10">
                   <Settings2 size={16} />
                   Configure
                   <ChevronRight size={16} />
@@ -76,7 +78,8 @@ export const BTOCatalog: React.FC = () => {
          <h3 className="text-2xl font-black mb-4">Need a custom solution?</h3>
          <p className="text-slate-400 font-bold mb-8 max-w-xl mx-auto">Our C-Suite agents can assist in architecting specialized reactors for high-throughput enterprise swarm coordination.</p>
          <button
-          onClick={() => setCurrentTab('ceo')}
+          type="button"
+          onClick={() => { setCurrentTab('ceo'); navigate('/ceo'); }}
           className="px-10 py-5 bg-white text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase tracking-widest text-sm">
             Consult VSB AI CEO
           </button>

@@ -33,10 +33,10 @@ export const KnowledgeGarden: React.FC = () => {
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {[
-                    { name: 'Sovereign Architecture', level: 100, icon: Flower },
-                    { name: 'PQC Protocol', level: 85, icon: Flower },
-                    { name: 'Mycelial Mesh', level: 42, icon: Flower },
-                    { name: 'GaaS Validation', level: 100, icon: Flower }
+                    { name: 'Sovereign Architecture', level: 100, cls: 'w-full', icon: Flower },
+                    { name: 'PQC Protocol', level: 85, cls: 'w-[85%]', icon: Flower },
+                    { name: 'Mycelial Mesh', level: 42, cls: 'w-[42%]', icon: Flower },
+                    { name: 'GaaS Validation', level: 100, cls: 'w-full', icon: Flower }
                   ].map((f, i) => (
                     <div
                       key={i}
@@ -47,7 +47,7 @@ export const KnowledgeGarden: React.FC = () => {
                        </div>
                        <p className="text-lg font-black text-white mb-1 uppercase tracking-widest">{f.name}</p>
                        <div className="w-32 h-1 bg-slate-900 rounded-full mt-2 overflow-hidden">
-                          <div className="h-full bg-highlight" style={{ width: `${f.level}%` }} />
+                          <div className={`h-full bg-highlight ${f.cls}`} />
                        </div>
                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Mastery: {f.level}%</p>
                     </div>

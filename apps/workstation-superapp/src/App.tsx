@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Shell } from './components/layout/Shell';
 import { DashboardNew as Dashboard } from './pages/DashboardNew';
 import { CEOChat } from './pages/CEOChat';
@@ -113,10 +114,12 @@ function App() {
   return (
     <ThemeProvider>
     <AdaptiveUIProvider>
+    <ErrorBoundary>
     <PlayfulEffectsManager />
     <Joyride steps={steps} run={runTutorial} continuous showProgress showSkipButton />
     <Shell>
       {(activeTab) => (
+        <ErrorBoundary>
         <Routes>
           <Route path="/" element={<MultiRealmDashboard />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
@@ -201,8 +204,10 @@ function App() {
             </div>
           } />
         </Routes>
+        </ErrorBoundary>
       )}
     </Shell>
+    </ErrorBoundary>
     </AdaptiveUIProvider>
     </ThemeProvider>
   );

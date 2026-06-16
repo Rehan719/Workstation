@@ -1,7 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { Gavel, Landmark, TrendingUp, ChevronRight, Check, X, ShieldAlert, Vote, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const VoteBar = ({ votesFor, votesAgainst }: { votesFor: number; votesAgainst: number }) => {
+  const forRef = useRef<HTMLDivElement>(null);
+  const againstRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const total = votesFor + votesAgainst;
+    if (!total) return;
+    if (forRef.current) forRef.current.style.width = `${(votesFor / total) * 100}%`;
+    if (againstRef.current) againstRef.current.style.width = `${(votesAgainst / total) * 100}%`;
+  }, [votesFor, votesAgainst]);
+  return (
+    <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden flex">
+      <div ref={forRef} className="h-full bg-aura" />
+      <div ref={againstRef} className="h-full bg-rose-500" />
+    </div>
+  );
+};
 
 export const DAODashboard: React.FC = () => {
   const [proposals, setProposals] = useState<any[]>([]);
@@ -68,10 +85,7 @@ export const DAODashboard: React.FC = () => {
                           <span className="text-aura">FOR: {p.votes_for.toLocaleString()}</span>
                           <span className="text-rose-500">AGAINST: {p.votes_against.toLocaleString()}</span>
                        </div>
-                       <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden flex">
-                          <div className="h-full bg-aura" style={{ width: `${(p.votes_for / (p.votes_for + p.votes_against)) * 100}%` }}></div>
-                          <div className="h-full bg-rose-500" style={{ width: `${(p.votes_against / (p.votes_for + p.votes_against)) * 100}%` }}></div>
-                       </div>
+                       <VoteBar votesFor={p.votes_for} votesAgainst={p.votes_against} />
                     </div>
 
                     <div className="flex gap-4">

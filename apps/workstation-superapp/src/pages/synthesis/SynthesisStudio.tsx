@@ -81,6 +81,7 @@ export const SynthesisStudio: React.FC = () => {
                     { id: 'simulation', label: 'Simulation', icon: Layers }
                   ].map(t => (
                     <button
+                      type="button"
                       key={t.id}
                       onClick={() => setOutputType(t.id)}
                       className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${outputType === t.id ? 'bg-aura text-sovereign border-aura' : 'bg-slate-900 border-slate-800 text-slate-400'}`}

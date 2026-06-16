@@ -78,7 +78,7 @@ export const CivilizationDashboard: React.FC = () => {
                          <p className="text-lg font-black text-white">{val.projection}</p>
                       </div>
                       <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-                         <div className="h-full bg-aura shadow-[0_0_10px_rgba(100,255,218,0.5)]" style={{ width: '70%' }}></div>
+                         <div className="h-full w-[70%] bg-aura shadow-[0_0_10px_rgba(100,255,218,0.5)]"></div>
                       </div>
                       <p className="text-[10px] text-slate-500 font-bold italic">{val.driver || val.catalyst || 'Natural Growth'}</p>
                    </div>

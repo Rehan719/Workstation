@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart,
@@ -6,7 +6,7 @@ import {
   Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye,
-  HeartPulse, Workflow, Search, Smartphone, Globe2, Database, Layers, Factory
+  HeartPulse, Workflow, Search, Smartphone, Globe2, Database, Layers, Factory, ChevronDown
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -99,6 +99,15 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const { currentRealm, currentMode, user, setCurrentTab } = useStore();
   const navigate = useNavigate();
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (id: string) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const filteredNavItems = allNavItems.filter(item => {
     if (currentRealm === 'UNIFIED') return true;
@@ -109,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   return (
     <aside className={`w-full flex flex-col p-6 h-full transition-all duration-500 border-r bg-slate-950 border-slate-900 z-30 ${currentMode === 'REST' ? 'grayscale-[30%] opacity-90' : ''}`}>
       <div className="mb-10 relative">
-        <button onClick={() => setCurrentTab('dashboard')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        <button type="button" onClick={() => { setCurrentTab('dashboard'); navigate('/'); }} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-aura to-highlight flex items-center justify-center text-sovereign shadow-lg shadow-aura/10 animate-pulse">
               <Zap size={24} />
            </div>
@@ -120,44 +129,56 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         </button>
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-        {filteredNavItems.map((item: any) => (
-          <div key={item.id} className="space-y-1">
-            <button
-              onClick={() => {
-                if (!item.subItems) {
-                  setActiveTab(item.id);
-                  navigate(`/${item.id === 'dashboard' ? '' : item.id}`);
-                }
-              }}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all focus:outline-none group ${
-                activeTab === item.id ? 'bg-aura text-sovereign font-black shadow-xl shadow-aura/20 scale-[1.02]' : 'text-slate-500 hover:text-white hover:bg-slate-900/50'
-              }`}
-            >
-              <item.icon size={18} className={`transition-transform group-hover:scale-110 ${activeTab === item.id ? 'text-sovereign' : 'text-aura/70'}`} />
-              <span className="text-xs font-black uppercase tracking-widest">{item.name}</span>
-            </button>
-            {item.subItems && (
-              <div className="ml-6 space-y-1 border-l border-slate-900 pl-4 py-1">
-                {item.subItems.map((sub: any) => (
-                  <button
-                    key={sub.id}
-                    onClick={() => {
-                      setActiveTab(sub.id);
-                      navigate(`/${sub.id}`);
-                    }}
-                    className={`w-full flex items-center gap-3 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all group ${
-                      activeTab === sub.id ? 'text-aura' : 'text-slate-600 hover:text-slate-300'
-                    }`}
-                  >
-                    <sub.icon size={14} className={`transition-opacity ${activeTab === sub.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`} />
-                    {sub.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+      <nav className="flex-1 space-y-1 overflow-y-auto pr-2 custom-scrollbar">
+        {filteredNavItems.map((item: any) => {
+          const isOpen = openGroups.has(item.id);
+          const hasChildren = Boolean(item.subItems?.length);
+          const isActive = activeTab === item.id;
+          return (
+            <div key={item.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (hasChildren) {
+                    toggleGroup(item.id);
+                  } else {
+                    setActiveTab(item.id);
+                    navigate(`/${item.id === 'dashboard' ? '' : item.id}`);
+                  }
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all focus:outline-none group ${
+                  isActive ? 'bg-aura text-sovereign font-black shadow-xl shadow-aura/20' : 'text-slate-500 hover:text-white hover:bg-slate-900/50'
+                }`}
+              >
+                <item.icon size={16} className={`shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-sovereign' : 'text-aura/70'}`} />
+                <span className="flex-1 text-left text-[10px] font-black uppercase tracking-widest truncate">{item.name}</span>
+                {hasChildren && (
+                  <ChevronDown size={12} className={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${isActive ? 'text-sovereign' : 'text-slate-600'}`} />
+                )}
+              </button>
+              {hasChildren && isOpen && (
+                <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-slate-800 pl-3">
+                  {item.subItems.map((sub: any) => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveTab(sub.id);
+                        navigate(`/${sub.id}`);
+                      }}
+                      className={`w-full flex items-center gap-2.5 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all group ${
+                        activeTab === sub.id ? 'text-aura bg-aura/5' : 'text-slate-600 hover:text-slate-300 hover:bg-slate-900/40'
+                      }`}
+                    >
+                      <sub.icon size={12} className={`shrink-0 transition-opacity ${activeTab === sub.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-80'}`} />
+                      <span className="truncate">{sub.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="pt-6 border-t border-slate-900 flex items-center gap-4 px-2">

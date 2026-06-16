@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Settings,
   ShieldAlert,
@@ -49,6 +49,13 @@ const FabricationPlantDashboard = () => {
   const [orderProgress, setOrderProgress] = useState(0);
   const [activeOrder, setActiveOrder] = useState(null);
   const [orderStep, setOrderStep] = useState('');
+  const progressBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (progressBarRef.current) {
+      progressBarRef.current.style.width = `${orderProgress}%`;
+    }
+  }, [orderProgress]);
 
   const facilities = [
     {
@@ -157,7 +164,7 @@ const FabricationPlantDashboard = () => {
             <div className="space-y-4 mb-8">
               <div>
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Content Type</label>
-                <select className="w-full bg-black border border-slate-800 rounded-lg p-3 text-sm text-white focus:border-cyan-500 outline-none">
+                <select aria-label="Content Type" title="Content Type" className="w-full bg-black border border-slate-800 rounded-lg p-3 text-sm text-white focus:border-cyan-500 outline-none">
                   <option>Tafsir (Standard)</option>
                   <option>Hifz Tracking</option>
                   <option>Arabic Grammar</option>
@@ -167,13 +174,13 @@ const FabricationPlantDashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                  <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Level</label>
-                    <select className="w-full bg-black border border-slate-800 rounded-lg p-3 text-sm text-white focus:border-cyan-500 outline-none">
+                    <select aria-label="Level" title="Level" className="w-full bg-black border border-slate-800 rounded-lg p-3 text-sm text-white focus:border-cyan-500 outline-none">
                       {[...Array(10)].map((_, i) => <option key={i+1}>Level {i+1}</option>)}
                     </select>
                  </div>
                  <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Language</label>
-                    <select className="w-full bg-black border border-slate-800 rounded-lg p-3 text-sm text-white focus:border-cyan-500 outline-none">
+                    <select aria-label="Language" title="Language" className="w-full bg-black border border-slate-800 rounded-lg p-3 text-sm text-white focus:border-cyan-500 outline-none">
                       <option>English</option>
                       <option>Urdu</option>
                       <option>Indonesian</option>
@@ -199,8 +206,8 @@ const FabricationPlantDashboard = () => {
                 </div>
                 <div className="h-2 w-full bg-black rounded-full overflow-hidden mb-3">
                    <div
+                    ref={progressBarRef}
                     className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 transition-all duration-300"
-                    style={{ width: `${orderProgress}%` }}
                    />
                 </div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] animate-pulse">
@@ -295,8 +302,9 @@ const FabricationPlantDashboard = () => {
               <div className="bg-black/60 p-6 rounded-2xl border border-slate-800">
                 <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-2">Throughput Trend</div>
                 <div className="h-16 flex items-end gap-1">
-                  {[...Array(12)].map((_, i) => (
-                    <div key={i} className="bg-cyan-500/40 flex-1 rounded-t-sm" style={{ height: `${20 + Math.random() * 80}%` }}></div>
+                  {(['h-[45%]', 'h-[72%]', 'h-[38%]', 'h-[85%]', 'h-[55%]', 'h-[91%]',
+                    'h-[62%]', 'h-[48%]', 'h-[78%]', 'h-[33%]', 'h-[88%]', 'h-[65%]'] as const).map((h, i) => (
+                    <div key={i} className={`bg-cyan-500/40 flex-1 rounded-t-sm ${h}`} />
                   ))}
                 </div>
               </div>

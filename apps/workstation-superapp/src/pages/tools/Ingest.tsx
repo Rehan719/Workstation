@@ -126,7 +126,7 @@ export const Ingest: React.FC = () => {
                  <div className="flex items-center gap-4">
                     <Badge color="emerald-500">{file.status}</Badge>
                     <Button variant="outline" className="px-4 py-2 text-[8px] uppercase font-black" onClick={() => alert(file.extracted_text)}>View Extract</Button>
-                    <button className="text-slate-700 hover:text-vital transition-colors">
+                    <button type="button" aria-label="Delete file" title="Delete file" className="text-slate-700 hover:text-vital transition-colors">
                        <Trash2 size={16} />
                     </button>
                  </div>

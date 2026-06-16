@@ -114,7 +114,11 @@ export const CEOChat: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-3">
-          <button className="p-3 bg-surface/80 border border-white/10 rounded-xl hover:border-aura/50 transition-colors text-slate-400 hover:text-aura">
+          <button
+            aria-label="More options"
+            title="More options"
+            className="p-3 bg-surface/80 border border-white/10 rounded-xl hover:border-aura/50 transition-colors text-slate-400 hover:text-aura"
+          >
              <MoreHorizontal size={20} />
           </button>
         </div>
@@ -145,8 +149,8 @@ export const CEOChat: React.FC = () => {
                    </div>
                    {m.role === 'assistant' && (
                      <div className="flex gap-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 hover:text-aura transition-colors"><ThumbsUp size={14} /></button>
-                        <button className="p-2 hover:text-vital transition-colors"><ThumbsDown size={14} /></button>
+                        <button type="button" aria-label="Helpful" title="Helpful" className="p-2 hover:text-aura transition-colors"><ThumbsUp size={14} /></button>
+                        <button type="button" aria-label="Not helpful" title="Not helpful" className="p-2 hover:text-vital transition-colors"><ThumbsDown size={14} /></button>
                      </div>
                    )}
                 </div>
@@ -157,9 +161,9 @@ export const CEOChat: React.FC = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                <div className="flex gap-4 items-center p-6 bg-aura/5 border border-aura/10 rounded-[2rem] rounded-tl-none">
                   <div className="flex gap-1">
-                     <div className="w-1.5 h-1.5 bg-aura rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                     <div className="w-1.5 h-1.5 bg-aura rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                     <div className="w-1.5 h-1.5 bg-aura rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                     <div className="w-1.5 h-1.5 bg-aura rounded-full animate-bounce"></div>
+                     <div className="w-1.5 h-1.5 bg-aura rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                     <div className="w-1.5 h-1.5 bg-aura rounded-full animate-bounce [animation-delay:0.4s]"></div>
                   </div>
                   <span className="text-[10px] font-black text-aura uppercase tracking-widest">Synthesis in progress...</span>
                </div>
@@ -174,13 +178,16 @@ export const CEOChat: React.FC = () => {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Issue a planetary directive..."
             className="w-full bg-sovereign/80 border border-white/10 rounded-[2rem] py-6 pl-8 pr-20 text-lg focus:outline-none focus:border-aura/50 transition-all shadow-2xl font-bold"
           />
           <button
+            type="button"
             onClick={handleSend}
             disabled={isThinking}
+            aria-label="Send message"
+            title="Send message"
             className="absolute right-3 top-1/2 -translate-y-1/2 p-4 bg-aura text-sovereign rounded-2xl hover:scale-105 transition-all shadow-lg"
           >
             <Send size={22} />

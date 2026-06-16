@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, Search, Activity, ChevronDown, Zap, Sparkles, MessageCircle, X, Shield, Star, Award, Moon, Sun, Play, GraduationCap, Terminal, Briefcase, Microscope, Binary, LayoutDashboard, ShieldCheck } from 'lucide-react';
-import { useModeStore } from '../../store/modeStore';
+import React, { useState } from 'react';
+import { Bell, Search, Activity, Zap, Sparkles, MessageCircle, X, Moon, Play, GraduationCap, Terminal, Briefcase, Microscope, Binary, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { useStore } from '@workstation/shared';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   wsStatus?: 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED';
 }
 
 export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
-  const { currentRealm, setCurrentRealm } = useStore();
+  const { currentRealm, setCurrentRealm, currentMode, setCurrentMode, setCurrentTab } = useStore();
+  const navigate = useNavigate();
   const [showAssistant, setShowAssistant] = useState(false);
-  const [activeMode, setActiveMode] = useState('WORK');
 
   const realms: { id: typeof currentRealm; label: string; icon: any }[] = [
     { id: 'LEARNER', label: 'Learner', icon: GraduationCap },
@@ -22,9 +22,9 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
   ];
 
   const modes = [
-    { id: 'WORK', icon: Zap, color: 'text-aura' },
-    { id: 'REST', icon: Moon, color: 'text-highlight' },
-    { id: 'PLAY', icon: Play, color: 'text-vital' }
+    { id: 'ACTIVE' as const, label: 'Active', icon: Zap, color: 'text-aura' },
+    { id: 'REST' as const, label: 'Rest', icon: Moon, color: 'text-highlight' },
+    { id: 'EVOLUTION' as const, label: 'Evolution', icon: Play, color: 'text-vital' }
   ];
 
   return (
@@ -43,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
           {realms.map((r) => (
             <button
               key={r.id}
+              type="button"
               onClick={() => setCurrentRealm(r.id)}
               className={`p-2 rounded-lg transition-all flex items-center gap-2 ${currentRealm === r.id ? 'bg-slate-800 shadow-lg border border-white/5' : 'opacity-40 hover:opacity-100'}`}
               title={`${r.label} Realm`}
@@ -59,12 +60,13 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
            {modes.map((m) => (
              <button
                key={m.id}
-               onClick={() => setActiveMode(m.id)}
-               className={`p-2.5 rounded-lg transition-all flex items-center gap-2 ${activeMode === m.id ? 'bg-slate-800 shadow-lg' : 'opacity-40 hover:opacity-100'}`}
-               title={`${m.id} Mode`}
+               type="button"
+               onClick={() => setCurrentMode(m.id)}
+               className={`p-2.5 rounded-lg transition-all flex items-center gap-2 ${currentMode === m.id ? 'bg-slate-800 shadow-lg' : 'opacity-40 hover:opacity-100'}`}
+               title={`${m.label} Mode`}
              >
-                <m.icon size={16} className={m.id === activeMode ? m.color : 'text-slate-400'} />
-                {activeMode === m.id && <span className={`text-[10px] font-black uppercase tracking-widest ${m.color}`}>{m.id}</span>}
+                <m.icon size={16} className={m.id === currentMode ? m.color : 'text-slate-400'} />
+                {currentMode === m.id && <span className={`text-[10px] font-black uppercase tracking-widest ${m.color}`}>{m.label}</span>}
              </button>
            ))}
         </div>
@@ -85,6 +87,7 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
         </div>
 
         <button
+          type="button"
           onClick={() => setShowAssistant(!showAssistant)}
           className={`p-3 rounded-xl transition-all ${showAssistant ? 'bg-aura text-sovereign' : 'bg-slate-800 text-aura hover:scale-105'}`}
           title="Toggle Sovereign Assistant"
@@ -94,16 +97,20 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
         </button>
 
         <button
+          type="button"
+          onClick={() => { setCurrentTab('audit'); navigate('/audit'); }}
           className="p-3 rounded-xl bg-slate-800 text-emerald-500 hover:scale-105 transition-all gaas-audit-btn"
-          title="Constitutional Audit Status"
-          aria-label="Constitutional Audit Status"
+          title="Constitutional Audit"
+          aria-label="Constitutional Audit"
         >
           <ShieldCheck size={20} />
         </button>
 
         <button
+          type="button"
+          onClick={() => { setCurrentTab('transparency'); navigate('/transparency'); }}
           className="relative p-2 text-slate-400 hover:text-white transition-colors"
-          title="View Notifications"
+          title="View Notifications / Transparency"
           aria-label="View Notifications"
         >
           <Bell size={20} />
@@ -115,7 +122,13 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
         <div className="fixed top-24 right-8 w-96 bg-slate-900 border border-aura/30 rounded-3xl shadow-2xl overflow-hidden z-[100] animate-in slide-in-from-right-4 duration-300">
            <div className="p-6 border-b border-white/10 bg-aura/5 flex justify-between items-center">
               <h3 className="font-black uppercase tracking-widest text-xs text-aura">Sovereign Assistant</h3>
-              <button onClick={() => setShowAssistant(false)} className="text-slate-500 hover:text-white">
+              <button
+                type="button"
+                onClick={() => setShowAssistant(false)}
+                aria-label="Close assistant"
+                title="Close assistant"
+                className="text-slate-500 hover:text-white"
+              >
                 <X size={16} />
               </button>
            </div>
@@ -127,6 +140,7 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
            <div className="p-4 border-t border-white/10 bg-slate-950 flex gap-2">
               <input placeholder="Ask the mesh..." className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white" />
               <button
+                type="button"
                 className="p-2 bg-aura text-sovereign rounded-lg"
                 title="Send Message"
                 aria-label="Send Message"

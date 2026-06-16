@@ -9,8 +9,8 @@ export const DebateLog: React.FC = () => {
   useEffect(() => {
     fetch('/api/v138/ceo/meeting/log')
       .then(res => res.json())
-      .then(data => setLog(data))
-      .catch(err => console.error("Debate Log Error:", err));
+      .then(data => setLog(Array.isArray(data) ? data : []))
+      .catch(() => setLog([]));
   }, []);
 
   return (
@@ -27,7 +27,7 @@ export const DebateLog: React.FC = () => {
                 <div className="flex justify-between items-start mb-4">
                    <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-xl bg-aura/10 flex items-center justify-center text-aura font-black">
-                         {entry.agent[0]}
+                         {entry.agent?.[0]}
                       </div>
                       <div>
                          <p className="text-sm font-black text-white uppercase">{entry.agent}</p>

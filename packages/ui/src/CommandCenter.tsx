@@ -1,13 +1,25 @@
 import React, { useState } from 'react';
-import { useStore, gaas } from '@workstation/shared';
-import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, MessageCircle, Heart, Brain, Zap, Clock, TrendingUp, Cpu } from 'lucide-react';
+import { useStore } from '@workstation/shared';
+import { User, Bell, Radio, FileText, BarChart3, Sparkles, ShieldCheck, X, Activity, MessageCircle, Brain, Zap, Clock, TrendingUp, Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge } from './index';
 import AgentForge from '@superapp/components/organism/AgentForge';
 import OrganismVitals from '@superapp/components/organism/OrganismVitals';
 import NeuralLink from '@superapp/components/organism/NeuralLink';
 import SpatioTemporal from '@superapp/components/organism/SpatioTemporal';
-import HolographicForge from '@superapp/components/organism/HolographicForge';
+
+class ChannelBoundary extends React.Component<{ children: React.ReactNode }, { err: boolean }> {
+  state = { err: false };
+  static getDerivedStateFromError() { return { err: true }; }
+  render() {
+    if (this.state.err) return (
+      <div className="p-8 text-center text-[10px] font-black uppercase text-slate-600 tracking-widest">
+        Channel stream unavailable
+      </div>
+    );
+    return this.props.children;
+  }
+}
 
 export const CommandCenter = () => {
   const { currentRealm, currentMode } = useStore();
@@ -29,18 +41,21 @@ export const CommandCenter = () => {
 
   return (
     <>
-    <div className="fixed left-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[100]">
+    <div className="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-[100]">
       <div className={`p-4 rounded-[2rem] bg-slate-950/80 border border-slate-900 backdrop-blur-3xl flex flex-col gap-5 shadow-2xl transition-all ${currentMode === 'REST' ? 'grayscale-[50%] opacity-80' : ''}`}>
         {channels.map((channel) => (
           <button
             key={channel.id}
-            onClick={() => setActiveChannel(channel.id)}
+            type="button"
+            aria-label={channel.name}
+            title={channel.name}
+            onClick={() => setActiveChannel(activeChannel === channel.id ? null : channel.id)}
             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all group relative ${activeChannel === channel.id ? 'bg-aura text-sovereign shadow-xl shadow-aura/20' : 'bg-slate-900 text-slate-500 hover:bg-slate-800 hover:text-white hover:scale-110'}`}
           >
             <channel.icon size={22} />
 
             {/* Tooltip */}
-            <div className="absolute left-16 px-4 py-2 bg-slate-950 border border-slate-900 rounded-xl opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none text-[10px] font-black uppercase tracking-widest text-aura shadow-2xl z-[110] -translate-x-2 group-hover:translate-x-0">
+            <div className="absolute right-16 px-4 py-2 bg-slate-950 border border-slate-900 rounded-xl opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none text-[10px] font-black uppercase tracking-widest text-aura shadow-2xl z-[110] translate-x-2 group-hover:translate-x-0">
                {channel.name}
                <div className="text-slate-500 font-bold mt-1 text-[8px]">{channel.description}</div>
             </div>
@@ -60,33 +75,46 @@ export const CommandCenter = () => {
        {activeChannel && (
          <div className="fixed inset-0 z-[200] flex items-center justify-center p-8 pointer-events-none">
             <motion.div
-               initial={{ opacity: 0, scale: 0.9, x: -50 }}
+               initial={{ opacity: 0, scale: 0.9, x: 50 }}
                animate={{ opacity: 1, scale: 1, x: 0 }}
-               exit={{ opacity: 0, scale: 0.9, x: -50 }}
-               className="w-[480px] bg-slate-950/90 border border-aura/20 rounded-[3rem] shadow-2xl pointer-events-auto overflow-hidden backdrop-blur-3xl ml-24"
+               exit={{ opacity: 0, scale: 0.9, x: 50 }}
+               className="w-[480px] bg-slate-950/90 border border-aura/20 rounded-[3rem] shadow-2xl pointer-events-auto overflow-hidden backdrop-blur-3xl mr-24"
             >
                <div className="p-8 border-b border-white/5 bg-aura/5 flex justify-between items-center">
                   <div className="flex items-center gap-4">
                      <div className="w-12 h-12 rounded-2xl bg-aura flex items-center justify-center text-sovereign shadow-xl shadow-aura/20">
-                        {channels.find(c => c.id === activeChannel)?.icon({ size: 24 })}
+                        {(() => { const ch = channels.find(c => c.id === activeChannel); if (!ch) return null; const Icon = ch.icon; return <Icon size={24} />; })()}
                      </div>
                      <div>
                         <h3 className="text-xl font-black text-white uppercase tracking-tight">{activeChannel} Channel</h3>
                         <p className="text-[10px] font-black text-aura uppercase tracking-widest">Multi-Modal Fabric v3.0</p>
                      </div>
                   </div>
-                  <button onClick={() => setActiveChannel(null)} className="p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all">
+                  <button
+                    type="button"
+                    onClick={() => setActiveChannel(null)}
+                    aria-label="Close channel"
+                    title="Close channel"
+                    className="p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all"
+                  >
                      <X size={20} />
                   </button>
                </div>
 
                <div className="p-8 max-h-[600px] overflow-y-auto custom-scrollbar space-y-6">
-                  <ChannelContent id={activeChannel} />
+                  <ChannelBoundary key={activeChannel}>
+                    <ChannelContent id={activeChannel} />
+                  </ChannelBoundary>
                </div>
 
                <div className="p-6 border-t border-white/5 bg-slate-950/50 flex gap-3">
                   <input placeholder={`Query ${activeChannel} channel...`} className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-5 py-3 text-xs text-white focus:outline-none focus:border-aura/30" />
-                  <button className="p-3 bg-aura text-sovereign rounded-2xl shadow-xl shadow-aura/20 hover:scale-110 transition-all">
+                  <button
+                    type="button"
+                    aria-label="Send query"
+                    title="Send query"
+                    className="p-3 bg-aura text-sovereign rounded-2xl shadow-xl shadow-aura/20 hover:scale-110 transition-all"
+                  >
                      <MessageCircle size={20} />
                   </button>
                </div>
@@ -144,8 +172,11 @@ const ChannelContent = ({ id }: { id: string }) => {
                   <TrendingUp size={16} className="text-aura" />
                </div>
                <div className="h-24 flex items-end gap-1 px-2">
-                  {[40, 65, 35, 80, 50, 90, 70, 45, 85, 60, 35, 75].map((h, i) => (
-                    <div key={i} className="flex-1 bg-aura/20 rounded-t-sm" style={{ height: `${h}%` }} />
+                  {[
+                    'h-[40%]', 'h-[65%]', 'h-[35%]', 'h-[80%]', 'h-[50%]', 'h-[90%]',
+                    'h-[70%]', 'h-[45%]', 'h-[85%]', 'h-[60%]', 'h-[35%]', 'h-[75%]'
+                  ].map((h, i) => (
+                    <div key={i} className={`flex-1 bg-aura/20 rounded-t-sm ${h}`} />
                   ))}
                </div>
                <div className="space-y-4">
@@ -184,8 +215,9 @@ const ChannelContent = ({ id }: { id: string }) => {
          </div>
       ),
       holo: (
-         <div className="space-y-6">
-            <HolographicForge />
+         <div className="p-8 text-center space-y-4">
+            <Sparkles size={32} className="text-highlight mx-auto opacity-50" />
+            <p className="text-xs font-black text-slate-500 uppercase tracking-widest">3D Holographic Engine — Loading...</p>
          </div>
       ),
       dashboard: (

@@ -57,7 +57,7 @@ export const SoulRecordExplorer: React.FC = () => {
                    <p className="text-[10px] font-black text-slate-500 uppercase">Reputation</p>
                    <p className="text-xl font-black text-white">{dim.reputation}</p>
                 </div>
-                <button className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+                <button type="button" aria-label={`Explore ${dim.name}`} title={`Explore ${dim.name}`} className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
                    <ChevronRight size={18} />
                 </button>
              </div>

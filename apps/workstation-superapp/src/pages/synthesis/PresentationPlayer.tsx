@@ -53,7 +53,7 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
                <p className="text-[10px] text-aura font-black uppercase tracking-widest">Sovereign Studio v1.0 • Autonomous Narration Active</p>
             </div>
          </div>
-         <button onClick={onClose} className="p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-all">
+         <button type="button" onClick={onClose} className="p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-all">
             <X size={24} />
          </button>
       </header>
@@ -119,14 +119,15 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
       {/* Controls */}
       <footer className="mt-10 flex items-center gap-10">
          <div className="flex items-center gap-4">
-            <button onClick={() => { setCurrentIdx(c => Math.max(0, c - 1)); setProgress(0); }} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><SkipBack size={20} /></button>
+            <button type="button" onClick={() => { setCurrentIdx(c => Math.max(0, c - 1)); setProgress(0); }} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><SkipBack size={20} /></button>
             <button
+              type="button"
               onClick={() => setPlaying(!playing)}
               className="w-20 h-20 rounded-3xl bg-white text-sovereign flex items-center justify-center shadow-2xl shadow-white/10 hover:scale-105 transition-transform"
             >
                {playing ? <Pause size={32} /> : <Play size={32} className="ml-1" />}
             </button>
-            <button onClick={() => { setCurrentIdx(c => Math.min(slides.length - 1, c + 1)); setProgress(0); }} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><SkipForward size={20} /></button>
+            <button type="button" onClick={() => { setCurrentIdx(c => Math.min(slides.length - 1, c + 1)); setProgress(0); }} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><SkipForward size={20} /></button>
          </div>
 
          <div className="flex-1 space-y-3">
@@ -143,7 +144,7 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
             </div>
          </div>
 
-         <button className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><Maximize2 size={20} /></button>
+         <button type="button" className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"><Maximize2 size={20} /></button>
       </footer>
     </div>
   );

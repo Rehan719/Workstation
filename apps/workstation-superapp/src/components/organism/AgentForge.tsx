@@ -1,55 +1,112 @@
 import React, { useState } from 'react';
 
+type AgentNode = { id: string; type: string; name: string; x: number; y: number };
+
+const NODE_COLOR: Record<string, string> = {
+    COGNITIVE: '#d946ef',
+    GOVERNANCE: '#22d3ee',
+    REASONING: '#d946ef',
+    ACTION: '#22d3ee',
+    EXECUTION: '#22d3ee',
+};
+
 const AgentForge: React.FC = () => {
-    const [nodes, setNodes] = useState([
-        { id: 'brain', type: 'COGNITIVE', name: 'Nematron v1.0', x: 100, y: 100 },
-        { id: 'immune', type: 'GOVERNANCE', name: 'Nemoclaw v1.0', x: 300, y: 100 },
-        { id: 'limbs', type: 'EXECUTION', name: 'OpenClaw v1.0', x: 500, y: 100 }
+    const [nodes, setNodes] = useState<AgentNode[]>([
+        { id: 'brain',  type: 'COGNITIVE',  name: 'Nematron v1.0', x: 30,  y: 70 },
+        { id: 'immune', type: 'GOVERNANCE', name: 'Nemoclaw v1.0', x: 190, y: 70 },
+        { id: 'limbs',  type: 'EXECUTION',  name: 'OpenClaw v1.0', x: 350, y: 70 },
     ]);
 
     const addNode = (type: string) => {
-        const newNode = {
-            id: `node-${Date.now()}`,
+        setNodes(prev => [...prev, {
+            id: `node-${prev.length}`,
             type,
             name: `${type.charAt(0) + type.slice(1).toLowerCase()} Agent`,
-            x: Math.random() * 400 + 50,
-            y: Math.random() * 200 + 50
-        };
-        setNodes([...nodes, newNode]);
+            x: 30 + (prev.length % 4) * 140,
+            y: 70 + Math.floor(prev.length / 4) * 80,
+        }]);
     };
 
     return (
-        <div style={{ padding: '20px', background: '#0a0a0a', color: '#fff', borderRadius: '12px', minHeight: '400px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0, borderLeft: '4px solid #ff00ff', paddingLeft: '15px' }}>Developer Forge: Agent Composer</h2>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => addNode('REASONING')} style={{ background: '#1a1a1a', color: '#fff', border: '1px solid #ff00ff', padding: '5px 15px', borderRadius: '4px', cursor: 'pointer' }}>+ Reasoning</button>
-                    <button onClick={() => addNode('ACTION')} style={{ background: '#1a1a1a', color: '#fff', border: '1px solid #00d4ff', padding: '5px 15px', borderRadius: '4px', cursor: 'pointer' }}>+ Action</button>
-                    <button style={{ background: '#ff00ff', color: '#fff', border: 'none', padding: '5px 20px', borderRadius: '4px', fontWeight: 'bold' }}>Deploy Swarm</button>
+        <div className="p-5 bg-black/90 text-white rounded-xl min-h-[400px]">
+            <div className="flex justify-between items-center mb-5">
+                <h2 className="text-xs font-black uppercase tracking-widest border-l-4 border-fuchsia-500 pl-4">
+                    Developer Forge: Agent Composer
+                </h2>
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => addNode('REASONING')}
+                        className="bg-slate-900 text-white border border-fuchsia-500 px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-fuchsia-500/10 transition-colors"
+                    >
+                        + Reasoning
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => addNode('ACTION')}
+                        className="bg-slate-900 text-white border border-cyan-400 px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400/10 transition-colors"
+                    >
+                        + Action
+                    </button>
+                    <button
+                        type="button"
+                        className="bg-fuchsia-500 text-white px-5 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-fuchsia-400 transition-colors"
+                    >
+                        Deploy Swarm
+                    </button>
                 </div>
             </div>
 
-            <div style={{ position: 'relative', width: '100%', height: '300px', background: '#111', borderRadius: '8px', border: '1px dashed #333', overflow: 'hidden' }}>
-                <svg style={{ position: 'absolute', width: '100%', height: '100%', pointerEvents: 'none' }}>
-                    {nodes.map((node, i) => i < nodes.length - 1 && (
-                        <line key={i} x1={node.x + 50} y1={node.y + 25} x2={nodes[i+1].x} y2={nodes[i+1].y + 25} stroke="#333" strokeWidth="2" strokeDasharray="5,5" />
-                    ))}
+            {/* SVG canvas — node x/y are SVG attributes, not CSS inline styles */}
+            <div className="relative w-full h-72 bg-slate-950 rounded-lg border border-dashed border-slate-800 overflow-hidden">
+                <svg width="100%" height="100%">
+                    {/* Edges */}
+                    {nodes.map((node, i) =>
+                        i < nodes.length - 1 && (
+                            <line
+                                key={`edge-${i}`}
+                                x1={node.x + 60} y1={node.y + 25}
+                                x2={nodes[i + 1].x} y2={nodes[i + 1].y + 25}
+                                stroke="#334155" strokeWidth="2" strokeDasharray="5,5"
+                            />
+                        )
+                    )}
+                    {/* Nodes */}
+                    {nodes.map(node => {
+                        const color = NODE_COLOR[node.type] ?? '#22d3ee';
+                        return (
+                            <g key={node.id}>
+                                <rect
+                                    x={node.x} y={node.y}
+                                    width="120" height="50" rx="6"
+                                    fill="#111827" stroke={color} strokeWidth="1"
+                                />
+                                <text
+                                    x={node.x + 60} y={node.y + 17}
+                                    textAnchor="middle"
+                                    fill={color}
+                                    fontSize="8"
+                                    fontWeight="bold"
+                                    fontFamily="monospace"
+                                >
+                                    {node.type}
+                                </text>
+                                <text
+                                    x={node.x + 60} y={node.y + 33}
+                                    textAnchor="middle"
+                                    fill="#94a3b8"
+                                    fontSize="8"
+                                    fontFamily="monospace"
+                                >
+                                    {node.name}
+                                </text>
+                            </g>
+                        );
+                    })}
                 </svg>
-                {nodes.map(node => (
-                    <div key={node.id} style={{
-                        position: 'absolute', left: node.x, top: node.y,
-                        width: '120px', padding: '10px', background: '#1a1a1a',
-                        border: `1px solid ${node.type === 'COGNITIVE' ? '#ff00ff' : '#00d4ff'}`,
-                        borderRadius: '6px', fontSize: '10px', textAlign: 'center',
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.5)'
-                    }}>
-                        <div style={{ fontWeight: 'black', marginBottom: '5px', color: node.type === 'COGNITIVE' ? '#ff00ff' : '#00d4ff' }}>{node.type}</div>
-                        <div>{node.name}</div>
-                    </div>
-                ))}
             </div>
 
-            <p style={{ marginTop: '15px', fontSize: '10px', color: '#555', fontStyle: 'italic' }}>
+            <p className="mt-4 text-[10px] text-slate-600 italic font-bold">
                 Node-based composition active. Genetic inheritance: 98.4%. Swarm stability: NOMINAL.
             </p>
         </div>

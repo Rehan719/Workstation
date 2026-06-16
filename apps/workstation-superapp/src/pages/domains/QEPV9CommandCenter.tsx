@@ -4,7 +4,7 @@ import {
   Lock, CheckCircle, Search, Terminal, Activity,
   Briefcase, Gavel, Microscope, HeartPulse, Boxes,
   Menu, Bell, User, LayoutGrid, FileCode, Server,
-  Fingerprint, Key, Edit3, Save, ChevronRight
+  Fingerprint, Key, Edit3, Save, ChevronRight, RefreshCcw
 } from 'lucide-react';
 
 const NavTab = ({ id, label, icon: Icon, active, onClick }) => (
@@ -51,7 +51,7 @@ const QEPV9CommandCenter = () => {
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               SYSTEMS OPTIMAL
            </div>
-           <button className="text-slate-500 hover:text-white transition-colors"><Bell size={20}/></button>
+           <button type="button" aria-label="Notifications" title="Notifications" className="text-slate-500 hover:text-white transition-colors"><Bell size={20}/></button>
            <div className="h-8 w-px bg-slate-800" />
            <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">

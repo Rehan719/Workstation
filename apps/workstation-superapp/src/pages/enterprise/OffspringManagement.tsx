@@ -14,7 +14,7 @@ export const OffspringManagement: React.FC = () => {
       <header className="flex justify-between items-end border-b border-white/5 pb-8">
         <div>
           <h1 className="text-5xl font-black mb-1 text-highlight">Offspring Management</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-highlight">NANITE Propagation • Autonomous Replication (Article 1115)</p>
+          <p className="font-bold uppercase text-[10px] tracking-widest text-highlight">NANITE Propagation • Autonomous Replication (Article 1115)</p>
         </div>
         <Button className="bg-highlight text-sovereign">
            <Rocket size={18} /> Spawn New Instance
@@ -69,7 +69,7 @@ export const OffspringManagement: React.FC = () => {
                              <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase">{item.status}</span>
                           </div>
                           <div className="w-px h-8 bg-slate-900" />
-                          <button className="p-2 text-slate-500 hover:text-highlight transition-colors">
+                          <button type="button" aria-label="Open instance" title="Open instance" className="p-2 text-slate-500 hover:text-highlight transition-colors">
                              <ExternalLink size={18} />
                           </button>
                        </div>

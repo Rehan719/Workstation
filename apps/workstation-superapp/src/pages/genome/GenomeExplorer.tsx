@@ -205,6 +205,9 @@ export const GenomeExplorer: React.FC = () => {
                                {i === 2 ? 'METHYLATED' : 'DEMETHYLATED'}
                             </span>
                             <button
+                               type="button"
+                               aria-label="Edit methylation site"
+                               title="Edit methylation site"
                                onClick={() => handleGaaSCommit('METHYLATION_EDIT', { site })}
                                className="p-2 bg-slate-900 rounded-lg text-slate-500 hover:text-white transition-colors border border-slate-800"
                             >
@@ -296,9 +299,9 @@ export const GenomeExplorer: React.FC = () => {
               <h4 className="text-xs font-black text-white uppercase tracking-widest mb-6 border-b border-white/5 pb-4">Expression Tuning</h4>
               <div className="space-y-8">
                  {[
-                   { label: 'Epigenetic Flux', val: 78 },
-                   { label: 'Transcriptional Pressure', val: 42 },
-                   { label: 'Evolutionary Intensity', val: 91 }
+                   { label: 'Epigenetic Flux', val: 78, cls: 'w-[78%]' },
+                   { label: 'Transcriptional Pressure', val: 42, cls: 'w-[42%]' },
+                   { label: 'Evolutionary Intensity', val: 91, cls: 'w-[91%]' }
                  ].map((slider, i) => (
                    <div key={i} className="space-y-3">
                       <div className="flex justify-between items-center">
@@ -306,7 +309,7 @@ export const GenomeExplorer: React.FC = () => {
                          <span className="text-[10px] font-black text-aura">{slider.val}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden border border-white/5">
-                         <div className="h-full bg-aura shadow-[0_0_10px_rgba(100,255,218,0.5)]" style={{ width: `${slider.val}%` }}></div>
+                         <div className={`h-full bg-aura shadow-[0_0_10px_rgba(100,255,218,0.5)] ${slider.cls}`}></div>
                       </div>
                    </div>
                  ))}

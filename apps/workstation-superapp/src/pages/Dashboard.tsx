@@ -3,6 +3,7 @@ import { Card, RealmSelector, AvatarPlaceholder } from '@workstation/ui';
 import { useStore } from '@workstation/shared';
 import { ShieldCheck, Zap, Cpu, Users, Activity, Globe, Heart, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 export const Dashboard: React.FC = () => {
   const { systemVitals, user } = useStore();
@@ -15,8 +16,7 @@ export const Dashboard: React.FC = () => {
   ];
 
   const setCurrentTab = useStore(state => state.setCurrentTab);
-
-  console.log("Dashboard Rendered, setCurrentTab:", !!setCurrentTab);
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-12 pb-24" id="dashboard-page">
@@ -106,7 +106,8 @@ export const Dashboard: React.FC = () => {
                     Article 1101: 10-minute veto window active for high-risk autonomous workflows. GaaS enforcement status: <span className="text-vital">STRICT</span>.
                  </p>
                  <button
-                  onClick={() => setCurrentTab('admin')}
+                  type="button"
+                  onClick={() => { setCurrentTab('admin'); navigate('/admin'); }}
                   className="w-full py-4 border border-vital text-vital font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-vital hover:text-white transition-all">
                     Open Veto Console
                  </button>
@@ -123,7 +124,8 @@ export const Dashboard: React.FC = () => {
               </div>
               <button
                 id="consult-ceo-btn"
-                onClick={() => setCurrentTab('ceo')}
+                type="button"
+                onClick={() => { setCurrentTab('ceo'); navigate('/ceo'); }}
                 className="mt-10 w-full py-5 rounded-2xl bg-white text-sovereign font-black text-xs uppercase tracking-[0.2em] hover:bg-aura transition-all shadow-2xl">
                   Consult VSB CEO
               </button>

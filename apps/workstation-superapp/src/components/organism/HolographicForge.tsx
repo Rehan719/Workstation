@@ -1,75 +1,86 @@
-import React, { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import React, { useState, useEffect } from 'react';
+
+const AGENT_COUNT = 5;
+const TWO_PI = Math.PI * 2;
 
 const HolographicForge: React.FC = () => {
-    const mountRef = useRef<HTMLDivElement>(null);
+    const [tick, setTick] = useState(0);
 
     useEffect(() => {
-        if (!mountRef.current) return;
-
-        // 1. Scene Setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
-        mountRef.current.appendChild(renderer.domElement);
-
-        // 2. Holographic Mesh (Article 1200)
-        const geometry = new THREE.IcosahedronGeometry(1, 2);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x00ff00,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.5
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-
-        // 3. Orbiting "Agents"
-        const agents: THREE.Mesh[] = [];
-        for (let i = 0; i < 5; i++) {
-            const agentGeom = new THREE.SphereGeometry(0.1, 8, 8);
-            const agentMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff });
-            const agent = new THREE.Mesh(agentGeom, agentMat);
-            agent.position.set(Math.cos(i) * 2, Math.sin(i) * 2, 0);
-            scene.add(agent);
-            agents.push(agent);
-        }
-
-        camera.position.z = 5;
-
-        // 4. Animation Loop
-        const animate = () => {
-            requestAnimationFrame(animate);
-            mesh.rotation.x += 0.01;
-            mesh.rotation.y += 0.01;
-
-            agents.forEach((a, i) => {
-                const t = Date.now() * 0.001 + i;
-                a.position.x = Math.cos(t) * 1.5;
-                a.position.y = Math.sin(t) * 1.5;
-                a.position.z = Math.sin(t * 2) * 0.5;
-            });
-
-            renderer.render(scene, camera);
-        };
-        animate();
-
-        return () => {
-            if (mountRef.current) mountRef.current.removeChild(renderer.domElement);
-        };
+        const id = setInterval(() => setTick(t => (t + 1) % 360), 50);
+        return () => clearInterval(id);
     }, []);
 
+    const cx = 140;
+    const cy = 130;
+    const orbitR = 80;
+
+    const agents = Array.from({ length: AGENT_COUNT }, (_, i) => {
+        const angle = (TWO_PI * i) / AGENT_COUNT + (tick * Math.PI) / 180;
+        return { x: cx + Math.cos(angle) * orbitR, y: cy + Math.sin(angle) * orbitR * 0.45 };
+    });
+
+    const meshPoints = Array.from({ length: 6 }, (_, i) => {
+        const a = (TWO_PI * i) / 6;
+        return { x: cx + Math.cos(a) * 50, y: cy + Math.sin(a) * 25 };
+    });
+
     return (
-        <div style={{ padding: '20px', background: '#0a0a0a', color: '#fff', borderRadius: '12px', border: '1px solid #ff00ff' }}>
-            <div style={{ marginBottom: '15px' }}>
-                <h2 style={{ margin: 0, color: '#ff00ff', textShadow: '0 0 10px #ff00ff' }}>Holographic Agent Forge (L13)</h2>
-                <p style={{ fontSize: '10px', color: '#888' }}>3D Immersive Swarm Composition Active</p>
+        <div className="p-5 bg-black/90 text-white rounded-xl border border-fuchsia-500/60">
+            <div className="mb-4">
+                <h2 className="text-xs font-black uppercase tracking-widest text-fuchsia-400 [text-shadow:0_0_10px_#d946ef]">
+                    Holographic Agent Forge (L13)
+                </h2>
+                <p className="text-[10px] text-slate-500 mt-1 font-bold">3D Immersive Swarm Composition Active</p>
             </div>
-            <div ref={mountRef} style={{ width: '100%', height: '300px', background: '#000', borderRadius: '8px' }} />
-            <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
-                <button style={{ background: '#1a1a1a', color: '#ff00ff', border: '1px solid #ff00ff', padding: '5px 15px', borderRadius: '4px', cursor: 'pointer' }}>INFUSE QUALIA</button>
-                <button style={{ background: '#ff00ff', color: '#fff', border: 'none', padding: '5px 15px', borderRadius: '4px', fontWeight: 'bold' }}>PROJECT SWARM</button>
+
+            <div className="w-full h-64 bg-black rounded-lg overflow-hidden flex items-center justify-center border border-slate-900">
+                <svg width="280" height="260">
+                    {/* Icosahedron wireframe approximation */}
+                    {meshPoints.map((p, i) => {
+                        const next = meshPoints[(i + 1) % meshPoints.length];
+                        const opp = meshPoints[(i + 3) % meshPoints.length];
+                        return (
+                            <g key={i} opacity="0.4">
+                                <line x1={p.x} y1={p.y} x2={next.x} y2={next.y} stroke="#00ff00" strokeWidth="0.8" />
+                                <line x1={p.x} y1={p.y} x2={cx} y2={cy} stroke="#00ff00" strokeWidth="0.5" />
+                                <line x1={p.x} y1={p.y} x2={opp.x} y2={opp.y} stroke="#00ff00" strokeWidth="0.4" />
+                            </g>
+                        );
+                    })}
+
+                    {/* Orbiting agent nodes */}
+                    {agents.map((a, i) => (
+                        <g key={i}>
+                            <circle cx={a.x} cy={a.y} r="5" fill="#22d3ee" opacity="0.9" />
+                            <circle cx={a.x} cy={a.y} r="9" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.3" />
+                        </g>
+                    ))}
+
+                    {/* Core nucleus */}
+                    <circle cx={cx} cy={cy} r="8" fill="#00ff00" opacity="0.7" />
+                    <circle cx={cx} cy={cy} r="14" fill="none" stroke="#00ff00" strokeWidth="1" opacity="0.3" />
+                    <circle cx={cx} cy={cy} r="22" fill="none" stroke="#00ff00" strokeWidth="0.5" opacity="0.15" />
+
+                    <text x={cx} y={cy + 40} textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+                        SOVEREIGN MESH CORE
+                    </text>
+                </svg>
+            </div>
+
+            <div className="mt-4 flex gap-2.5">
+                <button
+                    type="button"
+                    className="bg-slate-900 text-fuchsia-400 border border-fuchsia-500 px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-fuchsia-500/10 transition-colors"
+                >
+                    INFUSE QUALIA
+                </button>
+                <button
+                    type="button"
+                    className="bg-fuchsia-500 text-white px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-fuchsia-400 transition-colors"
+                >
+                    PROJECT SWARM
+                </button>
             </div>
         </div>
     );

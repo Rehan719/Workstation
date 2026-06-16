@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Command } from 'cmdk'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Globe, Zap, Cpu, Settings, MessageSquare } from 'lucide-react'
+import { Search, Globe, Zap, Cpu, Settings, MessageSquare, Brain, Shield, Map, BookOpen, Briefcase, HeartPulse, Gavel, GraduationCap } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export const CommandPalette = ({ open, setOpen, setActiveTab }: any) => {
+  const navigate = useNavigate()
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -14,6 +17,12 @@ export const CommandPalette = ({ open, setOpen, setActiveTab }: any) => {
     document.addEventListener('keydown', down)
     return () => document.removeEventListener('keydown', down)
   }, [])
+
+  const go = (tab: string, path: string) => {
+    setActiveTab(tab)
+    navigate(path)
+    setOpen(false)
+  }
 
   if (!open) return null
 
@@ -38,23 +47,29 @@ export const CommandPalette = ({ open, setOpen, setActiveTab }: any) => {
               <Command.Empty className="p-4 text-center text-slate-500 font-bold">No results found.</Command.Empty>
 
               <Command.Group heading="Navigation" className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mb-2 px-2">
-                <Item icon={Zap} label="Pulse Dashboard" onSelect={() => { setActiveTab('dashboard'); setOpen(false); }} />
-                <Item icon={MessageSquare} label="AI CEO Chat" onSelect={() => { setActiveTab('ceo'); setOpen(false); }} />
-                <Item icon={Globe} label="Federation Portal" onSelect={() => { setActiveTab('fed-portal'); setOpen(false); }} />
-                <Item icon={Cpu} label="QEP Engine" onSelect={() => { setActiveTab('qep'); setOpen(false); }} />
+                <Item icon={Zap} label="Dashboard" onSelect={() => go('dashboard', '/')} />
+                <Item icon={MessageSquare} label="AI CEO Chat" onSelect={() => go('ceo', '/ceo')} />
+                <Item icon={Map} label="Federation Portal" onSelect={() => go('fed-map', '/fed-map')} />
+                <Item icon={Cpu} label="QEP Flagship" onSelect={() => go('qep', '/qep')} />
               </Command.Group>
 
               <Command.Group heading="Domains" className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mt-4 mb-2 px-2">
-                <Item icon={Globe} label="Religion Hub" onSelect={() => { setActiveTab('religion'); setOpen(false); }} />
-                <Item icon={Zap} label="Science Hub" onSelect={() => { setActiveTab('science'); setOpen(false); }} />
-                <Item icon={Settings} label="Law Hub" onSelect={() => { setActiveTab('law'); setOpen(false); }} />
-                <Item icon={Globe} label="Employment Hub" onSelect={() => { setActiveTab('employment'); setOpen(false); }} />
-                <Item icon={Globe} label="Education Hub" onSelect={() => { setActiveTab('education'); setOpen(false); }} />
+                <Item icon={BookOpen} label="Religion Hub" onSelect={() => go('qep-religion', '/qep-religion')} />
+                <Item icon={Zap} label="Science Hub" onSelect={() => go('science', '/science')} />
+                <Item icon={Gavel} label="Law Hub" onSelect={() => go('law', '/law')} />
+                <Item icon={Briefcase} label="Employment Hub" onSelect={() => go('employment', '/employment')} />
+                <Item icon={GraduationCap} label="Education Hub" onSelect={() => go('education', '/education')} />
+                <Item icon={HeartPulse} label="Care Hub" onSelect={() => go('care', '/care')} />
+              </Command.Group>
+
+              <Command.Group heading="Evolution" className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mt-4 mb-2 px-2">
+                <Item icon={Brain} label="Introspection" onSelect={() => go('introspection', '/introspection')} />
+                <Item icon={Zap} label="Genome Explorer" onSelect={() => go('genome-explorer', '/genome-explorer')} />
               </Command.Group>
 
               <Command.Group heading="Settings" className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mt-4 mb-2 px-2">
-                <Item icon={Settings} label="System Settings" onSelect={() => { setActiveTab('settings'); setOpen(false); }} />
-                <Item icon={Globe} label="Admin Console" onSelect={() => { setActiveTab('admin'); setOpen(false); }} />
+                <Item icon={Settings} label="System Settings" onSelect={() => go('settings', '/settings')} />
+                <Item icon={Shield} label="Admin Console" onSelect={() => go('admin', '/admin')} />
               </Command.Group>
             </Command.List>
           </Command>

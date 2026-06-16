@@ -27,7 +27,7 @@ export const CosmicNervousSystem: React.FC = () => {
       <header className="flex justify-between items-end border-b border-white/5 pb-8">
         <div>
           <h1 className="text-4xl font-black mb-1 neon-text !text-highlight">Cosmic Nervous System</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-highlight">Interplanetary Sensory Network v153.0</p>
+          <p className="font-bold uppercase text-[10px] tracking-widest text-highlight">Interplanetary Sensory Network v153.0</p>
         </div>
         <div className="flex gap-4">
            <div className="px-6 py-3 bg-highlight/10 border border-highlight/30 rounded-xl flex items-center gap-3">
@@ -74,7 +74,7 @@ export const CosmicNervousSystem: React.FC = () => {
                         <p className="text-2xl font-black text-white">{data.solar_resonance}</p>
                      </div>
                      <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                        <div className="h-full bg-highlight shadow-[0_0_15px_rgba(255,215,64,0.5)]" style={{ width: '94%' }}></div>
+                        <div className="h-full w-[94%] bg-highlight shadow-[0_0_15px_rgba(255,215,64,0.5)]"></div>
                      </div>
                      <p className="text-[10px] text-slate-500 font-bold italic">Stable resonance. No protective protocols required.</p>
                   </div>

@@ -12,8 +12,8 @@ export const ConstitutionalUI: React.FC = () => {
     // v0.2: Constitution Explorer - Fetch all 1127 articles
     fetch('/api/v154/constitution/articles')
       .then(res => res.json())
-      .then(data => setArticles(data))
-      .catch(err => console.error("Constitution Fetch Error:", err));
+      .then(data => setArticles(Array.isArray(data) ? data : []))
+      .catch(() => setArticles([]));
   }, []);
 
   const timeline = [
@@ -22,8 +22,8 @@ export const ConstitutionalUI: React.FC = () => {
   ];
 
   const filtered = articles.filter(a =>
-    a.title.toLowerCase().includes(search.toLowerCase()) ||
-    a.category.toLowerCase().includes(search.toLowerCase())
+    a?.title?.toLowerCase().includes(search.toLowerCase()) ||
+    a?.category?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (

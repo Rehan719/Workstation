@@ -24,10 +24,10 @@ export const DashboardNew: React.FC = () => {
   const navigate = useNavigate();
 
   const actions = [
-    { id: 'task', name: 'Knowledge Ingest', icon: Plus, color: 'text-aura', bg: 'bg-aura/10', desc: 'Upload and process raw data.', route: '/file-hub' },
-    { id: 'note', name: 'Synthesis Studio', icon: Sparkles, color: 'text-highlight', bg: 'bg-highlight/10', desc: 'Generate reports & presentations.', route: '/synthesis' },
-    { id: 'event', name: 'QEP Religion', icon: BookOpen, color: 'text-vital', bg: 'bg-vital/10', desc: 'Quran Education Platform Hub.', route: '/qep-religion' },
-    { id: 'project', name: 'Genome Core', icon: Binary, color: 'text-emerald-500', bg: 'bg-emerald-500/10', desc: 'System evolution & GRN.', route: '/genome-explorer' },
+    { id: 'file-hub',        name: 'Knowledge Ingest', icon: Plus,      color: 'text-aura',         bg: 'bg-aura/10',         desc: 'Upload and process raw data.',          route: '/file-hub' },
+    { id: 'synthesis',       name: 'Synthesis Studio', icon: Sparkles,  color: 'text-highlight',    bg: 'bg-highlight/10',    desc: 'Generate reports & presentations.',     route: '/synthesis' },
+    { id: 'qep-religion',    name: 'QEP Religion',     icon: BookOpen,  color: 'text-vital',        bg: 'bg-vital/10',        desc: 'Quran Education Platform Hub.',         route: '/qep-religion' },
+    { id: 'genome-explorer', name: 'Genome Core',      icon: Binary,    color: 'text-emerald-500',  bg: 'bg-emerald-500/10',  desc: 'System evolution & GRN.',               route: '/genome-explorer' },
   ];
 
   const recentActivity = [
@@ -54,7 +54,7 @@ export const DashboardNew: React.FC = () => {
            <Button variant="outline" className="bg-slate-900 border-slate-800">
               <Search size={18} /> Search Mesh
            </Button>
-           <Button onClick={() => setCurrentTab('ceo')} className="bg-aura text-sovereign shadow-2xl shadow-aura/20">
+           <Button onClick={() => { setCurrentTab('ceo'); navigate('/ceo'); }} className="bg-aura text-sovereign shadow-2xl shadow-aura/20">
               <MessageSquare size={18} /> Consult CEO
            </Button>
         </div>
@@ -70,7 +70,7 @@ export const DashboardNew: React.FC = () => {
           >
             <Card
               className="p-8 group cursor-pointer hover:border-aura/40 transition-all bg-slate-950/40 backdrop-blur-sm border-slate-900 flex flex-col h-full"
-              onClick={() => navigate(action.route)}
+              onClick={() => { setCurrentTab(action.id); navigate(action.route); }}
             >
               <div className={`w-14 h-14 rounded-2xl ${action.bg} ${action.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                 <action.icon size={28} />
@@ -133,7 +133,7 @@ export const DashboardNew: React.FC = () => {
                      <div className="h-full bg-aura w-[98%]" />
                   </div>
                   <Button
-                    onClick={() => setCurrentTab('admin')}
+                    onClick={() => { setCurrentTab('admin'); navigate('/admin'); }}
                     variant="outline" className="w-full text-[10px] py-4 uppercase font-black border-aura/20 text-aura">
                     Advanced Telemetry
                   </Button>
@@ -144,9 +144,9 @@ export const DashboardNew: React.FC = () => {
                <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Active Objectives</h4>
                <div className="space-y-4">
                   {[
-                    { name: 'v1.0 Global Launch', prog: 100 },
-                    { name: 'QEP Domain Parity', prog: 100 },
-                    { name: 'v2.0 Neural Mesh', prog: 12 },
+                    { name: 'v1.0 Global Launch', prog: 100, cls: 'w-full' },
+                    { name: 'QEP Domain Parity', prog: 100, cls: 'w-full' },
+                    { name: 'v2.0 Neural Mesh', prog: 12, cls: 'w-[12%]' },
                   ].map((obj, i) => (
                     <div key={i} className="space-y-2">
                        <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
@@ -154,7 +154,7 @@ export const DashboardNew: React.FC = () => {
                           <span className="text-slate-600">{obj.prog}%</span>
                        </div>
                        <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
-                          <div className="h-full bg-highlight transition-all duration-1000" style={{ width: `${obj.prog}%` }} />
+                          <div className={`h-full bg-highlight transition-all duration-1000 ${obj.cls}`} />
                        </div>
                     </div>
                   ))}

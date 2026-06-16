@@ -66,6 +66,9 @@ export const CapitalDashboard: React.FC = () => {
             <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-2xl border border-slate-800">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Semi-Autonomous</span>
                 <button
+                    type="button"
+                    aria-label={`Toggle Semi-Autonomous mode: currently ${autonomousEnabled ? 'On' : 'Off'}`}
+                    title={`Semi-Autonomous mode: ${autonomousEnabled ? 'On' : 'Off'}`}
                     onClick={() => setAutonomousEnabled(!autonomousEnabled)}
                     className={`w-10 h-5 rounded-full transition-colors relative ${autonomousEnabled ? 'bg-aura' : 'bg-slate-700'}`}
                 >
@@ -186,7 +189,7 @@ export const CapitalDashboard: React.FC = () => {
                     </div>
                     <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
                         <p className="text-[10px] font-black text-slate-500 uppercase mb-1">PQC Security</p>
-                        <p className="text-sm font-bold text-green-400 font-black">ENFORCED</p>
+                        <p className="text-sm font-black text-green-400">ENFORCED</p>
                     </div>
                 </div>
                 <div className="space-y-4">

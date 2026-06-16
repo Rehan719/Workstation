@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@superapp/*": ["../../apps/workstation-superapp/src/*"]
     },
     "jsx": "react-jsx",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0",
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "target": "ESNext",

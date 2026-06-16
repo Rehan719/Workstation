@@ -119,9 +119,9 @@ export const QEPAIPortal: React.FC = () => {
             </h3>
             <div className="space-y-2">
                {[
-                 { label: 'Tajweed Mastery', fit: 98 },
-                 { label: 'Hifz Accelerator', fit: 85 },
-                 { label: 'Arabic Foundation', fit: 92 }
+                 { label: 'Tajweed Mastery', fit: 98, cls: 'w-[98%]' },
+                 { label: 'Hifz Accelerator', fit: 85, cls: 'w-[85%]' },
+                 { label: 'Arabic Foundation', fit: 92, cls: 'w-[92%]' }
                ].map((item) => (
                  <div key={item.label} className="space-y-1">
                     <div className="flex justify-between text-[10px] font-bold uppercase text-slate-500">
@@ -129,7 +129,7 @@ export const QEPAIPortal: React.FC = () => {
                        <span className="text-indigo-600">{item.fit}% Match</span>
                     </div>
                     <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-                       <div className="h-full bg-indigo-500" style={{ width: `${item.fit}%` }}></div>
+                       <div className={`h-full bg-indigo-500 ${item.cls}`}></div>
                     </div>
                  </div>
                ))}
