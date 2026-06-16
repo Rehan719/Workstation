@@ -1,29 +1,23 @@
 import React, { useState } from 'react';
-import { Bell, Search, Activity, Zap, Sparkles, MessageCircle, X, Moon, Play, GraduationCap, Terminal, Briefcase, Microscope, Binary, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { Bell, Search, Activity, Zap, Sparkles, MessageCircle, X, Moon, Play, GraduationCap, Terminal, Briefcase, Microscope, Binary, LayoutDashboard, ShieldCheck, Loader2 } from 'lucide-react';
 import { useStore } from '@workstation/shared';
 import { useNavigate } from 'react-router-dom';
+import type { UseAvatarSessionReturn } from '../../hooks/useAvatarSession';
 
 interface HeaderProps {
   wsStatus?: 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED';
+  avatar: UseAvatarSessionReturn;
 }
 
-export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
+export const Header: React.FC<HeaderProps> = ({ wsStatus, avatar }) => {
   const { currentRealm, setCurrentRealm, currentMode, setCurrentMode, setCurrentTab } = useStore();
   const navigate = useNavigate();
   const [showAssistant, setShowAssistant] = useState(false);
-  const [assistantInput, setAssistantInput] = useState('');
-  const [assistantMessages, setAssistantMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
 
-  const sendAssistantMessage = () => {
-    const text = assistantInput.trim();
-    if (!text) return;
-    setAssistantMessages(prev => [
-      ...prev,
-      { role: 'user', text },
-      { role: 'assistant', text: `Acknowledged: "${text}". Full reasoning is handled in the main Sovereign Mesh panel — open it for a complete response.` },
-    ]);
-    setAssistantInput('');
-  };
+  // This popup is a quick-access window onto the same real avatar session
+  // that drives the footer (useAvatarSession, shared via Shell) — not a
+  // separate, disconnected, canned-reply demo.
+  const { messages, input, setInput, sending, sendMessage } = avatar;
 
   const realms: { id: typeof currentRealm; label: string; icon: any }[] = [
     { id: 'LEARNER', label: 'Learner', icon: GraduationCap },
@@ -144,27 +138,35 @@ export const Header: React.FC<HeaderProps> = ({ wsStatus }) => {
               </button>
            </div>
            <div className="p-6 h-80 overflow-y-auto space-y-4 custom-scrollbar">
-              <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5 text-xs leading-relaxed text-slate-300">
-                L12 Multi-Modal Fabric Active. Mesh latency is currently 28ms. How can I assist with your v3.0 operation?
-              </div>
-              {assistantMessages.map((m, i) => (
+              {messages.length === 0 && (
+                <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5 text-xs leading-relaxed text-slate-300">
+                  Ask your avatar anything — this is a quick-access view of the same conversation shown in full at
+                  the bottom of the screen.
+                </div>
+              )}
+              {messages.map((m, i) => (
                 <div key={i} className={`p-4 rounded-2xl border text-xs leading-relaxed ${m.role === 'user' ? 'bg-aura/10 border-aura/20 text-white' : 'bg-slate-800/50 border-white/5 text-slate-300'}`}>
-                  {m.text}
+                  {m.content}
                 </div>
               ))}
+              {sending && (
+                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold px-1">
+                  <Loader2 size={12} className="animate-spin" /> Thinking...
+                </div>
+              )}
            </div>
            <div className="p-4 border-t border-white/10 bg-slate-950 flex gap-2">
               <input
-                value={assistantInput}
-                onChange={(e) => setAssistantInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') sendAssistantMessage(); }}
-                placeholder="Ask the mesh..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') sendMessage(); }}
+                placeholder="Ask your avatar..."
                 className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white"
               />
               <button
                 type="button"
-                onClick={sendAssistantMessage}
-                disabled={!assistantInput.trim()}
+                onClick={() => sendMessage()}
+                disabled={!input.trim() || sending}
                 className="p-2 bg-aura text-sovereign rounded-lg disabled:opacity-40"
                 title="Send Message"
                 aria-label="Send Message"

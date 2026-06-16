@@ -73,7 +73,7 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
       />
 
       <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
-        <Header wsStatus={wsStatus} />
+        <Header wsStatus={wsStatus} avatar={avatar} />
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <PanelGroup direction="horizontal" onLayout={setOuterSizes}>
