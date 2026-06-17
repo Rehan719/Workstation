@@ -44,6 +44,8 @@ const routeToContext = (pathname: string): string => {
  * conversation history (center), and the avatar figure (right) — all reading
  * and driving the exact same real session, not three disconnected copies.
  */
+export type AiStatus = 'online' | 'offline' | 'checking';
+
 export function useAvatarSession() {
   const location = useLocation();
   const context = routeToContext(location.pathname);
@@ -60,6 +62,7 @@ export function useAvatarSession() {
   const [notice, setNotice] = useState('');
   const [volume, setVolume] = useState(1);
   const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
+  const [aiStatus, setAiStatus] = useState<AiStatus>('checking');
 
   // Real-time amplitude (0-100), sampled from an actual Web Audio analyser —
   // never randomized/faked. `amplitude` tracks TTS playback, `micAmplitude`
@@ -81,6 +84,20 @@ export function useAvatarSession() {
     }
     return audioCtxRef.current;
   };
+
+  const checkAiStatus = useCallback(async () => {
+    setAiStatus('checking');
+    try {
+      const res = await axios.get('/api/v1/avatar/status', { timeout: 6000, validateStatus: () => true });
+      setAiStatus(res.status === 200 && (res.data?.ollama_online || res.data?.openai_configured) ? 'online' : 'offline');
+    } catch {
+      setAiStatus('offline');
+    }
+  }, []);
+
+  useEffect(() => {
+    checkAiStatus();
+  }, [checkAiStatus]);
 
   // Continuous sampling loop — only reads real analyser data, defaults to 0
   // (not a fake idle wobble) whenever there's no actual audio to measure.
@@ -160,8 +177,15 @@ export function useAvatarSession() {
       const replyText: string = resp.data.response;
       setMessages(prev => [...prev, { role: 'assistant', content: replyText }]);
       if (speakReplies) speakText(replyText);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong reaching the avatar backend.' }]);
+      setAiStatus('online');
+    } catch (err: any) {
+      const detail: string =
+        err?.response?.data?.detail ||
+        (err?.code === 'ECONNREFUSED' || err?.code === 'ERR_NETWORK'
+          ? 'Backend server is not running. Start the Workstation API server.'
+          : 'Could not reach the avatar backend.');
+      setAiStatus('offline');
+      setMessages(prev => [...prev, { role: 'assistant', content: detail }]);
     } finally {
       setSending(false);
     }
@@ -226,11 +250,14 @@ export function useAvatarSession() {
   }, []);
 
   const clearConversation = useCallback(() => {
+    if (sessionId) {
+      axios.delete(`/api/v1/avatar/session/${sessionId}`).catch(() => {});
+    }
     setMessages([]);
     setSessionId(null);
     setNotice('');
     setHasPlayedAudio(false);
-  }, []);
+  }, [sessionId]);
 
   const rewind = useCallback((seconds: number = 5) => {
     const audio = audioPlayerRef.current;
@@ -261,6 +288,8 @@ export function useAvatarSession() {
     volume, setVolumeLevel,
     amplitude, micAmplitude,
     canRewind: hasPlayedAudio,
+    aiStatus,
+    checkAiStatus,
     sendMessage,
     startRecording,
     stopRecording,

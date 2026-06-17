@@ -15,9 +15,9 @@ export const CFO: React.FC = () => {
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-2 break-words">CFO Agent</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-2 break-words">CFO Agent</h1>
           <p className="text-slate-500">Financial Orchestration & Tokenomics Optimization.</p>
         </div>
         <div className="text-right">
@@ -26,7 +26,7 @@ export const CFO: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-8">
         <MetricCard title="Revenue (24h)" value={`${data.revenue.toLocaleString()} WST`} delta={data.growth} icon={DollarSign} />
         <MetricCard title="Operating Costs" value={`${data.operating_costs.toLocaleString()} WST`} delta="-4.2%" icon={PieChart} />
         <MetricCard title="Liquidity" value={`${data.liquidity.toLocaleString()} WST`} delta="Stable" icon={Wallet} />

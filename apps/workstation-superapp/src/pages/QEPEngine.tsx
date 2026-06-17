@@ -20,7 +20,7 @@ export const QEPEngine: React.FC = () => {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-6">
         {engines.map((engine) => (
           <Card key={engine.name} className="flex flex-col group hover:border-aura/50 transition-all">
             <div className="flex justify-between items-start mb-6">

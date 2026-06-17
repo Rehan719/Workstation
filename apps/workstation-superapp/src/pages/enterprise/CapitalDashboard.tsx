@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge } from '@workstation/ui';
+import { Card, Button, Badge, toast } from '@workstation/ui';
 import {
   TrendingUp, ShieldAlert, PieChart, Activity,
   BarChart3, MessageCircle, AlertTriangle, RefreshCw,
@@ -52,19 +52,19 @@ export const CapitalDashboard: React.FC = () => {
   }, []);
 
   const handleAction = (msg: string) => {
-    alert(msg);
+    toast(msg);
   };
 
   const handleCastVote = (id: string, title: string) => {
     setVotedAmendments(prev => [...prev, id]);
-    alert(`Vote cast for Article ${id}: ${title}`);
+    toast(`Vote Cast — Article ${id}: ${title}`);
   };
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black text-white uppercase italic break-words">Sovereign Capital</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black text-white uppercase italic break-words">Sovereign Capital</h1>
           <p className="text-slate-500 font-bold tracking-widest uppercase text-xs mt-2">vΩ∞-CAPITAL-FUND | Global Investment Civilisation</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -104,7 +104,7 @@ export const CapitalDashboard: React.FC = () => {
       </div>
 
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 @[440px]:grid-cols-4 gap-6">
             <Card className="p-6 bg-slate-900/50 border-slate-800">
             <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Current AUM</p>
             <p className="text-3xl font-black text-white">${metrics?.balance.toLocaleString()}</p>
@@ -129,8 +129,8 @@ export const CapitalDashboard: React.FC = () => {
       )}
 
       {activeTab === 'external' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
+            <div className="@[440px]:col-span-2">
                 <Card className="p-8 border-slate-800 bg-slate-950/50">
                     <h3 className="text-xl font-black text-white uppercase italic mb-6">Real-Time Market Feeds</h3>
                     <div className="space-y-4">
@@ -187,7 +187,7 @@ export const CapitalDashboard: React.FC = () => {
       )}
 
       {activeTab === 'crypto' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-8">
             <Card className="p-8 border-slate-800 bg-slate-950/50">
                 <div className="flex items-center gap-4 mb-8">
                     <div className="p-3 bg-aura text-slate-950 rounded-2xl"><Wallet size={24} /></div>

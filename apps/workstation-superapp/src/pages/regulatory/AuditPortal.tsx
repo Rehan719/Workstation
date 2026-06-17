@@ -13,11 +13,11 @@ export default function AuditPortal() {
   return (
     <div className="p-8 space-y-8 bg-[#fdfdfd] min-h-screen text-slate-900 font-sans">
       <div className="max-w-6xl mx-auto space-y-8">
-        <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b pb-6 border-slate-200">
+        <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b pb-6 border-slate-200">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Scale className="text-blue-600" size={24} />
-              <h1 className="text-xl @lg:text-2xl @3xl:text-3xl font-bold tracking-tight text-slate-800 break-words">REGULATORY AUDIT PORTAL</h1>
+              <h1 className="text-xl @[480px]:text-2xl @[680px]:text-3xl font-bold tracking-tight text-slate-800 break-words">REGULATORY AUDIT PORTAL</h1>
             </div>
             <p className="text-slate-500 font-medium">Virtual Sovereign Business Capital Fund · Institutional Compliance Node</p>
           </div>

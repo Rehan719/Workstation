@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { toast } from '@workstation/ui';
 import { ShieldAlert, Check, X, Sparkles } from 'lucide-react';
 
 export const EvolutionProposals: React.FC = () => {
   const [proposals, setProposals] = useState<any[]>([]);
 
   useEffect(() => {
-    axios.get('/api/v191/evolution/proposals').then(res => setProposals(res.data));
+    axios.get('/api/v191/evolution/proposals', { validateStatus: () => true })
+      .then(res => { if (res.status === 200) setProposals(res.data); }).catch(() => {});
   }, []);
 
   const handleApprove = async (id: string) => {
@@ -16,7 +18,7 @@ export const EvolutionProposals: React.FC = () => {
 
   const handleVote = async (id: string) => {
     await axios.post(`/api/v200/contribute/vote?proposal_id=${id}`);
-    alert("Resonance Recorded. Your vote has been merged into the Merkle-DAG.");
+    toast("Resonance Recorded — Vote merged into Merkle-DAG.");
   };
 
   return (
@@ -44,18 +46,23 @@ export const EvolutionProposals: React.FC = () => {
             </div>
             <div className="flex gap-4 flex-shrink-0">
               <button
+                type="button"
                 onClick={() => handleVote(p.id)}
                 className="px-6 py-4 border border-slate-700 rounded-xl text-xs font-bold uppercase text-slate-400 hover:border-aura hover:text-white transition-all"
               >
                 Vote
               </button>
               <button
+                type="button"
+                aria-label="Dismiss proposal"
+                title="Dismiss proposal"
                 onClick={() => setProposals(proposals.filter(x => x.id !== p.id))}
                 className="p-4 bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"
               >
                 <X size={20} />
               </button>
               <button
+                type="button"
                 onClick={() => handleApprove(p.id)}
                 className="flex items-center gap-2 px-8 py-4 bg-aura text-sovereign font-bold rounded-xl hover:scale-105 transition-all"
               >

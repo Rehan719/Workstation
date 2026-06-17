@@ -76,13 +76,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
   return (
     <div className="h-full w-full flex flex-col min-h-0 min-w-0">
       <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0 space-y-3 pr-1">
-        {messages.length === 0 ? (
-          <p className="text-[11px] text-slate-500 font-bold leading-relaxed">
-            Ask anything — text, voice, or attach an image. Responses are tailored to the{' '}
-            <span className="text-aura">{context}</span> context you're currently in.
-          </p>
-        ) : (
-          messages.map((m, i) => (
+        {messages.length > 0 && messages.map((m, i) => (
             <div key={i} className={`flex flex-col gap-1 ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
               <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 px-1">
                 {m.role === 'user' ? 'You' : 'Avatar'}
@@ -95,7 +89,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
               </div>
             </div>
           ))
-        )}
+        }
         {sending && (
           <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold px-1">
             <Loader2 size={12} className="animate-spin" /> Thinking...
@@ -137,11 +131,6 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
               }
             }}
           />
-          {messages.length > 0 && (
-            <button type="button" onClick={clearConversation} aria-label="Clear conversation" title="Clear conversation" className="shrink-0 p-1.5 rounded-xl text-slate-600 hover:text-red-400 transition-colors">
-              <Trash2 size={14} />
-            </button>
-          )}
         </div>
         <button
           type="button"
@@ -153,7 +142,19 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
         >
           <ArrowUp size={15} />
         </button>
+        {messages.length > 0 && (
+          <button type="button" onClick={clearConversation} aria-label="Clear chat history" title="Clear chat history" className="flex-shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center bg-slate-800 text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
+            <Trash2 size={14} />
+          </button>
+        )}
       </div>
+
+      {messages.length === 0 && (
+        <p className="shrink-0 mt-1.5 text-[10px] text-slate-600 font-bold leading-relaxed">
+          Ask anything — text, voice, or attach an image. Responses are tailored to the{' '}
+          <span className="text-aura/70">{context}</span> context you're currently in.
+        </p>
+      )}
     </div>
   );
 };

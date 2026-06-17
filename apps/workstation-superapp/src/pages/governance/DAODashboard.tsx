@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { notImplemented } from '@workstation/ui';
+import { notImplemented, toast } from '@workstation/ui';
 import { Gavel, Landmark, TrendingUp, ChevronRight, Check, X, ShieldAlert, Vote, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -26,20 +26,22 @@ export const DAODashboard: React.FC = () => {
   const [treasury, setTreasury] = useState<any>(null);
 
   useEffect(() => {
-    axios.get('/api/v310/governance/proposals').then(res => setProposals(res.data));
-    axios.get('/api/v310/governance/treasury').then(res => setTreasury(res.data));
+    axios.get('/api/v310/governance/proposals', { validateStatus: () => true })
+      .then(res => { if (res.status === 200) setProposals(res.data); }).catch(() => {});
+    axios.get('/api/v310/governance/treasury', { validateStatus: () => true })
+      .then(res => { if (res.status === 200) setTreasury(res.data); }).catch(() => {});
   }, []);
 
   const handleVote = async (id: string, support: boolean) => {
     await axios.post(`/api/v310/governance/vote?proposal_id=${id}&user_id=guardian&weight=100&support=${support}`);
-    alert(`Vote recorded: ${support ? 'FOR' : 'AGAINST'}. System resonance updated.`);
+    toast(`Vote Recorded: ${support ? 'For' : 'Against'} — System resonance updated.`);
   };
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 break-words">Creator DAO</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black mb-1 break-words">Creator DAO</h1>
           <p className="text-slate-500 font-bold text-lg mt-2">Decentralized platform governance and treasury oversight.</p>
         </div>
         {treasury && (
@@ -55,8 +57,8 @@ export const DAODashboard: React.FC = () => {
         )}
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-         <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-12">
+         <div className="@[440px]:col-span-2 space-y-8">
             <h3 className="text-2xl font-black flex items-center gap-3">
                <Vote size={24} className="text-aura" />
                Active Proposals

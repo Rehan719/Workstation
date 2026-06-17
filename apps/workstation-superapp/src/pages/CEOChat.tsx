@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Sparkles, ThumbsUp, ThumbsDown, MoreHorizontal, X } from 'lucide-react';
+import { Send, Bot, User, ThumbsUp, ThumbsDown, MoreHorizontal, X, WifiOff, RefreshCw, ChevronLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const CEOChat: React.FC = () => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Greeting, Guardian. I am the VSB AI CEO. Our collective resonance is reaching multi-dimensional thresholds.' }
   ]);
@@ -11,6 +13,7 @@ export const CEOChat: React.FC = () => {
   const [sentiment, setSentiment] = useState('analytical');
   const [showMenu, setShowMenu] = useState(false);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down'>>({});
+  const [aiStatus, setAiStatus] = useState<'online' | 'fallback' | 'offline'>('online');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const getAvatarColor = () => {
@@ -37,19 +40,25 @@ export const CEOChat: React.FC = () => {
     setIsThinking(true);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000);
+
       const response = await fetch('/api/v138/ceo/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, context: messages })
+        body: JSON.stringify({ message: input, context: messages }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = { role: 'assistant', content: '' };
 
-      // v0.2: Simple sentiment analysis (frontend-side for UI responsiveness)
       if (input.toLowerCase().includes("great") || input.toLowerCase().includes("good")) setSentiment('joyful');
       else if (input.toLowerCase().includes("error") || input.toLowerCase().includes("fail")) setSentiment('frustrated');
       else if (input.toLowerCase().includes("how") || input.toLowerCase().includes("why")) setSentiment('curious');
@@ -62,9 +71,7 @@ export const CEOChat: React.FC = () => {
         if (done) break;
 
         const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
+        for (const line of chunk.split('\n')) {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
@@ -75,16 +82,27 @@ export const CEOChat: React.FC = () => {
                 return updated;
               });
               if (data.done) break;
-            } catch (e) {
-              console.error('Error parsing SSE data', e);
+            } catch {
+              // malformed SSE line — skip
             }
           }
         }
       }
-    } catch (error) {
+
+      // Detect when backend fell back to simulation (Ollama was offline)
+      if (assistantMessage.content.includes('(Ollama Offline)') || assistantMessage.content.includes('Simulated synthesis')) {
+        setAiStatus('fallback');
+      } else {
+        setAiStatus('online');
+      }
+    } catch (error: any) {
+      const isTimeout = error?.name === 'AbortError' || error?.message?.includes('timeout');
+      setAiStatus('offline');
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "I am currently out of resonance. Please verify local Ollama connectivity."
+        content: isTimeout
+          ? "Request timed out — the AI engine is taking too long to respond. It may still be loading the model. Please try again in a moment."
+          : "The AI backend is currently unreachable. Ensure the Workstation backend server is running, then retry.",
       }]);
     } finally {
       setIsThinking(false);
@@ -114,29 +132,57 @@ export const CEOChat: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-14rem)] max-w-5xl mx-auto glass-card overflow-hidden">
-      <header className="px-10 py-8 border-b border-white/5 flex justify-between items-center bg-surface/60 backdrop-blur-3xl">
+      <header className="px-10 py-6 border-b border-white/5 flex justify-between items-center bg-surface/60 backdrop-blur-3xl">
         <div className="flex items-center gap-5">
+          {/* Back / close */}
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            aria-label="Back to dashboard"
+            title="Back to dashboard"
+            className="p-2.5 bg-surface/80 border border-white/10 rounded-xl hover:border-aura/50 transition-colors text-slate-400 hover:text-aura shrink-0"
+          >
+            <ChevronLeft size={18} />
+          </button>
+
           <div className={`p-1 rounded-2xl transition-all duration-700 relative group bg-aura/20 shadow-[0_0_20px_rgba(100,255,218,0.2)] overflow-hidden`}>
-            {/* Visual Avatar Channel Simulation */}
-            <div className="w-16 h-16 bg-slate-950 rounded-xl flex items-center justify-center relative">
-               <Bot size={32} className={`${getAvatarColor()} relative z-10 transition-colors duration-500`} />
+            <div className="w-14 h-14 bg-slate-950 rounded-xl flex items-center justify-center relative">
+               <Bot size={28} className={`${getAvatarColor()} relative z-10 transition-colors duration-500`} />
                <motion.div
                  animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
                  transition={{ duration: 4, repeat: Infinity }}
                  className="absolute inset-0 bg-aura rounded-full blur-xl"
                ></motion.div>
             </div>
-            <div className={`absolute -inset-1 rounded-2xl border-2 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity border-aura`}></div>
           </div>
           <div>
-            <h2 className="text-2xl font-black tracking-tight uppercase">VSB AI CEO</h2>
+            <h2 className="text-xl font-black tracking-tight uppercase">VSB AI CEO</h2>
             <div className="flex items-center gap-2 mt-1">
-              <span className="w-2 h-2 rounded-full bg-aura animate-pulse"></span>
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Planetary Strategy Active</span>
+              {aiStatus === 'online' && (
+                <><span className="w-2 h-2 rounded-full bg-aura animate-pulse" /><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Planetary Strategy Active</span></>
+              )}
+              {aiStatus === 'fallback' && (
+                <><WifiOff size={11} className="text-amber-500" /><span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Fallback Mode — Ollama Offline</span></>
+              )}
+              {aiStatus === 'offline' && (
+                <><WifiOff size={11} className="text-vital" /><span className="text-[10px] font-black text-vital uppercase tracking-widest">AI Offline</span></>
+              )}
             </div>
           </div>
         </div>
-        <div className="flex gap-3 relative">
+
+        <div className="flex gap-2 relative items-center">
+          {aiStatus !== 'online' && (
+            <button
+              type="button"
+              onClick={() => setAiStatus('online')}
+              title="Retry connection"
+              aria-label="Retry connection"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-500/30 text-amber-500 hover:bg-amber-500/10 transition-colors"
+            >
+              <RefreshCw size={12} /> Retry
+            </button>
+          )}
           <button
             type="button"
             aria-label="More options"
@@ -144,7 +190,16 @@ export const CEOChat: React.FC = () => {
             onClick={() => setShowMenu(prev => !prev)}
             className="p-3 bg-surface/80 border border-white/10 rounded-xl hover:border-aura/50 transition-colors text-slate-400 hover:text-aura"
           >
-             <MoreHorizontal size={20} />
+             <MoreHorizontal size={18} />
+          </button>
+          <button
+            type="button"
+            aria-label="Close CEO chat"
+            title="Close"
+            onClick={() => navigate('/')}
+            className="p-3 bg-surface/80 border border-white/10 rounded-xl hover:border-vital/50 transition-colors text-slate-400 hover:text-vital"
+          >
+            <X size={18} />
           </button>
           {showMenu && (
             <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden z-20">

@@ -33,6 +33,7 @@ from agentic_core.api.v320 import intelligence as intel_v320, governance_autonom
 from agentic_core.api.v340 import consciousness, soul_record
 from agentic_core.api.v138 import ceo as ceo_v138
 from agentic_core.api import v154_unified, v200_unified
+from agentic_core.api import ai_query as ai_query_api
 from agentic_core.ingestion import api as ingestion_api
 from agentic_core.synthesis import api as synthesis_api
 from agentic_core.catalog import api as catalog_api
@@ -259,6 +260,7 @@ app.include_router(ingestion_api.router, prefix="/api/v1")
 app.include_router(synthesis_api.router, prefix="/api/v1")
 app.include_router(catalog_api.router, prefix="/api/v1")
 app.include_router(bto_api.router, prefix="/api/v1")
+app.include_router(ai_query_api.router, prefix="/api/v1")
 app.include_router(career_api.router, prefix="/api/v1")
 app.include_router(council_judiciary.router, prefix="/api")
 app.include_router(avatar_api.router, prefix="/api/v1")

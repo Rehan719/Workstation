@@ -29,9 +29,9 @@ export const TwinManagement: React.FC = () => {
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-2 break-words">Digital Twin Management</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-2 break-words">Digital Twin Management</h1>
           <p className="text-slate-500">Replicating application state and epigenetic memory across the federation.</p>
         </div>
         <button
@@ -66,7 +66,7 @@ export const TwinManagement: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-3 gap-8">
         {twins.map(t => (
           <div key={t.id} onClick={() => handleInspect(t.node)} className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm space-y-6 cursor-pointer hover:border-aura/50 transition-all">
             <div className="flex justify-between items-start">

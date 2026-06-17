@@ -52,7 +52,7 @@ const QEPAnalyticsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-6">
         <div className="bg-[#15171E] border border-slate-800 p-6 rounded-xl">
           <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
             <PieChart size={20} className="text-[#00F2FF]" />

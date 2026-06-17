@@ -18,9 +18,9 @@ export const PhysicalSymbiosis: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Physical-Digital Symbiosis</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-1 break-words">Physical-Digital Symbiosis</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">IoT & Smart City Integration v150.0</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -31,8 +31,8 @@ export const PhysicalSymbiosis: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
+        <div className="@[440px]:col-span-2 space-y-8">
            <section className="p-10 glass-card bg-aura/5 border-aura/20">
               <h3 className="text-2xl font-black mb-8 flex items-center gap-3">
                  <Activity size={24} className="text-aura" />

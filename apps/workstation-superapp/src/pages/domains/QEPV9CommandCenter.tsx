@@ -80,8 +80,8 @@ const QEPV9CommandCenter = () => {
       <main className="p-10 max-w-[1600px] mx-auto">
         {/* LEARNING TAB */}
         {activeTab === 'learning' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <div className="lg:col-span-2 space-y-8">
+          <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="@[440px]:col-span-2 space-y-8">
                 <div className="bg-slate-900/30 border border-slate-800 p-8 rounded-3xl">
                    <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight">Adaptive Learning Matrix</h2>
                    <div className="grid grid-cols-2 gap-4 mb-8">
@@ -190,7 +190,7 @@ const QEPV9CommandCenter = () => {
         {activeTab === 'crossdomain' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
              <h2 className="text-2xl font-black text-white mb-8 uppercase">Functional Domain Adapters</h2>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-6">
                 {[
                   { domain: 'Science', icon: Microscope, mapping: 'Scientific Taxonomy' },
                   { domain: 'Law', icon: Gavel, mapping: 'Legal Framework' },

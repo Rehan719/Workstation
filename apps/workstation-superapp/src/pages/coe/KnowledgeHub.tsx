@@ -32,7 +32,7 @@ export const KnowledgeHub: React.FC = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-8">
         <AnimatePresence>
           {filtered.map(coe => (
             <motion.div

@@ -45,7 +45,7 @@ export const QEPMultiDomainPortal: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-4">
         {domainIntegrations.map((domain) => (
           <div
             key={domain.name}
@@ -75,8 +75,8 @@ export const QEPMultiDomainPortal: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-6">
+        <div className="@[440px]:col-span-2 space-y-6">
           <div className="p-8 bg-white border-2 border-slate-100 rounded-3xl shadow-sm space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                <div className="flex items-center gap-2">

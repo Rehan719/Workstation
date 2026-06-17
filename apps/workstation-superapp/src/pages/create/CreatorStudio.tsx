@@ -70,7 +70,7 @@ export const CreatorStudio: React.FC = () => {
       <header className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl font-black mb-1 neon-text">Reality Forge</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-highlight">Universe Scale Creation v153.0 (ReactFlow Enabled)</p>
+          <p className="text-highlight font-bold uppercase text-[10px] tracking-widest">Universe Scale Creation v153.0 (ReactFlow Enabled)</p>
         </div>
         <div className="flex gap-4">
            <button onClick={() => notImplemented('Save Blueprint')} className="px-6 py-3 border border-slate-800 rounded-xl font-bold flex items-center gap-2 text-slate-400 hover:text-white transition-all">

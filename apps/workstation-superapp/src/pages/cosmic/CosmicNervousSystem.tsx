@@ -25,9 +25,9 @@ export const CosmicNervousSystem: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 neon-text !text-highlight break-words">Cosmic Nervous System</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-1 neon-text !text-highlight break-words">Cosmic Nervous System</h1>
           <p className="font-bold uppercase text-[10px] tracking-widest text-highlight">Interplanetary Sensory Network v153.0</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -38,8 +38,8 @@ export const CosmicNervousSystem: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
+         <div className="@[440px]:col-span-2 space-y-8">
             <section className="p-10 glass-card bg-highlight/5 border-highlight/20 h-96 flex flex-col items-center justify-center relative overflow-hidden group">
                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,64,0.05)_0%,transparent_70%)]"></div>
                <Globe size={120} className="text-highlight/20 group-hover:scale-110 transition-transform duration-1000" />

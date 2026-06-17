@@ -42,9 +42,9 @@ export const FileHub: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black text-white tracking-tighter uppercase italic break-words">Sovereign Files</h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black text-white tracking-tighter uppercase italic break-words">Sovereign Files</h1>
           <p className="text-highlight font-black uppercase text-[10px] tracking-[0.3em]">Knowledge Artifact Orchestration • Layer 7 Library</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -54,7 +54,7 @@ export const FileHub: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-4 gap-8">
          <aside className="space-y-8">
             <Card className="p-6 bg-slate-900/60">
                <h4 className="text-xs font-black uppercase text-slate-500 tracking-widest mb-6">Storage Nodes</h4>
@@ -89,7 +89,7 @@ export const FileHub: React.FC = () => {
             </div>
          </aside>
 
-         <main className="lg:col-span-3 space-y-8">
+         <main className="@[440px]:col-span-3 space-y-8">
             <Card className="p-0 overflow-hidden border-white/5">
                <div className="p-6 border-b border-white/5 bg-slate-900/40 flex justify-between items-center">
                   <div className="flex items-center gap-4 bg-slate-950 px-4 py-2 rounded-xl border border-white/5">

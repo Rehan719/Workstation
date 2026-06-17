@@ -41,12 +41,12 @@ export const FederationPortal: React.FC = () => {
 };
 
 const CivilizationalPulse = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4">
+  <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4">
     <StatBox label="Total Federated Nodes" value="1,420" delta="+12 today" color="text-aura" />
     <StatBox label="Aggregate Health" value="99.98%" delta="Stable" color="text-vital" />
     <StatBox label="Civilizational WST" value="1.4M" delta="+8.4% APY" color="text-highlight" />
 
-    <div className="lg:col-span-2 p-10 rounded-[3rem] bg-slate-900/40 border border-slate-800 h-96 flex items-center justify-center">
+    <div className="@[440px]:col-span-2 p-10 rounded-[3rem] bg-slate-900/40 border border-slate-800 h-96 flex items-center justify-center">
        <p className="text-slate-700 font-black uppercase tracking-[0.4em] text-sm italic">Global Neural Resonance Feed...</p>
     </div>
 

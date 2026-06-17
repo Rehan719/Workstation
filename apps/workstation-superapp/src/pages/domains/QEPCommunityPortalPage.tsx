@@ -12,9 +12,9 @@ export const QEPCommunityPortalPage: React.FC = () => {
   return (
     <div className="qep-community-portal-page min-h-screen bg-black text-white p-8 font-sans">
       <div className="max-w-7xl mx-auto">
-        <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 mb-12">
+        <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 mb-12">
           <div>
-            <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-extrabold tracking-tight text-emerald-500 mb-4 flex items-center gap-4 break-words">
+            <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-extrabold tracking-tight text-emerald-500 mb-4 flex items-center gap-4 break-words">
               <span>🕌</span> QEP COMMUNITY HUB
             </h1>
             <p className="text-lg text-slate-400 max-w-2xl font-light leading-relaxed">
@@ -49,8 +49,8 @@ export const QEPCommunityPortalPage: React.FC = () => {
           ))}
         </nav>
 
-        <div className="portal-content grid grid-cols-1 lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2">
+        <div className="portal-content grid grid-cols-1 @[440px]:grid-cols-3 gap-12">
+          <div className="@[440px]:col-span-2">
             {activePortal === 'Learner' && <Marketplace />}
             {activePortal === 'Contributor' && <CommunityContributionForm />}
             {activePortal === 'Scholar' && <ScholarVerificationInterface />}

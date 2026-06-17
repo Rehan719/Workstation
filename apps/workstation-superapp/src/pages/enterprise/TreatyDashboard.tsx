@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button, notImplemented} from '@workstation/ui';
+import { Card, Badge, Button, notImplemented, toast } from '@workstation/ui';
 import { Globe, FileText, Send, ShieldCheck, History, Info, ChevronRight, Zap, Globe2, AlertCircle, Plus, Network, Gavel, Scale } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
@@ -28,7 +28,7 @@ export const TreatyDashboard: React.FC = () => {
         const address = await signer.getAddress();
 
         const validation = await gaas.validateAction('TREATY_PROPOSAL', user?.did || 'anon', { wallet: address });
-        if (!validation.valid) return alert("GaaS blocked treaty proposal.");
+        if (!validation.valid) { toast("GaaS Blocked — Treaty proposal denied."); return; }
 
         const newTreaty = {
            id: `tr-${Math.floor(Math.random()*1000)}`,
@@ -40,18 +40,18 @@ export const TreatyDashboard: React.FC = () => {
         };
 
         setTreaties([newTreaty, ...treaties]);
-        alert(`Treaty proposed by ${address}. Article 1108 compliance verified.`);
+        toast(`Treaty Proposed — Article 1108 compliance verified for ${address.slice(0, 8)}...`);
      } catch (err) {
         console.error("Blockchain error:", err);
-        alert("Wallet connection required for v0.2 production treaties.");
+        toast("Wallet Connection Required — Connect a web3 wallet to propose treaties.");
      }
   };
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter break-words">Diplomacy Hub</h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter break-words">Diplomacy Hub</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Inter-Civilization Treaties & Alliances • Layer 11 Civilisation</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -62,8 +62,8 @@ export const TreatyDashboard: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-         <div className="lg:col-span-8 space-y-10">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-10">
+         <div className="@[440px]:col-span-8 space-y-10">
             <Card className="p-10 space-y-10">
                <div className="flex justify-between items-center">
                   <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tight">
@@ -145,7 +145,7 @@ export const TreatyDashboard: React.FC = () => {
             </Card>
          </div>
 
-         <div className="lg:col-span-4 space-y-10">
+         <div className="@[440px]:col-span-4 space-y-10">
             <Card className="p-10 space-y-10 bg-aura/5 border-aura/20">
                <div className="w-16 h-16 rounded-2xl bg-aura flex items-center justify-center text-sovereign shadow-xl shadow-aura/20">
                   <ShieldCheck size={32} />

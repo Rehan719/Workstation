@@ -52,8 +52,8 @@ export const Sanctum: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-12">
+        <div className="@[440px]:col-span-2 space-y-8">
            <div className="flex items-center justify-between">
               <h3 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
                  <Sparkles size={24} className="text-aura" />

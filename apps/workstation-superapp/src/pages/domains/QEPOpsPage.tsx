@@ -45,8 +45,8 @@ const QEPOpsPage: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-6">
+        <div className="@[440px]:col-span-2 space-y-6">
           <div className="bg-[#15171E] border border-slate-800 p-6 rounded-xl h-96 relative overflow-hidden">
             <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
               <Terminal size={20} className="text-[#00FF85]" />

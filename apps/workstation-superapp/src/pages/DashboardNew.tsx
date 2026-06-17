@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Button, Badge, notImplemented} from '@workstation/ui';
 import { useStore } from '@workstation/shared';
+import { SearchMeshModal } from '../components/SearchMeshModal';
 import {
   FileText,
   Calendar,
@@ -21,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 export const DashboardNew: React.FC = () => {
   const { user, setCurrentTab } = useStore();
   const navigate = useNavigate();
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const actions = [
     { id: 'synthesis',       name: 'Synthesis Studio', icon: Sparkles,  color: 'text-highlight',    bg: 'bg-highlight/10',    desc: 'Ingest knowledge & generate reports.',  route: '/synthesis' },
@@ -38,10 +40,12 @@ export const DashboardNew: React.FC = () => {
   ];
 
   return (
+    <>
+    <SearchMeshModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     <div className="space-y-12 animate-in fade-in duration-700">
-      <header className="flex flex-col @lg:flex-row @lg:items-end justify-between gap-8">
+      <header className="flex flex-col gap-6">
         <div className="space-y-2 min-w-0">
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black tracking-tighter text-white uppercase italic break-words">
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black tracking-tighter text-white uppercase italic break-words">
             Command <span className="text-aura">Center</span>
           </h1>
           <p className="text-slate-400 font-bold text-lg max-w-2xl leading-relaxed">
@@ -50,7 +54,7 @@ export const DashboardNew: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-4 shrink-0">
-           <Button onClick={() => notImplemented('Search Mesh')} variant="outline" className="bg-slate-900 border-slate-800">
+           <Button onClick={() => setSearchOpen(true)} variant="outline" className="bg-slate-900 border-slate-800">
               <Search size={18} /> Search Mesh
            </Button>
            <Button onClick={() => { setCurrentTab('ceo'); navigate('/ceo'); }} className="bg-aura text-sovereign shadow-2xl shadow-aura/20">
@@ -59,7 +63,7 @@ export const DashboardNew: React.FC = () => {
         </div>
       </header>
 
-      <section className="grid grid-cols-1 @lg:grid-cols-2 @4xl:grid-cols-4 gap-6">
+      <section className="grid grid-cols-1 @[480px]:grid-cols-2 @[720px]:grid-cols-4 gap-6">
         {actions.map((action, i) => (
           <motion.div
             key={action.id}
@@ -84,8 +88,8 @@ export const DashboardNew: React.FC = () => {
         ))}
       </section>
 
-      <div className="grid grid-cols-1 @4xl:grid-cols-12 gap-10">
-         <div className="@4xl:col-span-8 space-y-10">
+      <div className="grid grid-cols-1 @[720px]:grid-cols-12 gap-10">
+         <div className="@[720px]:col-span-8 space-y-10">
             <Card className="p-10 border-slate-900 bg-slate-950/20">
                <div className="flex justify-between items-center mb-8">
                   <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-4">
@@ -112,7 +116,7 @@ export const DashboardNew: React.FC = () => {
             </Card>
          </div>
 
-         <div className="@4xl:col-span-4 space-y-10">
+         <div className="@[720px]:col-span-4 space-y-10">
             <Card className="p-10 bg-aura/5 border-aura/20 space-y-8">
                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-aura flex items-center justify-center text-sovereign shadow-xl shadow-aura/20">
@@ -162,5 +166,6 @@ export const DashboardNew: React.FC = () => {
          </div>
       </div>
     </div>
+    </>
   );
 };

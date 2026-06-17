@@ -13,7 +13,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Plus, Save, Play, Rocket, Terminal, Download, FileJson, Search, Sparkles, Wrench } from 'lucide-react';
-import { Button, Card, Badge, notImplemented} from '@workstation/ui';
+import { Button, Card, Badge, notImplemented, toast } from '@workstation/ui';
 import { useStore, gaas } from '@workstation/shared';
 
 const initialNodes: Node[] = [
@@ -63,7 +63,7 @@ export const Forge: React.FC = () => {
 
     setTimeout(() => {
        setIsSimulating(false);
-       alert(`Simulation Complete! GaaS Score: ${validation.score || 0.99}`);
+       toast(`Simulation Complete — GaaS Score: ${validation.score ?? 0.99}`);
     }, 1500);
   };
 
@@ -90,9 +90,9 @@ export const Forge: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] space-y-6">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 text-white tracking-tighter uppercase break-words">The Forge</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black mb-1 text-white tracking-tighter uppercase break-words">The Forge</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Visual Agent Composer • Galactic Era Standard</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -163,7 +163,7 @@ export const Forge: React.FC = () => {
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Description</label>
                     <textarea className="w-full bg-slate-950 border border-slate-900 rounded-2xl p-5 text-white font-bold h-32" placeholder="Describe what the tool does for the AI CEO..." />
                  </div>
-                 <Button className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase text-xs tracking-widest" onClick={() => { alert('Tool registered with ToolRegistry.'); setShowToolWizard(false); }}>Register Tool</Button>
+                 <Button className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase text-xs tracking-widest" onClick={() => { toast('Tool Registered — Added to ToolRegistry.'); setShowToolWizard(false); }}>Register Tool</Button>
               </div>
            </Card>
         </div>

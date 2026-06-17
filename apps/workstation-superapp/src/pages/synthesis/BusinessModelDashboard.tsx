@@ -19,8 +19,8 @@ export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
          <StatCard label="GaaS Alignment" value="0.99" icon={ShieldCheck} color="text-emerald-500" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-         <Card className="lg:col-span-8 p-8 border-slate-900 bg-slate-950/40">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-8">
+         <Card className="@[440px]:col-span-8 p-8 border-slate-900 bg-slate-950/40">
             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-10 flex items-center gap-3">
                <BarChart3 size={18} className="text-aura" />
                Revenue Projections (LTSA Offering)
@@ -45,7 +45,7 @@ export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
             </div>
          </Card>
 
-         <Card className="lg:col-span-4 p-8 bg-aura/5 border-aura/20 flex flex-col justify-between">
+         <Card className="@[440px]:col-span-4 p-8 bg-aura/5 border-aura/20 flex flex-col justify-between">
             <div>
                <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Market Strategy</h3>
                <p className="text-xs text-slate-400 font-bold leading-relaxed">

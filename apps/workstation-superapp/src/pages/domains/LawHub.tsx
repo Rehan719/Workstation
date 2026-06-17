@@ -12,9 +12,9 @@ export const LawHub: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase break-words">Bastion of Order</h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase break-words">Bastion of Order</h1>
           <div className="flex items-center gap-4">
              <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Legal Framework • Constitutional Mesh • Law Hub</p>
              <Badge color="highlight" className="text-[8px]">{layout} MODE</Badge>

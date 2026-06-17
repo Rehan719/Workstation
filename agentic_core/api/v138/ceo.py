@@ -339,32 +339,53 @@ async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
     )
 
     full_response = ""
+    ollama_ok = False
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        timeout = httpx.Timeout(connect=5.0, read=25.0, write=5.0, pool=5.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
             payload = {
                 "model": DEFAULT_MODEL,
                 "prompt": f"SYSTEM: {behavioral_params['system_prompt']}\n\n{enhanced_prompt}",
                 "stream": True,
-                "options": {
-                    "temperature": behavioral_params['temperature']
-                }
+                "options": {"temperature": behavioral_params['temperature']},
             }
             async with client.stream("POST", f"{OLLAMA_BASE_URL}/api/generate", json=payload) as response:
                 if response.status_code != 200:
-                    raise Exception("Ollama error")
+                    raise httpx.HTTPStatusError(
+                        f"Ollama returned {response.status_code}",
+                        request=response.request, response=response
+                    )
+                ollama_ok = True
                 async for line in response.aiter_lines():
                     if line:
                         data = json.loads(line)
                         chunk = data.get('response', '')
                         full_response += chunk
                         yield f"data: {json.dumps({'content': chunk, 'done': data.get('done', False)})}\n\n"
+    except httpx.ConnectError:
+        logging.warning("Ollama not reachable (ConnectError) — using fallback response")
+        fallback_reason = "Ollama is not running. Start it with `ollama serve` then reload."
+    except httpx.ReadTimeout:
+        logging.warning("Ollama timed out (ReadTimeout) — model may still be loading, using fallback")
+        fallback_reason = "The AI model is still loading. This usually resolves after the first request. Please retry in a moment."
     except Exception as e:
-        logging.warning(f"Ollama unavailable, falling back to simulation: {e}")
-        sim_response = f"Simulated synthesis: In response to '{prompt}', the Galactic Era mesh is stabilizing. Alignment remains optimal. {f'System Vitals: {json.dumps(tool_output)}' if tool_output else ''} (Ollama Offline)"
+        logging.warning(f"Ollama error ({type(e).__name__}): {e} — using fallback")
+        fallback_reason = "The AI engine encountered an unexpected error. Using simulated response."
+    else:
+        fallback_reason = None  # Ollama responded successfully
+
+    if not ollama_ok:
+        vitals_str = f" Tool context: {json.dumps(tool_output)}." if tool_output else ""
+        sim_response = (
+            f"[Offline Mode] {fallback_reason}{vitals_str} "
+            f"Based on your query about '{prompt[:80]}', the sovereign mesh advisory framework suggests: "
+            "maintain current strategic trajectory, verify all subsystem alignments, and consult the "
+            "constitutional framework for protocol guidance. Full AI reasoning resumes once Ollama is available."
+        )
         for char in sim_response:
             full_response += char
             yield f"data: {json.dumps({'content': char, 'done': False})}\n\n"
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.008)
         yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
 
     # 3. Stateless Redis Memory Storage (v0.2)

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from '@workstation/ui';
 import { Network, Terminal, ShieldCheck, Cpu } from 'lucide-react';
 
 export const JoinFederationWizard: React.FC = () => {
@@ -45,7 +46,7 @@ export const JoinFederationWizard: React.FC = () => {
              Back
            </button>
            <button
-             onClick={() => step < steps.length - 1 ? setStep(step + 1) : alert("Node registration queued. PQC signature pending.")}
+             onClick={() => step < steps.length - 1 ? setStep(step + 1) : toast("Node Registration Queued — PQC signature pending.")}
              className="px-8 py-3 bg-aura text-sovereign font-black rounded-xl hover:scale-105 transition-all"
            >
              {step === steps.length - 1 ? "Initialize Node" : "Continue"}

@@ -21,7 +21,7 @@ export const EnterpriseRealm: React.FC = () => {
         <p className="text-slate-500 font-bold tracking-widest uppercase text-xs mt-2">Enterprise Governance Hub</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
         <Card className="p-8 space-y-6">
           <div className="flex items-center gap-4 text-aura">
             <Shield size={24} />
@@ -39,7 +39,7 @@ export const EnterpriseRealm: React.FC = () => {
           </div>
         </Card>
 
-        <div className="lg:col-span-2 Card p-8 space-y-6 bg-slate-950/50 border border-slate-800 rounded-3xl">
+        <div className="@[440px]:col-span-2 Card p-8 space-y-6 bg-slate-950/50 border border-slate-800 rounded-3xl">
            <div className="flex justify-between items-center">
               <h3 className="text-xl font-black flex items-center gap-3"><FileText className="text-slate-500" /> Compliance Audit Trail</h3>
               <Button onClick={() => notImplemented('Export GDPR Report')} size="sm" variant="outline">Export GDPR Report</Button>

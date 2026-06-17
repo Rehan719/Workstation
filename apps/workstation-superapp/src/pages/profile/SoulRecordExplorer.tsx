@@ -14,13 +14,13 @@ export const SoulRecordExplorer: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div className="flex items-center gap-6">
            <div className="p-5 bg-vital/20 rounded-full text-vital shadow-[0_0_30px_rgba(255,82,82,0.2)]">
               <Fingerprint size={40} />
            </div>
            <div>
-             <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Soul-Record</h1>
+             <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-1 break-words">Soul-Record</h1>
              <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Multi-Dimensional Identity Explorer v153.0</p>
            </div>
         </div>
@@ -30,7 +30,7 @@ export const SoulRecordExplorer: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
         {record.dimensions.map((dim: any) => (
           <div key={dim.name} className="p-8 glass-card border-white/5 group hover:border-aura/30 transition-all">
              <div className="flex justify-between items-start mb-6">

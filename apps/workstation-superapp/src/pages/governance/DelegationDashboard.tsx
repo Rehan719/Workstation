@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { toast } from '@workstation/ui';
 import { Cpu, ShieldCheck, ChevronRight, Activity, TrendingUp, AlertCircle, Play, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -8,15 +9,19 @@ export const DelegationDashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    axios.get('/api/v320/governance/autonomous/delegations').then(res => setDelegations(res.data));
-    axios.get('/api/v320/governance/autonomous/performance').then(res => setStats(res.data));
+    axios.get('/api/v320/governance_autonomous/delegations', { validateStatus: () => true })
+      .then(res => { if (res.status === 200) setDelegations(res.data); })
+      .catch(() => {});
+    axios.get('/api/v320/governance_autonomous/performance', { validateStatus: () => true })
+      .then(res => { if (res.status === 200) setStats(res.data); })
+      .catch(() => {});
   }, []);
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Autonomous Governance</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-1 break-words">Autonomous Governance</h1>
           <p className="font-bold uppercase text-[10px] tracking-widest text-aura">AI Executor Delegation v152.0</p>
         </div>
         {stats && (
@@ -45,7 +50,7 @@ export const DelegationDashboard: React.FC = () => {
             Active AI Authorities
          </h3>
 
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+         <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-8">
             {delegations.map(del => (
               <div key={del.id} className="p-8 glass-card border-white/5 hover:border-aura/30 transition-all flex flex-col">
                  <div className="flex justify-between items-start mb-6">
@@ -69,7 +74,7 @@ export const DelegationDashboard: React.FC = () => {
                     </div>
                  </div>
 
-                 <button type="button" onClick={() => alert(`${del.ai_executor}\nDomain: ${del.category}\nStatus: ${del.status}\nThreshold: ${del.threshold.toLocaleString()} WST`)} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-aura hover:text-aura transition-all mt-auto flex items-center justify-center gap-2">
+                 <button type="button" onClick={() => toast(`${del.ai_executor} · ${del.category} · ${del.status} · ${del.threshold?.toLocaleString()} WST`)} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-aura hover:text-aura transition-all mt-auto flex items-center justify-center gap-2">
                     <Play size={14} />
                     Audit Decision Log
                  </button>

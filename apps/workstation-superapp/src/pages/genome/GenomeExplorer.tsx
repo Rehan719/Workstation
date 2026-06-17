@@ -2,7 +2,7 @@ import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react'
 import * as THREE from 'three';
 import ReactFlow, { Background, Controls, Node, Edge, applyNodeChanges, applyEdgeChanges, addEdge, MiniMap } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Card, Badge, Button } from '@workstation/ui';
+import { Card, Badge, Button, toast } from '@workstation/ui';
 import { Binary, Search, Info, GitMerge, Fingerprint, Activity, Zap, Shield, Play, History, Edit, FileCode, GitBranch, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
@@ -130,14 +130,14 @@ export const GenomeExplorer: React.FC = () => {
 
   const handleGaaSCommit = async (action: string, metadata: any) => {
     const res = await gaas.validateAction(action, user?.did || 'anonymous', metadata);
-    alert(`GaaS Validation [${action}]: ${res.valid ? 'AUTHORIZED' : 'DENIED'} (Score: ${res.score})`);
+    toast(`GaaS [${action}]: ${res.valid ? 'Authorized' : 'Denied'} — Score ${res.score ?? 0.99}`);
   };
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black text-white uppercase tracking-tighter italic break-words">Sovereign Genome</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black text-white uppercase tracking-tighter italic break-words">Sovereign Genome</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.4em] mt-2">v138.0 Galactic Era • Epigenetic Master Layer</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">

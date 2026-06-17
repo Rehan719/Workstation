@@ -13,9 +13,9 @@ export const ScienceHub: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter italic break-words">Frontier of Discovery</h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter italic break-words">Frontier of Discovery</h1>
           <div className="flex items-center gap-4">
              <p className="text-highlight font-black uppercase text-[10px] tracking-[0.3em]">Scientific Inquiry • Empirical Mesh • Science Hub</p>
              <Badge color="highlight" className="text-[8px]">{layout} MODE</Badge>

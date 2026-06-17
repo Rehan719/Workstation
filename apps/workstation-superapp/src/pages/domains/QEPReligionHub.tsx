@@ -7,9 +7,9 @@ export const QEPReligionHub: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">QEP <span className="text-aura">Religion</span></h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">QEP <span className="text-aura">Religion</span></h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Quran Education Platform • Advanced AI Flagship • v1.0</p>
         </div>
         <div className="flex gap-2 p-1 rounded-2xl bg-slate-900 border border-slate-800 flex-wrap shrink-0">
@@ -59,8 +59,8 @@ const TajwidCoach = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-       <div className="lg:col-span-8">
+    <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+       <div className="@[440px]:col-span-8">
           <Card className="p-12 border-slate-900 bg-slate-950/20 relative min-h-[500px] flex flex-col items-center justify-center text-center">
              <div className="absolute top-10 left-10 flex items-center gap-4">
                 <Badge color="aura">Al-Baqarah: 1-5</Badge>
@@ -98,7 +98,7 @@ const TajwidCoach = () => {
              )}
           </Card>
        </div>
-       <div className="lg:col-span-4 space-y-8">
+       <div className="@[440px]:col-span-4 space-y-8">
           <Card className="p-8 bg-aura/5 border-aura/20">
              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Real-time Coaching</h3>
              <div className="space-y-4">

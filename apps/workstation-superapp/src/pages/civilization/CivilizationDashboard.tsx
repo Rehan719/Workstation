@@ -15,9 +15,9 @@ export const CivilizationDashboard: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 neon-text !text-aura break-words">Civilization Brain</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black mb-1 neon-text !text-aura break-words">Civilization Brain</h1>
           <p className="text-slate-500 font-bold text-lg mt-2">Real-time planetary intelligence and collective decision mapping.</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -28,15 +28,15 @@ export const CivilizationDashboard: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-8">
          <StatCard label="WST Liquidity" value={forecasts?.wst_liquidity.projection} delta="+12%" icon={Zap} color="text-aura" />
          <StatCard label="Voter Participation" value={forecasts?.voter_turnout.current} delta="+8%" icon={Users} color="text-vital" />
          <StatCard label="Autonomous Decisions" value="1,420" delta="100% Valid" icon={Cpu} color="text-highlight" />
          <StatCard label="System Integrity" value="99.98%" delta="Optimal" icon={ShieldCheck} color="text-aura" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-12">
+        <div className="@[440px]:col-span-2 space-y-8">
            <h3 className="text-2xl font-black flex items-center gap-3">
               <Zap size={24} className="text-aura" />
               Collective Insights

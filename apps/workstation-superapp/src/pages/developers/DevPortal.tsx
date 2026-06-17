@@ -19,8 +19,8 @@ export const DevPortal: React.FC = () => {
         <p className="text-slate-500">Build reactors, deploy nodes, and list products in the global marketplace.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         <section className={`lg:col-span-2 p-8 rounded-[2.5rem] space-y-6 border transition-all duration-700 ${
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
+         <section className={`@[440px]:col-span-2 p-8 rounded-[2.5rem] space-y-6 border transition-all duration-700 ${
            isAdvanced ? 'bg-sovereign border-aura/30 shadow-[0_0_30px_rgba(100,255,218,0.1)]' : 'bg-gradient-to-br from-aura/10 to-transparent border-white/10'
          }`}>
             <h3 className="text-xl font-bold flex items-center gap-2 italic">
@@ -38,7 +38,7 @@ export const DevPortal: React.FC = () => {
          </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-12">
         <section className={`p-8 rounded-3xl border space-y-8 transition-all duration-700 ${
           isAdvanced ? 'bg-sovereign border-aura/30' : 'bg-slate-900/40 border-slate-800'
         }`}>
@@ -95,7 +95,7 @@ export const DevPortal: React.FC = () => {
         </section>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-8">
         <section className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 h-64 flex flex-col items-center justify-center text-center">
           <BookOpen size={48} className="text-slate-700 mb-4" />
           <h3 className="text-xl font-bold mb-2">SDK Documentation & Tutorials</h3>

@@ -30,9 +30,12 @@ interface CommandCenterProps {
    * near the bottom of the screen (e.g. the footer) so the popup doesn't open
    * off-screen. Defaults to "down" for its original top-header placement. */
   dropDirection?: 'down' | 'up';
+  /** When true, renders the channel tiles directly (no trigger button, no popup).
+   * Use inside a panel/column where the grid should fill the available space. */
+  tiled?: boolean;
 }
 
-export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'down' }) => {
+export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'down', tiled = false }) => {
   const { currentMode } = useStore();
   const [open, setOpen] = useState(false);
   const [activeChannel, setActiveChannel] = useState<string | null>(null);
@@ -100,6 +103,91 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ dropDirection = 'd
     setQueryLog(prev => [...prev, text]);
     setQueryInput('');
   };
+
+  // Tiled mode: fill the parent with a responsive grid of channel tiles, no trigger button.
+  if (tiled) {
+    return (
+      <>
+        <div className="grid grid-cols-2 gap-2 p-1 content-start">
+          {channels.map((channel) => (
+            <button
+              key={channel.id}
+              type="button"
+              aria-label={channel.name}
+              title={channel.description}
+              onClick={() => setActiveChannel(channel.id)}
+              className="flex flex-col items-center gap-2 p-3 rounded-2xl transition-all bg-slate-900/70 border border-slate-800/60 text-slate-500 hover:bg-slate-800 hover:text-white hover:border-slate-700 hover:scale-[1.03]"
+            >
+              <channel.icon size={18} className={channel.color} />
+              <div className="text-center">
+                <span className="text-[8px] font-black uppercase tracking-widest block leading-tight text-slate-300">{channel.name}</span>
+                <span className="text-[7px] text-slate-600 font-bold leading-tight">{channel.description}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <AnimatePresence>
+          {activeChannel && (
+            <div
+              className="fixed inset-0 z-[200] flex items-center justify-center p-8 bg-black/40"
+              onClick={() => setActiveChannel(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-[480px] bg-slate-950/90 border border-aura/20 rounded-[3rem] shadow-2xl overflow-hidden backdrop-blur-3xl"
+              >
+                <div className="p-8 border-b border-white/5 bg-aura/5 flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-aura flex items-center justify-center text-sovereign shadow-xl shadow-aura/20">
+                      {(() => { const ch = channels.find(c => c.id === activeChannel); if (!ch) return null; const Icon = ch.icon; return <Icon size={24} />; })()}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-white uppercase tracking-tight">{activeChannel} Channel</h3>
+                      <p className="text-[10px] font-black text-aura uppercase tracking-widest">Multi-Modal Fabric v3.0</p>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setActiveChannel(null)} aria-label="Close channel" title="Close channel" className="p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all">
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="p-8 max-h-[600px] overflow-y-auto custom-scrollbar space-y-6">
+                  <ChannelBoundary key={activeChannel}>
+                    <ChannelContent id={activeChannel} />
+                  </ChannelBoundary>
+                  {queryLog.length > 0 && (
+                    <div className="space-y-2 pt-4 border-t border-white/5">
+                      {queryLog.map((q, i) => (
+                        <div key={i} className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
+                          <span className="text-aura font-black uppercase text-[9px] tracking-widest block mb-1">You asked</span>
+                          {q}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="p-6 border-t border-white/5 bg-slate-950/50 flex gap-3">
+                  <input
+                    value={queryInput}
+                    onChange={(e) => setQueryInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSendQuery(); }}
+                    placeholder={`Query ${activeChannel} channel...`}
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-5 py-3 text-xs text-white focus:outline-none focus:border-aura/30"
+                  />
+                  <button type="button" onClick={handleSendQuery} disabled={!queryInput.trim()} aria-label="Send query" title="Send query" className="p-3 bg-aura text-sovereign rounded-2xl shadow-xl shadow-aura/20 hover:scale-110 transition-all disabled:opacity-30 disabled:hover:scale-100">
+                    <MessageCircle size={20} />
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  }
 
   return (
     <>

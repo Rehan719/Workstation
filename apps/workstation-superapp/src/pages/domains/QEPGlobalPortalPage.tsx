@@ -39,7 +39,7 @@ export const QEPGlobalPortal: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-5 gap-4">
         {regions.map((region) => (
           <div
             key={region.name}
@@ -59,8 +59,8 @@ export const QEPGlobalPortal: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-6">
+        <div className="@[440px]:col-span-2 space-y-6">
           <div className="p-8 bg-slate-900 rounded-3xl border-2 border-slate-800 relative overflow-hidden">
              <div className="relative z-10 space-y-6">
                 <div className="flex items-center gap-2 text-indigo-400 mb-2">

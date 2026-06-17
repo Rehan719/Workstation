@@ -19,7 +19,7 @@ export const EvolutionDashboard: React.FC = () => {
         <p className="text-slate-500">Real-time metrics on how the Workstation platform is evolving autonomously.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 @[440px]:grid-cols-6 gap-6">
         <MetricCard label="Proposals Generated" value={metrics.proposals_generated} icon={Zap} />
         <MetricCard label="Autonomous Deploys" value={metrics.autonomous_deploys} icon={Rocket} />
         <MetricCard label="Accessibility Fidelity" value="99.9%" icon={Accessibility} />
@@ -31,7 +31,7 @@ export const EvolutionDashboard: React.FC = () => {
       <div className="space-y-12">
         <ABTestingPanel />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-8">
           <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800">
             <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                <Target size={20} className="text-highlight" />

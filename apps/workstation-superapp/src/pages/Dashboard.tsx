@@ -49,7 +49,7 @@ export const Dashboard: React.FC = () => {
         </div>
       </header>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
             <Card className="group cursor-pointer hover:border-aura/50 transition-all">
@@ -66,8 +66,8 @@ export const Dashboard: React.FC = () => {
         ))}
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
+        <div className="@[440px]:col-span-2 space-y-8">
            <Card className="h-[400px] flex flex-col justify-center items-center relative overflow-hidden bg-slate-950/20">
               <div className="absolute top-8 left-8 z-10">
                  <h3 className="text-2xl font-black tracking-tight">Planetary Resonance</h3>

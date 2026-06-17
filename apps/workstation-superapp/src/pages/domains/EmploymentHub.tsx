@@ -32,9 +32,9 @@ export const EmploymentHub: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div className="min-w-0">
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase break-words">Nexus of Talent</h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase break-words">Nexus of Talent</h1>
           <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
              <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Workforce Orchestration • Skill Mesh • Employment Hub</p>
              <Badge color="highlight" className="text-[8px] shrink-0">{layout} MODE</Badge>
@@ -50,15 +50,15 @@ export const EmploymentHub: React.FC = () => {
       </header>
 
       <Card className="p-10 space-y-10">
-         <div className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-center gap-6 border-b border-white/5 pb-8">
+         <div className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-center gap-6 border-b border-white/5 pb-8">
             <h3 className="text-2xl font-black text-white flex items-center gap-4 uppercase tracking-tight min-w-0 shrink-0">
                <Layers size={24} className="text-aura shrink-0" />
                <span className="truncate">Employment Engines</span>
             </h3>
-            <div className="flex gap-2 @lg:gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800 max-w-full overflow-x-auto custom-scrollbar">
-               <button onClick={() => setActiveTab('studio')} className={`shrink-0 whitespace-nowrap px-3 @lg:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'studio' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Application Studio</button>
-               <button onClick={() => setActiveTab('skills')} className={`shrink-0 whitespace-nowrap px-3 @lg:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Skills</button>
-               <button onClick={() => setActiveTab('qep')} className={`shrink-0 whitespace-nowrap px-3 @lg:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
+            <div className="flex gap-2 @[480px]:gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800 max-w-full overflow-x-auto custom-scrollbar">
+               <button onClick={() => setActiveTab('studio')} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'studio' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Application Studio</button>
+               <button onClick={() => setActiveTab('skills')} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Skills</button>
+               <button onClick={() => setActiveTab('qep')} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
 
@@ -67,7 +67,7 @@ export const EmploymentHub: React.FC = () => {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
                  <QEPDashboard domain="employment" />
                  <div className="pt-12 border-t border-white/5">
-                    <h3 className="text-xl @lg:text-2xl @3xl:text-3xl font-black text-white mb-10 uppercase tracking-tighter break-words">Virtual Skill Garden</h3>
+                    <h3 className="text-xl @[480px]:text-2xl @[680px]:text-3xl font-black text-white mb-10 uppercase tracking-tighter break-words">Virtual Skill Garden</h3>
                     <QEPImmersiveTools domain="employment" />
                  </div>
               </motion.div>

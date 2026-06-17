@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button, notImplemented } from '@workstation/ui';
+import { Card, Badge, Button, notImplemented, toast } from '@workstation/ui';
 import { FileText, Search, Link as LinkIcon, Database, Info, ChevronRight, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -13,9 +13,9 @@ export const BackgroundTextIndex: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black text-white tracking-tighter uppercase italic break-words">Text Archive</h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black text-white tracking-tighter uppercase italic break-words">Text Archive</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Indexed Background Knowledge • Forensic Knowledge Hub</p>
         </div>
         <Button onClick={() => notImplemented('Refresh Index')} variant="outline" className="border-aura/30 text-aura"><Database size={18} /> Refresh Index</Button>
@@ -51,7 +51,7 @@ export const BackgroundTextIndex: React.FC = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => alert(`${a.path}\n\n${a.obj}`)}
+                      onClick={() => toast(`${a.path} · ${a.obj}`)}
                       aria-label={`View source for ${a.path}`}
                       title={`View source for ${a.path}`}
                       className="p-3 bg-slate-900 rounded-xl text-slate-600 hover:text-white transition-colors border border-slate-800"

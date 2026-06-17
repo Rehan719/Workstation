@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, notImplemented } from '@workstation/ui';
+import { Card, Button, notImplemented, toast } from '@workstation/ui';
 import { GitBranch, UserPlus, ShieldCheck, History, Rocket, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -22,9 +22,9 @@ export const OffspringManagement: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 text-highlight break-words">Offspring Management</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black mb-1 text-highlight break-words">Offspring Management</h1>
           <p className="font-bold uppercase text-[10px] tracking-widest text-highlight">NANITE Propagation • Autonomous Replication (Article 1115)</p>
         </div>
         <Button onClick={spawnInstance} className="bg-highlight text-sovereign">
@@ -32,7 +32,7 @@ export const OffspringManagement: React.FC = () => {
         </Button>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-4 gap-8">
          <aside className="space-y-8">
             <Card>
                <h4 className="text-xs font-black uppercase text-slate-500 tracking-widest mb-6">Replication Vitals</h4>
@@ -50,7 +50,7 @@ export const OffspringManagement: React.FC = () => {
             </Card>
          </aside>
 
-         <main className="lg:col-span-3 space-y-8">
+         <main className="@[440px]:col-span-3 space-y-8">
             <Card className="p-10 min-h-[400px]">
                <div className="flex justify-between items-center mb-10">
                   <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -80,7 +80,7 @@ export const OffspringManagement: React.FC = () => {
                              <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase">{item.status}</span>
                           </div>
                           <div className="w-px h-8 bg-slate-900" />
-                          <button type="button" onClick={() => alert(`${item.id}\nParent: ${item.parent}\nStatus: ${item.status}\nAge: ${item.age}\nHealth: ${(item.health * 100).toFixed(0)}%`)} aria-label="Open instance" title="Open instance" className="p-2 text-slate-500 hover:text-highlight transition-colors">
+                          <button type="button" onClick={() => toast(`${item.id} · ${item.status} · Age ${item.age} · Health ${(item.health * 100).toFixed(0)}%`)} aria-label="Open instance" title="Open instance" className="p-2 text-slate-500 hover:text-highlight transition-colors">
                              <ExternalLink size={18} />
                           </button>
                        </div>

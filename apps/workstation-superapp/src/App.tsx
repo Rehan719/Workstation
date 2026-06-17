@@ -39,13 +39,12 @@ import { GlobalFederationMap } from './pages/federation/GlobalFederationMap';
 import { OrbitalDashboard } from './pages/federation/OrbitalDashboard';
 import { CosmicMeshDashboard } from './pages/federation/CosmicMeshDashboard';
 import { HomeostaticOrchestrator } from './pages/federation/Performance';
-import { CredentialsVault } from './pages/governance/CredentialsVault';
-import { Sanctum } from './pages/governance/Sanctum';
+import { GovernanceHub } from './pages/governance/GovernanceHub';
 import { FileHub } from './pages/tools/FileHub';
 import { UVAIDDashboard } from './pages/tools/UVAIDDashboard';
 import { BackgroundTextIndex } from './pages/tools/BackgroundTextIndex';
-import { AuditDashboard } from './pages/tools/AuditDashboard';
 import { SynthesisStudio } from './pages/synthesis/SynthesisStudio';
+import { SolutionsPlatform } from './pages/SolutionsPlatform';
 import { RealmEditor } from './pages/realms/RealmEditor';
 import { Observatory } from './pages/scholar/Observatory';
 import { LegacyVault } from './pages/scholar/LegacyVault';
@@ -53,7 +52,6 @@ import { ConstitutionalUI } from './pages/governance/ConstitutionalUI';
 import { CouncilInterface } from './pages/governance/CouncilInterface';
 import { DebateLog } from './pages/c-suite/DebateLog';
 import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
-import { ProductCatalog } from './pages/ProductCatalog';
 import { Contribute } from './pages/Contribute';
 import { QEPEngine } from './pages/QEPEngine';
 import { QEPLanding } from './pages/QEPLanding';
@@ -61,11 +59,6 @@ import { SovereignXAIObservatory as QEPObservatoryPage } from './pages/domains/Q
 import { QEPGovernancePortal } from './pages/domains/QEPGovernancePortal';
 import QEPAnalyticsPage from './pages/domains/QEPAnalyticsPage';
 import QEPOpsPage from './pages/domains/QEPOpsPage';
-import { QEPAIPortal as QEPAIPortalPage } from './pages/domains/QEPAIPortalPage';
-import { QEPMultiDomainPortal as QEPMultiDomainPortalPage } from './pages/domains/QEPMultiDomainPortalPage';
-import { QEPGlobalPortal as QEPGlobalPortalPage } from './pages/domains/QEPGlobalPortalPage';
-import FacilityControlRoom from './pages/domains/FacilityControlRoom';
-import QEPV9CommandCenter from './pages/domains/QEPV9CommandCenter';
 import HumanOversightQueue from './components/qep/scholar/HumanOversightQueue';
 import { IntrospectionDashboard } from './pages/IntrospectionDashboard';
 import CouncilJudiciary from './pages/council/Judiciary';
@@ -81,7 +74,7 @@ import Joyride from 'react-joyride';
 
 function App() {
   const { currentRealm } = useStore();
-  const [runTutorial, setRunTutorial] = useState(false);
+  const [runTutorial] = useState(false);
 
   const isQEPStandalone = import.meta.env.VITE_QEP_STANDALONE === 'true';
 
@@ -119,13 +112,14 @@ function App() {
     <PlayfulEffectsManager />
     <Joyride steps={steps} run={runTutorial} continuous showProgress showSkipButton />
     <Shell>
-      {(activeTab) => (
+      {() => (
         <ErrorBoundary>
         <Routes>
           <Route path="/" element={<MultiRealmDashboard />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/ceo" element={<CEOChat />} />
           <Route path="/bto" element={<BTOCatalog />} />
+          <Route path="/solutions" element={<SolutionsPlatform />} />
           <Route path="/religion" element={<ReligionHub />} />
           <Route path="/qep-religion" element={<QEPReligionHub />} />
           <Route path="/science" element={<ScienceHub />} />
@@ -142,7 +136,8 @@ function App() {
           <Route path="/treaties" element={<TreatyDashboard />} />
           <Route path="/offspring" element={<OffspringManagement />} />
           <Route path="/capital" element={<CapitalDashboard />} />
-          <Route path="/vault" element={<CredentialsVault />} />
+          <Route path="/governance-hub" element={<GovernanceHub />} />
+          <Route path="/vault" element={<Navigate to="/governance-hub" replace />} />
           <Route path="/forge" element={<Forge />} />
           <Route path="/visual-composer" element={<VisualAgentComposer />} />
           <Route path="/swarm-intelligence" element={<SwarmIntelligence />} />
@@ -162,8 +157,8 @@ function App() {
           <Route path="/uvaid" element={<UVAIDDashboard />} />
           <Route path="/text-index" element={<BackgroundTextIndex />} />
           <Route path="/file-hub" element={<FileHub />} />
-          <Route path="/sanctum" element={<Sanctum />} />
-          <Route path="/audit" element={<AuditDashboard />} />
+          <Route path="/sanctum" element={<Navigate to="/governance-hub" replace />} />
+          <Route path="/audit" element={<Navigate to="/governance-hub" replace />} />
           <Route path="/realm-editor" element={<RealmEditor />} />
           <Route path="/contribute" element={<Contribute />} />
           <Route path="/ar-vr" element={<ARVRSandbox />} />
@@ -176,11 +171,11 @@ function App() {
           <Route path="/qep/governance" element={<QEPGovernancePortal />} />
           <Route path="/qep/analytics" element={<QEPAnalyticsPage />} />
           <Route path="/qep/ops" element={<QEPOpsPage />} />
-          <Route path="/qep/ai" element={<QEPAIPortalPage />} />
-          <Route path="/qep/multi-domain" element={<QEPMultiDomainPortalPage />} />
-          <Route path="/qep/global" element={<QEPGlobalPortalPage />} />
-          <Route path="/qep/facility" element={<FacilityControlRoom />} />
-          <Route path="/qep/v9" element={<QEPV9CommandCenter />} />
+          <Route path="/qep/ai" element={<Navigate to="/solutions" replace />} />
+          <Route path="/qep/multi-domain" element={<Navigate to="/solutions" replace />} />
+          <Route path="/qep/global" element={<Navigate to="/solutions" replace />} />
+          <Route path="/qep/facility" element={<Navigate to="/solutions" replace />} />
+          <Route path="/qep/v9" element={<Navigate to="/solutions" replace />} />
           <Route path="/qep/oversight" element={<HumanOversightQueue />} />
           <Route path="/constitution" element={<ConstitutionalUI />} />
           <Route path="/council" element={<CouncilInterface />} />
@@ -188,10 +183,10 @@ function App() {
           <Route path="/debate" element={<DebateLog />} />
           <Route path="/security/bounty" element={<BugBountyPortal />} />
           <Route path="/marketplace" element={<LivingMarketplace />} />
-          <Route path="/products" element={<ProductCatalog />} />
+          <Route path="/products" element={<Navigate to="/bto" replace />} />
           <Route path="/introspection" element={<IntrospectionDashboard />} />
           <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/transparency" element={<AuditDashboard />} />
+          <Route path="/transparency" element={<Navigate to="/governance-hub" replace />} />
           <Route path="/settings" element={
             <div className="p-10">
               <h2 className="text-3xl font-black mb-6">System Settings</h2>

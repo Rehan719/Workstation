@@ -6,8 +6,44 @@ import React from 'react';
  * should always give the user feedback, even when the underlying capability
  * is still in development.
  */
+export const toast = (msg: string) => {
+  const existing = document.querySelectorAll('[data-workstation-toast]');
+  const offset = existing.length * 52;
+  const el = document.createElement('div');
+  el.setAttribute('data-workstation-toast', '');
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
+  el.style.cssText = [
+    'position:fixed', `bottom:${24 + offset}px`, 'right:24px', 'z-index:99999',
+    'background:#0f172a', 'color:#e2e8f0', 'border:1px solid #1e293b',
+    'padding:10px 18px', 'border-radius:12px', 'font-size:10px', 'font-weight:700',
+    'text-transform:uppercase', 'letter-spacing:0.1em',
+    'box-shadow:0 8px 32px rgba(0,0,0,0.5)', 'max-width:320px', 'line-height:1.4',
+    'transition:opacity 0.2s ease', 'opacity:1',
+  ].join(';');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 200); }, 3000);
+};
+
 export const notImplemented = (feature: string = 'This action') => {
-  alert(`${feature} — not yet implemented. This capability is still in development.`);
+  const existing = document.querySelectorAll('[data-notimpl-toast]');
+  const offset = existing.length * 52;
+  const el = document.createElement('div');
+  el.setAttribute('data-notimpl-toast', '');
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
+  el.style.cssText = [
+    'position:fixed', `bottom:${24 + offset}px`, 'right:24px', 'z-index:99999',
+    'background:#0f172a', 'color:#94a3b8', 'border:1px solid #1e293b',
+    'padding:10px 18px', 'border-radius:12px', 'font-size:10px', 'font-weight:700',
+    'text-transform:uppercase', 'letter-spacing:0.1em',
+    'box-shadow:0 8px 32px rgba(0,0,0,0.5)', 'max-width:320px', 'line-height:1.4',
+    'transition:opacity 0.2s ease', 'opacity:1',
+  ].join(';');
+  el.textContent = `${feature} — Coming Soon`;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 200); }, 3000);
 };
 
 export const Button = ({ children, variant = 'primary', className = '', type = 'button', ...props }: any) => {

@@ -14,9 +14,9 @@ export const Wallet: React.FC = () => {
 
   return (
     <div className="space-y-12 animate-in fade-in duration-1000">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black tracking-tight neon-text break-words">Sovereign Economy</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black tracking-tight neon-text break-words">Sovereign Economy</h1>
           <p className="text-slate-500 font-bold text-lg mt-2">Manage your creator earnings, WST liquidity, and fiat payouts.</p>
         </div>
         <div className="text-right flex items-center gap-6">

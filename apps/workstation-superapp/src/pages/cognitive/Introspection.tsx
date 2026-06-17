@@ -48,7 +48,7 @@ export const Introspection: React.FC = () => {
         <ResonanceBall label="Dopamine" value={vitals.dopamine} color="#ff5252" icon={Zap} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-12">
         <div className="glass-card p-12 flex flex-col justify-center items-center h-[400px] relative overflow-hidden group">
           <motion.div
              animate={{ scale: [1, 1.1, 1], rotate: 360 }}

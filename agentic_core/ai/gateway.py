@@ -36,18 +36,26 @@ class ModelGateway:
 
         if not openai_succeeded:
             try:
-                # Ollama can take >10s on a cold model load (evicted after idling),
-                # so allow real headroom rather than timing out a healthy request.
-                async with httpx.AsyncClient() as client:
+                timeout = httpx.Timeout(connect=5.0, read=20.0, write=5.0, pool=5.0)
+                async with httpx.AsyncClient(timeout=timeout) as client:
                     res = await client.post(self.ollama_url, json={
                         "model": self.model,
                         "prompt": augmented_prompt,
-                        "stream": False
-                    }, timeout=60)
+                        "stream": False,
+                    })
                     response = res.json().get("response", "No response from model.")
+            except httpx.ConnectError:
+                response = (
+                    "I'm temporarily unavailable — the local AI engine isn't running. "
+                    "Start Ollama with `ollama serve` and your next message will connect automatically."
+                )
+            except httpx.ReadTimeout:
+                response = (
+                    "The AI model is still loading (this is normal on first use). "
+                    "Please resend your message in a moment and it will respond."
+                )
             except Exception as e:
-                error_detail = str(e) or type(e).__name__
-                response = f"AI Offline (Ollama connection error: {error_detail})"
+                response = f"I encountered an unexpected error ({type(e).__name__}). Please try again."
 
         # Apply Guardrails
         if not validate_response(response):

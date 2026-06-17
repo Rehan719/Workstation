@@ -17,8 +17,8 @@ export const FederationGovernance: React.FC = () => {
         <p className="text-slate-500">Cross-node treaty management and constitutional amendment voting.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
+        <div className="@[440px]:col-span-2 space-y-8">
           <section className={`p-8 rounded-3xl border transition-all duration-700 ${
             isAdvanced ? 'bg-sovereign border-aura/30 shadow-lg shadow-aura/5' : 'bg-slate-900/40 border-slate-800'
           }`} aria-label="Active Treaties">

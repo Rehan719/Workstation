@@ -18,9 +18,9 @@ export const RealityDashboard: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Reality Dashboard</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-1 break-words">Reality Dashboard</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">Branching Civilizational Futures v153.0</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -31,8 +31,8 @@ export const RealityDashboard: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-12">
+        <div className="@[440px]:col-span-2 space-y-8">
            <section className="p-10 glass-card bg-sovereign/40 border-white/5 min-h-[500px] flex flex-col items-center justify-center relative overflow-hidden group">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(100,255,218,0.05)_0%,transparent_70%)]"></div>
               {/* Timeline Visualization Placeholder */}

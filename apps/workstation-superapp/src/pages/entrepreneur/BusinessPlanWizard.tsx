@@ -28,9 +28,9 @@ export const BusinessPlanWizard: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-12">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Entrepreneurial Hub</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-1 break-words">Entrepreneurial Hub</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Livelihood & Business Synthesis v151.0</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">

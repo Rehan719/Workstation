@@ -14,9 +14,9 @@ export const LegacyVault: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Legacy Vault</h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Legacy Vault</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Millennium-Scale Archival • Autonomous Replication Triggers</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -27,8 +27,8 @@ export const LegacyVault: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-         <main className="lg:col-span-8 space-y-10">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-10">
+         <main className="@[440px]:col-span-8 space-y-10">
             <Card className="p-10 space-y-10">
                <div className="flex justify-between items-center">
                   <h3 className="text-2xl font-black text-white flex items-center gap-4 uppercase tracking-tight">
@@ -94,7 +94,7 @@ export const LegacyVault: React.FC = () => {
             </Card>
          </main>
 
-         <aside className="lg:col-span-4 space-y-10">
+         <aside className="@[440px]:col-span-4 space-y-10">
             <Card className="p-10 space-y-8 bg-aura/5 border-aura/20">
                <div className="w-16 h-16 rounded-2xl bg-aura flex items-center justify-center text-sovereign shadow-xl shadow-aura/20">
                   <Clock size={32} />

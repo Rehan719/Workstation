@@ -52,8 +52,8 @@ export const IntrospectionDashboard: React.FC = () => {
         <p className="text-aura font-black uppercase text-[10px] tracking-[0.4em] mt-2">AI CEO Autonomy Pipelines • v0.9 Ultimate</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <main className="lg:col-span-8 space-y-10">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-10">
+        <main className="@[440px]:col-span-8 space-y-10">
           <Card className="p-10 space-y-10 border-aura/20">
             <div className="flex justify-between items-center border-b border-white/5 pb-8">
               <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tight">
@@ -110,7 +110,7 @@ export const IntrospectionDashboard: React.FC = () => {
           </Card>
         </main>
 
-        <aside className="lg:col-span-4 space-y-10">
+        <aside className="@[440px]:col-span-4 space-y-10">
           <Card className="p-10 bg-vital/5 border-vital/20 space-y-8">
             <div className="w-16 h-16 rounded-2xl bg-vital flex items-center justify-center text-white shadow-xl shadow-vital/20">
               <History size={32} />

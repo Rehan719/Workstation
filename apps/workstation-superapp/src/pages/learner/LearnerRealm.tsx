@@ -50,7 +50,7 @@ export const LearnerRealm: React.FC = () => {
         <RealmSelector />
       </header>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-6">
         {gardens.map((garden) => (
           <Card key={garden.name} className="group hover:border-aura/50 transition-all cursor-pointer overflow-hidden flex flex-col h-full">
              <div className="flex justify-between items-start mb-6">
@@ -88,8 +88,8 @@ export const LearnerRealm: React.FC = () => {
         ))}
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
+         <div className="@[440px]:col-span-2 space-y-8">
             <Card className="p-10 bg-aura/5 border-aura/20 overflow-hidden relative">
                <div className="absolute -bottom-10 -right-10 opacity-5 rotate-12">
                   <Activity size={300} className="text-aura" />

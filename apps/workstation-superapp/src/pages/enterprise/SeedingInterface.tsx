@@ -16,9 +16,9 @@ export const SeedingInterface: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Civilisation Seeding</h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Civilisation Seeding</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Autonomous Offspring Spawning • Deep Space NANITE Propagation</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -29,8 +29,8 @@ export const SeedingInterface: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-         <main className="lg:col-span-8 space-y-10">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-10">
+         <main className="@[440px]:col-span-8 space-y-10">
             <Card className="p-10 space-y-10">
                <div className="flex justify-between items-center">
                   <h3 className="text-2xl font-black text-white flex items-center gap-4 uppercase tracking-tight">
@@ -102,7 +102,7 @@ export const SeedingInterface: React.FC = () => {
             </Card>
          </main>
 
-         <aside className="lg:col-span-4 space-y-10">
+         <aside className="@[440px]:col-span-4 space-y-10">
             <Card className="p-10 space-y-8 bg-slate-950 border-slate-900">
                <h4 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-4">
                   <Activity size={20} className="text-aura" />

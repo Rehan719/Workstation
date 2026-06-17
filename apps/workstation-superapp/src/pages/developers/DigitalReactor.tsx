@@ -7,9 +7,9 @@ export const DigitalReactor: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black mb-1 text-aura break-words">Digital Reactor</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black mb-1 text-aura break-words">Digital Reactor</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-aura">Sandboxed Simulation Environment • Layer A5</p>
         </div>
         <Button onClick={() => setIsRunning(!isRunning)} className={isRunning ? 'bg-vital' : 'bg-aura'}>
@@ -18,7 +18,7 @@ export const DigitalReactor: React.FC = () => {
         </Button>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 h-[600px]">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-12 h-[600px]">
          <aside className="p-8 glass-card bg-sovereign/40 flex flex-col gap-8">
             <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Simulation Parameters</h3>
             <div className="space-y-6">
@@ -34,7 +34,7 @@ export const DigitalReactor: React.FC = () => {
             </div>
          </aside>
 
-         <main className="lg:col-span-2 glass-card bg-slate-950/50 border-aura/20 relative overflow-hidden flex flex-col">
+         <main className="@[440px]:col-span-2 glass-card bg-slate-950/50 border-aura/20 relative overflow-hidden flex flex-col">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(100,255,218,0.03)_0%,transparent_70%)]"></div>
             <div className="relative p-10 flex-1 overflow-y-auto custom-scrollbar font-mono text-xs space-y-2">
                {!isRunning ? (

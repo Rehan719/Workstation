@@ -16,9 +16,9 @@ export const OrbitalDashboard: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-3xl @lg:text-4xl @3xl:text-6xl font-black mb-1 text-white tracking-tighter uppercase break-words">Orbital Command</h1>
+          <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase break-words">Orbital Command</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Planetary Mesh Visualisation • LEO & Undersea Node Tracking</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -29,8 +29,8 @@ export const OrbitalDashboard: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-         <main className="lg:col-span-8 space-y-10">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-10">
+         <main className="@[440px]:col-span-8 space-y-10">
             <Card className="h-[600px] flex flex-col justify-center items-center relative overflow-hidden bg-slate-950 border-aura/10 group">
                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(100,255,218,0.03)_0%,transparent_70%)]"></div>
                <div className="absolute top-10 left-10 z-10 space-y-2">
@@ -110,7 +110,7 @@ export const OrbitalDashboard: React.FC = () => {
             </div>
          </main>
 
-         <aside className="lg:col-span-4 space-y-10">
+         <aside className="@[440px]:col-span-4 space-y-10">
             <Card className="p-10 space-y-10 bg-aura/5 border-aura/20">
                <div className="flex items-center gap-4 text-aura">
                   <Wind size={24} />

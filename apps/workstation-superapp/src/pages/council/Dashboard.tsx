@@ -75,7 +75,7 @@ export default function CouncilDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-8">
         {proposals.map(proposal => (
           <Card key={proposal.id} className="bg-[#0f0f0f] border-[#1a1a1a] overflow-hidden hover:border-[#333] transition-all">
             <CardHeader className="border-b border-[#1a1a1a] flex flex-row justify-between items-start">

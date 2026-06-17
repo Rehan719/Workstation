@@ -50,7 +50,7 @@ export const Marketplace: React.FC = () => {
          <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-aura/20 rounded-full blur-[100px]"></div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-3 gap-8">
         {products.map(p => (
           <div key={p.id} className={`p-8 rounded-3xl border transition-all group backdrop-blur-sm ${
             isAdvanced ? 'bg-sovereign border-aura/10 hover:border-aura/50 shadow-lg' : 'bg-slate-900/40 border-slate-800 hover:border-aura'

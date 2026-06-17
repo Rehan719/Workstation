@@ -16,7 +16,7 @@ export const ScholarRealm: React.FC = () => {
         <p className="text-slate-500 font-bold tracking-widest uppercase text-xs mt-2">Deep Intelligence Research Hub</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-4 gap-8">
         <aside className="space-y-6">
            <Card className="p-6">
               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Research Tools</h4>
@@ -28,7 +28,7 @@ export const ScholarRealm: React.FC = () => {
            </Card>
         </aside>
 
-        <main className="lg:col-span-3 space-y-8">
+        <main className="@[440px]:col-span-3 space-y-8">
            <Card className="p-10 border-dashed border-2 border-slate-800 bg-transparent flex flex-col items-center justify-center text-center space-y-6 min-h-[400px]">
               <div className="p-6 bg-slate-900 rounded-full text-slate-500">
                  <Search size={48} />

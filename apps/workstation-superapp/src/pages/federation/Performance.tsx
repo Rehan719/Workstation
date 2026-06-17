@@ -53,9 +53,9 @@ export const HomeostaticOrchestrator: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-5xl font-black text-white uppercase tracking-tighter italic break-words">Homeostatic Orchestrator</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black text-white uppercase tracking-tighter italic break-words">Homeostatic Orchestrator</h1>
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.4em] mt-2">v138.0 Galactic Era • Autonomous Self-Healing Mesh</p>
         </div>
         <Button
@@ -124,7 +124,7 @@ export const HomeostaticOrchestrator: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-12 gap-8">
-         <div className="col-span-12 lg:col-span-8">
+         <div className="col-span-12 @[440px]:col-span-8">
             <Card className="p-10">
                <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-8 flex items-center gap-4">
                   <Terminal size={24} className="text-slate-500" />
@@ -163,7 +163,7 @@ export const HomeostaticOrchestrator: React.FC = () => {
             </Card>
          </div>
 
-         <div className="col-span-12 lg:col-span-4 space-y-8">
+         <div className="col-span-12 @[440px]:col-span-4 space-y-8">
             <Card className="p-8 bg-aura/5 border-aura/20">
                <h4 className="text-xs font-black text-aura uppercase tracking-widest mb-6">Multi-Modal Fabric</h4>
                <div className="space-y-6">

@@ -36,7 +36,7 @@ export const SovereignXAIObservatory: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-4">
         {modelMetrics.map((metric) => (
           <div key={metric.name} className="p-5 bg-white border-2 border-slate-100 rounded-2xl hover:border-indigo-200 transition-colors shadow-sm">
              <div className="flex justify-between items-start mb-3">
@@ -52,8 +52,8 @@ export const SovereignXAIObservatory: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 p-8 bg-slate-900 rounded-3xl border-2 border-slate-800 relative overflow-hidden">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-6">
+        <div className="@[440px]:col-span-2 p-8 bg-slate-900 rounded-3xl border-2 border-slate-800 relative overflow-hidden">
           <div className="relative z-10 space-y-6">
             <div className="flex items-center gap-2 text-indigo-400 mb-2">
               <BrainCircuit className="w-6 h-6" />

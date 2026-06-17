@@ -233,7 +233,7 @@ export const ProductCatalog: React.FC = () => {
                     <span className="text-[10px] font-bold text-slate-600">({section.items.length})</span>
                   </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-3 gap-8">
                   {section.items.map((product, i) => renderCard(product, i))}
                 </div>
               </div>

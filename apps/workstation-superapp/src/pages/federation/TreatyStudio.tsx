@@ -24,7 +24,7 @@ export const TreatyStudio: React.FC = () => {
         <p className="text-slate-500">Draft and auto-negotiate standard data sharing and compute exchange treaties.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-12">
         <section className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 space-y-8">
            <h3 className="text-xl font-bold flex items-center gap-2">
              <PenLine size={20} className="text-aura" />

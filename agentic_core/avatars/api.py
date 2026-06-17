@@ -170,6 +170,29 @@ async def chat(request: ChatRequest):
     )
 
 
+@router.delete("/session/{session_id}")
+async def delete_session(session_id: str):
+    """Clears a session's conversation history and removes it from memory."""
+    if session_id in _sessions:
+        del _sessions[session_id]
+    return {"cleared": True, "session_id": session_id}
+
+
+@router.get("/status")
+async def ai_status():
+    """Quick health check: probes Ollama and reports AI availability."""
+    import httpx as _httpx
+    ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+    base_url = ollama_url.rsplit("/api/", 1)[0]
+    try:
+        async with _httpx.AsyncClient(timeout=4.0) as client:
+            r = await client.get(f"{base_url}/api/tags")
+            online = r.status_code == 200
+    except Exception:
+        online = False
+    return {"ollama_online": online, "openai_configured": bool(os.getenv("OPENAI_API_KEY"))}
+
+
 @router.get("/session/{session_id}/history")
 async def get_history(session_id: str):
     session = _sessions.get(session_id)

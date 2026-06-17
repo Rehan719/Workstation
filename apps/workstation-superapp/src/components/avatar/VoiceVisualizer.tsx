@@ -39,7 +39,7 @@ export const VoiceVisualizer: React.FC<VoiceVisualizerProps> = ({ avatar }) => {
   const statusLabel = speaking ? 'Avatar speaking' : recording ? 'Listening' : 'Idle';
 
   return (
-    <div className="h-full w-full flex flex-col gap-2 min-h-0 min-w-0">
+    <div className="h-full w-full flex flex-col gap-0.5 min-h-0 min-w-0">
       <div className="flex-1 flex items-end justify-center gap-1.5 min-h-0 px-1" role="img" aria-label={`Voice interaction level: ${statusLabel}`}>
         {BAR_WEIGHTS.map((w, i) =>
           isLive ? (
@@ -64,19 +64,19 @@ export const VoiceVisualizer: React.FC<VoiceVisualizerProps> = ({ avatar }) => {
         </span>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
         <button
           type="button"
           onClick={() => rewind(5)}
           disabled={!canRewind}
           aria-label="Rewind avatar's last reply 5 seconds"
           title="Rewind 5s"
-          className="shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-aura disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
+          className="shrink-0 p-1 rounded-md text-slate-500 hover:text-aura disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
         >
-          <RotateCcw size={13} />
+          <RotateCcw size={10} />
         </button>
 
-        {volume === 0 ? <VolumeX size={13} className="shrink-0 text-slate-600" /> : <Volume2 size={13} className="shrink-0 text-slate-600" />}
+        {volume === 0 ? <VolumeX size={10} className="shrink-0 text-slate-600" /> : <Volume2 size={10} className="shrink-0 text-slate-600" />}
         <input
           type="range"
           min={0}
@@ -85,7 +85,7 @@ export const VoiceVisualizer: React.FC<VoiceVisualizerProps> = ({ avatar }) => {
           value={volume}
           onChange={(e) => setVolumeLevel(parseFloat(e.target.value))}
           aria-label="Avatar voice volume"
-          className="flex-1 min-w-0 h-1 accent-aura cursor-pointer"
+          className="flex-1 min-w-0 h-0.5 accent-aura cursor-pointer"
         />
       </div>
     </div>

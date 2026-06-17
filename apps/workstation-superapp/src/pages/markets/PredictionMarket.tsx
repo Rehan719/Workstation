@@ -13,9 +13,9 @@ export const PredictionMarket: React.FC = () => {
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col @lg:flex-row @lg:justify-between @lg:items-end gap-6 border-b border-white/5 pb-8">
+      <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
-          <h1 className="text-2xl @lg:text-3xl @3xl:text-4xl font-black mb-1 break-words">Wisdom Hub</h1>
+          <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-1 break-words">Wisdom Hub</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest text-highlight">Civilizational Prediction Markets v152.0</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
@@ -26,7 +26,7 @@ export const PredictionMarket: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-8">
         {markets.map(m => (
           <div key={m.id} className="p-8 glass-card border-white/5 hover:border-highlight/30 transition-all flex flex-col gap-6">
              <div className="flex justify-between items-start">
