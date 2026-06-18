@@ -193,3 +193,78 @@ def test_project_run_streams(client, project_id):
                 except json.JSONDecodeError:
                     pass
         _assert_real_response(accumulated)
+
+
+# ── Law domain ────────────────────────────────────────────────────────────────
+
+def test_law_templates(client):
+    r = client.get("/api/v1/law/templates")
+    assert r.status_code == 200
+    body = r.json()
+    assert "templates" in body
+    assert len(body["templates"]) >= 5
+    assert all("id" in t and "name" in t for t in body["templates"])
+
+
+@_ai_only
+def test_law_analyse(client):
+    r = client.post("/api/v1/law/analyse", json={
+        "document_text": (
+            "This Non-Disclosure Agreement is entered into between Party A and Party B. "
+            "Party B agrees to keep all information confidential for a period of 1 year. "
+            "No limitations on liability are specified."
+        ),
+        "document_type": "nda",
+        "jurisdiction": "England & Wales",
+        "analysis_focus": "risk",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "analysis" in body
+    _assert_real_response(body["analysis"])
+
+
+@_ai_only
+def test_law_generate(client):
+    r = client.post("/api/v1/law/generate", json={
+        "template_id": "nda",
+        "parties": {"party_a": "Workstation Ltd", "party_b": "Client Co"},
+        "jurisdiction": "England & Wales",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "document" in body
+    _assert_real_response(body["document"])
+
+
+# ── Career domain ─────────────────────────────────────────────────────────────
+
+@_ai_only
+def test_career_generate(client):
+    """Career document generation must call gateway and return real content."""
+    r = client.post("/api/v1/career/generate", json={
+        "file_ids": [],
+        "company_website": "https://example.com",
+        "instructions": "Tailor for a Senior Software Engineer role at a fintech startup.",
+        "output_types": ["cover_letter"],
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "results" in body
+    assert len(body["results"]) == 1
+    result = body["results"][0]
+    assert result["output_type"] == "cover_letter"
+    _assert_real_response(result["content"])
+
+
+@_ai_only
+def test_career_job_search(client):
+    """Job search must return structured listings."""
+    r = client.post("/api/v1/career/job-search", json={
+        "query": "Senior Python developer remote",
+        "limit": 3,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "results" in body
+    assert isinstance(body["results"], list)

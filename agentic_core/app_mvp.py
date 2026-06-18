@@ -130,6 +130,14 @@ app.include_router(evolution_v191.router, prefix="/api/v191")
 from agentic_core.api.v200 import contribute as contribute_v200
 app.include_router(contribute_v200.router, prefix="/api/v200")
 
+# 22. Career / Employment domain (Application Studio, job search, doc generation)
+from agentic_core.api import career as career_api
+app.include_router(career_api.router)
+
+# 23. Law domain (contract analysis, legal document factory)
+from agentic_core.api import law as law_api
+app.include_router(law_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime
