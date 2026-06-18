@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(c:/Users/rehan/Workstation/venv/Scripts/python.exe -c \"import agentic_core\")",
+      "Bash(c:/Users/rehan/AppData/Local/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0/python.exe -c \"import anthropic; print\\('anthropic', anthropic.__version__\\)\")",
+      "Bash(c:/Users/rehan/AppData/Local/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0/python.exe -m pip install anthropic --quiet)",
+      "Bash(grep -v \"//\\\\|import\\\\|type\\\\|interface\")",
+      "Bash(curl -s -X POST http://localhost:8000/api/v1/synthesis/stream -H 'Content-Type: application/json' -d '{\"content_ids\":[],\"output_type\":\"report\",\"instructions\":\"Write 2 sentences about AI.\"}' --max-time 20)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(p\\) for p in d['paths'] if 'synthesis' in p or 'avatar' in p or 'biometrics' in p]\")",
+      "Bash(curl -s -X POST http://localhost:8000/api/v1/synthesis/stream -H 'Content-Type: application/json' -d '{\"content_ids\":[],\"output_type\":\"report\",\"instructions\":\"Write 2 sentences about the future of AI.\"}' --max-time 30)",
+      "Bash(curl -s \"http://localhost:8000/openapi.json\")",
+      "Bash(python3 -c \"import json,sys; paths=[p for p in json.load\\(sys.stdin\\)['paths'] if 'avatar' in p or 'biometric' in p]; [print\\(p\\) for p in paths]\")",
+      "Bash(curl -s http://localhost:5173/api/v1/avatar/status)",
+      "Bash(curl -s http://localhost:5173/api/v1/biometrics/status)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/v1/claude/status)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/v154/status)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/v154/security/status)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s http://localhost:8000/api/v1/claude/status)",
+      "Bash(curl -s --max-time 5 http://localhost:8000/api/v1/avatar/status)",
+      "Bash(curl -s --max-time 8 http://localhost:8000/api/v1/avatar/status)",
+      "Bash(curl -s --max-time 8 http://localhost:8000/api/v1/claude/status)",
+      "PowerShell(Stop-Process -Id 8752,5336,21308,24596,26056 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Id 3980,26520,28884,28904 -Force -ErrorAction SilentlyContinue)",
+      "Bash(npm run *)",
+      "Bash(curl -s --max-time 5 http://localhost:5173/ -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -s --max-time 6 http://localhost:8000/api/v1/projects/)",
+      "Bash(python -c \"from agentic_core.projects.api import router; routes = [\\(r.methods, r.path\\) for r in router.routes]; [print\\(m, p\\) for m, p in routes]\")",
+      "Bash(python -c \"from agentic_core.main import app; routes = [r.path for r in app.routes if hasattr\\(r,'path'\\) and 'forge' in r.path]; print\\(routes\\)\")",
+      "Bash(curl -s http://localhost:8000/api/v1/projects/stats/summary)",
+      "Bash(curl -s http://localhost:8000/api/v1/projects/governance/proposals)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -X POST http://localhost:8000/api/v1/forge/pipeline -H \"Content-Type: application/json\" -d '{\"steps\":[{\"name\":\"test\",\"instruction\":\"say hi\"}]}')",
+      "Bash(python -c ' *)",
+      "Bash(xargs grep -l \"sqlite\\\\|database\\\\|mongo\\\\|redis\")",
+      "Bash(xargs ls -lh)"
+    ]
+  }
+}
