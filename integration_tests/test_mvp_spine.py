@@ -111,15 +111,21 @@ def test_csuite_cfo_metrics(client):
 
 
 def test_biometrics_status(client):
-    """Vitals must come from real psutil data."""
+    """Vitals must come from real psutil data including immune system."""
     r = client.get("/api/v1/biometrics/status")
     assert r.status_code == 200
     body = r.json()
     assert "cardiovascular" in body
     assert "cognition" in body
+    assert "immune" in body
+    assert "metabolic" in body
     flow = body["cardiovascular"]["resource_flow"]
     assert isinstance(flow, (int, float))
     assert 0 <= flow <= 100
+    immune = body["immune"]
+    assert "health" in immune
+    assert 0.0 <= immune["health"] <= 1.0
+    assert immune["threat_level"] in ("NOMINAL", "ELEVATED", "HIGH", "CRITICAL")
 
 
 # ── AI endpoints — skipped without API key ───────────────────────────────────
@@ -268,3 +274,52 @@ def test_career_job_search(client):
     body = r.json()
     assert "results" in body
     assert isinstance(body["results"], list)
+
+
+# ── Science domain ────────────────────────────────────────────────────────────
+
+def test_science_methodologies(client):
+    r = client.get("/api/v1/science/methodologies")
+    assert r.status_code == 200
+    body = r.json()
+    assert "methodologies" in body
+    assert len(body["methodologies"]) >= 5
+
+
+@_ai_only
+def test_science_synthesise(client):
+    r = client.post("/api/v1/science/synthesise", json={
+        "research_question": "What is the effect of sleep deprivation on cognitive performance?",
+        "domain": "neuroscience",
+        "methodology": "systematic_review",
+        "depth": "brief",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "report" in body
+    _assert_real_response(body["report"])
+
+
+# ── Education domain ──────────────────────────────────────────────────────────
+
+def test_education_frameworks(client):
+    r = client.get("/api/v1/education/frameworks")
+    assert r.status_code == 200
+    body = r.json()
+    assert "frameworks" in body
+    assert len(body["frameworks"]) >= 5
+
+
+@_ai_only
+def test_education_lesson_plan(client):
+    r = client.post("/api/v1/education/lesson-plan", json={
+        "subject": "Mathematics",
+        "topic": "Quadratic Equations",
+        "level": "GCSE Year 10",
+        "duration_minutes": 60,
+        "class_size": 28,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "lesson_plan" in body
+    _assert_real_response(body["lesson_plan"])

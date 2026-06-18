@@ -60,7 +60,7 @@ class ModelGateway:
     async def query(self, prompt: str, agent: str = "assistant") -> str:
         await self._rate_limiter.acquire()
         augmented = self._augment(prompt)
-        response, provider = await self._call(augmented)
+        response, provider = await self._call(augmented, agent=agent)
 
         if not validate_response(response):
             response = "[POLICY VIOLATION] The generated response was blocked by safety guardrails."
@@ -69,8 +69,9 @@ class ModelGateway:
         memory.add_memory(f"User: {prompt} | AI: {response}")
         return response
 
-    async def _call(self, prompt: str) -> tuple[str, str]:
+    async def _call(self, prompt: str, agent: str = "gateway") -> tuple[str, str]:
         """Try providers in priority order, return (response_text, provider_name)."""
+        from agentic_core.organism.immune import immune
 
         # 1 — Anthropic Claude
         if self.anthropic_key:
@@ -83,8 +84,8 @@ class ModelGateway:
                     messages=[{"role": "user", "content": prompt}],
                 )
                 return msg.content[0].text, "claude"
-            except Exception as e:
-                pass  # fall through to next provider
+            except Exception:
+                immune.record(agent, "ai_failure")  # provider failed — immune records it
 
         # 2 — OpenAI
         if self.openai_key:
@@ -99,7 +100,7 @@ class ModelGateway:
                 )
                 return completion.choices[0].message.content or "", "openai"
             except Exception:
-                pass
+                immune.record(agent, "ai_failure")
 
         # 3 — Ollama
         try:
@@ -112,14 +113,17 @@ class ModelGateway:
                 })
                 return res.json().get("response", ""), "ollama"
         except httpx.ConnectError:
+            immune.record(agent, "ai_failure")
             return (
                 "AI engine unavailable — start Ollama with `ollama serve` "
                 "or configure ANTHROPIC_API_KEY in your environment.",
                 "error",
             )
         except httpx.ReadTimeout:
+            immune.record(agent, "timeout")
             return "The model is still loading. Please retry in a moment.", "error"
         except Exception as e:
+            immune.record(agent, "ai_failure")
             return f"Unexpected error ({type(e).__name__}). Please try again.", "error"
 
     # ── streaming ────────────────────────────────────────────────────────────

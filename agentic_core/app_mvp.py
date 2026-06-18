@@ -138,6 +138,14 @@ app.include_router(career_api.router)
 from agentic_core.api import law as law_api
 app.include_router(law_api.router)
 
+# 24. Science domain (research synthesis, hypothesis generation, literature review)
+from agentic_core.api import science as science_api
+app.include_router(science_api.router)
+
+# 25. Education domain (curriculum design, lesson plans, assessments)
+from agentic_core.api import education as education_api
+app.include_router(education_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime
@@ -156,8 +164,10 @@ def _circadian_cycle() -> str:
 
 @app.get("/api/v1/biometrics/status")
 async def biometrics_status():
-    """Organism vitals derived from real system state — psutil + project store."""
+    """Organism vitals derived from real system state — psutil + project store + immune system."""
     from agentic_core.projects.api import _all_projects
+    from agentic_core.organism.immune import immune
+
     try:
         projects = _all_projects()
         active = sum(1 for p in projects if p.status == "running")
@@ -168,12 +178,15 @@ async def biometrics_status():
     cpu  = psutil.cpu_percent(interval=None)
     mem  = psutil.virtual_memory()
     ws   = len(_ws.connections)
+    imm  = immune.status()
 
     resource_flow = max(0.0, 100.0 - cpu)
     peristaltic_delay = round(max(1, mem.percent / 20), 1)
 
+    # Cognition degrades under immune stress
+    immune_health = imm["health"]
     if active > 2 or cpu > 70:
-        cognition_state = "FLOURISHING"
+        cognition_state = "FLOURISHING" if immune_health > 0.5 else "STRESSED"
         primary_drive   = "SYNTHESIS"
     elif cpu > 40 or len(projects) > 0:
         cognition_state = "STABLE"
@@ -189,11 +202,20 @@ async def biometrics_status():
     else:
         neurotransmitter = "Oxytocin"
 
+    # Metabolic: ratio of concept-stage to total (immature projects = metabolic overhead)
+    total_projects = len(projects)
+    concept_count = sum(1 for p in projects if p.stage == "concept")
+    metabolic_efficiency = round(
+        1.0 - (concept_count / total_projects) if total_projects > 0 else 1.0, 3
+    )
+
     return {
         "circadian":      {"cycle": _circadian_cycle()},
         "cardiovascular": {"resource_flow": round(resource_flow, 1), "peristaltic_delay": peristaltic_delay},
         "cognition":      {"state": cognition_state, "primary_drive": primary_drive},
         "communication":  {"active_channels": ["WS"] if ws > 0 else [], "neurotransmitter": neurotransmitter, "is_active": ws > 0},
+        "immune":         imm,
+        "metabolic":      {"efficiency": metabolic_efficiency, "concept_projects": concept_count, "total_projects": total_projects},
     }
 
 
