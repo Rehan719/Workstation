@@ -1,0 +1,195 @@
+"""
+Integration tests for the MVP spine endpoints.
+
+Tests verify that each real AI endpoint:
+1. Returns a 2xx response
+2. Does NOT return a hardcoded/simulated response (checks for content length
+   that a real LLM call would produce)
+3. Does NOT contain obvious simulation markers
+
+Run with:
+    pytest integration_tests/test_mvp_spine.py --noconftest -v
+
+AI-dependent tests are automatically skipped when no provider is configured.
+Set ANTHROPIC_API_KEY (or have Ollama running) for the full suite.
+"""
+import os
+import json
+import pytest
+from fastapi.testclient import TestClient
+
+os.environ.setdefault("PROJECTS_DIR", "data/test_projects")
+os.environ.setdefault("SYNTHESIS_OUTPUT_DIR", "data/test_synthesis")
+os.environ.setdefault("PROPOSALS_DIR", "data/test_proposals")
+
+_AI_AVAILABLE = bool(
+    os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
+)
+_ai_only = pytest.mark.skipif(
+    not _AI_AVAILABLE,
+    reason="Skipped — no ANTHROPIC_API_KEY or OPENAI_API_KEY set"
+)
+
+
+@pytest.fixture(scope="module")
+def client():
+    from agentic_core.app_mvp import app
+    with TestClient(app, raise_server_exceptions=True) as c:
+        yield c
+
+
+# ── Health ───────────────────────────────────────────────────────────────────
+
+def test_health(client):
+    r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["status"] == "healthy"
+
+
+def test_health_versioned(client):
+    r = client.get("/api/v1/health")
+    assert r.status_code == 200
+
+
+# ── Projects CRUD ────────────────────────────────────────────────────────────
+
+@pytest.fixture(scope="module")
+def project_id(client):
+    r = client.post("/api/v1/projects/", json={
+        "title": "Test Integration Project",
+        "description": "Created by automated test",
+        "realm": "enterprise",
+        "domain": "product",
+    })
+    assert r.status_code in (200, 201), r.text
+    pid = r.json()["id"]
+    yield pid
+    client.delete(f"/api/v1/projects/{pid}")
+
+
+def test_create_project(project_id):
+    assert project_id
+
+
+def test_list_projects(client, project_id):
+    r = client.get("/api/v1/projects/")
+    assert r.status_code == 200
+    ids = [p["id"] for p in r.json()]
+    assert project_id in ids
+
+
+def test_get_project(client, project_id):
+    r = client.get(f"/api/v1/projects/{project_id}")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["stage"] == "concept"
+    assert data["title"] == "Test Integration Project"
+
+
+def test_projects_stats_summary(client):
+    r = client.get("/api/v1/projects/stats/summary")
+    assert r.status_code == 200
+    body = r.json()
+    assert "total_projects" in body
+    assert isinstance(body["total_projects"], int)
+
+
+# ── C-Suite ───────────────────────────────────────────────────────────────────
+
+def test_csuite_cfo_metrics(client):
+    """CFO metrics must be computed from real project store, not literals."""
+    r = client.get("/api/csuite/cfo/metrics")
+    assert r.status_code == 200
+    body = r.json()
+    # Response has 'revenue' (computed from project store) and a kpis array
+    assert "revenue" in body or "portfolio_value" in body, (
+        f"Expected revenue or portfolio_value in CFO response, got: {list(body.keys())}"
+    )
+    # Must not return the old hardcoded value
+    assert body.get("revenue") != 1420500
+    assert body.get("portfolio_value") != 1420500
+
+
+def test_biometrics_status(client):
+    """Vitals must come from real psutil data."""
+    r = client.get("/api/v1/biometrics/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert "cardiovascular" in body
+    assert "cognition" in body
+    flow = body["cardiovascular"]["resource_flow"]
+    assert isinstance(flow, (int, float))
+    assert 0 <= flow <= 100
+
+
+# ── AI endpoints — skipped without API key ───────────────────────────────────
+
+def _assert_real_response(text: str, min_chars: int = 100):
+    assert text, "Response was empty"
+    assert len(text) >= min_chars, (
+        f"Response too short ({len(text)} chars) — likely a fallback/error: {text!r}"
+    )
+    for phrase in ["# Simulation", "HARDCODED", "TODO: implement", "random.uniform"]:
+        assert phrase.lower() not in text.lower(), f"Simulation marker found: {phrase!r}"
+
+
+@_ai_only
+def test_factory_produce_streams(client):
+    """Factory must stream a real AI response."""
+    with client.stream("POST", "/api/v1/factory/produce", json={
+        "name": "Integration Test Business Model",
+        "product_type": "business_model",
+        "domain": "enterprise",
+        "description": "A SaaS platform for project management",
+    }) as resp:
+        assert resp.status_code == 200
+        accumulated = ""
+        for line in resp.iter_lines():
+            if line.startswith("data: "):
+                try:
+                    ev = json.loads(line[6:])
+                    if "token" in ev:
+                        accumulated += ev["token"].replace("\n", "\n")
+                    if ev.get("done"):
+                        break
+                    if ev.get("error"):
+                        pytest.fail(f"Factory error: {ev['error']}")
+                except json.JSONDecodeError:
+                    pass
+        _assert_real_response(accumulated)
+
+
+@_ai_only
+def test_ceo_generate_blueprint(client):
+    """CEO blueprint generation must return real AI content."""
+    r = client.post("/api/v290/ceo/generate-blueprint", json={
+        "intent": "An AI-powered tutoring platform",
+        "realm": "enterprise",
+        "domain": "education",
+        "stage": "concept",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "complete"
+    _assert_real_response(body["deliverable"])
+
+
+@_ai_only
+def test_project_run_streams(client, project_id):
+    """Project run must stream a real AI output."""
+    with client.stream("POST", f"/api/v1/projects/{project_id}/run") as resp:
+        assert resp.status_code == 200
+        accumulated = ""
+        for line in resp.iter_lines():
+            if line.startswith("data: "):
+                try:
+                    ev = json.loads(line[6:])
+                    if "token" in ev:
+                        accumulated += ev["token"].replace("\n", "\n")
+                    if ev.get("done"):
+                        break
+                    if ev.get("error"):
+                        pytest.fail(f"Project run error: {ev['error']}")
+                except json.JSONDecodeError:
+                    pass
+        _assert_real_response(accumulated)

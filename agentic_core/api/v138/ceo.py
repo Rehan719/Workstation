@@ -5,7 +5,6 @@ import asyncio
 import httpx
 import os
 import logging
-import random
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from config.paths import DATA_DIR
@@ -298,10 +297,7 @@ async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
          await tool_registry.register_custom_tool(proposed_tool, "Autonomously generated response tool.", {}, autonomous=True)
          prompt += f"\n(AI Note: I have autonomously created and registered {proposed_tool} to assist with this.)"
 
-    # v0.6: Analyze recent tool success rates for self-optimization
-    # Simulation: Propose prompt tweak if error rate > 20% (Article 1118)
-    if random.random() < 0.05:
-         prompt += "\n(CEO Self-Analysis: Optimizing system prompt for higher precision.)"
+    # Removed: random.random() < 0.05 prompt tweak — non-deterministic, no real data source
 
     # 0. Genome-Based Parameter Tuning (v0.1)
     behavioral_params = genome_engine.get_behavioral_params()

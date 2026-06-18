@@ -263,7 +263,7 @@ async def _vitals_loop():
         await asyncio.sleep(5)
 
 
-@app.on_event("startup")
+@app.on_event("startup")  # noqa: deprecated — lifespan refactor is Phase 1
 async def _startup():
     asyncio.create_task(_vitals_loop())
     logger.info("Workstation MVP started — spine routers only.")

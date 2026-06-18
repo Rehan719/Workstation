@@ -1,9 +1,34 @@
 import os
+import time
+import asyncio
 import httpx
 from typing import AsyncIterator
 from agentic_core.ai.guardrails import validate_response
 from agentic_core.ai.logger import interaction_logger
 from agentic_core.ai.memory import memory
+
+
+class _RateLimiter:
+    """Token-bucket rate limiter — prevents runaway API spend."""
+
+    def __init__(self, calls_per_minute: int):
+        self._limit = calls_per_minute
+        self._tokens = float(calls_per_minute)
+        self._last = time.monotonic()
+        self._lock = asyncio.Lock()
+
+    async def acquire(self):
+        async with self._lock:
+            now = time.monotonic()
+            elapsed = now - self._last
+            self._last = now
+            self._tokens = min(self._limit, self._tokens + elapsed * (self._limit / 60.0))
+            if self._tokens < 1:
+                wait = (1 - self._tokens) * 60.0 / self._limit
+                await asyncio.sleep(wait)
+                self._tokens = 0
+            else:
+                self._tokens -= 1
 
 
 class ModelGateway:
@@ -12,6 +37,8 @@ class ModelGateway:
       1. Anthropic Claude (claude-sonnet-4-6) — best quality, used when key present
       2. OpenAI GPT-4o-mini — fallback when OPENAI_API_KEY set
       3. Ollama llama3.2 — local fallback, always available if Ollama is running
+
+    Rate limit: GATEWAY_RPM env var (default 20 calls/min) prevents runaway spend.
     """
 
     def __init__(self):
@@ -21,6 +48,8 @@ class ModelGateway:
         self.ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
         self.claude_model = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
         self.max_tokens = int(os.getenv("GATEWAY_MAX_TOKENS", "4096"))
+        rpm = int(os.getenv("GATEWAY_RPM", "20"))
+        self._rate_limiter = _RateLimiter(rpm)
 
     def _augment(self, prompt: str) -> str:
         ctx = memory.query_memory(prompt)
@@ -29,6 +58,7 @@ class ModelGateway:
     # ── non-streaming ───────────────────────────────────────────────────────
 
     async def query(self, prompt: str, agent: str = "assistant") -> str:
+        await self._rate_limiter.acquire()
         augmented = self._augment(prompt)
         response, provider = await self._call(augmented)
 
@@ -96,6 +126,7 @@ class ModelGateway:
 
     async def stream(self, prompt: str, agent: str = "assistant") -> AsyncIterator[str]:
         """Yield response tokens as they arrive. Falls back to chunked non-streaming."""
+        await self._rate_limiter.acquire()
         augmented = self._augment(prompt)
 
         # 1 — Anthropic streaming
