@@ -2,9 +2,9 @@ import logging
 import json
 import re
 import os
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, AsyncIterator
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 import datetime
 import uuid
@@ -287,6 +287,82 @@ synthesis_manager = SynthesisManager()
 async def generate_synthesis(request: SynthesisRequest):
     """AI-powered multi-modal synthesis from knowledge base content."""
     return await synthesis_manager.generate_output(request)
+
+
+@router.post("/stream")
+async def stream_synthesis(request: SynthesisRequest):
+    """
+    Server-Sent Events endpoint that streams the synthesis token-by-token.
+    On completion emits a final JSON event with the full output_id and download URL.
+    """
+    context, inferred_topic = synthesis_manager._resolve_context(request.content_ids)
+    instructions = request.instructions.strip()
+    topic = instructions or inferred_topic
+    ctx_block = f"\n\nKnowledge base:\n{context[:4000]}" if context else ""
+    otype = request.output_type
+
+    label_map = {
+        "report": "Report", "review": "Scientific Review", "analysis": "Analysis",
+        "dissertation": "Dissertation", "dossier": "Intelligence Dossier",
+    }
+
+    if otype in label_map:
+        doc_label = label_map[otype]
+        prompt = (
+            f'You are a world-class analyst. Write a thorough professional {doc_label} on: "{topic}".{ctx_block}\n\n'
+            f"Format as clean markdown with sections: Abstract, Introduction, Analysis, Discussion, Conclusion. "
+            f"Be specific and cite knowledge base content where relevant."
+        )
+    elif otype in ("presentation", "video"):
+        prompt = (
+            f'Create a 10-slide executive presentation on: "{topic}".{ctx_block}\n\n'
+            "Return a JSON array of 10 slide objects, each with: id (int), title (str), content (str), narration (str)."
+        )
+    elif otype == "website":
+        prompt = (
+            f'Write a complete single-page HTML5 website about: "{topic}".{ctx_block}\n\n'
+            "Dark theme: background #0b0f19, accent #64ffda, text #e2e8f0. "
+            "Include: hero, key findings, features grid, CTA. Return full HTML only."
+        )
+    elif otype == "business_model":
+        prompt = (
+            f'Generate a comprehensive Business Model Canvas for: "{topic}".{ctx_block}\n\n'
+            "Return a JSON object with: title, value_proposition, customer_segments, channels, "
+            "revenue_streams, key_resources, key_activities, key_partners, cost_structure, "
+            "market_opportunity, competitive_advantage."
+        )
+    else:
+        prompt = (
+            f'Generate a detailed {otype} document on: "{topic}".{ctx_block}\n\n'
+            "Return clean markdown."
+        )
+
+    output_id = str(uuid.uuid4())
+    timestamp = datetime.datetime.utcnow().isoformat()
+    collected: list[str] = []
+
+    async def event_stream() -> AsyncIterator[str]:
+        async for token in gateway.stream(prompt, agent=f"synthesis:stream:{otype}"):
+            collected.append(token)
+            safe = token.replace("\n", "\\n").replace("\r", "")
+            yield f"data: {json.dumps({'token': safe})}\n\n"
+
+        # Persist full content
+        content = "".join(collected)
+        ext = "html" if otype == "website" else ("json" if otype in ("presentation", "video", "audiobook", "business_model", "simulation") else "md")
+        output_path = synthesis_manager.output_dir / f"{output_id}.{ext}"
+        output_path.write_text(content, encoding="utf-8")
+        synthesis_manager.history.append({
+            "output_id": output_id,
+            "output_url": f"/api/v1/synthesis/download/{output_id}",
+            "content": content,
+            "metadata": {"type": otype, "format": ext, "title": topic},
+            "timestamp": timestamp,
+        })
+
+        yield f"data: {json.dumps({'done': True, 'output_id': output_id, 'download_url': f'/api/v1/synthesis/download/{output_id}', 'timestamp': timestamp})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @router.get("/history", response_model=List[SynthesisOutput])

@@ -7,7 +7,7 @@ import {
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye,
   HeartPulse, Workflow, Search, Smartphone, Globe2, Layers, Factory, ChevronDown,
-  FolderOpen
+  FolderOpen, Folders, Building2, Users, TrendingUp, Copy
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -27,12 +27,18 @@ const allNavItems: NavItem[] = [
     icon: Zap,
     id: 'prod-facet',
     subItems: [
-      { name: 'AI CEO', icon: MessageSquare, id: 'ceo' },
-      { name: 'Synthesis Studio', icon: Sparkles, id: 'synthesis' },
-      { name: 'Build to Order', icon: Package, id: 'bto' },
-      { name: 'Marketplace · Products', icon: ShoppingBag, id: 'marketplace' },
-      { name: 'Solutions Platform', icon: Rocket, id: 'solutions' },
-      { name: 'Capital Fund', icon: DollarSign, id: 'capital' }
+      { name: 'Projects',          icon: Folders,       id: 'projects'   },
+      { name: 'AI CEO',            icon: MessageSquare, id: 'ceo'        },
+      { name: 'Factory',           icon: Factory,       id: 'factory'    },
+      { name: 'Digital Reactor',   icon: Zap,           id: 'reactor'    },
+      { name: 'Incubator',         icon: FlaskConical,  id: 'incubator'  },
+      { name: 'Creator Studio',    icon: Palette,       id: 'creator'    },
+      { name: 'Synthesis Studio',  icon: Sparkles,      id: 'synthesis'  },
+      { name: 'Build to Order',    icon: Package,       id: 'bto'        },
+      { name: 'Marketplace',       icon: ShoppingBag,   id: 'marketplace'},
+      { name: 'Entrepreneur',      icon: Briefcase,     id: 'entrepreneur'},
+      { name: 'Capital Fund',      icon: DollarSign,    id: 'capital'    },
+      { name: 'Solutions',         icon: Rocket,        id: 'solutions'  },
     ]
   },
 
@@ -41,12 +47,27 @@ const allNavItems: NavItem[] = [
     icon: Layers,
     id: 'qep-facet',
     subItems: [
-      { name: 'Religion', icon: Heart, id: 'qep-religion' },
-      { name: 'Science', icon: Microscope, id: 'science' },
-      { name: 'Education', icon: GraduationCap, id: 'education' },
-      { name: 'Law', icon: Gavel, id: 'law' },
-      { name: 'Care', icon: HeartPulse, id: 'care' },
-      { name: 'Employment', icon: Briefcase, id: 'employment' }
+      { name: 'Religion',    icon: Heart,        id: 'qep-religion' },
+      { name: 'Science',     icon: Microscope,   id: 'science' },
+      { name: 'Education',   icon: GraduationCap, id: 'education' },
+      { name: 'Law',         icon: Gavel,         id: 'law' },
+      { name: 'Care',        icon: HeartPulse,    id: 'care' },
+      { name: 'Employment',  icon: Briefcase,     id: 'employment' }
+    ]
+  },
+
+  {
+    name: 'Realms',
+    icon: Globe,
+    id: 'realms-facet',
+    subItems: [
+      { name: 'Learner Realm',    icon: BookOpen,     id: 'learner' },
+      { name: 'Knowledge Garden', icon: Book,          id: 'garden' },
+      { name: 'Scholar Realm',    icon: GraduationCap, id: 'scholar' },
+      { name: 'Observatory',      icon: Eye,           id: 'observatory' },
+      { name: 'Legacy Vault',     icon: Archive,       id: 'legacy-vault' },
+      { name: 'Enterprise',       icon: Building2,     id: 'enterprise' },
+      { name: 'Developer Portal', icon: Code2,         id: 'dev-portal' },
     ]
   },
 
@@ -55,10 +76,13 @@ const allNavItems: NavItem[] = [
     icon: Brain,
     id: 'evo-facet',
     subItems: [
-      { name: 'Genome', icon: Fingerprint, id: 'genome-explorer' },
-      { name: 'GRN Mesh', icon: Network, id: 'grn-dashboard' },
-      { name: 'Introspection', icon: Brain, id: 'introspection' },
-      { name: 'Homeostasis', icon: HeartPulse, id: 'orchestrator' }
+      { name: 'Genome',            icon: Fingerprint,  id: 'genome-explorer' },
+      { name: 'GRN Mesh',          icon: Network,      id: 'grn-dashboard' },
+      { name: 'Introspection',     icon: Brain,         id: 'introspection' },
+      { name: 'Evolution Hub',     icon: GitBranch,     id: 'evolution' },
+      { name: 'AB Testing',        icon: Target,        id: 'ab-testing' },
+      { name: 'Learning Dashboard',icon: BarChart3,     id: 'learning-dashboard' },
+      { name: 'Homeostasis',       icon: HeartPulse,    id: 'orchestrator' },
     ]
   },
 
@@ -67,10 +91,55 @@ const allNavItems: NavItem[] = [
     icon: Shield,
     id: 'gov-facet',
     subItems: [
-      { name: 'Constitution', icon: FileText, id: 'constitution' },
-      { name: 'Transparency', icon: History, id: 'transparency' },
-      { name: 'Entity Control', icon: ShieldCheck, id: 'admin' },
-      { name: 'Governance Hub', icon: Shield, id: 'governance-hub' }
+      { name: 'Governance Hub',   icon: Shield,       id: 'governance-hub' },
+      { name: 'Constitution',     icon: FileText,     id: 'constitution' },
+      { name: 'The Sanctum',      icon: Star,          id: 'sanctum' },
+      { name: 'DAO Dashboard',    icon: Globe2,        id: 'dao' },
+      { name: 'Delegation',       icon: Users,         id: 'delegation' },
+      { name: 'Credentials',      icon: Fingerprint,   id: 'credentials' },
+      { name: 'Council',          icon: Scale,         id: 'council' },
+      { name: 'Entity Control',   icon: ShieldCheck,   id: 'admin' },
+    ]
+  },
+
+  {
+    name: 'Intelligence',
+    icon: Cpu,
+    id: 'intel-facet',
+    subItems: [
+      { name: 'Civilization Brain', icon: Globe,      id: 'civilization' },
+      { name: 'Reality Dashboard',  icon: Radio,      id: 'reality' },
+      { name: 'Grand Ops',          icon: Gauge,      id: 'grand-ops' },
+      { name: 'Prediction Market',  icon: TrendingUp, id: 'prediction-market' },
+      { name: 'CFO Analytics',      icon: DollarSign, id: 'cfo' },
+      { name: 'CTO Infrastructure', icon: Cpu,        id: 'cto' },
+      { name: 'CoE Hub',            icon: Trophy,     id: 'coe' },
+    ]
+  },
+
+  {
+    name: 'Profile',
+    icon: User,
+    id: 'profile-facet',
+    subItems: [
+      { name: 'Wallet',        icon: DollarSign, id: 'wallet' },
+      { name: 'Impact',        icon: Activity,   id: 'impact' },
+      { name: 'Soul Record',   icon: Archive,    id: 'soul-record' },
+    ]
+  },
+
+  {
+    name: 'Federation',
+    icon: Map,
+    id: 'fed-facet',
+    subItems: [
+      { name: 'Federation Portal',    icon: Globe,      id: 'federation' },
+      { name: 'Federation Map',       icon: Map,        id: 'fed-map' },
+      { name: 'Join Federation',      icon: Plus,       id: 'join-federation' },
+      { name: 'Twin Management',      icon: Copy,       id: 'twin-management' },
+      { name: 'Workstation Explorer', icon: Search,     id: 'workstation-explorer' },
+      { name: 'Treaty Studio',        icon: FileText,   id: 'treaty-studio' },
+      { name: 'Orbital',              icon: Satellite,  id: 'orbital' },
     ]
   },
 
@@ -79,11 +148,14 @@ const allNavItems: NavItem[] = [
     icon: Settings,
     id: 'adv-facet',
     subItems: [
-      { name: 'The Forge', icon: Terminal, id: 'forge' },
-      { name: 'AR/VR Lab', icon: Camera, id: 'ar-vr' },
-      { name: 'Federation', icon: Map, id: 'fed-map' },
-      { name: 'File Hub', icon: FolderOpen, id: 'file-hub' },
-      { name: 'System Settings', icon: Settings, id: 'settings' }
+      { name: 'The Forge',        icon: Terminal,    id: 'forge' },
+      { name: 'Dev Marketplace',  icon: ShoppingBag, id: 'dev-marketplace' },
+      { name: 'File Hub',         icon: FolderOpen,  id: 'file-hub' },
+      { name: 'AR/VR Lab',        icon: Camera,      id: 'ar-vr' },
+      { name: 'Physical',         icon: Wifi,        id: 'physical' },
+      { name: 'Audit Portal',     icon: ShieldCheck, id: 'audit-portal' },
+      { name: 'Security Bounty',  icon: Shield,      id: 'security/bounty' },
+      { name: 'System Settings',  icon: Settings,    id: 'settings' },
     ]
   }
 ];

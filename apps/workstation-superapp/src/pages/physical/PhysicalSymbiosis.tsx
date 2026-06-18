@@ -66,7 +66,7 @@ export const PhysicalSymbiosis: React.FC = () => {
                    </div>
                    <h4 className="text-xl font-bold mb-1">{dev.name}</h4>
                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">{dev.protocol} Protocol</p>
-                   <button onClick={() => notImplemented('Configure Device')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all mt-auto">Configure Device</button>
+                   <button type="button" onClick={() => notImplemented('Configure Device')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all mt-auto">Configure Device</button>
                 </div>
               ))}
            </div>

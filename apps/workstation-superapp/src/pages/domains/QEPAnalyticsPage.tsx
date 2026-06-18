@@ -27,9 +27,8 @@ const QEPAnalyticsPage: React.FC = () => {
             <Lock className="text-[#00F2FF]" size={20} />
           </div>
           <div className="text-3xl font-bold">0.42 / 1.0</div>
-          <div className="mt-4 h-2 bg-slate-900 rounded-full overflow-hidden">
-            <div className="h-full bg-[#00F2FF]" style={{ width: '42%' }}></div>
-          </div>
+          <progress value={42} max={100} aria-label="Privacy budget 42%"
+            className="mt-4 w-full h-2 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-900 [&::-webkit-progress-value]:bg-[#00F2FF] [&::-moz-progress-bar]:bg-[#00F2FF]" />
           <p className="text-xs text-slate-500 mt-2">Differential Privacy Level: HIGH</p>
         </div>
 
@@ -70,9 +69,8 @@ const QEPAnalyticsPage: React.FC = () => {
                   <span className="text-slate-400">{item.label}</span>
                   <span className="text-white font-mono">{item.val}%</span>
                 </div>
-                <div className="h-1.5 bg-slate-900 rounded-full">
-                  <div className="h-full bg-[#00F2FF]" style={{ width: `${item.val}%` }}></div>
-                </div>
+                <progress value={item.val} max={100} aria-label={`${item.label} ${item.val}%`}
+                  className="w-full h-1.5 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-900 [&::-webkit-progress-value]:bg-[#00F2FF] [&::-moz-progress-bar]:bg-[#00F2FF]" />
               </div>
             ))}
           </div>

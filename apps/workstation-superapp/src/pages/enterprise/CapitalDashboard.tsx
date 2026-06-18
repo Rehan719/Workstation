@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Card, Button, Badge, toast } from '@workstation/ui';
 import {
   TrendingUp, ShieldAlert, PieChart, Activity,
@@ -19,6 +20,15 @@ interface CapitalMetrics {
   homeostasisStatus: 'stable' | 'minor_deviation' | 'major_deviation';
 }
 
+interface PortfolioStats {
+  total_projects: number;
+  by_stage: { concept: number; prototype: number; commercialise: number };
+  by_realm: Record<string, number>;
+  total_outputs: number;
+  active: number;
+  complete: number;
+}
+
 interface MarketFeed {
   symbol: string;
   price: number;
@@ -27,21 +37,36 @@ interface MarketFeed {
 
 export const CapitalDashboard: React.FC = () => {
   const [metrics, setMetrics] = useState<CapitalMetrics | null>(null);
+  const [portfolio, setPortfolio] = useState<PortfolioStats | null>(null);
   const [feeds, setFeeds] = useState<MarketFeed[]>([]);
   const [autonomousEnabled, setAutonomousEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'external' | 'crypto' | 'evolution'>('overview');
   const [votedAmendments, setVotedAmendments] = useState<string[]>([]);
 
   useEffect(() => {
-    // Simulated fetch for Phase 3
-    setMetrics({
-      balance: 12500,
-      totalDeposited: 10000,
-      unrealisedProfit: 1500,
-      realisedProfit: 1000,
-      riskScore: 0.92,
-      homeostasisStatus: 'stable'
-    });
+    // Derive capital metrics from real project portfolio data
+    axios.get<PortfolioStats>('/api/v1/projects/stats/summary', { validateStatus: () => true })
+      .then(res => {
+        if (res.status === 200) {
+          const s = res.data;
+          setPortfolio(s);
+          // Map project counts to capital-metaphor metrics
+          setMetrics({
+            balance:             s.total_projects * 1000 + s.total_outputs * 250,
+            totalDeposited:      s.total_projects * 1000,
+            unrealisedProfit:    s.by_stage.prototype * 500 + s.by_stage.concept * 100,
+            realisedProfit:      s.complete * 2500,
+            riskScore:           s.total_projects === 0 ? 0 : Math.min(0.99, 0.6 + s.complete / Math.max(s.total_projects, 1) * 0.39),
+            homeostasisStatus:   s.active > 0 ? 'minor_deviation' : 'stable',
+          });
+        } else {
+          // Graceful fallback so the page still renders without backend
+          setMetrics({ balance: 0, totalDeposited: 0, unrealisedProfit: 0, realisedProfit: 0, riskScore: 0, homeostasisStatus: 'stable' });
+        }
+      })
+      .catch(() => {
+        setMetrics({ balance: 0, totalDeposited: 0, unrealisedProfit: 0, realisedProfit: 0, riskScore: 0, homeostasisStatus: 'stable' });
+      });
 
     setFeeds([
       { symbol: 'BTC/USD', price: 65420, change: 2.4 },
@@ -104,27 +129,60 @@ export const CapitalDashboard: React.FC = () => {
       </div>
 
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 @[440px]:grid-cols-4 gap-6">
-            <Card className="p-6 bg-slate-900/50 border-slate-800">
-            <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Current AUM</p>
-            <p className="text-3xl font-black text-white">${metrics?.balance.toLocaleString()}</p>
-            </Card>
-            <Card className="p-6 bg-slate-900/50 border-slate-800">
-            <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Real-Time Volatility</p>
-            <p className="text-3xl font-black text-aura">14.5%</p>
-            </Card>
-            <Card className="p-6 bg-slate-900/50 border-slate-800">
-            <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">PQC Trust Score</p>
-            <div className="flex items-center gap-2">
-                <Activity className="text-green-500" size={20} />
-                <p className="text-3xl font-black text-white">100%</p>
+        <div className="space-y-6">
+          {/* Live portfolio stats sourced from /api/v1/projects/stats/summary */}
+          {portfolio && (
+            <div className="grid grid-cols-2 @[440px]:grid-cols-4 gap-4">
+              <Card className="p-4 bg-slate-900/50 border-slate-800">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Projects</p>
+                <p className="text-2xl font-black text-white">{portfolio.total_projects}</p>
+                <p className="text-[8px] text-slate-600 mt-0.5">{portfolio.active} active</p>
+              </Card>
+              <Card className="p-4 bg-slate-900/50 border-slate-800">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Outputs</p>
+                <p className="text-2xl font-black text-aura">{portfolio.total_outputs}</p>
+                <p className="text-[8px] text-slate-600 mt-0.5">AI artifacts generated</p>
+              </Card>
+              <Card className="p-4 bg-slate-900/50 border-slate-800">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Commercialised</p>
+                <p className="text-2xl font-black text-green-400">{portfolio.complete}</p>
+                <p className="text-[8px] text-slate-600 mt-0.5">of {portfolio.total_projects} projects</p>
+              </Card>
+              <Card className="p-4 bg-slate-900/50 border-slate-800">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Stage Pipeline</p>
+                <div className="flex gap-1 mt-1">
+                  {(['concept', 'prototype', 'commercialise'] as const).map(s => (
+                    <div key={s} className="flex-1 text-center">
+                      <p className="text-sm font-black text-white">{portfolio.by_stage[s]}</p>
+                      <p className="text-[7px] text-slate-600 capitalize">{s.slice(0,4)}</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
             </div>
+          )}
+          <div className="grid grid-cols-1 @[440px]:grid-cols-4 gap-6">
+            <Card className="p-6 bg-slate-900/50 border-slate-800">
+              <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Portfolio Value</p>
+              <p className="text-3xl font-black text-white">${metrics?.balance.toLocaleString() ?? '—'}</p>
+            </Card>
+            <Card className="p-6 bg-slate-900/50 border-slate-800">
+              <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Unrealised Gain</p>
+              <p className="text-3xl font-black text-aura">${metrics?.unrealisedProfit.toLocaleString() ?? '—'}</p>
+            </Card>
+            <Card className="p-6 bg-slate-900/50 border-slate-800">
+              <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Risk Score</p>
+              <div className="flex items-center gap-2">
+                <Activity className="text-green-500" size={20} />
+                <p className="text-3xl font-black text-white">{metrics ? (metrics.riskScore * 100).toFixed(0) : '—'}%</p>
+              </div>
             </Card>
             <Card className="p-6 bg-aura/10 border-aura/20">
-                <Button onClick={() => handleAction("Autonomous rebalance triggered.")} className="w-full h-full bg-aura text-slate-950 font-black hover:bg-white transition-all uppercase italic flex items-center gap-2">
-                    <Zap size={16} /> Rebalance
-                </Button>
+              <Button onClick={() => handleAction("Autonomous rebalance triggered.")} className="w-full h-full bg-aura text-slate-950 font-black hover:bg-white transition-all uppercase italic flex items-center gap-2">
+                <Zap size={16} /> Rebalance
+              </Button>
             </Card>
+          </div>
         </div>
       )}
 

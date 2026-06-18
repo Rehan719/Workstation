@@ -42,6 +42,9 @@ from agentic_core.career import api as career_api
 from agentic_core.api import council_judiciary
 from agentic_core.avatars import api as avatar_api
 from agentic_core.analysis import api as workstation_meta_api
+from agentic_core.projects import api as projects_api
+from agentic_core.api import products as products_api
+from agentic_core.api import marketplace as marketplace_api
 from prometheus_client import make_asgi_app, Counter, Histogram
 import time
 
@@ -152,14 +155,28 @@ class ConnectionManager:
             logger.info(f"WebSocket Client Disconnected. Active: {len(self.active_connections)}")
 
     async def broadcast_vitals(self):
+        try:
+            import psutil as _psutil
+            from agentic_core.projects.api import _all_projects
+            _projects = _all_projects()
+            cpu = _psutil.cpu_percent(interval=None)
+            mem = _psutil.virtual_memory().percent
+            active = sum(1 for p in _projects if p.status == "running")
+        except Exception:
+            cpu = 0.0
+            mem = 0.0
+            active = 0
+            _projects = []
         vitals = {
             "type": "SYSTEM_VITALS",
             "payload": {
-                "cpu": random.uniform(10, 30),
-                "memory": random.uniform(5, 15),
-                "activeAgents": 42,
-                "swarmHealth": 0.98,
-                "latency_ms": 18
+                "cpu": cpu,
+                "memory": mem,
+                "activeAgents": active,
+                "totalProjects": len(_projects) if '_projects' in dir() else 0,
+                "swarmHealth": min(1.0, 0.7 + (len(_projects) * 0.01) if '_projects' in dir() else 0.7),
+                "connections": len(self.active_connections),
+                "latency_ms": 12,
             }
         }
         disconnected = []
@@ -265,6 +282,9 @@ app.include_router(career_api.router, prefix="/api/v1")
 app.include_router(council_judiciary.router, prefix="/api")
 app.include_router(avatar_api.router, prefix="/api/v1")
 app.include_router(workstation_meta_api.router, prefix="/api/v1")
+app.include_router(projects_api.router, prefix="/api/v1")
+app.include_router(products_api.router)  # Reactor / Factory / Incubator / Intelligence
+app.include_router(marketplace_api.router)  # Marketplace listings + WST purchase
 
 app.add_middleware(
     CORSMiddleware,
@@ -276,15 +296,14 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"message": "Jules AI v120.0 Apotheosis of Synergy Master Backend is operational."}
+    return {"message": "Workstation — Intelligent Digital Biomimetic Organism v1.0 is operational."}
 
 @app.get("/api/v1/status")
 async def get_status():
     return {
-        "organism_id": "JULES-v128-SOVEREIGN",
-        "fidelity": 0.9998,
-        "articles": 750,
-        "mode": "UNIVERSAL-COMPLETION-INSTITUTIONAL-LEADERSHIP",
+        "organism_id": "WORKSTATION-SOVEREIGN",
+        "version": "1.0.0",
+        "mode": "ACTIVE",
         "governance": policy.bms.generate_performance_report()
     }
 
@@ -365,3 +384,98 @@ async def health():
 @app.get("/health")
 async def health_root():
     return {"status": "healthy", "version": "128.0.0"}
+
+@app.get("/api/v1/claude/status")
+async def claude_status():
+    """Reports whether an Anthropic API key is configured."""
+    return {"authenticated": bool(os.getenv("ANTHROPIC_API_KEY"))}
+
+
+# ── Forge: real chained AI pipeline ──────────────────────────────────────────
+from pydantic import BaseModel as _BaseModel
+from typing import List as _List
+
+class _PipelineStep(_BaseModel):
+    name: str
+    instruction: str
+
+class _PipelineRequest(_BaseModel):
+    steps: _List[_PipelineStep]
+    context: str = ""
+
+@app.post("/api/v1/forge/pipeline")
+async def forge_pipeline(req: _PipelineRequest):
+    """
+    Run a multi-step AI pipeline.  Each step receives the previous step's
+    output as context, then streams its own result as SSE.
+
+    SSE events:
+      {"step": 0, "name": "...", "token": "..."}   — incremental token
+      {"step": 0, "name": "...", "done": true}      — step complete
+      {"pipeline_done": true}                        — all steps complete
+      {"error": "..."}                               — on failure
+    """
+    from fastapi.responses import StreamingResponse
+    from agentic_core.ai.gateway import gateway
+    import json
+
+    async def stream():
+        carry = req.context
+        try:
+            for idx, step in enumerate(req.steps):
+                prompt = (
+                    f"You are a multi-step AI pipeline executor. "
+                    f"Step {idx + 1} of {len(req.steps)}: {step.instruction}\n\n"
+                    + (f"Previous output:\n{carry}\n\n" if carry else "")
+                    + "Produce the output for this step now. Be specific and complete."
+                )
+                step_text = ""
+                async for token in gateway.stream(prompt, agent="forge"):
+                    step_text += token
+                    payload = json.dumps({"step": idx, "name": step.name, "token": token.replace("\n","\\n")})
+                    yield f"data: {payload}\n\n"
+                carry = step_text
+                yield f'data: {{"step": {idx}, "name": {json.dumps(step.name)}, "done": true}}\n\n'
+            yield f'data: {{"pipeline_done": true, "steps_completed": {len(req.steps)}}}\n\n'
+        except Exception as exc:
+            yield f'data: {{"error": {json.dumps(str(exc))}}}\n\n'
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+@app.get("/api/v1/biometrics/status")
+async def biometrics_status():
+    """Workstation system biometrics — derived from real process/time data."""
+    import datetime, psutil as _psutil
+    now = datetime.datetime.utcnow()
+    hour = now.hour
+    if 6 <= hour < 12:
+        cycle = "ACTIVE_FOCUS"
+    elif 12 <= hour < 14:
+        cycle = "ACTIVE_REST"
+    elif 14 <= hour < 20:
+        cycle = "ACTIVE_FOCUS"
+    elif 20 <= hour < 23:
+        cycle = "MAINTENANCE_FOCUS"
+    else:
+        cycle = "MAINTENANCE_REST"
+    try:
+        cpu = _psutil.cpu_percent(interval=0.1)
+        mem = _psutil.virtual_memory().percent
+        resource_flow = max(0, 100 - int(cpu * 0.6 + mem * 0.4))
+    except Exception:
+        resource_flow = 80
+        cpu = 0
+        mem = 0
+    return {
+        "circadian": {"cycle": cycle},
+        "cardiovascular": {"resource_flow": resource_flow, "peristaltic_delay": max(1, int(cpu / 10))},
+        "cognition": {
+            "state": "STABLE" if cpu < 80 else "STRESSED",
+            "primary_drive": "ACHIEVEMENT",
+        },
+        "communication": {"active_channels": [], "neurotransmitter": "Serotonin", "is_active": False},
+    }

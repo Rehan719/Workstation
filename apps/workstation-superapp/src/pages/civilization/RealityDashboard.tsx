@@ -78,7 +78,7 @@ export const RealityDashboard: React.FC = () => {
                     <p className="text-[10px] font-black text-slate-500 uppercase">Simulated Yield (T-Alpha)</p>
                     <p className="text-xl font-black text-aura">+142,000 WST</p>
                  </div>
-                 <button onClick={() => notImplemented('Allocate Multi-Verse Grant')} className="w-full py-4 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Allocate Multi-Verse Grant</button>
+                 <button type="button" onClick={() => notImplemented('Allocate Multi-Verse Grant')} className="w-full py-4 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Allocate Multi-Verse Grant</button>
               </div>
            </section>
 

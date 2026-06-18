@@ -6,16 +6,17 @@ export const useWebSocket = (url: string) => {
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host === 'localhost:5173' ? 'localhost:8000' : window.location.host;
+    // Always route WS to the backend port (8000), regardless of Vite dev port
+    const isLocalDev = window.location.hostname === 'localhost';
+    const host = isLocalDev ? 'localhost:8000' : window.location.host;
     try {
       ws.current = new WebSocket(`${protocol}//${host}${url}`);
-    } catch (e) {
-      console.warn("WebSocket initialization failed:", e);
+    } catch (_e) {
       return;
     }
 
-    ws.current.onerror = (error) => {
-      console.warn("WebSocket error for", url, "- falling back to polling or static data.");
+    ws.current.onerror = () => {
+      // Backend WS unavailable — component falls back to static data via axios
     };
 
     ws.current.onmessage = (event) => {

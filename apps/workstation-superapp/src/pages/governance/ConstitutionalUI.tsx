@@ -65,7 +65,7 @@ export const ConstitutionalUI: React.FC = () => {
                      <div className="h-full bg-aura w-[96%]" />
                   </div>
                </div>
-               <Button onClick={() => notImplemented('Propose Amendment')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">
+               <Button type="button" onClick={() => notImplemented('Propose Amendment')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">
                   <Sparkles size={18} /> Propose Amendment
                </Button>
             </Card>
@@ -83,7 +83,7 @@ export const ConstitutionalUI: React.FC = () => {
                </div>
                <div className="flex flex-wrap gap-2">
                   {['CORE', 'ETERNAL', 'COSMIC', 'CARE'].map(cat => (
-                    <button key={cat} onClick={() => setSearch(cat)} className="px-3 py-1 rounded-lg bg-slate-900 text-[8px] font-black text-slate-500 hover:text-aura transition-all">{cat}</button>
+                    <button type="button" key={cat} onClick={() => setSearch(cat)} className="px-3 py-1 rounded-lg bg-slate-900 text-[8px] font-black text-slate-500 hover:text-aura transition-all">{cat}</button>
                   ))}
                </div>
             </Card>

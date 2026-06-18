@@ -80,7 +80,7 @@ const PriorityItem = ({ title, votes, theme }: any) => (
     <span className="font-bold text-sm">{title}</span>
     <div className="flex items-center gap-4">
        <span className="text-xs font-black text-aura uppercase tracking-widest">{votes} Resonance</span>
-       <button onClick={() => notImplemented('This action')}
+       <button type="button" onClick={() => notImplemented('This action')}
          className={`p-2 rounded-lg transition-all ${
            theme === 'advanced' ? 'bg-aura/10 text-aura hover:bg-aura hover:text-sovereign' : 'bg-slate-700 text-white hover:bg-aura hover:text-sovereign'
          }`}

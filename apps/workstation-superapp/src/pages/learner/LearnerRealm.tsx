@@ -109,7 +109,7 @@ export const LearnerRealm: React.FC = () => {
                        </div>
                      ))}
                   </div>
-                  <button onClick={() => notImplemented('Join Sync Session')} className="px-8 py-3 bg-white text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Join Sync Session</button>
+                  <button type="button" onClick={() => notImplemented('Join Sync Session')} className="px-8 py-3 bg-white text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Join Sync Session</button>
                </div>
             </Card>
          </div>

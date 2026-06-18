@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, ThumbsUp, ThumbsDown, MoreHorizontal, X, WifiOff, RefreshCw, ChevronLeft } from 'lucide-react';
+import { Send, Bot, User, ThumbsUp, ThumbsDown, MoreHorizontal, X, WifiOff, RefreshCw, ChevronLeft, FolderPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const CEOChat: React.FC = () => {
@@ -172,6 +172,18 @@ export const CEOChat: React.FC = () => {
         </div>
 
         <div className="flex gap-2 relative items-center">
+          {/* Create Project CTA appears after first CEO exchange */}
+          {messages.length > 1 && (
+            <button
+              type="button"
+              onClick={() => navigate('/projects?realm=enterprise&domain=saas&new=1')}
+              title="Create a project from this discussion"
+              aria-label="Create project"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-aura/40 text-aura hover:bg-aura/10 transition-colors"
+            >
+              <FolderPlus size={12} /> New Project
+            </button>
+          )}
           {aiStatus !== 'online' && (
             <button
               type="button"

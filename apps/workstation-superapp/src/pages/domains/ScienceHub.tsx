@@ -1,5 +1,7 @@
+import { StartProjectCTA } from '../../components/StartProjectCTA';
 import React, { useState } from 'react';
-import { Card, Badge, Button, notImplemented} from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
+import { Card, Badge, Button } from '@workstation/ui';
 import { BookOpen, Heart, Sparkles, MessageCircle, History, Info, ShieldCheck, Zap, Globe, HeartPulse, Network, Binary, Compass, Anchor, Wind, Layers, Microscope } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +10,7 @@ import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 
 export const ScienceHub: React.FC = () => {
+  const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState('research');
 
@@ -23,12 +26,13 @@ export const ScienceHub: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button onClick={() => notImplemented('Lab Notes')} variant="outline"><History size={18} /> Lab Notes</Button>
-           <Button onClick={() => notImplemented('New Experiment')} className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
+           <Button type="button" onClick={() => navigate('/projects?realm=science&domain=research')} variant="outline"><History size={18} /> Lab Notes</Button>
+           <Button type="button" onClick={() => navigate('/reactor?domain=science')} className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
               <Microscope size={18} /> New Experiment
            </Button>
         </div>
       </header>
+      <StartProjectCTA realm="science" domain="research" />
 
       <Card className="p-10 space-y-10">
          <div className="flex justify-between items-center border-b border-white/5 pb-8">
@@ -37,8 +41,8 @@ export const ScienceHub: React.FC = () => {
                Scholarly Engines
             </h3>
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
-               <button onClick={() => setActiveTab('research')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'research' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Research</button>
-               <button onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
+               <button type="button" onClick={() => setActiveTab('research')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'research' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Research</button>
+               <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
 

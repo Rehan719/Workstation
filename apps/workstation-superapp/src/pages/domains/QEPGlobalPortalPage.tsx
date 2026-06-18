@@ -139,13 +139,12 @@ export const QEPGlobalPortal: React.FC = () => {
                           <span className="text-emerald-500">{stat.growth}</span>
                        </div>
                     </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                       <div className={`h-full ${stat.color}`} style={{ width: `${(parseInt(stat.users)/5).toFixed(0)}%` }}></div>
-                    </div>
+                    <progress value={parseInt(stat.users)} max={500} aria-label={`${stat.users} users`}
+                       className="w-full h-1.5 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-100 [&::-webkit-progress-value]:bg-emerald-500 [&::-moz-progress-bar]:bg-emerald-500" />
                  </div>
                ))}
             </div>
-            <button onClick={() => notImplemented('AI Translation Pipeline Status')} className="w-full mt-4 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase hover:bg-black transition-colors">
+            <button type="button" onClick={() => notImplemented('AI Translation Pipeline Status')} className="w-full mt-4 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase hover:bg-black transition-colors">
               AI Translation Pipeline Status
             </button>
           </div>

@@ -3,6 +3,8 @@ import datetime
 import uuid
 import hashlib
 import json
+import os
+from pathlib import Path
 from typing import Dict, Any, List, Optional
 from enum import Enum
 from cryptography.hazmat.primitives.asymmetric import ed25519
@@ -29,10 +31,52 @@ class TokenLedger:
             UserTier.PRO: 50000,
             UserTier.ENTERPRISE: 1000000
         }
+        self._snapshot_path = Path(os.getenv("DATA_DIR", "data")) / "token_ledger_snapshot.json"
         # Generate a system private key for signing transactions (simulating a central mint/validator)
         self._system_private_key = ed25519.Ed25519PrivateKey.generate()
         self._system_public_key = self._system_private_key.public_key()
         self.last_tx_hash = hashlib.sha256(b"GENESIS").hexdigest()
+        self._load_snapshot()
+
+    def _load_snapshot(self):
+        """Restore balances/tiers from disk on boot."""
+        try:
+            if self._snapshot_path.exists():
+                data = json.loads(self._snapshot_path.read_text())
+                for uid, rec in data.get("ledgers", {}).items():
+                    tier = UserTier(rec.get("tier", "FREE"))
+                    self.ledgers[uid] = {
+                        "balance": rec.get("balance", 0.0),
+                        "tier": tier,
+                        "total_consumed": rec.get("total_consumed", 0.0),
+                        "last_refill": rec.get("last_refill", datetime.datetime.now().isoformat()),
+                        "created_at": rec.get("created_at", datetime.datetime.now().isoformat()),
+                        "public_key": rec.get("public_key", ""),
+                    }
+                self.last_tx_hash = data.get("last_tx_hash", self.last_tx_hash)
+        except Exception as exc:
+            logger.warning("TokenLedger: could not load snapshot: %s", exc)
+
+    def _save_snapshot(self):
+        """Persist balances/tiers to disk after any mutation."""
+        try:
+            self._snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+            serializable = {
+                uid: {
+                    "balance": rec["balance"],
+                    "tier": rec["tier"].value if isinstance(rec["tier"], UserTier) else rec["tier"],
+                    "total_consumed": rec["total_consumed"],
+                    "last_refill": rec["last_refill"],
+                    "created_at": rec["created_at"],
+                    "public_key": rec.get("public_key", ""),
+                }
+                for uid, rec in self.ledgers.items()
+            }
+            self._snapshot_path.write_text(json.dumps(
+                {"ledgers": serializable, "last_tx_hash": self.last_tx_hash}, indent=2
+            ))
+        except Exception as exc:
+            logger.warning("TokenLedger: could not save snapshot: %s", exc)
 
     def initialize_user(self, user_id: str, tier: UserTier = UserTier.FREE, airdrop_bonus: float = 100.0):
         if user_id not in self.ledgers:
@@ -54,6 +98,7 @@ class TokenLedger:
                 ).hex()
             }
             logger.info(f"TokenLedger: Initialized user {user_id} with {tier.value} tier and cryptographic identity.")
+            self._save_snapshot()
 
     def consume_tokens(self, user_id: str, amount: float, activity: str) -> bool:
         if user_id not in self.ledgers:
@@ -92,6 +137,7 @@ class TokenLedger:
 
         self.transactions.append(transaction)
         logger.info(f"TokenLedger: User {user_id} consumed {amount} WST. TX Hash: {new_hash[:10]}...")
+        self._save_snapshot()
         return True
 
     def mint(self, to_user: str, amount: float, reason: str = "Admin Minting") -> bool:
@@ -122,6 +168,7 @@ class TokenLedger:
             "hash": new_hash
         })
         logger.info(f"TokenLedger: Minted {amount} WST for {to_user}. Hash: {new_hash[:10]}...")
+        self._save_snapshot()
         return True
 
     async def deduct_tokens(self, user_id: str, amount: float, reason: str) -> bool:
@@ -154,6 +201,7 @@ class TokenLedger:
             "signature": signature.hex(),
             "hash": new_hash
         })
+        self._save_snapshot()
 
     def transfer(self, from_user: str, to_user: str, amount: float, reason: str = "P2P Transfer") -> bool:
         """ARTICLE 626: Secure token transfer between users."""
@@ -186,6 +234,7 @@ class TokenLedger:
             "signature": signature.hex(),
             "hash": new_hash
         })
+        self._save_snapshot()
         return True
 
     def get_ledger_report(self, user_id: str) -> Dict[str, Any]:

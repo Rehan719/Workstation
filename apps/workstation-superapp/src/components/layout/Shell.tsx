@@ -64,7 +64,8 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
 
   const biometrics = useWorkstationBiometrics();
 
-  useResilientWebSocket('ws://localhost:8000/api/v154/ws/streams', (data) => {
+  const _wsBase = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000').replace(/^http/, 'ws');
+  useResilientWebSocket(`${_wsBase}/api/v154/ws/streams`, (data) => {
     if (data.type === 'SYSTEM_VITALS') {
       updateSystemVitals(data.payload);
     }

@@ -14,12 +14,11 @@ const HifzProgress: React.FC<HifzProgressProps> = ({ juzMemorized }) => {
         <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Hifz Tracker</h3>
         <span className="text-xs font-black text-aura">{juzMemorized}/{totalJuz} Juz</span>
       </div>
-      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-aura to-sovereign transition-all duration-1000"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
+      <progress
+        value={percentage} max={100}
+        aria-label={`Hifz progress ${percentage.toFixed(0)}%`}
+        className="w-full h-2 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-800 [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-aura [&::-webkit-progress-value]:to-sovereign [&::-moz-progress-bar]:bg-aura"
+      />
       <p className="mt-4 text-[9px] font-bold text-slate-600 uppercase tracking-widest text-center">
         Next milestone: Juz {juzMemorized + 1}
       </p>

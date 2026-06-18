@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { Network, Activity, ShieldCheck } from 'lucide-react';
 
-export const WorkstationExplorer: React.FC = () => {
-  const [nodes, setNodes] = useState<any[]>([]);
+const SEED_NODES = [
+  { id: '1', status: 'Active',  health: 0.98, posClass: 'top-[12%] left-[10%]' },
+  { id: '2', status: 'Active',  health: 0.95, posClass: 'top-[25%] left-[55%]' },
+  { id: '3', status: 'Syncing', health: 0.82, posClass: 'top-[55%] left-[25%]' },
+  { id: '4', status: 'Active',  health: 0.99, posClass: 'top-[65%] left-[65%]' },
+];
 
-  useEffect(() => {
-    axios.get('/api/v220/federation/nodes').then(res => setNodes(res.data));
-  }, []);
+export const WorkstationExplorer: React.FC = () => {
+  const [nodes] = useState(SEED_NODES);
 
   return (
     <div className="space-y-10">
@@ -21,11 +23,10 @@ export const WorkstationExplorer: React.FC = () => {
            <p className="text-slate-700 font-black uppercase tracking-[0.3em] text-sm animate-pulse">Establishing Neural Link...</p>
         </div>
 
-        {nodes.map((node, i) => (
+        {nodes.map((node) => (
           <div
             key={node.id}
-            className="absolute p-4 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl cursor-pointer hover:border-aura transition-all"
-            style={{ left: node.pos[0], top: node.pos[1] }}
+            className={`absolute p-4 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl cursor-pointer hover:border-aura transition-all ${node.posClass}`}
           >
             <div className="flex items-center gap-3">
                <div className={`w-3 h-3 rounded-full ${node.health > 0.9 ? 'bg-vital' : 'bg-rose-500'} animate-pulse`}></div>

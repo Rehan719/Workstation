@@ -16,7 +16,6 @@ export const useResilientWebSocket = (url: string, onMessage: (data: any) => voi
     ws.current = new WebSocket(url);
 
     ws.current.onopen = () => {
-      console.log('Sovereign Stream Connected');
       setStatus('CONNECTED');
       retryCount.current = 0;
     };
@@ -31,7 +30,6 @@ export const useResilientWebSocket = (url: string, onMessage: (data: any) => voi
     };
 
     ws.current.onclose = () => {
-      console.log('Sovereign Stream Disconnected. Reconnecting...');
       setStatus('DISCONNECTED');
 
       // Exponential backoff

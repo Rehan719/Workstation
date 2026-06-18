@@ -69,9 +69,15 @@ const QuotaCard: React.FC<{ quota: QuotaInfo }> = ({ quota }) => {
           {quota.health.toUpperCase()}
         </span>
       </div>
-      <div className="h-2 bg-slate-700 rounded-full overflow-hidden mb-3">
-        <div className={`h-full ${color}`} style={{ width: `${percentage}%` }}></div>
-      </div>
+      <progress
+        value={percentage} max={100}
+        aria-label={`${quota.model} usage ${percentage}%`}
+        className={`w-full h-2 mb-3 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-700 [&::-moz-progress-bar]:${color} ${
+          color === 'bg-blue-500'
+            ? '[&::-webkit-progress-value]:bg-blue-500'
+            : '[&::-webkit-progress-value]:bg-yellow-500'
+        }`}
+      />
       <div className="flex justify-between text-xs text-slate-400 font-mono">
         <span>{quota.used.toLocaleString()} / {quota.limit.toLocaleString()}</span>
         <span>{percentage}%</span>

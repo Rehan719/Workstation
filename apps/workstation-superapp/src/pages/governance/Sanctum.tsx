@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Shield, Gavel, Landmark, ChevronRight, Lock, Eye, Sparkles, Award } from 'lucide-react';
+import { Shield, Gavel, Landmark, ChevronRight, Lock, Eye, Sparkles, Award, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 import { progressWidthClass } from '../../lib/progressWidth';
 
 export const Sanctum: React.FC = () => {
   const [accessGranted, setAccessGranted] = useState(false);
   const [proposals, setProposals] = useState<any[]>([]);
+  const [detailProposal, setDetailProposal] = useState<any | null>(null);
 
   useEffect(() => {
     // Simulated authentication check: Min reputation 1000
@@ -59,7 +60,7 @@ export const Sanctum: React.FC = () => {
                  <Sparkles size={24} className="text-aura" />
                  Meta-Amendments
               </h3>
-              <button type="button" onClick={() => notImplemented('New Meta-Proposal')} className="px-6 py-2 border border-aura/30 text-aura font-black rounded-xl text-xs uppercase tracking-widest hover:bg-aura/10 transition-all">New Meta-Proposal</button>
+              <button type="button" onClick={() => toast('Meta-Proposal drafting opens in the next governance epoch')} className="px-6 py-2 border border-aura/30 text-aura font-black rounded-xl text-xs uppercase tracking-widest hover:bg-aura/10 transition-all">New Meta-Proposal</button>
            </div>
 
            <div className="space-y-6">
@@ -74,7 +75,7 @@ export const Sanctum: React.FC = () => {
                    <h4 className="text-2xl font-black mb-4 leading-tight">{p.title}</h4>
                    <div className="flex gap-4">
                       <button type="button" onClick={() => castSovereignVote(p.id)} className="flex-1 py-4 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest">Cast Sovereign Vote</button>
-                      <button type="button" onClick={() => alert(`${p.title}\nStatus: ${p.status}\nConsensus: ${p.support}`)} aria-label="View proposal details" title="View proposal details" className="p-4 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white transition-all"><Eye size={20} /></button>
+                      <button type="button" onClick={() => setDetailProposal(p)} aria-label="View proposal details" title="View proposal details" className="p-4 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white transition-all"><Eye size={20} /></button>
                    </div>
                 </div>
               ))}
@@ -103,6 +104,41 @@ export const Sanctum: React.FC = () => {
            </section>
         </aside>
       </div>
+
+      <AnimatePresence>
+        {detailProposal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6"
+            onClick={() => setDetailProposal(null)}>
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-slate-950 border border-aura/30 rounded-[2rem] p-8 w-full max-w-lg space-y-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="p-3 bg-aura/10 rounded-xl text-aura shrink-0"><Shield size={20} /></div>
+                <button type="button" aria-label="Close" onClick={() => setDetailProposal(null)} className="text-slate-500 hover:text-white shrink-0"><X size={18} /></button>
+              </div>
+              <div>
+                <span className="text-[9px] font-black text-aura uppercase tracking-widest border border-aura/30 px-2 py-0.5 rounded-full">{detailProposal.status}</span>
+                <h3 className="text-xl font-black text-white mt-3 leading-snug">{detailProposal.title}</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="p-4 bg-slate-900 rounded-xl">
+                  <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Consensus</p>
+                  <p className="text-2xl font-black text-aura">{detailProposal.support}</p>
+                </div>
+                <div className="p-4 bg-slate-900 rounded-xl">
+                  <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Status</p>
+                  <p className="text-sm font-black text-white uppercase">{detailProposal.status}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => { castSovereignVote(detailProposal.id); setDetailProposal(null); }}
+                className="w-full py-3 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:opacity-90">
+                Cast Sovereign Vote
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

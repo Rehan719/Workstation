@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: workstation-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn agentic_core.app_mvp:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        value: claude-sonnet-4-6
+      - key: GATEWAY_MAX_TOKENS
+        value: "4096"
+      - key: OLLAMA_URL
+        value: ""
+      - key: MODEL_BACKEND
+        value: anthropic
+      - key: LOG_LEVEL
+        value: INFO
+    healthCheckPath: /health
+    autoDeploy: true

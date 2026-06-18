@@ -8,14 +8,19 @@ export const BusinessPlanWizard: React.FC = () => {
   const [step, setStep] = useState(1);
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [projectName, setProjectName] = useState('My Venture');
+  const [targetMarket, setTargetMarket] = useState('Enterprise AI Analytics');
+  const [fundingGoal, setFundingGoal] = useState('50000');
+  const [description, setDescription] = useState('');
 
   const handleGenerate = async () => {
     setLoading(true);
     try {
       const res = await axios.post('/api/v310/entrepreneur/generate-plan', {
-        creation_id: "Neural-Nexus-v2",
-        target_market: "Enterprise AI",
-        funding_goal: 50000
+        creation_id: projectName,
+        target_market: targetMarket,
+        funding_goal: parseFloat(fundingGoal) || 50000,
+        description,
       });
       setPlan(res.data);
       setStep(3);
@@ -31,7 +36,7 @@ export const BusinessPlanWizard: React.FC = () => {
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
           <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-1 break-words">Entrepreneurial Hub</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Livelihood & Business Synthesis v151.0</p>
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">AI-Mediated Business Plan Generation</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
            {[1, 2, 3].map(s => (
@@ -53,17 +58,29 @@ export const BusinessPlanWizard: React.FC = () => {
                   </h2>
                   <p className="text-slate-500 font-bold">Select a creation to transform into a sustainable business.</p>
                </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-8 bg-sovereign rounded-[2rem] border border-white/10 hover:border-highlight/40 cursor-pointer transition-all group">
-                     <p className="text-lg font-black group-hover:text-highlight transition-colors">Neural-Nexus-v2</p>
-                     <p className="text-[10px] text-slate-500 font-black uppercase mt-2">Reactor • 1.4k Installs</p>
+               <div className="space-y-4 max-w-xl">
+                  <div className="space-y-2">
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Project / Venture Name</p>
+                     <input
+                       value={projectName}
+                       onChange={e => setProjectName(e.target.value)}
+                       placeholder="e.g. Neural-Nexus AI Platform"
+                       className="w-full bg-sovereign border border-white/10 rounded-2xl p-5 font-bold outline-none focus:border-highlight transition-all"
+                     />
                   </div>
-                  <div className="p-8 bg-slate-900 border border-dashed border-slate-800 rounded-[2rem] flex items-center justify-center text-slate-600 font-bold italic">
-                     Select other creation...
+                  <div className="space-y-2">
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Brief Description (optional)</p>
+                     <textarea
+                       value={description}
+                       onChange={e => setDescription(e.target.value)}
+                       rows={2}
+                       placeholder="What does your venture do?"
+                       className="w-full bg-sovereign border border-white/10 rounded-2xl p-5 font-bold outline-none focus:border-highlight transition-all resize-none"
+                     />
                   </div>
                </div>
                <div className="pt-8">
-                  <button onClick={() => setStep(2)} className="flex items-center gap-3 px-10 py-4 bg-highlight text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-lg shadow-highlight/20 uppercase tracking-widest text-sm">
+                  <button type="button" onClick={() => setStep(2)} className="flex items-center gap-3 px-10 py-4 bg-highlight text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-lg shadow-highlight/20 uppercase tracking-widest text-sm">
                     Configure Strategy
                     <ChevronRight size={18} />
                   </button>
@@ -83,15 +100,27 @@ export const BusinessPlanWizard: React.FC = () => {
                <div className="space-y-6 max-w-xl">
                   <div className="space-y-2">
                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Target Market</p>
-                     <input defaultValue="Enterprise AI Analytics" className="w-full bg-sovereign border border-white/10 rounded-2xl p-5 font-bold outline-none focus:border-highlight transition-all" />
+                     <input
+                       value={targetMarket}
+                       onChange={e => setTargetMarket(e.target.value)}
+                       placeholder="e.g. Enterprise AI Analytics"
+                       className="w-full bg-sovereign border border-white/10 rounded-2xl p-5 font-bold outline-none focus:border-highlight transition-all"
+                     />
                   </div>
                   <div className="space-y-2">
-                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Seed Funding Goal (WST)</p>
-                     <input defaultValue="50000" className="w-full bg-sovereign border border-white/10 rounded-2xl p-5 font-bold outline-none focus:border-highlight transition-all" />
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Funding Goal (USD)</p>
+                     <input
+                       value={fundingGoal}
+                       onChange={e => setFundingGoal(e.target.value)}
+                       type="number"
+                       min="1000"
+                       placeholder="50000"
+                       className="w-full bg-sovereign border border-white/10 rounded-2xl p-5 font-bold outline-none focus:border-highlight transition-all"
+                     />
                   </div>
                </div>
                <div className="pt-8">
-                  <button onClick={handleGenerate} disabled={loading} className="flex items-center gap-3 px-10 py-4 bg-highlight text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-lg shadow-highlight/20 uppercase tracking-widest text-sm disabled:opacity-50">
+                  <button type="button" onClick={handleGenerate} disabled={loading} className="flex items-center gap-3 px-10 py-4 bg-highlight text-sovereign font-black rounded-2xl hover:scale-105 transition-all shadow-lg shadow-highlight/20 uppercase tracking-widest text-sm disabled:opacity-50">
                     {loading ? 'Synthesizing...' : 'Synthesize Business Plan'}
                     <Sparkles size={18} />
                   </button>
@@ -103,13 +132,13 @@ export const BusinessPlanWizard: React.FC = () => {
             <motion.div key="s3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
                <div className="flex justify-between items-start">
                   <div>
-                    <h2 className="text-3xl font-black mb-2">Strategy: Neural-Nexus-v2</h2>
+                    <h2 className="text-3xl font-black mb-2">Strategy: {projectName}</h2>
                     <div className="flex items-center gap-2">
                        <CheckCircle2 size={16} className="text-highlight" />
                        <span className="text-xs font-black uppercase text-highlight tracking-widest">AI CEO Validated</span>
                     </div>
                   </div>
-                  <button onClick={() => notImplemented('This action')} className="p-4 bg-white/10 rounded-2xl text-white hover:bg-white/20 transition-all border border-white/10">
+                  <button type="button" onClick={() => notImplemented('This action')} className="p-4 bg-white/10 rounded-2xl text-white hover:bg-white/20 transition-all border border-white/10">
                      <FileText size={24} />
                   </button>
                </div>
@@ -139,7 +168,7 @@ export const BusinessPlanWizard: React.FC = () => {
                   </div>
                </div>
 
-               <button onClick={() => notImplemented('Register Business & Open Payouts')} className="w-full py-5 bg-highlight text-sovereign font-black rounded-2xl hover:scale-[1.02] transition-all shadow-xl shadow-highlight/20 uppercase tracking-widest text-sm">
+               <button type="button" onClick={() => notImplemented('Register Business & Open Payouts')} className="w-full py-5 bg-highlight text-sovereign font-black rounded-2xl hover:scale-[1.02] transition-all shadow-xl shadow-highlight/20 uppercase tracking-widest text-sm">
                   Register Business & Open Payouts
                </button>
             </motion.div>
@@ -163,7 +192,7 @@ export const BusinessPlanWizard: React.FC = () => {
                        <p className="font-bold">{m.name}</p>
                        <p className="text-[10px] text-slate-500 uppercase font-black">{m.role}</p>
                     </div>
-                    <button onClick={() => notImplemented('Match')} className="text-[10px] font-black uppercase text-aura hover:underline">Match</button>
+                    <button type="button" onClick={() => notImplemented('Match')} className="text-[10px] font-black uppercase text-aura hover:underline">Match</button>
                  </div>
                ))}
             </div>
@@ -177,7 +206,7 @@ export const BusinessPlanWizard: React.FC = () => {
             <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">
                Generate AI-assisted Terms of Service and IP Licensing agreements. Verified against the global constitutional floor.
             </p>
-            <button onClick={() => notImplemented('Draft Compliance Pack')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest hover:border-vital hover:text-vital transition-all">
+            <button type="button" onClick={() => notImplemented('Draft Compliance Pack')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest hover:border-vital hover:text-vital transition-all">
                Draft Compliance Pack
             </button>
          </div>

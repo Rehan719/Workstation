@@ -1,12 +1,102 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Badge, Button, notImplemented } from '@workstation/ui';
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { Card, Badge, Button, notImplemented, toast } from '@workstation/ui';
 import {
   ShieldCheck, AlertCircle, CheckCircle2, XCircle, History,
   Lock, Key, Shield, RefreshCw, Eye, EyeOff, Copy, Check,
-  Sparkles, Award, Database, X,
+  Sparkles, Award, Database, X, Vote, ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { progressWidthClass } from '../../lib/progressWidth';
+
+// ── Governance Proposals sub-component ────────────────────────────────────────
+
+interface Proposal {
+  id: string;
+  project_id: string;
+  project_title: string;
+  from_stage: 'concept' | 'prototype' | 'commercialise';
+  to_stage: 'concept' | 'prototype' | 'commercialise';
+  status: 'pending' | 'approved' | 'rejected';
+  votes_for: number;
+  votes_against: number;
+  created_at: number;
+}
+
+const ProposalsPanel: React.FC = () => {
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading]     = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await axios.get<Proposal[]>('/api/v1/projects/governance/proposals');
+      setProposals(r.data);
+    } catch {
+      setProposals([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const vote = async (proposal_id: string, approve: boolean) => {
+    try {
+      await axios.post(`/api/v1/projects/governance/proposals/${proposal_id}/vote?approve=${approve}`);
+      toast(approve ? 'Proposal approved — stage advanced.' : 'Proposal rejected.');
+      load();
+    } catch (e: any) {
+      toast(e?.response?.data?.detail ?? 'Vote failed');
+    }
+  };
+
+  if (loading) return <p className="text-xs text-slate-500 py-4">Loading proposals…</p>;
+  if (proposals.length === 0) return (
+    <div className="py-8 text-center">
+      <Vote size={28} className="text-slate-700 mx-auto mb-2" />
+      <p className="text-xs text-slate-500">No proposals yet.</p>
+      <p className="text-[9px] text-slate-600 mt-1">In a Project, click <strong>Propose Advance</strong> to request a stage vote here.</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      {proposals.map(p => (
+        <div key={p.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-900 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black text-white">{p.project_title}</p>
+              <p className="text-[9px] text-slate-500 uppercase mt-0.5">
+                {p.from_stage} → {p.to_stage} &nbsp;·&nbsp; {new Date(p.created_at * 1000).toLocaleDateString()}
+              </p>
+            </div>
+            <Badge color={p.status === 'approved' ? 'emerald-500' : p.status === 'rejected' ? 'vital' : 'aura'}>
+              {p.status.toUpperCase()}
+            </Badge>
+          </div>
+          {p.status === 'pending' && (
+            <div className="flex gap-2">
+              <Button
+                onClick={() => vote(p.id, true)}
+                className="flex-1 bg-emerald-500 text-white font-black text-[9px] py-1.5 flex items-center justify-center gap-1"
+              >
+                <ThumbsUp size={11} /> Approve
+              </Button>
+              <Button
+                onClick={() => vote(p.id, false)}
+                variant="outline"
+                className="flex-1 border-vital text-vital font-black text-[9px] py-1.5 flex items-center justify-center gap-1"
+              >
+                <ThumbsDown size={11} /> Reject
+              </Button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 type Tab = 'audit' | 'vault' | 'sanctum';
 
@@ -114,7 +204,13 @@ const AuditTab: React.FC = () => {
           </Card>
         </div>
 
-        <div className="@[440px]:col-span-4">
+        <div className="@[440px]:col-span-4 space-y-6">
+          <Card className="p-6 border-aura/20 bg-aura/5">
+            <h4 className="text-sm font-black text-white mb-3 uppercase tracking-tight flex items-center gap-2">
+              <Vote size={14} className="text-aura" /> Stage Proposals
+            </h4>
+            <ProposalsPanel />
+          </Card>
           <Card className="p-8 bg-aura/5 border-aura/20">
             <h4 className="text-base font-black text-white mb-4 uppercase tracking-tight">Audit Intelligence</h4>
             <p className="text-sm text-slate-400 font-bold leading-relaxed mb-6">

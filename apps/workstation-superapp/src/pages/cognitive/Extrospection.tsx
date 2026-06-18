@@ -43,9 +43,8 @@ export const Extrospection: React.FC = () => {
                 </div>
                 <p className="font-bold text-sm mb-2">{s.title}</p>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1 bg-slate-800 rounded-full">
-                    <div className="h-full bg-aura" style={{ width: `${s.relevance * 100}%` }}></div>
-                  </div>
+                  <progress value={s.relevance} max={1} aria-label={`Relevance ${(s.relevance * 100).toFixed(0)}%`}
+                    className="flex-1 h-1 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-800 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura" />
                   <span className="text-[10px] font-black text-slate-500">Relevance: {(s.relevance * 100).toFixed(0)}%</span>
                 </div>
               </div>

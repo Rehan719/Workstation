@@ -1,72 +1,172 @@
 import os
 import httpx
-from typing import Dict, Any
+from typing import AsyncIterator
 from agentic_core.ai.guardrails import validate_response
 from agentic_core.ai.logger import interaction_logger
 from agentic_core.ai.memory import memory
 
+
 class ModelGateway:
+    """
+    Priority order:
+      1. Anthropic Claude (claude-sonnet-4-6) — best quality, used when key present
+      2. OpenAI GPT-4o-mini — fallback when OPENAI_API_KEY set
+      3. Ollama llama3.2 — local fallback, always available if Ollama is running
+    """
+
     def __init__(self):
-        self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
-        self.model = os.getenv("OLLAMA_MODEL", "llama3.2")
+        self.anthropic_key = os.getenv("ANTHROPIC_API_KEY")
         self.openai_key = os.getenv("OPENAI_API_KEY")
+        self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+        self.ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+        self.claude_model = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
+        self.max_tokens = int(os.getenv("GATEWAY_MAX_TOKENS", "4096"))
+
+    def _augment(self, prompt: str) -> str:
+        ctx = memory.query_memory(prompt)
+        return f"Context: {ctx}\n\nUser: {prompt}" if ctx else prompt
+
+    # ── non-streaming ───────────────────────────────────────────────────────
 
     async def query(self, prompt: str, agent: str = "assistant") -> str:
-        # Check Memory (RAG)
-        context = memory.query_memory(prompt)
-        augmented_prompt = f"Context: {context}\n\nUser: {prompt}" if context else prompt
+        augmented = self._augment(prompt)
+        response, provider = await self._call(augmented)
 
-        response = ""
-        openai_succeeded = False
+        if not validate_response(response):
+            response = "[POLICY VIOLATION] The generated response was blocked by safety guardrails."
+
+        interaction_logger.log_interaction(agent, prompt, response)
+        memory.add_memory(f"User: {prompt} | AI: {response}")
+        return response
+
+    async def _call(self, prompt: str) -> tuple[str, str]:
+        """Try providers in priority order, return (response_text, provider_name)."""
+
+        # 1 — Anthropic Claude
+        if self.anthropic_key:
+            try:
+                import anthropic
+                client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
+                msg = await client.messages.create(
+                    model=self.claude_model,
+                    max_tokens=self.max_tokens,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return msg.content[0].text, "claude"
+            except Exception as e:
+                pass  # fall through to next provider
+
+        # 2 — OpenAI
         if self.openai_key:
             try:
                 from openai import AsyncOpenAI
                 client = AsyncOpenAI(api_key=self.openai_key)
                 completion = await client.chat.completions.create(
                     model="gpt-4o-mini",
-                    messages=[{"role": "user", "content": augmented_prompt}],
-                    timeout=10,
+                    messages=[{"role": "user", "content": prompt}],
+                    timeout=30,
+                    max_tokens=self.max_tokens,
                 )
-                response = completion.choices[0].message.content or "No response from model."
-                openai_succeeded = True
-            except Exception as e:
-                # Invalid/expired key, quota, or network issue — fall through to Ollama
-                # rather than failing the whole request or faking a response.
-                response = f"[OpenAI unavailable: {str(e)[:200]}] Falling back to local model."
+                return completion.choices[0].message.content or "", "openai"
+            except Exception:
+                pass
 
-        if not openai_succeeded:
+        # 3 — Ollama
+        try:
+            timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                res = await client.post(self.ollama_url, json={
+                    "model": self.ollama_model,
+                    "prompt": prompt,
+                    "stream": False,
+                })
+                return res.json().get("response", ""), "ollama"
+        except httpx.ConnectError:
+            return (
+                "AI engine unavailable — start Ollama with `ollama serve` "
+                "or configure ANTHROPIC_API_KEY in your environment.",
+                "error",
+            )
+        except httpx.ReadTimeout:
+            return "The model is still loading. Please retry in a moment.", "error"
+        except Exception as e:
+            return f"Unexpected error ({type(e).__name__}). Please try again.", "error"
+
+    # ── streaming ────────────────────────────────────────────────────────────
+
+    async def stream(self, prompt: str, agent: str = "assistant") -> AsyncIterator[str]:
+        """Yield response tokens as they arrive. Falls back to chunked non-streaming."""
+        augmented = self._augment(prompt)
+
+        # 1 — Anthropic streaming
+        if self.anthropic_key:
             try:
-                timeout = httpx.Timeout(connect=5.0, read=20.0, write=5.0, pool=5.0)
-                async with httpx.AsyncClient(timeout=timeout) as client:
-                    res = await client.post(self.ollama_url, json={
-                        "model": self.model,
-                        "prompt": augmented_prompt,
-                        "stream": False,
-                    })
-                    response = res.json().get("response", "No response from model.")
-            except httpx.ConnectError:
-                response = (
-                    "I'm temporarily unavailable — the local AI engine isn't running. "
-                    "Start Ollama with `ollama serve` and your next message will connect automatically."
-                )
-            except httpx.ReadTimeout:
-                response = (
-                    "The AI model is still loading (this is normal on first use). "
-                    "Please resend your message in a moment and it will respond."
-                )
-            except Exception as e:
-                response = f"I encountered an unexpected error ({type(e).__name__}). Please try again."
+                import anthropic
+                client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
+                full = ""
+                async with client.messages.stream(
+                    model=self.claude_model,
+                    max_tokens=self.max_tokens,
+                    messages=[{"role": "user", "content": augmented}],
+                ) as s:
+                    async for chunk in s.text_stream:
+                        full += chunk
+                        yield chunk
+                interaction_logger.log_interaction(agent, prompt, full)
+                memory.add_memory(f"User: {prompt} | AI: {full}")
+                return
+            except Exception:
+                pass
 
-        # Apply Guardrails
-        if not validate_response(response):
-            response = "[POLICY VIOLATION] The generated response was blocked by Workstation safety guardrails."
+        # 2 — OpenAI streaming
+        if self.openai_key:
+            try:
+                from openai import AsyncOpenAI
+                client = AsyncOpenAI(api_key=self.openai_key)
+                full = ""
+                async for chunk in await client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": augmented}],
+                    stream=True,
+                    max_tokens=self.max_tokens,
+                ):
+                    delta = chunk.choices[0].delta.content or ""
+                    full += delta
+                    if delta:
+                        yield delta
+                interaction_logger.log_interaction(agent, prompt, full)
+                memory.add_memory(f"User: {prompt} | AI: {full}")
+                return
+            except Exception:
+                pass
 
-        # Log Interaction
-        interaction_logger.log_interaction(agent, prompt, response)
+        # 3 — Ollama streaming
+        try:
+            import json as _json
+            timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
+            full = ""
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                async with client.stream("POST", self.ollama_url, json={
+                    "model": self.ollama_model,
+                    "prompt": augmented,
+                    "stream": True,
+                }) as r:
+                    async for line in r.aiter_lines():
+                        if line:
+                            try:
+                                obj = _json.loads(line)
+                                token = obj.get("response", "")
+                                full += token
+                                if token:
+                                    yield token
+                                if obj.get("done"):
+                                    break
+                            except Exception:
+                                continue
+            interaction_logger.log_interaction(agent, prompt, full)
+            memory.add_memory(f"User: {prompt} | AI: {full}")
+        except Exception as e:
+            yield f"Error: {e}"
 
-        # Update Memory
-        memory.add_memory(f"User: {prompt} | AI: {response}")
-
-        return response
 
 gateway = ModelGateway()

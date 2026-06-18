@@ -190,7 +190,11 @@ async def ai_status():
             online = r.status_code == 200
     except Exception:
         online = False
-    return {"ollama_online": online, "openai_configured": bool(os.getenv("OPENAI_API_KEY"))}
+    return {
+        "ollama_online": online,
+        "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
+        "anthropic_configured": bool(os.getenv("ANTHROPIC_API_KEY")),
+    }
 
 
 @router.get("/session/{session_id}/history")

@@ -48,20 +48,16 @@ export const GlobalFederationMap: React.FC = () => {
                      <Globe2 size={400} className="text-aura opacity-20" />
                   </motion.div>
 
-                  {/* Floating Node Markers */}
-                  {[...Array(12)].map((_, i) => (
+                  {/* Floating Node Markers — fixed positions to prevent render-flicker */}
+                  {([
+                    [22,25],[35,45],[55,30],[70,55],[28,65],[48,72],[62,20],[80,40],
+                    [40,58],[65,70],[25,40],[75,28]
+                  ] as [number,number][]).map(([left, top], i) => (
                     <motion.div
                       key={i}
-                      animate={{
-                        scale: [1, 1.2, 1],
-                        opacity: [0.3, 0.7, 0.3]
-                      }}
-                      transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, delay: i * 0.5 }}
-                      className="absolute w-4 h-4 rounded-full bg-aura shadow-2xl shadow-aura/50"
-                      style={{
-                        left: `${20 + Math.random() * 60}%`,
-                        top: `${20 + Math.random() * 60}%`,
-                      }}
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.7, 0.3] }}
+                      transition={{ duration: 2.5 + (i % 3) * 0.5, repeat: Infinity, delay: i * 0.5 }}
+                      className={`absolute w-4 h-4 rounded-full bg-aura shadow-2xl shadow-aura/50 top-[${top}%] left-[${left}%]`}
                     />
                   ))}
                </div>
@@ -85,8 +81,8 @@ export const GlobalFederationMap: React.FC = () => {
                      Sovereign Node Registry
                   </h3>
                   <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
-                     <button onClick={() => setActiveLayer('mesh')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeLayer === 'mesh' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Terrestrial</button>
-                     <button onClick={() => setActiveLayer('orbital')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeLayer === 'orbital' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Orbital</button>
+                     <button type="button" onClick={() => setActiveLayer('mesh')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeLayer === 'mesh' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Terrestrial</button>
+                     <button type="button" onClick={() => setActiveLayer('orbital')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeLayer === 'orbital' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Orbital</button>
                   </div>
                </div>
 

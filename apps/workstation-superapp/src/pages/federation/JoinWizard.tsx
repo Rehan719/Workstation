@@ -20,9 +20,8 @@ export const JoinFederationWizard: React.FC = () => {
       </header>
 
       <div className="p-12 rounded-3xl bg-slate-900/40 border border-slate-800 space-y-8 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-slate-800">
-           <div className="h-full bg-aura transition-all duration-500" style={{ width: `${((step + 1) / steps.length) * 100}%` }}></div>
-        </div>
+        <progress value={step + 1} max={steps.length} aria-label={`Step ${step + 1} of ${steps.length}`}
+          className="absolute top-0 left-0 w-full h-1 appearance-none rounded-none overflow-hidden [&::-webkit-progress-bar]:bg-slate-800 [&::-webkit-progress-value]:bg-aura [&::-webkit-progress-value]:transition-all [&::-moz-progress-bar]:bg-aura" />
 
         <div className="flex gap-8 items-start">
            <div className="p-4 bg-aura/10 text-aura rounded-2xl">

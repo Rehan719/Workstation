@@ -47,7 +47,7 @@ export const TwinManagement: React.FC = () => {
         <div className="p-8 mb-10 bg-aura/5 border border-aura/20 rounded-3xl animate-in fade-in slide-in-from-top-4">
            <div className="flex justify-between items-start mb-6">
              <h3 className="text-2xl font-black">Ecosystem Blueprint: {activeBlueprint.id}</h3>
-             <button onClick={() => setActiveBlueprint(null)} className="text-slate-500 hover:text-white">&times;</button>
+             <button type="button" onClick={() => setActiveBlueprint(null)} className="text-slate-500 hover:text-white">&times;</button>
            </div>
            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>

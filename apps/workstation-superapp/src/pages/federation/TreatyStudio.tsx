@@ -35,7 +35,7 @@ export const TreatyStudio: React.FC = () => {
               <input value={nodeB} onChange={e => setNodeB(e.target.value)} placeholder="Node B ID" className="w-full bg-sovereign border border-slate-700 rounded-xl px-4 py-3" />
            </div>
            <textarea value={terms} onChange={e => setTerms(e.target.value)} placeholder="Define Treaty Terms..." className="w-full h-40 bg-sovereign border border-slate-700 rounded-2xl p-6" />
-           <button onClick={handleDraft} className="w-full py-4 bg-aura text-sovereign font-black rounded-xl">Propose Treaty</button>
+           <button type="button" onClick={handleDraft} className="w-full py-4 bg-aura text-sovereign font-black rounded-xl">Propose Treaty</button>
         </section>
 
         <section className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800 flex flex-col items-center justify-center text-center">

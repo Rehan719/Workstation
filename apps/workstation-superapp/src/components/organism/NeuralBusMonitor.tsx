@@ -8,12 +8,17 @@ interface NeuralEvent {
     priority: number;
 }
 
+const priorityDot = (priority: number) => {
+    if (priority === 1) return 'bg-red-500';
+    if (priority <= 3) return 'bg-yellow-400';
+    return 'bg-green-400';
+};
+
 const NeuralBusMonitor: React.FC = () => {
     const [events, setEvents] = useState<NeuralEvent[]>([]);
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        // Mocking the NeuralBridge WebSocket behavior for visual verification
         const interval = setInterval(() => {
             const newEvent: NeuralEvent = {
                 id: Math.random().toString(36).substr(2, 9),
@@ -25,57 +30,48 @@ const NeuralBusMonitor: React.FC = () => {
             setEvents(prev => [newEvent, ...prev].slice(0, 50));
             setIsConnected(true);
         }, 2000);
-
         return () => clearInterval(interval);
     }, []);
 
-    const getPriorityColor = (priority: number) => {
-        if (priority === 1) return '#ff4d4d'; // Critical
-        if (priority <= 3) return '#ffff4d';  // Normal
-        return '#4dff4d';                     // Low
-    };
-
     return (
-        <div style={{ padding: '20px', background: '#0a0a0a', color: '#fff', borderRadius: '12px', border: '1px solid #333' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0, borderLeft: '4px solid #00d4ff', paddingLeft: '15px' }}>Neural Bus Monitor</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: isConnected ? '#00ff00' : '#ff0000', boxShadow: isConnected ? '0 0 8px #00ff00' : 'none' }} />
-                    <span style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', color: '#888' }}>
+        <div className="p-5 bg-[#0a0a0a] text-white rounded-xl border border-[#333]">
+            <div className="flex justify-between items-center mb-5">
+                <h2 className="m-0 border-l-4 border-[#00d4ff] pl-4 text-lg font-bold">Neural Bus Monitor</h2>
+                <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 shadow-[0_0_8px_#4ade80]' : 'bg-red-500'}`} />
+                    <span className="text-[10px] font-bold uppercase text-[#888]">
                         {isConnected ? 'libp2p Mesh Active' : 'Connecting...'}
                     </span>
                 </div>
             </div>
 
-            <div style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <div className="max-h-[400px] overflow-y-auto pr-2">
+                <table className="w-full border-collapse text-xs">
                     <thead>
-                        <tr style={{ textAlign: 'left', borderBottom: '1px solid #333', color: '#888' }}>
-                            <th style={{ padding: '10px' }}>ID</th>
-                            <th style={{ padding: '10px' }}>TYPE</th>
-                            <th style={{ padding: '10px' }}>SOURCE</th>
-                            <th style={{ padding: '10px' }}>TIME</th>
-                            <th style={{ padding: '10px' }}>P</th>
+                        <tr className="text-left border-b border-[#333] text-[#888]">
+                            <th className="p-2.5">ID</th>
+                            <th className="p-2.5">TYPE</th>
+                            <th className="p-2.5">SOURCE</th>
+                            <th className="p-2.5">TIME</th>
+                            <th className="p-2.5">P</th>
                         </tr>
                     </thead>
                     <tbody>
                         {events.map(event => (
-                            <tr key={event.id} style={{ borderBottom: '1px solid #222', transition: 'background 0.2s' }}>
-                                <td style={{ padding: '10px', fontFamily: 'monospace', color: '#aaa' }}>{event.id}</td>
-                                <td style={{ padding: '10px', fontWeight: 'bold', color: '#00d4ff' }}>{event.type}</td>
-                                <td style={{ padding: '10px', color: '#ff00ff' }}>{event.source}</td>
-                                <td style={{ padding: '10px', color: '#888' }}>{new Date(event.timestamp).toLocaleTimeString()}</td>
-                                <td style={{ padding: '10px' }}>
-                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: getPriorityColor(event.priority) }} />
+                            <tr key={event.id} className="border-b border-[#222] transition-colors duration-200 hover:bg-white/5">
+                                <td className="p-2.5 font-mono text-[#aaa]">{event.id}</td>
+                                <td className="p-2.5 font-bold text-[#00d4ff]">{event.type}</td>
+                                <td className="p-2.5 text-fuchsia-400">{event.source}</td>
+                                <td className="p-2.5 text-[#888]">{new Date(event.timestamp).toLocaleTimeString()}</td>
+                                <td className="p-2.5">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${priorityDot(event.priority)}`} />
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
                 {events.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#555', fontStyle: 'italic' }}>
-                        Awaiting neural signals...
-                    </div>
+                    <p className="text-center py-10 text-[#555] italic">Awaiting neural signals...</p>
                 )}
             </div>
         </div>

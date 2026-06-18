@@ -16,7 +16,6 @@ const CommunityContributionForm: React.FC = () => {
     setStatus('submitting');
     // Simulated backend submission to community_contribution_orchestrator
     setTimeout(() => {
-      console.log('Submitting contribution to v8.3 backend:', formData);
       setStatus('success');
     }, 1500);
   };
@@ -36,7 +35,7 @@ const CommunityContributionForm: React.FC = () => {
           <div className="text-[10px] text-slate-500 bg-slate-800 p-2 rounded">
             Audit Trail Hash: SHA256-V83-COMM-POC-001
           </div>
-          <button onClick={() => setStatus(null)} className="mt-8 px-4 py-2 bg-emerald-600 rounded text-sm hover:bg-emerald-500 transition-colors">
+          <button type="button" onClick={() => setStatus(null)} className="mt-8 px-4 py-2 bg-emerald-600 rounded text-sm hover:bg-emerald-500 transition-colors">
             New Submission
           </button>
         </div>
@@ -56,8 +55,9 @@ const CommunityContributionForm: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-emerald-500/70 mb-1 uppercase tracking-wider">Category</label>
+              <label htmlFor="contrib-category" className="block text-xs font-bold text-emerald-500/70 mb-1 uppercase tracking-wider">Category</label>
               <select
+                id="contrib-category"
                 className="w-full bg-slate-800 border border-slate-700 p-2 rounded text-sm focus:border-emerald-500 outline-none transition-colors"
                 value={formData.category}
                 onChange={(e) => setFormData({...formData, category: e.target.value})}

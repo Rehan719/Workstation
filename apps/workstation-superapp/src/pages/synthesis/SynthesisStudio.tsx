@@ -83,6 +83,7 @@ export const SynthesisStudio: React.FC = () => {
   // Generation
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<SynthesisResult[]>([]);
+  const [streamTokens, setStreamTokens] = useState<Record<string, string>>({});
   const [activePresentation, setActivePresentation] = useState<any[] | null>(null);
 
   // History
@@ -192,22 +193,73 @@ export const SynthesisStudio: React.FC = () => {
     setErrorMsg(null);
     setGenerating(true);
     setResults([]);
+    setStreamTokens({});
     setExpandedResults(new Set());
-    try {
-      const generated = await Promise.all(
-        outputTypes.map(type =>
-          axios.post('/api/v1/synthesis/generate', {
-            content_ids: selectedIds,
-            output_type: type,
-            instructions,
-          }).then(resp => ({ ...resp.data, outputType: type } as SynthesisResult))
-        )
-      );
-      setResults(generated);
-      // Auto-expand first result
-      setExpandedResults(new Set([0]));
-    } catch (e) { setErrorMsg('Generation failed — check the API server is running.'); }
-    finally { setGenerating(false); }
+
+    const completed: SynthesisResult[] = [];
+
+    for (const type of outputTypes) {
+      try {
+        const res = await fetch('/api/v1/synthesis/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content_ids: selectedIds, output_type: type, instructions }),
+        });
+
+        if (!res.ok || !res.body) {
+          // Fallback to non-streaming
+          const resp = await axios.post('/api/v1/synthesis/generate', {
+            content_ids: selectedIds, output_type: type, instructions,
+          });
+          completed.push({ ...resp.data, outputType: type });
+          continue;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        let finalResult: SynthesisResult | null = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop() ?? '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const ev = JSON.parse(line.slice(6));
+              if (ev.token !== undefined) {
+                const tok: string = ev.token.replace(/\\n/g, '\n');
+                setStreamTokens(prev => ({ ...prev, [type]: (prev[type] ?? '') + tok }));
+              } else if (ev.done) {
+                finalResult = {
+                  output_id: ev.output_id,
+                  output_url: ev.download_url,
+                  content: '',
+                  metadata: { type, format: 'md', title: type },
+                  timestamp: ev.timestamp,
+                  outputType: type,
+                };
+              }
+            } catch { /* malformed line */ }
+          }
+        }
+
+        if (finalResult) {
+          // Swap accumulated stream text into content
+          finalResult.content = (document.getElementById(`stream-${type}`) as HTMLElement | null)?.innerText ?? '';
+          completed.push(finalResult);
+        }
+      } catch (e) {
+        setErrorMsg(`Generation failed for ${type} — check the API server is running.`);
+      }
+    }
+
+    setResults(completed);
+    setExpandedResults(new Set([0]));
+    setGenerating(false);
   };
 
   // ── Download ─────────────────────────────────────────────────────────────────
@@ -328,17 +380,26 @@ export const SynthesisStudio: React.FC = () => {
         )}
 
         {generating && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
-            <div className="relative w-24 h-24">
-              <div className="absolute inset-0 rounded-full border-2 border-aura/20 animate-ping" />
-              <div className="w-24 h-24 rounded-full border-2 border-aura animate-spin border-t-transparent" />
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-6 h-6 rounded-full border-2 border-aura animate-spin border-t-transparent shrink-0" />
+              <p className="text-aura font-black uppercase tracking-[0.3em] text-[10px]">Synthesising…</p>
             </div>
-            <div>
-              <p className="text-aura font-black uppercase tracking-[0.3em] text-xs">AI CEO Synthesis In Progress</p>
-              <p className="text-slate-500 text-[10px] mt-1 font-bold uppercase tracking-widest italic animate-pulse">
-                Accessing Knowledge Base · Orchestrating Outputs...
-              </p>
-            </div>
+            {outputTypes.map(type => {
+              const tokens = streamTokens[type] ?? '';
+              return (
+                <div key={type} className="border border-slate-800 rounded-2xl overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2 border-b border-slate-800 bg-slate-900/40">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-aura">{type.replace('_', ' ')}</span>
+                    {!tokens && <span className="text-[9px] text-slate-600 uppercase animate-pulse">waiting…</span>}
+                  </div>
+                  <pre
+                    id={`stream-${type}`}
+                    className="p-4 text-xs text-slate-300 font-mono whitespace-pre-wrap break-words max-h-64 overflow-y-auto"
+                  >{tokens}<span className="inline-block w-1.5 h-3 bg-aura animate-pulse ml-0.5" /></pre>
+                </div>
+              );
+            })}
           </div>
         )}
 

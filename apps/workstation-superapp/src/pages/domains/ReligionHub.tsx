@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button, notImplemented} from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
+import { Card, Badge, Button } from '@workstation/ui';
 import { BookOpen, Heart, Sparkles, MessageCircle, History, Info, ShieldCheck, Zap, Globe, HeartPulse, Network, Binary, Compass, Anchor, Wind, Layers, GraduationCap } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +11,7 @@ import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 
 export const ReligionHub: React.FC = () => {
+  const navigate = useNavigate();
    const { layout, emotionalAdjustment } = useAdaptiveUI();
   const { user } = useStore();
   const [activeTab, setActiveTab] = useState('wisdom');
@@ -32,8 +34,8 @@ export const ReligionHub: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button onClick={() => notImplemented('Tradition')} variant="outline"><History size={18} /> Tradition</Button>
-           <Button onClick={() => notImplemented('Seek Guidance')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+           <Button onClick={() => navigate('/projects?realm=religion&domain=content')} variant="outline"><History size={18} /> Tradition</Button>
+           <Button onClick={() => navigate('/ceo')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Sparkles size={18} /> Seek Guidance
            </Button>
         </div>
@@ -77,9 +79,9 @@ export const ReligionHub: React.FC = () => {
                      Scholarly Operations
                   </h3>
                   <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
-                     <button onClick={() => setActiveTab('wisdom')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'wisdom' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Wisdom</button>
-                     <button onClick={() => setActiveTab('dialogue')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'dialogue' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Dialogue</button>
-                     <button onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
+                     <button type="button" onClick={() => setActiveTab('wisdom')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'wisdom' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Wisdom</button>
+                     <button type="button" onClick={() => setActiveTab('dialogue')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'dialogue' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Dialogue</button>
+                     <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
                   </div>
                </div>
 
@@ -133,7 +135,7 @@ export const ReligionHub: React.FC = () => {
                        </div>
                        <div className="flex items-center gap-6">
                           <Badge color={wisdom.status === 'Ratified' ? 'emerald-500' : 'highlight'}>{wisdom.status}</Badge>
-                          <Button onClick={() => notImplemented('Meditate')} variant="outline" className="px-6">Meditate</Button>
+                          <Button onClick={() => navigate('/reactor?domain=religion')} variant="outline" className="px-6">Meditate</Button>
                        </div>
                     </motion.div>
                   ))}
@@ -161,7 +163,7 @@ export const ReligionHub: React.FC = () => {
                      <div className="h-full bg-aura w-[98%]" />
                   </div>
                </div>
-               <Button onClick={() => notImplemented('Consult Ethics Council')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Consult Ethics Council</Button>
+               <Button onClick={() => navigate('/ceo')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Consult Ethics Council</Button>
             </Card>
 
             <Card className="p-10 bg-slate-950 border-slate-900 space-y-6">

@@ -75,7 +75,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <Globe size={240} className="text-aura opacity-20 animate-pulse-slow" />
               <div className="absolute bottom-8 right-8 z-10 flex gap-4">
-                 <button onClick={() => notImplemented('Mesh Explorer')} className="px-6 py-3 bg-aura/10 border border-aura/30 text-aura rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-aura hover:text-sovereign transition-all">Mesh Explorer</button>
+                 <button type="button" onClick={() => notImplemented('Mesh Explorer')} className="px-6 py-3 bg-aura/10 border border-aura/30 text-aura rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-aura hover:text-sovereign transition-all">Mesh Explorer</button>
               </div>
            </Card>
 

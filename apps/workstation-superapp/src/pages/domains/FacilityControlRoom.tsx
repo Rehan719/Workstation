@@ -298,7 +298,7 @@ const FabricationPlantDashboard = () => {
                <selectedFacility.icon size={200} />
             </div>
 
-            <button className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors" onClick={() => setSelectedFacility(null)}>✕</button>
+            <button type="button" className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors" onClick={() => setSelectedFacility(null)}>✕</button>
 
             <div className="flex items-center gap-6 mb-10">
               <div className="p-6 bg-cyan-500/20 rounded-2xl text-cyan-400">

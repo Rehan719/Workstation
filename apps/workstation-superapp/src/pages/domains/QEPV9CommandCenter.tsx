@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { notImplemented } from '@workstation/ui';
+import { toast, notImplemented } from '@workstation/ui';
 import {
   Zap, Shield, Globe, Users, Settings, Database,
   Lock, CheckCircle, Search, Terminal, Activity,
@@ -52,7 +52,7 @@ const QEPV9CommandCenter = () => {
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               SYSTEMS OPTIMAL
            </div>
-           <button type="button" onClick={() => alert('No new notifications.')} aria-label="Notifications" title="Notifications" className="text-slate-500 hover:text-white transition-colors"><Bell size={20}/></button>
+           <button type="button" onClick={() => toast('No new notifications')} aria-label="Notifications" title="Notifications" className="text-slate-500 hover:text-white transition-colors"><Bell size={20}/></button>
            <div className="h-8 w-px bg-slate-800" />
            <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">

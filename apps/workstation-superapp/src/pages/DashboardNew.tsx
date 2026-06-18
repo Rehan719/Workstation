@@ -1,28 +1,69 @@
-import React, { useState } from 'react';
-import { Card, Button, Badge, notImplemented} from '@workstation/ui';
+import React, { useState, useEffect } from 'react';
+import { Card, Button, Badge } from '@workstation/ui';
 import { useStore } from '@workstation/shared';
 import { SearchMeshModal } from '../components/SearchMeshModal';
 import {
-  FileText,
-  Calendar,
-  Layout,
   MessageSquare,
   Zap,
-  CheckCircle2,
   Clock,
   ArrowRight,
   Search,
   Sparkles,
   BookOpen,
-  Binary
+  Binary,
+  FolderOpen,
+  FileText,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+interface ActivityItem {
+  id: string;
+  type: string;
+  msg: string;
+  time: string;
+}
+
+interface VitalsData {
+  cpu: number;
+  memory: number;
+  totalProjects: number;
+  swarmHealth: number;
+}
 
 export const DashboardNew: React.FC = () => {
   const { user, setCurrentTab } = useStore();
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [activity,   setActivity]   = useState<ActivityItem[]>([]);
+  const [vitals,     setVitals]     = useState<VitalsData | null>(null);
+
+  useEffect(() => {
+    // Load live activity from project store
+    axios.get('/api/v1/projects/').then(({ data }) => {
+      const projects: any[] = data ?? [];
+      const items: ActivityItem[] = projects.slice(0, 5).map(p => ({
+        id: p.id,
+        type: 'Project',
+        msg: `${p.title} — stage: ${p.stage}`,
+        time: p.updated_at
+          ? new Date(p.updated_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : 'recently',
+      }));
+      if (items.length > 0) setActivity(items);
+    }).catch(() => {});
+
+    // Load real vitals from psutil endpoint
+    axios.get('/api/v1/projects/stats/summary').then(({ data }) => {
+      setVitals({
+        cpu: data.cpu_percent ?? 0,
+        memory: data.memory_percent ?? 0,
+        totalProjects: data.total_projects ?? 0,
+        swarmHealth: data.swarm_health ?? 0.98,
+      });
+    }).catch(() => {});
+  }, []);
 
   const actions = [
     { id: 'synthesis',       name: 'Synthesis Studio', icon: Sparkles,  color: 'text-highlight',    bg: 'bg-highlight/10',    desc: 'Ingest knowledge & generate reports.',  route: '/synthesis' },
@@ -31,12 +72,8 @@ export const DashboardNew: React.FC = () => {
     { id: 'ceo',             name: 'AI CEO',            icon: MessageSquare, color: 'text-aura',     bg: 'bg-aura/10',         desc: 'Consult your autonomous executive.',    route: '/ceo' },
   ];
 
-  const recentActivity = [
-    { id: 1, type: 'System', msg: 'Article 1127 Validation Passed', time: '2m ago' },
-    { id: 2, type: 'Agent', msg: 'Llama-3-Graft Synthesis Complete', time: '15m ago' },
-    { id: 3, type: 'Governance', msg: 'Zakat ROI Allocation Verified', time: '1h ago' },
-    { id: 4, type: 'Security', msg: 'PQC Handshake Rotated', time: '3h ago' },
-    { id: 5, type: 'Evolution', msg: 'Recursive Optimization Loop Active', time: '5h ago' }
+  const displayActivity = activity.length > 0 ? activity : [
+    { id: 'placeholder', type: 'System', msg: 'No projects yet — create your first project', time: '' },
   ];
 
   return (
@@ -99,20 +136,28 @@ export const DashboardNew: React.FC = () => {
                   <Badge color="highlight">Real-time</Badge>
                </div>
                <div className="space-y-4">
-                  {recentActivity.map((act) => (
+                  {displayActivity.map((act) => (
                     <div key={act.id} className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 flex items-center justify-between gap-4 group hover:border-aura/20 transition-all">
                        <div className="flex items-center gap-6 min-w-0">
                           <div className="w-2 h-2 rounded-full bg-aura animate-pulse shrink-0" />
                           <div className="min-w-0">
                              <p className="text-sm font-bold text-white truncate">{act.msg}</p>
-                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest truncate">{act.type} • {act.time}</p>
+                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest truncate">{act.type}{act.time ? ` • ${act.time}` : ''}</p>
                           </div>
                        </div>
-                       <Button onClick={() => notImplemented('View Audit')} variant="outline" className="text-[8px] py-1 px-3 shrink-0">View Audit</Button>
+                       {act.id !== 'placeholder' && (
+                         <button type="button" onClick={() => navigate('/projects')}
+                           className="text-[8px] py-1 px-3 border border-slate-700 rounded-lg text-slate-400 hover:text-white shrink-0 uppercase font-black tracking-widest">
+                           View
+                         </button>
+                       )}
                     </div>
                   ))}
                </div>
-               <Button onClick={() => notImplemented('View All System Activity')} variant="secondary" className="w-full mt-8 uppercase font-black tracking-widest text-xs py-4">View All System Activity</Button>
+               <button type="button" onClick={() => navigate('/projects')}
+                 className="w-full mt-8 py-4 border border-slate-800 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-500 hover:text-white hover:border-slate-600 transition-colors">
+                 View All Projects
+               </button>
             </Card>
          </div>
 
@@ -129,11 +174,20 @@ export const DashboardNew: React.FC = () => {
                </div>
                <div className="space-y-6 pt-6 border-t border-aura/10">
                   <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500 tracking-widest">
-                     <span>System Resonance</span>
-                     <span className="text-aura">98.4%</span>
+                     <span>CPU</span>
+                     <span className="text-aura">{vitals ? `${vitals.cpu.toFixed(1)}%` : '—'}</span>
                   </div>
-                  <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                     <div className="h-full bg-aura w-[98%]" />
+                  <progress value={vitals?.cpu ?? 0} max={100} aria-label="CPU usage"
+                    className="w-full h-1.5 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-900 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura" />
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                     <span>Memory</span>
+                     <span className="text-highlight">{vitals ? `${vitals.memory.toFixed(1)}%` : '—'}</span>
+                  </div>
+                  <progress value={vitals?.memory ?? 0} max={100} aria-label="Memory usage"
+                    className="w-full h-1.5 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-900 [&::-webkit-progress-value]:bg-highlight [&::-moz-progress-bar]:bg-highlight" />
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                     <span>Projects</span>
+                     <span className="text-emerald-400">{vitals?.totalProjects ?? '—'}</span>
                   </div>
                   <Button
                     onClick={() => { setCurrentTab('admin'); navigate('/admin'); }}

@@ -63,7 +63,7 @@ const Marketplace: React.FC = () => {
               ))}
             </div>
 
-            <button onClick={() => notImplemented('Integrate with My Portal')} className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded transition-colors text-sm shadow-lg shadow-emerald-900/20">
+            <button type="button" onClick={() => notImplemented('Integrate with My Portal')} className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded transition-colors text-sm shadow-lg shadow-emerald-900/20">
               Integrate with My Portal
             </button>
           </div>

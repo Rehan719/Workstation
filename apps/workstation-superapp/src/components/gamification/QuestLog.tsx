@@ -54,7 +54,7 @@ export const QuestLog: React.FC = () => {
                    Quest Synchronized
                 </div>
               ) : (
-                <button onClick={() => notImplemented('Launch Quest')} className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">
+                <button type="button" onClick={() => notImplemented('Launch Quest')} className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">
                   Launch Quest
                 </button>
               )}

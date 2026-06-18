@@ -50,7 +50,7 @@ export const BTOConfigurator: React.FC<BTOConfiguratorProps> = ({ product, onClo
           <p className="text-[10px] font-black uppercase text-slate-500">Order ID: SOV-{Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
           <p className="text-[10px] font-black uppercase text-slate-500">Estimated Delivery: 4h 12m</p>
         </div>
-        <button onClick={onClose} className="w-full py-4 bg-aura text-sovereign font-bold rounded-xl">Return to Catalog</button>
+        <button type="button" onClick={onClose} className="w-full py-4 bg-aura text-sovereign font-bold rounded-xl">Return to Catalog</button>
       </div>
     );
   }
@@ -66,7 +66,7 @@ export const BTOConfigurator: React.FC<BTOConfiguratorProps> = ({ product, onClo
             ))}
           </div>
         </div>
-        <button onClick={onClose} className="text-slate-500 hover:text-white">&times;</button>
+        <button type="button" onClick={onClose} className="text-slate-500 hover:text-white">&times;</button>
       </header>
 
       <div className="flex-1">
@@ -98,7 +98,7 @@ export const BTOConfigurator: React.FC<BTOConfiguratorProps> = ({ product, onClo
         </div>
         <div className="flex gap-4">
           {step > 0 && (
-            <button onClick={() => setStep(step - 1)} className="p-4 bg-slate-800 rounded-xl text-white">
+            <button type="button" onClick={() => setStep(step - 1)} aria-label="Previous step" className="p-4 bg-slate-800 rounded-xl text-white">
               <ChevronLeft size={24} />
             </button>
           )}

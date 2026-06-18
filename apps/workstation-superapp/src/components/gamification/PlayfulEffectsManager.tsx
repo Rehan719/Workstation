@@ -9,16 +9,15 @@ export const PlayfulEffectsManager: React.FC = () => {
 
   useEffect(() => {
     const handleXPGain = () => {
-       console.log("🔊 Playing 'xp_gain' chime.");
+       // Audio stub — wire Howler here when audio assets are available
     };
 
-    const handleLevelUp = (e: any) => {
-       console.log(`🎉 Level Up to ${e.detail.level}! Playing 'celebration' fanfare.`);
+    const handleLevelUp = (_e: any) => {
        // Trigger Confetti (simulated)
     };
 
-    const handleQuestComplete = (e: any) => {
-       console.log(`🏆 Quest Complete! Badge Earned: ${e.detail.badge || 'None'}. Playing 'achievement' sound.`);
+    const handleQuestComplete = (_e: any) => {
+       // Achievement fanfare stub
     };
 
     window.addEventListener('workstation-xp-gain', handleXPGain);

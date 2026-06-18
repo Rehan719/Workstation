@@ -131,11 +131,11 @@ export const SearchMeshModal: React.FC<SearchMeshModalProps> = ({ open, onClose 
               className="flex-1 bg-transparent border-none outline-none text-base font-bold placeholder-slate-600 text-white"
             />
             {query && (
-              <button onClick={() => setQuery('')} aria-label="Clear search" title="Clear search" className="p-1 text-slate-600 hover:text-white transition-colors">
+              <button type="button" onClick={() => setQuery('')} aria-label="Clear search" title="Clear search" className="p-1 text-slate-600 hover:text-white transition-colors">
                 <X size={14} />
               </button>
             )}
-            <button onClick={onClose} aria-label="Close search" title="Close search" className="p-1.5 text-slate-600 hover:text-white transition-colors border-l border-slate-800 pl-3 ml-1">
+            <button type="button" onClick={onClose} aria-label="Close search" title="Close search" className="p-1.5 text-slate-600 hover:text-white transition-colors border-l border-slate-800 pl-3 ml-1">
               <X size={16} />
             </button>
           </div>

@@ -77,9 +77,8 @@ export const SovereignXAIObservatory: React.FC = () => {
                          <span>{f.feature}</span>
                          <span className="text-white">{(f.weight * 100).toFixed(0)}%</span>
                        </div>
-                       <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                          <div className={`h-full ${f.color}`} style={{ width: `${f.weight * 100}%` }}></div>
-                       </div>
+                       <progress value={f.weight} max={1} aria-label={`${f.feature} weight ${(f.weight * 100).toFixed(0)}%`}
+                          className="w-full h-1.5 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-700 [&::-webkit-progress-value]:bg-indigo-500 [&::-moz-progress-bar]:bg-indigo-500" />
                     </div>
                   ))}
                </div>
@@ -127,7 +126,7 @@ export const SovereignXAIObservatory: React.FC = () => {
                </div>
              ))}
           </div>
-          <button onClick={() => notImplemented('View All Explanations')} className="w-full mt-4 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-black text-slate-400 uppercase hover:border-indigo-400 hover:text-indigo-600 transition-all">
+          <button type="button" onClick={() => notImplemented('View All Explanations')} className="w-full mt-4 py-2 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-black text-slate-400 uppercase hover:border-indigo-400 hover:text-indigo-600 transition-all">
             View All Explanations
           </button>
         </div>

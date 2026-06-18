@@ -2,12 +2,31 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Fingerprint, Globe, GitCommit, Layers, ChevronRight, ShieldCheck, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from '@workstation/ui';
+
+const MOCK_RECORD = {
+  unified_reputation: 1420,
+  reality_coefficient: '3.7',
+  merkle_root: 'a8f2c91d4e76b3052f1a9e8c7d6b4f20e3a1c5d9b7f0e2a4c6d8f1b3e5a7c9',
+  dimensions: [
+    { name: 'Scholar', contributions: 48, reputation: 560, badges: ['S1', 'S2', 'S3'] },
+    { name: 'Developer', contributions: 61, reputation: 490, badges: ['D1', 'D2'] },
+    { name: 'Entrepreneur', contributions: 33, reputation: 370, badges: ['E1'] },
+  ],
+};
 
 export const SoulRecordExplorer: React.FC = () => {
   const [record, setRecord] = useState<any>(null);
 
   useEffect(() => {
-    axios.get('/api/v340/soul-record/guardian-did').then(res => setRecord(res.data));
+    axios.get('/api/v1/projects/stats/summary')
+      .then(res => {
+        setRecord({
+          ...MOCK_RECORD,
+          unified_reputation: (res.data.total_outputs ?? 0) * 10 + 1000,
+        });
+      })
+      .catch(() => setRecord(MOCK_RECORD));
   }, []);
 
   if (!record) return <div className="p-8 text-slate-500 animate-pulse">Synchronizing Multi-Verse Identity...</div>;
@@ -57,7 +76,7 @@ export const SoulRecordExplorer: React.FC = () => {
                    <p className="text-[10px] font-black text-slate-500 uppercase">Reputation</p>
                    <p className="text-xl font-black text-white">{dim.reputation}</p>
                 </div>
-                <button type="button" onClick={() => alert(`${dim.name}\nReputation: ${dim.reputation}\nContributions: ${dim.contributions}\nBadges: ${dim.badges.length}`)} aria-label={`Explore ${dim.name}`} title={`Explore ${dim.name}`} className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+                <button type="button" onClick={() => toast(`${dim.name} · ${dim.reputation} rep · ${dim.contributions} contributions · ${dim.badges.length} badge${dim.badges.length !== 1 ? 's' : ''}`)} aria-label={`Explore ${dim.name}`} title={`Explore ${dim.name}`} className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
                    <ChevronRight size={18} />
                 </button>
              </div>

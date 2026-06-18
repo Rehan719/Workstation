@@ -39,7 +39,7 @@ const CrossDomainAdaptationPortal: React.FC = () => {
                 <span className="text-emerald-400 font-mono">{domain.validation}</span>
               </div>
             </div>
-            <button onClick={() => notImplemented('Explore Adapted Plugins')} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded transition-colors text-xs border border-slate-700">
+            <button type="button" onClick={() => notImplemented('Explore Adapted Plugins')} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded transition-colors text-xs border border-slate-700">
               Explore Adapted Plugins
             </button>
           </div>

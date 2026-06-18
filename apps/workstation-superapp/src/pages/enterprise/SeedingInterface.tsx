@@ -68,7 +68,7 @@ export const SeedingInterface: React.FC = () => {
                               <h4 className="text-lg font-black text-white uppercase tracking-widest">Select Target Environment</h4>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                  {targetEnvironments.map(env => (
-                                    <button key={env.id} onClick={() => setSeedingStep(1)} className="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-aura/50 transition-all text-left group">
+                                    <button type="button" key={env.id} onClick={() => setSeedingStep(1)} className="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-aura/50 transition-all text-left group">
                                        <p className="text-sm font-black text-white mb-2 uppercase">{env.name}</p>
                                        <Badge color="aura">{env.resources} Res</Badge>
                                     </button>

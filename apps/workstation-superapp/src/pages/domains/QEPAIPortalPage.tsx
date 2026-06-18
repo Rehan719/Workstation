@@ -135,7 +135,7 @@ export const QEPAIPortal: React.FC = () => {
                  </div>
                ))}
             </div>
-            <button onClick={() => notImplemented('Update Recommendation Model')} className="w-full mt-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition-colors">
+            <button type="button" onClick={() => notImplemented('Update Recommendation Model')} className="w-full mt-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition-colors">
               Update Recommendation Model
             </button>
           </div>

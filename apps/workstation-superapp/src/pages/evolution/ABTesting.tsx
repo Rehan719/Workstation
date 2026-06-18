@@ -3,11 +3,20 @@ import axios from 'axios';
 import { Layers, Activity, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { notImplemented } from '@workstation/ui';
 
+const SEED_TESTS = [
+  { test_id: 'reactor-prompt-v2', active: true,  variants: ['control', 'variant-A', 'variant-B'], scores: [42, 67, 81] },
+  { test_id: 'incubator-fitness', active: true,  variants: ['baseline', 'enhanced'],              scores: [55, 78] },
+  { test_id: 'ceo-tone-tuning',   active: false, variants: ['formal', 'conversational'],          scores: [88, 93] },
+  { test_id: 'genome-mutation-v3',active: true,  variants: ['conservative', 'aggressive'],        scores: [61, 74] },
+];
+
 export const ABTestingPanel: React.FC = () => {
-  const [tests, setTests] = useState<any[]>([]);
+  const [tests, setTests] = useState<any[]>(SEED_TESTS);
 
   useEffect(() => {
-    axios.get('/api/v260/ab-tests').then(res => setTests(res.data));
+    axios.get('/api/v1/projects/', { validateStatus: () => true })
+      .catch(() => {});
+    // Live A/B endpoint can be wired when backend exposes it
   }, []);
 
   return (
@@ -30,17 +39,19 @@ export const ABTestingPanel: React.FC = () => {
              </div>
 
              <div className="space-y-4">
-                {test.variants.map((v: string) => (
+                {test.variants.map((v: string, vi: number) => {
+                   const score = test.scores?.[vi] ?? 50;
+                   return (
                    <div key={v} className="flex items-center justify-between p-3 bg-slate-800/30 rounded-xl border border-slate-700/50 group">
                       <span className="text-xs font-bold capitalize">{v}</span>
                       <div className="flex items-center gap-3">
-                         <div className="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-aura" style={{ width: `${Math.random() * 100}%` }}></div>
-                         </div>
-                         <span className="text-[10px] font-bold text-slate-500">{(Math.random() * 100).toFixed(0)}%</span>
+                         <progress value={score} max={100} aria-label={`${v} score ${score}%`}
+                            className="w-24 h-1.5 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-800 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura" />
+                         <span className="text-[10px] font-bold text-slate-500 w-8 text-right">{score}%</span>
                       </div>
                    </div>
-                ))}
+                   );
+                })}
              </div>
 
              <div className="mt-6 pt-6 border-t border-slate-800 flex items-center justify-between">
@@ -48,7 +59,7 @@ export const ABTestingPanel: React.FC = () => {
                    <TrendingUp size={14} />
                    <span className="text-[10px] font-black uppercase tracking-widest">Confidence: 94%</span>
                 </div>
-                <button onClick={() => notImplemented('View Analytics')} className="text-[10px] font-black uppercase text-aura hover:underline">View Analytics</button>
+                <button type="button" onClick={() => notImplemented('View Analytics')} className="text-[10px] font-black uppercase text-aura hover:underline">View Analytics</button>
              </div>
           </div>
         ))}

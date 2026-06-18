@@ -38,9 +38,9 @@ export const CouncilInterface: React.FC = () => {
       <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-10">
          <main className="@[440px]:col-span-8 space-y-10">
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800 w-fit">
-               <button onClick={() => setActiveTab('members')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'members' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Members</button>
-               <button onClick={() => setActiveTab('proposals')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'proposals' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Proposals</button>
-               <button onClick={() => setActiveTab('rules')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'rules' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Self-Healing</button>
+               <button type="button" onClick={() => setActiveTab('members')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'members' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Members</button>
+               <button type="button" onClick={() => setActiveTab('proposals')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'proposals' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Proposals</button>
+               <button type="button" onClick={() => setActiveTab('rules')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'rules' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Self-Healing</button>
             </div>
 
             <AnimatePresence mode="wait">

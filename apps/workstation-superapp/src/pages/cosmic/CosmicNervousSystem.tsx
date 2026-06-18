@@ -47,20 +47,19 @@ export const CosmicNervousSystem: React.FC = () => {
                   <h3 className="text-2xl font-black">Planetary Defense Map</h3>
                   <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">NEO Orbital Tracking Active</p>
                </div>
-               {data.asteroids.map((a: any, i: number) => (
+               {data.asteroids.map((a: any, i: number) => {
+                 const pos = ['top-[20%] left-[15%]', 'top-[35%] left-[55%]', 'top-[50%] left-[25%]', 'top-[65%] left-[70%]'];
+                 return (
                  <motion.div
                    key={a.id}
-                   animate={{
-                      x: [0, 10, 0],
-                      y: [0, -10, 0],
-                   }}
+                   animate={{ x: [0, 10, 0], y: [0, -10, 0] }}
                    transition={{ duration: 5, repeat: Infinity, delay: i }}
-                   className="absolute p-2 bg-surface border border-white/10 rounded-lg text-[8px] font-black uppercase text-white shadow-xl"
-                   style={{ top: `${20 + i * 15}%`, left: `${15 + i * 40}%` }}
+                   className={`absolute p-2 bg-surface border border-white/10 rounded-lg text-[8px] font-black uppercase text-white shadow-xl ${pos[i] ?? 'top-[20%] left-[20%]'}`}
                  >
                     {a.name} • {a.risk}
                  </motion.div>
-               ))}
+                 );
+               })}
             </section>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -88,7 +87,7 @@ export const CosmicNervousSystem: React.FC = () => {
                   <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">
                      Meta-Consciousness is modeling potential responses to Neo-01 trajectory shift.
                   </p>
-                  <button onClick={() => notImplemented('Trigger Response Protocol')} className="w-full py-4 bg-vital/20 text-vital border border-vital/30 font-black rounded-xl text-[10px] uppercase tracking-widest">Trigger Response Protocol</button>
+                  <button type="button" onClick={() => notImplemented('Trigger Response Protocol')} className="w-full py-4 bg-vital/20 text-vital border border-vital/30 font-black rounded-xl text-[10px] uppercase tracking-widest">Trigger Response Protocol</button>
                </section>
             </div>
          </div>
@@ -108,8 +107,8 @@ export const CosmicNervousSystem: React.FC = () => {
                        </div>
                        <p className="font-mono text-white text-sm break-all">{s.content}</p>
                        <div className="pt-4 border-t border-white/5 flex gap-2">
-                          <button onClick={() => notImplemented('Analyze')} className="flex-1 py-2 bg-aura/10 text-aura font-black rounded-lg text-[8px] uppercase tracking-widest">Analyze</button>
-                          <button onClick={() => notImplemented('Respond')} className="flex-1 py-2 bg-aura text-sovereign font-black rounded-lg text-[8px] uppercase tracking-widest">Respond</button>
+                          <button type="button" onClick={() => notImplemented('Analyze')} className="flex-1 py-2 bg-aura/10 text-aura font-black rounded-lg text-[8px] uppercase tracking-widest">Analyze</button>
+                          <button type="button" onClick={() => notImplemented('Respond')} className="flex-1 py-2 bg-aura text-sovereign font-black rounded-lg text-[8px] uppercase tracking-widest">Respond</button>
                        </div>
                     </div>
                   ))}

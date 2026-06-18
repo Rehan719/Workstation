@@ -52,8 +52,8 @@ export const OrbitalDashboard: React.FC = () => {
                   <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 30, ease: "linear" }} className="absolute w-[600px] h-[600px] rounded-full border border-highlight/5 border-dashed" />
 
                   {/* Node markers */}
-                  <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }} transition={{ repeat: Infinity, duration: 2 }} className="absolute w-2 h-2 rounded-full bg-aura shadow-[0_0_15px_rgba(100,255,218,0.8)]" style={{ top: '30%', left: '45%' }} />
-                  <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }} transition={{ repeat: Infinity, duration: 2.5 }} className="absolute w-2 h-2 rounded-full bg-highlight shadow-[0_0_15px_rgba(255,204,100,0.8)]" style={{ top: '60%', left: '70%' }} />
+                  <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }} transition={{ repeat: Infinity, duration: 2 }} className="absolute top-[30%] left-[45%] w-2 h-2 rounded-full bg-aura shadow-[0_0_15px_rgba(100,255,218,0.8)]" />
+                  <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }} transition={{ repeat: Infinity, duration: 2.5 }} className="absolute top-[60%] left-[70%] w-2 h-2 rounded-full bg-highlight shadow-[0_0_15px_rgba(255,204,100,0.8)]" />
                </div>
 
                <div className="absolute bottom-10 right-10 flex gap-10 text-right">

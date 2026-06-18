@@ -31,9 +31,8 @@ export const QEPEngine: React.FC = () => {
             </div>
             <h3 className="text-xl font-black mb-1">{engine.name}</h3>
             <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest mb-6">{engine.status}</p>
-            <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
-               <div className={`h-full bg-aura transition-all duration-1000`} style={{ width: `${engine.progress}%` }} />
-            </div>
+            <progress value={engine.progress} max={100} aria-label={`${engine.name} progress ${engine.progress}%`}
+               className="w-full h-1 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-900 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura" />
           </Card>
         ))}
       </div>

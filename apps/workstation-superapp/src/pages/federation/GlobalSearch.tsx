@@ -27,7 +27,7 @@ export const GlobalSearch: React.FC = () => {
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && handleSearch()}
+          onKeyDown={e => e.key === 'Enter' && handleSearch()}
           placeholder="Search all federated nodes..."
           className={`w-full rounded-[2rem] py-6 pl-16 pr-8 text-xl focus:outline-none transition-all shadow-2xl ${
             isAdvanced
@@ -56,9 +56,8 @@ export const GlobalSearch: React.FC = () => {
              </div>
              <h3 className="text-xl font-bold mb-2">{r.title}</h3>
              <div className="flex items-center gap-2">
-                <div className={`flex-1 h-1 rounded-full overflow-hidden ${isAdvanced ? 'bg-aura/10' : 'bg-slate-800'}`}>
-                   <div className="h-full bg-aura" style={{ width: `${r.relevance * 100}%` }}></div>
-                </div>
+                <progress value={r.relevance} max={1} aria-label={`Relevance ${(r.relevance * 100).toFixed(0)}%`}
+                  className="flex-1 h-1 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-800 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura" />
                 <span className="text-[10px] font-black text-slate-500">Relevance: {(r.relevance * 100).toFixed(0)}%</span>
              </div>
           </div>

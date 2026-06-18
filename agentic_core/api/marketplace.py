@@ -1,0 +1,248 @@
+"""
+Marketplace API — real JSON-persisted product listings + WST purchase.
+
+Routes (all under /api/v1/marketplace):
+  GET  /listings            — all listings (platform catalog + user listings)
+  POST /listings            — create a new user listing
+  GET  /listings/{id}       — single listing
+  PATCH /listings/{id}      — update (owner only — no auth in MVP, uses creator_id field)
+  DELETE /listings/{id}     — delete listing
+  POST /listings/{id}/purchase — deduct WST from token ledger, record sale
+
+Also exposes:
+  GET /api/v230/marketplace/products — backward-compat alias for old frontend calls
+"""
+from __future__ import annotations
+
+import json
+import os
+import time
+import uuid
+from pathlib import Path
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+router = APIRouter(tags=["Marketplace"])
+
+_LISTINGS_DIR = Path(os.getenv("LISTINGS_DIR", "data/marketplace"))
+_LISTINGS_DIR.mkdir(parents=True, exist_ok=True)
+
+# ── Models ────────────────────────────────────────────────────────────────────
+
+class Listing(BaseModel):
+    id: str = ""
+    name: str
+    description: str = ""
+    author: str = "Community"
+    category: str = "Product"
+    price_wst: float = 0.0
+    tier: str = "Standard"
+    tags: list[str] = []
+    certified: bool = False
+    status: str = "active"   # active | sold_out | draft
+    sales_count: int = 0
+    created_at: float = 0.0
+    updated_at: float = 0.0
+    creator_id: str = "community"
+
+class CreateListingRequest(BaseModel):
+    name: str
+    description: str = ""
+    author: str = "Community"
+    category: str = "Product"
+    price_wst: float = 0.0
+    tier: str = "Standard"
+    tags: list[str] = []
+    creator_id: str = "community"
+
+class PurchaseRequest(BaseModel):
+    user_id: str = "demo_user"
+    quantity: int = 1
+
+
+# ── Persistence helpers ───────────────────────────────────────────────────────
+
+def _listing_path(listing_id: str) -> Path:
+    return _LISTINGS_DIR / f"{listing_id}.json"
+
+def _load(listing_id: str) -> Listing:
+    p = _listing_path(listing_id)
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
+    return Listing(**json.loads(p.read_text()))
+
+def _save(listing: Listing) -> Listing:
+    listing.updated_at = time.time()
+    _listing_path(listing.id).write_text(listing.model_dump_json(indent=2))
+    return listing
+
+def _all_listings() -> list[Listing]:
+    listings = []
+    for f in sorted(_LISTINGS_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
+        try:
+            listings.append(Listing(**json.loads(f.read_text())))
+        except Exception:
+            pass
+    return listings
+
+def _seed_platform_listings():
+    """Seed built-in platform listings on first boot if the store is empty."""
+    if any(_LISTINGS_DIR.glob("*.json")):
+        return
+    seeds = [
+        {"name": "Sovereign Synthesis Pack", "description": "Full Synthesis Studio access with unlimited document generation, AI summarisation, and export to any format.", "author": "Workstation Core", "category": "Platform", "price_wst": 5000, "tier": "Pro", "tags": ["synthesis","ai","documents"], "certified": True, "creator_id": "platform"},
+        {"name": "Digital Reactor — Religion Domain", "description": "Plug-in domain reactor for Islamic jurisprudence processing, consensus validation, and fatwa generation.", "author": "Workstation CoE", "category": "Reactor", "price_wst": 8000, "tier": "Enterprise", "tags": ["religion","reactor","ai"], "certified": True, "creator_id": "platform"},
+        {"name": "Capital Intelligence Module", "description": "AI-powered portfolio analysis, governance proposals tracker, and Sovereign Vault integration.", "author": "Workstation CoE", "category": "Analytics", "price_wst": 12000, "tier": "Enterprise", "tags": ["capital","analytics","governance"], "certified": True, "creator_id": "platform"},
+        {"name": "AI CEO Consultation Bundle", "description": "Unlimited AI CEO chat sessions with persistent ChromaDB memory across all realms and domains.", "author": "Workstation Core", "category": "AI Agent", "price_wst": 3000, "tier": "Standard", "tags": ["ceo","ai","chat"], "certified": True, "creator_id": "platform"},
+        {"name": "Forge Multi-Step Pipeline Pack", "description": "Unlock unlimited pipeline steps in the AI Forge with LLM, Search, Memory, and Guardrail nodes.", "author": "Workstation Core", "category": "Developer", "price_wst": 4500, "tier": "Pro", "tags": ["forge","pipeline","developer"], "certified": True, "creator_id": "platform"},
+        {"name": "Incubator Evolution Engine Pro", "description": "Run 5-variant prompt tournaments with advanced fitness scoring and auto-export of winning prompts.", "author": "Community", "category": "Developer", "price_wst": 2000, "tier": "Standard", "tags": ["incubator","evolution","prompts"], "certified": False, "creator_id": "community"},
+    ]
+    for s in seeds:
+        lid = uuid.uuid4().hex[:12]
+        listing = Listing(
+            id=lid,
+            created_at=time.time(),
+            updated_at=time.time(),
+            status="active",
+            **s,
+        )
+        _listing_path(lid).write_text(listing.model_dump_json(indent=2))
+
+_seed_platform_listings()
+
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@router.get("/api/v1/marketplace/listings")
+async def list_marketplace_listings(
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+    certified_only: bool = False,
+) -> list[dict]:
+    listings = _all_listings()
+    if category:
+        listings = [l for l in listings if l.category.lower() == category.lower()]
+    if certified_only:
+        listings = [l for l in listings if l.certified]
+    if search:
+        q = search.lower()
+        listings = [l for l in listings if q in l.name.lower() or q in l.description.lower() or any(q in t for t in l.tags)]
+    return [l.model_dump() for l in listings if l.status != "draft"]
+
+
+@router.post("/api/v1/marketplace/listings")
+async def create_listing(req: CreateListingRequest) -> dict:
+    lid = uuid.uuid4().hex[:12]
+    listing = Listing(
+        id=lid,
+        name=req.name,
+        description=req.description,
+        author=req.author,
+        category=req.category,
+        price_wst=req.price_wst,
+        tier=req.tier,
+        tags=req.tags,
+        creator_id=req.creator_id,
+        certified=False,
+        status="active",
+        created_at=time.time(),
+        updated_at=time.time(),
+    )
+    _save(listing)
+    return listing.model_dump()
+
+
+@router.get("/api/v1/marketplace/listings/{listing_id}")
+async def get_listing(listing_id: str) -> dict:
+    return _load(listing_id).model_dump()
+
+
+@router.patch("/api/v1/marketplace/listings/{listing_id}")
+async def update_listing(listing_id: str, patch: dict) -> dict:
+    listing = _load(listing_id)
+    for k, v in patch.items():
+        if k not in ("id", "created_at", "certified") and hasattr(listing, k):
+            setattr(listing, k, v)
+    return _save(listing).model_dump()
+
+
+@router.delete("/api/v1/marketplace/listings/{listing_id}")
+async def delete_listing(listing_id: str) -> dict:
+    p = _listing_path(listing_id)
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="Listing not found")
+    p.unlink()
+    return {"deleted": listing_id}
+
+
+@router.post("/api/v1/marketplace/listings/{listing_id}/purchase")
+async def purchase_listing(listing_id: str, req: PurchaseRequest) -> dict:
+    """
+    Deduct WST from the user's token ledger and record the sale.
+    Returns purchase receipt.
+    """
+    listing = _load(listing_id)
+    if listing.status == "sold_out":
+        raise HTTPException(status_code=409, detail="Listing is sold out")
+
+    total_cost = listing.price_wst * req.quantity
+
+    if total_cost > 0:
+        try:
+            from agentic_core.commercial.token_ledger import TokenLedger, UserTier
+            ledger = TokenLedger()
+            # Ensure user exists with at least a free tier
+            ledger.initialize_user(req.user_id, UserTier.FREE)
+            success = ledger.consume_tokens(req.user_id, total_cost, f"Purchase: {listing.name}")
+            if not success:
+                raise HTTPException(
+                    status_code=402,
+                    detail=f"Insufficient WST balance. Required: {total_cost} WST."
+                )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Ledger error: {exc}")
+
+    # Record sale
+    listing.sales_count += req.quantity
+    _save(listing)
+
+    receipt = {
+        "receipt_id": uuid.uuid4().hex[:16],
+        "listing_id": listing_id,
+        "listing_name": listing.name,
+        "user_id": req.user_id,
+        "quantity": req.quantity,
+        "total_cost_wst": total_cost,
+        "purchased_at": time.time(),
+        "status": "confirmed",
+    }
+    # Persist receipt
+    receipts_dir = Path("data/marketplace/receipts")
+    receipts_dir.mkdir(parents=True, exist_ok=True)
+    (receipts_dir / f"{receipt['receipt_id']}.json").write_text(json.dumps(receipt, indent=2))
+
+    return receipt
+
+
+# ── Backward-compat alias (old frontend calls /api/v230/marketplace/products) ─
+
+@router.get("/api/v230/marketplace/products")
+async def marketplace_products_v230() -> list[dict]:
+    """Backward-compat alias — returns active listings in the old product shape."""
+    listings = [l for l in _all_listings() if l.status == "active"]
+    return [
+        {
+            "id": l.id,
+            "name": l.name,
+            "author": l.author,
+            "price": l.price_wst,
+            "category": l.category,
+            "certified": l.certified,
+            "description": l.description,
+        }
+        for l in listings
+    ]

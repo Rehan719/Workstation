@@ -71,8 +71,8 @@ export const TreatyDashboard: React.FC = () => {
                      Sovereign Treaties
                   </h3>
                   <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
-                     <button onClick={() => setActiveTab('active')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Active</button>
-                     <button onClick={() => setActiveTab('alliances')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'alliances' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Alliances</button>
+                     <button type="button" onClick={() => setActiveTab('active')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Active</button>
+                     <button type="button" onClick={() => setActiveTab('alliances')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'alliances' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Alliances</button>
                   </div>
                </div>
 

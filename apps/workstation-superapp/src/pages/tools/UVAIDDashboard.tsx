@@ -50,7 +50,7 @@ export const UVAIDDashboard: React.FC = () => {
                 <h3 className="text-2xl font-black text-white">Upload Synthesis Source</h3>
                 <p className="text-slate-400 font-bold max-w-md mx-auto">Drop a JSON, CSV, or Neural Manifest to begin the Grand Synthesis.</p>
              </div>
-             <button onClick={handleUpload} className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all">Begin Ingestion</button>
+             <button type="button" onClick={handleUpload} className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all">Begin Ingestion</button>
            </div>
          )}
 
@@ -65,7 +65,7 @@ export const UVAIDDashboard: React.FC = () => {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full space-y-8">
                <div className="flex justify-between items-center">
                   <h3 className="text-2xl font-black">Synthesis Report</h3>
-                  <button onClick={() => setResult(null)} className="text-slate-500 hover:text-white font-bold text-xs uppercase tracking-widest">Clear Analysis</button>
+                  <button type="button" onClick={() => setResult(null)} className="text-slate-500 hover:text-white font-bold text-xs uppercase tracking-widest">Clear Analysis</button>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="p-8 rounded-3xl bg-surface border border-white/5 space-y-6">
@@ -73,9 +73,8 @@ export const UVAIDDashboard: React.FC = () => {
                         <p className="text-[10px] font-black text-slate-500 uppercase">System Fidelity</p>
                         <p className="text-3xl font-black text-aura">{(result.fidelity * 100).toFixed(2)}%</p>
                      </div>
-                     <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-aura shadow-[0_0_15px_rgba(100,255,218,0.5)]" style={{ width: '99.98%' }}></div>
-                     </div>
+                     <progress value={99.98} max={100} aria-label="System fidelity 99.98%"
+                        className="w-full h-2 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-800 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura" />
                   </div>
                   <div className="p-8 rounded-3xl bg-surface border border-white/5">
                      <p className="text-[10px] font-black text-slate-500 uppercase mb-4">Detected Patterns</p>
