@@ -323,3 +323,45 @@ def test_education_lesson_plan(client):
     body = r.json()
     assert "lesson_plan" in body
     _assert_real_response(body["lesson_plan"])
+
+
+# ── Care domain ───────────────────────────────────────────────────────────────
+
+def test_care_tools(client):
+    r = client.get("/api/v1/care/tools")
+    assert r.status_code == 200
+    body = r.json()
+    assert "tools" in body
+    assert len(body["tools"]) >= 5
+
+
+# ── Evolution engine ──────────────────────────────────────────────────────────
+
+def test_evolution_proposals_empty(client):
+    """Evolution proposals endpoint must return a list (may be empty initially)."""
+    r = client.get("/api/v191/evolution/proposals")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+
+def test_evolution_history(client):
+    r = client.get("/api/v191/evolution/history")
+    assert r.status_code == 200
+    body = r.json()
+    assert "resolved" in body
+    assert "total_approved" in body
+
+
+@_ai_only
+def test_evolution_generate(client):
+    """Evolution engine must generate AI-backed proposals."""
+    r = client.post("/api/v191/evolution/proposals/generate", json={
+        "context": "We have 2 projects in concept stage and good system health."
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "proposals" in body
+    assert len(body["proposals"]) >= 1
+    p = body["proposals"][0]
+    assert "id" in p and "title" in p and "status" in p
+    assert p["status"] == "pending"

@@ -146,6 +146,10 @@ app.include_router(science_api.router)
 from agentic_core.api import education as education_api
 app.include_router(education_api.router)
 
+# 26. Care domain (care plans, risk assessment, clinical handover)
+from agentic_core.api import care as care_api
+app.include_router(care_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime
