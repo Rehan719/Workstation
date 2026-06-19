@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProjectsHub } from './pages/projects/ProjectsHub';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -34,6 +34,8 @@ import { CareHub } from './pages/domains/CareHub';
 import { KnowledgeGarden } from './pages/learner/KnowledgeGarden';
 import { LearnerRealm } from './pages/learner/LearnerRealm';
 import { EnterpriseRealm } from './pages/enterprise/EnterpriseRealm';
+import { VSBSpawnStudio } from './pages/enterprise/VSBSpawnStudio';
+import { IntelligenceLab } from './pages/IntelligenceLab';
 import { OffspringManagement } from './pages/enterprise/OffspringManagement';
 import { TreatyDashboard } from './pages/enterprise/TreatyDashboard';
 import { SeedingInterface } from './pages/enterprise/SeedingInterface';
@@ -220,6 +222,9 @@ function App() {
 
           {/* ── Enterprise Realm ──────────────────────────────────── */}
           <Route path="/enterprise"  element={<EnterpriseRealm />} />
+          <Route path="/vsb"         element={<VSBSpawnStudio />} />
+          <Route path="/vsb-spawn"   element={<VSBSpawnStudio />} />
+          <Route path="/intelligence" element={<IntelligenceLab />} />
           <Route path="/seeding"     element={<SeedingInterface />} />
           <Route path="/diplomacy"   element={<InterstellarDiplomacy />} />
           <Route path="/treaties"    element={<TreatyDashboard />} />

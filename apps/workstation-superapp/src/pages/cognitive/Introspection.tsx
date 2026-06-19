@@ -1,26 +1,49 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Activity, Brain, Zap, Heart, Wind } from 'lucide-react';
+import { Activity, Brain, Zap, Heart, Wind, Shield, Cpu, FlaskConical, Radio } from 'lucide-react';
 
-const MOCK_VITALS = { oxytocin: 0.85, serotonin: 0.92, dopamine: 0.74, system_health: 0.9998 };
+interface Biometrics {
+  circadian:      { cycle: string };
+  cardiovascular: { resource_flow: number; peristaltic_delay: number };
+  cognition:      { state: string; primary_drive: string };
+  immune:         { health: number; threat_level: string; error_rate: number };
+  metabolic:      { efficiency: number; atp_ratio: number; total_projects: number };
+  nervous:        { arousal_state: string; signal_rate: number };
+  communication:  { neurotransmitter: string; is_active: boolean };
+}
+
+const SEED: Biometrics = {
+  circadian:      { cycle: 'ACTIVE_FOCUS' },
+  cardiovascular: { resource_flow: 75, peristaltic_delay: 1.5 },
+  cognition:      { state: 'STABLE', primary_drive: 'DISCOVERY' },
+  immune:         { health: 0.98, threat_level: 'NONE', error_rate: 0 },
+  metabolic:      { efficiency: 0.92, atp_ratio: 0.88, total_projects: 0 },
+  nervous:        { arousal_state: 'RESTING', signal_rate: 0.0 },
+  communication:  { neurotransmitter: 'Oxytocin', is_active: false },
+};
 
 export const Introspection: React.FC = () => {
-  const [vitals, setVitals] = useState<any>(MOCK_VITALS);
+  const [bio, setBio] = useState<Biometrics>(SEED);
 
   useEffect(() => {
-    // Enrich from real endpoint if backend is live; fall back to seed
-    axios.get('/api/v1/projects/stats/summary', { validateStatus: () => true })
-      .then(res => {
-        if (res.status === 200 && res.data) {
-          setVitals({
-            ...MOCK_VITALS,
-            system_health: Math.min(0.9999, 0.95 + (res.data.total_projects ?? 0) * 0.001),
-          });
-        }
-      })
-      .catch(() => {});
+    const load = () => {
+      axios.get<Biometrics>('/api/v1/biometrics/status', { validateStatus: () => true })
+        .then(res => { if (res.status === 200 && res.data) setBio(res.data); })
+        .catch(() => {});
+    };
+    load();
+    const t = setInterval(load, 10000);
+    return () => clearInterval(t);
   }, []);
+
+  // Map real biometrics to display values
+  const vitals = {
+    oxytocin:      bio.communication.neurotransmitter === 'Oxytocin'  ? 0.85 : 0.5,
+    serotonin:     bio.communication.neurotransmitter === 'Serotonin' ? 0.88 : 0.55,
+    dopamine:      bio.communication.neurotransmitter === 'Dopamine'  ? 0.82 : 0.6,
+    system_health: bio.immune.health,
+  };
 
   if (!vitals) return <div className="p-8 text-aura animate-pulse font-black uppercase tracking-widest">Calibrating Introspection...</div>;
 
@@ -59,12 +82,28 @@ export const Introspection: React.FC = () => {
         <div className="glass-card p-12 h-[400px] flex flex-col justify-between">
           <h3 className="text-2xl font-black flex items-center gap-3">
             <Brain size={24} className="text-aura" />
-            Cognitive Load
+            Live Biometrics
           </h3>
-          <div className="space-y-10">
-             <LoadVisual label="Synthesis Engine" value={42} color="bg-aura" />
-             <LoadVisual label="Genomic Reconfiguration" value={18} color="bg-highlight" />
-             <LoadVisual label="Passive Sensory Monitoring" value={85} color="bg-vital" />
+          <div className="space-y-6">
+             <LoadVisual label={`Metabolic (ATP ${(bio.metabolic.atp_ratio * 100).toFixed(0)}%)`} value={Math.round(bio.metabolic.efficiency * 100)} color="bg-aura" />
+             <LoadVisual label={`Cardiovascular (Flow)`} value={Math.round(bio.cardiovascular.resource_flow)} color="bg-highlight" />
+             <LoadVisual label={`Immune Health`} value={Math.round(bio.immune.health * 100)} color="bg-vital" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            {[
+              { icon: Radio, label: 'Circadian', val: bio.circadian.cycle.replace('_', ' ') },
+              { icon: Brain, label: 'Cognition', val: bio.cognition.state },
+              { icon: Shield, label: 'Immune', val: bio.immune.threat_level },
+              { icon: Cpu, label: 'Nervous', val: bio.nervous.arousal_state },
+            ].map(({ icon: Icon, label, val }) => (
+              <div key={label} className="flex items-center gap-2 bg-slate-900/40 rounded-xl px-3 py-2">
+                <Icon size={12} className="text-slate-500 shrink-0" />
+                <div>
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-600">{label}</p>
+                  <p className="text-[10px] font-black text-white">{val}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

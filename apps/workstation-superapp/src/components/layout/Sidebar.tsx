@@ -39,6 +39,7 @@ const allNavItems: NavItem[] = [
       { name: 'Entrepreneur',      icon: Briefcase,     id: 'entrepreneur'},
       { name: 'Capital Fund',      icon: DollarSign,    id: 'capital'    },
       { name: 'Solutions',         icon: Rocket,        id: 'solutions'  },
+      { name: 'VSB Spawn Studio',  icon: Building2,     id: 'vsb'        },
     ]
   },
 
@@ -107,6 +108,7 @@ const allNavItems: NavItem[] = [
     icon: Cpu,
     id: 'intel-facet',
     subItems: [
+      { name: 'Intelligence Lab',   icon: Brain,      id: 'intelligence' },
       { name: 'Civilization Brain', icon: Globe,      id: 'civilization' },
       { name: 'Reality Dashboard',  icon: Radio,      id: 'reality' },
       { name: 'Grand Ops',          icon: Gauge,      id: 'grand-ops' },
