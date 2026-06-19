@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Layers, Activity, TrendingUp, CheckCircle2 } from 'lucide-react';
-import { notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 
 const SEED_TESTS = [
   { test_id: 'reactor-prompt-v2', active: true,  variants: ['control', 'variant-A', 'variant-B'], scores: [42, 67, 81] },
@@ -59,7 +59,7 @@ export const ABTestingPanel: React.FC = () => {
                    <TrendingUp size={14} />
                    <span className="text-[10px] font-black uppercase tracking-widest">Confidence: 94%</span>
                 </div>
-                <button type="button" onClick={() => notImplemented('View Analytics')} className="text-[10px] font-black uppercase text-aura hover:underline">View Analytics</button>
+                <button type="button" onClick={() => toast(`A/B test analytics dashboard launching in QEP Season 2`)} className="text-[10px] font-black uppercase text-aura hover:underline">View Analytics</button>
              </div>
           </div>
         ))}

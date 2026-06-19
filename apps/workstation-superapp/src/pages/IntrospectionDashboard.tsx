@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Badge, Button, notImplemented} from '@workstation/ui';
+import { Card, Badge, Button } from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
 import { Brain, Globe, History, Activity, FileText, CheckCircle2, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const IntrospectionDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [introspectionLog, setIntrospectionLog] = useState<any[]>([]);
   const [retrospection, setRetrospection] = useState<any>(null);
   const [extrospection, setExtrospection] = useState<any>(null);
@@ -125,7 +127,7 @@ export const IntrospectionDashboard: React.FC = () => {
                <p className="text-[10px] font-black text-slate-600 uppercase mb-2">Ticket ID</p>
                <p className="text-xs font-mono text-vital">{retrospection?.automated_ticket_id}</p>
             </div>
-            <Button onClick={() => notImplemented('Audit Incidents')} className="w-full bg-vital text-white py-6 rounded-2xl font-black uppercase text-xs tracking-widest">Audit Incidents</Button>
+            <Button onClick={() => navigate('/change-control')} className="w-full bg-vital text-white py-6 rounded-2xl font-black uppercase text-xs tracking-widest">Audit Incidents</Button>
           </Card>
 
           <Card className="p-10 bg-slate-950 border-slate-900 space-y-10">

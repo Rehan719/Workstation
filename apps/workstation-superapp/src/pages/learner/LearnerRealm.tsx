@@ -1,12 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, RealmSelector, notImplemented} from '@workstation/ui';
+import { Card, RealmSelector } from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '@workstation/shared';
 import { Book, Compass, Star, Users, ArrowRight, Flower2, Activity } from 'lucide-react';
 
 import { MessageSquare, Bell, Zap, FileText, Layout, BarChart, ShieldCheck } from 'lucide-react';
 
 export const LearnerRealm: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useStore();
 
   const channels = [
@@ -109,7 +111,7 @@ export const LearnerRealm: React.FC = () => {
                        </div>
                      ))}
                   </div>
-                  <button type="button" onClick={() => notImplemented('Join Sync Session')} className="px-8 py-3 bg-white text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Join Sync Session</button>
+                  <button type="button" onClick={() => navigate('/hub')} className="px-8 py-3 bg-white text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Join Sync Session</button>
                </div>
             </Card>
          </div>

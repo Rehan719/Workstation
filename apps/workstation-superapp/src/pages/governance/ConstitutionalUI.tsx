@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Badge, Button, notImplemented} from '@workstation/ui';
+import { Card, Badge, Button } from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
 import { Shield, Sparkles, FileText, Send, History, CheckCircle2, AlertTriangle, Search, Activity, Zap, TrendingUp, Clock, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const ConstitutionalUI: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'articles' | 'timeline' | 'history'>('articles');
   const [search, setSearch] = useState('');
   const [articles, setArticles] = useState<any[]>([]);
@@ -65,7 +67,7 @@ export const ConstitutionalUI: React.FC = () => {
                      <div className="h-full bg-aura w-[96%]" />
                   </div>
                </div>
-               <Button type="button" onClick={() => notImplemented('Propose Amendment')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">
+               <Button type="button" onClick={() => navigate('/change-control')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">
                   <Sparkles size={18} /> Propose Amendment
                </Button>
             </Card>

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { notImplemented, toast } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 import { Gavel, Landmark, TrendingUp, ChevronRight, Check, X, ShieldAlert, Vote, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -127,7 +127,7 @@ export const DAODashboard: React.FC = () => {
                      <p className="text-[10px] font-black text-slate-500 uppercase">Delegated Power</p>
                      <p className="text-xl font-black text-slate-400">0.0</p>
                   </div>
-                  <button type="button" onClick={() => notImplemented('Delegate Votes')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-aura hover:text-aura transition-all">
+                  <button type="button" onClick={() => toast('Vote delegation requires council multi-sig — submit a governance proposal via Change Control Agency')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:border-aura hover:text-aura transition-all">
                      Delegate Votes
                   </button>
                </div>

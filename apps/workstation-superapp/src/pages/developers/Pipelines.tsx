@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge, notImplemented } from '@workstation/ui';
+import { Card, Button, Badge, toast } from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
 import { Workflow, Play, History, Activity, Terminal, ArrowRight, CheckCircle2, AlertCircle, Info, Settings, LayoutGrid, Users, Zap, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
 
 export const Pipelines: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useStore();
   const [activeTab, setActiveTab] = useState('pipelines');
   const [activePipeline, setActivePipeline] = useState(0);
@@ -37,8 +39,8 @@ export const Pipelines: React.FC = () => {
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Workflow Pipelines & Swarm Management • Layer 9 Orchestrator</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button onClick={() => notImplemented('History')} variant="outline"><History size={18} /> History</Button>
-           <Button onClick={() => notImplemented('New Workflow')} className="bg-aura text-sovereign shadow-xl shadow-aura/20"><Play size={18} /> New Workflow</Button>
+           <Button onClick={() => navigate('/change-control')} variant="outline"><History size={18} /> History</Button>
+           <Button onClick={() => navigate('/swarm-intelligence')} className="bg-aura text-sovereign shadow-xl shadow-aura/20"><Play size={18} /> New Workflow</Button>
         </div>
       </header>
 
@@ -164,7 +166,7 @@ export const Pipelines: React.FC = () => {
                      <span className="text-emerald-500">18ms</span>
                   </div>
                </div>
-               <Button onClick={() => notImplemented('Scale Swarm')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Scale Swarm</Button>
+               <Button onClick={() => navigate('/swarm-intelligence')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Scale Swarm</Button>
             </Card>
 
             <Card className="p-8 border-slate-800">

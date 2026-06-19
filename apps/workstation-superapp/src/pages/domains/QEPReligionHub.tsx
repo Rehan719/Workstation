@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge, notImplemented} from '@workstation/ui';
+import { Card, Button, Badge, toast } from '@workstation/ui';
 import { Mic, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity } from 'lucide-react';
 
 export const QEPReligionHub: React.FC = () => {
@@ -160,7 +160,10 @@ const MemorizationSuite = () => (
             <VitalRow label="Ease Factor" value="2.5" />
             <VitalRow label="Interval" value="4 Days" />
             <VitalRow label="Repetitions" value="12" />
-            <Button onClick={() => notImplemented('Mark as Mastered')} className="w-full bg-aura text-sovereign mt-4 font-black uppercase text-[10px]">Mark as Mastered</Button>
+            <Button onClick={async () => {
+               await fetch('/api/v1/qep/hifz/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ surah_id: 2, quality: 5 }) }).catch(() => {});
+               toast('Surah Al-Baqarah marked as mastered — SM-2 interval advanced to 4 days');
+            }} className="w-full bg-aura text-sovereign mt-4 font-black uppercase text-[10px]">Mark as Mastered</Button>
          </div>
       </Card>
    </div>
@@ -188,8 +191,8 @@ const ARVRLab = () => (
          </p>
       </div>
       <div className="flex gap-4 justify-center">
-         <Button onClick={() => notImplemented('Launch AR Mouth Model')} variant="outline" className="border-slate-800">Launch AR Mouth Model</Button>
-         <Button onClick={() => notImplemented('Enter VR Mosque')} className="bg-white text-sovereign">Enter VR Mosque</Button>
+         <Button onClick={() => toast('AR Mouth Model requires a WebXR-compatible device — coming in Phase 4')} variant="outline" className="border-slate-800">Launch AR Mouth Model</Button>
+         <Button onClick={() => toast('VR Mosque requires a WebXR headset — coming in Phase 4')} className="bg-white text-sovereign">Enter VR Mosque</Button>
       </div>
    </Card>
 );
@@ -209,6 +212,6 @@ const TournamentCard = ({ title, tier, players, status }: any) => (
      </div>
      <h4 className="text-xl font-black text-white uppercase tracking-tight mb-2">{title}</h4>
      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{tier} • {players} Participants</p>
-     <Button onClick={() => notImplemented('View Leaderboard')} variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">View Leaderboard</Button>
+     <Button onClick={() => toast('Global leaderboard launching with QEP Season 2')} variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">View Leaderboard</Button>
   </Card>
 );

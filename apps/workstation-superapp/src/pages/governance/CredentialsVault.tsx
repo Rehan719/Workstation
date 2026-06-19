@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button, notImplemented } from '@workstation/ui';
+import { Card, Badge, Button, toast } from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
 import { Lock, Key, Shield, RefreshCw, Eye, EyeOff, MoreVertical, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const CredentialsVault: React.FC = () => {
+  const navigate = useNavigate();
   const [secrets, setSecrets] = useState([
     { id: 1, name: 'Main-Sovereign-PQC-Key', type: 'DILITHIUM-5', status: 'ROTATED', lastSync: '2h ago' },
     { id: 2, name: 'L11-Orbital-Auth-Token', type: 'JWT-RSA4096', status: 'ACTIVE', lastSync: '5m ago' },
@@ -39,7 +41,7 @@ export const CredentialsVault: React.FC = () => {
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
            <Button onClick={rotateAll} variant="outline" className="bg-vital/10 border-vital/30 text-vital"><RefreshCw size={18} /> Rotate All</Button>
-           <Button onClick={() => notImplemented('Add Secret')} className="bg-white text-sovereign shadow-xl shadow-white/10"><Key size={18} /> Add Secret</Button>
+           <Button onClick={() => toast('Vault credentials are governed by Article 1107 — submit a change request via Change Control Agency')} className="bg-white text-sovereign shadow-xl shadow-white/10"><Key size={18} /> Add Secret</Button>
         </div>
       </header>
 
@@ -83,7 +85,7 @@ export const CredentialsVault: React.FC = () => {
                   Vault access is governed by multi-sig council approval (Article 1112). Any attempt to rotate master PQC keys triggers a 10-minute system-wide veto window.
                </p>
             </div>
-            <Button onClick={() => notImplemented('Audit Logs')} variant="outline" className="border-vital/30 text-vital hover:bg-vital hover:text-white transition-all px-10">Audit Logs</Button>
+            <Button onClick={() => navigate('/change-control')} variant="outline" className="border-vital/30 text-vital hover:bg-vital hover:text-white transition-all px-10">Audit Logs</Button>
          </div>
       </Card>
     </div>

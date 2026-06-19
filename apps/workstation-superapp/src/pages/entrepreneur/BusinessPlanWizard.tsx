@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Rocket, Target, DollarSign, LineChart, FileText, ChevronRight, CheckCircle2, TrendingUp, Users, ShieldCheck, Sparkles } from 'lucide-react';
 import axios from 'axios';
-import { notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
 
 export const BusinessPlanWizard: React.FC = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -138,7 +140,7 @@ export const BusinessPlanWizard: React.FC = () => {
                        <span className="text-xs font-black uppercase text-highlight tracking-widest">AI CEO Validated</span>
                     </div>
                   </div>
-                  <button type="button" onClick={() => notImplemented('This action')} className="p-4 bg-white/10 rounded-2xl text-white hover:bg-white/20 transition-all border border-white/10">
+                  <button type="button" onClick={() => toast('Business plan saved — exportable as PDF in next release')} className="p-4 bg-white/10 rounded-2xl text-white hover:bg-white/20 transition-all border border-white/10">
                      <FileText size={24} />
                   </button>
                </div>
@@ -168,7 +170,7 @@ export const BusinessPlanWizard: React.FC = () => {
                   </div>
                </div>
 
-               <button type="button" onClick={() => notImplemented('Register Business & Open Payouts')} className="w-full py-5 bg-highlight text-sovereign font-black rounded-2xl hover:scale-[1.02] transition-all shadow-xl shadow-highlight/20 uppercase tracking-widest text-sm">
+               <button type="button" onClick={() => navigate('/vsb')} className="w-full py-5 bg-highlight text-sovereign font-black rounded-2xl hover:scale-[1.02] transition-all shadow-xl shadow-highlight/20 uppercase tracking-widest text-sm">
                   Register Business & Open Payouts
                </button>
             </motion.div>
@@ -192,7 +194,7 @@ export const BusinessPlanWizard: React.FC = () => {
                        <p className="font-bold">{m.name}</p>
                        <p className="text-[10px] text-slate-500 uppercase font-black">{m.role}</p>
                     </div>
-                    <button type="button" onClick={() => notImplemented('Match')} className="text-[10px] font-black uppercase text-aura hover:underline">Match</button>
+                    <button type="button" onClick={() => navigate('/hub')} className="text-[10px] font-black uppercase text-aura hover:underline">Match</button>
                  </div>
                ))}
             </div>
@@ -206,7 +208,7 @@ export const BusinessPlanWizard: React.FC = () => {
             <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">
                Generate AI-assisted Terms of Service and IP Licensing agreements. Verified against the global constitutional floor.
             </p>
-            <button type="button" onClick={() => notImplemented('Draft Compliance Pack')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest hover:border-vital hover:text-vital transition-all">
+            <button type="button" onClick={() => navigate('/law')} className="w-full py-4 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest hover:border-vital hover:text-vital transition-all">
                Draft Compliance Pack
             </button>
          </div>

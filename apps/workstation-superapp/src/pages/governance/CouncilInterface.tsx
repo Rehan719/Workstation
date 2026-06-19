@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge, notImplemented} from '@workstation/ui';
+import { Card, Button, Badge } from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
 import { Gavel, ShieldCheck, Users, Activity, Globe, Scale, MessageSquare, AlertCircle, History, Terminal, Fingerprint, TrendingUp, ChevronRight, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
 
 export const CouncilInterface: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useStore();
   const [activeTab, setActiveTab] = useState('members');
 
@@ -28,8 +30,8 @@ export const CouncilInterface: React.FC = () => {
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">AI-Led Eternal Governance • Article 1120 • Self-Healing Rules</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button onClick={() => notImplemented('Ballot History')} variant="outline"><History size={18} /> Ballot History</Button>
-           <Button onClick={() => notImplemented('Access Ballot Box')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+           <Button onClick={() => navigate('/governance')} variant="outline"><History size={18} /> Ballot History</Button>
+           <Button onClick={() => navigate('/governance')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Scale size={18} /> Access Ballot Box
            </Button>
         </div>
@@ -150,7 +152,7 @@ export const CouncilInterface: React.FC = () => {
                      The Council is 100% AI-led in v3.0, with human advisors providing mandatory oversight for Articles 1101-1127.
                   </p>
                </div>
-               <Button onClick={() => notImplemented('Access Governance Log')} className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">Access Governance Log</Button>
+               <Button onClick={() => navigate('/change-control')} className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">Access Governance Log</Button>
             </Card>
 
             <Card className="p-10 space-y-6">

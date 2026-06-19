@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Card, Badge, Button, notImplemented, toast } from '@workstation/ui';
+import { useNavigate } from 'react-router-dom';
+import { Card, Badge, Button, toast } from '@workstation/ui';
 import {
   ShieldCheck, AlertCircle, CheckCircle2, XCircle, History,
   Lock, Key, Shield, RefreshCw, Eye, EyeOff, Copy, Check,
@@ -103,6 +104,7 @@ type Tab = 'audit' | 'vault' | 'sanctum';
 // ── Audit tab ─────────────────────────────────────────────────────────────
 
 const AuditTab: React.FC = () => {
+  const navigate = useNavigate();
   const [commits, setCommits] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'FAILED'>('ALL');
@@ -147,7 +149,7 @@ const AuditTab: React.FC = () => {
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em] mt-1">Constitutional Compliance • CI/CD Monitoring • v0.3</p>
         </div>
         <div className="flex gap-3 flex-wrap shrink-0">
-          <Button onClick={() => notImplemented('Full History')} variant="outline" className="border-slate-800"><History size={16} /> Full History</Button>
+          <Button onClick={() => navigate('/change-control')} variant="outline" className="border-slate-800"><History size={16} /> Full History</Button>
           <Button onClick={runManualAudit} disabled={auditing} className="bg-white text-sovereign shadow-xl">
             <ShieldCheck size={16} /> {auditing ? 'Auditing...' : 'Run Manual Audit'}
           </Button>
@@ -273,6 +275,7 @@ const AuditStatCard = ({ label, value, icon: Icon, color }: any) => (
 // ── Vault tab ─────────────────────────────────────────────────────────────
 
 const VaultTab: React.FC = () => {
+  const navigate = useNavigate();
   const [secrets, setSecrets] = useState([
     { id: 1, name: 'Main-Sovereign-PQC-Key', type: 'DILITHIUM-5', status: 'ROTATED', lastSync: '2h ago' },
     { id: 2, name: 'L11-Orbital-Auth-Token', type: 'JWT-RSA4096', status: 'ACTIVE', lastSync: '5m ago' },
@@ -308,7 +311,7 @@ const VaultTab: React.FC = () => {
         </div>
         <div className="flex gap-3 flex-wrap shrink-0">
           <Button onClick={rotateAll} variant="outline" className="bg-vital/10 border-vital/30 text-vital"><RefreshCw size={16} /> Rotate All</Button>
-          <Button onClick={() => notImplemented('Add Secret')} className="bg-white text-sovereign shadow-xl shadow-white/10"><Key size={16} /> Add Secret</Button>
+          <Button onClick={() => toast('Vault credentials are governed by Article 1107 — submit a change request via Change Control Agency')} className="bg-white text-sovereign shadow-xl shadow-white/10"><Key size={16} /> Add Secret</Button>
         </div>
       </div>
 
@@ -357,7 +360,7 @@ const VaultTab: React.FC = () => {
               Vault access is governed by multi-sig council approval (Article 1112). Any attempt to rotate master PQC keys triggers a 10-minute system-wide veto window.
             </p>
           </div>
-          <Button onClick={() => notImplemented('Audit Logs')} variant="outline" className="border-vital/30 text-vital hover:bg-vital hover:text-white transition-all px-8 shrink-0">Audit Logs</Button>
+          <Button onClick={() => navigate('/change-control')} variant="outline" className="border-vital/30 text-vital hover:bg-vital hover:text-white transition-all px-8 shrink-0">Audit Logs</Button>
         </div>
       </Card>
     </div>
@@ -370,6 +373,41 @@ const SanctumTab: React.FC = () => {
   const [accessGranted, setAccessGranted] = useState(false);
   const [proposals, setProposals] = useState<any[]>([]);
   const [expandedProposal, setExpandedProposal] = useState<string | null>(null);
+  const [showProposalForm, setShowProposalForm] = useState(false);
+  const [proposalInput, setProposalInput] = useState('');
+  const [submittingProposal, setSubmittingProposal] = useState(false);
+
+  const submitMetaProposal = async () => {
+    if (!proposalInput.trim()) return;
+    setSubmittingProposal(true);
+    try {
+      const res = await fetch('/api/v1/cca/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: proposalInput,
+          description: `Constitutional Meta-Amendment: ${proposalInput}`,
+          change_type: 'constitutional',
+          risk_level: 'HIGH',
+          requester: 'sovereign-sanctum',
+        }),
+      });
+      const data = await res.json();
+      setProposals(prev => [...prev, {
+        id: data.id ?? `meta-${Date.now()}`,
+        title: proposalInput,
+        status: 'Deliberation',
+        support: '0%',
+      }]);
+      setProposalInput('');
+      setShowProposalForm(false);
+      toast('Constitutional meta-proposal submitted to Change Control Agency for review');
+    } catch {
+      toast('Submission failed — please try again');
+    } finally {
+      setSubmittingProposal(false);
+    }
+  };
 
   useEffect(() => {
     setTimeout(() => setAccessGranted(true), 1500);
@@ -419,11 +457,30 @@ const SanctumTab: React.FC = () => {
             <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
               <Sparkles size={20} className="text-aura" /> Meta-Amendments
             </h3>
-            <button type="button" onClick={() => notImplemented('New Meta-Proposal')}
+            <button type="button" onClick={() => setShowProposalForm(v => !v)}
               className="px-5 py-2 border border-aura/30 text-aura font-black rounded-xl text-xs uppercase tracking-widest hover:bg-aura/10 transition-all">
-              New Meta-Proposal
+              {showProposalForm ? 'Cancel' : 'New Meta-Proposal'}
             </button>
           </div>
+
+          {showProposalForm && (
+            <div className="p-6 bg-aura/5 border border-aura/20 rounded-2xl space-y-4">
+              <input
+                value={proposalInput}
+                onChange={e => setProposalInput(e.target.value)}
+                placeholder="Amendment title (e.g. Evolve Article 1096: Post-Quantum Autonomy)..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-700 focus:outline-none focus:border-aura/50"
+              />
+              <button
+                type="button"
+                onClick={submitMetaProposal}
+                disabled={submittingProposal || !proposalInput.trim()}
+                className="w-full py-3 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest disabled:opacity-50 transition-all"
+              >
+                {submittingProposal ? 'Submitting…' : 'Submit to CCA'}
+              </button>
+            </div>
+          )}
 
           <div className="space-y-5">
             {proposals.map(p => (
