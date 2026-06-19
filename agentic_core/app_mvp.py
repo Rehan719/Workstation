@@ -150,6 +150,54 @@ app.include_router(education_api.router)
 from agentic_core.api import care as care_api
 app.include_router(care_api.router)
 
+# ── Agent Collaboration Hub + additional routers ──────────────────────────────
+
+# 27. Agent Collaboration Hub (SSE message bus, handoffs, agent registry)
+#     data/agent_messages/, data/handoffs/, data/agent_registry/ must exist
+from agentic_core.api import agent_hub
+app.include_router(agent_hub.router, prefix="/api/v1")
+
+# 28. AI Orchestration (multi-agent CEO delegation)
+from agentic_core.api import ai_orchestration
+app.include_router(ai_orchestration.router, prefix="/api")
+
+# 29. Partnerships / Diplomatic Corps
+from agentic_core.api import partnerships
+app.include_router(partnerships.router, prefix="/api")
+
+# 30. QEP Analytics (Quran Education Platform analytics)
+from agentic_core.api import qep_analytics
+app.include_router(qep_analytics.router, prefix="/api")
+
+# 31. Tool Ecosystem (tool discovery and invocation)
+from agentic_core.api import tools as tools_api
+app.include_router(tools_api.router, prefix="/api")
+
+# 32. Cross-Platform Bridge (wearable, voice, AR — Phase 3 scaffolding)
+#     Refactored from FastAPI() sub-app to APIRouter (2026-06-18)
+from agentic_core.api import cross_platform
+app.include_router(cross_platform.api, prefix="/api")
+
+# 33. Religion domain (fiqh research, Quran tafsir, halal review, interfaith)
+from agentic_core.api import religion as religion_api
+app.include_router(religion_api.router)
+
+# 34. Human Synthesis Studio + VSB entity spawning (concept → commercialisation cascade)
+from agentic_core.api import synthesis_studio
+app.include_router(synthesis_studio.router)
+
+# 35. AI Agent Swarm Orchestration (CEO → C-Suite → CoE delegation)
+from agentic_core.api import swarm as swarm_api
+app.include_router(swarm_api.router)
+
+# 36. Digital Twin & Simulation (AI model generation + scenario simulation)
+from agentic_core.api import digital_twin as twin_api
+app.include_router(twin_api.router)
+
+# 37. IDBO Self-Healing (circuit breaker status + healing log)
+from agentic_core.organism import self_healing as self_healing_api
+app.include_router(self_healing_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime

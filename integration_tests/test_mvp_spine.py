@@ -365,3 +365,99 @@ def test_evolution_generate(client):
     p = body["proposals"][0]
     assert "id" in p and "title" in p and "status" in p
     assert p["status"] == "pending"
+
+
+# ── Religion domain ───────────────────────────────────────────────────────────
+
+def test_religion_schools(client):
+    r = client.get("/api/v1/religion/schools")
+    assert r.status_code == 200
+    body = r.json()
+    assert "madhabs" in body
+    assert len(body["madhabs"]) >= 4
+
+
+# ── Self-healing system ───────────────────────────────────────────────────────
+
+def test_self_healing_status(client):
+    r = client.get("/api/v1/organism/self-healing/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert "overall_health" in body
+    assert "circuits" in body
+    assert 0.0 <= body["overall_health"] <= 1.0
+
+
+def test_self_healing_log(client):
+    r = client.get("/api/v1/organism/self-healing/log")
+    assert r.status_code == 200
+    assert "events" in r.json()
+
+
+# ── Agent swarm ───────────────────────────────────────────────────────────────
+
+def test_swarm_agents(client):
+    r = client.get("/api/v1/swarm/agents")
+    assert r.status_code == 200
+    body = r.json()
+    assert "agents" in body
+    assert len(body["agents"]) >= 8
+
+
+def test_swarm_runs(client):
+    r = client.get("/api/v1/swarm/runs")
+    assert r.status_code == 200
+    assert "runs" in r.json()
+
+
+# ── Digital twin ──────────────────────────────────────────────────────────────
+
+def test_twin_models_list(client):
+    r = client.get("/api/v1/twin/models")
+    assert r.status_code == 200
+    body = r.json()
+    assert "models" in body
+    assert isinstance(body["models"], list)
+
+
+# ── VSB Studio ────────────────────────────────────────────────────────────────
+
+def test_studio_vsb_list(client):
+    r = client.get("/api/v1/studio/vsb")
+    assert r.status_code == 200
+    body = r.json()
+    assert "entities" in body
+    assert isinstance(body["entities"], list)
+
+
+@_ai_only
+def test_swarm_delegate(client):
+    """Swarm must engage agents and return CEO synthesis."""
+    r = client.post("/api/v1/swarm/delegate", json={
+        "task": "How should we price a SaaS product for the education market?",
+        "agent_ids": ["CFO", "CMO"],
+        "domain": "education",
+        "realm": "enterprise",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "ceo_synthesis" in body
+    assert "agent_responses" in body
+    _assert_real_response(body["ceo_synthesis"])
+
+
+@_ai_only
+def test_twin_model_generate(client):
+    """Digital twin model generation must return real AI spec."""
+    r = client.post("/api/v1/twin/model", json={
+        "system_name": "Hospital Patient Flow",
+        "system_description": "Emergency department intake through to ward admission",
+        "domain": "care",
+        "model_type": "process",
+        "complexity": "simple",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "model_id" in body
+    assert "model_spec" in body
+    _assert_real_response(body["model_spec"])

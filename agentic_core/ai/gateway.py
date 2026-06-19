@@ -72,9 +72,10 @@ class ModelGateway:
     async def _call(self, prompt: str, agent: str = "gateway") -> tuple[str, str]:
         """Try providers in priority order, return (response_text, provider_name)."""
         from agentic_core.organism.immune import immune
+        from agentic_core.organism.self_healing import self_healer
 
         # 1 — Anthropic Claude
-        if self.anthropic_key:
+        if self.anthropic_key and not self_healer.is_open("claude"):
             try:
                 import anthropic
                 client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
@@ -83,12 +84,14 @@ class ModelGateway:
                     max_tokens=self.max_tokens,
                     messages=[{"role": "user", "content": prompt}],
                 )
+                self_healer.record_success("claude")
                 return msg.content[0].text, "claude"
             except Exception:
-                immune.record(agent, "ai_failure")  # provider failed — immune records it
+                immune.record(agent, "ai_failure")
+                self_healer.record_failure("claude")
 
         # 2 — OpenAI
-        if self.openai_key:
+        if self.openai_key and not self_healer.is_open("openai"):
             try:
                 from openai import AsyncOpenAI
                 client = AsyncOpenAI(api_key=self.openai_key)
@@ -98,33 +101,42 @@ class ModelGateway:
                     timeout=30,
                     max_tokens=self.max_tokens,
                 )
+                self_healer.record_success("openai")
                 return completion.choices[0].message.content or "", "openai"
             except Exception:
                 immune.record(agent, "ai_failure")
+                self_healer.record_failure("openai")
 
         # 3 — Ollama
-        try:
-            timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                res = await client.post(self.ollama_url, json={
-                    "model": self.ollama_model,
-                    "prompt": prompt,
-                    "stream": False,
-                })
+        if not self_healer.is_open("ollama"):
+            try:
+                timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    res = await client.post(self.ollama_url, json={
+                        "model": self.ollama_model,
+                        "prompt": prompt,
+                        "stream": False,
+                    })
+                self_healer.record_success("ollama")
                 return res.json().get("response", ""), "ollama"
-        except httpx.ConnectError:
-            immune.record(agent, "ai_failure")
-            return (
-                "AI engine unavailable — start Ollama with `ollama serve` "
-                "or configure ANTHROPIC_API_KEY in your environment.",
-                "error",
-            )
-        except httpx.ReadTimeout:
-            immune.record(agent, "timeout")
-            return "The model is still loading. Please retry in a moment.", "error"
-        except Exception as e:
-            immune.record(agent, "ai_failure")
-            return f"Unexpected error ({type(e).__name__}). Please try again.", "error"
+            except httpx.ConnectError:
+                immune.record(agent, "ai_failure")
+                self_healer.record_failure("ollama")
+                return (
+                    "AI engine unavailable — start Ollama with `ollama serve` "
+                    "or configure ANTHROPIC_API_KEY in your environment.",
+                    "error",
+                )
+            except httpx.ReadTimeout:
+                immune.record(agent, "timeout")
+                self_healer.record_failure("ollama")
+                return "The model is still loading. Please retry in a moment.", "error"
+            except Exception as e:
+                immune.record(agent, "ai_failure")
+                self_healer.record_failure("ollama")
+                return f"Unexpected error ({type(e).__name__}). Please try again.", "error"
+
+        return "All AI providers are currently unavailable. The self-healing system is monitoring recovery.", "circuit_open"
 
     # ── streaming ────────────────────────────────────────────────────────────
 
