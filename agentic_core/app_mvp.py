@@ -208,19 +208,35 @@ app.include_router(mgmt_api.router)
 from agentic_core.api import capital_fund as fund_api
 app.include_router(fund_api.router)
 
-# 40. Auth (JWT + API key — single-user by default, multi-user with AUTH_ENABLED=true)
+# 40. VSB Full Spawn Pipeline (Cascade → MJM → Genomic Registry → Agent Swarm)
+from agentic_core.api import vsb as vsb_api
+app.include_router(vsb_api.router)
+
+# 41. Nine Cognitive Engines + MJM HTTP surface
+from agentic_core.api import cognitive as cognitive_api
+app.include_router(cognitive_api.router)
+
+# 42. Business Development Process + Scientific Process Intelligence Engines
+from agentic_core.api import intelligence as intelligence_api
+app.include_router(intelligence_api.router)
+
+# 43. Auth (JWT + API key — single-user by default, multi-user with AUTH_ENABLED=true)
 from agentic_core.auth import core as auth_api
 app.include_router(auth_api.router)
 
-# 41. IDBO Nervous System (signal routing, reflex arcs, arousal state)
+# 44. QEP — Quran Education Platform (Hifz SM-2 + Tajweed + Gamification)
+from agentic_core.religious_domain import api as qep_api
+app.include_router(qep_api.router)
+
+# 45. IDBO Nervous System (signal routing, reflex arcs, arousal state)
 from agentic_core.organism import nervous as nervous_api
 app.include_router(nervous_api.router)
 
-# 41. IDBO Reconfiguration Engine (runtime feature flags, provider config)
+# 45. IDBO Reconfiguration Engine (runtime feature flags, provider config)
 from agentic_core.organism import reconfiguration as reconfig_api
 app.include_router(reconfig_api.router)
 
-# 42. IDBO Genome System (project trait encoding, crossover, mutation)
+# 46. IDBO Genome System (project trait encoding, crossover, mutation)
 from agentic_core.organism import genome as genome_api
 app.include_router(genome_api.router)
 

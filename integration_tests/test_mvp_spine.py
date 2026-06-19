@@ -628,6 +628,135 @@ def test_auth_refresh(client):
     assert "access_token" in body
 
 
+# ── VSB Spawn Pipeline ────────────────────────────────────────────────────────
+
+def test_vsb_list(client):
+    r = client.get("/api/v1/vsb")
+    assert r.status_code == 200
+    body = r.json()
+    assert "entities" in body
+    assert isinstance(body["entities"], list)
+
+
+# ── Nine Cognitive Engines ────────────────────────────────────────────────────
+
+def test_cognitive_engines_list(client):
+    r = client.get("/api/v1/cognitive/engines")
+    assert r.status_code == 200
+    body = r.json()
+    assert "engines" in body
+    assert body["total"] == 9
+    layers = {e["layer"] for e in body["engines"]}
+    assert "foundational" in layers
+    assert "meta" in layers
+
+
+def test_cognitive_cascade(client):
+    """Cascade must run without API key — engines process internally."""
+    r = client.post("/api/v1/cognitive/cascade", json={
+        "problem": "How do we reduce hospital readmission rates?",
+        "domain": "care",
+        "include_mjm": True,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "cascade" in body
+    assert "status" in body
+    assert body["status"] == "complete"
+    assert body["engines_run"] == 9
+
+
+def test_cognitive_single_engine(client):
+    r = client.post("/api/v1/cognitive/engine", json={
+        "engine_id": "aqal",
+        "input": {"goals": ["solve climate change"], "constraints": ["budget limits"]},
+        "domain": "enterprise",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["engine_id"] == "aqal"
+    assert "result" in body
+
+
+def test_cognitive_unknown_engine(client):
+    r = client.post("/api/v1/cognitive/engine", json={
+        "engine_id": "nonexistent",
+        "input": "test",
+    })
+    assert r.status_code == 400
+
+
+# ── Intelligence Engines ──────────────────────────────────────────────────────
+
+def test_intelligence_status(client):
+    r = client.get("/api/v1/intelligence/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert "engines_available" in body
+    assert "BDP" in body["engines_available"]
+    assert "SPI" in body["engines_available"]
+    assert body["bdp_stages"] == 8
+    assert body["spi_stages"] == 8
+
+
+@_ai_only
+def test_intelligence_solve(client):
+    r = client.post("/api/v1/intelligence/solve", json={
+        "problem": "How can a small care home improve resident wellbeing on a limited budget?",
+        "domain": "care",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "synthesis" in body
+    _assert_real_response(body["synthesis"])
+    assert body["engines_used"] == ["UltimateCognitiveCascade", "MJMOrchestratorV4", "AIGateway"]
+
+
+# ── QEP — Quran Education Platform ───────────────────────────────────────────
+
+def test_qep_status(client):
+    r = client.get("/api/v1/qep/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert "components" in body
+    assert "hifz_sm2" in body["components"]
+    assert "constraints" in body
+
+
+def test_qep_hifz_schedule(client):
+    r = client.post("/api/v1/qep/hifz/schedule", json={
+        "uid": "test_user_001",
+        "surah_number": 1,
+        "ayaat_range": [1, 7],
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ayaat_scheduled"] == 7
+    assert len(body["schedule"]) == 7
+
+
+def test_qep_hifz_review(client):
+    """SM-2 review must return updated interval based on quality score."""
+    r = client.post("/api/v1/qep/hifz/review", json={
+        "uid": "test_user_001",
+        "ayah_ref": "1:1",
+        "quality": 4,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "new_interval_days" in body
+    assert body["new_interval_days"] >= 1
+    assert "next_review_date" in body
+
+
+def test_qep_hifz_progress(client):
+    r = client.get("/api/v1/qep/hifz/progress/test_user_001")
+    assert r.status_code == 200
+    body = r.json()
+    assert "total_ayaat_in_schedule" in body
+    assert "due_today" in body
+
+
 @_ai_only
 def test_genome_encode(client):
     r = client.post("/api/v1/organism/genome/encode", json={
