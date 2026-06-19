@@ -499,3 +499,95 @@ def test_marketplace_listings(client):
     assert r.status_code == 200
     # Existing marketplace router returns a list; new capital_fund router returns dict
     assert isinstance(r.json(), (list, dict))
+
+
+# ── Nervous system ────────────────────────────────────────────────────────────
+
+def test_nervous_status(client):
+    r = client.get("/api/v1/organism/nervous/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert "arousal_state" in body
+    assert body["arousal_state"] in ("HYPERACTIVE", "ALERT", "RESTING", "DORMANT")
+    assert "signal_rate_per_second" in body
+    assert "reflex_arcs_registered" in body
+
+
+def test_nervous_signals(client):
+    r = client.get("/api/v1/organism/nervous/signals")
+    assert r.status_code == 200
+    body = r.json()
+    assert "signals" in body
+    assert isinstance(body["signals"], list)
+
+
+def test_nervous_stimulate(client):
+    r = client.post("/api/v1/organism/nervous/stimulate", json={
+        "signal_type": "sensory",
+        "source": "test_suite",
+        "payload": "integration test stimulation",
+        "intensity": 0.7,
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["fired"] is True
+
+
+# ── Reconfiguration engine ────────────────────────────────────────────────────
+
+def test_reconfig_get(client):
+    r = client.get("/api/v1/organism/config")
+    assert r.status_code == 200
+    body = r.json()
+    assert "gateway" in body
+    assert "features" in body
+    assert "domains" in body
+    assert "organism" in body
+
+
+def test_reconfig_history(client):
+    r = client.get("/api/v1/organism/config/history")
+    assert r.status_code == 200
+    body = r.json()
+    assert "history" in body
+    assert isinstance(body["history"], list)
+
+
+def test_reconfig_update(client):
+    r = client.post("/api/v1/organism/config/update", json={
+        "section": "gateway",
+        "key": "temperature_bias",
+        "value": "creative",
+        "reason": "integration test",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "applied"
+    assert body["change"]["new_value"] == "creative"
+
+
+# ── Genome system ─────────────────────────────────────────────────────────────
+
+def test_genome_list(client):
+    r = client.get("/api/v1/organism/genome")
+    assert r.status_code == 200
+    body = r.json()
+    assert "genomes" in body
+    assert isinstance(body["genomes"], list)
+
+
+@_ai_only
+def test_genome_encode(client):
+    r = client.post("/api/v1/organism/genome/encode", json={
+        "entity_name": "AI Medical Diagnostics Platform",
+        "domain": "care",
+        "realm": "health",
+        "description": "AI-powered early disease detection using medical imaging",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "genome_id" in body
+    assert "traits" in body
+    assert len(body["traits"]) == 10
+    assert "fitness_score" in body
+    assert 0.0 <= body["fitness_score"] <= 1.0
