@@ -80,6 +80,7 @@ const allNavItems: NavItem[] = [
       { name: 'Genome',            icon: Fingerprint,  id: 'genome-explorer' },
       { name: 'GRN Mesh',          icon: Network,      id: 'grn-dashboard' },
       { name: 'Introspection',     icon: Brain,         id: 'introspection' },
+      { name: 'Organism Dashboard',icon: Activity,      id: 'organism'      },
       { name: 'Evolution Hub',     icon: GitBranch,     id: 'evolution' },
       { name: 'AB Testing',        icon: Target,        id: 'ab-testing' },
       { name: 'Learning Dashboard',icon: BarChart3,     id: 'learning-dashboard' },

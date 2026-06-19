@@ -36,6 +36,7 @@ import { LearnerRealm } from './pages/learner/LearnerRealm';
 import { EnterpriseRealm } from './pages/enterprise/EnterpriseRealm';
 import { VSBSpawnStudio } from './pages/enterprise/VSBSpawnStudio';
 import { IntelligenceLab } from './pages/IntelligenceLab';
+import { OrganismDashboard } from './pages/organism/OrganismDashboard';
 import { OffspringManagement } from './pages/enterprise/OffspringManagement';
 import { TreatyDashboard } from './pages/enterprise/TreatyDashboard';
 import { SeedingInterface } from './pages/enterprise/SeedingInterface';
@@ -225,6 +226,7 @@ function App() {
           <Route path="/vsb"         element={<VSBSpawnStudio />} />
           <Route path="/vsb-spawn"   element={<VSBSpawnStudio />} />
           <Route path="/intelligence" element={<IntelligenceLab />} />
+              <Route path="/organism" element={<OrganismDashboard />} />
           <Route path="/seeding"     element={<SeedingInterface />} />
           <Route path="/diplomacy"   element={<InterstellarDiplomacy />} />
           <Route path="/treaties"    element={<TreatyDashboard />} />

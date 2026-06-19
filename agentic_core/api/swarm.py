@@ -21,6 +21,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1/swarm", tags=["agent-swarm"])
 
@@ -93,6 +94,8 @@ async def delegate_task(req: DelegateRequest):
     run_id = uuid.uuid4().hex[:10]
     start = time.time()
 
+    biobus.fire_signal("cognitive", "swarm.delegate", f"CEO delegation: {req.task[:80]}", 0.7)
+
     # Step 1: CEO decides which agents to engage (if not specified)
     agent_ids = req.agent_ids
     if not agent_ids:
@@ -155,6 +158,7 @@ async def delegate_task(req: DelegateRequest):
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     _save_run({k: v for k, v in run.items() if k != "agent_responses"})  # save compact version
+    biobus.record_operation("swarm_delegate", "swarm.delegate", success=True, payload=f"{len(agent_ids)} agents, {run['duration_ms']}ms")
 
     return run
 
@@ -174,6 +178,8 @@ async def cascade_orchestration(req: CascadeRequest):
     """
     run_id = uuid.uuid4().hex[:10]
     start = time.time()
+
+    biobus.fire_signal("cognitive", "swarm.cascade", f"CEO cascade: {req.mission[:80]}", 0.8)
 
     # Level 1: CEO sets mission
     ceo_prompt = (
@@ -220,12 +226,15 @@ async def cascade_orchestration(req: CascadeRequest):
         )
         coe_responses[specialism] = await gateway.query(prompt, agent=f"cascade_coe_{specialism}")
 
+    duration_ms = int((time.time() - start) * 1000)
+    biobus.record_operation("swarm_cascade", "swarm.cascade", success=True, payload=f"CEO+{len(csuite_responses)} CSuite+{len(coe_responses)} CoE, {duration_ms}ms")
+
     return {
         "run_id": run_id,
         "mission": req.mission,
         "level_1_ceo_directive": ceo_directive,
         "level_2_csuite": csuite_responses,
         "level_3_coe": coe_responses,
-        "duration_ms": int((time.time() - start) * 1000),
+        "duration_ms": duration_ms,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

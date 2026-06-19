@@ -20,6 +20,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1/mgmt", tags=["management-systems"])
 
@@ -75,7 +76,9 @@ async def generate_qms(req: QMSRequest):
         "Be practical and immediately usable."
     )
 
+    biobus.fire_signal("sensory", "mgmt.qms", f"QMS generation: {req.organisation_name}", 0.5)
     framework = await gateway.query(prompt, agent="mgmt_qms")
+    biobus.record_operation("qms_generate", "mgmt.qms", success=True, payload=f"{req.organisation_name} QMS")
 
     return {
         "doc_id": uuid.uuid4().hex[:10],
@@ -116,7 +119,9 @@ async def generate_bms(req: BMSRequest):
         "## Decision Rights Matrix (RACI for strategic decisions)\n"
     )
 
+    biobus.fire_signal("sensory", "mgmt.bms", f"BMS generation: {req.organisation_name}", 0.5)
     framework = await gateway.query(prompt, agent="mgmt_bms")
+    biobus.record_operation("bms_generate", "mgmt.bms", success=True, payload=f"{req.organisation_name} BMS")
 
     return {
         "doc_id": uuid.uuid4().hex[:10],
@@ -155,7 +160,9 @@ async def generate_dcs(req: DCSRequest):
         "## Digital DCS Tool Recommendations\n"
     )
 
+    biobus.fire_signal("sensory", "mgmt.dcs", f"DCS generation: {req.organisation_name}", 0.4)
     framework = await gateway.query(prompt, agent="mgmt_dcs")
+    biobus.record_operation("dcs_generate", "mgmt.dcs", success=True, payload=f"{req.organisation_name} DCS")
 
     return {
         "doc_id": uuid.uuid4().hex[:10],
@@ -193,7 +200,9 @@ async def generate_audit_schedule(req: AuditScheduleRequest):
         "## Management Review Input from Audits\n"
     )
 
+    biobus.fire_signal("sensory", "mgmt.audit", f"Audit schedule: {req.organisation_name}", 0.4)
     schedule = await gateway.query(prompt, agent="mgmt_audit")
+    biobus.record_operation("audit_schedule", "mgmt.audit", success=True)
 
     return {
         "schedule_id": uuid.uuid4().hex[:10],
@@ -234,12 +243,119 @@ async def generate_risk_register(req: RiskRegisterRequest):
         "## Risk Review Cadence\n"
     )
 
+    biobus.fire_signal("cognitive", "mgmt.risk", f"Risk register: {req.organisation_name}", 0.6)
     register = await gateway.query(prompt, agent="mgmt_risk")
+    biobus.record_operation("risk_register", "mgmt.risk", success=True)
 
     return {
         "register_id": uuid.uuid4().hex[:10],
         "organisation_name": req.organisation_name,
         "domain": req.domain,
         "register": register,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+# ── EMS — ISO 14001 Environmental Management System ──────────────────────────
+
+class EMSRequest(BaseModel):
+    organisation_name: str
+    domain: str = "general"
+    sector: str = "services"   # manufacturing | services | technology | healthcare
+    scope: str = ""            # environmental scope (optional)
+
+
+@router.post("/ems/generate")
+async def generate_ems(req: EMSRequest):
+    """Generate an ISO 14001-aligned Environmental Management System framework."""
+    prompt = (
+        f"You are a lead ISO 14001 environmental management consultant.\n\n"
+        f"Organisation: {req.organisation_name}\n"
+        f"Domain: {req.domain}\nSector: {req.sector}\n"
+        + (f"Scope: {req.scope}\n" if req.scope else "")
+        + "\nGenerate a complete ISO 14001:2015-aligned EMS comprising:\n"
+        "## 1. Environmental Policy Statement\n"
+        "## 2. Environmental Aspects and Impacts Register\n"
+        "   (List top 10 aspects: activity | aspect | impact | significance)\n"
+        "## 3. Legal and Regulatory Register\n"
+        "   (Relevant UK/international environmental legislation)\n"
+        "## 4. Environmental Objectives and Targets (5 SMART objectives)\n"
+        "## 5. Environmental Management Programmes (actions, owners, timelines)\n"
+        "## 6. Energy Management Plan\n"
+        "## 7. Waste Management Framework\n"
+        "## 8. Carbon Footprint Assessment Methodology\n"
+        "## 9. Emergency Preparedness and Response Procedure\n"
+        "## 10. Environmental Monitoring and Measurement Plan\n"
+        "## 11. Internal Audit Programme\n"
+        "## 12. Management Review Agenda for Environmental Performance\n\n"
+        f"Tailor to a {req.sector}-sector {req.domain} organisation. Be practical and immediately usable."
+    )
+
+    biobus.fire_signal("sensory", "mgmt.ems", f"EMS generation: {req.organisation_name}", 0.5)
+    framework = await gateway.query(prompt, agent="mgmt_ems")
+    biobus.record_operation("ems_generate", "mgmt.ems", success=True, payload=f"{req.organisation_name} EMS")
+
+    return {
+        "doc_id": uuid.uuid4().hex[:10],
+        "organisation_name": req.organisation_name,
+        "standard": "ISO 14001:2015",
+        "framework_type": "EMS",
+        "framework": framework,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+class NonConformanceRequest(BaseModel):
+    organisation_name: str
+    vsb_id: str | None = None
+    description: str
+    severity: str = "minor"   # minor | major | critical
+
+
+@router.post("/nonconformance")
+async def record_nonconformance(req: NonConformanceRequest):
+    """
+    Record a quality non-conformance — feeds directly into the immune system.
+    Major/critical non-conformances elevate immune threat level.
+    """
+    # Feed into immune system — non-conformances are organism errors
+    error_type = {
+        "minor": "quality_minor",
+        "major": "quality_major",
+        "critical": "quality_critical",
+    }.get(req.severity, "quality_minor")
+
+    immune_endpoint = f"qms.{req.vsb_id or 'org'}"
+    biobus.record_error(immune_endpoint, error_type)
+
+    # Higher intensity signal for severe non-conformances
+    intensity = {"minor": 0.3, "major": 0.6, "critical": 0.9}.get(req.severity, 0.3)
+    biobus.fire_signal(
+        "reflex", "mgmt.nonconformance",
+        f"NC [{req.severity.upper()}]: {req.description[:100]}",
+        intensity,
+    )
+
+    # AI generates CAPA (Corrective Action / Preventive Action)
+    prompt = (
+        f"You are a quality management specialist. Generate a CAPA for:\n\n"
+        f"Organisation: {req.organisation_name}\n"
+        f"Non-conformance: {req.description}\n"
+        f"Severity: {req.severity.upper()}\n\n"
+        f"Provide:\n"
+        f"1. Root cause analysis (5-Why)\n"
+        f"2. Immediate containment actions\n"
+        f"3. Corrective actions (what and by when)\n"
+        f"4. Preventive actions (systemic changes)\n"
+        f"5. Effectiveness verification method\n"
+    )
+    capa = await gateway.query(prompt, agent="mgmt_capa")
+
+    return {
+        "nc_id": uuid.uuid4().hex[:8],
+        "severity": req.severity,
+        "description": req.description,
+        "immune_response": f"Recorded as {error_type} — immune monitoring elevated",
+        "capa": capa,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

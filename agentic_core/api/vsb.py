@@ -32,6 +32,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.organism.biobus import biobus
 from agentic_core.cognitive.cascade_v16 import UltimateCognitiveCascade
 from agentic_core.mjm.mjm import MJMOrchestratorV4
 from agentic_core.genetic_immune.genomic_registry import GenomicRegistry
@@ -151,6 +152,7 @@ async def spawn_vsb(req: SpawnRequest):
                 payload["data"] = data
             return f"data: {json.dumps(payload)}\n\n"
 
+        biobus.fire_signal("sensory", "vsb.spawn", f"VSB spawn initiated: {req.challenge[:80]}", 0.9)
         yield _event("init", "VSB Spawn Initiated", f"Spawning VSB for challenge: {req.challenge[:120]}", {"vsb_id": vsb_id})
 
         # ── Stage 1: Cognitive Cascade ────────────────────────────────────────
@@ -165,6 +167,7 @@ async def spawn_vsb(req: SpawnRequest):
         except Exception as e:
             cascade_result = {"error": str(e)}
             cascade_summary = f"Cascade encountered: {e}"
+        biobus.fire_signal("cognitive", "vsb.cascade", f"Nine engines complete: {vsb_id}", 0.7)
         yield _event("cognitive_complete", "Cascade Complete", cascade_summary, {"status": cascade_result.get("status", "done")})
 
         # ── Stage 2: MJM Evaluation ───────────────────────────────────────────
@@ -192,6 +195,12 @@ async def spawn_vsb(req: SpawnRequest):
                 gaas_message = f"GaaS gate: {e}"
         else:
             gaas_message = "Constitutional alignment assumed (configure GAAS_GENOME_PATH + GAAS_LEGAL_PATH for full gate)."
+        biobus.fire_signal(
+            "reflex" if not gaas_passed else "motor",
+            "vsb.gaas",
+            f"Constitutional gate: {'PASSED' if gaas_passed else 'BLOCKED'}",
+            0.9 if not gaas_passed else 0.5,
+        )
         yield _event("gaas_complete", "GaaS Gate Complete", gaas_message, {"passed": gaas_passed})
 
         # ── Stage 4: CEO Strategy ─────────────────────────────────────────────
@@ -279,6 +288,8 @@ async def spawn_vsb(req: SpawnRequest):
             "elapsed_seconds": round(time.time() - started, 2),
         }
         _save_vsb(vsb_entity)
+        biobus.record_operation("vsb_spawn", "vsb.spawn", success=True, payload=f"{vsb_id} [{req.domain}]")
+        biobus.fire_signal("motor", "vsb.launch", f"VSB launched: {vsb_id} — {req.challenge[:60]}", 0.9)
 
         yield _event("complete", "VSB Operational", f"VSB {vsb_id} is now operational.", {
             "vsb_id": vsb_id,
@@ -320,6 +331,7 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest):
         "Output ONLY the EVOLVE lines."
     )
 
+    biobus.fire_signal("cognitive", "vsb.evolve", f"Evolution cycle: {vsb_id} gen {vsb.get('generation',0)+1}", 0.7)
     raw = await gateway.query(prompt, agent=f"vsb_evolution_{vsb_id}")
     proposals = []
     for line in raw.splitlines():

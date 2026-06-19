@@ -772,3 +772,102 @@ def test_genome_encode(client):
     assert len(body["traits"]) == 10
     assert "fitness_score" in body
     assert 0.0 <= body["fitness_score"] <= 1.0
+
+
+# ── Organism Status ───────────────────────────────────────────────────────────
+
+def test_organism_status(client):
+    r = client.get("/api/v1/organism/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert "composite_health" in body
+    assert "mode" in body
+    assert "systems" in body
+    assert body["mode"] in ("FULL_POWER", "NOMINAL", "DEGRADED", "EMERGENCY")
+    assert 0.0 <= body["composite_health"] <= 1.0
+
+
+def test_organism_health_summary(client):
+    r = client.get("/api/v1/organism/health-summary")
+    assert r.status_code == 200
+    body = r.json()
+    assert "composite_health" in body
+    assert "should_throttle" in body
+    assert "circadian_cycle" in body
+
+
+def test_organism_lifecycle(client):
+    r = client.get("/api/v1/organism/lifecycle")
+    assert r.status_code == 200
+    body = r.json()
+    assert "lifecycle_stages_reached" in body
+    assert "projects" in body
+    assert "vsb_entities" in body
+
+
+def test_organism_signals(client):
+    r = client.get("/api/v1/organism/signals?n=10")
+    assert r.status_code == 200
+    body = r.json()
+    assert "arousal_state" in body
+    assert "signals" in body
+    assert isinstance(body["signals"], list)
+
+
+# ── Change Control Agency ─────────────────────────────────────────────────────
+
+def test_cca_list_all(client):
+    r = client.get("/api/v1/cca")
+    assert r.status_code == 200
+    body = r.json()
+    assert "changes" in body
+    assert "total" in body
+
+
+def test_cca_queue(client):
+    r = client.get("/api/v1/cca/queue")
+    assert r.status_code == 200
+    body = r.json()
+    assert "queue" in body
+    assert "total" in body
+
+
+def test_cca_submit_and_get(client):
+    r = client.post("/api/v1/cca/submit", json={
+        "title": "Test: Enable experimental domain routing",
+        "change_type": "config_minor",
+        "description": "Enable A/B routing for the science domain to test new prompts.",
+        "rationale": "Improve science domain response quality.",
+        "affected_systems": ["gateway", "science"],
+        "submitted_by": "test_suite",
+        "rollback_plan": "Revert config flag to false.",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "cca_id" in body
+    assert "impact_tier" in body
+    assert body["impact_tier"] == "LOW"
+    # LOW tier auto-approved when organism healthy
+    assert body["status"] in ("submitted", "approved")
+
+    # Retrieve the change
+    cca_id = body["cca_id"]
+    r2 = client.get(f"/api/v1/cca/{cca_id}")
+    assert r2.status_code == 200
+    assert r2.json()["cca_id"] == cca_id
+
+
+def test_mgmt_ems_generate(client):
+    """EMS endpoint — no AI key needed for route resolution."""
+    if not _AI_AVAILABLE:
+        pytest.skip("Skipped — no AI key")
+    r = client.post("/api/v1/mgmt/ems/generate", json={
+        "organisation_name": "GreenTech Solutions Ltd",
+        "domain": "technology",
+        "sector": "technology",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "framework" in body
+    assert body["standard"] == "ISO 14001:2015"
+    assert len(body["framework"]) > 200

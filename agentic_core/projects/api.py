@@ -33,6 +33,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -272,6 +273,7 @@ async def create_project(req: CreateProjectRequest) -> Project:
         domain=req.domain.lower(),
     )
     _save(project)
+    biobus.fire_signal("sensory", "projects.create", f"New project: {req.title} [{req.realm}/{req.domain}]", 0.5)
     return project
 
 
@@ -335,6 +337,7 @@ async def run_project(project_id: str) -> StreamingResponse:
     async def event_stream() -> AsyncIterator[str]:
         accumulated = ""
         completed = False
+        biobus.fire_signal("cognitive", "projects.run", f"{project.title} [{project.stage}]", 0.6)
         try:
             async for token in gateway.stream(full_prompt, agent="projects"):
                 accumulated += token
@@ -346,6 +349,7 @@ async def run_project(project_id: str) -> StreamingResponse:
             project.status = "done"
             _save(project)
             completed = True
+            biobus.record_operation("project_run", "projects.run", success=True, payload=f"{project.title}")
             yield (
                 f'data: {{"done": true, "output_id": "{output.output_id}", '
                 f'"download_url": "{output.download_url}", '
@@ -354,6 +358,7 @@ async def run_project(project_id: str) -> StreamingResponse:
         except Exception as exc:
             project.status = "error"
             _save(project)
+            biobus.record_operation("project_run", "projects.run", success=False)
             yield f'data: {{"error": {json.dumps(str(exc))}}}\n\n'
         finally:
             # Client disconnected before stream finished — reset so user can retry
@@ -397,9 +402,15 @@ async def advance_stage(project_id: str) -> Project:
             detail=f"Run the AI workflow at least once in the '{project.stage}' stage before advancing.",
         )
 
+    prev_stage = project.stage
     project.stage = STAGE_ORDER[current_idx + 1]
     project.status = "idle"
     _save(project)
+    biobus.fire_signal(
+        "motor", "projects.advance",
+        f"{project.title}: {prev_stage} → {project.stage}",
+        0.7,
+    )
     return project
 
 

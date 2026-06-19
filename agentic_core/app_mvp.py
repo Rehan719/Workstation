@@ -240,6 +240,14 @@ app.include_router(reconfig_api.router)
 from agentic_core.organism import genome as genome_api
 app.include_router(genome_api.router)
 
+# 47. Master Organism Status + Homeostasis
+from agentic_core.api import organism_status as organism_status_api
+app.include_router(organism_status_api.router)
+
+# 48. Change Control Agency (arms-length governance for organism changes)
+from agentic_core.api import change_control as cca_api
+app.include_router(cca_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime

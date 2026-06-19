@@ -18,6 +18,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1/twin", tags=["digital-twin"])
 
@@ -106,6 +107,7 @@ async def generate_twin_model(req: ModelRequest):
         "## Key Metrics Output (what the simulation measures)\n"
     )
 
+    biobus.fire_signal("cognitive", "twin.model", f"Digital twin: {req.system_name}", 0.6)
     model_spec = await gateway.query(prompt, agent="digital_twin_modeller")
 
     model_id = f"twin-{uuid.uuid4().hex[:10]}"
@@ -121,6 +123,7 @@ async def generate_twin_model(req: ModelRequest):
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     _save_twin(model)
+    biobus.record_operation("twin_model", "twin.model", success=True, payload=req.system_name)
 
     return {"model_id": model_id, "system_name": req.system_name, "model_spec": model_spec}
 
@@ -165,6 +168,7 @@ async def run_simulation(req: SimulateRequest):
         "## Conclusions and Recommendations\n"
     )
 
+    biobus.fire_signal("cognitive", "twin.simulate", f"Simulation: {req.scenario_name}", 0.7)
     simulation_result = await gateway.query(prompt, agent="digital_twin_simulator")
 
     sim_id = uuid.uuid4().hex[:8]
@@ -180,6 +184,7 @@ async def run_simulation(req: SimulateRequest):
 
     model["simulations"].append({k: v for k, v in simulation.items() if k != "result"})
     _save_twin(model)
+    biobus.record_operation("twin_simulate", "twin.simulate", success=True, payload=req.scenario_name)
 
     return {"simulation_id": sim_id, "model_id": req.model_id, **simulation}
 
@@ -218,7 +223,9 @@ async def optimise_model(req: OptimiseRequest):
         "## Implementation Steps\n"
     )
 
+    biobus.fire_signal("cognitive", "twin.optimise", f"Optimise: {req.optimisation_objective[:60]}", 0.7)
     result = await gateway.query(prompt, agent="digital_twin_optimiser")
+    biobus.record_operation("twin_optimise", "twin.optimise", success=True, payload=model["system_name"])
 
     return {
         "optimisation_id": uuid.uuid4().hex[:8],

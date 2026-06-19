@@ -35,6 +35,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1/studio", tags=["synthesis-studio"])
 
@@ -246,6 +247,7 @@ async def synthesise(req: SynthesiseRequest) -> StreamingResponse:
 
     async def stream() -> AsyncIterator[str]:
         # Announce start
+        biobus.fire_signal("cognitive", "studio.synthesise", f"BTO cascade initiated: {req.challenge[:80]}", 0.9)
         yield f'data: {json.dumps({"stage": "init", "synthesis_id": synthesis_id, "total_stages": len(_CASCADE_STAGES), "challenge": req.challenge})}\n\n'
 
         for i, (stage_key, stage_label, stage_desc) in enumerate(_CASCADE_STAGES):
@@ -280,6 +282,8 @@ async def synthesise(req: SynthesiseRequest) -> StreamingResponse:
             "duration_seconds": round(time.time() - start, 1),
         }
         _save_vsb(entity)
+        biobus.record_operation("bto_cascade", "studio.synthesise", success=True, payload=f"{entity_id} [{req.domain}]")
+        biobus.fire_signal("motor", "studio.vsb_launch", f"VSB entity created: {entity_id} — {solution_name}", 0.9)
 
         # Also create a project for lifecycle tracking
         try:

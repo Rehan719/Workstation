@@ -24,6 +24,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1", tags=["capital-fund"])
 
@@ -126,6 +127,12 @@ async def allocate_capital(req: AllocateRequest):
     fund["allocations"].append(allocation)
     _save_fund(fund)
 
+    biobus.fire_signal(
+        "motor", "fund.allocate",
+        f"Capital allocated: {req.amount} WST → {req.project_name} [{req.domain}]",
+        0.8,
+    )
+
     return {
         "allocation_id": allocation_id,
         "amount": req.amount,
@@ -196,7 +203,9 @@ async def generate_fund_report(req: FundReportRequest):
         "## Outlook\n"
     )
 
+    biobus.fire_signal("cognitive", "fund.report", f"Fund report: {req.focus}/{req.period}", 0.5)
     report = await gateway.query(prompt, agent="fund_manager")
+    biobus.record_operation("fund_report", "fund.report", success=True)
 
     return {
         "report_id": uuid.uuid4().hex[:10],

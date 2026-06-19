@@ -2,10 +2,13 @@ import os
 import time
 import asyncio
 import httpx
+from pathlib import Path
 from typing import AsyncIterator
 from agentic_core.ai.guardrails import validate_response
 from agentic_core.ai.logger import interaction_logger
 from agentic_core.ai.memory import memory
+
+_RECONFIG_PATH = Path("data/organism_config.json")
 
 
 class _RateLimiter:
@@ -50,6 +53,30 @@ class ModelGateway:
         self.max_tokens = int(os.getenv("GATEWAY_MAX_TOKENS", "4096"))
         rpm = int(os.getenv("GATEWAY_RPM", "20"))
         self._rate_limiter = _RateLimiter(rpm)
+        self._reconfig_last_sync = 0.0
+        self._reconfig_cache: dict = {}
+
+    def _sync_reconfig(self) -> None:
+        """Read the reconfiguration engine config at most once every 30 seconds."""
+        now = time.monotonic()
+        if now - self._reconfig_last_sync < 30.0:
+            return
+        self._reconfig_last_sync = now
+        try:
+            import json
+            data = json.loads(_RECONFIG_PATH.read_text())
+            self._reconfig_cache = data
+            gw = data.get("gateway", {})
+            new_rpm = int(gw.get("rpm_limit", 0))
+            if new_rpm and new_rpm != self._rate_limiter._limit:
+                self._rate_limiter._limit = new_rpm
+                self._rate_limiter._tokens = min(self._rate_limiter._tokens, float(new_rpm))
+        except Exception:
+            pass
+
+    def _preferred_provider(self) -> str:
+        """Return preferred_provider from reconfig, defaulting to 'auto'."""
+        return self._reconfig_cache.get("gateway", {}).get("preferred_provider", "auto")
 
     def _augment(self, prompt: str) -> str:
         ctx = memory.query_memory(prompt)
@@ -58,6 +85,7 @@ class ModelGateway:
     # ── non-streaming ───────────────────────────────────────────────────────
 
     async def query(self, prompt: str, agent: str = "assistant") -> str:
+        self._sync_reconfig()
         await self._rate_limiter.acquire()
         augmented = self._augment(prompt)
         response, provider = await self._call(augmented, agent=agent)
@@ -74,8 +102,10 @@ class ModelGateway:
         from agentic_core.organism.immune import immune
         from agentic_core.organism.self_healing import self_healer
 
+        preferred = self._preferred_provider()  # "auto" | "claude" | "openai" | "ollama"
+
         # 1 — Anthropic Claude
-        if self.anthropic_key and not self_healer.is_open("claude"):
+        if self.anthropic_key and not self_healer.is_open("claude") and preferred in ("auto", "claude"):
             try:
                 import anthropic
                 client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
@@ -91,7 +121,7 @@ class ModelGateway:
                 self_healer.record_failure("claude")
 
         # 2 — OpenAI
-        if self.openai_key and not self_healer.is_open("openai"):
+        if self.openai_key and not self_healer.is_open("openai") and preferred in ("auto", "openai"):
             try:
                 from openai import AsyncOpenAI
                 client = AsyncOpenAI(api_key=self.openai_key)
