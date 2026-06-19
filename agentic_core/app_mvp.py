@@ -258,9 +258,10 @@ def _circadian_cycle() -> str:
 
 @app.get("/api/v1/biometrics/status")
 async def biometrics_status():
-    """Organism vitals derived from real system state — psutil + project store + immune system."""
+    """Organism vitals: psutil + project store + immune system + ATPSimulator + NervousSystem."""
     from agentic_core.projects.api import _all_projects
     from agentic_core.organism.immune import immune
+    from agentic_core.organism.nervous import nervous
 
     try:
         projects = _all_projects()
@@ -273,9 +274,22 @@ async def biometrics_status():
     mem  = psutil.virtual_memory()
     ws   = len(_ws.connections)
     imm  = immune.status()
+    nervous_status = nervous.status()
 
     resource_flow = max(0.0, 100.0 - cpu)
     peristaltic_delay = round(max(1, mem.percent / 20), 1)
+
+    # ATP Simulator — molecular energy model (real biomimetic calculation)
+    try:
+        from agentic_core.molecular.atp_simulator import ATPSimulator
+        if not hasattr(biometrics_status, "_atp"):
+            biometrics_status._atp = ATPSimulator()
+        circadian_efficiency = 1.0 if _circadian_cycle() == "ACTIVE_FOCUS" else 0.8
+        metabolic_load = cpu / 100.0
+        biometrics_status._atp.update(dt=1.0, metabolic_load=metabolic_load, circadian_efficiency=circadian_efficiency)
+        atp_ratio = round(max(0.0, min(1.0, biometrics_status._atp.ratio)), 3)
+    except Exception:
+        atp_ratio = round(resource_flow / 100.0, 3)
 
     # Cognition degrades under immune stress
     immune_health = imm["health"]
@@ -296,12 +310,13 @@ async def biometrics_status():
     else:
         neurotransmitter = "Oxytocin"
 
-    # Metabolic: ratio of concept-stage to total (immature projects = metabolic overhead)
+    # Metabolic: ATP ratio + project stage ratio combined
     total_projects = len(projects)
     concept_count = sum(1 for p in projects if p.stage == "concept")
-    metabolic_efficiency = round(
+    stage_efficiency = round(
         1.0 - (concept_count / total_projects) if total_projects > 0 else 1.0, 3
     )
+    metabolic_efficiency = round((atp_ratio + stage_efficiency) / 2, 3)
 
     return {
         "circadian":      {"cycle": _circadian_cycle()},
@@ -309,7 +324,8 @@ async def biometrics_status():
         "cognition":      {"state": cognition_state, "primary_drive": primary_drive},
         "communication":  {"active_channels": ["WS"] if ws > 0 else [], "neurotransmitter": neurotransmitter, "is_active": ws > 0},
         "immune":         imm,
-        "metabolic":      {"efficiency": metabolic_efficiency, "concept_projects": concept_count, "total_projects": total_projects},
+        "metabolic":      {"efficiency": metabolic_efficiency, "atp_ratio": atp_ratio, "concept_projects": concept_count, "total_projects": total_projects},
+        "nervous":        {"arousal_state": nervous_status["arousal_state"], "signal_rate": nervous_status["signal_rate_per_second"]},
     }
 
 
