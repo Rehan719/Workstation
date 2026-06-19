@@ -198,6 +198,14 @@ app.include_router(twin_api.router)
 from agentic_core.organism import self_healing as self_healing_api
 app.include_router(self_healing_api.router)
 
+# 38. Management Systems (QMS/BMS/DCS/Audit/Risk Register — ISO 9001-aligned)
+from agentic_core.api import management_systems as mgmt_api
+app.include_router(mgmt_api.router)
+
+# 39. Sovereign Capital Fund + VSB Marketplace
+from agentic_core.api import capital_fund as fund_api
+app.include_router(fund_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime

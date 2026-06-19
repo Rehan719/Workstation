@@ -461,3 +461,41 @@ def test_twin_model_generate(client):
     assert "model_id" in body
     assert "model_spec" in body
     _assert_real_response(body["model_spec"])
+
+
+# ── Management systems ────────────────────────────────────────────────────────
+
+def test_mgmt_standards(client):
+    r = client.get("/api/v1/mgmt/standards")
+    assert r.status_code == 200
+    body = r.json()
+    assert "standards" in body
+    assert len(body["standards"]) >= 5
+
+
+# ── Capital fund ──────────────────────────────────────────────────────────────
+
+def test_fund_status(client):
+    r = client.get("/api/v1/fund/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert "total_capital" in body
+    assert "available" in body
+    assert "fund_health" in body
+
+
+def test_fund_portfolio(client):
+    r = client.get("/api/v1/fund/portfolio")
+    assert r.status_code == 200
+    body = r.json()
+    assert "total_capital" in body
+    assert "allocations" in body
+
+
+# ── Marketplace ───────────────────────────────────────────────────────────────
+
+def test_marketplace_listings(client):
+    r = client.get("/api/v1/marketplace/listings")
+    assert r.status_code == 200
+    # Existing marketplace router returns a list; new capital_fund router returns dict
+    assert isinstance(r.json(), (list, dict))
