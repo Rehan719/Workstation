@@ -5,7 +5,8 @@ import {
   Activity, Brain, Shield, Zap, Heart, Wind, Cpu, Dna,
   RefreshCw, AlertTriangle, CheckCircle2, Circle, Wifi,
   TrendingUp, Building2, GitMerge, Clock, Radio,
-  ChevronRight, Loader2, Play, Settings
+  ChevronRight, Loader2, Play, Settings,
+  type LucideIcon
 } from 'lucide-react';
 
 // ── Type definitions ──────────────────────────────────────────────────────────
@@ -98,7 +99,7 @@ function HealthBar({ value, className = '' }: { value: number; className?: strin
 function SystemCard({
   icon: Icon, title, children, accent = 'border-white/10'
 }: {
-  icon: React.FC<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   title: string;
   children: React.ReactNode;
   accent?: string;

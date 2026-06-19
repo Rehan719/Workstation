@@ -37,6 +37,8 @@ import { EnterpriseRealm } from './pages/enterprise/EnterpriseRealm';
 import { VSBSpawnStudio } from './pages/enterprise/VSBSpawnStudio';
 import { IntelligenceLab } from './pages/IntelligenceLab';
 import { OrganismDashboard } from './pages/organism/OrganismDashboard';
+import { ManagementSystemsHub } from './pages/enterprise/ManagementSystemsHub';
+import { ChangeControlAgency } from './pages/enterprise/ChangeControlAgency';
 import { OffspringManagement } from './pages/enterprise/OffspringManagement';
 import { TreatyDashboard } from './pages/enterprise/TreatyDashboard';
 import { SeedingInterface } from './pages/enterprise/SeedingInterface';
@@ -222,15 +224,17 @@ function App() {
           <Route path="/scholar"     element={<ScholarRealm />} />
 
           {/* ── Enterprise Realm ──────────────────────────────────── */}
-          <Route path="/enterprise"  element={<EnterpriseRealm />} />
-          <Route path="/vsb"         element={<VSBSpawnStudio />} />
-          <Route path="/vsb-spawn"   element={<VSBSpawnStudio />} />
-          <Route path="/intelligence" element={<IntelligenceLab />} />
-              <Route path="/organism" element={<OrganismDashboard />} />
-          <Route path="/seeding"     element={<SeedingInterface />} />
-          <Route path="/diplomacy"   element={<InterstellarDiplomacy />} />
-          <Route path="/treaties"    element={<TreatyDashboard />} />
-          <Route path="/offspring"   element={<OffspringManagement />} />
+          <Route path="/enterprise"      element={<EnterpriseRealm />} />
+          <Route path="/vsb"             element={<VSBSpawnStudio />} />
+          <Route path="/vsb-spawn"       element={<VSBSpawnStudio />} />
+          <Route path="/intelligence"    element={<IntelligenceLab />} />
+          <Route path="/organism"        element={<OrganismDashboard />} />
+          <Route path="/management"      element={<ManagementSystemsHub />} />
+          <Route path="/change-control"  element={<ChangeControlAgency />} />
+          <Route path="/seeding"         element={<SeedingInterface />} />
+          <Route path="/diplomacy"       element={<InterstellarDiplomacy />} />
+          <Route path="/treaties"        element={<TreatyDashboard />} />
+          <Route path="/offspring"       element={<OffspringManagement />} />
 
           {/* ── Genome ────────────────────────────────────────────── */}
           <Route path="/genome-explorer"  element={<GenomeExplorer />} />

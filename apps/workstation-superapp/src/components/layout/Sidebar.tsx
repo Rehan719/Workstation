@@ -40,6 +40,7 @@ const allNavItems: NavItem[] = [
       { name: 'Capital Fund',      icon: DollarSign,    id: 'capital'    },
       { name: 'Solutions',         icon: Rocket,        id: 'solutions'  },
       { name: 'VSB Spawn Studio',  icon: Building2,     id: 'vsb'        },
+      { name: 'Management Systems',icon: Shield,        id: 'management' },
     ]
   },
 
@@ -100,6 +101,7 @@ const allNavItems: NavItem[] = [
       { name: 'Delegation',       icon: Users,         id: 'delegation' },
       { name: 'Credentials',      icon: Fingerprint,   id: 'credentials' },
       { name: 'Council',          icon: Scale,         id: 'council' },
+      { name: 'Change Control',    icon: GitBranch,     id: 'change-control' },
       { name: 'Entity Control',   icon: ShieldCheck,   id: 'admin' },
     ]
   },
