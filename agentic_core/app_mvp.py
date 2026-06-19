@@ -24,6 +24,8 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("workstation.mvp")
 
+from agentic_core.config import settings
+
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="Workstation",
@@ -33,7 +35,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -206,7 +208,11 @@ app.include_router(mgmt_api.router)
 from agentic_core.api import capital_fund as fund_api
 app.include_router(fund_api.router)
 
-# 40. IDBO Nervous System (signal routing, reflex arcs, arousal state)
+# 40. Auth (JWT + API key — single-user by default, multi-user with AUTH_ENABLED=true)
+from agentic_core.auth import core as auth_api
+app.include_router(auth_api.router)
+
+# 41. IDBO Nervous System (signal routing, reflex arcs, arousal state)
 from agentic_core.organism import nervous as nervous_api
 app.include_router(nervous_api.router)
 
@@ -295,6 +301,21 @@ async def biometrics_status():
 @app.get("/api/v1/health")
 async def health():
     return {"status": "healthy", "version": "1.0.0", "app": "workstation-mvp"}
+
+
+@app.get("/api/v1/system/info")
+async def system_info():
+    """Non-sensitive system configuration summary for ops/monitoring."""
+    return {
+        "environment": settings.environment,
+        "auth_enabled": settings.auth_enabled,
+        "has_ai_provider": settings.has_ai_provider,
+        "gateway_rpm": settings.gateway_rpm,
+        "default_model": settings.default_model,
+        "cors_origins_count": len(settings.cors_origins),
+        "cors_wildcard": "*" in settings.cors_origins,
+        "config_warnings": settings.validate(),
+    }
 
 
 @app.get("/api/v1/claude/status")

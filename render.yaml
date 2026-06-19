@@ -7,15 +7,29 @@ services:
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        sync: false          # Set to your frontend URL(s) e.g. https://workstation.vercel.app
+      - key: AUTH_ENABLED
+        value: "false"       # Set to "true" to require JWT auth
+      - key: JWT_SECRET
+        sync: false          # Auto-generated if not set; set explicitly for key rotation
+      - key: ADMIN_PASSWORD
+        sync: false          # Override default before going live
       - key: CLAUDE_MODEL
         value: claude-sonnet-4-6
+      - key: GATEWAY_RPM
+        value: "20"
       - key: GATEWAY_MAX_TOKENS
         value: "4096"
-      - key: OLLAMA_URL
-        value: ""
       - key: MODEL_BACKEND
         value: anthropic
       - key: LOG_LEVEL
         value: INFO
+      - key: DATA_DIR
+        value: data
     healthCheckPath: /health
     autoDeploy: true

@@ -576,6 +576,58 @@ def test_genome_list(client):
     assert isinstance(body["genomes"], list)
 
 
+# ── Auth system ───────────────────────────────────────────────────────────────
+
+def test_auth_status(client):
+    r = client.get("/api/v1/auth/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert "auth_enabled" in body
+    assert "mode" in body
+    assert body["mode"] in ("single-user", "multi-user")
+
+
+def test_auth_me_single_user(client):
+    """In single-user mode, /me returns a non-authed descriptor — no token needed."""
+    r = client.get("/api/v1/auth/me")
+    assert r.status_code == 200
+    body = r.json()
+    # In single-user mode: auth_enabled=False and a message field
+    assert "auth_enabled" in body or "username" in body
+
+
+def test_auth_login(client):
+    """Default admin credentials must yield tokens."""
+    r = client.post("/api/v1/auth/token", data={
+        "username": "admin",
+        "password": "workstation2026",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert "access_token" in body
+    assert "refresh_token" in body
+    assert body["token_type"] == "bearer"
+
+
+def test_auth_login_bad_password(client):
+    r = client.post("/api/v1/auth/token", data={
+        "username": "admin",
+        "password": "wrongpassword",
+    })
+    assert r.status_code == 401
+
+
+def test_auth_refresh(client):
+    login = client.post("/api/v1/auth/token", data={
+        "username": "admin", "password": "workstation2026"
+    })
+    refresh_token = login.json()["refresh_token"]
+    r = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    assert r.status_code == 200
+    body = r.json()
+    assert "access_token" in body
+
+
 @_ai_only
 def test_genome_encode(client):
     r = client.post("/api/v1/organism/genome/encode", json={
