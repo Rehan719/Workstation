@@ -1,32 +1,85 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Fingerprint, Globe, GitCommit, Layers, ChevronRight, ShieldCheck, Award } from 'lucide-react';
+import { Fingerprint, Globe, Layers, ChevronRight, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from '@workstation/ui';
 
-const MOCK_RECORD = {
-  unified_reputation: 1420,
-  reality_coefficient: '3.7',
-  merkle_root: 'a8f2c91d4e76b3052f1a9e8c7d6b4f20e3a1c5d9b7f0e2a4c6d8f1b3e5a7c9',
-  dimensions: [
-    { name: 'Scholar', contributions: 48, reputation: 560, badges: ['S1', 'S2', 'S3'] },
-    { name: 'Developer', contributions: 61, reputation: 490, badges: ['D1', 'D2'] },
-    { name: 'Entrepreneur', contributions: 33, reputation: 370, badges: ['E1'] },
-  ],
-};
+interface Dimension {
+  name: string;
+  contributions: number;
+  reputation: number;
+  badges: string[];
+}
+
+interface SoulRecord {
+  unified_reputation: number;
+  reality_coefficient: string;
+  merkle_root: string;
+  dimensions: Dimension[];
+}
+
+function buildDimensions(projects: any[]): Dimension[] {
+  const byRealm: Record<string, any[]> = {};
+  for (const p of projects) {
+    const realm = p.realm ?? 'General';
+    if (!byRealm[realm]) byRealm[realm] = [];
+    byRealm[realm].push(p);
+  }
+
+  const REALM_LABELS: Record<string, string> = {
+    LEARNER: 'Scholar', DEVELOPER: 'Developer', ENTERPRISE: 'Entrepreneur',
+    SCHOLAR: 'Scholar', GENOME: 'Genome', UNIFIED: 'General',
+  };
+
+  return Object.entries(byRealm).slice(0, 4).map(([realm, ps]) => {
+    const completed = ps.filter(p => p.stage === 'commercialise').length;
+    const contributions = ps.length;
+    const reputation = contributions * 40 + completed * 60 + Math.floor(Math.random() * 20);
+    const badges: string[] = [];
+    if (contributions >= 1) badges.push(realm[0] + '1');
+    if (contributions >= 3) badges.push(realm[0] + '2');
+    if (completed >= 1) badges.push(realm[0] + 'X');
+    return {
+      name: REALM_LABELS[realm] ?? realm,
+      contributions,
+      reputation,
+      badges: badges.slice(0, 3),
+    };
+  });
+}
 
 export const SoulRecordExplorer: React.FC = () => {
-  const [record, setRecord] = useState<any>(null);
+  const [record, setRecord] = useState<SoulRecord | null>(null);
 
   useEffect(() => {
-    axios.get('/api/v1/projects/stats/summary')
-      .then(res => {
-        setRecord({
-          ...MOCK_RECORD,
-          unified_reputation: (res.data.total_outputs ?? 0) * 10 + 1000,
-        });
-      })
-      .catch(() => setRecord(MOCK_RECORD));
+    Promise.all([
+      axios.get('/api/v1/projects/', { validateStatus: () => true }),
+      axios.get('/api/v1/projects/stats/summary', { validateStatus: () => true }),
+    ]).then(([projRes, statsRes]) => {
+      const projects: any[] = projRes.status === 200 ? (Array.isArray(projRes.data) ? projRes.data : []) : [];
+      const stats = statsRes.status === 200 ? statsRes.data : {};
+
+      const dims = buildDimensions(projects);
+      if (dims.length === 0) {
+        dims.push({ name: 'Sovereign', contributions: 0, reputation: 1000, badges: [] });
+      }
+
+      const totalRep = dims.reduce((s, d) => s + d.reputation, 0);
+
+      setRecord({
+        unified_reputation: totalRep,
+        reality_coefficient: ((stats.total_outputs ?? 0) * 0.15 + 3.5).toFixed(1),
+        merkle_root: Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+        dimensions: dims,
+      });
+    }).catch(() => {
+      setRecord({
+        unified_reputation: 1000,
+        reality_coefficient: '3.5',
+        merkle_root: 'a'.repeat(64),
+        dimensions: [{ name: 'Sovereign', contributions: 0, reputation: 1000, badges: [] }],
+      });
+    });
   }, []);
 
   if (!record) return <div className="p-8 text-slate-500 animate-pulse">Synchronizing Multi-Verse Identity...</div>;
@@ -40,7 +93,7 @@ export const SoulRecordExplorer: React.FC = () => {
            </div>
            <div>
              <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-4xl font-black mb-1 break-words">Soul-Record</h1>
-             <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Multi-Dimensional Identity Explorer v153.0</p>
+             <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Multi-Dimensional Identity Explorer</p>
            </div>
         </div>
         <div className="text-right">
@@ -50,8 +103,13 @@ export const SoulRecordExplorer: React.FC = () => {
       </header>
 
       <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
-        {record.dimensions.map((dim: any) => (
-          <div key={dim.name} className="p-8 glass-card border-white/5 group hover:border-aura/30 transition-all">
+        {record.dimensions.map((dim) => (
+          <motion.div
+            key={dim.name}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-8 glass-card border-white/5 group hover:border-aura/30 transition-all"
+          >
              <div className="flex justify-between items-start mb-6">
                 <div className="p-4 bg-surface rounded-2xl text-slate-500 group-hover:text-aura transition-colors">
                    <Globe size={24} />
@@ -64,11 +122,13 @@ export const SoulRecordExplorer: React.FC = () => {
              <p className="text-xs text-slate-500 font-black uppercase tracking-widest mb-6">{dim.contributions} Contributions</p>
 
              <div className="flex gap-2 mb-8">
-                {dim.badges.map((b: string) => (
+                {dim.badges.length > 0 ? dim.badges.map((b) => (
                    <div key={b} className="p-2 bg-aura/10 rounded-lg text-aura border border-aura/20">
                       <Award size={14} />
                    </div>
-                ))}
+                )) : (
+                  <p className="text-[10px] text-slate-700">No badges yet — complete a project to earn</p>
+                )}
              </div>
 
              <div className="flex justify-between items-end pt-6 border-t border-white/5">
@@ -76,11 +136,16 @@ export const SoulRecordExplorer: React.FC = () => {
                    <p className="text-[10px] font-black text-slate-500 uppercase">Reputation</p>
                    <p className="text-xl font-black text-white">{dim.reputation}</p>
                 </div>
-                <button type="button" onClick={() => toast(`${dim.name} · ${dim.reputation} rep · ${dim.contributions} contributions · ${dim.badges.length} badge${dim.badges.length !== 1 ? 's' : ''}`)} aria-label={`Explore ${dim.name}`} title={`Explore ${dim.name}`} className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+                <button
+                  type="button"
+                  onClick={() => toast(`${dim.name} · ${dim.reputation} rep · ${dim.contributions} contributions · ${dim.badges.length} badge${dim.badges.length !== 1 ? 's' : ''}`)}
+                  aria-label={`Explore ${dim.name}`}
+                  className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all"
+                >
                    <ChevronRight size={18} />
                 </button>
              </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 

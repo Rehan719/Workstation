@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { Card, Badge, Button } from '@workstation/ui';
 import { BookOpen, Heart, Sparkles, MessageCircle, History, Info, ShieldCheck, Zap, Globe, HeartPulse, Network, Binary, Compass, Anchor, Wind, Layers, GraduationCap } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
@@ -10,17 +11,20 @@ import { LearnTeachModule } from '../../components/LearnTeachModule';
 import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 
+interface Madhab { id: string; name: string; region: string; founder: string }
+
 export const ReligionHub: React.FC = () => {
   const navigate = useNavigate();
    const { layout, emotionalAdjustment } = useAdaptiveUI();
   const { user } = useStore();
   const [activeTab, setActiveTab] = useState('wisdom');
+  const [madhabs, setMadhabs] = useState<Madhab[]>([]);
 
-  const wisdoms = [
-    { id: 'w-1', name: 'Universal Ethics v3', type: 'Moral Framework', status: 'Ratified', hash: 'e8a9b1...' },
-    { id: 'w-2', name: 'Interfaith-Dialogue', type: 'Alliance', status: 'Active', hash: 'd4f5g6...' },
-    { id: 'w-3', name: 'Compassionate-Inquiry', type: 'Protocol', status: 'Proposed', hash: 'a1b2c3...' },
-  ];
+  useEffect(() => {
+    axios.get('/api/v1/religion/schools')
+      .then(res => setMadhabs(res.data.madhabs ?? []))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="space-y-12 pb-24">
@@ -114,11 +118,12 @@ export const ReligionHub: React.FC = () => {
                           <QEPFlagshipFeatures />
                        </div>
                     </motion.div>
-                  ) : wisdoms.map((wisdom, i) => (
+                  ) : madhabs.length > 0 ? madhabs.map((madhab, i) => (
                     <motion.div
-                      key={wisdom.id}
+                      key={madhab.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
                       className="p-8 rounded-[2.5rem] bg-slate-950 border border-slate-900 flex items-center justify-between group hover:border-aura/30 transition-all cursor-pointer"
                     >
                        <div className="flex items-center gap-8">
@@ -126,19 +131,21 @@ export const ReligionHub: React.FC = () => {
                              <Heart size={24} />
                           </div>
                           <div>
-                             <p className="text-lg font-black text-white mb-1 uppercase tracking-widest">{wisdom.name}</p>
+                             <p className="text-lg font-black text-white mb-1 uppercase tracking-widest">{madhab.name}</p>
                              <div className="flex items-center gap-4">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{wisdom.type}</span>
-                                <span className="text-[10px] font-mono text-aura/50">{wisdom.hash}</span>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{madhab.region}</span>
+                                <span className="text-[10px] font-mono text-aura/50">{madhab.founder}</span>
                              </div>
                           </div>
                        </div>
                        <div className="flex items-center gap-6">
-                          <Badge color={wisdom.status === 'Ratified' ? 'emerald-500' : 'highlight'}>{wisdom.status}</Badge>
-                          <Button onClick={() => navigate('/reactor?domain=religion')} variant="outline" className="px-6">Meditate</Button>
+                          <Badge color="emerald-500">Active</Badge>
+                          <Button onClick={() => navigate('/qep-religion')} variant="outline" className="px-6">Explore</Button>
                        </div>
                     </motion.div>
-                  ))}
+                  )) : (
+                    <div className="text-center py-8 text-slate-600 text-sm animate-pulse">Loading jurisprudential traditions…</div>
+                  )}
                </div>
             </Card>
          </div>

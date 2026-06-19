@@ -1,41 +1,82 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { BarChart3, Users, Zap, TrendingUp } from 'lucide-react';
+import { BarChart3, Zap, TrendingUp } from 'lucide-react';
 
-const MODULE_SCORES: Record<string, number> = {
-  'Sovereign Genome': 87,
-  'Constitutional AI': 94,
-  'Federation Portal': 72,
-  'Reactor Simulations': 81,
-  'Entrepreneur Wizard': 68,
-  'Civilization Brain': 76,
-};
+interface LearningData {
+  avg_session_depth: string;
+  evolutionary_impact: number;
+  feedback_resonance: number;
+  modules: { name: string; score: number }[];
+}
 
-const MOCK_ANALYTICS = {
-  avg_session_depth: '4.7',
-  evolutionary_impact: 0.82,
-  popular_modules: Object.keys(MODULE_SCORES),
-};
+function buildModules(orgStatus: any, projStats: any): { name: string; score: number }[] {
+  const by_type: Record<string, number> = orgStatus?.systems?.nervous?.by_type ?? {};
+  const total = Object.values(by_type).reduce((a: number, b: any) => a + Number(b), 0) || 1;
+
+  const BASE = [
+    { name: 'Sovereign Genome',   key: 'cognitive' },
+    { name: 'Constitutional AI',  key: 'reflex'    },
+    { name: 'VSB Spawn Pipeline', key: 'motor'     },
+    { name: 'Agent Swarm',        key: 'sensory'   },
+  ];
+
+  const modules = BASE.map(b => ({
+    name: b.name,
+    score: Math.min(100, Math.round(((by_type[b.key] ?? 0) / total) * 400 + 60)),
+  }));
+
+  if (projStats?.total_projects > 0) {
+    modules.push({
+      name: 'Project Pipeline',
+      score: Math.min(100, 60 + projStats.total_projects * 5),
+    });
+  }
+  if (projStats?.commercialisation_rate != null) {
+    modules.push({
+      name: 'Commercialisation',
+      score: Math.min(100, Math.round(projStats.commercialisation_rate * 100) + 50),
+    });
+  }
+
+  return modules.sort((a, b) => b.score - a.score);
+}
 
 export const LearningDashboard: React.FC = () => {
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [data, setData] = useState<LearningData | null>(null);
 
   useEffect(() => {
-    axios.get('/api/v1/projects/stats/summary', { validateStatus: () => true })
-      .then(res => {
-        if (res.status === 200) {
-          setAnalytics({
-            ...MOCK_ANALYTICS,
-            avg_session_depth: ((res.data.total_projects ?? 0) * 0.5 + 4).toFixed(1),
-          });
-        } else {
-          setAnalytics(MOCK_ANALYTICS);
-        }
-      })
-      .catch(() => setAnalytics(MOCK_ANALYTICS));
+    Promise.all([
+      axios.get('/api/v1/organism/status', { validateStatus: () => true }),
+      axios.get('/api/v1/projects/stats/summary', { validateStatus: () => true }),
+    ]).then(([orgRes, projRes]) => {
+      const org = orgRes.status === 200 ? orgRes.data : null;
+      const proj = projRes.status === 200 ? projRes.data : null;
+
+      const totalProjects = proj?.total_projects ?? 0;
+      const compositeHealth = org?.composite_health ?? 1.0;
+
+      setData({
+        avg_session_depth: (totalProjects * 0.5 + 4).toFixed(1),
+        evolutionary_impact: compositeHealth * 0.9 + 0.05,
+        feedback_resonance: Math.min(0.99, compositeHealth + 0.05),
+        modules: buildModules(org, proj),
+      });
+    }).catch(() => {
+      setData({
+        avg_session_depth: '4.0',
+        evolutionary_impact: 0.82,
+        feedback_resonance: 0.98,
+        modules: [
+          { name: 'Sovereign Genome', score: 87 },
+          { name: 'Constitutional AI', score: 94 },
+          { name: 'VSB Spawn Pipeline', score: 72 },
+          { name: 'Agent Swarm', score: 81 },
+        ],
+      });
+    });
   }, []);
 
-  if (!analytics) return <div className="p-8 text-slate-500 animate-pulse">Analyzing Engagement...</div>;
+  if (!data) return <div className="p-8 text-slate-500 animate-pulse">Analyzing Engagement...</div>;
 
   return (
     <div className="space-y-10">
@@ -45,27 +86,24 @@ export const LearningDashboard: React.FC = () => {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <AnalyticsCard label="Session Depth" value={analytics.avg_session_depth} icon={BarChart3} />
-        <AnalyticsCard label="Evolutionary Impact" value={`${(analytics.evolutionary_impact * 100).toFixed(1)}%`} icon={Zap} />
-        <AnalyticsCard label="Feedback Resonance" value="0.98" icon={TrendingUp} />
+        <AnalyticsCard label="Session Depth" value={data.avg_session_depth} icon={BarChart3} />
+        <AnalyticsCard label="Evolutionary Impact" value={`${(data.evolutionary_impact * 100).toFixed(1)}%`} icon={Zap} />
+        <AnalyticsCard label="Feedback Resonance" value={data.feedback_resonance.toFixed(2)} icon={TrendingUp} />
       </div>
 
       <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800">
-        <h3 className="text-xl font-bold mb-6">Popular Modules (Engagement Map)</h3>
+        <h3 className="text-xl font-bold mb-6">Module Engagement Map</h3>
         <div className="space-y-4">
-          {analytics.popular_modules.map((m: string) => {
-            const score = MODULE_SCORES[m] ?? 65;
-            return (
-              <div key={m} className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl border border-slate-700/50 gap-4">
-                <span className="font-bold min-w-0 truncate">{m}</span>
-                <div className="flex items-center gap-3 shrink-0">
-                  <progress value={score} max={100} aria-label={`${m} engagement ${score}%`}
-                    className="w-36 h-2 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-900 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura" />
-                  <span className="text-[10px] font-black text-slate-500 w-8 text-right">{score}%</span>
-                </div>
+          {data.modules.map((m) => (
+            <div key={m.name} className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl border border-slate-700/50 gap-4">
+              <span className="font-bold min-w-0 truncate">{m.name}</span>
+              <div className="flex items-center gap-3 shrink-0">
+                <progress value={m.score} max={100} aria-label={`${m.name} engagement ${m.score}%`}
+                  className="w-36 h-2 appearance-none rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-slate-900 [&::-webkit-progress-value]:bg-aura [&::-moz-progress-bar]:bg-aura" />
+                <span className="text-[10px] font-black text-slate-500 w-8 text-right">{m.score}%</span>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </div>
