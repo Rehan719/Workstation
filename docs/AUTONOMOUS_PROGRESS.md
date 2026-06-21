@@ -145,4 +145,9 @@ Health check: backend boots (313 routes); suite **78 passed / 0 failed**. No gen
 
 ### CI fix — real verification in GitHub Actions (autonomous)
 **Finding:** the legacy `ci.yml` ran Jules-era tests (`tests/test_v120_synergy.py`) via poetry and checked the wrong mobile path (`src/mobile` vs `apps/mobile`) — it **never ran the real 83-test integration suite or the frontend build**, so a "green" CI gave false confidence.
-**Executed:** added `.github/workflows/spine.yml` (additive, non-destructive) — a backend job (`pip install -r requirements.txt` → boot → `pytest integration_tests/test_mvp_spine.py`) and a frontend job (`npm install` → `npm run build --workspace=apps/workstation-superapp`, i.e. tsc+vite). Commands verified locally (suite 83 pass; npm resolves the workspace build script). Left `ci.yml` intact (flagged its staleness for the Owner).
+**Executed:** added `.github/workflows/spine.yml` (additive, non-destructive) — a backend job (`pip install -r requirements.txt` → boot → `pytest integration_tests/test_mvp_spine.py`) and a frontend job (`npm install` → `npm run build --workspace=apps/workstation-superapp`, i.e. tsc+vite). Commands verified locally. Left `ci.yml` intact (flagged its staleness for the Owner).
+
+**The CI immediately caught TWO real launch blockers local builds masked (now fixed):**
+1. **Frontend prod build (and Vercel) would FAIL** — `src/data/fallbackData.json` (imported by `Evolution.tsx`) was swallowed by the broad `data/` .gitignore rule, so it was never committed → absent in any fresh clone. Added `!apps/workstation-superapp/src/data/` + tracked the asset.
+2. **Backend CI** — `No module named pytest` (a dev-only dep not in the runtime `requirements.txt`; boot check passed). Added `pip install pytest` to the CI test job.
+**Result:** Spine CI is **GREEN** on `bf961467` — backend (boot + 83-test suite) ✅ and frontend (tsc + vite build) ✅ both pass. Real CI now guards every push/PR.
