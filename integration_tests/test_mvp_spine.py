@@ -1155,3 +1155,16 @@ def test_transformation_orchestrate_runs(client):
     assert body["total"] >= 1
     first = body["runs"][0]
     assert "transformation_id" in first and "validated" in first
+
+
+def test_vsb_list_org_flags(client):
+    # an established VSB has a Board + Economy; the list must surface org flags
+    client.post("/api/v1/genesis/establish",
+                json={"problem": "list-flags test", "owner_id": "pytest", "entity_type": "ltd"})
+    r = client.get("/api/v1/vsb")
+    assert r.status_code == 200
+    ents = r.json()["entities"]
+    assert ents
+    established = [e for e in ents if e.get("has_board")]
+    assert established, "expected at least one established VSB with has_board=True"
+    assert "entity_type" in established[0]

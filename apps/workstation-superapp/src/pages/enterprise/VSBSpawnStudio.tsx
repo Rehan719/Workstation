@@ -65,6 +65,9 @@ interface VSBEntity {
   status: string;
   stage: string;
   created_at: string;
+  has_board?: boolean;
+  entity_type?: string;
+  business_plan_scope?: string;
 }
 
 interface Director { id?: string; title?: string; name?: string }
@@ -343,6 +346,12 @@ export const VSBSpawnStudio: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  {e.has_board && (
+                    <span className="text-[8px] font-black uppercase px-2 py-1 rounded-lg bg-aura/10 text-aura"
+                      title="Established living organisation — Board + Economy">
+                      ⬢ {e.entity_type || 'org'}
+                    </span>
+                  )}
                   <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg ${
                     e.status === 'active'
                       ? 'bg-emerald-500/10 text-emerald-400'

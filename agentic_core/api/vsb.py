@@ -94,6 +94,10 @@ def _list_vsbs() -> list[dict]:
                 "status": v.get("status", ""),
                 "stage": v.get("stage", ""),
                 "created_at": v.get("created_at", ""),
+                # org flags — surface which VSBs are fully-established living organisations
+                "has_board": bool(v.get("board")),
+                "entity_type": (v.get("economy") or {}).get("entity_type"),
+                "business_plan_scope": v.get("business_plan_scope"),
             })
         except Exception:
             pass
