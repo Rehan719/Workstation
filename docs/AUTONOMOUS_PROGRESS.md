@@ -154,4 +154,9 @@ Health check: backend boots (313 routes); suite **78 passed / 0 failed**. No gen
 
 ### Resolved CI noise — 3 stale Jules-era workflows were red on every push (autonomous)
 **Finding:** `ci.yml` (Jules v120, dies at `poetry install`), `main.yml` (Genetic-Immune vΩ∞), `validate.yml` (MUSHĀWARA) all failed on every push — false-red noise that made the repo look broken even though the real Spine CI is green. They test Jules-era artifacts the Spine CI now supersedes.
-**Executed (non-destructive):** switched all three from `on: [push, pull_request]` to `on: workflow_dispatch` (manual-only) + a header comment. Files kept (runnable manually, one-line revert). **Recommendation to Owner: fix-or-remove these three.** The Jules automation (`jules-*.yml`) and `documentation_sync.yml` (green) were left untouched.
+**Executed (non-destructive):** switched all three from `on: [push, pull_request]` to `on: workflow_dispatch` (manual-only) + a header comment. Files kept (runnable manually, one-line revert). **Recommendation to Owner: fix-or-remove these three.** The Jules automation (`jules-*.yml`) and `documentation_sync.yml` (green) were left untouched. Verified on GitHub: the next push triggered only Spine CI ✅ + Documentation ✅ (the 3 red workflows no longer run).
+
+### Phase-2 depth — surface each VSB's living org + per-VSB orchestration (autonomous)
+**Finding:** every established VSB carries a Board (Chief + directors), Economy, and living Business Plan (`/api/v1/vsb/{id}` exposes them), but `VSBSpawnStudio` only listed name/status — the rich org was invisible.
+**Executed:** clicking a VSB now expands an org detail panel — **Board** (Chief = owner digital twin + specialist directors), **Economy** (legal/economic form, WST virtual), a link to its **living Business Plan**, and an **"Orchestrate transformation (Chief → BTO)"** action that runs the end-to-end cascade for that VSB and renders the validated result (stages verified · governance · twin sim).
+**Verified live:** 10 VSB rows expand → Board/Economy/Plan render; Orchestrate → cascade renders VALIDATED; tsc+vite build clean. `main` == `153e8da7`.
