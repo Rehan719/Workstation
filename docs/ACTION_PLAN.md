@@ -16,13 +16,17 @@ Deliver the **commercially-ready, launch-ready realisation** of the Workstation 
 3. **Launch-ready standards** — every increment real + verified (boot/tests/tsc/endpoint); honest (no fabrication); governed (gaas/UEG); virtual-money only until the Owner enables Stripe.
 4. **Owner sovereignty** — the Chief (Owner's digital twin) + Board own the living business plan; the Owner monitors via the Living Plan + Transformation + Business-Plan dashboards.
 
-## Gap (current state — 2026-06-21)
-Computed vision realisation: **100%** (live evidence) for the 11 core pillars. Remaining **build-out** to reach launch-ready (not pillar gaps, but depth/coverage):
-- **Living Business-Plan management** for the Digital-Twin Chief + per-VSB (set strategy→objectives→review→progress). ← biggest piece
-- **Frontend pages** for Forge + Compliance (backends live; no UI).
-- **End-to-end pilot** validating the full workflow on a real VSB + digital twin.
-- **Real-money rails (Stripe)** — gated by Owner; stay virtual tonight.
-- Deeper engine integration into synthesis workflows; more role automation; per-VSB business plans.
+## Gap (current state — 2026-06-21, updated)
+Computed vision realisation: **100%** (live evidence) for the 11 core pillars. Structural transformation is **complete and operationally verified** (64 pages swept clean; 71 integration tests pass; backend boots live; all AI endpoints bounded). Status of the build-out items:
+- ✅ **Living Business-Plan management** (Chief + per-VSB) — built, verified (`/api/v1/business-plan`).
+- ✅ **Forge + Compliance frontend pages** — built, sidebar-wired, swept clean.
+- ✅ **End-to-end pilot** — "NourishLondon" VSB established with board+twin+economy, gaas-governed.
+- ✅ **Frontend↔backend integration** — 18 previously-broken endpoints wired; venv/jose boot crash fixed; AI-gateway hangs bounded; 3 latent SM-2 overflow bugs fixed; smoke coverage added.
+- ⛔ **Real-money rails (Stripe)** — **GATED on Owner** (virtual-only until directed).
+- ⛔ **Production deployment hardening** + **live AI key** in the running env — **Owner-gated** (next phase).
+- ◯ Forward (non-gated, ongoing): deeper engine integration into synthesis workflows; per-VSB business plans; more role automation; broader POST-path test coverage.
+
+> **Conclusion:** the planned **structural transformation is done**. What remains is either Owner-gated (launch/commercial) or ongoing incremental depth — there is no remaining non-gated *structural* gap. See `docs/AUTONOMOUS_PROGRESS.md` for the continuous-cycle log.
 
 ---
 

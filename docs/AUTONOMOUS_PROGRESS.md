@@ -50,5 +50,16 @@
 **Verification:** **36/36 clean** — 0 API failures, 0 JS errors. Combined with the earlier 28 → **64 distinct pages verified operational**. The remaining ~75 routes are intentional Phase-4 stubs (genome/methylation/orbital/diplomacy/etc.) with no backends, as documented.
 **Status: ✅ complete (no code changes — nothing was broken).**
 
+### Cycle 4 — Production build + backend stub audit + doc reconciliation
+**Review findings:**
+- Backend stub/TODO sweep: the grep is dominated by constitution Roman numerals and the intentional "Zero-Placeholder certification" *feature*. The genuine placeholders left (`trustworthiness_engine`, `v220/federation`) are in honestly-labelled aspirational subsystems **not mounted on the live MVP path** → **the verified-live surface is clean.**
+- Discovered a large `tests/` tree (unit, integration, phase3/4/9, sovereignty, …) beyond `test_mvp_spine.py` — candidate for a future cycle (many likely target unmounted Jules-era features).
+
+**Executed:**
+- **Frontend production build** (`tsc && vite build`): **✓ 3,327 modules, built in 40s, 0 errors** — compiles + bundles clean for production. Flags one real item: a single **2.9 MB JS chunk** (787 KB gzip) → code-split next cycle.
+- Reconciled `docs/ACTION_PLAN.md` Gap section to current reality (structural transformation done; only Owner-gated + ongoing-depth items remain).
+
+**Status: ✅ complete.** Next: **C5 — bundle code-splitting** (real load-time win, non-gated).
+
 ---
 *(Subsequent cycles appended here.)*
