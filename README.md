@@ -107,19 +107,28 @@ vercel deploy
 
 ```
 agentic_core/          — FastAPI backend (the real code)
-  app_mvp.py           — lean entrypoint; 21 routers, boots clean
-  ai/gateway.py        — Anthropic → OpenAI → Ollama chain
+  app_mvp.py           — entrypoint; 64 routers / 313 routes, boots clean
+  ai/gateway.py        — Anthropic → OpenAI → Ollama chain (bounded timeout → labelled fallback)
+  gaas/v5/             — constitutional interceptor engine + hash-chained UEG audit log
+  organism/            — biomimetic systems: nervous, immune, self-healing, ATP,
+                         heartbeat (continuous circadian autonomy)
   projects/api.py      — Project CRUD + SSE AI workflow + lifecycle
-  api/products.py      — Factory, Reactor, Incubator (all real AI)
-  api/v290/ceo_generate.py  — CEO blueprint generation
-  api/csuite.py        — CFO/CTO metrics from real data
-  synthesis/api.py     — multi-format document synthesis
+  api/genesis.py       — Concept → Design → Commercialisation journey orchestrator
+  api/board.py         — Board of Directors (Chief = owner's digital twin, above the AI CEO)
+  api/economy.py       — living VSB economic metabolism (virtual/simulated currency only)
+  api/transformation.py — live vision → realisation → transformation engine
+  api/forge.py · api/resource_fabric.py — digital-resource pipelines + reconfigurable resource fabric
+  api/integration_surface.py — federates 18 frontend endpoints to real backend data
+  synthesis/ · api/intelligence.py — multi-format synthesis + cognitive/MJM/Nexus engines
 
 apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
-  src/App.tsx          — 100+ routes
+  src/App.tsx          — 140+ routes (64 verified operational end-to-end)
   src/pages/           — Enterprise, Learner, Developer, Scholar realms
                          + domain hubs + all product pages
 ```
+
+> Verified: backend boots clean; **78 integration tests pass**; production build
+> (`tsc && vite build`) succeeds. Auth needs crypto deps — `pip install -r requirements.txt`.
 
 Data persists to `data/projects/` and `data/synthesis_outputs/` as JSON files.
 
@@ -133,11 +142,19 @@ The gateway tries providers in order:
 
 ## Roadmap
 
-**Phase 1** (next): authentication, SQLite persistence, one integration test per AI endpoint, clean clone boot verified
+The live, authoritative roadmap is the **Living Plan** (`docs/WORKSTATION_IDBO_LIVING_PLAN.md`,
+served at `GET /api/v1/plan`) and **`docs/ACTION_PLAN.md`**; cycle-by-cycle progress is in
+**`docs/AUTONOMOUS_PROGRESS.md`**. Summary:
 
-**Phase 2**: PostgreSQL, file storage for deliverables, analytics, extend domain-specific AI depth across all Realm × Domain combinations
+**Phase 1 — ✅ done**: authentication (opt-in JWT, resilient crypto imports), integration test
+suite (78 passing), clean boot verified, frontend↔backend integration (all 18 previously-broken
+endpoints wired), production build verified + code-split.
 
-**Phase 3**: PWA, mobile (Capacitor wrap), marketing site
+**Phase 2 — in progress (non-gated)**: deeper domain-specific AI depth across Realm × Domain,
+broader test coverage, data-fidelity + operational hardening, SQLite/Postgres persistence.
+
+**Phase 3 — ⛔ Owner-gated (launch/commercial)**: real-money rails (Stripe — virtual/simulated
+until directed), production deployment hardening, live AI key in the running environment.
 
 ---
 

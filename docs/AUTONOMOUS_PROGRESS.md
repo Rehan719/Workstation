@@ -69,7 +69,7 @@
 ---
 
 ## Running summary (for the Owner)
-Autonomous cycles **C1–C8 complete**, all verified + committed to `feat/idbo-living-organism-integration` (no push). Net: 3 latent overflow bugs + 1 test-isolation bug fixed, AI-gateway hangs bounded, **+24 integration tests (78 pass / 0 fail)**, 2 thin endpoints now honestly state-derived, 64 pages swept clean, production build verified + code-split, docs reconciled. **No non-gated structural gap remains.** Gated/next-phase items (Stripe, deploy, live AI key) untouched per mandate.
+Autonomous cycles **C1–C9 complete**, all verified + committed to `feat/idbo-living-organism-integration` (no push). Net: 3 latent overflow bugs + 1 test-isolation bug fixed, AI-gateway hangs bounded, **+24 integration tests (78 pass / 0 fail)**, 2 thin endpoints now honestly state-derived, 64 pages swept clean, production build verified + code-split, root README reconciled to current reality. **No non-gated structural gap remains.** Gated/next-phase items (Stripe, deploy, live AI key) untouched per mandate.
 
 ### Cycle 6 — POST-path test coverage (operational workflows)
 **Executed:** added **6 POST-path tests** for deterministic operational workflows (compliance/check pass+fail, economy/cycle, resources/compose, integration user/activity + bounty/submit) — verifying the real request→response contract, not just that the router is mounted.
@@ -88,6 +88,12 @@ Autonomous cycles **C1–C8 complete**, all verified + committed to `feat/idbo-l
 - **Fixed a latent test-isolation bug** the suite surfaced in the C7 business-plan test: it used a fixed scope that persists to `data/`, so a 2nd run appended a 2nd objective and failed `objectives==1`. Now uses a unique per-run scope (idempotent).
 
 **Verification:** fresh-import confirms state-derived payloads; suite **78 passed / 15 skipped / 0 failed**; live server restarted serves the new code.
+**Status: ✅ complete.**
+
+### Cycle 9 — Doc reconciliation (root README)
+**Review findings:** root `README.md` was stale — architecture block claimed "21 routers" (now 64 routers / 313 routes) and omitted every living-organism subsystem built this session; the Roadmap listed Phase-1 items (auth, integration tests, boot) as "next" when they're done. `docs/README.md` (the knowledge canon index) is current — no change needed.
+**Executed:** rewrote the README architecture block to the true 64-router/313-route state with the new subsystems (gaas.v5, organism/heartbeat, genesis, board, economy, transformation, forge, resource-fabric, integration-surface) + a verified-status note (78 tests, prod build); reconciled the Roadmap (Phase 1 ✅ done, Phase 2 non-gated in progress, Phase 3 Owner-gated) and pointed it at the live planning docs.
+**Verification:** backend boots (313 routes); doc-only change (no suite re-run needed).
 **Status: ✅ complete.**
 
 *(Subsequent cycles appended here.)*
