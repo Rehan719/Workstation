@@ -224,13 +224,21 @@ async def evo_trajectories():
 @router.get("/api/v240/evolution/metrics")
 async def evo_metrics():
     imm = _immune()
+    real = None
+    pillars: List[Dict[str, Any]] = []
     try:
         from agentic_core.api.transformation import _realise
-        real = _realise().get("overall_realisation")
+        r = _realise()
+        real = r.get("overall_realisation")
+        pillars = [{"pillar": p["pillar"], "realisation": p["realisation"], "status": p["status"]}
+                   for p in r.get("pillars", [])]
     except Exception:
-        real = None
+        pass
     return {"vision_realisation": real, "organism_health": imm.get("health"),
             "threat_level": imm.get("threat_level"),
+            "pillar_breakdown": pillars,
+            "dimensions_realised": sum(1 for p in pillars if p["status"] == "realised"),
+            "dimensions_total": len(pillars),
             "self_improvement": "Sovereign Evolution + Heartbeat active"}
 
 
@@ -263,7 +271,24 @@ async def global_search(q: str = ""):
                 results.append({"type": "resource", "title": r["name"], "route": "/resource-fabric", "id": r["id"]})
     except Exception:
         pass
-    return {"query": q, "results": results[:30], "total": len(results)}
+    try:
+        from agentic_core.projects.api import _all_projects
+        for p in _all_projects():
+            hay = f"{p.title} {p.realm} {p.domain} {p.stage}".lower()
+            if not ql or ql in hay:
+                results.append({"type": "project", "title": p.title, "route": "/projects", "id": p.id,
+                                "meta": f"{p.realm} · {p.domain} · {p.stage}"})
+    except Exception:
+        pass
+    # rank exact title matches first, then prefix, then substring
+    def _rank(item):
+        if not ql:
+            return 1
+        t = str(item.get("title", "")).lower()
+        return 0 if t == ql else (1 if t.startswith(ql) else 2)
+    results.sort(key=_rank)
+    by_type = {t: sum(1 for x in results if x["type"] == t) for t in {x["type"] for x in results}}
+    return {"query": q, "results": results[:30], "total": len(results), "by_type": by_type}
 
 
 # ── v210 / v220 federation twins ──────────────────────────────────────────────

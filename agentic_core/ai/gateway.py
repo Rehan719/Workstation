@@ -84,11 +84,36 @@ class ModelGateway:
 
     # ── non-streaming ───────────────────────────────────────────────────────
 
-    async def query(self, prompt: str, agent: str = "assistant") -> str:
+    async def query(self, prompt: str, agent: str = "assistant",
+                    timeout: float | None = 90.0) -> str:
+        """Run one completion through the provider cascade.
+
+        `timeout` is an OVERALL bound (seconds) on the whole cascade so an AI call
+        can never hang a request indefinitely — the worst case (claude→openai→ollama)
+        could otherwise stack to ~3 minutes. Interactive endpoints should pass a
+        tighter value (e.g. 20) for snappy UX; pass None to disable the bound.
+        On timeout we return a clearly-labelled fallback rather than blocking.
+        """
         self._sync_reconfig()
         await self._rate_limiter.acquire()
         augmented = self._augment(prompt)
-        response, provider = await self._call(augmented, agent=agent)
+        try:
+            if timeout is not None:
+                response, provider = await asyncio.wait_for(
+                    self._call(augmented, agent=agent), timeout)
+            else:
+                response, provider = await self._call(augmented, agent=agent)
+        except asyncio.TimeoutError:
+            try:
+                from agentic_core.organism.immune import immune
+                from agentic_core.organism.self_healing import self_healer
+                immune.record(agent, "timeout")
+                self_healer.record_failure("gateway")
+            except Exception:
+                pass
+            return ("[AI unavailable — no provider responded within "
+                    f"{int(timeout)}s. Configure ANTHROPIC_API_KEY (or start Ollama) "
+                    "for live AI narration; the rest of this view is computed live.]")
 
         if not validate_response(response):
             response = "[POLICY VIOLATION] The generated response was blocked by safety guardrails."

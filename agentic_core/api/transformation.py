@@ -200,7 +200,7 @@ async def assess():
         "## Faithfulness Assessment\n## Biggest Gaps\n## Recommended Next Transformation Steps\n## Risks"
     )
     try:
-        narrative = await gateway.query(prompt, agent="transformation_assess")
+        narrative = await gateway.query(prompt, agent="transformation_assess", timeout=20)
     except Exception as e:
         narrative = f"[assessment unavailable: {e}]"
     return {"overall_realisation": r["overall_realisation"], "assessment": narrative}

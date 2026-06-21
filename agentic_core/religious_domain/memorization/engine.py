@@ -14,6 +14,10 @@ class MemorizationEngine:
     def __init__(self):
         self.default_efactor = 2.5
         self.min_efactor = 1.3
+        # SM-2 intervals grow geometrically (×efactor each review); without a cap a
+        # long-mastered ayah's interval eventually overflows `date + timedelta(days=…)`.
+        # 100 years is far beyond any meaningful review horizon and keeps date math safe.
+        self.max_interval_days = 36500
 
     def calculate_next_review(self, quality: int, repetitions: int, previous_interval: int, previous_efactor: float) -> Tuple[int, float]:
         """
@@ -38,6 +42,7 @@ class MemorizationEngine:
             else:
                 interval = math.ceil(previous_interval * new_efactor)
 
+        interval = min(interval, self.max_interval_days)
         logger.debug(f"SRS: Quality {quality} -> Next Review in {interval} days (EF: {new_efactor:.2f})")
         return interval, new_efactor
 

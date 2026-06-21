@@ -53,3 +53,16 @@ Audited **every** frontend `fetch`/`axios` call against the live backend route t
 **Verified end-to-end:** 313 routes; all 18 endpoints live-**200** with real payloads; frontend consumes them through the Vite proxy (all 200); steady-state polling clean (no storm); the full app renders with live data. The previously-reported "biometrics retry storm" was just the 6-second status poll accumulating failures during the whole window the backend was down from the jose crash — gone now that boot is fixed.
 
 **Operational note for you:** always start the dev backend with `venv\Scripts\python.exe -m uvicorn agentic_core.app_mvp:app` and keep the venv synced (`venv\Scripts\python.exe -m pip install -r requirements.txt`).
+
+---
+
+## Transformation-Completion Pass (2026-06-21, on your request) — "plan + execute to completion"
+
+Drove from the organism's own ground truth (`/api/v1/transformation` reports **overall_realisation = 1.0**, 11/11 pillars realised) and closed every real, non-gated gap I could find:
+
+1. **AI gateway hang (important fix).** `/api/v1/transformation/assess` hung forever (HTTP 000) and saturated the single worker — `gateway.query` could stack claude(30s)→openai(30s)→ollama(120s) unbounded with no AI key. Added an **overall timeout** to `gateway.query` (default 90s → labelled fallback) so no AI-mediated endpoint can ever hang a request; `/assess` uses a tight 20s. Verified: isolated `query(timeout=5)`→5.6s; `/assess`→HTTP 200 in 20s with an honest fallback.
+2. **Federated-endpoint fidelity.** Global search now also covers **projects** + ranks results + returns `by_type`; evolution metrics now returns the full **per-pillar realisation breakdown** (11/11 dimensions).
+3. **Latent overflow bug fixed.** The Quran-memorization SM-2 interval grew geometrically until `date + timedelta(days=…)` overflowed (a test that passed earlier began failing as stored review-state accumulated). Capped the interval at 100 years — self-corrects on next review.
+4. **Operational verification.** Swept **28 distinct pages live** (every major nav section) → **0 API failures, 0 JS errors**. Integration suite back to green.
+
+**Honest framing of "completion":** the transformation engine's *computed structural* realisation is at its ceiling — the system is wired, self-running, internally coherent, and operationally verified end-to-end. That is **not** "commercially launched": real-money rails (Stripe), production deployment hardening, and a live AI key in the running environment remain ahead and **gated on you**. Those are the next phase, not part of this structural transformation.
