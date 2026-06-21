@@ -15,6 +15,9 @@ outputs_final/
 *.wav
 *.mp3
 *.txt
+# …but the Python deps manifest MUST be tracked (the blanket *.txt above accidentally
+# excluded it, leaving fresh clones / Render deploys with no installable requirements).
+!requirements.txt
 # Python cache
 __pycache__/
 *.pyc

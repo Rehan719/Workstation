@@ -1088,3 +1088,38 @@ def test_genesis_establish_seeds_business_plan(client):
     bp = client.get("/api/v1/business-plan", params={"scope": vsb}).json()
     assert bp["mission"].startswith("Deliver:")
     assert len(bp["objectives"]) == 3
+
+
+# ── Payments — honest, launch-ready rails (Phase 3, test-mode safe) ───────────
+# Verifies the rails never fabricate a connection and default to safe simulation.
+
+def test_payments_status_honest(client):
+    r = client.get("/api/v310/payments/status")
+    assert r.status_code == 200
+    b = r.json()
+    assert b["mode"] in ("simulation", "test", "live", "live_gated")
+    assert isinstance(b["stripe_configured"], bool)
+    # SAFETY INVARIANT: live charges are enabled IFF mode is exactly "live"
+    # (requires BOTH a live key AND STRIPE_LIVE_ENABLED=true). A live key alone → "live_gated".
+    assert b["live_charges_enabled"] == (b["mode"] == "live")
+    if b["mode"] == "simulation":
+        assert b["stripe_configured"] is False
+
+
+def test_payments_wallet_no_fabrication(client):
+    r = client.get("/api/v310/payments/wallet/pytest")
+    assert r.status_code == 200
+    b = r.json()
+    assert b["currency"] == "WST (virtual)"
+    assert isinstance(b["stripe_configured"], bool)
+
+
+def test_payments_wst_settlement(client):
+    # WST settlement never touches Stripe (real money) — safe in any payment mode,
+    # including when a live key is present (it stays gated).
+    r = client.post("/api/v310/payments/create-session",
+                    json={"item_id": "test-item", "price_wst": 100.0, "payment_method": "wst_balance"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["mode"] == "wst_ledger"
+    assert body["currency"] == "WST (virtual)"
