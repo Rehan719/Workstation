@@ -1144,3 +1144,14 @@ def test_transformation_orchestrate_end_to_end(client):
     assert b["digital_twin"]["model_id"]                                  # twin generated
     assert b["digital_twin"]["simulation"]["projected_realisation"] is not None  # + simulated
     assert b["governance"]["status"] == "allowed"                        # gaas-governed
+
+
+def test_transformation_orchestrate_runs(client):
+    # run an orchestration, then the history endpoint must list it
+    client.post("/api/v1/transformation/orchestrate", json={"objective": "runs test", "scope": "workstation"})
+    r = client.get("/api/v1/transformation/orchestrate/runs")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] >= 1
+    first = body["runs"][0]
+    assert "transformation_id" in first and "validated" in first

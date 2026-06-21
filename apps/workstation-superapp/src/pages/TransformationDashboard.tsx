@@ -16,6 +16,7 @@ interface Picture {
 }
 
 interface CascadeStage { step: number; tier: string; delegates_to: string; action: string; verified: boolean; signal: string }
+interface OrchRunSummary { transformation_id: string; scope: string; objective: string; validated: boolean; created_at: string }
 interface OrchestrationRun {
   transformation_id: string;
   objective: string;
@@ -41,10 +42,12 @@ export const TransformationDashboard: React.FC = () => {
   const [assessment, setAssessment] = useState('');
   const [orch, setOrch] = useState<OrchestrationRun | null>(null);
   const [orchestrating, setOrchestrating] = useState(false);
+  const [runs, setRuns] = useState<OrchRunSummary[]>([]);
   const [error, setError] = useState('');
 
   const load = () => fetch('/api/v1/transformation').then(r => r.json()).then(setPic).catch(() => setError('Failed to load'));
-  useEffect(() => { load(); }, []);
+  const loadRuns = () => fetch('/api/v1/transformation/orchestrate/runs').then(r => r.json()).then(d => setRuns(d.runs ?? [])).catch(() => {});
+  useEffect(() => { load(); loadRuns(); }, []);
 
   const tick = async () => {
     setTicking(true);
@@ -66,7 +69,7 @@ export const TransformationDashboard: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scope: 'workstation', owner_id: 'Rehan' }),
       });
-      setOrch(await r.json());
+      setOrch(await r.json()); loadRuns();
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setOrchestrating(false);
   };
@@ -152,6 +155,28 @@ export const TransformationDashboard: React.FC = () => {
                 <Stat label="Twin sim" value={orch.digital_twin.simulation.verdict} />
               </div>
               <p className="text-[10px] text-slate-500 mt-3 leading-relaxed">{orch.validation.report}</p>
+            </Card>
+          )}
+
+          {/* Recent orchestration runs (Chief → BTO history) */}
+          {runs.length > 0 && (
+            <Card className="p-6">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                <GitBranch size={14} /> Recent Transformation Orchestrations
+              </h3>
+              <div className="space-y-2">
+                {runs.slice(0, 8).map(r => (
+                  <div key={r.transformation_id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-900">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{r.objective}</p>
+                      <p className="text-[9px] text-slate-600">{r.scope} · {r.created_at ? new Date(r.created_at).toLocaleString() : '—'}</p>
+                    </div>
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${r.validated ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                      {r.validated ? 'VALIDATED' : 'PARTIAL'}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </Card>
           )}
 
