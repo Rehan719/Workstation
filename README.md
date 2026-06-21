@@ -95,7 +95,11 @@ Or go straight to `/factory` → New Production Line → Business Model → Prod
 
 ```bash
 cd apps/workstation-superapp
-# Set VITE_API_BASE_URL in Vercel dashboard to your backend URL
+# IMPORTANT: set your backend URL in apps/workstation-superapp/vercel.json — the
+# `/api/(.*)` rewrite destination. Vercel does NOT interpolate env vars in rewrites,
+# so it must be a literal URL. It currently defaults to the Render service
+# (https://workstation-api.onrender.com); change it to your actual backend URL.
+# (In local dev the Vite proxy handles /api → :8000; this rewrite is prod-only.)
 vercel deploy
 ```
 
