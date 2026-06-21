@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
   Target, Activity, GitBranch, CheckCircle2, Circle, Loader2,
-  Sparkles, HeartPulse, AlertCircle, Eye, Map,
+  Sparkles, HeartPulse, AlertCircle, Eye, Map, Workflow, ShieldCheck,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -13,6 +13,16 @@ interface Picture {
   vision_summary: string;
   realisation: { overall_realisation: number; pillars: Pillar[]; evidence_counts: Record<string, any> };
   transformation_plan: { immediate_gaps: { pillar: string; realisation: number; missing: string[] }[]; short_term: string[]; long_term: string[] };
+}
+
+interface CascadeStage { step: number; tier: string; delegates_to: string; action: string; verified: boolean; signal: string }
+interface OrchestrationRun {
+  transformation_id: string;
+  objective: string;
+  cascade: CascadeStage[];
+  digital_twin: { model_id: string; simulation: { verdict: string; projected_realisation: number } };
+  governance: { status: string; checkpoint?: string };
+  validation: { stages: number; verified_stages: number; end_to_end_chief_to_bto: boolean; biomimetic_signals_fired: number; validated: boolean; report: string };
 }
 
 function tone(status: string) {
@@ -29,6 +39,8 @@ export const TransformationDashboard: React.FC = () => {
   const [assessing, setAssessing] = useState(false);
   const [ticking, setTicking] = useState(false);
   const [assessment, setAssessment] = useState('');
+  const [orch, setOrch] = useState<OrchestrationRun | null>(null);
+  const [orchestrating, setOrchestrating] = useState(false);
   const [error, setError] = useState('');
 
   const load = () => fetch('/api/v1/transformation').then(r => r.json()).then(setPic).catch(() => setError('Failed to load'));
@@ -46,6 +58,17 @@ export const TransformationDashboard: React.FC = () => {
       const d = await r.json(); setAssessment(d.assessment ?? '');
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setAssessing(false);
+  };
+  const orchestrate = async () => {
+    setOrchestrating(true); setOrch(null);
+    try {
+      const r = await fetch('/api/v1/transformation/orchestrate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: 'workstation', owner_id: 'Rehan' }),
+      });
+      setOrch(await r.json());
+    } catch (e: any) { setError(e?.message ?? String(e)); }
+    setOrchestrating(false);
   };
 
   const overall = pic ? Math.round(pic.realisation.overall_realisation * 100) : 0;
@@ -71,6 +94,9 @@ export const TransformationDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3"><Eye size={18} className="text-highlight" /><h3 className="text-sm font-black text-white uppercase tracking-wide">Vision Realisation</h3></div>
               <div className="flex gap-2">
+                <Button onClick={orchestrate} disabled={orchestrating} className="flex items-center gap-2 bg-emerald-500 text-sovereign text-xs">
+                  {orchestrating ? <Loader2 size={14} className="animate-spin" /> : <Workflow size={14} />} Orchestrate
+                </Button>
                 <Button onClick={tick} disabled={ticking} className="flex items-center gap-2 bg-slate-800 text-white text-xs">
                   {ticking ? <Loader2 size={14} className="animate-spin" /> : <HeartPulse size={14} />} Tick
                 </Button>
@@ -94,6 +120,40 @@ export const TransformationDashboard: React.FC = () => {
               </div>
             )}
           </Card>
+
+          {/* Transformation cascade — Chief → Build-to-Order, through the VSB delivery org */}
+          {orch && (
+            <Card className="p-6 border-emerald-500/30 bg-emerald-500/5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-black text-emerald-400 uppercase tracking-widest text-sm flex items-center gap-2">
+                  <Workflow size={16} /> Transformation Cascade · Chief → Build-to-Order
+                </h3>
+                <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${orch.validation.validated ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                  {orch.validation.validated ? 'VALIDATED' : 'PARTIAL'}
+                </span>
+              </div>
+              <div className="space-y-2 mb-4">
+                {orch.cascade.map(s => (
+                  <div key={s.step} className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-950 border border-slate-900">
+                    <span className="text-[10px] font-black text-slate-600 w-4">{s.step}</span>
+                    {s.verified ? <CheckCircle2 size={13} className="text-emerald-400 shrink-0" /> : <Circle size={13} className="text-slate-600 shrink-0" />}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-black text-white truncate">{s.tier} <span className="text-slate-600 font-bold">→ {s.delegates_to}</span></p>
+                      <p className="text-[10px] text-slate-500 truncate">{s.action}</p>
+                    </div>
+                    <span className="text-[9px] font-bold uppercase text-slate-700">{s.signal}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
+                <Stat label="Stages verified" value={`${orch.validation.verified_stages}/${orch.validation.stages}`} />
+                <Stat label="Bio signals" value={String(orch.validation.biomimetic_signals_fired)} />
+                <Stat label="Governance" value={orch.governance.status} icon={ShieldCheck} />
+                <Stat label="Twin sim" value={orch.digital_twin.simulation.verdict} />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-3 leading-relaxed">{orch.validation.report}</p>
+            </Card>
+          )}
 
           {/* Pillars — vision mapped to live evidence */}
           <div>
@@ -147,6 +207,13 @@ export const TransformationDashboard: React.FC = () => {
     </div>
   );
 };
+
+const Stat: React.FC<{ label: string; value: string; icon?: React.ComponentType<any> }> = ({ label, value, icon: Icon }) => (
+  <div className="p-2 rounded-xl bg-slate-950 border border-slate-900">
+    <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1 flex items-center justify-center gap-1">{Icon && <Icon size={9} />}{label}</p>
+    <p className="text-xs font-black text-emerald-400 truncate">{value}</p>
+  </div>
+);
 
 const PlanList: React.FC<{ title: string; items: string[]; icon: React.ComponentType<any> }> = ({ title, items, icon: Icon }) => (
   <div>
