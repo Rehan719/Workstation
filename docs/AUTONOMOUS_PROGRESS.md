@@ -113,4 +113,21 @@ Health check: backend boots (313 routes); suite **78 passed / 0 failed**. No gen
 - **Final validation on main:** suite **78 passed / 0 failed**; production build `tsc && vite build` **clean (0 errors)**; backend boots (313 routes).
 - Refreshed `docs/ACTION_PLAN.md` into the validated phase plan (Phase 1 ✅ landed; Phase 2 non-gated depth; Phase 3 Owner-gated launch).
 
-**Status: ✅ Phase 1 complete and shipped to `main`.** The autonomous cycle loop concludes here (Owner returned). Remaining work is Phase 2 (non-gated depth, on request) or Phase 3 (Owner-gated launch).
+**Status: ✅ Phase 1 complete and shipped to `main`.**
+
+---
+
+## All-Phases Autonomous Session (Owner opened all phases, on `main`)
+> Owner: "all phases open… do not wait… use resources already developed." Commits go directly to `main` now (PR #354 merged). 3 increments + 2 important findings.
+
+**Built (each verified + pushed to `main`):**
+- **Phase 2 — Genesis→Business-Plan:** every established VSB now auto-seeds its own living business plan (objectives mapped to Concept→Design→Commercialisation) — wires the Genesis + Business-Plan resources. (suite 78→79)
+- **Phase 3 — Honest payment rails:** `v310/payments.py` was a sim stub FABRICATING `stripe_connected: true` + a hardcoded wallet on a live endpoint. Rewritten honest + test-mode-safe (modes simulation→test→live_gated→live; a live key ALONE can never charge; WST from the real Capital Fund). (suite 79→82, incl. a safety-invariant test)
+- **Phase 3 — `requirements.txt` was gitignored** by a blanket `*.txt` rule → repo had NO deps manifest (fresh clone / Render deploy would fail `pip install -r requirements.txt`). Added `!requirements.txt` exception + tracked the manifest.
+- **Phase 3 — `vercel.json` prod wiring broken:** the `/api` rewrite used `$VITE_API_BASE_URL` which Vercel does NOT interpolate → prod frontend↔backend calls would fail. Set to the Render backend default + documented.
+
+**⚠️ Findings surfaced to the Owner:**
+1. **A LIVE Stripe secret key is in `.env`** (gitignored, auto-loaded). My payment code gates it (refuses charges); recommend swapping local `.env` to a `sk_test_…` key.
+2. `requirements.txt` / `vercel.json` were silent production blockers (now fixed).
+
+**State:** `main` == `origin/main` == `98b8f90c`; suite **82 pass / 0 fail**; backend boots (313 routes); deploy configs (render.yaml + vercel.json) now correct.
