@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Backend (FastAPI — uvicorn :8000)",
+      "runtimeExecutable": "venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "agentic_core.app_mvp:app", "--reload", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "Frontend (Vite — workstation-superapp :5173)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "apps/workstation-superapp", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "Mobile (Expo — apps/mobile :8081)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "apps/mobile", "run", "start"],
+      "port": 8081
+    }
+  ]
+}

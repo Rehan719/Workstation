@@ -1,5 +1,12 @@
 # Workstation Sovereign Digital Organism Documentation
 
+## ⭐ START HERE — Vision, Plan & Process (the knowledge canon)
+- **[Shared Understanding](WORKSTATION_IDBO_UNDERSTANDING.md)** — the "same page" doc: Owner profile, vision (envisaged + latest final), evidence base, my articulated understanding, open questions, fidelity commitments. **Read this first.**
+- **[Living Design & Development Action Plan](WORKSTATION_IDBO_LIVING_PLAN.md)** — the single source of truth bridging **vision ↔ grounded current state ↔ action** (roadmap, scorecard, collaboration protocol). Live: `GET /api/v1/plan` + `GET /api/v1/plan/state`.
+- **[Knowledge Operating Process](KNOWLEDGE_OPERATING_PROCESS.md)** — the living process by which knowledge/understanding is built, maintained, leveraged, and kept consistent across Owner + AI agents over immediate/short/long term.
+- **[VSB Economic & Legal Model](VSB_ECONOMIC_LEGAL_MODEL.md)** — ✅ APPROVED & BUILT: the hybrid Waqf/Trust/Multinational autonomous economic VSB; profit waterfall; legal-entity-type selection; charitable-giving intelligence (WATER/Orphan/Conflict/Dawah, 100%-donation-only).
+- **[Development Timeline](DEVELOPMENT_TIMELINE.md)** — from start of development (2026-02-20) to current state, synthesised from the 999-commit git history + the living-plan changelog. The "what was intended / started / done / requested" picture.
+
 ## 🏛️ Foundational Documents
 - **[Supreme Constitution v1.0](constitution/CONSTITUTION_FINAL.md)**: The 1127-article digital charter governing all autonomous actions.
 - **[Technical Specification v1.0](architecture/SPECIFICATION.md)**: Definitive v1.0 production baseline and API surface.
