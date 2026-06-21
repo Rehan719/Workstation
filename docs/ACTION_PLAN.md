@@ -56,5 +56,65 @@ T1 action plan · T2 Living Business-Plan API · T3–T5 Business-Plan/Forge/Com
 
 ---
 
+## EXPANDED TRANSFORMATION PLAN — Whole-Vision Workstreams (scope · scale · complexity)
+> Authored 2026-06-21 from the Owner's "deliver the **whole platform**" directive. Grounded in
+> `WORKSTATION_IDBO_WHOLE_VISION.md` (the fine-resolution vision). These workstreams *expand* the plan
+> beyond integration/depth to realise the complete IDBO. **W1 is the headline new direction.**
+
+### W1 — ★ Native AI Resource Fabric (own Swarm · Models · Orchestration) — NEW, highest scope
+**Why:** the AI Agent Swarm must NOT be "just lots of API calls" to external providers — that creates
+dependency, expense, latency, staleness, and loss of control. Workstation must **own** its core AI
+capability as dynamic, adaptable, responsive, reconfigurable resources (Whole-Vision §6).
+- **W1.1 Native model serving** — make models that Workstation owns/runs first-class (local/self-hosted
+  runtime, e.g. an Ollama-class or embedded inference layer the platform controls), with external
+  providers demoted to *optional accelerants behind a flag*, never dependencies.
+- **W1.2 In-platform Orchestrator** — an owned orchestration engine that composes agent/model/resource
+  cascades (not a thin gateway): routing, scheduling, retries, caching, cost/latency governance, and
+  graceful degradation — biomimetically mediated (nervous/immune/metabolic), gaas-governed.
+- **W1.3 Swarm Engine** — compose **bespoke-per-solution** agent-cascade trees (synthesised, modelled,
+  simulated to each solution's needs AND to each founder's digital twin), reconfigurable + reusable.
+- **W1.4 Reconfiguration + design control** — users compose/reconfigure swarm cascades, models, and the
+  org structure in Synthesis Lab / Build-to-Order / Forge; the platform models+simulates a configuration
+  before commit (digital-twin pre-validation).
+- **W1.5 Optimisation** — cascades/models/resources are optimised (efficiency, cost, latency, quality),
+  verified · tested · validated; knowledge/expertise accrues from experience (learning organism).
+- **Acceptance:** Workstation can run a full Concept→Commercialisation cascade producing real
+  (non-fallback) AI output **without any external API key set**, using its own resources; external
+  providers, when present, only accelerate.
+
+### W2 — Bespoke VSB organisation + resource synthesis (user design control)
+Deepen Genesis/BTO/Forge so each generated VSB's **organisation structure AND digital resources/swarm
+cascades** are specifically designed · modelled · simulated · optimised for the solution and editable by
+the user — reconfigurable org charts, resource compositions, and swarm trees, with twin pre-validation.
+
+### W3 — Full multimodal, enterprise-aware avatar + AI-CEO/Chief interaction
+Complete the avatar as the platform-wide, enterprise-aware interaction surface: multimodal (text/voice/
+image) dialogue with the **Chief** and **AI CEO**, plus guided navigation/reconfiguration of any area;
+continually reconfigurable, function-specific, intuitive, optimised, all-language, personalised UI.
+
+### W4 — Living deliverables (every output a living enterprise)
+Make each output type (Report · Presentation · Video · Website · Platform · App · Product · Service) a
+**living, reconfigurable, continually-developing** enterprise instance — selectable, combinable,
+integrable — rather than a static artefact.
+
+### W5 — Continuous operational excellence + learning organism
+Wire the BMS/QMS/DCS/EMS + Sovereign Evolution + heartbeat into a measurable **operational-excellence**
+loop: live monitoring/evaluation of effectiveness, efficiency, performance, profitability, satisfaction,
+founder-alignment and compliance → autonomous improvement (process/scientific/technical/operational),
+with knowledge/expertise built from experience, evidence and live research.
+
+### W6 — Depth, persistence, scale, launch-readiness (absorbs Phase 2/3)
+Domain AI depth across all Realm × Domain; persistence hardening (SQLite/Postgres); broader test
+coverage (incl. AI-path contract tests once W1 provides native AI); observability; and the gated launch
+items (Stripe, production deploy) when the Owner directs.
+
+**Sequencing:** W1 is foundational (it changes what every other AI-mediated workflow runs on) and is the
+priority. W2–W5 build the bespoke/living/multimodal/operational depth on top of W1. W6 runs continuously.
+Each workstream decomposes into timed, resourced tasks owned by the VSB delivery org (Board → AI CEO →
+C-Suite → CoE → BTO), and — true to the vision — is itself delivered **through** the Transformation
+Orchestration cascade where practical (dogfooding).
+
+---
+
 ## Progress Log (this session)
 - **2026-06-21 (overnight)** — Plan generated (T1). Executing T2→T8 autonomously; see `WORKSTATION_IDBO_LIVING_PLAN.md` §8 + the overnight session log for verified outcomes.
