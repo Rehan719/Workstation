@@ -1037,3 +1037,38 @@ def test_integration_bounty_submit(client):
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "received" and body["severity"] == "low"
+
+
+# ── Business-plan lifecycle — Chief/Board flagship feature (autonomous Cycle 7) ─
+# Full set→objective→review→progress flow in an isolated scope (no real-data
+# pollution), plus the missing-objective 404 path.
+
+def test_business_plan_lifecycle(client):
+    scope = "pytest-bp-c7"
+    # 1. Chief sets the plan's strategic layers
+    r = client.post("/api/v1/business-plan/set",
+                    json={"scope": scope, "mission": "M", "vision": "V", "strategy": "S"})
+    assert r.status_code == 200
+    assert r.json()["mission"] == "M"
+    # 2. add a timelined objective
+    r = client.post("/api/v1/business-plan/objective",
+                    json={"scope": scope, "title": "Test objective", "timeline": "Q3 2026"})
+    assert r.status_code == 200
+    obj = r.json()
+    oid = obj["id"]
+    assert obj["progress_pct"] == 0
+    # 3. review it to 80%
+    r = client.post(f"/api/v1/business-plan/objective/{oid}/review",
+                    json={"scope": scope, "progress_pct": 80, "status": "in_progress"})
+    assert r.status_code == 200
+    assert r.json()["progress_pct"] == 80
+    # 4. progress summary reflects 80%
+    r = client.get("/api/v1/business-plan/progress", params={"scope": scope})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["overall_progress"] == 80.0
+    assert body["objectives"] == 1
+    # 5. reviewing a missing objective → 404
+    r = client.post("/api/v1/business-plan/objective/nope/review",
+                    json={"scope": scope, "progress_pct": 50})
+    assert r.status_code == 404
