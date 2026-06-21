@@ -98,6 +98,7 @@ class QEPFlagshipService:
             mem["interval"] = 1
 
         mem["ef"] = max(1.3, mem["ef"] + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02)))
+        mem["interval"] = min(mem["interval"], 36500)  # cap ~100y: prevents date overflow on long-mastered ayat
         next_review = datetime.datetime.utcnow() + datetime.timedelta(days=mem["interval"])
         mem["next_date"] = next_review.isoformat()
 

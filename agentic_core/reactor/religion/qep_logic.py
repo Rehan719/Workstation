@@ -93,6 +93,7 @@ class SpacedRepetitionSM2:
         if ease_factor < 1.3:
             ease_factor = 1.3
 
+        interval = min(interval, 36500)  # cap ~100y: prevents date overflow on long-mastered ayat
         return {
             "interval": interval,
             "repetition": repetition,

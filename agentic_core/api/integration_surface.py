@@ -70,7 +70,7 @@ class AIQuery(BaseModel):
 async def ai_completion(req: AIQuery):
     prompt = req.prompt or req.query
     try:
-        out = await gateway.query(prompt, agent=req.agent)
+        out = await gateway.query(prompt, agent=req.agent, timeout=30)
     except Exception as e:
         out = f"[unavailable: {e}]"
     return {"completion": out, "prompt": prompt[:120]}
@@ -80,7 +80,7 @@ async def ai_completion(req: AIQuery):
 async def ai_query(req: AIQuery):
     prompt = req.query or req.prompt
     try:
-        out = await gateway.query(prompt, agent="solutions")
+        out = await gateway.query(prompt, agent="solutions", timeout=30)
     except Exception as e:
         out = f"[unavailable: {e}]"
     return {"answer": out, "query": prompt[:120]}
