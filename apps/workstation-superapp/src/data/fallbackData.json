@@ -1,0 +1,21 @@
+{
+  "financials": {
+    "revenue": 482950,
+    "growth": "+6.4%",
+    "operating_costs": 118400,
+    "liquidity": 1204500,
+    "kpis": [
+      { "label": "Active Subscriptions", "value": "1,842" },
+      { "label": "Burn Rate (Monthly)", "value": "38,200 WST" }
+    ]
+  },
+  "evolution": {
+    "evolutionary_step": 1424,
+    "active_operons": 37,
+    "recent_mutations": [
+      "Operon-12: tightened resource-allocation threshold by 4%",
+      "Operon-29: pruned redundant inference path",
+      "Operon-03: merged duplicate validation rule with Operon-08"
+    ]
+  }
+}

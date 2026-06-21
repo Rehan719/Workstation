@@ -50,6 +50,10 @@ env/
 venv/
 .env
 data/
+# …but the broad data/ rule above also matches the frontend's source assets at
+# apps/workstation-superapp/src/data/ — those are TRACKED source (imported by the
+# app, e.g. fallbackData.json) and must ship, or the production build fails.
+!apps/workstation-superapp/src/data/
 logs/
 state_snapshots/
 sandbox/
