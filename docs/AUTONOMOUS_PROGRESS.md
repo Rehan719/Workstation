@@ -61,5 +61,14 @@
 
 **Status: ✅ complete.** Next: **C5 — bundle code-splitting** (real load-time win, non-gated).
 
+### Cycle 5 — Production bundle code-splitting
+**Executed:** added `build.rollupOptions.output.manualChunks` to `vite.config.js` — splits node_modules into separately-cacheable chunks (react-vendor, icons, charts, motion, rn-web, vendor).
+**Verification (re-build, 0 errors):** the monolithic **2,924 kB** chunk → app `index` **1,004 kB** (gzip **208 kB**, was 787 kB) + `vendor` 1,198 kB + `charts` 343 kB + `react-vendor` 180 kB + `motion` 110 kB + `icons` 84 kB. A code change now re-downloads only the ~208 KB app chunk instead of the whole bundle.
+**Status: ✅ complete.**
+
 ---
+
+## Running summary (for the Owner)
+Autonomous cycles **C1–C5 complete**, all verified + committed to `feat/idbo-living-organism-integration` (no push). Net: 3 latent overflow bugs fixed, AI-gateway hangs bounded, +17 integration tests (71 pass), 64 pages swept clean, production build verified + code-split, docs reconciled. **No non-gated structural gap remains.** Gated/next-phase items (Stripe, deploy, live AI key) untouched per mandate.
+
 *(Subsequent cycles appended here.)*
