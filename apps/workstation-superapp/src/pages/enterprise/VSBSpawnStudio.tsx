@@ -67,6 +67,19 @@ interface VSBEntity {
   created_at: string;
 }
 
+interface Director { id?: string; title?: string; name?: string }
+interface VSBDetail extends VSBEntity {
+  board?: { chief?: { title?: string }; directors?: Director[]; governance?: string };
+  economy?: { entity_type?: string; entity_name?: string; currency?: string };
+  business_plan_scope?: string;
+}
+interface OrchRun {
+  cascade: { step: number; tier: string; verified: boolean }[];
+  validation: { verified_stages: number; stages: number; validated: boolean };
+  governance: { status: string };
+  digital_twin: { simulation: { verdict: string } };
+}
+
 // ── Stage config ──────────────────────────────────────────────────────────────
 
 const STAGE_META: Record<string, { icon: React.FC<any>; color: string }> = {
@@ -98,6 +111,10 @@ export const VSBSpawnStudio: React.FC = () => {
   const [error, setError] = useState('');
   const [entities, setEntities] = useState<VSBEntity[]>([]);
   const [loadingEntities, setLoadingEntities] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [detail, setDetail] = useState<Record<string, VSBDetail>>({});
+  const [orch, setOrch] = useState<Record<string, OrchRun>>({});
+  const [orchBusy, setOrchBusy] = useState<string | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
   const fetchEntities = async () => {
@@ -107,6 +124,24 @@ export const VSBSpawnStudio: React.FC = () => {
       setEntities(r.data.entities ?? []);
     } catch {}
     setLoadingEntities(false);
+  };
+
+  const openDetail = async (vsbId: string) => {
+    setSelected(prev => (prev === vsbId ? null : vsbId));
+    if (!detail[vsbId]) {
+      try {
+        const r = await axios.get(`/api/v1/vsb/${vsbId}`);
+        setDetail(prev => ({ ...prev, [vsbId]: r.data }));
+      } catch {}
+    }
+  };
+  const orchestrateVsb = async (vsbId: string) => {
+    setOrchBusy(vsbId);
+    try {
+      const r = await axios.post('/api/v1/transformation/orchestrate', { scope: vsbId, owner_id: 'Rehan' });
+      setOrch(prev => ({ ...prev, [vsbId]: r.data }));
+    } catch {}
+    setOrchBusy(null);
   };
 
   useEffect(() => { fetchEntities(); }, []);
@@ -289,9 +324,10 @@ export const VSBSpawnStudio: React.FC = () => {
         ) : (
           <div className="space-y-3">
             {entities.map(e => (
+              <React.Fragment key={e.vsb_id}>
               <div
-                key={e.vsb_id}
-                className="flex items-center justify-between p-4 rounded-xl bg-slate-950/60 border border-slate-900 hover:border-aura/20 transition-all"
+                onClick={() => openDetail(e.vsb_id)}
+                className="flex items-center justify-between p-4 rounded-xl bg-slate-950/60 border border-slate-900 hover:border-aura/20 transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-8 h-8 rounded-xl bg-aura/10 flex items-center justify-center">
@@ -318,13 +354,75 @@ export const VSBSpawnStudio: React.FC = () => {
                     <Clock size={10} />
                     {e.created_at ? new Date(e.created_at).toLocaleDateString() : '—'}
                   </div>
-                  <ChevronRight size={14} className="text-slate-700" />
+                  <ChevronRight size={14} className={`text-slate-700 transition-transform ${selected === e.vsb_id ? 'rotate-90' : ''}`} />
                 </div>
               </div>
+              {selected === e.vsb_id && (
+                <VSBDetailPanel d={detail[e.vsb_id]} orch={orch[e.vsb_id]}
+                  busy={orchBusy === e.vsb_id} onOrchestrate={() => orchestrateVsb(e.vsb_id)} />
+              )}
+              </React.Fragment>
             ))}
           </div>
         )}
       </Card>
+    </div>
+  );
+};
+
+// ── Per-VSB org detail: Board · Economy · Living Plan · Transformation cascade ──
+const VSBDetailPanel: React.FC<{
+  d?: VSBDetail; orch?: OrchRun; busy: boolean; onOrchestrate: () => void;
+}> = ({ d, orch, busy, onOrchestrate }) => {
+  if (!d) return <div className="ml-4 px-4 py-3 text-[10px] text-slate-600 font-bold uppercase tracking-widest">Loading org…</div>;
+  const directors = d.board?.directors ?? [];
+  return (
+    <div className="ml-4 mb-2 p-4 rounded-xl bg-slate-950 border border-aura/15 space-y-4">
+      <div>
+        <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1.5">Board of Directors (arms-length)</p>
+        <p className="text-xs font-bold text-white">{d.board?.chief?.title ?? 'Chief — Owner digital twin'}</p>
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {directors.map((dir, i) => (
+            <span key={i} className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-900 text-slate-400">{dir.title ?? dir.name ?? dir.id}</span>
+          ))}
+          {directors.length === 0 && <span className="text-[9px] text-slate-600">No directors recorded</span>}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400 mb-1">Economy</p>
+          <p className="text-[11px] text-slate-300 font-bold">{d.economy?.entity_name ?? d.economy?.entity_type ?? '—'}</p>
+          <p className="text-[9px] text-slate-600">{d.economy?.currency ?? 'WST (virtual)'}</p>
+        </div>
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-widest text-highlight mb-1">Living Business Plan</p>
+          <a href={`/business-plan?scope=${d.business_plan_scope ?? d.vsb_id}`} className="text-[11px] text-aura font-bold underline">Open plan →</a>
+        </div>
+      </div>
+      <div>
+        <Button onClick={onOrchestrate} disabled={busy} className="flex items-center gap-2 bg-aura text-sovereign text-xs">
+          {busy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Orchestrate transformation (Chief → BTO)
+        </Button>
+        {orch && (
+          <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[9px] font-black uppercase text-slate-400">
+                {orch.validation.verified_stages}/{orch.validation.stages} stages · gov {orch.governance.status} · twin {orch.digital_twin.simulation.verdict}
+              </span>
+              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${orch.validation.validated ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                {orch.validation.validated ? 'VALIDATED' : 'PARTIAL'}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {orch.cascade.map(s => (
+                <span key={s.step} className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-500 flex items-center gap-1">
+                  {s.verified ? <CheckCircle2 size={8} className="text-emerald-400" /> : <Circle size={8} />}{s.tier.split(' ')[0]}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
