@@ -185,11 +185,35 @@ async def user_prefs(user_id: str = "default"):
 
 @router.get("/api/v260/user/recommendations")
 async def user_recs(user_id: str = "default"):
-    return {"user_id": user_id, "recommendations": [
-        {"id": "r1", "title": "Run a Genesis journey", "route": "/genesis", "reason": "Concept→Commercialisation"},
-        {"id": "r2", "title": "Review the Business Plan", "route": "/business-plan", "reason": "objectives due"},
-        {"id": "r3", "title": "Check Vision realisation", "route": "/transformation", "reason": "live progress"},
-    ]}
+    """Recommendations derived from live state — not a static list."""
+    recs: List[Dict[str, Any]] = []
+    try:
+        from agentic_core.api.transformation import _realise
+        real = _realise().get("overall_realisation", 1.0)
+        if real < 1.0:
+            recs.append({"id": "r-transform", "title": "Close the next vision gap",
+                         "route": "/transformation", "reason": f"realisation at {int(real*100)}%"})
+    except Exception:
+        pass
+    try:
+        from agentic_core.api.business_plan import _load
+        pending = [o for o in _load("workstation").get("objectives", []) if o.get("progress_pct", 0) < 100]
+        if pending:
+            recs.append({"id": "r-bp", "title": f"Review {len(pending)} business-plan objective(s)",
+                         "route": "/business-plan", "reason": "objectives below 100%"})
+    except Exception:
+        pass
+    try:
+        from agentic_core.api.vsb import _list_vsbs
+        n = len(_list_vsbs())
+        recs.append({"id": "r-vsb", "title": "Inspect your living VSBs" if n else "Establish your first VSB",
+                     "route": "/vsb", "reason": f"{n} VSB(s) exist"})
+    except Exception:
+        pass
+    recs.append({"id": "r-genesis", "title": "Run a Genesis journey", "route": "/genesis",
+                 "reason": "Concept→Commercialisation"})
+    return {"user_id": user_id, "recommendations": recs[:5],
+            "source": "derived from live realisation / business-plan / VSB state"}
 
 
 @router.post("/api/v260/user/activity")
@@ -341,9 +365,36 @@ async def iot_devices():
 
 @router.get("/api/v290/iot/telemetry/{device_id}")
 async def iot_telemetry(device_id: str):
+    """Telemetry derived from live organism state. No physical wearable is
+    connected, so biometric-style values are explicitly SIMULATED (and track the
+    organism's real arousal) rather than presented as real sensor readings."""
     imm = _immune()
-    return {"device_id": device_id, "telemetry": {"heart_rate": 72, "steps": 4200,
-            "organism_resonance": imm.get("health", 0.9)}, "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    arousal, signal_rate = "DORMANT", 0.0
+    try:
+        from agentic_core.organism.nervous import nervous
+        st = nervous.status()
+        arousal = st.get("arousal_state", arousal)
+        signal_rate = st.get("signal_rate_per_second", 0.0)
+    except Exception:
+        pass
+    atp = None
+    try:
+        from agentic_core.molecular.atp_simulator import ATPSimulator
+        atp = round(ATPSimulator().ratio / 15.0, 3)
+    except Exception:
+        pass
+    sim_bpm = int(58 + min(signal_rate, 5.0) * 6 + (12 if arousal not in ("DORMANT", "") else 0))
+    return {
+        "device_id": device_id,
+        "source": "derived from live organism state — no physical wearable connected",
+        "telemetry": {
+            "organism_resonance": imm.get("health", 0.9),   # real — immune health 0–1
+            "metabolic_atp_ratio": atp,                       # real — ATP simulator
+            "arousal_state": arousal,                         # real — central nervous system
+            "simulated_bpm": sim_bpm,                         # SIMULATED — tracks arousal, not a sensor
+        },
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
 
 
 # ── v191 modes ────────────────────────────────────────────────────────────────

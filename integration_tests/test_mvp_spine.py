@@ -1044,7 +1044,9 @@ def test_integration_bounty_submit(client):
 # pollution), plus the missing-objective 404 path.
 
 def test_business_plan_lifecycle(client):
-    scope = "pytest-bp-c7"
+    import uuid
+    # unique scope per run → fully isolated + idempotent (the plan store persists to data/)
+    scope = f"pytest-bp-{uuid.uuid4().hex[:8]}"
     # 1. Chief sets the plan's strategic layers
     r = client.post("/api/v1/business-plan/set",
                     json={"scope": scope, "mission": "M", "vision": "V", "strategy": "S"})
