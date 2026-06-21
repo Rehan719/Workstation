@@ -228,6 +228,30 @@ async def genesis_establish(req: EstablishRequest):
         }
     except Exception:
         pass
+    # Seed the VSB's living business plan (Chief/Board own it), with objectives
+    # mapped to its Concept→Design→Commercialisation lifecycle — wires Genesis to
+    # the Business-Plan resource so every generated entity starts with a plan.
+    try:
+        from agentic_core.api import business_plan as bp_mod
+        import uuid as _uuid
+        plan = bp_mod._load(vsb_id)
+        plan["owner"] = req.owner_id
+        plan["mission"] = f"Deliver: {req.problem[:160]}"
+        plan["vision"] = f"A self-running {req.entity_type} VSB IDBO that commercialises this solution beneficently."
+        plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
+                            "(Chief = owner's digital twin) → AI CEO → C-Suite → CoE → BTO.")
+        plan.setdefault("objectives", [])
+        if not plan["objectives"]:
+            for _title in ("Validate the concept", "Deliver the design", "Launch to market"):
+                plan["objectives"].append({
+                    "id": f"obj-{_uuid.uuid4().hex[:8]}", "title": _title, "kpi": "", "timeline": "",
+                    "owner_role": "AI CEO", "progress_pct": 0, "status": "planned", "reviews": [],
+                    "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+                })
+        bp_mod._save(plan)
+        entity["business_plan_scope"] = vsb_id
+    except Exception:
+        pass
     vsb_mod._save_vsb(entity)
 
     try:

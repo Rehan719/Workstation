@@ -1074,3 +1074,17 @@ def test_business_plan_lifecycle(client):
     r = client.post("/api/v1/business-plan/objective/nope/review",
                     json={"scope": scope, "progress_pct": 50})
     assert r.status_code == 404
+
+
+# ── Genesis → Business-Plan wiring (Phase 2) ──────────────────────────────────
+# Every established VSB IDBO auto-seeds a living business plan with objectives
+# mapped to its Concept→Design→Commercialisation lifecycle.
+
+def test_genesis_establish_seeds_business_plan(client):
+    r = client.post("/api/v1/genesis/establish",
+                    json={"problem": "pytest VSB business-plan seed check", "owner_id": "pytest", "entity_type": "ltd"})
+    assert r.status_code == 200
+    vsb = r.json()["vsb_id"]
+    bp = client.get("/api/v1/business-plan", params={"scope": vsb}).json()
+    assert bp["mission"].startswith("Deliver:")
+    assert len(bp["objectives"]) == 3
