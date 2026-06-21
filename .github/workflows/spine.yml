@@ -1,0 +1,43 @@
+name: Spine CI (backend suite + frontend build)
+
+# Runs the REAL verification the legacy ci.yml never did: the live integration
+# suite (integration_tests/test_mvp_spine.py) against a pip install of the tracked
+# requirements.txt, plus the production frontend build (tsc + vite). Additive —
+# does not replace the existing workflows.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend:
+    name: Backend — boot + integration suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies (pip / requirements.txt)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Boot check
+        run: python -c "import agentic_core.app_mvp; print('boot ok')"
+      - name: Integration suite (AI tests auto-skip without a key)
+        run: python -m pytest integration_tests/test_mvp_spine.py --noconftest -q
+
+  frontend:
+    name: Frontend — typecheck + production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install workspace dependencies
+        run: npm install
+      - name: Typecheck + build (tsc && vite build)
+        run: npm run build --workspace=apps/workstation-superapp

@@ -142,3 +142,7 @@ Health check: backend boots (313 routes); suite **78 passed / 0 failed**. No gen
 **Frontend:** "Orchestrate" action on the Transformation page renders the live cascade (per-stage verified, governance, twin sim, VALIDATED badge).
 
 **Verified end-to-end:** API → 8/8 stages verified, governance `allowed`, digital twin generated+simulated, 8 biomimetic signals, `validated=True`; UI click → cascade renders 8/8 VALIDATED, no console errors; suite **83 pass / 0 fail**; tsc+vite build clean. `main` == `origin/main` == `f3303432`; **317 routes**.
+
+### CI fix — real verification in GitHub Actions (autonomous)
+**Finding:** the legacy `ci.yml` ran Jules-era tests (`tests/test_v120_synergy.py`) via poetry and checked the wrong mobile path (`src/mobile` vs `apps/mobile`) — it **never ran the real 83-test integration suite or the frontend build**, so a "green" CI gave false confidence.
+**Executed:** added `.github/workflows/spine.yml` (additive, non-destructive) — a backend job (`pip install -r requirements.txt` → boot → `pytest integration_tests/test_mvp_spine.py`) and a frontend job (`npm install` → `npm run build --workspace=apps/workstation-superapp`, i.e. tsc+vite). Commands verified locally (suite 83 pass; npm resolves the workspace build script). Left `ci.yml` intact (flagged its staleness for the Owner).
