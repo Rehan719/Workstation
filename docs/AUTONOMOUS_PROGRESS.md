@@ -159,4 +159,9 @@ Health check: backend boots (313 routes); suite **78 passed / 0 failed**. No gen
 ### Phase-2 depth — surface each VSB's living org + per-VSB orchestration (autonomous)
 **Finding:** every established VSB carries a Board (Chief + directors), Economy, and living Business Plan (`/api/v1/vsb/{id}` exposes them), but `VSBSpawnStudio` only listed name/status — the rich org was invisible.
 **Executed:** clicking a VSB now expands an org detail panel — **Board** (Chief = owner digital twin + specialist directors), **Economy** (legal/economic form, WST virtual), a link to its **living Business Plan**, and an **"Orchestrate transformation (Chief → BTO)"** action that runs the end-to-end cascade for that VSB and renders the validated result (stages verified · governance · twin sim).
-**Verified live:** 10 VSB rows expand → Board/Economy/Plan render; Orchestrate → cascade renders VALIDATED; tsc+vite build clean. `main` == `153e8da7`.
+**Verified live:** 10 VSB rows expand → Board/Economy/Plan render; Orchestrate → cascade renders VALIDATED; tsc+vite build clean. `main` == `153e8da7`. (Spine CI green.)
+
+### Phase-2 depth — transformation-orchestration run history in the UI (autonomous)
+**Finding:** orchestration runs were persisted (`GET /api/v1/transformation/orchestrate/runs`, 6+ saved) but the Transformation page never showed them.
+**Executed:** added a **"Recent Transformation Orchestrations"** panel to the Transformation page (objective · scope · timestamp · VALIDATED/PARTIAL badge), loaded on mount + refreshed after each Orchestrate; added a backend test for the `/orchestrate/runs` endpoint.
+**Verified:** suite **83→84 pass**; tsc+vite build clean; history panel renders 8 runs live. `main` == `8edaf3a3`.
