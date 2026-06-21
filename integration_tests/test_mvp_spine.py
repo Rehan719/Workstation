@@ -871,3 +871,118 @@ def test_mgmt_ems_generate(client):
     assert "framework" in body
     assert body["standard"] == "ISO 14001:2015"
     assert len(body["framework"]) > 200
+
+
+# ── New IDBO routers — smoke coverage (added autonomous Cycle 2) ──────────────
+# These verify each new router is mounted and its primary non-AI GET endpoint
+# returns 200 with a sane payload. AI-narrated fields are not asserted (they may
+# be live or a labelled fallback depending on the running environment).
+
+def test_board_status(client):
+    r = client.get("/api/v1/board/status")
+    assert r.status_code == 200
+    assert isinstance(r.json(), dict)
+
+
+def test_business_plan_get(client):
+    r = client.get("/api/v1/business-plan", params={"scope": "workstation"})
+    assert r.status_code == 200
+    assert isinstance(r.json(), dict)
+
+
+def test_economy_entity_types(client):
+    r = client.get("/api/v1/economy/entity-types")
+    assert r.status_code == 200
+    body = r.json()
+    assert body  # non-empty list/dict of entity types
+
+
+def test_forge_resources(client):
+    r = client.get("/api/v1/forge/resources")
+    assert r.status_code == 200
+    assert r.json()
+
+
+def test_compliance_frameworks(client):
+    r = client.get("/api/v1/compliance/frameworks")
+    assert r.status_code == 200
+    assert r.json()
+
+
+def test_transformation_realisation(client):
+    r = client.get("/api/v1/transformation/realisation")
+    assert r.status_code == 200
+    body = r.json()
+    assert "overall_realisation" in body
+    assert "pillars" in body and len(body["pillars"]) > 0
+
+
+def test_resource_fabric_list(client):
+    r = client.get("/api/v1/resources")
+    assert r.status_code == 200
+    assert r.json()
+
+
+def test_sovereign_evolution_roadmap(client):
+    r = client.get("/api/v1/sovereign-evolution/roadmap")
+    assert r.status_code == 200
+    assert isinstance(r.json(), dict)
+
+
+def test_heartbeat_status(client):
+    r = client.get("/api/v1/heartbeat/status")
+    assert r.status_code == 200
+    assert isinstance(r.json(), dict)
+
+
+def test_cognition_wiring(client):
+    r = client.get("/api/v1/cognition/wiring")
+    assert r.status_code == 200
+    assert isinstance(r.json(), dict)
+
+
+def test_living_plan_state(client):
+    r = client.get("/api/v1/plan/state")
+    assert r.status_code == 200
+    assert isinstance(r.json(), dict)
+
+
+def test_frontier_reality_status(client):
+    r = client.get("/api/v1/frontier/reality/status")
+    assert r.status_code == 200
+    assert isinstance(r.json(), dict)
+
+
+# ── Integration surface — the 18 previously-broken endpoints (Cycle 2) ────────
+
+def test_integration_ai_quotas(client):
+    r = client.get("/api/v1/ai/quotas")
+    assert r.status_code == 200
+    assert "providers" in r.json()
+
+
+def test_integration_evidence_graph(client):
+    r = client.get("/api/v1/evidence/graph")
+    assert r.status_code == 200
+    body = r.json()
+    assert "nodes" in body and "edges" in body
+
+
+def test_integration_git_history(client):
+    r = client.get("/api/v1/workstation/git-history")
+    assert r.status_code == 200
+    assert "commits" in r.json()
+
+
+def test_integration_global_search(client):
+    r = client.get("/api/v250/search/global", params={"q": "vsb"})
+    assert r.status_code == 200
+    body = r.json()
+    assert "results" in body and "by_type" in body
+
+
+def test_integration_evolution_metrics(client):
+    r = client.get("/api/v240/evolution/metrics")
+    assert r.status_code == 200
+    body = r.json()
+    assert "pillar_breakdown" in body

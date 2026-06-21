@@ -40,5 +40,10 @@
 **Verification:** imports OK; `test_qep_hifz_review` passes; backend boots. Committed `ec…` → see git log.
 **Status: ✅ complete.**
 
+### Cycle 2 — Integration-test coverage for the new routers
+**Executed:** added **17 smoke tests** to `integration_tests/test_mvp_spine.py` covering board, business-plan, economy, forge, compliance, transformation/realisation, resource-fabric, sovereign-evolution, heartbeat, cognition, living-plan, frontier, and 5 integration-surface endpoints (ai/quotas, evidence/graph, git-history, global-search, evolution-metrics). Each asserts 200 + a structural field.
+**Verification:** full suite **71 passed / 15 skipped / 0 failed** (was 54 passed → +17, no regressions).
+**Status: ✅ complete.**
+
 ---
 *(Subsequent cycles appended here.)*
