@@ -1,5 +1,9 @@
 name: Genetic-Immune CI/CD - vΩ∞-FINAL
-on: [push, pull_request]
+# Stale Jules-era workflow (red since before the integration arc) — superseded by the
+# real Spine CI (.github/workflows/spine.yml). Set to manual-only so it no longer
+# fails on every push; fix-or-remove (see docs/AUTONOMOUS_PROGRESS.md).
+on:
+  workflow_dispatch:
 jobs:
   quality-gates:
     runs-on: ubuntu-latest

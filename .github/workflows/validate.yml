@@ -1,10 +1,9 @@
 name: vΩ∞-MUSHĀWARA Sovereign Validation
 
+# Stale Jules-era workflow — superseded by Spine CI (spine.yml). Manual-only to
+# stop false-red on every push; fix-or-remove (see docs/AUTONOMOUS_PROGRESS.md).
 on:
-  push:
-    branches: [ main, "feature/**", "phases/**" ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   validate:

@@ -1,10 +1,9 @@
 name: Jules AI v120 Apotheosis of Eternal Synthesis CI
 
+# Stale Jules-era workflow (poetry + old v120 tests, wrong mobile path) — superseded
+# by Spine CI (spine.yml). Manual-only; fix-or-remove (see docs/AUTONOMOUS_PROGRESS.md).
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   test:
