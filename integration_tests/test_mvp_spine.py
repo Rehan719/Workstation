@@ -986,3 +986,54 @@ def test_integration_evolution_metrics(client):
     assert r.status_code == 200
     body = r.json()
     assert "pillar_breakdown" in body
+
+
+# ── POST-path coverage — operational workflows (added autonomous Cycle 6) ─────
+# Deterministic (non-AI) workflow endpoints. Verify the real request→response
+# contract, not just that the router is mounted.
+
+def test_compliance_check_pass(client):
+    r = client.post("/api/v1/compliance/check",
+                    json={"subject": "a halal community meal-prep service for elderly families"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["overall"] == "pass"
+    assert len(body["verdicts"]) >= 5
+
+
+def test_compliance_check_fail(client):
+    r = client.post("/api/v1/compliance/check",
+                    json={"subject": "a payday loan charging riba interest plus gambling"})
+    assert r.status_code == 200
+    assert r.json()["overall"] == "fail"
+
+
+def test_economy_cycle(client):
+    r = client.post("/api/v1/economy/cycle", json={})
+    assert r.status_code == 200
+    cycle = r.json()["cycle"]
+    assert "vsb_id" in cycle and "intake_revenue" in cycle
+
+
+def test_resource_compose(client):
+    r = client.post("/api/v1/resources/compose",
+                    json={"name": "test-composition", "resource_ids": ["genesis"]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["name"] == "test-composition"
+    assert len(body["resources"]) >= 1
+
+
+def test_integration_user_activity(client):
+    r = client.post("/api/v260/user/activity",
+                    json={"user_id": "pytest", "action": "view", "detail": "spine-test"})
+    assert r.status_code == 200
+    assert r.json()["recorded"] is True
+
+
+def test_integration_bounty_submit(client):
+    r = client.post("/api/security/bounty/submit",
+                    json={"title": "test finding", "severity": "low", "description": "smoke"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "received" and body["severity"] == "low"

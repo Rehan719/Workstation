@@ -69,6 +69,11 @@
 ---
 
 ## Running summary (for the Owner)
-Autonomous cycles **C1–C5 complete**, all verified + committed to `feat/idbo-living-organism-integration` (no push). Net: 3 latent overflow bugs fixed, AI-gateway hangs bounded, +17 integration tests (71 pass), 64 pages swept clean, production build verified + code-split, docs reconciled. **No non-gated structural gap remains.** Gated/next-phase items (Stripe, deploy, live AI key) untouched per mandate.
+Autonomous cycles **C1–C6 complete**, all verified + committed to `feat/idbo-living-organism-integration` (no push). Net: 3 latent overflow bugs fixed, AI-gateway hangs bounded, **+23 integration tests (77 pass / 0 fail)**, 64 pages swept clean, production build verified + code-split, docs reconciled. **No non-gated structural gap remains.** Gated/next-phase items (Stripe, deploy, live AI key) untouched per mandate.
+
+### Cycle 6 — POST-path test coverage (operational workflows)
+**Executed:** added **6 POST-path tests** for deterministic operational workflows (compliance/check pass+fail, economy/cycle, resources/compose, integration user/activity + bounty/submit) — verifying the real request→response contract, not just that the router is mounted.
+**Verification:** suite **77 passed / 15 skipped / 0 failed** (was 71 → +6).
+**Status: ✅ complete.**
 
 *(Subsequent cycles appended here.)*
