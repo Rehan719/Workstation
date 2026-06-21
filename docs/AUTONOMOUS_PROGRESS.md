@@ -164,4 +164,9 @@ Health check: backend boots (313 routes); suite **78 passed / 0 failed**. No gen
 ### Phase-2 depth — transformation-orchestration run history in the UI (autonomous)
 **Finding:** orchestration runs were persisted (`GET /api/v1/transformation/orchestrate/runs`, 6+ saved) but the Transformation page never showed them.
 **Executed:** added a **"Recent Transformation Orchestrations"** panel to the Transformation page (objective · scope · timestamp · VALIDATED/PARTIAL badge), loaded on mount + refreshed after each Orchestrate; added a backend test for the `/orchestrate/runs` endpoint.
-**Verified:** suite **83→84 pass**; tsc+vite build clean; history panel renders 8 runs live. `main` == `8edaf3a3`.
+**Verified:** suite **83→84 pass**; tsc+vite build clean; history panel renders 8 runs live. `main` == `8edaf3a3`. (Spine CI green.)
+
+### Phase-2 depth — VSB list org flags + badge (autonomous)
+**Finding:** `/api/v1/vsb` list returned only name/status — no way to see which VSBs are fully-established living organisations (Board + Economy + Plan).
+**Executed:** enriched `_list_vsbs()` with `has_board` / `entity_type` / `business_plan_scope`; VSB Studio now shows a "⬢ <entity_type>" org badge on each established row; added a test asserting the list exposes the flags.
+**Verified:** suite **84→85 pass**; tsc+vite build clean; 12 org badges render on 13 VSB rows live. `main` == `1584ebd4`.
