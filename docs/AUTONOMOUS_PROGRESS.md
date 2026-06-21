@@ -131,3 +131,14 @@ Health check: backend boots (313 routes); suite **78 passed / 0 failed**. No gen
 2. `requirements.txt` / `vercel.json` were silent production blockers (now fixed).
 
 **State:** `main` == `origin/main` == `98b8f90c`; suite **82 pass / 0 fail**; backend boots (313 routes); deploy configs (render.yaml + vercel.json) now correct.
+
+---
+
+## Capstone — End-to-End Transformation Orchestration (Chief → Build-to-Order)
+> Owner: run the WHOLE transformation through the IDBO's own VSB delivery org, end to end, dynamic/adaptive/responsive/verified/validated.
+
+**Built (`agentic_core/api/transformation_orchestration.py`, router #65):** `POST /api/v1/transformation/orchestrate` runs an 8-stage cascade through the real org — **Chief (owner digital twin) → living Business Plan → Board of Directors → Action Planning (timelined/resourced) → AI CEO → living systems (BMS·QMS·DCS·EMS) → C-Suite → CoE → Business Transformation Office → Build-to-Order + Products + digital resources (Engines/Reactors/Incubators/Labs/Factories/Generators/Simulators) → Change Control (arms-length) → Chief/VSB digital-twin generation + simulation**. Each stage federates a REAL module, fires a biomimetic nervous signal, and the whole is gaas.v5-governed (UEG checkpoint). Deterministic-first (fast, verifiable without an AI key); per-stage `verified` + a `validation` summary.
+
+**Frontend:** "Orchestrate" action on the Transformation page renders the live cascade (per-stage verified, governance, twin sim, VALIDATED badge).
+
+**Verified end-to-end:** API → 8/8 stages verified, governance `allowed`, digital twin generated+simulated, 8 biomimetic signals, `validated=True`; UI click → cascade renders 8/8 VALIDATED, no console errors; suite **83 pass / 0 fail**; tsc+vite build clean. `main` == `origin/main` == `f3303432`; **317 routes**.
