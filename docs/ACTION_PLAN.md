@@ -30,30 +30,29 @@ Computed vision realisation: **100%** (live evidence) for the 11 core pillars. S
 
 ---
 
-## Task Breakdown & Timelines
+## Validated current state (2026-06-21 — landed on `main`)
+- **Phase 1 integration arc is COMPLETE and merged to `main`** (PR #354, fast-forward, pushed). 14 commits.
+- **Frontend↔backend wiring: 61/61 prefixes wired, 0 broken** — every frontend API call resolves to a real `agentic_core` route.
+- Backend boots clean (**313 routes**); **78 integration tests pass / 0 fail**; production build `tsc && vite build` clean; **64 pages swept** (0 errors).
+- Transformation engine: `overall_realisation = 1.0` (11/11 pillars). All financial flows **virtual/simulated only**.
 
-### TONIGHT — autonomous session (no Owner intervention)
-| # | Task | Owner tier | Status |
-|---|---|---|---|
-| T1 | Generate this detailed action plan | Chief/Claude | ▶ |
-| T2 | **Living Business-Plan management** API (`/api/v1/business-plan`) — Workstation + per-VSB; Chief-mediated set/objective/review/progress/AI-generate | Board/AI CEO | ◻ |
-| T3 | Business-Plan frontend dashboard | CoE | ◻ |
-| T4 | **Forge** frontend page (digital-resource pipelines) | CoE | ◻ |
-| T5 | **Compliance** frontend page (Halal/UK-Legal/Regulatory/EHS/Ethical) | CoE | ◻ |
-| T6 | **End-to-end pilot** — run Genesis Concept→Commercialisation → establish a real pilot VSB + digital twin → Forge multi-output pipeline → economy cycle → board; document results | AI CEO + CoE | ◻ |
-| T7 | Enable + demonstrate **heartbeat autonomy** (auto_align) — organism self-aligns overnight | Heartbeat | ◻ |
-| T8 | Reconcile docs (Living Plan, Timeline, memory) + **overnight session log** + final verification | Chief/Claude | ◻ |
+## Phases & Task Breakdown
 
-### SHORT TERM (next sessions, with Owner)
-- Real-money readiness: Stripe rails behind compliance/KYC (Owner enables).
+### Phase 1 — Integration & Hardening — ✅ COMPLETE (landed on `main`)
+T1 action plan · T2 Living Business-Plan API · T3–T5 Business-Plan/Forge/Compliance UIs · T6 end-to-end pilot ("NourishLondon" VSB + twin + economy) · T7 heartbeat autonomy · T8 doc reconcile — **all done**. Plus: 18 broken endpoints wired (integration surface), venv/`jose` boot-crash fixed, AI-gateway hangs bounded, 3 latent SM-2 overflow bugs fixed, +24 tests, bundle code-split, README reconciled.
+
+### Phase 2 — Depth & Coverage (non-gated; ready to start) ◻
 - Per-VSB living business plans wired into each generated entity's lifecycle.
 - Deeper embedding of compliance + process-intelligence engines into every synthesis/generative workflow.
-- More automation of functional roles (Founder/Owner + within the VSB); scheduled evolution cycles.
+- Broader automated test coverage (AI-path contract tests behind a key; more POST flows).
+- Persistence hardening (SQLite → Postgres) for concurrent writes.
+- More automation of functional roles + scheduled evolution cycles.
 
-### LONG TERM (horizon)
-- Cross-VSB federation & marketplace; generated IDBOs interoperate and transact.
-- Persistence hardening (DB), Docker/CI, multi-tenant scale, observability.
-- Public launch: marketing site, onboarding, billing, support.
+### Phase 3 — Launch / Commercial — ⛔ OWNER-GATED
+- **Real-money rails (Stripe)** behind compliance/KYC — virtual/simulated until the Owner enables.
+- **Production deployment hardening** + CI/CD (Render/Vercel), observability, multi-tenant scale.
+- **Live AI key** in the running environment → real end-to-end dogfood (replaces labelled fallbacks).
+- Public launch: marketing site, onboarding, billing, support; cross-VSB federation & marketplace.
 
 ---
 
