@@ -49,6 +49,7 @@ import { HeartbeatMonitor } from './pages/organism/HeartbeatMonitor';
 import { CognitionIntegration } from './pages/CognitionIntegration';
 import { BusinessPlan } from './pages/enterprise/BusinessPlan';
 import { ForgePipeline } from './pages/developers/ForgePipeline';
+import { DigitalTwins } from './pages/developers/DigitalTwins';
 import { ComplianceChecker } from './pages/governance/ComplianceChecker';
 import { OrganismDashboard } from './pages/organism/OrganismDashboard';
 import { ManagementSystemsHub } from './pages/enterprise/ManagementSystemsHub';
@@ -255,6 +256,7 @@ function App() {
           <Route path="/cognition" element={<CognitionIntegration />} />
           <Route path="/business-plan" element={<BusinessPlan />} />
           <Route path="/forge-pipeline" element={<ForgePipeline />} />
+          <Route path="/digital-twins" element={<DigitalTwins />} />
           <Route path="/compliance" element={<ComplianceChecker />} />
           <Route path="/organism"        element={<OrganismDashboard />} />
           <Route path="/management"      element={<ManagementSystemsHub />} />

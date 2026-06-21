@@ -7,7 +7,7 @@ import {
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye,
   HeartPulse, Workflow, Search, Smartphone, Globe2, Layers, Factory, ChevronDown,
-  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Hammer
+  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Hammer, Boxes
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -123,6 +123,7 @@ const allNavItems: NavItem[] = [
       { name: 'Economic Metabolism',   icon: Coins,        id: 'economy' },
       { name: 'Business Plan',         icon: Briefcase,    id: 'business-plan' },
       { name: 'Forge Pipeline',        icon: Hammer,       id: 'forge-pipeline' },
+      { name: 'Digital Twins',         icon: Boxes,        id: 'digital-twins' },
       { name: 'Compliance',            icon: ShieldCheck,  id: 'compliance' },
       { name: 'Sovereign Evolution',   icon: Dna,          id: 'sovereign-evolution' },
       { name: 'Resource Fabric',       icon: Layers,       id: 'resource-fabric' },
