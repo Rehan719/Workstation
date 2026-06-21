@@ -1168,3 +1168,33 @@ def test_vsb_list_org_flags(client):
     established = [e for e in ents if e.get("has_board")]
     assert established, "expected at least one established VSB with has_board=True"
     assert "entity_type" in established[0]
+
+
+# ── Native AI Fabric (W1) — Workstation's OWN in-house AI resources ───────────
+# Verifies the platform produces real AI output from its own resources with NO
+# external dependency (the headline native-AI mandate).
+
+def test_native_ai_status_in_house_first(client):
+    r = client.get("/api/v1/native-ai/status")
+    assert r.status_code == 200
+    b = r.json()
+    assert b["posture"] == "in-house-first"
+    assert "native" in b["owned_resources_available"]   # the owned floor is always available
+    assert isinstance(b["external_allowed"], bool)
+
+
+def test_native_ai_complete_no_external_dependency(client):
+    r = client.post("/api/v1/native-ai/complete",
+                    json={"prompt": "## Understanding\n## Approach\nProblem: a native-AI test", "agent": "t"})
+    assert r.status_code == 200
+    b = r.json()
+    assert b["output"]                       # always a real result
+    assert b["is_external"] is False         # in-house-first guarantee — never depends on external
+
+
+def test_native_ai_swarm_cascade(client):
+    r = client.post("/api/v1/native-ai/swarm", json={"agent": "t", "context": "test"})
+    assert r.status_code == 200
+    b = r.json()
+    assert b["stages"] >= 1 and len(b["trace"]) == b["stages"]
+    assert b["any_external"] is False

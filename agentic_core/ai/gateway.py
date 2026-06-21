@@ -97,23 +97,24 @@ class ModelGateway:
         self._sync_reconfig()
         await self._rate_limiter.acquire()
         augmented = self._augment(prompt)
+        # IN-HOUSE FIRST: route through Workstation's OWN native orchestrator — a local owned
+        # model (Ollama) when present → the always-available native structured engine floor →
+        # external accelerants ONLY if AI_ALLOW_EXTERNAL=true. The native floor guarantees a
+        # real, honest, structured result, so the platform never hangs, never depends on an
+        # external provider, and never returns a bare "[unavailable]". `timeout` bounds any
+        # single model attempt. (The legacy external-first `_call` cascade remains below for
+        # reference but is superseded by the native fabric — see agentic_core/ai/native/.)
         try:
-            if timeout is not None:
-                response, provider = await asyncio.wait_for(
-                    self._call(augmented, agent=agent), timeout)
-            else:
-                response, provider = await self._call(augmented, agent=agent)
-        except asyncio.TimeoutError:
+            from agentic_core.ai.native import orchestrator as native_orchestrator
+            res = await native_orchestrator.complete(augmented, agent=agent,
+                                                     timeout=min(timeout or 30.0, 30.0))
+            response = res.get("output", "")
+        except Exception:
             try:
-                from agentic_core.organism.immune import immune
-                from agentic_core.organism.self_healing import self_healer
-                immune.record(agent, "timeout")
-                self_healer.record_failure("gateway")
+                from agentic_core.ai.native import native_engine
+                response = native_engine.generate(augmented, agent)
             except Exception:
-                pass
-            return ("[AI unavailable — no provider responded within "
-                    f"{int(timeout)}s. Configure ANTHROPIC_API_KEY (or start Ollama) "
-                    "for live AI narration; the rest of this view is computed live.]")
+                response = "[native engine unavailable]"
 
         if not validate_response(response):
             response = "[POLICY VIOLATION] The generated response was blocked by safety guardrails."

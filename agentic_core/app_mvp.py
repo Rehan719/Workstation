@@ -317,6 +317,11 @@ app.include_router(integration_surface_api.router)
 from agentic_core.api import transformation_orchestration as transformation_orchestration_api
 app.include_router(transformation_orchestration_api.router)
 
+# 66. Native AI Fabric (W1) — Workstation's OWN AI resources: model-resource registry,
+# in-house-first orchestrator, and bespoke swarm cascades (not external API calls)
+from agentic_core.api import native_ai as native_ai_api
+app.include_router(native_ai_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime
