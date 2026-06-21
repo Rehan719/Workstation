@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Globe, Map, Languages, Activity, ShieldCheck, HeartPulse, Cpu, BarChart3, ChevronRight, Zap } from 'lucide-react';
-import { notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 
 export const QEPGlobalPortal: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string | null>('Middle East');
@@ -144,7 +144,7 @@ export const QEPGlobalPortal: React.FC = () => {
                  </div>
                ))}
             </div>
-            <button type="button" onClick={() => notImplemented('AI Translation Pipeline Status')} className="w-full mt-4 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase hover:bg-black transition-colors">
+            <button type="button" onClick={async () => { try { const r = await fetch('/api/v1/qep/translation/status'); const d = await r.json(); toast(`Translation pipeline ${d.pipeline} · ${d.supported_languages?.length ?? 0} languages`); } catch { toast('Failed to load pipeline status'); } }} className="w-full mt-4 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase hover:bg-black transition-colors">
               AI Translation Pipeline Status
             </button>
           </div>

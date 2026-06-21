@@ -1,5 +1,16 @@
 import React from 'react';
-import { Card, Badge, Button, notImplemented} from '@workstation/ui';
+import { Card, Badge, Button, notImplemented, toast } from '@workstation/ui';
+
+const syncVitals = async () => {
+  try {
+    const r = await fetch('/api/v1/frontier/platform/wearable/sync', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device: 'Apple Watch Ultra', heart_rate: 72, steps: 4200, focus_score: 0.86 }),
+    });
+    const d = await r.json();
+    toast(`Vitals ${d.status} — biometric signal fired to organism`);
+  } catch { toast('Sync failed'); }
+};
 import { Watch, Smartphone, Bluetooth, Wifi, Activity, ShieldCheck, History, Info, ChevronRight, Zap, Bell, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -18,7 +29,7 @@ export const WearableSync: React.FC = () => {
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
            <Button onClick={() => notImplemented('Pair Device')} variant="outline"><Bluetooth size={18} /> Pair Device</Button>
-           <Button onClick={() => notImplemented('Sync Vitals')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+           <Button onClick={syncVitals} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Watch size={18} /> Sync Vitals
            </Button>
         </div>
@@ -112,7 +123,7 @@ export const WearableSync: React.FC = () => {
                      <span className="text-emerald-500">AES-PQC</span>
                   </div>
                </div>
-               <Button onClick={() => notImplemented('Enable Sync')} className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Enable Sync</Button>
+               <Button onClick={syncVitals} className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Enable Sync</Button>
             </Card>
 
             <Card className="p-8 border-slate-800">

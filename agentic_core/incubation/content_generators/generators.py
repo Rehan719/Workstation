@@ -1,7 +1,6 @@
 import os
 import logging
 import json
-import json
 
 class BaseGenerator:
     def __init__(self, output_dir: str = "output/incubation"):
@@ -92,5 +91,3 @@ class AppGenerator(BaseGenerator):
         with open(path, "w") as f:
             json.dump(manifest, f, indent=4)
         return path
-            content += f"\n## Slide {i+1}: {slide['title']}\n{slide['content']}\n"
-        return self.generate(content, f"{title.lower().replace(' ', '_')}_slides.md")

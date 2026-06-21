@@ -9,6 +9,8 @@ export const ConstitutionalUI: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'articles' | 'timeline' | 'history'>('articles');
   const [search, setSearch] = useState('');
   const [articles, setArticles] = useState<any[]>([]);
+  const [gaas, setGaas] = useState<any>(null);
+  const [ueg, setUeg] = useState<any[]>([]);
 
   useEffect(() => {
     // v0.2: Constitution Explorer - Fetch all 1127 articles
@@ -16,6 +18,18 @@ export const ConstitutionalUI: React.FC = () => {
       .then(res => res.json())
       .then(data => setArticles(Array.isArray(data) ? data : []))
       .catch(() => setArticles([]));
+  }, []);
+
+  // Live GaaS v5 constitutional engine (v16-Omega interceptor + UEG audit log)
+  const refreshGaas = () => {
+    fetch('/api/v1/gaas/status').then(r => r.json()).then(setGaas).catch(() => {});
+    fetch('/api/v1/gaas/ueg/events?limit=40').then(r => r.json())
+      .then(d => setUeg(Array.isArray(d?.events) ? [...d.events].reverse() : [])).catch(() => {});
+  };
+  useEffect(() => {
+    refreshGaas();
+    const t = setInterval(refreshGaas, 15000);
+    return () => clearInterval(t);
   }, []);
 
   const timeline = [
@@ -70,6 +84,39 @@ export const ConstitutionalUI: React.FC = () => {
                <Button type="button" onClick={() => navigate('/change-control')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">
                   <Sparkles size={18} /> Propose Amendment
                </Button>
+            </Card>
+
+            {/* Live GaaS v5 constitutional engine */}
+            <Card className="p-8 space-y-5 border-slate-800">
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-aura">
+                     <Terminal size={18} />
+                     <h4 className="text-[11px] font-black uppercase tracking-widest">Constitutional Engine</h4>
+                  </div>
+                  <Badge color={gaas?.circuit_breaker?.tripped ? 'vital' : 'emerald-500'}>
+                     {gaas?.circuit_breaker?.tripped ? 'BREAKER OPEN' : 'NOMINAL'}
+                  </Badge>
+               </div>
+               <p className="text-[9px] font-mono text-slate-600">{gaas?.interceptor ?? 'gaas.v5 · v16-Omega'}</p>
+               <div className="space-y-3">
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
+                     <span>Breaker Threshold</span>
+                     <span className="text-white">{gaas?.circuit_breaker?.threshold ?? '—'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
+                     <span>Error Rate</span>
+                     <span className="text-white">{gaas?.circuit_breaker?.error_rate ?? '—'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
+                     <span>UEG Events</span>
+                     <span className="text-aura">{gaas?.ueg?.total_events ?? 0}</span>
+                  </div>
+               </div>
+               {gaas?.ueg?.root_hash && (
+                  <p className="text-[8px] font-mono text-slate-700 break-all pt-2 border-t border-slate-900">
+                     root: {String(gaas.ueg.root_hash).slice(0, 32)}…
+                  </p>
+               )}
             </Card>
 
             <Card className="p-10 space-y-6">
@@ -137,6 +184,43 @@ export const ConstitutionalUI: React.FC = () => {
                             </div>
                           ))}
                        </div>
+                    </Card>
+                 </motion.div>
+               )}
+
+               {activeTab === 'history' && (
+                 <motion.div key="history" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                    <Card className="p-10">
+                       <div className="flex justify-between items-center mb-8">
+                          <h3 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-4">
+                             <History size={24} className="text-aura" />
+                             UEG Audit Trail
+                          </h3>
+                          <Badge color="aura">{ueg.length} events</Badge>
+                       </div>
+                       {ueg.length === 0 ? (
+                          <p className="text-sm text-slate-500 font-bold">No constitutional events logged yet. Actions routed through the engine appear here.</p>
+                       ) : (
+                          <div className="space-y-3">
+                             {ueg.map((node: any) => {
+                               const d = node?.data ?? {};
+                               const kind = d.type ?? 'event';
+                               const tone = kind === 'circuit_breaker_trip' || kind === 'policy_gate_halt' ? 'text-vital' : 'text-aura';
+                               return (
+                                 <div key={node.id} className="p-5 rounded-2xl bg-slate-950 border border-slate-900 flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                       <p className={`text-[10px] font-black uppercase tracking-widest ${tone}`}>{kind.replace(/_/g, ' ')}</p>
+                                       <p className="text-xs text-slate-400 font-bold mt-1 truncate">
+                                          {d.action ?? d.reason ?? d.checkpoint_id ?? node.id}
+                                       </p>
+                                       <p className="text-[8px] font-mono text-slate-700 mt-1 break-all">{String(node.hash ?? '').slice(0, 24)}…</p>
+                                    </div>
+                                    <Activity size={14} className="text-slate-700 shrink-0 mt-1" />
+                                 </div>
+                               );
+                             })}
+                          </div>
+                       )}
                     </Card>
                  </motion.div>
                )}

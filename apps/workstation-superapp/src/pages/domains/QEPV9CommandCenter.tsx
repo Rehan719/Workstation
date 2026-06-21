@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { toast, notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 import {
   Zap, Shield, Globe, Users, Settings, Database,
   Lock, CheckCircle, Search, Terminal, Activity,
@@ -203,7 +203,7 @@ const QEPV9CommandCenter = () => {
                      </div>
                      <h3 className="font-black text-white mb-2 uppercase">{d.domain}</h3>
                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-6">TARGET: {d.mapping}</p>
-                     <button type="button" onClick={() => notImplemented(`Execute Adaptation: ${d.domain}`)} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-[10px] uppercase tracking-widest rounded-lg flex items-center justify-center gap-2">
+                     <button type="button" onClick={async () => { try { const resp = await fetch('/api/v1/qep/adaptation/execute', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pattern: 'SM-2 spaced repetition', source_domain: 'religion', target_domain: d.domain }) }); const rj = await resp.json(); toast(`Adaptation ${rj.status} → ${d.domain} (${rj.adaptation?.id})`); } catch { toast('Adaptation failed'); } }} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-[10px] uppercase tracking-widest rounded-lg flex items-center justify-center gap-2">
                         Execute Adaptation <ChevronRight size={14} />
                      </button>
                   </div>

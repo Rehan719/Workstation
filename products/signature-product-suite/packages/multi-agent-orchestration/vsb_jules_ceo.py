@@ -1,7 +1,17 @@
+import os
+import sys
 from typing import Dict, Any, List
-from products.signature-product-suite.packages.business_intelligence.vsb_business import BusinessIntelligenceEngine
-from products.signature-product-suite.packages.science_intelligence.vsb_science import ScienceIntelligenceEngine
-from products.signature-product-suite.packages.scholarship_intelligence.vsb_scholarship import ScholarshipIntelligenceEngine
+
+# Sibling engine folders contain hyphens, so they cannot be imported via a
+# normal dotted path. Resolve them on sys.path instead.
+_PKGS = os.path.join(os.path.dirname(__file__), "..")
+for _sib in ("business-intelligence", "science-intelligence", "scholarship-intelligence"):
+    _p = os.path.join(_PKGS, _sib)
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+from vsb_business import BusinessIntelligenceEngine
+from vsb_science import ScienceIntelligenceEngine
+from vsb_scholarship import ScholarshipIntelligenceEngine
 
 class JulesVirtualCEO:
     """

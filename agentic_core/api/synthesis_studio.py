@@ -373,8 +373,8 @@ async def list_vsb_entities():
     return {
         "entities": [
             {
-                "entity_id": e["entity_id"],
-                "solution_name": e.get("solution_name", ""),
+                "entity_id": e.get("entity_id") or e.get("vsb_id", ""),
+                "solution_name": e.get("solution_name", e.get("name", "")),
                 "domain": e.get("domain", ""),
                 "realm": e.get("realm", ""),
                 "status": e.get("status", ""),

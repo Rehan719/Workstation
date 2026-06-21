@@ -37,9 +37,36 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
+
+# Auth crypto deps (python-jose, passlib) are OPTIONAL. Auth is opt-in
+# (AUTH_ENABLED=false by default), so a missing crypto dep must NEVER take the
+# whole organism offline — degrade gracefully and surface a clear 503 only if an
+# auth endpoint that needs crypto is actually called.
+try:
+    from jose import JWTError, jwt
+    from passlib.context import CryptContext
+    _AUTH_DEPS_OK = True
+    _AUTH_DEPS_ERR = ""
+except ModuleNotFoundError as _e:  # pragma: no cover - environment-dependent
+    _AUTH_DEPS_OK = False
+    _AUTH_DEPS_ERR = str(_e)
+
+    class JWTError(Exception):  # type: ignore
+        """Fallback when python-jose is unavailable."""
+
+    jwt = None  # type: ignore
+    CryptContext = None  # type: ignore
+
+
+def _require_auth_deps() -> None:
+    """Raise a clear 503 if an auth operation needs crypto deps that aren't installed."""
+    if not _AUTH_DEPS_OK:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Auth crypto dependencies not installed ({_AUTH_DEPS_ERR}). "
+                   "Run: pip install 'python-jose[cryptography]' 'passlib[bcrypt]'",
+        )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -68,7 +95,7 @@ _REFRESH_TTL = int(os.getenv("REFRESH_TOKEN_TTL", "10080"))  # minutes
 
 # ── Crypto ────────────────────────────────────────────────────────────────────
 
-_pwd_ctx = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+_pwd_ctx = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto") if _AUTH_DEPS_OK else None
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
 
 # ── User store ────────────────────────────────────────────────────────────────
@@ -96,6 +123,8 @@ def _get_user(username: str) -> dict | None:
 
 def _create_default_admin() -> None:
     """Ensure an admin user exists; creates one if the store is empty."""
+    if not _AUTH_DEPS_OK:
+        return  # cannot hash without passlib; admin is created once deps are present
     users = _load_users()
     if users:
         return
@@ -117,11 +146,13 @@ _create_default_admin()
 # ── Token helpers ─────────────────────────────────────────────────────────────
 
 def _make_token(data: dict, ttl_minutes: int) -> str:
+    _require_auth_deps()
     payload = {**data, "exp": time.time() + ttl_minutes * 60}
     return jwt.encode(payload, _JWT_SECRET, algorithm=_ALGORITHM)
 
 
 def _decode_token(token: str) -> dict:
+    _require_auth_deps()
     try:
         return jwt.decode(token, _JWT_SECRET, algorithms=[_ALGORITHM])
     except JWTError as exc:
@@ -191,6 +222,7 @@ class RefreshRequest(BaseModel):
 
 @router.post("/token", response_model=TokenResponse)
 async def login(form: OAuth2PasswordRequestForm = Depends()):
+    _require_auth_deps()
     user = _get_user(form.username)
     if not user or not _pwd_ctx.verify(form.password, user["hashed_password"]):
         raise HTTPException(
@@ -220,6 +252,7 @@ async def refresh(req: RefreshRequest):
 @router.post("/register")
 async def register(req: RegisterRequest, _admin: dict = Depends(require_admin)):
     """Register a new user. Admin only."""
+    _require_auth_deps()
     users = _load_users()
     if req.username in users:
         raise HTTPException(status_code=409, detail=f"Username '{req.username}' already exists.")
@@ -305,4 +338,5 @@ async def auth_status():
         "algorithm": _ALGORITHM,
         "access_token_ttl_minutes": _ACCESS_TTL,
         "user_count": len(users),
+        "crypto_deps_installed": _AUTH_DEPS_OK,
     }

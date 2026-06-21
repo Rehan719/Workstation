@@ -3,6 +3,9 @@ import { Card, Badge, Button, notImplemented} from '@workstation/ui';
 import { Github, Globe, MessageSquare, History, Info, ChevronRight, Zap, Star, Users, Terminal, BookOpen, HeartPulse } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const REPO = 'https://github.com/Rehan719/Workstation';
+const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
+
 export const Contribute: React.FC = () => {
   return (
     <div className="space-y-12 pb-24">
@@ -12,8 +15,8 @@ export const Contribute: React.FC = () => {
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Open Source Leadership • Article 1121 • community governance</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button onClick={() => notImplemented('View Source')} variant="outline"><Github size={18} /> View Source</Button>
-           <Button onClick={() => notImplemented('Star Repository')} className="bg-white text-sovereign shadow-xl">
+           <Button onClick={() => openExternal(REPO)} variant="outline"><Github size={18} /> View Source</Button>
+           <Button onClick={() => openExternal(REPO)} className="bg-white text-sovereign shadow-xl">
               <Star size={18} /> Star Repository
            </Button>
         </div>
@@ -55,7 +58,7 @@ export const Contribute: React.FC = () => {
                      <History size={24} className="text-aura" />
                      Recent RFCs
                   </h3>
-                  <Button onClick={() => notImplemented('View RFC Archive')} variant="outline" className="text-[10px]">View RFC Archive</Button>
+                  <Button onClick={() => openExternal(`${REPO}/discussions`)} variant="outline" className="text-[10px]">View RFC Archive</Button>
                </div>
                <div className="space-y-4">
                   {[

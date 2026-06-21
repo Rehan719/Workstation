@@ -14,6 +14,7 @@ class MegaConsolidator:
     """
     def __init__(self):
         # We simulate the engines to avoid dependency hell for this consolidation task
+        self.engines_simulated = True
 
     async def execute_mega_consolidation(self):
         logger.info("MegaConsolidator: Initiating full system restoration...")

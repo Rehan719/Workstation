@@ -1,0 +1,266 @@
+"""
+Resource Fabric — the unified, reconfigurable resource catalogue.
+
+One place to discover, select, reconfigure, and COMBINE every resource of the
+Workstation IDBO — across the Synthesis Lab, Design, Development, Delivery,
+Build-to-Order, and the Forge. It federates (does not duplicate) the existing
+process-intelligence engines, digital resources (reactors/factories/incubators/
+labs/twins/generators/simulators), organism biomimetic systems, and the
+enterprise/org layer into a single fabric. Selections can be composed into named,
+reusable, re-runnable configurations.
+
+  GET  /api/v1/resources                       — list/filter the resource fabric
+  GET  /api/v1/resources/{resource_id}         — one resource + its reconfig schema
+  POST /api/v1/resources/compose               — combine selected resources into a config
+  GET  /api/v1/resources/compositions          — list saved compositions
+  GET  /api/v1/resources/compositions/{cid}    — get one composition
+"""
+from __future__ import annotations
+
+import json
+import time
+import uuid
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+router = APIRouter(prefix="/api/v1/resources", tags=["resource-fabric"])
+
+_STORE = Path("data/resource_compositions.json")
+
+# Usage areas a resource can be selected into.
+# synthesis | design | development | delivery | build_to_order | forge | commercialisation | governance | evolution
+
+
+def _R(rid, name, cls, rtype, desc, caps, params, endpoint, usable_in,
+       reusable=True, rerunnable=True, biomimetic=False, methods=("POST",)) -> Dict[str, Any]:
+    return {
+        "id": rid, "name": name, "resource_class": cls, "type": rtype, "description": desc,
+        "capabilities": caps, "reconfigurable_params": params, "endpoint": endpoint,
+        "methods": list(methods), "reusable": reusable, "rerunnable": rerunnable,
+        "biomimetic": biomimetic, "usable_in": usable_in,
+    }
+
+
+# ── The unified resource registry (federates real, live resources) ────────────
+_REGISTRY: List[Dict[str, Any]] = [
+    # Process-Intelligence cognition engines
+    _R("bdp", "Business Development Process", "process_intelligence", "engine",
+       "8-stage business intelligence: market → value prop → model → GTM → financials → risk.",
+       ["market analysis", "business model", "go-to-market", "financial model", "risk"],
+       {"challenge": "str", "domain": "str"}, "/api/v1/intelligence/bdp",
+       ["synthesis", "design", "commercialisation", "build_to_order", "forge"]),
+    _R("spi", "Scientific Process Intelligence", "process_intelligence", "engine",
+       "8-stage research intelligence: problem → literature → hypothesis → methodology → validation.",
+       ["hypothesis generation", "literature synthesis", "methodology", "validation"],
+       {"challenge": "str", "domain": "str"}, "/api/v1/intelligence/spi",
+       ["synthesis", "design", "development", "forge"]),
+    _R("apie", "Scholarship & Authorship Intelligence", "process_intelligence", "engine",
+       "9-stage authorship: source discovery → argument → draft → evidence → peer review → publication.",
+       ["research reports", "papers", "reviews", "citations", "integrity audit"],
+       {"topic": "str", "genre": "str", "citation_style": "str", "word_count": "str"},
+       "/api/v1/intelligence/authorship", ["synthesis", "design", "development", "forge"]),
+    _R("ddpie", "Design & Development Intelligence", "process_intelligence", "engine",
+       "9-stage engineering: requirements → architecture → API → security → blueprint → tests → devops.",
+       ["architecture", "api contract", "security", "test strategy", "devops"],
+       {"system": "str", "tech_stack": "str", "scale": "str", "deployment_target": "str"},
+       "/api/v1/intelligence/design-dev", ["design", "development", "delivery", "forge", "build_to_order"]),
+    _R("cognitive_cascade", "Nine Cognitive Engines + MJM", "process_intelligence", "engine",
+       "6 cognitive engines (Inkashaf/Samajh/Soch/Aqal/Hoshiyari/Iman) + MJM meta-judgement.",
+       ["pattern discovery", "comprehension", "reasoning", "anomaly detection", "values alignment"],
+       {"problem": "str", "domain": "str"}, "/api/v1/intelligence/solve",
+       ["synthesis", "design", "development", "delivery", "governance"], biomimetic=True),
+    _R("nexus", "Synthesis Nexus", "process_intelligence", "orchestrator",
+       "4-layer autonomous chain: cognitive cascade → MJM → auto-selected engine → apex synthesis.",
+       ["auto engine routing", "cross-engine synthesis", "synergistic chaining"],
+       {"challenge": "str", "domain": "str", "activity": "str"}, "/api/v1/intelligence/nexus",
+       ["synthesis", "design", "development", "delivery"], biomimetic=True),
+    _R("genesis", "Genesis Sovereign Journey", "process_intelligence", "orchestrator",
+       "End-to-end Concept → Design → Commercialisation, ending in a living VSB blueprint.",
+       ["conceptualisation", "design", "commercialisation", "vsb blueprint"],
+       {"problem": "str", "domain": "str", "realm": "str"}, "/api/v1/genesis/journey",
+       ["synthesis", "design", "development", "delivery", "commercialisation"], biomimetic=True),
+
+    # Digital resources (reconfigurable / rerunnable / reusable)
+    _R("synthesis_studio", "Synthesis Lab", "digital_resource", "laboratory",
+       "Autonomously generates varied content types (reports, decks, sites, apps, models) from instructions + data.",
+       ["multi-format content generation", "9-stage BTO cascade", "vsb spawn"],
+       {"brief": "str", "output_types": "list", "domain": "str"}, "/api/v1/studio/synthesise",
+       ["synthesis", "design", "development", "forge"]),
+    _R("reactor", "Domain Reactor", "digital_resource", "reactor",
+       "Streams a domain AI processing simulation (ingestion → analysis → synthesis → validation).",
+       ["domain simulation", "data flow modelling", "artefact output"],
+       {"domain": "str"}, "/api/v1/reactor/run", ["development", "forge", "synthesis"]),
+    _R("factory", "Production Factory", "digital_resource", "factory",
+       "Generates production-grade artefacts (business model, spec, marketing plan, pitch, report).",
+       ["artefact production", "production-grade output"],
+       {"product_type": "str", "brief": "str"}, "/api/v1/factory/produce",
+       ["delivery", "build_to_order", "forge", "commercialisation"]),
+    _R("incubator", "Evolution Incubator", "digital_resource", "incubator",
+       "Prompt tournament: generates N variations, scores and ranks them (iterative development).",
+       ["variation generation", "scoring", "ranking", "iterative evolution"],
+       {"brief": "str", "variations": "int"}, "/api/v1/incubator/evolve",
+       ["development", "forge", "evolution"]),
+    _R("digital_twin", "Digital Twin & Simulator", "digital_resource", "simulator",
+       "Generates AI models and runs scenario simulations / optimisation (generators + simulators).",
+       ["model generation", "scenario simulation", "optimisation"],
+       {"system": "str", "scenario": "str"}, "/api/v1/twin", ["design", "development", "delivery", "forge"]),
+
+    # Organism biomimetic systems
+    _R("gaas_v5", "Constitutional Gate (gaas.v5)", "organism_system", "governance_engine",
+       "v16-Omega constitutional interceptor + self-tuning breaker + SHA3-512 UEG audit log.",
+       ["pre/post gate", "self-tuning circuit breaker", "tamper-evident audit"],
+       {"action_type": "str", "payload": "dict"}, "/api/v1/gaas/intercept",
+       ["governance", "delivery", "evolution"], biomimetic=True),
+    _R("sovereign_evolution", "Sovereign Evolution Office", "organism_system", "evolution_engine",
+       "Autonomous self-improvement curated by the VSB org (CEO→C-Suite→CoE→BTO), routes to Change Control.",
+       ["introspection", "org-curated proposals", "transformation roadmap", "governance hand-off"],
+       {"focus": "str", "submit_to_change_control": "bool"}, "/api/v1/sovereign-evolution/cycle",
+       ["evolution", "governance"], biomimetic=True),
+    _R("nervous_system", "Nervous System", "organism_system", "biomimetic",
+       "Signal routing, reflex arcs, arousal state — the organism's live event field.",
+       ["signal routing", "reflex arcs", "arousal state"], {},
+       "/api/v1/organism/nervous/status", ["governance", "evolution"], biomimetic=True, methods=("GET",)),
+    _R("genome", "Genome Registry", "organism_system", "biomimetic",
+       "3-layer epigenetic memory encoding VSB DNA and acquired traits.",
+       ["DNA encoding", "epigenetic memory", "trait inheritance"], {"trait": "str"},
+       "/api/v1/genome", ["design", "delivery", "evolution"], biomimetic=True),
+
+    # Enterprise / org layer
+    _R("vsb_spawn", "VSB Spawn Pipeline", "enterprise_org", "spawner",
+       "Spawns a living VSB IDBO entity via cascade → MJM → GaaS → genome → swarm (SSE).",
+       ["vsb instantiation", "genome encoding", "swarm config"],
+       {"challenge": "str", "domain": "str", "scope": "str"}, "/api/v1/vsb/spawn",
+       ["delivery", "commercialisation", "build_to_order"]),
+    _R("genesis_establish", "Establish Enterprise IDBO", "enterprise_org", "spawner",
+       "Turns a Genesis blueprint into a real, persisted, governed, operational VSB IDBO entity.",
+       ["living entity generation", "blueprint → enterprise"],
+       {"problem": "str", "domain": "str", "concept": "str", "commercialisation": "str"},
+       "/api/v1/genesis/establish", ["delivery", "commercialisation"]),
+    _R("vsb_org_swarm", "AI CEO → C-Suite → CoE", "enterprise_org", "org_swarm",
+       "The VSB organisational cascade: AI CEO directs, C-Suite delegates, CoE delivers.",
+       ["ceo directive", "c-suite delegation", "coe synthesis"],
+       {"mission": "str", "domain": "str"}, "/api/v1/swarm/cascade",
+       ["delivery", "build_to_order", "commercialisation", "governance"]),
+    _R("change_control", "Change Control Agency", "enterprise_org", "governance",
+       "Arms-length governance: LOW auto-approve, MEDIUM/HIGH AI review, CRITICAL blocked.",
+       ["change submission", "tiered review", "governed implementation"],
+       {"title": "str", "change_type": "str", "description": "str"}, "/api/v1/cca/submit",
+       ["governance", "evolution", "delivery"]),
+    _R("capital_fund", "Sovereign Capital Fund", "enterprise_org", "treasury",
+       "Virtual capital allocation + marketplace for the VSB ecosystem.",
+       ["capital allocation", "portfolio", "marketplace"], {"amount": "float", "recipient": "str"},
+       "/api/v1/fund/allocate", ["delivery", "commercialisation"]),
+    _R("compliance", "Unified Compliance Engine", "process_intelligence", "engine",
+       "Sharia/Halal · UK Legal (London) · Regulatory · EHS · Ethical · Constitutional — one federated check.",
+       ["halal/sharia", "uk legal", "regulatory", "ehs", "ethical", "constitutional"],
+       {"subject": "str", "domain": "str", "jurisdiction": "str"}, "/api/v1/compliance/check",
+       ["synthesis", "design", "development", "delivery", "commercialisation", "governance", "forge", "build_to_order"]),
+]
+
+_BY_ID = {r["id"]: r for r in _REGISTRY}
+
+
+def _load_compositions() -> List[Dict[str, Any]]:
+    if _STORE.exists():
+        try:
+            return json.loads(_STORE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return []
+    return []
+
+
+def _save_compositions(rows: List[Dict[str, Any]]) -> None:
+    _STORE.parent.mkdir(parents=True, exist_ok=True)
+    _STORE.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+
+
+@router.get("")
+async def list_resources(resource_class: Optional[str] = None, usable_in: Optional[str] = None):
+    """List the resource fabric, optionally filtered by class and/or usage area."""
+    items = _REGISTRY
+    if resource_class:
+        items = [r for r in items if r["resource_class"] == resource_class]
+    if usable_in:
+        items = [r for r in items if usable_in in r["usable_in"]]
+    classes: Dict[str, int] = {}
+    for r in _REGISTRY:
+        classes[r["resource_class"]] = classes.get(r["resource_class"], 0) + 1
+    return {
+        "resources": items,
+        "total": len(items),
+        "classes": classes,
+        "usage_areas": ["synthesis", "design", "development", "delivery",
+                        "build_to_order", "forge", "commercialisation", "governance", "evolution"],
+    }
+
+
+@router.get("/compositions")
+async def list_compositions():
+    return {"compositions": _load_compositions()}
+
+
+@router.get("/compositions/{cid}")
+async def get_composition(cid: str):
+    for c in _load_compositions():
+        if c["id"] == cid:
+            return c
+    raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
+
+
+@router.get("/{resource_id}")
+async def get_resource(resource_id: str):
+    r = _BY_ID.get(resource_id)
+    if not r:
+        raise HTTPException(status_code=404, detail=f"Resource {resource_id} not found.")
+    return r
+
+
+class ComposeRequest(BaseModel):
+    name: str
+    resource_ids: List[str]
+    usage_area: str = "synthesis"
+    config: Dict[str, Dict[str, Any]] = {}   # per-resource param overrides {id: {param: value}}
+
+
+@router.post("/compose")
+async def compose(req: ComposeRequest):
+    """Combine selected resources into a named, reusable, re-runnable configuration."""
+    unknown = [rid for rid in req.resource_ids if rid not in _BY_ID]
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
+
+    resolved = []
+    for rid in req.resource_ids:
+        base = _BY_ID[rid]
+        resolved.append({
+            "id": rid,
+            "name": base["name"],
+            "resource_class": base["resource_class"],
+            "endpoint": base["endpoint"],
+            "config": {**base["reconfigurable_params"], **req.config.get(rid, {})},
+        })
+
+    composition = {
+        "id": f"comp-{uuid.uuid4().hex[:8]}",
+        "name": req.name,
+        "usage_area": req.usage_area,
+        "resources": resolved,
+        "reusable": True,
+        "rerunnable": True,
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    rows = _load_compositions()
+    rows.append(composition)
+    _save_compositions(rows)
+
+    try:
+        from agentic_core.organism.biobus import biobus
+        biobus.fire_signal("motor", "resource_fabric.compose",
+                           f"{req.name}: {len(resolved)} resources", 0.6)
+    except Exception:
+        pass
+
+    return composition

@@ -4,7 +4,7 @@ import CommunityContributionForm from '../../components/qep/community/CommunityC
 import ScholarVerificationInterface from '../../components/qep/scholar/ScholarVerificationInterface';
 import ProductionMonitoringDashboard from '../../components/qep/production/ProductionMonitoringDashboard';
 import CrossDomainAdaptationPortal from '../../components/qep/cross_domain/CrossDomainAdaptationPortal';
-import { notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 
 export const QEPCommunityPortalPage: React.FC = () => {
   const [activePortal, setActivePortal] = React.useState<'Learner' | 'Contributor' | 'Scholar' | 'Production' | 'CrossDomain'>('Learner');
@@ -96,7 +96,7 @@ export const QEPCommunityPortalPage: React.FC = () => {
                 <div className="inline-block h-8 w-8 rounded-full ring-2 ring-slate-900 bg-purple-500 flex items-center justify-center text-[10px] font-bold">RK</div>
                 <div className="flex items-center justify-center h-8 w-8 rounded-full bg-slate-800 text-[8px] font-bold ring-2 ring-slate-900">+5</div>
               </div>
-              <button type="button" onClick={() => notImplemented('View Adaptation Registry')} className="w-full py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-xs transition-all">
+              <button type="button" onClick={async () => { try { const r = await fetch('/api/v1/qep/adaptation/registry'); const d = await r.json(); toast(`${d.count} cross-domain adaptations registered`); } catch { toast('Failed to load registry'); } }} className="w-full py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-xs transition-all">
                 View Adaptation Registry
               </button>
             </div>

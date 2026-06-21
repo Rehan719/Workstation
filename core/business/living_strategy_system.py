@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 🧬 LIVING STRATEGY SYSTEM: SUPREME CIVILIZATIONAL REFLECTION
 Constitutional Binding: Layer 13 (Civilizational Reflection), Constraint #8 (Eternal Operation)
@@ -43,7 +44,7 @@ class LivingStrategySystem:
         new_plan_content = await self._draft_updated_markdown(current_plan_path, improvement_proposals)
 
         new_version_path = current_plan_path.replace(".md", f"_v{self.current_plan_version}.md")
-        with open(new_version_path, "w") as f:
+        with open(new_version_path, "w", encoding="utf-8") as f:
             f.write(new_plan_content)
 
         # 4. Log to UEG with Halo2 proof
@@ -57,7 +58,7 @@ class LivingStrategySystem:
         major, minor, patch = map(int, self.current_plan_version.split('.'))
         self.current_plan_version = f"{major}.{minor}.{patch + 1}"
 
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
 
         header = f"\n\n## UPDATE v{self.current_plan_version} ({datetime.now().date()})\n"

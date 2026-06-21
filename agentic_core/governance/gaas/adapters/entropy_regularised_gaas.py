@@ -1,9 +1,24 @@
 import logging
-import torch
 from typing import Dict, Any, Optional, List
+
+# torch is an optional heavy ML dependency — not required for the FastAPI
+# deployment environment. The EntropyRegularisedGaaS class uses torch tensors
+# internally but is not wired into any of the 32 mounted API routers.
+# Guard the import so the package remains importable without torch installed.
+try:
+    import torch
+    _TORCH_AVAILABLE = True
+except ImportError:
+    _TORCH_AVAILABLE = False
+    torch = None  # type: ignore
+
 from agentic_core.governance.gaas.gaas_validator import GaaSValidatorV4
 from agentic_core.legal.precision_engine import UKLegalPrecisionEngineImpl
-from agentic_core.biomimicry.minimisation.core.optimal_transport import OptimalTransportRouter
+
+try:
+    from agentic_core.biomimicry.minimisation.core.optimal_transport import OptimalTransportRouter
+except ImportError:
+    OptimalTransportRouter = None  # type: ignore
 
 class EntropyRegularisedGaaS:
     """
@@ -15,14 +30,20 @@ class EntropyRegularisedGaaS:
         self,
         base_validator: GaaSValidatorV4,
         legal_engine: UKLegalPrecisionEngineImpl,
-        ot_solver: Optional[OptimalTransportRouter] = None
+        ot_solver=None
     ):
         self.base = base_validator
         self.legal_engine = legal_engine
-        self.ot = ot_solver or OptimalTransportRouter(epsilon=0.01)
+        if OptimalTransportRouter is not None:
+            self.ot = ot_solver or OptimalTransportRouter(epsilon=0.01)
+        else:
+            self.ot = None
         self.logger = logging.getLogger("EntropyRegularisedGaaS")
         # Constitutional articles represented as a distribution over intent space
-        self.const_embs = torch.ones(10) / 10.0
+        if _TORCH_AVAILABLE:
+            self.const_embs = torch.ones(10) / 10.0  # type: ignore
+        else:
+            self.const_embs = [0.1] * 10
 
     async def validate_intent(self, intent: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         """

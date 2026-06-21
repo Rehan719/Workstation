@@ -51,3 +51,7 @@ logs/
 state_snapshots/
 sandbox/
 .env
+
+# Runtime UEG / GaaS audit-log state (generated, hash-chained — not source)
+meta/*ueg*.json
+**/meta/*ueg*.json

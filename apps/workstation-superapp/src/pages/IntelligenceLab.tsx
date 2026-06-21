@@ -93,9 +93,7 @@ export const IntelligenceLab: React.FC = () => {
     setExpanded(null);
 
     const url = `/api/v1/intelligence/${mode}`;
-    const body = isBDP
-      ? { challenge: input, domain }
-      : { question: input, domain };
+    const body = { challenge: input, domain };
 
     await streamPost(url, body,
       ev => setEvents(prev => [...prev, ev]),

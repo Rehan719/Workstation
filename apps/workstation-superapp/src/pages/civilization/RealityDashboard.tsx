@@ -2,19 +2,30 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { GitBranch, TrendingUp, Zap, Activity, ChevronRight, Play, Star, Map, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 
 export const RealityDashboard: React.FC = () => {
   const [timelines, setTimelines] = useState<any[]>([]);
+  const [reality, setReality] = useState<any>(null);
 
   useEffect(() => {
-    // Simulated branching futures
     setTimelines([
       { id: 'T-Main', title: "Current Trajectory", probability: 0.85, status: "Active", prosperity: "+12%" },
       { id: 'T-Alpha', title: "Empathy Peak (Sanctum-Meta-01)", probability: 0.12, status: "Simulated", prosperity: "+28%" },
       { id: 'T-Omega', title: "Resource Scarcity Crisis", probability: 0.03, status: "Simulated", prosperity: "-42%" }
     ]);
+    axios.get('/api/v1/frontier/reality/status').then(({ data }) => setReality(data)).catch(() => {});
   }, []);
+
+  const allocateGrant = async () => {
+    try {
+      const { data: d } = await axios.post('/api/v1/frontier/reality/grant',
+        { recipient: 'T-Alpha branch', amount: 142000, branch: 'alpha', purpose: 'Empathy Peak acceleration' });
+      toast(`Grant ${d.id} allocated — ${d.amount.toLocaleString()} WST to ${d.recipient}`);
+      const { data: s } = await axios.get('/api/v1/frontier/reality/status');
+      setReality(s);
+    } catch { toast('Grant allocation failed'); }
+  };
 
   return (
     <div className="space-y-12">
@@ -78,7 +89,12 @@ export const RealityDashboard: React.FC = () => {
                     <p className="text-[10px] font-black text-slate-500 uppercase">Simulated Yield (T-Alpha)</p>
                     <p className="text-xl font-black text-aura">+142,000 WST</p>
                  </div>
-                 <button type="button" onClick={() => notImplemented('Allocate Multi-Verse Grant')} className="w-full py-4 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Allocate Multi-Verse Grant</button>
+                 <button type="button" onClick={allocateGrant} className="w-full py-4 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Allocate Multi-Verse Grant</button>
+                 {reality && (
+                   <p className="text-[9px] font-mono text-aura/70 pt-1">
+                     {reality.total_grants} grants · {reality.capital_allocated?.toLocaleString?.() ?? reality.capital_allocated} WST allocated · coherence {reality.coherence}
+                   </p>
+                 )}
               </div>
            </section>
 

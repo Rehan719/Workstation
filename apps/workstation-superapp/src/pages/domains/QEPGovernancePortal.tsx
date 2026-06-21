@@ -1,7 +1,7 @@
 import React from 'react';
 import { DAOGovernanceInterface } from '../../components/qep/dao/DAOGovernanceInterface';
 import { AIEthicsDashboard } from '../../components/qep/ethics/AIEthicsDashboard';
-import { notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 
 export const QEPGovernancePortal: React.FC = () => {
   const exportReusabilityKit = () => {
@@ -39,7 +39,7 @@ export const QEPGovernancePortal: React.FC = () => {
              This portal demonstrates the integration of decentralized governance and automated AI ethics auditing. Every proposal, vote, and ethics assessment is verified against the Sovereign State v99.0 framework and logged to the immutable VSB signature trail.
            </p>
            <div className="flex gap-4 justify-center pt-4">
-             <button type="button" onClick={() => notImplemented('View Compliance Audit')} className="px-6 py-2 bg-indigo-600 text-white text-xs font-black uppercase rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+             <button type="button" onClick={async () => { try { const r = await fetch('/api/v1/qep/compliance/audit'); const d = await r.json(); toast(`Compliance: ${d.compliant ? 'PASS' : 'REVIEW'} · ${d.checks?.length ?? 0} controls`); } catch { toast('Audit failed'); } }} className="px-6 py-2 bg-indigo-600 text-white text-xs font-black uppercase rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
                View Compliance Audit
              </button>
              <button type="button" onClick={exportReusabilityKit} className="px-6 py-2 bg-white text-indigo-600 border-2 border-indigo-200 text-xs font-black uppercase rounded-xl hover:border-indigo-400 transition-colors">

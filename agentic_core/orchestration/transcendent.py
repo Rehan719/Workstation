@@ -5,7 +5,7 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
-class Strategic transcendentAgent:
+class StrategicTranscendentAgent:
     """
     v0.9 Transcendent Layer (L5).
     Strategic goal-planning and task decomposition.
@@ -34,4 +34,4 @@ class Strategic transcendentAgent:
         completed = len([t for t in current_tasks if t.get("status") == "COMPLETED"])
         return (completed / len(current_tasks)) if current_tasks else 1.0
 
-strategic_agent = Strategic transcendentAgent()
+strategic_agent = StrategicTranscendentAgent()

@@ -36,6 +36,20 @@ import { LearnerRealm } from './pages/learner/LearnerRealm';
 import { EnterpriseRealm } from './pages/enterprise/EnterpriseRealm';
 import { VSBSpawnStudio } from './pages/enterprise/VSBSpawnStudio';
 import { IntelligenceLab } from './pages/IntelligenceLab';
+import { AuthorshipEngine } from './pages/synthesis/AuthorshipEngine';
+import { DesignDevEngine } from './pages/developers/DesignDevEngine';
+import { SynthesisNexus } from './pages/synthesis/SynthesisNexus';
+import { GenesisJourney } from './pages/synthesis/GenesisJourney';
+import { SovereignEvolution } from './pages/evolution/SovereignEvolution';
+import { ResourceFabric } from './pages/synthesis/ResourceFabric';
+import { BoardOfDirectors } from './pages/enterprise/BoardOfDirectors';
+import { VSBEconomy } from './pages/enterprise/VSBEconomy';
+import { TransformationDashboard } from './pages/TransformationDashboard';
+import { HeartbeatMonitor } from './pages/organism/HeartbeatMonitor';
+import { CognitionIntegration } from './pages/CognitionIntegration';
+import { BusinessPlan } from './pages/enterprise/BusinessPlan';
+import { ForgePipeline } from './pages/developers/ForgePipeline';
+import { ComplianceChecker } from './pages/governance/ComplianceChecker';
 import { OrganismDashboard } from './pages/organism/OrganismDashboard';
 import { ManagementSystemsHub } from './pages/enterprise/ManagementSystemsHub';
 import { ChangeControlAgency } from './pages/enterprise/ChangeControlAgency';
@@ -228,6 +242,20 @@ function App() {
           <Route path="/vsb"             element={<VSBSpawnStudio />} />
           <Route path="/vsb-spawn"       element={<VSBSpawnStudio />} />
           <Route path="/intelligence"    element={<IntelligenceLab />} />
+          <Route path="/authorship"      element={<AuthorshipEngine />} />
+          <Route path="/design-dev"      element={<DesignDevEngine />} />
+          <Route path="/nexus"           element={<SynthesisNexus />} />
+          <Route path="/genesis"         element={<GenesisJourney />} />
+          <Route path="/sovereign-evolution" element={<SovereignEvolution />} />
+          <Route path="/resource-fabric" element={<ResourceFabric />} />
+          <Route path="/board" element={<BoardOfDirectors />} />
+          <Route path="/economy" element={<VSBEconomy />} />
+          <Route path="/transformation" element={<TransformationDashboard />} />
+          <Route path="/heartbeat" element={<HeartbeatMonitor />} />
+          <Route path="/cognition" element={<CognitionIntegration />} />
+          <Route path="/business-plan" element={<BusinessPlan />} />
+          <Route path="/forge-pipeline" element={<ForgePipeline />} />
+          <Route path="/compliance" element={<ComplianceChecker />} />
           <Route path="/organism"        element={<OrganismDashboard />} />
           <Route path="/management"      element={<ManagementSystemsHub />} />
           <Route path="/change-control"  element={<ChangeControlAgency />} />

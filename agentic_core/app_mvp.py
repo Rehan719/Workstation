@@ -248,6 +248,70 @@ app.include_router(organism_status_api.router)
 from agentic_core.api import change_control as cca_api
 app.include_router(cca_api.router)
 
+# 49. Constitutional GaaS v5 (v16-Omega interceptor + self-tuning breaker + UEG audit log)
+from agentic_core.api import constitutional_gaas as gaas_api
+app.include_router(gaas_api.router)
+
+# 50. Frontier Phase 4 (cosmic nervous system, reality mesh, embodiment platforms)
+from agentic_core.api import frontier as frontier_api
+app.include_router(frontier_api.router)
+
+# 51. QEP Intelligence (explainability/XAI, translation pipeline, cross-domain adaptation)
+from agentic_core.api import qep_intelligence as qep_intel_api
+app.include_router(qep_intel_api.router)
+
+# 52. Genesis — unified Sovereign Journey orchestrator (Concept → Design → Commercialisation)
+from agentic_core.api import genesis as genesis_api
+app.include_router(genesis_api.router)
+
+# 53. Sovereign Evolution Office — autonomous self-improvement curated by the VSB org
+from agentic_core.api import sovereign_evolution as sov_evo_api
+app.include_router(sov_evo_api.router)
+
+# 54. Resource Fabric — unified reconfigurable/combinable resource catalogue
+from agentic_core.api import resource_fabric as resource_fabric_api
+app.include_router(resource_fabric_api.router)
+
+# 55. Board of Directors — apex governance; Chief = Owner's digital twin, above the AI CEO
+from agentic_core.api import board as board_api
+app.include_router(board_api.router)
+
+# 56. Living Plan — self-updating current-state + progress spine of the D&D Action Plan
+from agentic_core.api import living_plan as living_plan_api
+app.include_router(living_plan_api.router)
+
+# 57. VSB Economy — living biomimetic economic metabolism (Waqf/Trust hybrid, virtual/simulated)
+from agentic_core.api import economy as economy_api
+app.include_router(economy_api.router)
+
+# 58. Vision→Realisation→Transformation — the living alignment engine (computed from live evidence)
+from agentic_core.api import transformation as transformation_api
+app.include_router(transformation_api.router)
+
+# 59. Organism Heartbeat — continuous-autonomy circadian scheduler (the organism runs itself)
+from agentic_core.api import heartbeat as heartbeat_api
+app.include_router(heartbeat_api.router)
+
+# 60. Cognition & Alignment — wires the knowledge system into every living tier
+from agentic_core.api import cognition as cognition_api
+app.include_router(cognition_api.router)
+
+# 61. Forge — executable digital-resource pipelines (Petri/Incubator/Lab/Factory/Generator/Simulator/Reactor)
+from agentic_core.api import forge as forge_api
+app.include_router(forge_api.router)
+
+# 62. Unified Compliance — Sharia/Halal · UK Legal (London) · Regulatory · EHS · Ethical · Constitutional
+from agentic_core.api import compliance as compliance_api
+app.include_router(compliance_api.router)
+
+# 63. Living Business-Plan management — Chief/Board own the plan for Workstation + per-VSB
+from agentic_core.api import business_plan as business_plan_api
+app.include_router(business_plan_api.router)
+
+# 64. Integration Surface — wires 18 previously-broken frontend calls to real backend data
+from agentic_core.api import integration_surface as integration_surface_api
+app.include_router(integration_surface_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime
@@ -429,4 +493,10 @@ async def _vitals_loop():
 @app.on_event("startup")  # noqa: deprecated — lifespan refactor is Phase 1
 async def _startup():
     asyncio.create_task(_vitals_loop())
-    logger.info("Workstation MVP started — spine routers only.")
+    # Start the continuous-autonomy circadian heartbeat — the organism runs itself.
+    try:
+        from agentic_core.organism.heartbeat import heartbeat
+        heartbeat.start()
+    except Exception as exc:
+        logger.debug("heartbeat start deferred: %s", exc)
+    logger.info("Workstation MVP started — spine routers + organism heartbeat.")

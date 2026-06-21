@@ -8,6 +8,8 @@ class RecombinationBackend(ABC):
     """Abstract base class for recombination engines."""
     @abstractmethod
     def merge(self, source_hashes: List[str], parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Merge the given source modules into a single offspring module."""
+        ...
 
 class TIESMergingBackend(RecombinationBackend):
     """

@@ -7,7 +7,7 @@ import {
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye,
   HeartPulse, Workflow, Search, Smartphone, Globe2, Layers, Factory, ChevronDown,
-  FolderOpen, Folders, Building2, Users, TrendingUp, Copy
+  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Hammer
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -111,14 +111,28 @@ const allNavItems: NavItem[] = [
     icon: Cpu,
     id: 'intel-facet',
     subItems: [
-      { name: 'Intelligence Lab',   icon: Brain,      id: 'intelligence' },
-      { name: 'Civilization Brain', icon: Globe,      id: 'civilization' },
-      { name: 'Reality Dashboard',  icon: Radio,      id: 'reality' },
-      { name: 'Grand Ops',          icon: Gauge,      id: 'grand-ops' },
-      { name: 'Prediction Market',  icon: TrendingUp, id: 'prediction-market' },
-      { name: 'CFO Analytics',      icon: DollarSign, id: 'cfo' },
-      { name: 'CTO Infrastructure', icon: Cpu,        id: 'cto' },
-      { name: 'CoE Hub',            icon: Trophy,     id: 'coe' },
+      { name: 'Intelligence Lab',      icon: Brain,        id: 'intelligence' },
+      { name: 'Authorship Engine',     icon: BookOpen,     id: 'authorship' },
+      { name: 'Design & Dev Engine',   icon: Code2,        id: 'design-dev' },
+      { name: 'Synthesis Nexus',       icon: Sparkles,     id: 'nexus' },
+      { name: 'Genesis Journey',       icon: Rocket,       id: 'genesis' },
+      { name: 'Vision · Transformation', icon: Target,     id: 'transformation' },
+      { name: 'Organism Heartbeat',    icon: HeartPulse,   id: 'heartbeat' },
+      { name: 'Cognition · Wiring',    icon: Network,      id: 'cognition' },
+      { name: 'Board of Directors',    icon: Crown,        id: 'board' },
+      { name: 'Economic Metabolism',   icon: Coins,        id: 'economy' },
+      { name: 'Business Plan',         icon: Briefcase,    id: 'business-plan' },
+      { name: 'Forge Pipeline',        icon: Hammer,       id: 'forge-pipeline' },
+      { name: 'Compliance',            icon: ShieldCheck,  id: 'compliance' },
+      { name: 'Sovereign Evolution',   icon: Dna,          id: 'sovereign-evolution' },
+      { name: 'Resource Fabric',       icon: Layers,       id: 'resource-fabric' },
+      { name: 'Civilization Brain',    icon: Globe,        id: 'civilization' },
+      { name: 'Reality Dashboard',     icon: Radio,        id: 'reality' },
+      { name: 'Grand Ops',             icon: Gauge,        id: 'grand-ops' },
+      { name: 'Prediction Market',     icon: TrendingUp,   id: 'prediction-market' },
+      { name: 'CFO Analytics',         icon: DollarSign,   id: 'cfo' },
+      { name: 'CTO Infrastructure',    icon: Cpu,          id: 'cto' },
+      { name: 'CoE Hub',               icon: Trophy,       id: 'coe' },
     ]
   },
 

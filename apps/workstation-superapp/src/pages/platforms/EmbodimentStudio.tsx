@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button, notImplemented} from '@workstation/ui';
+import { Card, Badge, Button, notImplemented, toast } from '@workstation/ui';
 import { User, Cpu, Zap, Activity, ShieldCheck, History, Info, ChevronRight, MousePointer2, Smartphone, Terminal, Radio, Brain, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, gaas } from '@workstation/shared';
@@ -14,6 +14,21 @@ export const EmbodimentStudio: React.FC = () => {
     { id: 'plat-3', name: 'Neural-Link-A1', type: 'BCI', status: 'Calibrating', battery: 'N/A' },
   ];
 
+  const inhabit = async () => {
+    const p = platforms[activeAvatar] ?? platforms[0];
+    try {
+      const r = await fetch('/api/v1/frontier/platform/embodiment', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          avatar: p.name,
+          morphology: p.type === 'BCI' ? 'neural' : p.type === 'Robotic' ? 'robotic' : 'humanoid',
+        }),
+      });
+      const d = await r.json();
+      toast(`Inhabiting ${d.avatar} — ${d.status} (${(d.capabilities || []).join(', ')})`);
+    } catch { toast('Embodiment failed'); }
+  };
+
   return (
     <div className="space-y-12 pb-24">
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
@@ -23,7 +38,7 @@ export const EmbodimentStudio: React.FC = () => {
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
            <Button onClick={() => notImplemented('Calibrate BCI')} variant="outline"><Brain size={18} /> Calibrate BCI</Button>
-           <Button onClick={() => notImplemented('Inhabit Avatar')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+           <Button onClick={inhabit} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Eye size={18} /> Inhabit Avatar
            </Button>
         </div>

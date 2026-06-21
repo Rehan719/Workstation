@@ -53,4 +53,5 @@ class UCIv16Omega:
         await self.ueg.log_minimisation_event("uci_action_completed", {"intent": intent})
         return report
 
-class SecurityError(Exception): return True
+class SecurityError(Exception):
+    """Raised when a sovereign action violates a security invariant."""

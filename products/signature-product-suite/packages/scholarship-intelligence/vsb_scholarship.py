@@ -1,5 +1,13 @@
+import os
+import sys
 from typing import Dict, Any
-from products.signature-product-suite.packages.constitutional-core.vsb_constitutional_core import UCIV12Interceptor
+
+# The constitutional-core sibling folder contains hyphens, so it cannot be
+# imported via a normal dotted path. Resolve it on sys.path instead.
+_CC_DIR = os.path.join(os.path.dirname(__file__), "..", "constitutional-core")
+if _CC_DIR not in sys.path:
+    sys.path.insert(0, _CC_DIR)
+from vsb_constitutional_core import UCIV12Interceptor
 
 class ScholarshipIntelligenceEngine:
     """Core Scholarship Process Intelligence v12.0."""

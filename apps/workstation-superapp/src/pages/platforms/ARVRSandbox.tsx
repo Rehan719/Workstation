@@ -1,7 +1,18 @@
 import React from 'react';
-import { Card, Badge, Button, notImplemented} from '@workstation/ui';
+import { Card, Badge, Button, notImplemented, toast } from '@workstation/ui';
 import { Globe, Users, MessageSquare, Zap, Shield, Camera, MousePointer2, Smartphone, Monitor, Info, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+const startSession = async (environment: string, mode = 'VR') => {
+  try {
+    const r = await fetch('/api/v1/frontier/platform/arvr/session', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user: 'sovereign-user', environment, mode }),
+    });
+    const d = await r.json();
+    toast(`${mode} session ${d.status} — ${d.environment} (${d.id})`);
+  } catch { toast('Session failed to start'); }
+};
 
 export const ARVRSandbox: React.FC = () => {
   return (
@@ -12,8 +23,8 @@ export const ARVRSandbox: React.FC = () => {
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">AR/VR Prototypes • WebXR Council Chambers • Phase 3</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button onClick={() => notImplemented('VR Mode')} variant="outline"><Camera size={18} /> VR Mode</Button>
-           <Button onClick={() => notImplemented('Join Council Meeting')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
+           <Button onClick={() => startSession('immersive-lab', 'VR')} variant="outline"><Camera size={18} /> VR Mode</Button>
+           <Button onClick={() => startSession('council-chamber', 'VR')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
               <Users size={18} /> Join Council Meeting
            </Button>
         </div>
@@ -65,7 +76,7 @@ export const ARVRSandbox: React.FC = () => {
                      Navigate the planetary mesh in 3D. Click and drag nodes to inspect real-time cytokine propagation paths.
                   </p>
                </div>
-               <Button onClick={() => notImplemented('Launch 3D Explorer')} className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Launch 3D Explorer</Button>
+               <Button onClick={() => startSession('spatial-mesh', 'MR')} className="w-full bg-aura text-sovereign py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">Launch 3D Explorer</Button>
             </Card>
 
             <Card className="p-10 bg-slate-950 border-slate-900 space-y-6">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrainCircuit, Fingerprint, Network, ShieldCheck, Activity, BarChart3, Lock, Cpu } from 'lucide-react';
-import { notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 
 export const QEPAIPortal: React.FC = () => {
   const [activeModel, setActiveModel] = useState<string | null>('Theological NLP');
@@ -135,7 +135,7 @@ export const QEPAIPortal: React.FC = () => {
                  </div>
                ))}
             </div>
-            <button type="button" onClick={() => notImplemented('Update Recommendation Model')} className="w-full mt-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition-colors">
+            <button type="button" onClick={async () => { try { const r = await fetch('/api/v1/qep/recommendation/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ease_weight: 0.4, interval_weight: 0.35, quality_weight: 0.25 }) }); const d = await r.json(); toast(`Recommendation model ${d.status}`); } catch { toast('Update failed'); } }} className="w-full mt-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition-colors">
               Update Recommendation Model
             </button>
           </div>

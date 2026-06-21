@@ -56,8 +56,8 @@ class MemoryHierarchy:
                 with open(path, "r") as f:
                     data = json.load(f)
                     self.procedural_graph = nx.node_link_graph(data)
-            except:
-                continue
+            except Exception:
+                pass
 
     def _save_procedural_memory(self):
         path = os.path.join(self.data_dir, "procedural.json")

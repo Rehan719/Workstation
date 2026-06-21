@@ -71,7 +71,8 @@ class ResilienceManagerL5:
              if prediction_score > 600 or self.failure_counts.get(component_id, 0) > 5:
                   logger.warning(f"L5: v0.5 Torch Prediction high ({prediction_score.item():.2f}) for {component_id}. Proactive action required.")
                   return True
-        except:
+        except Exception:
+            pass
 
         return False
 

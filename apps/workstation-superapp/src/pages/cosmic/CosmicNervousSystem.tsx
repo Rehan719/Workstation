@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Globe, Radio, Zap, ShieldAlert, Cpu, Activity, Send, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { notImplemented } from '@workstation/ui';
+import { toast } from '@workstation/ui';
 
 export const CosmicNervousSystem: React.FC = () => {
   const [data, setData] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    // Simulated cosmic sensor data
+    // Seed local view, then hydrate the live cosmic field from the organism nervous system.
     setData({
       asteroids: [
         { id: 'neo-42', name: 'Apophis-B', risk: 'Low', distance: '1.4M km' },
@@ -19,7 +20,40 @@ export const CosmicNervousSystem: React.FC = () => {
         { id: 'sig-01', source: 'Sector 7G', type: 'Pulse', content: '.. ..- -. .. - -.--' }
       ]
     });
+    axios.get('/api/v1/frontier/cosmic/signals')
+      .then(({ data: d }) => setData((prev: any) => ({ ...prev, cosmic_coherence: d.cosmic_coherence, field_state: d.field_state })))
+      .catch(() => {});
   }, []);
+
+  const triggerProtocol = async () => {
+    setBusy(true);
+    try {
+      const { data: d } = await axios.post('/api/v1/frontier/cosmic/response-protocol',
+        { stimulus: 'Neo-01 trajectory shift', intensity: 0.85, region: 'planetary-defense' });
+      toast(`Response protocol ${d.status} — arc: ${(d.arc || []).join(' → ')}`);
+    } catch { toast('Response protocol failed'); }
+    setBusy(false);
+  };
+
+  const analyzeSignal = async (sig: any) => {
+    setBusy(true);
+    try {
+      const { data: d } = await axios.post('/api/v1/frontier/cosmic/analyze',
+        { signal: sig.content, context: sig.source });
+      toast(`Analysis: ${String(d.analysis).slice(0, 100)}`);
+    } catch { toast('Analysis failed'); }
+    setBusy(false);
+  };
+
+  const respondSignal = async (sig: any) => {
+    setBusy(true);
+    try {
+      const { data: d } = await axios.post('/api/v1/frontier/cosmic/response-protocol',
+        { stimulus: sig.content, region: sig.source, intensity: 0.7 });
+      toast(`Responded to ${sig.source} — ${d.status}`);
+    } catch { toast('Response failed'); }
+    setBusy(false);
+  };
 
   if (!data) return null;
 
@@ -87,7 +121,7 @@ export const CosmicNervousSystem: React.FC = () => {
                   <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">
                      Meta-Consciousness is modeling potential responses to Neo-01 trajectory shift.
                   </p>
-                  <button type="button" onClick={() => notImplemented('Trigger Response Protocol')} className="w-full py-4 bg-vital/20 text-vital border border-vital/30 font-black rounded-xl text-[10px] uppercase tracking-widest">Trigger Response Protocol</button>
+                  <button type="button" disabled={busy} onClick={triggerProtocol} className="w-full py-4 bg-vital/20 text-vital border border-vital/30 font-black rounded-xl text-[10px] uppercase tracking-widest disabled:opacity-50">Trigger Response Protocol</button>
                </section>
             </div>
          </div>
@@ -107,8 +141,8 @@ export const CosmicNervousSystem: React.FC = () => {
                        </div>
                        <p className="font-mono text-white text-sm break-all">{s.content}</p>
                        <div className="pt-4 border-t border-white/5 flex gap-2">
-                          <button type="button" onClick={() => notImplemented('Analyze')} className="flex-1 py-2 bg-aura/10 text-aura font-black rounded-lg text-[8px] uppercase tracking-widest">Analyze</button>
-                          <button type="button" onClick={() => notImplemented('Respond')} className="flex-1 py-2 bg-aura text-sovereign font-black rounded-lg text-[8px] uppercase tracking-widest">Respond</button>
+                          <button type="button" disabled={busy} onClick={() => analyzeSignal(s)} className="flex-1 py-2 bg-aura/10 text-aura font-black rounded-lg text-[8px] uppercase tracking-widest disabled:opacity-50">Analyze</button>
+                          <button type="button" disabled={busy} onClick={() => respondSignal(s)} className="flex-1 py-2 bg-aura text-sovereign font-black rounded-lg text-[8px] uppercase tracking-widest disabled:opacity-50">Respond</button>
                        </div>
                     </div>
                   ))}
