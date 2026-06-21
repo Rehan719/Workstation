@@ -280,6 +280,82 @@ swarm synthesis — is the next major scope expansion (see `ACTION_PLAN.md`, wor
 
 ---
 
+## 17. Canonical Structure (the precise specifics — for completeness & certainty)
+
+Re-analysed and consolidated from the full knowledge canon (Cowork architecture canon, vision/owner/
+mandate memories, the living plan, mission/vision/values, the org charters, the reactor/biomimetic
+architecture). This is the exact structural skeleton the fine-grained vision hangs on:
+
+**17.1 The product grid — 4 Realms × 6 Domains × 4 Products (96 combinations), one lifecycle pattern.**
+- **Realms (who the user is):** Enterprise (business/commercial) · Learning (education/knowledge) ·
+  Developing (innovation/technical) · Scholarship (research/academic).
+- **Domains (the problem space):** Religion · Science · Education · Law · Employment/Career · Care.
+- **Products (how work runs):** Reactor (rapid AI generation) · Incubator (iterative development) ·
+  Factory (production-grade delivery) · Laboratory (experimental/research).
+- All 96 follow the same **Concept → Design → Build → Launch → Commercialise** stage-gated lifecycle.
+
+**17.2 The biomimetic body — 7 layers (the IDBO's anatomy).**
+1. **Genome** — VSB identity/capabilities/constraints/evolution (arms-length controlled).
+2. **Nervous** — the cognitive engines + MJM + SPI/BPI + Knowledge Tree (sense → think → decide).
+3. **Immune** — GaaS (legal/ethical/quality/safety/environmental) + self-healing (defend).
+4. **Cardiovascular** — dynamic resource allocation (distribute).
+5. **Respiratory** — autonomous workflow cascade / Agent Hub (do).
+6. **Musculoskeletal** — digital facilities: Reactors, Labs, Factories, Petri dishes, Generators,
+   Simulators, Digital Twin (act on the world).
+7. **Endocrine** — signal bus / shared context + MJM (coordinate).
++ homeostasis loops (immune↔nervous↔metabolic), circadian operation, and a survival instinct.
+
+**17.3 The Living Business System — 4 continuously-maintained layers (with cadence).**
+- **Constitutional** (genome-locked): Mission · Vision · Values · Ethical mandate (rarely changes).
+- **Strategic** (AI CEO; quarterly + market signal): position, growth, resource posture.
+- **Action Plan** (BTO; weekly + KPI-triggered): sprint priorities, corrective actions, timelines.
+- **Board Pack** (on-demand): assembled fresh from live data, DCS-registered.
+
+**17.4 The 3 Human–AI integration modes.**
+- **Mode 1** — Owner sets mission/values/ethical bounds → the IDBO executes everything else autonomously.
+- **Mode 2** — Expert → **Digital-Twin human node** (24/7 expertise without the expert present). *This is
+  the basis of the Chief = the founder's digital twin.*
+- **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome).
+
+**17.5 The 10 architecture invariants (absolute).** User isolation (scoped to user_id) · mandatory GaaS
+gate on every output · append-only DCS audit · **Arms-Length Agency** (AI CEO cannot instruct the
+board/genome) · digital-twin pre-validation before major change · torch optionality · single
+router-mount point · signal-bus atomicity · living business plan ≤5-min staleness · KPI gate before
+customer delivery.
+
+## 18. Certainty & Agreement — what I am sure of, and what I want you to confirm
+
+**The spine I am certain of (please correct any line that is even slightly off):**
+1. **Purpose:** democratise AI-mediated working for *all* humanity, in *all* realms and domains, to
+   resolve any challenge/problem and seize any opportunity — faith-rooted ethics architecturally binding.
+2. **The deliverable is a living VSB IDBO Enterprise**, generated end-to-end (Concept→Commercialisation),
+   not a document; Workstation is the meta-organism that spawns these child organisms.
+3. **Chief = the founder's digital twin**, apex and arms-length above the AI CEO; faithful in presence
+   and absence; every generated VSB carries its own Board + Chief-of-its-owner.
+4. **Native AI is owned** — Workstation's own dynamic, reconfigurable Swarm + Models + Orchestration,
+   bespoke per-solution and per-founder; external providers are optional accelerants, never dependencies.
+5. **Everything is modelled · simulated · optimised · ranked, then verified · tested · validated**, and
+   delivered as **living, reconfigurable** outputs (report/deck/video/site/platform/app/product/service).
+6. **One self-running biomimetic organism** that defends, heals, learns, improves and grows itself; the
+   VSB is a compliant hybrid Waqf/Trust/Multinational economic entity (virtual money until you direct real).
+7. **User design control** — reconfigure the org structure, digital resources, and AI swarm cascades in
+   Synthesis Lab / Build-to-Order / Forge, with twin pre-validation before commit.
+8. Interaction via a **multimodal, enterprise-aware avatar** (Chief / AI CEO), with a reconfigurable,
+   all-language, personalised UI.
+
+**Points where I want your word to reach *certainty* (not assumption):**
+- **A — "Own models" scope** (W1): own the orchestration + swarm control plane with **local-first model
+  serving** (external = optional accelerant) as the pragmatic realisation? Or a heavier self-hosted /
+  trained-model programme? *(My recommended default: control plane + local-first.)*
+- **B — Realm naming:** the canon lists Realms as Enterprise / Learning / Developing / Scholarship — is
+  that still the intended set, or has it evolved (e.g. the live sidebar's Learner/Developer/Enterprise/
+  Scholar/Genome/Unified)? Confirm the canonical Realm set.
+- **C — Scope priority:** is **W1 (native AI fabric)** the right next thing to *build*, or do you want the
+  understanding ratified first and a different workstream started?
+- **D — Anything in §1–§17 that does not match what you mean** — name it and I will correct the canon.
+
+---
+
 *This document is the canonical fine-resolution statement of the Owner's whole vision. If any future
 work or summary contradicts it by sampling or assuming a narrower scope, this document prevails — the
 job is to realise the whole vision, faithfully.*
