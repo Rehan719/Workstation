@@ -312,6 +312,11 @@ app.include_router(business_plan_api.router)
 from agentic_core.api import integration_surface as integration_surface_api
 app.include_router(integration_surface_api.router)
 
+# 65. Transformation Orchestration — runs the whole transformation through the VSB
+# delivery org end-to-end (Chief→Board→AI CEO→C-Suite→CoE→BTO), governed + biomimetic
+from agentic_core.api import transformation_orchestration as transformation_orchestration_api
+app.include_router(transformation_orchestration_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime

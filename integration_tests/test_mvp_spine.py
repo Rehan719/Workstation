@@ -1123,3 +1123,24 @@ def test_payments_wst_settlement(client):
     body = r.json()
     assert body["mode"] == "wst_ledger"
     assert body["currency"] == "WST (virtual)"
+
+
+# ── End-to-end Transformation Orchestration (Chief → Build-to-Order) ──────────
+# The whole transformation run THROUGH the VSB delivery org as one verified cascade.
+
+def test_transformation_orchestrate_end_to_end(client):
+    r = client.post("/api/v1/transformation/orchestrate",
+                    json={"objective": "pytest end-to-end", "scope": "workstation", "owner_id": "Rehan"})
+    assert r.status_code == 200
+    b = r.json()
+    tiers = [s["tier"] for s in b["cascade"]]
+    assert tiers[0].startswith("Chief")                                    # starts at the Chief
+    assert any("Business Transformation" in t for t in tiers)             # reaches the BTO
+    v = b["validation"]
+    assert v["verified_stages"] == v["stages"]                            # every stage verified
+    assert v["end_to_end_chief_to_bto"] is True
+    assert v["validated"] is True
+    assert v["biomimetic_signals_fired"] >= 1                             # responsive
+    assert b["digital_twin"]["model_id"]                                  # twin generated
+    assert b["digital_twin"]["simulation"]["projected_realisation"] is not None  # + simulated
+    assert b["governance"]["status"] == "allowed"                        # gaas-governed
