@@ -1367,3 +1367,17 @@ def test_operations_learning_loop(client):
     mine = [r for r in ranks if r["resource"] == "swarm:ops pytest"]
     assert mine and mine[0]["runs"] >= 1 and 0.0 <= mine[0]["success_rate"] <= 1.0
     assert client.get("/api/v1/operations/outcomes?kind=swarm_run").json()["total"] >= 1
+
+
+def test_deliverables_per_vsb_filter(client):
+    # A deliverable produced for a VSB is filed under it and retrievable by vsb_id (per-VSB
+    # living deliverables, surfaced in the VSBSpawnStudio panel).
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "per-vsb deliverable", "domain": "care", "owner_id": "pytest"}).json()
+    vid = est["vsb_id"]
+    d = client.post("/api/v1/deliverables/produce",
+                    json={"type": "brief", "brief": "opportunity brief", "vsb_id": vid}).json()
+    assert d["vsb_id"] == vid
+    lst = client.get(f"/api/v1/deliverables?vsb_id={vid}").json()
+    assert any(x["id"] == d["id"] for x in lst["deliverables"])
+    assert all(x.get("vsb_id") == vid for x in lst["deliverables"])   # the filter is honest

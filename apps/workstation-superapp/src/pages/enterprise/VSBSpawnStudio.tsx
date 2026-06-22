@@ -4,7 +4,7 @@ import { Card, Button } from '@workstation/ui';
 import {
   Sparkles, Loader2, CheckCircle2, Circle, AlertCircle,
   Brain, Dna, Bot, ShieldCheck, ChevronRight, ListTree, Clock,
-  RefreshCw, Network, Play,
+  RefreshCw, Network, Play, FileText,
 } from 'lucide-react';
 
 // ── SSE helper ────────────────────────────────────────────────────────────────
@@ -72,11 +72,13 @@ interface VSBEntity {
 
 interface Director { id?: string; title?: string; name?: string }
 interface VSBDetail extends VSBEntity {
+  challenge?: string;
   board?: { chief?: { title?: string }; directors?: Director[]; governance?: string };
   economy?: { entity_type?: string; entity_name?: string; currency?: string };
   business_plan_scope?: string;
   native_swarm?: { cascade_id: string; name: string; org: string[]; stages: string[] };
 }
+interface VSBDeliverable { id: string; type: string; title: string; served_by?: string; versions?: number }
 interface SwarmRunResult {
   stages: number; any_external: boolean;
   trace: { step: number; role: string; served_by: string; output: string }[];
@@ -391,9 +393,28 @@ const VSBDetailPanel: React.FC<{
   const [swarmRun, setSwarmRun] = useState<SwarmRunResult | null>(null);
   const [swarmBusy, setSwarmBusy] = useState(false);
   const [swarmErr, setSwarmErr] = useState('');
+  const [deliverables, setDeliverables] = useState<VSBDeliverable[]>([]);
+  const [delivBusy, setDelivBusy] = useState(false);
+  useEffect(() => {
+    if (d?.vsb_id) axios.get(`/api/v1/deliverables?vsb_id=${d.vsb_id}`)
+      .then(r => setDeliverables(r.data.deliverables || [])).catch(() => {});
+  }, [d?.vsb_id]);
   if (!d) return <div className="ml-4 px-4 py-3 text-[10px] text-slate-600 font-bold uppercase tracking-widest">Loading org…</div>;
   const directors = d.board?.directors ?? [];
   const ns = d.native_swarm;
+
+  const produceDeliverable = async () => {
+    setDelivBusy(true);
+    try {
+      await axios.post('/api/v1/deliverables/produce', {
+        type: 'brief', vsb_id: d.vsb_id, domain: d.domain,
+        brief: `Opportunity brief for ${d.name}: ${d.challenge || d.name}`,
+      });
+      const r = await axios.get(`/api/v1/deliverables?vsb_id=${d.vsb_id}`);
+      setDeliverables(r.data.deliverables || []);
+    } catch { /* surfaced by empty state */ }
+    setDelivBusy(false);
+  };
 
   const runSwarm = async () => {
     if (!ns) return;
@@ -481,6 +502,25 @@ const VSBDetailPanel: React.FC<{
           )}
         </div>
       )}
+
+      <div className="pt-1 border-t border-slate-900">
+        <div className="flex items-center justify-between mb-1 mt-3">
+          <p className="text-[9px] font-black uppercase tracking-widest text-highlight flex items-center gap-1.5"><FileText size={11} /> Living deliverables ({deliverables.length})</p>
+          <button onClick={produceDeliverable} disabled={delivBusy} className="text-[9px] font-black uppercase text-aura flex items-center gap-1 disabled:opacity-50">
+            {delivBusy ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />} Produce brief
+          </button>
+        </div>
+        {deliverables.length === 0 && <p className="text-[9px] text-slate-600">None yet — produce one, or use the Deliverables page.</p>}
+        <div className="space-y-1">
+          {deliverables.map(dv => (
+            <a key={dv.id} href="/deliverables" className="flex items-center gap-2 text-[10px] p-1.5 rounded-lg bg-slate-950 border border-slate-900 hover:border-aura/30">
+              <span className="font-bold text-white truncate">{dv.title}</span>
+              <span className="text-[8px] text-slate-600 uppercase">{dv.type}</span>
+              {dv.served_by && <span className="ml-auto text-[8px] font-black uppercase text-aura/70">in-house · {dv.served_by}</span>}
+            </a>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
