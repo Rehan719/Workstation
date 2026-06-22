@@ -42,6 +42,7 @@ export const EducationHub: React.FC = () => {
             </h3>
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                <button type="button" onClick={() => setActiveTab('lessons')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'lessons' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Lessons</button>
+               <button type="button" onClick={() => setActiveTab('curriculum')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'curriculum' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Curriculum</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
@@ -55,6 +56,21 @@ export const EducationHub: React.FC = () => {
                     <QEPImmersiveTools domain="education" />
                  </div>
               </motion.div>
+            ) : activeTab === 'curriculum' ? (
+              <DomainTool
+                title="Curriculum Designer"
+                description={<>Design a full course — Workstation's <span className="text-highlight">own</span> AI builds a structured, framework-aligned curriculum (week-by-week plan, objectives, assessment), in-house.</>}
+                endpoint="/api/v1/education/curriculum"
+                resultKey="curriculum"
+                submitLabel="Design curriculum"
+                fields={[
+                  { name: 'subject', label: 'Subject', type: 'text', placeholder: 'e.g. Introduction to Machine Learning', default: 'Introduction to Machine Learning' },
+                  { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / A-Level / University Year 1', default: 'University Year 1' },
+                  { name: 'duration_weeks', label: 'Duration (weeks)', type: 'text', default: '12' },
+                  { name: 'framework', label: 'Framework', type: 'select', options: ['bloom', 'solo', 'backward_design', 'competency'], default: 'bloom' },
+                  { name: 'learning_objectives_count', label: 'Learning objectives', type: 'text', default: '6' },
+                ]}
+              />
             ) : (
               <DomainTool
                 title="Lesson Plan Generator"
