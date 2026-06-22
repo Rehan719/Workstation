@@ -10,6 +10,7 @@ import { QEPFlagshipFeatures } from '../../components/QEPFlagshipFeatures';
 import { LearnTeachModule } from '../../components/LearnTeachModule';
 import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
+import { DomainTool } from '../../components/DomainTool';
 
 interface Madhab { id: string; name: string; region: string; founder: string }
 
@@ -118,6 +119,19 @@ export const ReligionHub: React.FC = () => {
                           <QEPFlagshipFeatures />
                        </div>
                     </motion.div>
+                  ) : activeTab === 'dialogue' ? (
+                    <DomainTool
+                      title="Comparative Fiqh Research"
+                      description={<>Pose a question of Islamic jurisprudence — Workstation's <span className="text-aura">own</span> AI researches it within your chosen madhab, in-house, with scholarly humility.</>}
+                      endpoint="/api/v1/religion/fatwa-research"
+                      resultKey="research"
+                      submitLabel="Research question"
+                      fields={[
+                        { name: 'question', label: 'Question', type: 'textarea', placeholder: 'e.g. What are the conditions for combining prayers when travelling?' },
+                        { name: 'madhab', label: 'Madhab (school of jurisprudence)', type: 'select', options: ['hanafi', 'maliki', 'shafi', 'hanbali', 'jafari'], default: 'hanafi' },
+                        { name: 'context', label: 'Context (optional)', type: 'text', placeholder: 'geographic / circumstantial context' },
+                      ]}
+                    />
                   ) : madhabs.length > 0 ? madhabs.map((madhab, i) => (
                     <motion.div
                       key={madhab.id}
