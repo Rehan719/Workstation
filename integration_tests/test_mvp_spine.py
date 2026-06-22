@@ -1502,3 +1502,18 @@ def test_resource_optimizer_surfaced(client):
     assert inv["simulated"] is True and "compute" in inv["inventory"]
     fab = client.get("/api/v1/resources?resource_class=digital_resource").json()
     assert any(x["id"] == "resource_optimizer" for x in fab["resources"])
+
+
+def test_collective_truth_consensus_surfaced(client):
+    # Workstation's own truth-consensus engine (agentic_core.collective, previously orphaned):
+    # reputation-weighted consensus over the SUBMITTED claims — real logic, fabricates nothing.
+    r = client.post("/api/v1/collective/consensus", json={"threshold": 0.85, "claims": [
+        {"claim": "halal supply is verified", "confidence": 0.95, "reputation": 2.0},
+        {"claim": "halal supply is verified", "confidence": 0.9, "reputation": 1.0},
+        {"claim": "price is optimal", "confidence": 0.4, "reputation": 1.0}]}).json()
+    assert r["claims"] == 2 and r["accepted"] == 1
+    by = {x["claim"]: x for x in r["results"]}
+    assert by["halal supply is verified"]["accepted"] is True
+    assert by["price is optimal"]["accepted"] is False
+    fab = client.get("/api/v1/resources?resource_class=process_intelligence").json()
+    assert any(x["id"] == "truth_consensus" for x in fab["resources"])

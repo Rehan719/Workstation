@@ -214,6 +214,15 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["resource verification", "scheduling", "dynamic assembly", "tiered allocation"],
        {"domain": "str", "requirements": "dict", "tier": "str"}, "/api/v1/optimizer/allocate",
        ["delivery", "forge", "governance", "evolution"]),
+
+    # Workstation's OWN collective-intelligence truth consensus — surfaced so the swarm/mesh can
+    # agree on ground truth (agentic_core.collective). Operates only on submitted claims.
+    _R("truth_consensus", "Collective Truth Consensus", "process_intelligence", "consensus",
+       "Reputation-weighted confidence aggregation over a set of claims — accepts a claim when the "
+       "weighted consensus clears the threshold. For cross-swarm / cross-VSB agreement on ground truth.",
+       ["consensus", "reputation weighting", "calibration"],
+       {"claims": "list[{claim,confidence,reputation}]", "threshold": "float"},
+       "/api/v1/collective/consensus", ["governance", "evolution", "delivery"], biomimetic=True),
 ]
 
 _BY_ID = {r["id"]: r for r in _REGISTRY}

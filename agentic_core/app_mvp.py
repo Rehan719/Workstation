@@ -337,6 +337,9 @@ app.include_router(mega_project_api.router)
 from agentic_core.api import optimizer as optimizer_api
 app.include_router(optimizer_api.router)
 
+from agentic_core.api import collective as collective_api
+app.include_router(collective_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime
