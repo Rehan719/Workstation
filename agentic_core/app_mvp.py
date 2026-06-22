@@ -328,6 +328,9 @@ app.include_router(deliverables_api.router)
 from agentic_core.api import operational_excellence as operational_excellence_api
 app.include_router(operational_excellence_api.router)
 
+from agentic_core.api import mesh as mesh_api
+app.include_router(mesh_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime

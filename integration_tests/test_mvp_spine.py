@@ -1455,3 +1455,15 @@ def test_deliverables_leverage_own_omnimedia(client):
     assert "omnimedia" in of["source"]
     fab = client.get("/api/v1/resources?resource_class=output_media").json()
     assert any(r["id"] == "omnimedia" for r in fab["resources"])
+
+
+def test_federation_mesh_surfaced(client):
+    # Workstation's OWN federation mesh (agentic_core.mesh, previously 0 importers) is now reachable
+    # and a first-class Resource-Fabric resource — honest: single-node peers are flagged simulated.
+    m = client.get("/api/v1/mesh/status").json()
+    assert m["operational"] is True
+    assert "bft" in m["consensus"]["type"].lower()
+    assert m["discovery"]["simulated"] is True
+    assert "consensus" in m["modules"] and "discovery" in m["modules"]
+    fab = client.get("/api/v1/resources?resource_class=federation").json()
+    assert any(r["id"] == "federation_mesh" for r in fab["resources"])

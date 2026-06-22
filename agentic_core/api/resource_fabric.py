@@ -184,6 +184,16 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["multi-format output", "infographic", "video", "audio", "document", "dashboard"],
        {"deliverable_id": "str", "format": "str"}, "/api/v1/deliverables/output-formats",
        ["synthesis", "delivery", "commercialisation", "forge"], methods=("GET",)),
+
+    # Workstation's OWN multi-instance federation mesh — surfaced into the fabric so VSBs can
+    # federate (peer discovery, reputation-weighted BFT consensus, health) (agentic_core.mesh).
+    _R("federation_mesh", "Federation Mesh", "federation", "mesh",
+       "Workstation's own multi-instance federation mesh: peer discovery, reputation-weighted BFT "
+       "consensus (2/3+1), health/heartbeat, and treaty negotiation — for federating VSB IDBO "
+       "instances. Single-node deployments report simulated peers (honestly flagged).",
+       ["peer discovery", "BFT consensus", "reputation/health", "treaty negotiation"],
+       {}, "/api/v1/mesh/status", ["governance", "delivery", "evolution"],
+       biomimetic=True, methods=("GET",)),
 ]
 
 _BY_ID = {r["id"]: r for r in _REGISTRY}
