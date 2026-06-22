@@ -344,8 +344,19 @@ async def run_swarm(req: RunSwarmRequest):
     if not stages:
         raise HTTPException(status_code=400, detail="Provide stages or a saved swarm_id to run.")
     from agentic_core.ai.native import orchestrator
+    _t0 = time.time()
     res = await orchestrator.swarm(req.agent, stages, context=context,
                                    prefer_external=req.prefer_external, timeout=req.timeout)
+    # operational-excellence learning loop: record the real outcome of this run
+    try:
+        from agentic_core.api.operational_excellence import record_outcome
+        served = res["trace"][0]["served_by"] if res.get("trace") else "native"
+        record_outcome("swarm_run", f"swarm:{name}", served_by=served,
+                       is_external=bool(res.get("any_external")),
+                       duration_ms=int((time.time() - _t0) * 1000),
+                       success=bool(res.get("trace")), ref=req.swarm_id)
+    except Exception:
+        pass
     return {"name": name, "swarm_id": req.swarm_id, "posture": "in-house-first", **res}
 
 

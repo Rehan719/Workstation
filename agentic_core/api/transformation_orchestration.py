@@ -71,6 +71,7 @@ class OrchestrateRequest(BaseModel):
 # ── The cascade ───────────────────────────────────────────────────────────────
 @router.post("/orchestrate")
 async def orchestrate(req: OrchestrateRequest):
+    _t0 = time.time()
     signals = 0
     cascade: List[Dict[str, Any]] = []
 
@@ -294,6 +295,18 @@ async def orchestrate(req: OrchestrateRequest):
     }
     try:
         _save_run(run)
+    except Exception:
+        pass
+    try:
+        from agentic_core.api.operational_excellence import record_outcome
+        nc = native_cognition or {}
+        record_outcome("transformation", "transformation_orchestrate",
+                       served_by=(nc.get("served_by") or ["native"])[0],
+                       is_external=bool(nc.get("any_external")),
+                       duration_ms=int((time.time() - _t0) * 1000),
+                       success=bool(validation.get("validated")),
+                       ref=run["transformation_id"],
+                       vsb_id=req.scope if req.scope != "workstation" else None)
     except Exception:
         pass
     return run

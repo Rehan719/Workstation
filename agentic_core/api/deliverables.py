@@ -114,7 +114,9 @@ async def produce(req: ProduceRequest):
     if req.type not in _TYPES and not req.sections:
         raise HTTPException(status_code=400,
                             detail=f"Unknown type '{req.type}'. Known: {list(_TYPES)} (or pass sections).")
+    _t0 = time.time()
     gen = await _generate(req.type, req.title, req.brief, req.domain, req.vsb_id, req.sections)
+    _dur = int((time.time() - _t0) * 1000)
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     deliverable = {
         "id": f"deliv-{uuid.uuid4().hex[:8]}",
@@ -137,6 +139,15 @@ async def produce(req: ProduceRequest):
     try:
         from agentic_core.organism.biobus import biobus
         biobus.fire_signal("motor", "deliverables.produce", f"{req.type}: {deliverable['title']}", 0.6)
+    except Exception:
+        pass
+    try:
+        from agentic_core.api.operational_excellence import record_outcome
+        record_outcome("deliverable", f"deliverable:{req.type}",
+                       served_by=gen["ai_provenance"]["served_by"],
+                       is_external=gen["ai_provenance"]["is_external"],
+                       duration_ms=_dur, success=bool(gen["content"]),
+                       ref=deliverable["id"], vsb_id=req.vsb_id)
     except Exception:
         pass
     return deliverable

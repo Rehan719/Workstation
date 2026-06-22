@@ -52,6 +52,7 @@ import { ForgePipeline } from './pages/developers/ForgePipeline';
 import { DigitalTwins } from './pages/developers/DigitalTwins';
 import { NativeAI } from './pages/developers/NativeAI';
 import { Deliverables } from './pages/Deliverables';
+import { OperationalExcellence } from './pages/OperationalExcellence';
 import { ComplianceChecker } from './pages/governance/ComplianceChecker';
 import { OrganismDashboard } from './pages/organism/OrganismDashboard';
 import { ManagementSystemsHub } from './pages/enterprise/ManagementSystemsHub';
@@ -261,6 +262,7 @@ function App() {
           <Route path="/digital-twins" element={<DigitalTwins />} />
           <Route path="/native-ai" element={<NativeAI />} />
           <Route path="/deliverables" element={<Deliverables />} />
+          <Route path="/operations" element={<OperationalExcellence />} />
           <Route path="/compliance" element={<ComplianceChecker />} />
           <Route path="/organism"        element={<OrganismDashboard />} />
           <Route path="/management"      element={<ManagementSystemsHub />} />

@@ -1353,3 +1353,17 @@ def test_deliverables_living_lifecycle(client):
     r = client.post(f"/api/v1/deliverables/{did}/regenerate", json={"brief": "add a zero-waste angle"}).json()
     assert len(r["versions"]) == 2 and r["brief"] == "add a zero-waste angle"
     assert client.get("/api/v1/deliverables/nope").status_code == 404
+
+
+def test_operations_learning_loop(client):
+    # W5: running a swarm records a real outcome that surfaces in rankings + summary (honest).
+    sid = client.post("/api/v1/resources/swarm/define",
+                      json={"name": "ops pytest", "stages": [{"role": "a", "instruction": "x"}]}).json()["id"]
+    client.post("/api/v1/resources/swarm/run", json={"swarm_id": sid})
+    summ = client.get("/api/v1/operations/summary").json()
+    assert summ["total_runs"] >= 1 and "swarm_run" in summ["kinds"]
+    assert 0.0 <= summ["success_rate"] <= 1.0 and 0.0 <= summ["in_house_rate"] <= 1.0
+    ranks = client.get("/api/v1/operations/rankings").json()["rankings"]
+    mine = [r for r in ranks if r["resource"] == "swarm:ops pytest"]
+    assert mine and mine[0]["runs"] >= 1 and 0.0 <= mine[0]["success_rate"] <= 1.0
+    assert client.get("/api/v1/operations/outcomes?kind=swarm_run").json()["total"] >= 1
