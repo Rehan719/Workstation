@@ -86,6 +86,7 @@ export const ReligionHub: React.FC = () => {
                   <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                      <button type="button" onClick={() => setActiveTab('wisdom')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'wisdom' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Wisdom</button>
                      <button type="button" onClick={() => setActiveTab('dialogue')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'dialogue' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Dialogue</button>
+                     <button type="button" onClick={() => setActiveTab('tafsir')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'tafsir' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Tafsir</button>
                      <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
                   </div>
                </div>
@@ -130,6 +131,20 @@ export const ReligionHub: React.FC = () => {
                         { name: 'question', label: 'Question', type: 'textarea', placeholder: 'e.g. What are the conditions for combining prayers when travelling?' },
                         { name: 'madhab', label: 'Madhab (school of jurisprudence)', type: 'select', options: ['hanafi', 'maliki', 'shafi', 'hanbali', 'jafari'], default: 'hanafi' },
                         { name: 'context', label: 'Context (optional)', type: 'text', placeholder: 'geographic / circumstantial context' },
+                      ]}
+                    />
+                  ) : activeTab === 'tafsir' ? (
+                    <DomainTool
+                      title="Qur'anic Tafsir"
+                      description={<>Study an ayah — Workstation's <span className="text-aura">own</span> AI offers structured tafsir (classical, thematic, contemporary or linguistic), in-house, drawing on the classical mufassirun.</>}
+                      endpoint="/api/v1/religion/quran-tafsir"
+                      resultKey="tafsir"
+                      submitLabel="Generate tafsir"
+                      fields={[
+                        { name: 'surah', label: 'Surah (1–114)', type: 'text', default: '1' },
+                        { name: 'ayah_start', label: 'Ayah (start)', type: 'text', default: '1' },
+                        { name: 'ayah_end', label: 'Ayah (end — 0 for a single ayah)', type: 'text', default: '0' },
+                        { name: 'tafsir_approach', label: 'Approach', type: 'select', options: ['classical', 'thematic', 'contemporary', 'linguistic'], default: 'classical' },
                       ]}
                     />
                   ) : madhabs.length > 0 ? madhabs.map((madhab, i) => (
