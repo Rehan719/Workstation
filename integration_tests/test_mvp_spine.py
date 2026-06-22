@@ -1405,3 +1405,17 @@ def test_orchestrator_adapts_to_model_health(client):
     mh = client.get("/api/v1/operations/model-health").json()
     flaky = next((m for m in mh["models"] if m["name"] == "flaky"), None)
     assert flaky and flaky["deprioritised"] is True
+
+
+def test_domains_in_house_provenance(client):
+    # The Domains suite (Law/Science/Care …) runs AI-mediated responses on Workstation's OWN
+    # native fabric and reports in-house provenance — same contract as Forge/Genesis.
+    law = client.post("/api/v1/law/analyse",
+                      json={"document_text": "A short NDA between two parties.", "analysis_focus": "risk"}).json()
+    sci = client.post("/api/v1/science/hypothesis", json={"research_question": "does X reduce Y?"}).json()
+    care = client.post("/api/v1/care/handover",
+                       json={"patient_summary": "stable", "current_situation": "routine"}).json()
+    for r in (law, sci, care):
+        p = r["ai_provenance"]
+        assert p["posture"] == "in-house-first" and p["is_external"] is False
+        assert p["served_by"] in ("native", "ollama")

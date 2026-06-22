@@ -14,7 +14,7 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import ai_text
 
 router = APIRouter(prefix="/api/v1/care", tags=["care"])
 
@@ -77,13 +77,14 @@ async def generate_care_plan(req: CarePlanRequest):
         "Mark fields needing personalisation with [PERSONALISE]."
     )
 
-    plan = await gateway.query(prompt, agent="care_planner")
+    plan, provenance = await ai_text(prompt, "care_planner")
 
     return {
         "plan_id": uuid.uuid4().hex[:10],
         "setting": req.setting,
         "duration_weeks": req.duration_weeks,
         "care_plan": plan,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             "This care plan is AI-generated as a planning aid only. "
@@ -127,13 +128,14 @@ async def risk_assessment(req: RiskAssessRequest):
         "Reference current clinical guidelines. Be specific about thresholds and actions."
     )
 
-    assessment = await gateway.query(prompt, agent="care_risk_assess")
+    assessment, provenance = await ai_text(prompt, "care_risk_assess")
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],
         "tool": req.tool,
         "tool_name": tool_name,
         "assessment": assessment,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": "AI-generated risk assessment aid only. Clinical judgement by a qualified professional is required.",
     }
@@ -167,11 +169,12 @@ async def generate_handover(req: HandoverRequest):
         "Be concise — handovers should be completable in under 3 minutes verbally."
     )
 
-    handover = await gateway.query(prompt, agent="care_handover")
+    handover, provenance = await ai_text(prompt, "care_handover")
 
     return {
         "handover_id": uuid.uuid4().hex[:10],
         "handover_type": req.handover_type.upper(),
         "handover": handover,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

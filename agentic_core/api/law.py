@@ -14,7 +14,7 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import ai_text
 
 router = APIRouter(prefix="/api/v1/law", tags=["law"])
 
@@ -110,7 +110,7 @@ async def analyse_document(req: AnalyseRequest):
         "Be specific, cite clause numbers where present. Use plain English where possible."
     )
 
-    analysis = await gateway.query(prompt, agent="law_analyst")
+    analysis, provenance = await ai_text(prompt, "law_analyst")
 
     return {
         "analysis_id": uuid.uuid4().hex[:10],
@@ -118,6 +118,7 @@ async def analyse_document(req: AnalyseRequest):
         "jurisdiction": req.jurisdiction,
         "analysis_focus": req.analysis_focus,
         "analysis": analysis,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             "This analysis is AI-generated for informational purposes only. "
@@ -157,7 +158,7 @@ async def generate_document(req: GenerateRequest):
         + "\nGenerate the complete legal document now in Markdown format with proper headings and clause numbering."
     )
 
-    document = await gateway.query(prompt, agent="law_generator")
+    document, provenance = await ai_text(prompt, "law_generator")
 
     template_name = next(
         (t["name"] for t in _TEMPLATES if t["id"] == req.template_id),
@@ -170,6 +171,7 @@ async def generate_document(req: GenerateRequest):
         "template_name": template_name,
         "jurisdiction": req.jurisdiction,
         "document": document,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             "This document is AI-generated and provided as a starting point only. "

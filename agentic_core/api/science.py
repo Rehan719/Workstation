@@ -14,7 +14,7 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import ai_text
 
 router = APIRouter(prefix="/api/v1/science", tags=["science"])
 
@@ -78,7 +78,7 @@ async def synthesise_research(req: SynthesiseRequest):
         "Where evidence is absent, state this explicitly rather than speculating."
     )
 
-    report = await gateway.query(prompt, agent="science_synthesiser")
+    report, provenance = await ai_text(prompt, "science_synthesiser")
 
     return {
         "synthesis_id": uuid.uuid4().hex[:10],
@@ -87,6 +87,7 @@ async def synthesise_research(req: SynthesiseRequest):
         "methodology": req.methodology,
         "depth": req.depth,
         "report": report,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -123,7 +124,7 @@ async def generate_hypotheses(req: HypothesisRequest):
         f"Then add a RECOMMENDATION line: which hypothesis to pursue first and why."
     )
 
-    raw = await gateway.query(prompt, agent="science_hypothesis")
+    raw, provenance = await ai_text(prompt, "science_hypothesis")
 
     hypotheses = []
     recommendation = ""
@@ -140,6 +141,7 @@ async def generate_hypotheses(req: HypothesisRequest):
         "domain": req.domain,
         "hypotheses_raw": hypotheses if hypotheses else [raw],
         "recommendation": recommendation,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -177,7 +179,7 @@ async def literature_review_outline(req: LiteratureRequest):
         "Be specific and actionable. Tailor to the domain."
     )
 
-    outline = await gateway.query(prompt, agent="science_literature")
+    outline, provenance = await ai_text(prompt, "science_literature")
 
     return {
         "review_id": uuid.uuid4().hex[:10],
@@ -185,5 +187,6 @@ async def literature_review_outline(req: LiteratureRequest):
         "domain": req.domain,
         "scope_years": req.scope_years,
         "outline": outline,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
