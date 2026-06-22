@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';
 import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
+import { DomainTool } from '../../components/DomainTool';
 
 export const ScienceHub: React.FC = () => {
   const navigate = useNavigate();
@@ -56,9 +57,18 @@ export const ScienceHub: React.FC = () => {
                  </div>
               </motion.div>
             ) : (
-              <div className="p-20 text-center border-2 border-dashed border-slate-900 rounded-[3rem]">
-                 <p className="text-slate-600 font-black uppercase tracking-widest">Select an engine to begin exploration.</p>
-              </div>
+              <DomainTool
+                title="Research Synthesiser"
+                description={<>Pose a research question — Workstation's <span className="text-aura">own</span> AI synthesises a structured, methodology-grounded evidence report, in-house.</>}
+                endpoint="/api/v1/science/synthesise"
+                resultKey="report"
+                submitLabel="Synthesise report"
+                fields={[
+                  { name: 'research_question', label: 'Research question', type: 'textarea', placeholder: 'e.g. Does intermittent fasting reduce inflammatory markers in adults?' },
+                  { name: 'domain', label: 'Domain', type: 'text', default: 'medicine', placeholder: 'medicine | physics | social science' },
+                  { name: 'depth', label: 'Depth', type: 'select', options: ['brief', 'standard', 'comprehensive'], default: 'standard' },
+                ]}
+              />
             )}
          </div>
       </Card>
