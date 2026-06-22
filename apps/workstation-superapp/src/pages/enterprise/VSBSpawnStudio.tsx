@@ -321,6 +321,8 @@ export const VSBSpawnStudio: React.FC = () => {
           <button
             type="button"
             onClick={fetchEntities}
+            aria-label="Refresh VSB entities"
+            title="Refresh entities"
             className="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-all"
           >
             <RefreshCw size={14} className={loadingEntities ? 'animate-spin' : ''} />

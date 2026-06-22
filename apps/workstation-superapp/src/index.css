@@ -35,6 +35,14 @@
   }
 }
 
+/* Accessibility: a visible keyboard-focus ring on interactive elements. :focus-visible only
+   matches keyboard navigation, so mouse/touch interaction is unaffected. */
+:focus-visible {
+  outline: 2px solid rgba(100, 255, 218, 0.7);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
 }

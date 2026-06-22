@@ -204,7 +204,7 @@ export const NativeAI: React.FC = () => {
                   <input value={s.instruction} onChange={e => setStage(i, 'instruction', e.target.value)}
                     className="flex-1 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300"
                     placeholder="instruction for this agent…" />
-                  <button onClick={() => removeStage(i)} className="text-slate-600 hover:text-vital p-1"><Trash2 size={13} /></button>
+                  <button onClick={() => removeStage(i)} aria-label={`Remove stage ${i + 1}`} title="Remove stage" className="text-slate-600 hover:text-vital p-1"><Trash2 size={13} /></button>
                 </div>
               ))}
             </div>
