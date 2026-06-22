@@ -109,6 +109,24 @@ async def deliverable_types():
             "posture": "in-house-first"}
 
 
+@router.get("/output-formats")
+async def output_formats():
+    """Output formats a deliverable can be rendered into — drawn from Workstation's OWN omnimedia
+    factory (`agentic_core.omnimedia`). Markdown export (`/export`) is live now; the richer formats
+    (pptx/pdf/docx/xlsx/html/mp4/mp3/png/svg) are produced by the omnimedia generators. Honest: only
+    `md` is wired end-to-end today — the rest are the catalogue the omnimedia module exposes."""
+    try:
+        from agentic_core.omnimedia.factory import OutputFormat
+        omnimedia = [f.value for f in OutputFormat]
+    except Exception:
+        omnimedia = []
+    return {
+        "live": ["md"],
+        "omnimedia_formats": omnimedia,
+        "source": "agentic_core.omnimedia (the platform's own multimedia output factory)",
+    }
+
+
 @router.post("/produce")
 async def produce(req: ProduceRequest):
     """Produce a new LIVING deliverable on the native fabric (in-house provenance)."""

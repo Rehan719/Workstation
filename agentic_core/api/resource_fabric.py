@@ -174,6 +174,16 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"agent": "str", "context": "str", "stages": "list[{role,instruction}]"},
        "/api/v1/resources/swarm/run",
        ["synthesis", "design", "development", "delivery", "governance", "forge", "build_to_order"]),
+
+    # Workstation's OWN omnimedia output factory — surfaced into the fabric so the swarm/delivery
+    # pipeline can render deliverables across formats (agentic_core.omnimedia).
+    _R("omnimedia", "Omnimedia Output Factory", "output_media", "generator",
+       "Workstation's own multimedia output factory — renders deliverables across formats "
+       "(pptx/pdf/docx/xlsx/html/mp4/mp3/png/svg): infographics, video, audio, digital-twin, "
+       "documents, dashboards. Markdown export is live; richer formats via the omnimedia generators.",
+       ["multi-format output", "infographic", "video", "audio", "document", "dashboard"],
+       {"deliverable_id": "str", "format": "str"}, "/api/v1/deliverables/output-formats",
+       ["synthesis", "delivery", "commercialisation", "forge"], methods=("GET",)),
 ]
 
 _BY_ID = {r["id"]: r for r in _REGISTRY}

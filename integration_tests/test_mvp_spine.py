@@ -1443,3 +1443,15 @@ def test_native_engine_web_app_archetypes():
         seg = out.split(sec)[1].split("##")[0]
         assert "Native structured content for" not in seg   # not the generic fallback
         assert "Structured" in seg                          # a dedicated archetype frame
+
+
+def test_deliverables_leverage_own_omnimedia(client):
+    # The deliverables pipeline LEVERAGES Workstation's own omnimedia factory for its output-format
+    # catalogue, and omnimedia is registered as a first-class Resource-Fabric resource (so existing
+    # in-house capabilities are surfaced into the unified fabric the swarm/delivery draws from).
+    of = client.get("/api/v1/deliverables/output-formats").json()
+    assert of["live"] == ["md"]
+    assert "pptx" in of["omnimedia_formats"] and "mp4" in of["omnimedia_formats"]
+    assert "omnimedia" in of["source"]
+    fab = client.get("/api/v1/resources?resource_class=output_media").json()
+    assert any(r["id"] == "omnimedia" for r in fab["resources"])
