@@ -5,10 +5,18 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn agentic_core.app_mvp:app --host 0.0.0.0 --port $PORT
     envVars:
+      # AI posture: IN-HOUSE-FIRST. The backend runs on its OWN native fabric and boots + fully
+      # serves with NO external key (the native structured engine is the always-available floor;
+      # a self-hosted Ollama model is used when present). ANTHROPIC/OPENAI are OPTIONAL accelerants,
+      # used only when AI_ALLOW_EXTERNAL=true AND a key is configured — never a dependency.
+      - key: AI_ALLOW_EXTERNAL
+        value: "false"
       - key: ANTHROPIC_API_KEY
-        sync: false
+        sync: false          # optional — external accelerant, only if AI_ALLOW_EXTERNAL=true
       - key: OPENAI_API_KEY
-        sync: false
+        sync: false          # optional — multimodal (voice/vision) + external accelerant
+      - key: OLLAMA_URL
+        sync: false          # optional — self-hosted local model URL; absent → native floor
       - key: ENVIRONMENT
         value: production
       - key: CORS_ORIGINS
