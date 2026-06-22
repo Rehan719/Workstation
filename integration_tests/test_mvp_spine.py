@@ -1490,3 +1490,15 @@ def test_swarm_cascade_in_house_provenance(client):
     p = r["ai_provenance"]
     assert p["posture"] == "in-house-first" and p["any_external"] is False
     assert set(p["served_by"]) <= {"native", "ollama"}
+
+
+def test_resource_optimizer_surfaced(client):
+    # Workstation's own adaptive resource optimiser (agentic_core.optimizer, previously orphaned) is
+    # now reachable + a fabric resource; capacity is an honestly-flagged single-node simulated baseline.
+    a = client.post("/api/v1/optimizer/allocate",
+                    json={"domain": "science", "requirements": {"CPU": 8, "RAM": 2048}, "tier": "standard"}).json()
+    assert a["status"] == "SUCCESS" and a["pool_id"] and a["simulated_capacity"] is True
+    inv = client.get("/api/v1/optimizer/inventory").json()
+    assert inv["simulated"] is True and "compute" in inv["inventory"]
+    fab = client.get("/api/v1/resources?resource_class=digital_resource").json()
+    assert any(x["id"] == "resource_optimizer" for x in fab["resources"])

@@ -205,6 +205,15 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["business plan", "feasibility", "capital plan", "roadmap", "risk"],
        {"concept": "str", "domain": "str"}, "/api/v1/mega-project/synthesise",
        ["synthesis", "commercialisation", "delivery", "forge"]),
+
+    # Workstation's OWN adaptive resource optimiser — surfaced so the swarm/delivery can verify,
+    # schedule, assemble and allocate resources (agentic_core.optimizer). Single-node simulated capacity.
+    _R("resource_optimizer", "Adaptive Resource Optimiser", "digital_resource", "optimizer",
+       "Verify a resource request (RAL) → cost-aware schedule → assemble a dynamic pool → "
+       "tiered-fair allocate. Real engine logic; capacity is a simulated single-node baseline.",
+       ["resource verification", "scheduling", "dynamic assembly", "tiered allocation"],
+       {"domain": "str", "requirements": "dict", "tier": "str"}, "/api/v1/optimizer/allocate",
+       ["delivery", "forge", "governance", "evolution"]),
 ]
 
 _BY_ID = {r["id"]: r for r in _REGISTRY}
