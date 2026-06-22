@@ -1157,6 +1157,21 @@ def test_transformation_orchestrate_runs(client):
     assert "transformation_id" in first and "validated" in first
 
 
+def test_transformation_orchestrate_deep_native_swarm(client):
+    # deep=true runs the Chief's cognition on Workstation's OWN native swarm (W1-c) — in-house,
+    # recording served_by so the whole-transformation run demonstrably uses owned AI resources.
+    r = client.post("/api/v1/transformation/orchestrate",
+                    json={"objective": "pytest deep native swarm", "scope": "workstation", "deep": True})
+    assert r.status_code == 200
+    b = r.json()
+    nc = b["native_cognition"]
+    assert nc and "error" not in nc
+    assert nc["any_external"] is False                                   # in-house only
+    assert all(s in ("native", "ollama") for s in nc["served_by"])       # owned resources only
+    assert b["validation"]["ai_in_house"] is True
+    assert b["validation"]["stages"] == 9                                # the owned-swarm stage was added
+
+
 def test_vsb_list_org_flags(client):
     # an established VSB has a Board + Economy; the list must surface org flags
     client.post("/api/v1/genesis/establish",

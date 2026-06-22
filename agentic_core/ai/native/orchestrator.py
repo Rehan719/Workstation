@@ -76,9 +76,11 @@ class NativeOrchestrator:
         return ""
 
     async def swarm(self, agent: str, stages: List[Dict[str, str]],
-                    context: str = "", prefer_external: bool = False) -> Dict[str, Any]:
+                    context: str = "", prefer_external: bool = False,
+                    timeout: float = 30.0) -> Dict[str, Any]:
         """Run a bespoke agent-cascade tree: each stage = {role, instruction}. Each stage is
-        completed in-house-first and feeds the next — a reconfigurable, reusable swarm resource."""
+        completed in-house-first and feeds the next — a reconfigurable, reusable swarm resource.
+        `timeout` bounds each stage's model attempt (a slow local model falls to the native floor)."""
         trace: List[Dict[str, Any]] = []
         carry = context
         external_used = False
@@ -88,7 +90,7 @@ class NativeOrchestrator:
             prompt = (f"You are the '{role}' agent in Workstation's native swarm.\n"
                       f"{('Prior context:\\n' + carry[:1200] + '\\n\\n') if carry else ''}"
                       f"Task: {instruction}\n\n## {role} output")
-            res = await self.complete(prompt, agent=f"{agent}:{role}", prefer_external=prefer_external)
+            res = await self.complete(prompt, agent=f"{agent}:{role}", timeout=timeout, prefer_external=prefer_external)
             external_used = external_used or res.get("is_external", False)
             carry = res["output"]
             trace.append({"step": i + 1, "role": role, "served_by": res["served_by"], "output": res["output"]})

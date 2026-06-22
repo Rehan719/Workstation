@@ -94,21 +94,32 @@ class ModelGateway:
         tighter value (e.g. 20) for snappy UX; pass None to disable the bound.
         On timeout we return a clearly-labelled fallback rather than blocking.
         """
+        res = await self.query_meta(prompt, agent=agent, timeout=timeout)
+        return res.get("output", "")
+
+    async def query_meta(self, prompt: str, agent: str = "assistant",
+                         timeout: float | None = 90.0) -> dict:
+        """Like `query()` but returns PROVENANCE — {output, served_by, is_external} — so callers
+        can surface which OWNED resource served the completion (Genesis/Forge/Transformation use
+        this to prove their cascades run in-house). Same in-house-first routing as `query()`.
+
+        IN-HOUSE FIRST: route through Workstation's OWN native orchestrator — a local owned model
+        (Ollama) when present → the always-available native structured engine floor → external
+        accelerants ONLY if AI_ALLOW_EXTERNAL=true. The native floor guarantees a real, honest,
+        structured result, so the platform never hangs, never depends on an external provider, and
+        never returns a bare "[unavailable]". `timeout` bounds any single model attempt. (The legacy
+        external-first `_call` cascade remains below for reference but is superseded by the native
+        fabric — see agentic_core/ai/native/.)"""
         self._sync_reconfig()
         await self._rate_limiter.acquire()
         augmented = self._augment(prompt)
-        # IN-HOUSE FIRST: route through Workstation's OWN native orchestrator — a local owned
-        # model (Ollama) when present → the always-available native structured engine floor →
-        # external accelerants ONLY if AI_ALLOW_EXTERNAL=true. The native floor guarantees a
-        # real, honest, structured result, so the platform never hangs, never depends on an
-        # external provider, and never returns a bare "[unavailable]". `timeout` bounds any
-        # single model attempt. (The legacy external-first `_call` cascade remains below for
-        # reference but is superseded by the native fabric — see agentic_core/ai/native/.)
+        served_by, is_external = "native", False
         try:
             from agentic_core.ai.native import orchestrator as native_orchestrator
             res = await native_orchestrator.complete(augmented, agent=agent,
                                                      timeout=min(timeout or 30.0, 30.0))
             response = res.get("output", "")
+            served_by, is_external = res.get("served_by", "native"), res.get("is_external", False)
         except Exception:
             try:
                 from agentic_core.ai.native import native_engine
@@ -121,7 +132,7 @@ class ModelGateway:
 
         interaction_logger.log_interaction(agent, prompt, response)
         memory.add_memory(f"User: {prompt} | AI: {response}")
-        return response
+        return {"output": response, "served_by": served_by, "is_external": is_external}
 
     async def _call(self, prompt: str, agent: str = "gateway") -> tuple[str, str]:
         """Try providers in priority order, return (response_text, provider_name)."""

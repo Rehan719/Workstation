@@ -65,7 +65,7 @@ class OrchestrateRequest(BaseModel):
     scope: str = "workstation"          # business-plan scope (a vsb_id or 'workstation')
     owner_id: str = "Rehan"
     domain: str = "enterprise"
-    deep: bool = False                  # also reference AI-mediated deep engines (key-dependent)
+    deep: bool = False                  # also run the Chief's cognition on Workstation's OWN native AI swarm (in-house, always works)
 
 
 # ── The cascade ───────────────────────────────────────────────────────────────
@@ -219,6 +219,41 @@ async def orchestrate(req: OrchestrateRequest):
            "simulation": twin["simulation"]},
           verified=bool(twin.get("model_id")), signal_type="cognitive")
 
+    # ── 9 · (deep) the Chief's cognition runs on Workstation's OWN native AI swarm ──
+    native_cognition = None
+    if req.deep:
+        try:
+            from agentic_core.ai.native import orchestrator as _native
+            ctx = (f"Objective: {objective}\nMission: {plan.get('mission', '')}\n"
+                   f"Vision: {plan.get('vision', '')}\n"
+                   f"Open gaps: {[p.get('name') or p.get('id') for p in open_pillars][:6]}")
+            swarm_res = await _native.swarm(
+                agent="transformation",
+                context=ctx,
+                stages=[
+                    {"role": "chief-analyst", "instruction": "Analyse the objective against mission/vision and the open gaps."},
+                    {"role": "strategist", "instruction": "Design the strategy and the highest-leverage next moves."},
+                    {"role": "synthesiser", "instruction": "Synthesise a concise executive recommendation for the AI CEO."},
+                ],
+                timeout=10.0,
+            )
+            native_cognition = {
+                "posture": "in-house-first",
+                "stages": swarm_res["stages"],
+                "any_external": swarm_res["any_external"],
+                "served_by": [t["served_by"] for t in swarm_res["trace"]],
+                "trace": [{"role": t["role"], "served_by": t["served_by"], "output": t["output"][:400]}
+                          for t in swarm_res["trace"]],
+                "synthesis": swarm_res["final"][:800],
+            }
+            stage(9, "Native AI Swarm (owned)", "AI CEO",
+                  "Run the Chief's cognition on Workstation's OWN native swarm (in-house-first)",
+                  {"served_by": native_cognition["served_by"], "any_external": native_cognition["any_external"],
+                   "synthesis": native_cognition["synthesis"][:200]},
+                  verified=bool(swarm_res["trace"]), signal_type="cognitive")
+        except Exception as e:
+            native_cognition = {"error": str(e)[:120]}
+
     # ── constitutional governance over the whole cascade ──
     async def _attest() -> str:
         return "Transformation orchestrated through the VSB delivery org under v16-Omega supervision."
@@ -240,6 +275,8 @@ async def orchestrate(req: OrchestrateRequest):
         "biomimetic_signals_fired": signals,
         "governed": governance.get("status") not in (None, "ungoverned"),
         "validated": bool(validated),
+        "ai_in_house": bool(native_cognition and "error" not in native_cognition
+                            and not native_cognition.get("any_external", False)),
         "report": ("End-to-end transformation cascade ran From Chief To Build-to-Order, "
                    f"{verified_stages}/{len(cascade)} stages verified, "
                    f"{signals} biomimetic signals fired, governance: {governance.get('status')}."),
@@ -250,6 +287,7 @@ async def orchestrate(req: OrchestrateRequest):
         "scope": req.scope, "objective": objective,
         "realisation_before": realisation.get("overall_realisation"),
         "cascade": cascade, "digital_twin": twin,
+        "native_cognition": native_cognition,
         "governance": governance, "validation": validation,
         "dynamic": True, "adaptive": True, "responsive": signals > 0,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
