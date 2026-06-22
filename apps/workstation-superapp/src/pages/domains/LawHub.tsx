@@ -1,8 +1,9 @@
 import { StartProjectCTA } from '../../components/StartProjectCTA';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { Card, Badge, Button } from '@workstation/ui';
-import { Layers, Landmark, History } from 'lucide-react';
+import { Layers, Landmark, History, ScrollText, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';
 import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
@@ -12,6 +13,23 @@ export const LawHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState('compliance');
+  const [docText, setDocText] = useState('');
+  const [focus, setFocus] = useState('risk');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result, setResult] = useState<{ analysis: string; disclaimer?: string; ai_provenance?: { served_by?: string; is_external?: boolean } } | null>(null);
+  const [error, setError] = useState('');
+
+  const analyse = async () => {
+    if (!docText.trim()) return;
+    setAnalyzing(true); setError(''); setResult(null);
+    try {
+      const r = await axios.post('/api/v1/law/analyse', { document_text: docText, analysis_focus: focus });
+      setResult(r.data);
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Analysis failed — the backend may be unavailable.');
+    }
+    setAnalyzing(false);
+  };
 
   return (
     <div className="space-y-12 pb-24">
@@ -55,8 +73,39 @@ export const LawHub: React.FC = () => {
                  </div>
               </motion.div>
             ) : (
-              <div className="p-20 text-center border-2 border-dashed border-slate-900 rounded-[3rem]">
-                 <p className="text-slate-600 font-black uppercase tracking-widest">Awaiting legal data ingestion...</p>
+              <div className="space-y-5">
+                 <div>
+                    <h4 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2"><ScrollText size={18} className="text-aura" /> Legal Document Analyser</h4>
+                    <p className="text-[11px] text-slate-500 font-bold mt-1 max-w-2xl leading-relaxed">Paste a contract or legal document — Workstation's <span className="text-aura">own</span> AI runs a structured England &amp; Wales analysis (key clauses, risks, missing provisions, recommendations) in-house.</p>
+                 </div>
+                 <textarea value={docText} onChange={e => setDocText(e.target.value)} rows={6}
+                    className="w-full text-xs bg-slate-950 border border-slate-900 rounded-2xl p-4 text-slate-300"
+                    placeholder="Paste the legal document text here…" />
+                 <div className="flex items-center gap-3 flex-wrap">
+                    <select aria-label="Analysis focus" value={focus} onChange={e => setFocus(e.target.value)}
+                       className="text-[10px] font-black uppercase bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2">
+                       <option value="general">General</option>
+                       <option value="risk">Risk</option>
+                       <option value="compliance">Compliance</option>
+                       <option value="negotiation">Negotiation</option>
+                    </select>
+                    <Button type="button" onClick={analyse} disabled={analyzing || !docText.trim()} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
+                       {analyzing ? <Loader2 size={14} className="animate-spin" /> : <ScrollText size={14} />} Analyse document
+                    </Button>
+                 </div>
+                 {error && <p className="text-vital text-xs font-bold">{error}</p>}
+                 {result && (
+                    <Card className="p-6 space-y-3">
+                       <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-black text-white uppercase tracking-wide">Analysis</h4>
+                          <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${result.ai_provenance?.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                             {result.ai_provenance?.is_external ? `via ${result.ai_provenance?.served_by}` : `in-house · ${result.ai_provenance?.served_by ?? 'native'}`}
+                          </span>
+                       </div>
+                       <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">{result.analysis}</pre>
+                       {result.disclaimer && <p className="text-[10px] text-slate-600 italic leading-relaxed">{result.disclaimer}</p>}
+                    </Card>
+                 )}
               </div>
             )}
          </div>
