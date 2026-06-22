@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 from typing import Any, Dict, List
 
 from agentic_core.ai.native.engine import native_engine
@@ -25,27 +26,63 @@ def _fire(signal_type: str, source: str, msg: str, intensity: float = 0.5) -> No
         pass
 
 
+def _record_model(name: str, success: bool, t0: float) -> None:
+    """Record a real per-model-resource attempt (kind=model_attempt) so the orchestrator can
+    LEARN which owned/external models actually perform. Best-effort, non-critical."""
+    try:
+        from agentic_core.api.operational_excellence import record_outcome
+        record_outcome("model_attempt", f"model:{name}", served_by=name,
+                       is_external=name in ("anthropic", "openai"),
+                       duration_ms=int((time.monotonic() - t0) * 1000), success=success)
+    except Exception:
+        pass
+
+
+def _reorder_by_health(order: List[str]) -> List[str]:
+    """Adapt selection to real recorded performance: move any non-native model with a clearly-poor
+    recent track record AFTER the native floor (effectively skipping it, so we stop wasting time on
+    a model that keeps failing/timing out). Native is NEVER deprioritised; with no recorded data the
+    order is unchanged. This is the learning loop turned into adaptation — honest, real-data only."""
+    try:
+        from agentic_core.api.operational_excellence import model_health
+        health = model_health()
+    except Exception:
+        return order
+
+    def poor(name: str) -> bool:
+        h = health.get(name)
+        return bool(h and h["runs"] >= 5 and h["success_rate"] < 0.6)
+
+    good = [n for n in order if n == "native" or not poor(n)]
+    bad = [n for n in order if n != "native" and poor(n)]
+    return good + bad
+
+
 class NativeOrchestrator:
     """In-house-first orchestration over owned + local + (optional) external model resources."""
 
     async def complete(self, prompt: str, agent: str = "assistant",
                        timeout: float = 30.0, prefer_external: bool = False) -> Dict[str, Any]:
-        order = registry.select(prefer_external=prefer_external)
+        order = _reorder_by_health(registry.select(prefer_external=prefer_external))
         tried: List[str] = []
         _fire("cognitive", f"native.{agent}", f"orchestrate: {prompt[:60]}", 0.5)
         for name in order:
             tried.append(name)
+            if name == "native":
+                out = native_engine.generate(prompt, agent)
+                _fire("motor", f"native.{agent}", "served by native engine", 0.4)
+                return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
+            _t = time.monotonic()
             try:
-                if name == "native":
-                    out = native_engine.generate(prompt, agent)
-                    _fire("motor", f"native.{agent}", "served by native engine", 0.4)
-                    return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
                 out = await asyncio.wait_for(self._run_model(name, prompt), timeout)
                 if out and out.strip():
+                    _record_model(name, True, _t)        # learned: this model performed
                     _fire("motor", f"native.{agent}", f"served by {name}", 0.5)
                     return {"output": out, "served_by": name,
                             "is_external": name in ("anthropic", "openai"), "resources_tried": tried}
+                _record_model(name, False, _t)           # empty output = failure
             except Exception:
+                _record_model(name, False, _t)           # error/timeout = failure
                 continue
         # the native floor guarantees we never reach here, but be safe:
         out = native_engine.generate(prompt, agent)

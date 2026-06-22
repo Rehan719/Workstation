@@ -98,6 +98,25 @@ def _rankings(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
+def model_health() -> Dict[str, Dict[str, Any]]:
+    """Per-model-resource health from recorded model attempts (kind="model_attempt"), keyed by the
+    model name (served_by). The native orchestrator uses this to ADAPT selection — deprioritise a
+    model resource with a clearly-poor recent track record. Honest: only real recorded attempts."""
+    agg: Dict[str, Dict[str, Any]] = {}
+    for r in _load():
+        if r.get("kind") != "model_attempt":
+            continue
+        name = r.get("served_by", "")
+        a = agg.setdefault(name, {"runs": 0, "successes": 0, "total_ms": 0})
+        a["runs"] += 1
+        a["successes"] += 1 if r.get("success") else 0
+        a["total_ms"] += int(r.get("duration_ms", 0))
+    return {name: {"runs": a["runs"],
+                   "success_rate": round(a["successes"] / a["runs"], 3) if a["runs"] else 0.0,
+                   "avg_ms": round(a["total_ms"] / a["runs"]) if a["runs"] else 0}
+            for name, a in agg.items()}
+
+
 class RecordRequest(BaseModel):
     kind: str
     resource: str
@@ -119,23 +138,25 @@ async def record(req: RecordRequest):
 async def outcomes(resource: Optional[str] = None, vsb_id: Optional[str] = None,
                    kind: Optional[str] = None, limit: int = 100):
     rows = _load()
+    if kind:
+        rows = [r for r in rows if r.get("kind") == kind]
+    else:
+        rows = [r for r in rows if r.get("kind") != "model_attempt"]   # infra-level; hidden by default
     if resource:
         rows = [r for r in rows if r.get("resource") == resource]
     if vsb_id:
         rows = [r for r in rows if r.get("vsb_id") == vsb_id]
-    if kind:
-        rows = [r for r in rows if r.get("kind") == kind]
     return {"outcomes": rows[-limit:][::-1], "total": len(rows)}
 
 
 @router.get("/rankings")
 async def rankings():
-    return {"rankings": _rankings(_load())}
+    return {"rankings": _rankings([r for r in _load() if r.get("kind") != "model_attempt"])}
 
 
 @router.get("/summary")
 async def summary():
-    rows = _load()
+    rows = [r for r in _load() if r.get("kind") != "model_attempt"]
     n = len(rows)
     successes = sum(1 for r in rows if r.get("success"))
     in_house = sum(1 for r in rows if not r.get("is_external"))

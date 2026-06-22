@@ -1381,3 +1381,23 @@ def test_deliverables_per_vsb_filter(client):
     lst = client.get(f"/api/v1/deliverables?vsb_id={vid}").json()
     assert any(x["id"] == d["id"] for x in lst["deliverables"])
     assert all(x.get("vsb_id") == vid for x in lst["deliverables"])   # the filter is honest
+
+
+def test_orchestrator_adapts_to_model_health(client):
+    # The learning APPLICATION: a model resource with a clearly-poor recorded track record is
+    # deprioritised below the always-available native floor (so we stop wasting time on it).
+    # Native is never demoted; infra-level model_attempt records stay out of the user-facing views.
+    from agentic_core.api.operational_excellence import model_health
+    from agentic_core.ai.native.orchestrator import _reorder_by_health
+    for _ in range(6):
+        client.post("/api/v1/operations/record",
+                    json={"kind": "model_attempt", "resource": "model:flaky", "served_by": "flaky",
+                          "duration_ms": 25000, "success": False})
+    h = model_health()
+    assert h["flaky"]["runs"] >= 6 and h["flaky"]["success_rate"] < 0.6
+    order = _reorder_by_health(["flaky", "native"])
+    assert order.index("native") < order.index("flaky")              # flaky demoted below the floor
+    assert _reorder_by_health(["native"]) == ["native"]              # native untouched
+    # model_attempt records are infra-level — excluded from the user-facing rankings + summary
+    assert not any(r["resource"] == "model:flaky" for r in client.get("/api/v1/operations/rankings").json()["rankings"])
+    assert "model_attempt" not in client.get("/api/v1/operations/summary").json()["kinds"]
