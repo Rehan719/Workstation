@@ -1333,3 +1333,23 @@ def test_avatar_chat_grounded_in_vsb(client):
     b = r.json()
     assert b["grounded_in"] == est["vsb_id"]
     assert b["is_external"] is False and b["response"]
+
+
+def test_deliverables_living_lifecycle(client):
+    # W4: a living deliverable is produced on the native fabric (in-house), persisted, listed,
+    # and is re-runnable / reconfigurable (versioned history).
+    types = client.get("/api/v1/deliverables/types").json()
+    assert any(t["id"] == "report" for t in types["types"])
+    d = client.post("/api/v1/deliverables/produce",
+                    json={"type": "report", "title": "pytest deliverable",
+                          "brief": "a halal meal service for elderly Londoners", "domain": "care"}).json()
+    did = d["id"]
+    assert len(d["sections"]) >= 4 and d["content"]
+    assert d["living"] is True and len(d["versions"]) == 1
+    assert d["ai_provenance"]["is_external"] is False
+    assert d["ai_provenance"]["served_by"] in ("native", "ollama")
+    assert any(x["id"] == did for x in client.get("/api/v1/deliverables").json()["deliverables"])
+    # re-run / reconfigure → appends a new version (living)
+    r = client.post(f"/api/v1/deliverables/{did}/regenerate", json={"brief": "add a zero-waste angle"}).json()
+    assert len(r["versions"]) == 2 and r["brief"] == "add a zero-waste angle"
+    assert client.get("/api/v1/deliverables/nope").status_code == 404

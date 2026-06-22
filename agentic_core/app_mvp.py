@@ -322,6 +322,9 @@ app.include_router(transformation_orchestration_api.router)
 from agentic_core.api import native_ai as native_ai_api
 app.include_router(native_ai_api.router)
 
+from agentic_core.api import deliverables as deliverables_api
+app.include_router(deliverables_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime
