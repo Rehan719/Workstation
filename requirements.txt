@@ -260,6 +260,7 @@ tokenizers==0.19.1 ; python_version >= "3.11" and python_version < "3.13"
 toml==0.10.2 ; python_version >= "3.11" and python_version < "3.13"
 toolz==1.1.0 ; python_version >= "3.11" and python_version < "3.13" and (implementation_name == "cpython" or implementation_name == "pypy")
 torch==2.11.0 ; python_version >= "3.11" and python_version < "3.13"
+torchsde==0.2.6 ; python_version >= "3.11" and python_version < "3.13"
 tornado==6.5.5 ; python_version >= "3.11" and python_version < "3.13"
 tqdm==4.67.3 ; python_version >= "3.11" and python_version < "3.13"
 transformers==4.43.4 ; python_version >= "3.11" and python_version < "3.13"

@@ -1,7 +1,7 @@
 import torch
 from typing import Dict, Any, Tuple, Optional
 from agentic_core.biomimicry.minimisation.core.schrodinger_bridge import SchrödingerBridgeEngine
-from agentic_core.gaas.adapters.entropy_regularised_gaas import EntropyRegularisedGaaS
+from agentic_core.governance.gaas.adapters.entropy_regularised_gaas import EntropyRegularisedGaaS
 from agentic_core.ueg.logger import VSBUEGLogger
 
 class BridgeGuidedEvolution:

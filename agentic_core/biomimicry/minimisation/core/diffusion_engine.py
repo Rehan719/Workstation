@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
-import torchsde
+try:
+    import torchsde  # optional: SDE solver for the structural-evolution diffusion engine
+except Exception:  # pragma: no cover - keeps the module import-safe without the optional dep
+    torchsde = None
 from typing import Callable, Optional, Tuple
 
 class SDEWrapper(nn.Module):
@@ -37,6 +40,9 @@ class DiffusionEngine:
         """
         Integrate SDE using torchsde's optimized solvers.
         """
+        if torchsde is None:
+            raise RuntimeError("DiffusionEngine.integrate requires the optional 'torchsde' package "
+                               "(pip install torchsde).")
         # Ensure y0 has batch dimension for torchsde
         if y0.dim() == 1:
             y_in = y0.unsqueeze(0)
