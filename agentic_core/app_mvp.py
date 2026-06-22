@@ -331,6 +331,9 @@ app.include_router(operational_excellence_api.router)
 from agentic_core.api import mesh as mesh_api
 app.include_router(mesh_api.router)
 
+from agentic_core.api import mega_project as mega_project_api
+app.include_router(mega_project_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime

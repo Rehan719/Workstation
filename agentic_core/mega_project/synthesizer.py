@@ -14,31 +14,32 @@ class MegaProjectSynthesizer:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def generate_deliverables(self, concept: str, data: Dict[str, Any]) -> Dict[str, str]:
-        """Synthesize Business Plan, Feasibility Study, and Roadmap."""
+        """Structured deliverable scaffolds for a mega-project — HONEST: no invented figures
+        (the original returned hardcoded "$1.5T / 450% ROI / 98.5% confidence" — fabricated). For
+        real, populated deliverables use POST /api/v1/mega-project/synthesise (native AI fabric)."""
         business_plan = (
             f"BUSINESS PLAN: {concept}\n"
-            f"Target Market Valuation: $1.5 Trillion USD\n"
-            f"Strategic Objective: Digital Biomimicry at Scale\n"
-            f"Financial Model: 10-year projected ROI of 450% based on efficiency gains."
+            "- Strategic objective: [to be defined from the concept]\n"
+            "- Market valuation: [to be MODELLED — TAM/SAM/SOM bottom-up + comparables]\n"
+            "- Financial model: [ROI derived from the cost/revenue model — not assumed]"
         )
-
         feasibility = (
             f"FEASIBILITY STUDY: {concept}\n"
-            f"Technical Viability: 98.5% confidence interval via 10k Monte Carlo trials.\n"
-            f"Scalability Analysis: Verified for global mesh deployment."
+            "- Technical viability: [to be assessed — prototype + risk analysis]\n"
+            "- Confidence: [to be QUANTIFIED via real trials/sensitivity analysis — not asserted]\n"
+            "- Scalability: [deployment plan + load assumptions to be validated]"
         )
-
         roadmap = (
             f"ROADMAP: {concept}\n"
-            f"Phase 1: Foundation (Months 1-6)\n"
-            f"Phase 2: Scaling (Months 6-18)\n"
-            f"Phase 3: General Availability (Year 2+)"
+            "Phase 1: Foundation (validate the riskiest assumption cheaply)\n"
+            "Phase 2: Scaling (smallest end-to-end slice that delivers value)\n"
+            "Phase 3: General Availability (ship, instrument, iterate)"
         )
-
         return {
             "business_plan": business_plan,
             "feasibility_study": feasibility,
-            "roadmap": roadmap
+            "roadmap": roadmap,
+            "note": "Scaffolds only — no fabricated figures; use /api/v1/mega-project/synthesise.",
         }
 
     async def publish_synthesis(self, concept: str, deliverables: Dict[str, str]):

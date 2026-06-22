@@ -1467,3 +1467,15 @@ def test_federation_mesh_surfaced(client):
     assert "consensus" in m["modules"] and "discovery" in m["modules"]
     fab = client.get("/api/v1/resources?resource_class=federation").json()
     assert any(r["id"] == "federation_mesh" for r in fab["resources"])
+
+
+def test_mega_project_synthesis_in_house_no_fabrication(client):
+    # mega_project surfaced into the fabric, REDONE honestly on the native fabric (the original
+    # MegaProjectSynthesizer returned hardcoded "$1.5T valuation / 450% ROI / 98.5% confidence").
+    r = client.post("/api/v1/mega-project/synthesise",
+                    json={"concept": "a carbon-negative shipping network", "domain": "enterprise"}).json()
+    assert len(r["sections"]) >= 5 and r["deliverable"]
+    assert r["ai_provenance"]["is_external"] is False
+    assert "1.5 Trillion" not in r["deliverable"] and "450%" not in r["deliverable"]  # not fabricated
+    fab = client.get("/api/v1/resources?resource_class=process_intelligence").json()
+    assert any(x["id"] == "mega_project" for x in fab["resources"])

@@ -194,6 +194,17 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["peer discovery", "BFT consensus", "reputation/health", "treaty negotiation"],
        {}, "/api/v1/mesh/status", ["governance", "delivery", "evolution"],
        biomimetic=True, methods=("GET",)),
+
+    # Workstation's OWN mega-project synthesis — redone honestly on the native fabric (the original
+    # returned fabricated figures); surfaced so the swarm/delivery can produce investor-grade
+    # deliverables for large concepts (agentic_core.mega_project).
+    _R("mega_project", "Mega-Project Synthesiser", "process_intelligence", "synthesiser",
+       "Investor-grade deliverables for a large-scale concept (business plan · market · feasibility · "
+       "capital plan · roadmap · risks), produced on the native fabric — honest (no invented figures; "
+       "valuations/ROI framed as to-be-modelled).",
+       ["business plan", "feasibility", "capital plan", "roadmap", "risk"],
+       {"concept": "str", "domain": "str"}, "/api/v1/mega-project/synthesise",
+       ["synthesis", "commercialisation", "delivery", "forge"]),
 ]
 
 _BY_ID = {r["id"]: r for r in _REGISTRY}
