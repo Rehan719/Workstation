@@ -1261,3 +1261,21 @@ def test_native_ai_swarm_cascade(client):
     b = r.json()
     assert b["stages"] >= 1 and len(b["trace"]) == b["stages"]
     assert b["any_external"] is False
+
+
+def test_native_engine_structured_and_grounded():
+    # W1-e: the native engine returns every requested section, tailored per archetype and grounded
+    # in the prompt's content — honestly labelled (not an LLM), never fabricated.
+    from agentic_core.ai.native.engine import native_engine
+    prompt = ("You are the IDBO Commercialisation engine.\n\n"
+              "Concept: a halal zero-waste community meal service for elderly Londoners\n"
+              "Domain: care\n\n## Go-To-Market Strategy\n## Revenue Model\n## Key Risks")
+    out = native_engine.generate(prompt, "genesis_commercial")
+    assert native_engine.is_model is False and native_engine.is_external is False
+    assert "Workstation native structured engine" in out          # honest provenance marker
+    for section in ("## Go-To-Market Strategy", "## Revenue Model", "## Key Risks"):
+        assert section in out                                      # every requested section present
+    assert "zero-waste" in out.lower() or "elderly" in out.lower()  # grounded in the actual content
+    gtm = out.split("## Go-To-Market Strategy")[1].split("##")[0]
+    rev = out.split("## Revenue Model")[1].split("##")[0]
+    assert gtm.strip() != rev.strip()                             # archetypes are differentiated
