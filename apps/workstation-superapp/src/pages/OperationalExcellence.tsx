@@ -14,6 +14,7 @@ interface Outcome {
   id: string; kind: string; resource: string; served_by: string;
   is_external: boolean; duration_ms: number; success: boolean; created_at: string;
 }
+interface ModelHealth { name: string; runs: number; success_rate: number; avg_ms: number; deprioritised: boolean }
 
 const pct = (n: number) => `${Math.round((n ?? 0) * 100)}%`;
 
@@ -21,6 +22,7 @@ export const OperationalExcellence: React.FC = () => {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
+  const [models, setModels] = useState<ModelHealth[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +31,10 @@ export const OperationalExcellence: React.FC = () => {
       fetch('/api/v1/operations/summary').then(r => r.json()),
       fetch('/api/v1/operations/rankings').then(r => r.json()),
       fetch('/api/v1/operations/outcomes?limit=40').then(r => r.json()),
-    ]).then(([s, r, o]) => { setSummary(s); setRankings(r.rankings || []); setOutcomes(o.outcomes || []); })
+      fetch('/api/v1/operations/model-health').then(r => r.json()),
+    ]).then(([s, r, o, m]) => {
+      setSummary(s); setRankings(r.rankings || []); setOutcomes(o.outcomes || []); setModels(m.models || []);
+    })
       .catch(() => setError('Failed to load operational metrics'))
       .finally(() => setLoading(false));
   }, []);
@@ -89,6 +94,37 @@ export const OperationalExcellence: React.FC = () => {
           </Card>
         )}
       </div>
+
+      {/* Model performance — the fabric's learning (W7) */}
+      {models.length > 0 && (
+        <div>
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-2"><Cpu size={14} /> Model performance — the fabric's learning</h3>
+          <p className="text-[9px] text-slate-600 mb-3">Non-native models are deprioritised below the always-available native floor when they keep failing (≥5 attempts and under 60% success), so the fabric stops wasting time on them.</p>
+          <Card className="p-0 overflow-hidden">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[8px] font-black uppercase tracking-widest text-slate-600 border-b border-slate-900">
+                  <th scope="col" className="p-3">Model</th><th scope="col" className="p-3">Attempts</th>
+                  <th scope="col" className="p-3">Success</th><th scope="col" className="p-3">Avg ms</th><th scope="col" className="p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {models.map((m, i) => (
+                  <tr key={m.name} className={`text-[11px] ${i % 2 ? 'bg-slate-950/40' : ''}`}>
+                    <td className="p-3 font-bold text-white">{m.name}</td>
+                    <td className="p-3 text-slate-400">{m.runs}</td>
+                    <td className="p-3"><span className={m.success_rate >= 0.6 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{pct(m.success_rate)}</span></td>
+                    <td className="p-3 text-slate-500">{m.avg_ms}</td>
+                    <td className="p-3">{m.deprioritised
+                      ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">deprioritised</span>
+                      : <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">preferred</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      )}
 
       {/* Recent outcomes */}
       <div>

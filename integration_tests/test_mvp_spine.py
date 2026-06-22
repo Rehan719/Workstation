@@ -1401,3 +1401,7 @@ def test_orchestrator_adapts_to_model_health(client):
     # model_attempt records are infra-level — excluded from the user-facing rankings + summary
     assert not any(r["resource"] == "model:flaky" for r in client.get("/api/v1/operations/rankings").json()["rankings"])
     assert "model_attempt" not in client.get("/api/v1/operations/summary").json()["kinds"]
+    # the learning surface exposes the poor model as deprioritised
+    mh = client.get("/api/v1/operations/model-health").json()
+    flaky = next((m for m in mh["models"] if m["name"] == "flaky"), None)
+    assert flaky and flaky["deprioritised"] is True

@@ -154,6 +154,22 @@ async def rankings():
     return {"rankings": _rankings([r for r in _load() if r.get("kind") != "model_attempt"])}
 
 
+@router.get("/model-health")
+async def model_health_view():
+    """The fabric's LEARNING surface: per-model track records and which models the native
+    orchestrator is currently deprioritising (moved below the always-available native floor)."""
+    h = model_health()
+    models = [{"name": name, **stats,
+               "deprioritised": stats["runs"] >= 5 and stats["success_rate"] < 0.6}
+              for name, stats in sorted(h.items(), key=lambda kv: kv[1]["runs"], reverse=True)]
+    return {
+        "models": models,
+        "total_attempts": sum(m["runs"] for m in models),
+        "rule": "A non-native model is deprioritised below the native floor when runs >= 5 and "
+                "success_rate < 0.6 — so the fabric stops wasting time on a model that keeps failing.",
+    }
+
+
 @router.get("/summary")
 async def summary():
     rows = [r for r in _load() if r.get("kind") != "model_attempt"]
