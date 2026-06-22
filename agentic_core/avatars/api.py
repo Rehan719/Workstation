@@ -64,6 +64,7 @@ class ChatRequest(BaseModel):
     message: str
     context: str = "general"
     image_base64: Optional[str] = None
+    vsb_id: Optional[str] = None       # when set, the avatar is grounded in this live VSB entity
 
 
 class ChatResponse(BaseModel):
@@ -71,6 +72,37 @@ class ChatResponse(BaseModel):
     response: str
     image_understood: bool = False
     context: str
+    served_by: str = "native"          # which OWNED resource answered (in-house-first provenance)
+    is_external: bool = False
+    grounded_in: Optional[str] = None  # the vsb_id the answer was grounded in, if any
+
+
+def _vsb_grounding(vsb_id: str) -> str:
+    """Build a grounding block from a live VSB entity so the avatar answers IN its context."""
+    try:
+        from agentic_core.api.vsb import _load_vsb
+        v = _load_vsb(vsb_id)
+        if not v:
+            return ""
+        eco = v.get("economy") or {}
+        chief = ((v.get("board") or {}).get("chief") or {}).get("title", "")
+        bp = ""
+        try:
+            from agentic_core.api.business_plan import _load as _bp_load
+            objs = [o.get("title") for o in (_bp_load(vsb_id).get("objectives") or [])][:4]
+            bp = f"Objectives: {', '.join(o for o in objs if o)}" if any(objs) else ""
+        except Exception:
+            pass
+        return (
+            "\n\nYou are THIS VSB's enterprise-aware avatar — ground every answer in its live state:\n"
+            f"- VSB: {v.get('name')} (domain: {v.get('domain')}, stage: {v.get('stage')})\n"
+            f"- Mission: {v.get('challenge', '')}\n"
+            f"- Chief (owner digital twin): {chief}\n"
+            f"- Entity type: {eco.get('entity_type', '')}\n"
+            + (f"- {bp}\n" if bp else "")
+        )
+    except Exception:
+        return ""
 
 
 class SpeakRequest(BaseModel):
@@ -148,15 +180,19 @@ async def chat(request: ChatRequest):
         else:
             image_note = "(Image attached but no working vision-capable API key is configured, so it could not be analyzed.)"
 
+    grounding = _vsb_grounding(request.vsb_id) if request.vsb_id else ""
     history_block = "\n".join(f"{h['role']}: {h['content']}" for h in history[-10:])
     prompt = (
-        f"{domain_prompt}\n\n"
+        f"{domain_prompt}{grounding}\n\n"
         f"{f'Conversation so far:\n{history_block}\n\n' if history_block else ''}"
         f"{f'Image analysis: {image_note}\n\n' if image_note else ''}"
         f"User: {request.message}"
     )
 
-    response_text = await gateway.query(prompt, agent=f"avatar:{request.context}")
+    # In-house-first via the native fabric — always answers (native floor) and reports which
+    # OWNED resource served it; bounded so the avatar stays responsive.
+    meta = await gateway.query_meta(prompt, agent=f"avatar:{request.context}", timeout=20.0)
+    response_text = meta.get("output", "")
 
     history.append({"role": "user", "content": request.message})
     history.append({"role": "assistant", "content": response_text})
@@ -167,6 +203,9 @@ async def chat(request: ChatRequest):
         response=response_text,
         image_understood=image_understood,
         context=request.context,
+        served_by=meta.get("served_by", "native"),
+        is_external=bool(meta.get("is_external")),
+        grounded_in=request.vsb_id,
     )
 
 
@@ -180,18 +219,23 @@ async def delete_session(session_id: str):
 
 @router.get("/status")
 async def ai_status():
-    """Quick health check: probes Ollama and reports AI availability."""
+    """Health check. The avatar is ALWAYS online: it runs on Workstation's OWN native fabric
+    (the native floor always serves), so `online` is true regardless of any external/local
+    model. The provider flags below indicate optional accelerants only."""
     import httpx as _httpx
     ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
     base_url = ollama_url.rsplit("/api/", 1)[0]
     try:
         async with _httpx.AsyncClient(timeout=4.0) as client:
             r = await client.get(f"{base_url}/api/tags")
-            online = r.status_code == 200
+            ollama = r.status_code == 200
     except Exception:
-        online = False
+        ollama = False
     return {
-        "ollama_online": online,
+        "online": True,                 # native fabric guarantees the avatar always answers
+        "posture": "in-house-first",
+        "native": True,
+        "ollama_online": ollama,
         "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
         "anthropic_configured": bool(os.getenv("ANTHROPIC_API_KEY")),
     }

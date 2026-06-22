@@ -87,6 +87,11 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                 {m.imageDataUrl && <img src={m.imageDataUrl} alt="Attached" className="rounded-lg mb-2 max-h-32 object-cover" />}
                 {renderRichText(m.content)}
               </div>
+              {m.role === 'assistant' && m.servedBy && (
+                <span className={`text-[8px] font-black uppercase tracking-widest px-1 ${m.isExternal ? 'text-amber-500/70' : 'text-emerald-500/70'}`}>
+                  {m.isExternal ? `via ${m.servedBy} (external)` : `in-house · ${m.servedBy}`}
+                </span>
+              )}
             </div>
           ))
         }

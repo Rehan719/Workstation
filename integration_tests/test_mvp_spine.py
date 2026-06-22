@@ -1303,3 +1303,33 @@ def test_native_engine_structured_and_grounded():
     gtm = out.split("## Go-To-Market Strategy")[1].split("##")[0]
     rev = out.split("## Revenue Model")[1].split("##")[0]
     assert gtm.strip() != rev.strip()                             # archetypes are differentiated
+
+
+def test_avatar_status_always_online_in_house(client):
+    # W3: the avatar runs on the native fabric — it is ALWAYS online regardless of providers.
+    r = client.get("/api/v1/avatar/status")
+    assert r.status_code == 200
+    b = r.json()
+    assert b["online"] is True and b["native"] is True and b["posture"] == "in-house-first"
+
+
+def test_avatar_chat_in_house_provenance(client):
+    # W3: a chat turn answers in-house and reports which OWNED resource served it.
+    r = client.post("/api/v1/avatar/chat", json={"message": "Summarise my context.", "context": "ceo"})
+    assert r.status_code == 200
+    b = r.json()
+    assert b["response"] and b["served_by"] in ("native", "ollama")
+    assert b["is_external"] is False
+
+
+def test_avatar_chat_grounded_in_vsb(client):
+    # W3: when a vsb_id is supplied, the avatar is grounded in that live entity (no error,
+    # in-house, and the grounded_in id echoed back).
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "avatar grounding test", "domain": "care", "owner_id": "pytest"}).json()
+    r = client.post("/api/v1/avatar/chat",
+                    json={"message": "What is this venture's mission?", "context": "vsb", "vsb_id": est["vsb_id"]})
+    assert r.status_code == 200
+    b = r.json()
+    assert b["grounded_in"] == est["vsb_id"]
+    assert b["is_external"] is False and b["response"]

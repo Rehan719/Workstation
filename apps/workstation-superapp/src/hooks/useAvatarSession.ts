@@ -6,6 +6,8 @@ export interface AvatarMessage {
   role: 'user' | 'assistant';
   content: string;
   imageDataUrl?: string;
+  servedBy?: string;     // which OWNED resource answered (in-house provenance)
+  isExternal?: boolean;
 }
 
 export type AvatarFaceState = 'idle' | 'thinking' | 'speaking';
@@ -89,7 +91,9 @@ export function useAvatarSession() {
     setAiStatus('checking');
     try {
       const res = await axios.get('/api/v1/avatar/status', { timeout: 6000, validateStatus: () => true });
-      setAiStatus(res.status === 200 && (res.data?.ollama_online || res.data?.openai_configured) ? 'online' : 'offline');
+      // The avatar runs on Workstation's OWN native fabric — always online. Provider flags are
+      // optional accelerants only, so they no longer gate the status.
+      setAiStatus(res.status === 200 && (res.data?.online || res.data?.native || res.data?.ollama_online || res.data?.openai_configured) ? 'online' : 'offline');
     } catch {
       setAiStatus('offline');
     }
@@ -175,7 +179,10 @@ export function useAvatarSession() {
       });
       if (!sessionId) setSessionId(resp.data.session_id);
       const replyText: string = resp.data.response;
-      setMessages(prev => [...prev, { role: 'assistant', content: replyText }]);
+      setMessages(prev => [...prev, {
+        role: 'assistant', content: replyText,
+        servedBy: resp.data.served_by, isExternal: resp.data.is_external,
+      }]);
       if (speakReplies) speakText(replyText);
       setAiStatus('online');
     } catch (err: any) {
