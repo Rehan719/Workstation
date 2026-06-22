@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';
 import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
+import { DomainTool } from '../../components/DomainTool';
 
 export const EducationHub: React.FC = () => {
   const navigate = useNavigate();
@@ -55,9 +56,19 @@ export const EducationHub: React.FC = () => {
                  </div>
               </motion.div>
             ) : (
-              <div className="p-20 text-center border-2 border-dashed border-slate-900 rounded-[3rem]">
-                 <p className="text-slate-600 font-black uppercase tracking-widest">Select a course to begin learning.</p>
-              </div>
+              <DomainTool
+                title="Lesson Plan Generator"
+                description={<>Describe a lesson — Workstation's <span className="text-highlight">own</span> AI produces a classroom-ready plan (objectives, sequence, differentiation, assessment), in-house.</>}
+                endpoint="/api/v1/education/lesson-plan"
+                resultKey="lesson_plan"
+                submitLabel="Generate lesson plan"
+                fields={[
+                  { name: 'subject', label: 'Subject', type: 'text', placeholder: 'e.g. Biology', default: 'Biology' },
+                  { name: 'topic', label: 'Topic', type: 'textarea', placeholder: 'e.g. Photosynthesis — light-dependent reactions' },
+                  { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / KS3 / A-Level', default: 'GCSE' },
+                  { name: 'duration_minutes', label: 'Duration (minutes)', type: 'text', default: '60' },
+                ]}
+              />
             )}
          </div>
       </Card>

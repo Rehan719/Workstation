@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';
 import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
+import { DomainTool } from '../../components/DomainTool';
 
 export const CareHub: React.FC = () => {
   const navigate = useNavigate();
@@ -55,9 +56,20 @@ export const CareHub: React.FC = () => {
                  </div>
               </motion.div>
             ) : (
-              <div className="p-20 text-center border-2 border-dashed border-slate-900 rounded-[3rem]">
-                 <p className="text-slate-600 font-black uppercase tracking-widest">Connect DID to access patient data.</p>
-              </div>
+              <DomainTool
+                title="Clinical Handover (SBAR)"
+                description={<>Compose a structured clinical handover — Workstation's <span className="text-vital">own</span> AI drafts it using the SBAR/ISBAR framework, in-house.</>}
+                endpoint="/api/v1/care/handover"
+                resultKey="handover"
+                submitLabel="Compose handover"
+                fields={[
+                  { name: 'current_situation', label: 'Current situation', type: 'textarea', placeholder: 'e.g. 72yo M, post-op day 2, rising NEWS2, new confusion' },
+                  { name: 'background', label: 'Background', type: 'text', placeholder: 'relevant history / admission reason' },
+                  { name: 'assessment', label: 'Assessment', type: 'text', placeholder: 'your clinical assessment' },
+                  { name: 'recommendation', label: 'Recommendation', type: 'text', placeholder: 'what you recommend / are asking for' },
+                  { name: 'handover_type', label: 'Framework', type: 'select', options: ['sbar', 'isbar', 'nursing', 'medical'], default: 'sbar' },
+                ]}
+              />
             )}
          </div>
       </Card>
