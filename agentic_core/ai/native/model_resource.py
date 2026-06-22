@@ -39,7 +39,10 @@ def ollama_up() -> bool:
     try:
         import httpx
         r = httpx.get(f"{_ollama_base()}/api/tags", timeout=1.0)
-        up = r.status_code == 200
+        # A server that merely responds is not enough — it must have a model pulled, or it
+        # cannot serve a completion. Requiring a model avoids burning the per-call read
+        # timeout on a server that will only fail, keeping the in-house path snappy.
+        up = r.status_code == 200 and bool(r.json().get("models"))
     except Exception:
         up = False
     _OLLAMA_CACHE.update(at=now, up=up)

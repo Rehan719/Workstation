@@ -124,6 +124,7 @@ const allNavItems: NavItem[] = [
       { name: 'Business Plan',         icon: Briefcase,    id: 'business-plan' },
       { name: 'Forge Pipeline',        icon: Hammer,       id: 'forge-pipeline' },
       { name: 'Digital Twins',         icon: Boxes,        id: 'digital-twins' },
+      { name: 'Native AI',             icon: Cpu,          id: 'native-ai' },
       { name: 'Compliance',            icon: ShieldCheck,  id: 'compliance' },
       { name: 'Sovereign Evolution',   icon: Dna,          id: 'sovereign-evolution' },
       { name: 'Resource Fabric',       icon: Layers,       id: 'resource-fabric' },
