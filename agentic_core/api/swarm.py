@@ -181,6 +181,17 @@ async def cascade_orchestration(req: CascadeRequest):
 
     biobus.fire_signal("cognitive", "swarm.cascade", f"CEO cascade: {req.mission[:80]}", 0.8)
 
+    # In-house-first AI with provenance — the whole CEO→C-Suite→CoE cascade records which OWNED
+    # resource served each tier (proves the org cascade runs on Workstation's own fabric).
+    provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+
+    async def _q(prompt: str, agent: str) -> str:
+        res = await gateway.query_meta(prompt, agent=agent)
+        sb = res.get("served_by", "native")
+        provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
+        provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
+        return res.get("output", "")
+
     # Level 1: CEO sets mission
     ceo_prompt = (
         f"You are the AI CEO of a VSB. You have received this mission:\n\"{req.mission}\"\n"
@@ -193,7 +204,7 @@ async def cascade_orchestration(req: CascadeRequest):
         "## Timeline\n"
         "Be decisive and inspiring. This directive will cascade to your entire executive team."
     )
-    ceo_directive = await gateway.query(ceo_prompt, agent="cascade_ceo")
+    ceo_directive = await _q(ceo_prompt, "cascade_ceo")
 
     # Level 2: C-Suite responds to directive
     csuite_roles = ["CFO", "CTO", "CMO", "COO"]
@@ -210,7 +221,7 @@ async def cascade_orchestration(req: CascadeRequest):
             "## Resources Required\n"
             "## Metrics You Own"
         )
-        csuite_responses[role] = await gateway.query(prompt, agent=f"cascade_{role.lower()}")
+        csuite_responses[role] = await _q(prompt, f"cascade_{role.lower()}")
 
     # Level 3: CoE synthesis
     coe_specialisms = req.coe_specialisms or [req.domain, "quality", "innovation"]
@@ -224,7 +235,7 @@ async def cascade_orchestration(req: CascadeRequest):
             "## Specialist Support Offered\n"
             "## Standards and Best Practice Input"
         )
-        coe_responses[specialism] = await gateway.query(prompt, agent=f"cascade_coe_{specialism}")
+        coe_responses[specialism] = await _q(prompt, f"cascade_coe_{specialism}")
 
     duration_ms = int((time.time() - start) * 1000)
     biobus.record_operation("swarm_cascade", "swarm.cascade", success=True, payload=f"CEO+{len(csuite_responses)} CSuite+{len(coe_responses)} CoE, {duration_ms}ms")
@@ -235,6 +246,7 @@ async def cascade_orchestration(req: CascadeRequest):
         "level_1_ceo_directive": ceo_directive,
         "level_2_csuite": csuite_responses,
         "level_3_coe": coe_responses,
+        "ai_provenance": provenance,
         "duration_ms": duration_ms,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

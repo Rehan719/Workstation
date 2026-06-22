@@ -1479,3 +1479,14 @@ def test_mega_project_synthesis_in_house_no_fabrication(client):
     assert "1.5 Trillion" not in r["deliverable"] and "450%" not in r["deliverable"]  # not fabricated
     fab = client.get("/api/v1/resources?resource_class=process_intelligence").json()
     assert any(x["id"] == "mega_project" for x in fab["resources"])
+
+
+def test_swarm_cascade_in_house_provenance(client):
+    # The flagship AI CEO -> C-Suite -> CoE org cascade runs on the native fabric and reports
+    # in-house provenance across all tiers.
+    r = client.post("/api/v1/swarm/cascade",
+                    json={"mission": "launch a halal meal service", "domain": "enterprise"}).json()
+    assert all(k in r for k in ("level_1_ceo_directive", "level_2_csuite", "level_3_coe"))
+    p = r["ai_provenance"]
+    assert p["posture"] == "in-house-first" and p["any_external"] is False
+    assert set(p["served_by"]) <= {"native", "ollama"}
