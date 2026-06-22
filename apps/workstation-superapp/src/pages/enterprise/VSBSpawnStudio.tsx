@@ -395,9 +395,13 @@ const VSBDetailPanel: React.FC<{
   const [swarmErr, setSwarmErr] = useState('');
   const [deliverables, setDeliverables] = useState<VSBDeliverable[]>([]);
   const [delivBusy, setDelivBusy] = useState(false);
+  const [delivType, setDelivType] = useState('brief');
+  const [delivTypes, setDelivTypes] = useState<string[]>([]);
   useEffect(() => {
     if (d?.vsb_id) axios.get(`/api/v1/deliverables?vsb_id=${d.vsb_id}`)
       .then(r => setDeliverables(r.data.deliverables || [])).catch(() => {});
+    axios.get('/api/v1/deliverables/types')
+      .then(r => setDelivTypes((r.data.types || []).map((t: { id: string }) => t.id))).catch(() => {});
   }, [d?.vsb_id]);
   if (!d) return <div className="ml-4 px-4 py-3 text-[10px] text-slate-600 font-bold uppercase tracking-widest">Loading org…</div>;
   const directors = d.board?.directors ?? [];
@@ -407,8 +411,8 @@ const VSBDetailPanel: React.FC<{
     setDelivBusy(true);
     try {
       await axios.post('/api/v1/deliverables/produce', {
-        type: 'brief', vsb_id: d.vsb_id, domain: d.domain,
-        brief: `Opportunity brief for ${d.name}: ${d.challenge || d.name}`,
+        type: delivType, vsb_id: d.vsb_id, domain: d.domain,
+        brief: `${delivType} for ${d.name}: ${d.challenge || d.name}`,
       });
       const r = await axios.get(`/api/v1/deliverables?vsb_id=${d.vsb_id}`);
       setDeliverables(r.data.deliverables || []);
@@ -506,9 +510,15 @@ const VSBDetailPanel: React.FC<{
       <div className="pt-1 border-t border-slate-900">
         <div className="flex items-center justify-between mb-1 mt-3">
           <p className="text-[9px] font-black uppercase tracking-widest text-highlight flex items-center gap-1.5"><FileText size={11} /> Living deliverables ({deliverables.length})</p>
-          <button onClick={produceDeliverable} disabled={delivBusy} className="text-[9px] font-black uppercase text-aura flex items-center gap-1 disabled:opacity-50">
-            {delivBusy ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />} Produce brief
-          </button>
+          <div className="flex items-center gap-1.5">
+            <select aria-label="Deliverable type" value={delivType} onChange={e => setDelivType(e.target.value)}
+              className="text-[9px] font-black uppercase bg-slate-900 border border-slate-800 rounded text-slate-300 px-1.5 py-0.5">
+              {(delivTypes.length ? delivTypes : ['brief']).map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <button onClick={produceDeliverable} disabled={delivBusy} className="text-[9px] font-black uppercase text-aura flex items-center gap-1 disabled:opacity-50">
+              {delivBusy ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />} Produce
+            </button>
+          </div>
         </div>
         {deliverables.length === 0 && <p className="text-[9px] text-slate-600">None yet — produce one, or use the Deliverables page.</p>}
         <div className="space-y-1">
