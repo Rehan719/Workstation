@@ -21,6 +21,10 @@ from fastapi.testclient import TestClient
 os.environ.setdefault("PROJECTS_DIR", "data/test_projects")
 os.environ.setdefault("SYNTHESIS_OUTPUT_DIR", "data/test_synthesis")
 os.environ.setdefault("PROPOSALS_DIR", "data/test_proposals")
+# Skip the local Ollama model under tests so the suite resolves to the always-available native
+# floor instantly (no waiting on real local inference). The in-house guarantee is unchanged:
+# served_by stays an OWNED resource and any_external stays False.
+os.environ.setdefault("AI_DISABLE_LOCAL", "1")
 
 _AI_AVAILABLE = bool(
     os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -901,6 +905,27 @@ def test_forge_resources(client):
     r = client.get("/api/v1/forge/resources")
     assert r.status_code == 200
     assert r.json()
+
+
+def test_forge_run_in_house_provenance(client):
+    # W1-d.2: a Forge pipeline records which OWNED resource served each AI stage (in-house-first).
+    r = client.post("/api/v1/forge/run",
+                    json={"objective": "pytest forge provenance", "stages": [{"type": "laboratory"}]})
+    assert r.status_code == 200
+    prov = r.json()["ai_provenance"]
+    assert prov["posture"] == "in-house-first"
+    assert prov["any_external"] is False
+    assert set(prov["served_by"]) <= {"native", "ollama"} and sum(prov["served_by"].values()) >= 1
+
+
+def test_genesis_journey_in_house_provenance(client):
+    # W1-d.2: the Genesis Concept→Commercialisation journey runs its synthesis stages in-house.
+    r = client.post("/api/v1/genesis/journey", json={"problem": "pytest genesis provenance"})
+    assert r.status_code == 200
+    prov = r.json()["ai_provenance"]
+    assert prov["posture"] == "in-house-first"
+    assert prov["any_external"] is False
+    assert set(prov["served_by"]) <= {"native", "ollama"}
 
 
 def test_compliance_frameworks(client):

@@ -102,13 +102,6 @@ def _save(rows: List[Dict[str, Any]]) -> None:
     _STORE.write_text(json.dumps(rows[-100:], indent=2), encoding="utf-8")
 
 
-async def _q(prompt: str, agent: str) -> str:
-    try:
-        return await gateway.query(prompt, agent=agent)
-    except Exception as e:
-        return f"[{agent} unavailable: {e}]"
-
-
 @router.get("/resources")
 async def forge_resources():
     """The digital resource stages selectable for a pipeline."""
@@ -142,6 +135,19 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
     start = time.time()
     stage_ids = [s.type for s in req.stages if s.type in _STAGES] or _DEFAULT_PIPELINE
     configs = {s.type: s.config for s in req.stages}
+
+    # In-house-first AI with provenance: every stage records which OWNED resource served it.
+    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+
+    async def _q(prompt: str, agent: str) -> str:
+        try:
+            res = await gateway.query_meta(prompt, agent=agent)
+            sb = res.get("served_by", "native")
+            provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
+            provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
+            return res.get("output", "")
+        except Exception as e:
+            return f"[{agent} unavailable: {e}]"
 
     # 1. AI CEO frames the objective (swarm hierarchy entry)
     ceo = await _q(
@@ -202,6 +208,7 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
         "stage_outputs": outputs,
         "integrated_deliverable": integration,
         "governance": governance,
+        "ai_provenance": provenance,
         "reusable": True, "rerunnable": True,
         "duration_ms": int((time.time() - start) * 1000),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

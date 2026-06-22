@@ -65,6 +65,20 @@ async def genesis_status():
 async def genesis_journey(req: JourneyRequest):
     """Run the full intelligently-autonomous Concept → Commercialisation cascade."""
 
+    # In-house-first AI with provenance: the synthesis stages record which OWNED resource
+    # served them (this local _q shadows the module helper for the journey's stages).
+    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+
+    async def _q(prompt: str, agent: str) -> str:  # noqa: F811 — local, provenance-aware
+        try:
+            res = await gateway.query_meta(prompt, agent=agent)
+            sb = res.get("served_by", "native")
+            provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
+            provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
+            return res.get("output", "")
+        except Exception as e:
+            return f"[{agent} unavailable: {e}]"
+
     # ── Phase 1 — Conceptualisation (understand → analyse → optimal concept) ──
     try:
         cognitive = await _ai_cognitive_prime(req.problem, req.domain)
@@ -114,6 +128,7 @@ async def genesis_journey(req: JourneyRequest):
         "phase_2_design_development": design,
         "phase_3_commercialisation": commercial,
         "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id, "node": gov.node},
+        "ai_provenance": provenance,
         "engines_used": [
             "Inkashaf", "Samajh", "Soch", "Aqal", "Hoshiyari", "Iman",
             "MJM", "DDPIE", "BDP", "gaas.v5",

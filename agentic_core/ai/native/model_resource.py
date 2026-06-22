@@ -31,7 +31,13 @@ def _ollama_base() -> str:
 
 
 def ollama_up() -> bool:
-    """Probe the local Ollama server (cached). Owned/self-hosted, no external dependency."""
+    """Probe the local Ollama server (cached). Owned/self-hosted, no external dependency.
+
+    Set AI_DISABLE_LOCAL=1 to skip the local model entirely and resolve straight to the native
+    floor — used under the test suite so it doesn't wait on real local inference (and available
+    to any deployment that wants the deterministic native path)."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return False
     now = time.monotonic()
     if now - _OLLAMA_CACHE["at"] < _OLLAMA_TTL:
         return _OLLAMA_CACHE["up"]
