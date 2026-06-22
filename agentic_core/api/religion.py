@@ -15,7 +15,7 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import ai_text
 
 router = APIRouter(prefix="/api/v1/religion", tags=["religion"])
 
@@ -80,7 +80,7 @@ async def fatwa_research(req: FatwaResearchRequest):
         "and recommend consulting a qualified mufti for personal rulings."
     )
 
-    research = await gateway.query(prompt, agent="religion_fiqh")
+    research, provenance = await ai_text(prompt, "religion_fiqh")
 
     return {
         "research_id": uuid.uuid4().hex[:10],
@@ -88,6 +88,7 @@ async def fatwa_research(req: FatwaResearchRequest):
         "madhab": req.madhab,
         "madhab_name": madhab_info["name"],
         "research": research,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             "This is AI-assisted scholarly research only. It is NOT a fatwa and does not constitute "
@@ -138,7 +139,7 @@ async def quran_tafsir(req: QuranTafsirRequest):
         "Acknowledge differing scholarly interpretations where they exist."
     )
 
-    tafsir = await gateway.query(prompt, agent="religion_tafsir")
+    tafsir, provenance = await ai_text(prompt, "religion_tafsir")
 
     return {
         "tafsir_id": uuid.uuid4().hex[:10],
@@ -148,6 +149,7 @@ async def quran_tafsir(req: QuranTafsirRequest):
         "ayah_end": ayah_end,
         "approach": req.tafsir_approach,
         "tafsir": tafsir,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -190,13 +192,14 @@ async def halal_pre_assessment(req: HalalReviewRequest):
         "Note: This is a pre-assessment tool only; formal certification requires an accredited certifying body."
     )
 
-    assessment = await gateway.query(prompt, agent="religion_halal")
+    assessment, provenance = await ai_text(prompt, "religion_halal")
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],
         "product_name": req.product_name,
         "target_markets": req.target_markets,
         "assessment": assessment,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             "This is an AI pre-assessment tool only. Official halal certification must be obtained "
@@ -246,7 +249,7 @@ async def interfaith_dialogue(req: InterfaithRequest):
         "noting internal diversity where significant."
     )
 
-    analysis = await gateway.query(prompt, agent="religion_interfaith")
+    analysis, provenance = await ai_text(prompt, "religion_interfaith")
 
     return {
         "analysis_id": uuid.uuid4().hex[:10],
@@ -254,5 +257,6 @@ async def interfaith_dialogue(req: InterfaithRequest):
         "traditions": traditions,
         "dialogue_purpose": req.dialogue_purpose,
         "analysis": analysis,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

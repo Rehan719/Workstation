@@ -16,7 +16,7 @@ from typing import Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 
-from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import ai_text
 
 router = APIRouter(prefix="/api/v1/career", tags=["career"])
 
@@ -52,7 +52,7 @@ async def auto_classify_upload(file: UploadFile = File(...)):
         "\nOnly output valid JSON. Do not add any other text."
     )
 
-    result = await gateway.query(prompt, agent="career_classifier")
+    result, provenance = await ai_text(prompt, "career_classifier")
 
     # Parse AI response
     try:
@@ -84,6 +84,7 @@ async def auto_classify_upload(file: UploadFile = File(...)):
             "confidence": confidence,
             "reasoning": reasoning,
         },
+        "ai_provenance": provenance,
     }
 
 
@@ -205,12 +206,13 @@ async def generate_career_docs(req: GenerateRequest):
             + "\nGenerate the complete document now in Markdown format."
         )
 
-        content = await gateway.query(prompt, agent="career_generator")
+        content, provenance = await ai_text(prompt, "career_generator")
         results.append({
             "output_id": uuid.uuid4().hex[:10],
             "output_type": output_type,
             "title": output_type.replace("_", " ").title(),
             "content": content,
+            "ai_provenance": provenance,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
 
@@ -259,7 +261,7 @@ async def job_search(req: JobSearchRequest):
         + f"Output exactly {limit} JSON objects, one per line. No other text."
     )
 
-    raw = await gateway.query(prompt, agent="career_job_search")
+    raw, provenance = await ai_text(prompt, "career_job_search")
 
     listings = []
     for line in raw.splitlines():
@@ -287,6 +289,7 @@ async def job_search(req: JobSearchRequest):
         "query": req.query or "tailored to profile",
         "sources_used": ["AI Career Intelligence"],
         "total": len(listings),
+        "ai_provenance": provenance,
     }
 
 

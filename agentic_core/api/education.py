@@ -14,7 +14,7 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import ai_text
 
 router = APIRouter(prefix="/api/v1/education", tags=["education"])
 
@@ -77,7 +77,7 @@ async def design_curriculum(req: CurriculumRequest):
         "Be specific and practical. Each week entry should be actionable for a teacher."
     )
 
-    curriculum = await gateway.query(prompt, agent="education_curriculum")
+    curriculum, provenance = await ai_text(prompt, "education_curriculum")
 
     return {
         "curriculum_id": uuid.uuid4().hex[:10],
@@ -86,6 +86,7 @@ async def design_curriculum(req: CurriculumRequest):
         "duration_weeks": n_weeks,
         "framework": req.framework,
         "curriculum": curriculum,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -131,7 +132,7 @@ async def generate_lesson_plan(req: LessonPlanRequest):
         "Format timings as [MM:SS] inline. Be specific and practical."
     )
 
-    plan = await gateway.query(prompt, agent="education_lesson_plan")
+    plan, provenance = await ai_text(prompt, "education_lesson_plan")
 
     return {
         "plan_id": uuid.uuid4().hex[:10],
@@ -140,6 +141,7 @@ async def generate_lesson_plan(req: LessonPlanRequest):
         "level": req.level,
         "duration_minutes": duration,
         "lesson_plan": plan,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -181,7 +183,7 @@ async def create_assessment(req: AssessmentRequest):
         "- Free of ambiguity"
     )
 
-    assessment = await gateway.query(prompt, agent="education_assessment")
+    assessment, provenance = await ai_text(prompt, "education_assessment")
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],
@@ -190,5 +192,6 @@ async def create_assessment(req: AssessmentRequest):
         "level": req.level,
         "assessment_type": req.assessment_type,
         "assessment": assessment,
+        "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

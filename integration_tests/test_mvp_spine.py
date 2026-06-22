@@ -1408,14 +1408,19 @@ def test_orchestrator_adapts_to_model_health(client):
 
 
 def test_domains_in_house_provenance(client):
-    # The Domains suite (Law/Science/Care …) runs AI-mediated responses on Workstation's OWN
-    # native fabric and reports in-house provenance — same contract as Forge/Genesis.
+    # The WHOLE Domains suite (Law/Science/Care/Education/Religion/Employment) runs AI-mediated
+    # responses on Workstation's OWN native fabric and reports in-house provenance (like Forge/Genesis).
     law = client.post("/api/v1/law/analyse",
                       json={"document_text": "A short NDA between two parties.", "analysis_focus": "risk"}).json()
     sci = client.post("/api/v1/science/hypothesis", json={"research_question": "does X reduce Y?"}).json()
     care = client.post("/api/v1/care/handover",
                        json={"patient_summary": "stable", "current_situation": "routine"}).json()
-    for r in (law, sci, care):
+    edu = client.post("/api/v1/education/lesson-plan",
+                      json={"subject": "Maths", "topic": "fractions", "level": "KS3"}).json()
+    rel = client.post("/api/v1/religion/halal-review",
+                      json={"product_name": "Snack", "product_description": "a cereal bar"}).json()
+    car = client.post("/api/v1/career/job-search", json={"query": "developer"}).json()
+    for r in (law, sci, care, edu, rel, car):
         p = r["ai_provenance"]
         assert p["posture"] == "in-house-first" and p["is_external"] is False
         assert p["served_by"] in ("native", "ollama")
