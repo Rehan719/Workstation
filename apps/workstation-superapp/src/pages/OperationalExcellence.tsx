@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '@workstation/ui';
-import { Gauge, TrendingUp, Cpu, CheckCircle2 } from 'lucide-react';
+import { Gauge, TrendingUp, Cpu, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface Summary {
   total_runs: number; success_rate: number; in_house_rate: number;
@@ -22,6 +22,7 @@ export const OperationalExcellence: React.FC = () => {
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -29,7 +30,8 @@ export const OperationalExcellence: React.FC = () => {
       fetch('/api/v1/operations/rankings').then(r => r.json()),
       fetch('/api/v1/operations/outcomes?limit=40').then(r => r.json()),
     ]).then(([s, r, o]) => { setSummary(s); setRankings(r.rankings || []); setOutcomes(o.outcomes || []); })
-      .catch(() => setError('Failed to load operational metrics'));
+      .catch(() => setError('Failed to load operational metrics'))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -46,6 +48,10 @@ export const OperationalExcellence: React.FC = () => {
 
       {error && <p className="text-vital text-xs font-bold">{error}</p>}
 
+      {loading && !error && (
+        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500"><Loader2 size={14} className="animate-spin" /> Loading operational metrics…</div>
+      )}
+
       {summary && (
         <div className="grid grid-cols-2 @[640px]:grid-cols-4 gap-3">
           <Stat icon={Gauge} label="Total runs" value={String(summary.total_runs)} />
@@ -58,7 +64,7 @@ export const OperationalExcellence: React.FC = () => {
       {/* Rankings */}
       <div>
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><TrendingUp size={14} /> Resource rankings</h3>
-        {rankings.length === 0 && <p className="text-[11px] text-slate-600">No runs recorded yet.</p>}
+        {!loading && rankings.length === 0 && <p className="text-[11px] text-slate-600">No runs recorded yet — run a swarm, produce a deliverable, or orchestrate a transformation, and outcomes will appear here.</p>}
         {rankings.length > 0 && (
           <Card className="p-0 overflow-hidden">
             <table className="w-full text-left">
@@ -99,7 +105,7 @@ export const OperationalExcellence: React.FC = () => {
               <span className="text-slate-600">{o.duration_ms}ms</span>
             </div>
           ))}
-          {outcomes.length === 0 && <p className="text-[11px] text-slate-600">No outcomes recorded yet.</p>}
+          {!loading && outcomes.length === 0 && <p className="text-[11px] text-slate-600">No outcomes recorded yet.</p>}
         </div>
       </div>
     </div>

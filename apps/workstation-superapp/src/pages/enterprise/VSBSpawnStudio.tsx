@@ -390,17 +390,20 @@ const VSBDetailPanel: React.FC<{
 }> = ({ d, orch, busy, onOrchestrate }) => {
   const [swarmRun, setSwarmRun] = useState<SwarmRunResult | null>(null);
   const [swarmBusy, setSwarmBusy] = useState(false);
+  const [swarmErr, setSwarmErr] = useState('');
   if (!d) return <div className="ml-4 px-4 py-3 text-[10px] text-slate-600 font-bold uppercase tracking-widest">Loading org…</div>;
   const directors = d.board?.directors ?? [];
   const ns = d.native_swarm;
 
   const runSwarm = async () => {
     if (!ns) return;
-    setSwarmBusy(true); setSwarmRun(null);
+    setSwarmBusy(true); setSwarmRun(null); setSwarmErr('');
     try {
       const r = await axios.post('/api/v1/resources/swarm/run', { swarm_id: ns.cascade_id });
       setSwarmRun(r.data);
-    } catch { /* surfaced via empty state */ }
+    } catch (e: any) {
+      setSwarmErr(e?.response?.data?.detail || 'Could not run this VSB’s swarm — the backend may be unavailable.');
+    }
     setSwarmBusy(false);
   };
   return (
@@ -463,6 +466,7 @@ const VSBDetailPanel: React.FC<{
           <Button onClick={runSwarm} disabled={swarmBusy} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[11px]">
             {swarmBusy ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Run this VSB's swarm
           </Button>
+          {swarmErr && <p className="mt-2 text-[10px] text-vital font-bold">{swarmErr}</p>}
           {swarmRun && (
             <div className="mt-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
               <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${swarmRun.any_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>

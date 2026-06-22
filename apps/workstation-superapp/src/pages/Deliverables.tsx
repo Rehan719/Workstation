@@ -24,13 +24,14 @@ export const Deliverables: React.FC = () => {
   const [regenBrief, setRegenBrief] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const loadList = () =>
     fetch('/api/v1/deliverables').then(r => r.json()).then(d => setList(d.deliverables || [])).catch(() => {});
 
   useEffect(() => {
     fetch('/api/v1/deliverables/types').then(r => r.json()).then(d => setTypes(d.types || [])).catch(() => setError('Failed to load types'));
-    loadList();
+    loadList().finally(() => setLoading(false));
   }, []);
 
   const produce = async () => {
@@ -108,7 +109,8 @@ export const Deliverables: React.FC = () => {
         <div>
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Layers size={14} /> Deliverables ({list.length})</h3>
           <div className="space-y-2">
-            {list.length === 0 && <p className="text-[11px] text-slate-600">None yet — produce one above.</p>}
+            {loading && <p className="text-[11px] text-slate-600">Loading…</p>}
+            {!loading && list.length === 0 && <p className="text-[11px] text-slate-600">None yet — produce one above.</p>}
             {list.map(d => (
               <button key={d.id} onClick={() => open(d.id)}
                 className={`w-full text-left p-3 rounded-xl border ${selected?.id === d.id ? 'border-aura/50 bg-aura/5' : 'border-slate-900 bg-slate-950'}`}>

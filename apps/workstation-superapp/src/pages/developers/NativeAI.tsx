@@ -53,6 +53,7 @@ export const NativeAI: React.FC = () => {
   const [run, setRun] = useState<SwarmRun | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   // ── bespoke cascade design (user design control) ──
   const [name, setName] = useState('Concept Validator');
@@ -70,7 +71,9 @@ export const NativeAI: React.FC = () => {
     fetch('/api/v1/resources/swarm').then(r => r.json()).then(d => setCascades(d.cascades || [])).catch(() => {});
 
   useEffect(() => {
-    fetch('/api/v1/native-ai/status').then(r => r.json()).then(setStatus).catch(() => setError('Failed to load fabric status'));
+    fetch('/api/v1/native-ai/status').then(r => r.json()).then(setStatus)
+      .catch(() => setError('Failed to load fabric status'))
+      .finally(() => setLoading(false));
     loadCascades();
   }, []);
 
@@ -129,6 +132,10 @@ export const NativeAI: React.FC = () => {
       </header>
 
       {error && <p className="text-vital text-xs font-bold">{error}</p>}
+
+      {loading && !status && !error && (
+        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500"><Loader2 size={14} className="animate-spin" /> Loading the native AI fabric…</div>
+      )}
 
       {status && (
         <>
