@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -169,6 +170,36 @@ async def get_deliverable(deliverable_id: str):
     for d in _load():
         if d["id"] == deliverable_id:
             return d
+    raise HTTPException(status_code=404, detail=f"Deliverable {deliverable_id} not found.")
+
+
+def _to_markdown(d: Dict[str, Any]) -> str:
+    prov = d.get("ai_provenance", {})
+    served = prov.get("served_by", "native")
+    in_house = "in-house" if not prov.get("is_external") else f"via {served}"
+    return (
+        f"# {d.get('title', 'Deliverable')}\n\n"
+        f"_{d.get('type', 'deliverable')} · produced on Workstation's own AI fabric ({in_house} · {served})_\n\n"
+        f"> **Brief:** {d.get('brief', '')}\n\n"
+        f"{d.get('content', '')}\n\n"
+        "---\n"
+        f"_Living deliverable `{d.get('id')}` — version {len(d.get('versions', []) or [1])}, "
+        f"updated {d.get('updated_at', '')}. Re-generate or reconfigure it any time in Workstation IDBO._\n"
+    )
+
+
+@router.get("/{deliverable_id}/export")
+async def export_deliverable(deliverable_id: str):
+    """Export a living deliverable as a downloadable Markdown document so the user can take it
+    out and use it — the platform's output, in the user's hands."""
+    for d in _load():
+        if d["id"] == deliverable_id:
+            slug = "".join(c if c.isalnum() else "-" for c in d.get("title", "deliverable")).strip("-")[:60] or "deliverable"
+            return Response(
+                content=_to_markdown(d),
+                media_type="text/markdown",
+                headers={"Content-Disposition": f'attachment; filename="{slug}.md"'},
+            )
     raise HTTPException(status_code=404, detail=f"Deliverable {deliverable_id} not found.")
 
 

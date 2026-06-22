@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
-import { FileText, Loader2, Sparkles, RefreshCw, Layers } from 'lucide-react';
+import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
@@ -143,6 +143,10 @@ export const Deliverables: React.FC = () => {
                 <Button onClick={regenerate} disabled={busy} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[11px]">
                   {busy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Regenerate
                 </Button>
+                <a href={`/api/v1/deliverables/${selected.id}/export`} download
+                  className="flex items-center gap-1.5 bg-aura text-sovereign text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90">
+                  <Download size={12} /> Download .md
+                </a>
               </div>
             </Card>
           )}

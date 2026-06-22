@@ -1353,6 +1353,12 @@ def test_deliverables_living_lifecycle(client):
     r = client.post(f"/api/v1/deliverables/{did}/regenerate", json={"brief": "add a zero-waste angle"}).json()
     assert len(r["versions"]) == 2 and r["brief"] == "add a zero-waste angle"
     assert client.get("/api/v1/deliverables/nope").status_code == 404
+    # the user can EXPORT the living deliverable as a downloadable Markdown document
+    exp = client.get(f"/api/v1/deliverables/{did}/export")
+    assert exp.status_code == 200 and exp.headers["content-type"].startswith("text/markdown")
+    assert "attachment" in exp.headers.get("content-disposition", "")
+    assert exp.text.startswith("# ") and "own AI fabric" in exp.text
+    assert client.get("/api/v1/deliverables/nope/export").status_code == 404
 
 
 def test_operations_learning_loop(client):
