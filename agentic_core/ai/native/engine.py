@@ -166,6 +166,33 @@ class NativeReasoningEngine:
                     + self._dims(terms[:4], "Component for") +
                     "\n- Interfaces & data: specify inputs/outputs and contracts.\n"
                     f"- Non-functionals: reliability, security, and constitutional governance (gaas.v5), fit for {domain}.")
+        if has("value proposition", "value prop"):
+            return (f"Structured value-proposition frame for: {subject}.\n"
+                    "- For [segment] who [need], this delivers [benefit] — unlike [the alternative].\n"
+                    + self._dims(terms[:3], "Differentiator from") +
+                    "\n- The single measurable outcome the user gets.")
+        if has("hero", "call to action", "call-to-action", "cta", "headline", "landing"):
+            return (f"Structured hero/conversion frame for: {subject}.\n"
+                    "- Headline: the one-line promise of the OUTCOME (not the feature).\n"
+                    + self._dims(terms[:3], "Proof point from") +
+                    "\n- Primary call-to-action: the single next step for the visitor.\n"
+                    "- Trust: the reassurance that lowers the risk of acting.")
+        if has("feature", "capabilit"):
+            return (f"Structured feature frame for: {subject}.\n"
+                    + self._dims(terms[:5], "Capability") +
+                    "\n- Tie each feature to a user job and an outcome — not a bare spec list.")
+        if has("how it works", "user flow", "user journey", "journey", "onboarding"):
+            return (f"Structured flow frame for: {subject}.\n"
+                    "- Entry: how the user arrives and what they want.\n"
+                    "- Steps: the shortest path from intent to value (number them).\n"
+                    + self._dims(terms[:3], "Step touching") +
+                    "\n- Exit: the value delivered + the next loop.")
+        if has("offering", "delivery model", "sla", "service level", "service overview", "quality"):
+            return (f"Structured service frame for: {subject}.\n"
+                    "- Offering: what is delivered and the scope boundary.\n"
+                    "- Delivery model: how it is provided (cadence, channel, roles).\n"
+                    + self._dims(terms[:3], "Quality measure for") +
+                    f"\n- SLAs & assurance: the commitments and how they're governed for {domain}.")
         if has("revenue", "pricing", "monetis", "monetiz", "unit econ"):
             return (f"Structured revenue frame for: {subject}.\n"
                     "- Units: what is charged for, and the pricing model.\n"

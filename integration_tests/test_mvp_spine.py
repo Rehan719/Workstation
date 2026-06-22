@@ -1424,3 +1424,16 @@ def test_domains_in_house_provenance(client):
         p = r["ai_provenance"]
         assert p["posture"] == "in-house-first" and p["is_external"] is False
         assert p["served_by"] in ("native", "ollama")
+
+
+def test_native_engine_web_app_archetypes():
+    # The native floor gives website/app/service section types tailored scaffolds (not the bland
+    # generic fallback), improving the quality of those living deliverables even with no model.
+    from agentic_core.ai.native.engine import native_engine
+    prompt = ("Produce a website.\nConcept: a halal meal service for elderly Londoners\nDomain: care\n\n"
+              "## Hero\n## Value Proposition\n## Features\n## How It Works\n## Service Overview")
+    out = native_engine.generate(prompt, "deliverable:website")
+    for sec in ("## Hero", "## Value Proposition", "## Features", "## How It Works", "## Service Overview"):
+        seg = out.split(sec)[1].split("##")[0]
+        assert "Native structured content for" not in seg   # not the generic fallback
+        assert "Structured" in seg                          # a dedicated archetype frame
