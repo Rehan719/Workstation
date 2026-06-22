@@ -98,6 +98,7 @@ def _list_vsbs() -> list[dict]:
                 "has_board": bool(v.get("board")),
                 "entity_type": (v.get("economy") or {}).get("entity_type"),
                 "business_plan_scope": v.get("business_plan_scope"),
+                "has_native_swarm": bool(v.get("native_swarm")),
             })
         except Exception:
             pass

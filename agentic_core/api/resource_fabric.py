@@ -249,6 +249,40 @@ def _save_swarms(rows: List[Dict[str, Any]]) -> None:
     _SWARM_STORE.write_text(json.dumps(rows[-200:], indent=2), encoding="utf-8")
 
 
+def register_swarm(name: str, stages: List[Dict[str, str]], context: str = "",
+                   usage_area: str = "synthesis", vsb_id: str | None = None,
+                   org: List[str] | None = None) -> Dict[str, Any]:
+    """Persist a bespoke native swarm cascade as a reusable, re-runnable fabric resource and
+    return it. Shared by the /swarm/define endpoint and by Genesis (which gives every established
+    VSB its OWN cascade) — one path, so per-VSB swarms run through the same owned-resource runner."""
+    cascade = {
+        "id": f"swarm-{uuid.uuid4().hex[:8]}",
+        "name": name,
+        "kind": "ai_native_swarm",
+        "stages": [{"role": s.get("role", ""), "instruction": s.get("instruction", "")} for s in stages],
+        "context": context,
+        "usage_area": usage_area,
+        "posture": "in-house-first",
+        "reusable": True,
+        "rerunnable": True,
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    if vsb_id:
+        cascade["vsb_id"] = vsb_id
+    if org:
+        cascade["org"] = org
+    rows = _load_swarms()
+    rows.append(cascade)
+    _save_swarms(rows)
+    try:
+        from agentic_core.organism.biobus import biobus
+        biobus.fire_signal("motor", "resource_fabric.swarm.register",
+                           f"{name}: {len(cascade['stages'])} stages", 0.5)
+    except Exception:
+        pass
+    return cascade
+
+
 class SwarmStageSpec(BaseModel):
     role: str
     instruction: str
@@ -273,33 +307,15 @@ class RunSwarmRequest(BaseModel):
 @router.post("/swarm/define")
 async def define_swarm(req: DefineSwarmRequest):
     """Define + save a bespoke, reusable, re-runnable native swarm cascade (user design control)."""
-    cascade = {
-        "id": f"swarm-{uuid.uuid4().hex[:8]}",
-        "name": req.name,
-        "kind": "ai_native_swarm",
-        "stages": [s.model_dump() for s in req.stages],
-        "context": req.context,
-        "usage_area": req.usage_area,
-        "posture": "in-house-first",
-        "reusable": True,
-        "rerunnable": True,
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    rows = _load_swarms()
-    rows.append(cascade)
-    _save_swarms(rows)
-    try:
-        from agentic_core.organism.biobus import biobus
-        biobus.fire_signal("motor", "resource_fabric.swarm.define",
-                           f"{req.name}: {len(cascade['stages'])} stages", 0.5)
-    except Exception:
-        pass
-    return cascade
+    return register_swarm(req.name, [s.model_dump() for s in req.stages],
+                          context=req.context, usage_area=req.usage_area)
 
 
 @router.get("/swarm")
-async def list_swarms():
+async def list_swarms(vsb_id: Optional[str] = None):
     rows = _load_swarms()
+    if vsb_id:
+        rows = [c for c in rows if c.get("vsb_id") == vsb_id]
     return {"cascades": rows, "total": len(rows)}
 
 

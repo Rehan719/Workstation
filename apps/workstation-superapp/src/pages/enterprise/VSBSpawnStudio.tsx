@@ -4,7 +4,7 @@ import { Card, Button } from '@workstation/ui';
 import {
   Sparkles, Loader2, CheckCircle2, Circle, AlertCircle,
   Brain, Dna, Bot, ShieldCheck, ChevronRight, ListTree, Clock,
-  RefreshCw,
+  RefreshCw, Network, Play,
 } from 'lucide-react';
 
 // ── SSE helper ────────────────────────────────────────────────────────────────
@@ -75,6 +75,11 @@ interface VSBDetail extends VSBEntity {
   board?: { chief?: { title?: string }; directors?: Director[]; governance?: string };
   economy?: { entity_type?: string; entity_name?: string; currency?: string };
   business_plan_scope?: string;
+  native_swarm?: { cascade_id: string; name: string; org: string[]; stages: string[] };
+}
+interface SwarmRunResult {
+  stages: number; any_external: boolean;
+  trace: { step: number; role: string; served_by: string; output: string }[];
 }
 interface OrchRun {
   cascade: { step: number; tier: string; verified: boolean }[];
@@ -383,8 +388,21 @@ export const VSBSpawnStudio: React.FC = () => {
 const VSBDetailPanel: React.FC<{
   d?: VSBDetail; orch?: OrchRun; busy: boolean; onOrchestrate: () => void;
 }> = ({ d, orch, busy, onOrchestrate }) => {
+  const [swarmRun, setSwarmRun] = useState<SwarmRunResult | null>(null);
+  const [swarmBusy, setSwarmBusy] = useState(false);
   if (!d) return <div className="ml-4 px-4 py-3 text-[10px] text-slate-600 font-bold uppercase tracking-widest">Loading org…</div>;
   const directors = d.board?.directors ?? [];
+  const ns = d.native_swarm;
+
+  const runSwarm = async () => {
+    if (!ns) return;
+    setSwarmBusy(true); setSwarmRun(null);
+    try {
+      const r = await axios.post('/api/v1/resources/swarm/run', { swarm_id: ns.cascade_id });
+      setSwarmRun(r.data);
+    } catch { /* surfaced via empty state */ }
+    setSwarmBusy(false);
+  };
   return (
     <div className="ml-4 mb-2 p-4 rounded-xl bg-slate-950 border border-aura/15 space-y-4">
       <div>
@@ -432,6 +450,33 @@ const VSBDetailPanel: React.FC<{
           </div>
         )}
       </div>
+
+      {ns && (
+        <div className="pt-1 border-t border-slate-900">
+          <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1 mt-3 flex items-center gap-1.5"><Network size={11} /> Native delivery swarm (owned, in-house)</p>
+          <p className="text-[9px] text-slate-600 mb-1.5">{ns.org.join(' → ')}</p>
+          <div className="flex flex-wrap gap-1 mb-2">
+            {ns.stages.map((s, i) => (
+              <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-aura/80">{i + 1}. {s}</span>
+            ))}
+          </div>
+          <Button onClick={runSwarm} disabled={swarmBusy} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[11px]">
+            {swarmBusy ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Run this VSB's swarm
+          </Button>
+          {swarmRun && (
+            <div className="mt-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${swarmRun.any_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                {swarmRun.any_external ? 'used external accelerant' : 'fully in-house'} · {swarmRun.stages} stages
+              </span>
+              <div className="mt-2 space-y-1">
+                {swarmRun.trace.map(t => (
+                  <p key={t.step} className="text-[9px] text-slate-500"><span className="text-aura/80 font-bold">{t.step}. {t.role}</span> <span className="text-slate-600">· served by {t.served_by}</span></p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

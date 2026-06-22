@@ -167,11 +167,22 @@ async def genesis_establish(req: EstablishRequest):
     name = req.name.strip()
     if not name:
         derived = await _q(
-            "Propose ONE concise, brandable business name (max 5 words, no quotes, no preamble) "
-            f"for a venture that solves: {req.problem}\nDomain: {req.domain}\nReturn only the name.",
+            "Propose ONE concise, brandable business name (2-4 words, no quotes, no preamble, no "
+            f"markdown) for a venture that solves: {req.problem}\nDomain: {req.domain}\nReturn ONLY the name.",
             "genesis_vsb_name",
         )
-        name = (derived.strip().splitlines()[0].strip()[:60] if derived else "") or f"VSB — {req.problem[:40]}"
+        # Take the first clean, short, name-like line — reject the native engine's provenance
+        # marker / markdown headings / scaffold lines so an auto-named VSB never inherits them.
+        cand = ""
+        for line in (derived or "").splitlines():
+            s = line.strip().strip('"').strip("*").strip()
+            low = s.lower()
+            if (not s or s.startswith(("_[", "#", "-", ">")) or ":" in s
+                    or "native structured engine" in low or len(s.split()) > 6):
+                continue
+            cand = s[:60]
+            break
+        name = cand or f"VSB — {req.problem[:40]}"
 
     async def _attest() -> str:
         return "VSB establishment attested under v16-Omega constitutional supervision."
@@ -265,6 +276,30 @@ async def genesis_establish(req: EstablishRequest):
                 })
         bp_mod._save(plan)
         entity["business_plan_scope"] = vsb_id
+    except Exception:
+        pass
+    # Give this VSB its OWN bespoke, reconfigurable native swarm cascade — its in-house delivery
+    # org (Chief → AI CEO → C-Suite → CoE → BTO) as a runnable, owned Resource-Fabric resource.
+    try:
+        from agentic_core.api import resource_fabric as rf
+        org_tiers = ["Chief (owner twin)", "AI CEO", "C-Suite", "Centre of Excellence", "Build-to-Order"]
+        cascade = rf.register_swarm(
+            name=f"{name} — delivery swarm",
+            context=(f"VSB: {name}\nMission: {req.problem}\nDomain: {req.domain}\n"
+                     f"Concept: {(req.concept or req.problem)[:600]}"),
+            usage_area="delivery", vsb_id=vsb_id, org=org_tiers,
+            stages=[
+                {"role": "ai-ceo", "instruction": "Frame the objective and set the directive for the C-Suite."},
+                {"role": "c-suite", "instruction": "Break the directive into specialist workstreams (finance, technical, market, legal/compliance)."},
+                {"role": "centre-of-excellence", "instruction": "Produce the specialist deliverable for the highest-priority workstream."},
+                {"role": "build-to-order", "instruction": "Integrate the workstreams into a Build-to-Order delivery plan."},
+            ],
+        )
+        entity["native_swarm"] = {
+            "cascade_id": cascade["id"], "name": cascade["name"], "org": org_tiers,
+            "stages": [s["role"] for s in cascade["stages"]],
+            "run": "/api/v1/resources/swarm/run", "posture": "in-house-first",
+        }
     except Exception:
         pass
     vsb_mod._save_vsb(entity)

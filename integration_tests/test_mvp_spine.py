@@ -1233,6 +1233,30 @@ def test_vsb_list_org_flags(client):
     assert "entity_type" in established[0]
 
 
+def test_established_vsb_gets_own_native_swarm(client):
+    # W2: every established VSB is given its OWN reconfigurable native swarm (its in-house
+    # delivery org), persisted, filed under the VSB in the fabric, and runnable on owned resources.
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "pytest per-vsb swarm", "domain": "care", "owner_id": "pytest"}).json()
+    vid = est["vsb_id"]
+    ent = client.get(f"/api/v1/vsb/{vid}").json()
+    ns = ent["native_swarm"]
+    assert ns["cascade_id"] and ns["org"] and len(ns["stages"]) >= 3
+    # auto-derived name must not leak the native engine's provenance marker
+    assert "native structured engine" not in ent["name"].lower()
+    # the cascade is filed under THIS vsb in the fabric
+    mine = client.get(f"/api/v1/resources/swarm?vsb_id={vid}").json()
+    assert any(c["id"] == ns["cascade_id"] for c in mine["cascades"])
+    # and runs on OWNED resources only
+    run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": ns["cascade_id"]}).json()
+    assert run["stages"] == len(ns["stages"])
+    assert run["any_external"] is False
+    assert all(s["served_by"] in ("native", "ollama") for s in run["trace"])
+    # the list surfaces the org flag
+    row = next(e for e in client.get("/api/v1/vsb").json()["entities"] if e["vsb_id"] == vid)
+    assert row["has_native_swarm"] is True
+
+
 # ── Native AI Fabric (W1) — Workstation's OWN in-house AI resources ───────────
 # Verifies the platform produces real AI output from its own resources with NO
 # external dependency (the headline native-AI mandate).
