@@ -158,6 +158,22 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["halal/sharia", "uk legal", "regulatory", "ehs", "ethical", "constitutional"],
        {"subject": "str", "domain": "str", "jurisdiction": "str"}, "/api/v1/compliance/check",
        ["synthesis", "design", "development", "delivery", "commercialisation", "governance", "forge", "build_to_order"]),
+
+    # Native AI fabric — Workstation's OWN AI resources (in-house-first, no external dependency)
+    _R("native_orchestrator", "Native AI Orchestrator", "ai_native", "orchestrator",
+       "In-house-first completion over OWNED resources: native structured-reasoning floor · local "
+       "Ollama model when present · external accelerants opt-in only. Every result reports served_by.",
+       ["in-house completion", "graceful degradation", "provenance (served_by)"],
+       {"prompt": "str", "agent": "str", "prefer_external": "bool"}, "/api/v1/native-ai/complete",
+       ["synthesis", "design", "development", "delivery", "governance", "forge"]),
+    _R("native_swarm", "Native AI Swarm", "ai_native", "swarm",
+       "A bespoke, RECONFIGURABLE agent-cascade run on Workstation's OWN resources — define stages "
+       "(role + instruction); each stage completes in-house-first and feeds the next. Define once, "
+       "reuse and re-run as a living resource (full user design control).",
+       ["bespoke cascade", "reconfigurable stages", "in-house provenance", "reusable", "rerunnable"],
+       {"agent": "str", "context": "str", "stages": "list[{role,instruction}]"},
+       "/api/v1/resources/swarm/run",
+       ["synthesis", "design", "development", "delivery", "governance", "forge", "build_to_order"]),
 ]
 
 _BY_ID = {r["id"]: r for r in _REGISTRY}
@@ -208,6 +224,113 @@ async def get_composition(cid: str):
         if c["id"] == cid:
             return c
     raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
+
+
+# ── Native swarm cascades — first-class reconfigurable resources (user design control) ──
+# A swarm cascade is an ordered list of {role, instruction} stages run in-house-first on
+# Workstation's OWN resources. Users DEFINE a bespoke cascade (reconfigure the stages), it is
+# SAVED as a reusable resource, and can be RE-RUN on demand — the result reports served_by per
+# stage so it is provably running on owned resources. (Declared before /{resource_id} so the
+# static /swarm* paths win over the dynamic resource lookup.)
+_SWARM_STORE = Path("data/swarm_cascades.json")
+
+
+def _load_swarms() -> List[Dict[str, Any]]:
+    if _SWARM_STORE.exists():
+        try:
+            return json.loads(_SWARM_STORE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return []
+    return []
+
+
+def _save_swarms(rows: List[Dict[str, Any]]) -> None:
+    _SWARM_STORE.parent.mkdir(parents=True, exist_ok=True)
+    _SWARM_STORE.write_text(json.dumps(rows[-200:], indent=2), encoding="utf-8")
+
+
+class SwarmStageSpec(BaseModel):
+    role: str
+    instruction: str
+
+
+class DefineSwarmRequest(BaseModel):
+    name: str
+    stages: List[SwarmStageSpec]
+    context: str = ""
+    usage_area: str = "synthesis"
+
+
+class RunSwarmRequest(BaseModel):
+    swarm_id: Optional[str] = None        # run a SAVED cascade …
+    stages: List[SwarmStageSpec] = []     # … or an ad-hoc one
+    context: str = ""
+    agent: str = "fabric-swarm"
+    prefer_external: bool = False
+    timeout: float = 12.0
+
+
+@router.post("/swarm/define")
+async def define_swarm(req: DefineSwarmRequest):
+    """Define + save a bespoke, reusable, re-runnable native swarm cascade (user design control)."""
+    cascade = {
+        "id": f"swarm-{uuid.uuid4().hex[:8]}",
+        "name": req.name,
+        "kind": "ai_native_swarm",
+        "stages": [s.model_dump() for s in req.stages],
+        "context": req.context,
+        "usage_area": req.usage_area,
+        "posture": "in-house-first",
+        "reusable": True,
+        "rerunnable": True,
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    rows = _load_swarms()
+    rows.append(cascade)
+    _save_swarms(rows)
+    try:
+        from agentic_core.organism.biobus import biobus
+        biobus.fire_signal("motor", "resource_fabric.swarm.define",
+                           f"{req.name}: {len(cascade['stages'])} stages", 0.5)
+    except Exception:
+        pass
+    return cascade
+
+
+@router.get("/swarm")
+async def list_swarms():
+    rows = _load_swarms()
+    return {"cascades": rows, "total": len(rows)}
+
+
+@router.get("/swarm/{sid}")
+async def get_swarm(sid: str):
+    for c in _load_swarms():
+        if c["id"] == sid:
+            return c
+    raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
+
+
+@router.post("/swarm/run")
+async def run_swarm(req: RunSwarmRequest):
+    """Run a swarm cascade (saved via swarm_id, or ad-hoc stages) on Workstation's OWN resources.
+    Returns the per-stage trace with served_by + whether any external accelerant was used."""
+    stages = [s.model_dump() for s in req.stages]
+    context = req.context
+    name = "ad-hoc"
+    if req.swarm_id:
+        saved = next((c for c in _load_swarms() if c["id"] == req.swarm_id), None)
+        if not saved:
+            raise HTTPException(status_code=404, detail=f"Swarm cascade {req.swarm_id} not found.")
+        stages = saved["stages"]
+        context = req.context or saved.get("context", "")
+        name = saved["name"]
+    if not stages:
+        raise HTTPException(status_code=400, detail="Provide stages or a saved swarm_id to run.")
+    from agentic_core.ai.native import orchestrator
+    res = await orchestrator.swarm(req.agent, stages, context=context,
+                                   prefer_external=req.prefer_external, timeout=req.timeout)
+    return {"name": name, "swarm_id": req.swarm_id, "posture": "in-house-first", **res}
 
 
 @router.get("/{resource_id}")

@@ -1024,6 +1024,29 @@ def test_resource_compose(client):
     assert len(body["resources"]) >= 1
 
 
+def test_resource_fabric_native_swarm_cascade(client):
+    # W1-d: native AI resources are first-class in the fabric, and bespoke swarm cascades are
+    # reconfigurable, reusable, re-runnable resources that run on Workstation's OWN resources.
+    fab = client.get("/api/v1/resources?resource_class=ai_native").json()
+    ids = [r["id"] for r in fab["resources"]]
+    assert "native_orchestrator" in ids and "native_swarm" in ids
+    # define a bespoke, reusable cascade (user design control)
+    d = client.post("/api/v1/resources/swarm/define",
+                    json={"name": "pytest cascade", "context": "test",
+                          "stages": [{"role": "analyst", "instruction": "Analyse."},
+                                     {"role": "synthesiser", "instruction": "Synthesise."}]}).json()
+    sid = d["id"]
+    assert d["reusable"] is True and len(d["stages"]) == 2
+    assert any(c["id"] == sid for c in client.get("/api/v1/resources/swarm").json()["cascades"])
+    # run the SAVED cascade on owned resources — in-house only
+    run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": sid}).json()
+    assert run["stages"] == 2
+    assert run["any_external"] is False
+    assert all(s["served_by"] in ("native", "ollama") for s in run["trace"])
+    # unknown saved id → 404
+    assert client.post("/api/v1/resources/swarm/run", json={"swarm_id": "nope"}).status_code == 404
+
+
 def test_integration_user_activity(client):
     r = client.post("/api/v260/user/activity",
                     json={"user_id": "pytest", "action": "view", "detail": "spine-test"})
