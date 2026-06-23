@@ -87,6 +87,24 @@ class TreeRequest(BaseModel):
     timeout: float = 30.0
 
 
+class DecideRequest(BaseModel):
+    state: Dict[str, Any] = {}
+    actions: List[str] = []
+
+
+@router.post("/decide")
+async def native_decide(req: DecideRequest):
+    """In-house minimax (maximin) decision over candidate actions under worst-case stressors — the OWNED
+    cognition decision capability (agentic_core/cognition). Real game-theory, not LLM text. Uses the
+    survival-utility default when no custom utility is provided."""
+    from agentic_core.cognition.minimax_optimizer import MinimaxOptimizer, default_utility_func
+    actions = req.actions or ["proceed", "refine", "hold"]
+    state = req.state or {"base_stability": 0.9}
+    res = MinimaxOptimizer().evaluate_strategy(state, actions, default_utility_func)
+    return {"posture": "in-house", "method": "minimax adversarial (owned cognition)",
+            "actions": actions, **res}
+
+
 @router.post("/tree")
 async def native_tree(req: TreeRequest):
     """Autonomous workflow-TREE orchestration: the native swarm decomposes the goal into a dependency

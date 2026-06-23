@@ -1703,6 +1703,24 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_minimax_decision_in_house(client):
+    # The OWNED cognition module (agentic_core/cognition.MinimaxOptimizer) is integrated into the
+    # in-house AI as a REAL maximin decision capability — game-theory over actions under worst-case
+    # stressors, not LLM text. Exposed standalone AND used to recommend on every workflow-tree run.
+    d = client.post("/api/v1/native-ai/decide",
+                    json={"state": {"base_stability": 0.9}, "actions": ["expand", "hold", "retreat"]})
+    assert d.status_code == 200, d.text
+    db = d.json()
+    assert db["selected_action"] in ["expand", "hold", "retreat"]
+    assert 0.0 <= db["consistency_score"] <= 1.0 and "minimax" in db["method"]
+    # the workflow tree carries a real minimax decision grounded in its OWN run signals
+    t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    dec = t.get("decision")
+    assert dec and dec["recommendation"] in ("proceed", "refine", "hold")
+    assert 0.0 <= dec["consistency"] <= 1.0 and "minimax" in dec["method"]
+    assert dec["stressors"] and len(dec["stressors"]) >= 3
+
+
 def test_native_workflow_tree_in_house(client):
     # The native swarm AUTONOMOUSLY decomposes a goal into a workflow TREE (DAG) and runs it
     # in-house-first per node, with PARALLEL branches + dependency ordering — orchestrated as a

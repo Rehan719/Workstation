@@ -218,6 +218,39 @@ class NativeOrchestrator:
         except Exception:
             governance = None
 
+        # MINIMAX DECISION (owned cognition): a REAL maximin decision over {proceed · refine · hold} under
+        # worst-case stressors, grounded in the run's ACTUAL signals (QMS gate, immune threat, in-house,
+        # coverage). The in-house AI uses an owned decision algorithm — not LLM text — to recommend.
+        decision: Dict[str, Any] = None
+        try:
+            from agentic_core.cognition.minimax_optimizer import MinimaxOptimizer
+            qms_ok = bool(governance and governance.get("qms_passed"))
+            cov = float((governance or {}).get("qms_coverage_proxy", 0.5))
+            st = {"qms_passed": qms_ok, "immune": threat, "in_house": (not any_external), "coverage": cov}
+
+            def _util(state: Dict[str, Any], action: str, stressor: str) -> float:
+                base = {"proceed": 0.92, "refine": 0.84, "hold": 0.78}.get(action, 0.70)
+                if not state["qms_passed"]:
+                    base -= 0.15 if action == "proceed" else 0.05
+                if state["immune"] != "NOMINAL":
+                    base -= 0.12 if action == "proceed" else 0.04
+                if not state["in_house"]:
+                    base -= 0.05
+                base += (state["coverage"] - 0.5) * 0.10
+                sens = {"proceed": 0.30, "refine": 0.18, "hold": 0.10}.get(action, 0.20)
+                smag = {"hypoxia": 1.0, "oxidative_burst": 0.8, "high_load": 0.6, "thermal_stress": 0.5}.get(stressor, 0.5)
+                return max(0.0, base - sens * smag * 0.4)
+
+            mm = MinimaxOptimizer(threshold=0.8)
+            res = mm.evaluate_strategy(st, ["proceed", "refine", "hold"], _util)
+            decision = {"recommendation": res["selected_action"], "consistency": round(float(res["consistency_score"]), 3),
+                        "worst_case_utility": round(float(res["worst_case_utility"]), 3),
+                        "method": "minimax adversarial (owned cognition)",
+                        "stressors": ["hypoxia", "oxidative_burst", "high_load", "thermal_stress"]}
+            _fire("cognitive", "native.tree", f"minimax decision: {res['selected_action']}", 0.5)
+        except Exception:
+            decision = None
+
         return {
             "goal": goal,
             "posture": "in-house-first",
@@ -228,6 +261,7 @@ class NativeOrchestrator:
             "max_parallel": max_parallel,
             "immune_threat": threat,
             "governance": governance,
+            "decision": decision,
             "nodes": [{"id": nid, "role": by_id[nid]["role"], "depends_on": by_id[nid]["depends_on"],
                        "served_by": results[nid]["served_by"], "is_external": results[nid]["is_external"],
                        "output": results[nid]["output"]} for nid in order if nid in results],
