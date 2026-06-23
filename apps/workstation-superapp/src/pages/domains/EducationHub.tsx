@@ -43,6 +43,7 @@ export const EducationHub: React.FC = () => {
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                <button type="button" onClick={() => setActiveTab('lessons')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'lessons' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Lessons</button>
                <button type="button" onClick={() => setActiveTab('curriculum')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'curriculum' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Curriculum</button>
+               <button type="button" onClick={() => setActiveTab('assessment')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'assessment' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Assessment</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
@@ -69,6 +70,21 @@ export const EducationHub: React.FC = () => {
                   { name: 'duration_weeks', label: 'Duration (weeks)', type: 'text', default: '12' },
                   { name: 'framework', label: 'Framework', type: 'select', options: ['bloom', 'solo', 'backward_design', 'competency'], default: 'bloom' },
                   { name: 'learning_objectives_count', label: 'Learning objectives', type: 'text', default: '6' },
+                ]}
+              />
+            ) : activeTab === 'assessment' ? (
+              <DomainTool
+                title="Assessment Builder"
+                description={<>Generate a ready-to-use assessment — Workstation's <span className="text-highlight">own</span> AI builds quizzes, rubrics, exams, project briefs or formative checks with mark schemes, in-house.</>}
+                endpoint="/api/v1/education/assessment"
+                resultKey="assessment"
+                submitLabel="Build assessment"
+                fields={[
+                  { name: 'subject', label: 'Subject', type: 'text', placeholder: 'e.g. Biology', default: 'Biology' },
+                  { name: 'topic', label: 'Topic', type: 'text', placeholder: 'e.g. Photosynthesis', default: 'Photosynthesis' },
+                  { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / KS3 / A-Level', default: 'GCSE' },
+                  { name: 'assessment_type', label: 'Type', type: 'select', options: ['quiz', 'rubric', 'exam', 'project_brief', 'formative'], default: 'quiz' },
+                  { name: 'learning_objectives', label: 'Learning objectives (one per line)', type: 'list', placeholder: 'explain the light-dependent reactions' },
                 ]}
               />
             ) : (

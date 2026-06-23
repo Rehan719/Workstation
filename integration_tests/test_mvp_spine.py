@@ -1548,6 +1548,7 @@ _DOMAIN_TOOLS = [
     ("/api/v1/care/risk-assess", {"tool": "news2", "patient_data": {"resp_rate": "22", "spo2": "93", "pulse": "112"}, "clinical_context": "post-op day 2"}, "assessment"),
     ("/api/v1/education/lesson-plan", {"subject": "Biology", "topic": "Cells", "level": "GCSE"}, "lesson_plan"),
     ("/api/v1/education/curriculum", {"subject": "Mathematics", "level": "GCSE"}, "curriculum"),
+    ("/api/v1/education/assessment", {"subject": "Biology", "topic": "Photosynthesis", "level": "GCSE", "assessment_type": "quiz", "learning_objectives": ["explain light-dependent reactions"]}, "assessment"),
     ("/api/v1/religion/fatwa-research", {"question": "What are the conditions for fasting while travelling?"}, "research"),
     ("/api/v1/religion/quran-tafsir", {"surah": 1, "ayah_start": 1}, "tafsir"),
     ("/api/v1/religion/halal-review", {"product_name": "Gummy sweets", "product_description": "Chewy fruit sweets", "ingredients": ["bovine gelatin", "glucose syrup"], "target_markets": ["UK"]}, "assessment"),
