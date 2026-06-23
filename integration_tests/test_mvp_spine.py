@@ -1682,6 +1682,27 @@ def test_cca_immune_reconfigurator(client):
                 json={"section": "organism", "key": "immune_quarantine", "value": False, "reason": "test reset"})
 
 
+def test_vbs_living_systems_integrated_in_house(client):
+    # The OWNED VBS management systems (agentic_core/vbs) are real, reachable, and INTEGRATED into the
+    # in-house AI: genuine ops (real QMS gates, SHA3-512 DCMS versioning) + the native workflow-tree
+    # synthesis is GOVERNED by the real VBS QMS + DCMS. Honest: real computation, nothing fabricated.
+    sysz = client.get("/api/v1/vbs/systems").json()
+    assert sysz["owned"] is True and sysz["count"] == 5
+    assert {s["id"] for s in sysz["systems"]} == {"bms", "qms", "ems", "dcms", "backbone"}
+    # QMS: a REAL gate — high coverage + no stubs passes; low coverage + stubs fails
+    assert client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.97, "stubs_found": False}).json()["passed"] is True
+    assert client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.4, "stubs_found": True}).json()["passed"] is False
+    # DCMS: REAL SHA3-512 versioning — same id, distinct content -> distinct hash + version bump
+    a = client.post("/api/v1/vbs/dcms/commit", json={"artifact_id": "t-vbs", "content": {"v": 1}}).json()
+    b = client.post("/api/v1/vbs/dcms/commit", json={"artifact_id": "t-vbs", "content": {"v": 2}}).json()
+    assert a["algo"] == "sha3_512" and a["hash"] != b["hash"] and b["version"] == a["version"] + 1
+    # INTEGRATED INTO THE IN-HOUSE AI: the native workflow tree's output is governed by VBS QMS + DCMS
+    tree = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    gov = tree.get("governance")
+    assert gov and gov["governed_by"].startswith("VBS QMS + DCMS")
+    assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
+
+
 def test_native_workflow_tree_in_house(client):
     # The native swarm AUTONOMOUSLY decomposes a goal into a workflow TREE (DAG) and runs it
     # in-house-first per node, with PARALLEL branches + dependency ordering — orchestrated as a
