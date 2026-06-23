@@ -41,8 +41,10 @@ export const VSBCockpit: React.FC = () => {
     axios.get('/api/v1/vsb').then(r => {
       const ents: VSBRow[] = r.data.entities || [];
       setVsbs(ents);
-      const first = (ents.find(e => e.has_board) || ents[0]);
-      if (first) setSelected(first.vsb_id);
+      // Honour a ?vsb=<id> deep-link (e.g. "Open in Cockpit" from the Spawn Studio); else prefer an established VSB.
+      const want = new URLSearchParams(window.location.search).get('vsb');
+      const chosen = (want && ents.find(e => e.vsb_id === want)) || ents.find(e => e.has_board) || ents[0];
+      if (chosen) setSelected(chosen.vsb_id);
     }).catch(() => {});
     axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(() => {});
   }, []);

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -121,6 +122,7 @@ export const VSBSpawnStudio: React.FC = () => {
   const [error, setError] = useState('');
   const [entities, setEntities] = useState<VSBEntity[]>([]);
   const [loadingEntities, setLoadingEntities] = useState(false);
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<Record<string, VSBDetail>>({});
   const [orch, setOrch] = useState<Record<string, OrchRun>>({});
@@ -355,6 +357,14 @@ export const VSBSpawnStudio: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  {e.has_board && (
+                    <button type="button"
+                      onClick={(ev) => { ev.stopPropagation(); navigate(`/vsb-cockpit?vsb=${e.vsb_id}`); }}
+                      className="text-[8px] font-black uppercase px-2 py-1 rounded-lg bg-highlight/15 text-highlight hover:bg-highlight/25 transition-all"
+                      title="Open this living VSB in the Cockpit">
+                      Open in Cockpit
+                    </button>
+                  )}
                   {e.has_board && (
                     <span className="text-[8px] font-black uppercase px-2 py-1 rounded-lg bg-aura/10 text-aura"
                       title="Established living organisation — Board + Economy">
