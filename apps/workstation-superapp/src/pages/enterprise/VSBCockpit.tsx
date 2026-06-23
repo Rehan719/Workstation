@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
-import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText } from 'lucide-react';
+import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send } from 'lucide-react';
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -18,7 +18,10 @@ const TABS = [
   ['plan', 'Business Plan', Target],
   ['systems', 'Living Systems', ShieldCheck],
   ['transform', 'Transformation', Workflow],
+  ['chat', 'Converse', MessageCircle],
 ] as const;
+
+interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_external?: boolean }
 
 export const VSBCockpit: React.FC = () => {
   const [vsbs, setVsbs] = useState<VSBRow[]>([]);
@@ -30,6 +33,9 @@ export const VSBCockpit: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [tx, setTx] = useState<Dict | null>(null);
   const [txRunning, setTxRunning] = useState(false);
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatting, setChatting] = useState(false);
 
   useEffect(() => {
     axios.get('/api/v1/vsb').then(r => {
@@ -43,7 +49,7 @@ export const VSBCockpit: React.FC = () => {
 
   useEffect(() => {
     if (!selected) return;
-    setLoading(true); setTx(null);
+    setLoading(true); setTx(null); setMessages([]);
     Promise.all([
       axios.get(`/api/v1/vsb/${selected}`).then(r => r.data).catch(() => null),
       axios.get('/api/v1/business-plan', { params: { scope: selected } }).then(r => r.data).catch(() => null),
@@ -60,6 +66,20 @@ export const VSBCockpit: React.FC = () => {
       setTx(r.data);
     } catch { /* keep */ }
     setTxRunning(false);
+  };
+
+  const sendChat = async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatting || !selected) return;
+    setMessages(m => [...m, { role: 'you', text: msg }]);
+    setChatInput(''); setChatting(true);
+    try {
+      const r = await axios.post('/api/v1/avatar/chat', { message: msg, context: 'vsb', vsb_id: selected });
+      setMessages(m => [...m, { role: 'vsb', text: r.data.response || '(no response)', served_by: r.data.served_by, is_external: r.data.is_external }]);
+    } catch {
+      setMessages(m => [...m, { role: 'vsb', text: 'The enterprise avatar is unavailable right now.', is_external: false }]);
+    }
+    setChatting(false);
   };
 
   const board = detail?.board || {};
@@ -264,6 +284,41 @@ export const VSBCockpit: React.FC = () => {
                 </>
               )}
             </div>
+          )}
+
+          {/* Converse — chat with the living VSB's avatar, grounded in this entity, in-house */}
+          {tab === 'chat' && (
+            <Card className="p-6 space-y-4">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                <MessageCircle size={14} /> Converse with {detail.name} <span className="text-slate-600 normal-case font-bold">— grounded in this living VSB, in-house</span>
+              </h4>
+              <div className="space-y-3 max-h-[440px] overflow-y-auto">
+                {messages.length === 0 && (
+                  <p className="text-[11px] text-slate-600">Ask the enterprise about its mission, plan, next steps, or risks — its avatar answers grounded in this VSB, on Workstation's own fabric.</p>
+                )}
+                {messages.map((m, i) => (
+                  <div key={i} className={m.role === 'you' ? 'text-right' : ''}>
+                    <div className={`inline-block max-w-[85%] text-left p-3 rounded-2xl text-[12px] leading-relaxed ${m.role === 'you' ? 'bg-highlight/15 text-slate-200' : 'bg-slate-900 border border-slate-800 text-slate-300'}`}>
+                      <p className="whitespace-pre-wrap font-sans">{m.text}</p>
+                      {m.role === 'vsb' && m.served_by && (
+                        <span className={`mt-2 inline-block text-[8px] font-black uppercase px-2 py-0.5 rounded ${m.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                          {m.is_external ? `via ${m.served_by}` : `in-house · ${m.served_by}`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input aria-label="Message the VSB" value={chatInput} onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') sendChat(); }}
+                  placeholder="Ask the living enterprise…"
+                  className="flex-1 text-xs bg-slate-950 border border-slate-900 rounded-xl p-3 text-slate-300" />
+                <Button type="button" onClick={sendChat} disabled={chatting || !chatInput.trim()} className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
+                  {chatting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Send
+                </Button>
+              </div>
+            </Card>
           )}
         </>
       )}
