@@ -13,12 +13,13 @@ OpenAI used automatically the moment a valid OPENAI_API_KEY is configured) and t
 real `memory_v01` ChromaDB store, while reusing `AvatarState` from the existing
 avatar_engine for genuine per-session identity.
 
-Voice transcription (STT), voice output (TTS), and image understanding all require
-a working OpenAI (or other multimodal) API key — currently neither the configured
-OPENAI_API_KEY (invalid) nor GOOGLE_API_KEY (valid but IP-restricted in Cloud
-Console, blocking this server's outbound IP) works from this environment. Those
-endpoints are wired for real against the OpenAI client and will start working the
-moment a valid, unrestricted key is available — no other code changes needed.
+Vision (image understanding) is IN-HOUSE-FIRST: `/chat` analyses an attached image with a LOCAL
+Ollama vision model (e.g. `llava` / `llama3.2-vision` / `moondream`, set via OLLAMA_VISION_MODEL) —
+owned, no external dependency — and only falls back to an external provider (OpenAI) if a key is
+configured. If neither is available the image is received but its contents are NOT analysed and this is
+stated honestly (never a fabricated description). The response reports `image_served_by` +
+`image_is_external` so vision provenance is explicit. Voice STT/TTS (`/transcribe`, `/speak`) still
+require an external key (browser-native voice is used client-side for the in-house path).
 """
 import logging
 import os
@@ -71,8 +72,10 @@ class ChatResponse(BaseModel):
     session_id: str
     response: str
     image_understood: bool = False
+    image_served_by: Optional[str] = None  # which resource analysed the image: "ollama" (in-house) | "openai" | None
+    image_is_external: bool = False        # honest: was the image sent to an external provider?
     context: str
-    served_by: str = "native"          # which OWNED resource answered (in-house-first provenance)
+    served_by: str = "native"          # which OWNED resource answered the TEXT (in-house-first provenance)
     is_external: bool = False
     grounded_in: Optional[str] = None  # the vsb_id the answer was grounded in, if any
 
@@ -103,6 +106,29 @@ def _vsb_grounding(vsb_id: str) -> str:
         )
     except Exception:
         return ""
+
+
+async def _ollama_vision(image_base64: str, message: str) -> Optional[str]:
+    """In-house vision: analyse an image with a LOCAL Ollama vision model (e.g. llava / llama3.2-vision /
+    moondream) — owned, no external dependency. Returns the analysis text, or None if no local vision
+    model is available (caller then falls back honestly — never fabricates image content)."""
+    import httpx
+    ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+    model = os.getenv("OLLAMA_VISION_MODEL", "llava")
+    try:
+        async with httpx.AsyncClient(timeout=float(os.getenv("OLLAMA_VISION_TIMEOUT", "30"))) as client:
+            r = await client.post(ollama_url, json={
+                "model": model,
+                "prompt": f"{message}\n\nDescribe what is relevant in this image for the user's request. Be specific and honest; if the image is unclear, say so.",
+                "images": [image_base64],
+                "stream": False,
+            })
+            if r.status_code == 200:
+                out = (r.json().get("response") or "").strip()
+                return out or None
+    except Exception:
+        pass
+    return None
 
 
 class SpeakRequest(BaseModel):
@@ -156,29 +182,44 @@ async def chat(request: ChatRequest):
 
     image_understood = False
     image_note = ""
+    image_served_by: Optional[str] = None
+    image_is_external = False
     if request.image_base64:
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if openai_key:
-            try:
-                from openai import AsyncOpenAI
-                client = AsyncOpenAI(api_key=openai_key)
-                vision_resp = await client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[{
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": f"{request.message}\n\nDescribe what's relevant in this image for the user's request."},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{request.image_base64}"}},
-                        ],
-                    }],
-                    timeout=20,
-                )
-                image_note = vision_resp.choices[0].message.content or ""
-                image_understood = True
-            except Exception as e:
-                image_note = f"(Image attached but could not be analyzed: vision backend unavailable — {str(e)[:150]})"
+        # IN-HOUSE-FIRST vision: try a LOCAL Ollama vision model first (owned, no external dependency).
+        vision_out = await _ollama_vision(request.image_base64, request.message)
+        if vision_out:
+            image_note = vision_out
+            image_understood = True
+            image_served_by = "ollama"
+            image_is_external = False
         else:
-            image_note = "(Image attached but no working vision-capable API key is configured, so it could not be analyzed.)"
+            # Optional external accelerant — only if a key is configured (never a dependency).
+            openai_key = os.getenv("OPENAI_API_KEY")
+            if openai_key:
+                try:
+                    from openai import AsyncOpenAI
+                    client = AsyncOpenAI(api_key=openai_key)
+                    vision_resp = await client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": f"{request.message}\n\nDescribe what's relevant in this image for the user's request."},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{request.image_base64}"}},
+                            ],
+                        }],
+                        timeout=20,
+                    )
+                    image_note = vision_resp.choices[0].message.content or ""
+                    image_understood = True
+                    image_served_by = "openai"
+                    image_is_external = True
+                except Exception as e:
+                    image_note = f"(Image attached but could not be analysed: vision backend unavailable — {str(e)[:150]})"
+            else:
+                # Honest: the image was received but NOT analysed — no fabricated description.
+                image_note = ("(Image attached and received, but no in-house vision model (set OLLAMA_VISION_MODEL, "
+                              "e.g. llava/llama3.2-vision) or external vision key is available, so its contents were not analysed.)")
 
     grounding = _vsb_grounding(request.vsb_id) if request.vsb_id else ""
     history_block = "\n".join(f"{h['role']}: {h['content']}" for h in history[-10:])
@@ -202,6 +243,8 @@ async def chat(request: ChatRequest):
         session_id=session_id,
         response=response_text,
         image_understood=image_understood,
+        image_served_by=image_served_by,
+        image_is_external=image_is_external,
         context=request.context,
         served_by=meta.get("served_by", "native"),
         is_external=bool(meta.get("is_external")),

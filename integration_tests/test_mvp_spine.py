@@ -1680,6 +1680,26 @@ def test_cca_immune_reconfigurator(client):
                 json={"section": "organism", "key": "immune_quarantine", "value": False, "reason": "test reset"})
 
 
+def test_avatar_vision_in_house_and_honest(client):
+    # The avatar accepts an image (multimodal) and analyses it IN-HOUSE FIRST (local Ollama vision
+    # model) — never an external dependency. When no vision model is available it stays HONEST:
+    # image_understood is False and no description is fabricated; the text answer is still in-house.
+    png_1x1 = ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+    r = client.post("/api/v1/avatar/chat",
+                    json={"message": "What is in this image?", "context": "general", "image_base64": png_1x1})
+    assert r.status_code == 200, r.text
+    b = r.json()
+    assert "image_understood" in b and "image_served_by" in b and "image_is_external" in b
+    assert isinstance(b["image_understood"], bool)
+    # vision provenance is honest: if analysed at all, in-house (ollama) unless an external key is set
+    if b["image_understood"]:
+        assert b["image_served_by"] in ("ollama", "openai")
+    else:
+        assert b["image_served_by"] is None and b["image_is_external"] is False
+    # the conversational answer itself is always in-house (native fabric)
+    assert b["response"] and b["is_external"] is False
+
+
 def test_refine_iterates_in_house(client):
     # Iterative refinement: ANY tool output can be advanced in-house via /api/v1/refine, building on
     # the previous version. Returns the FULL refined text + honest in-house provenance.

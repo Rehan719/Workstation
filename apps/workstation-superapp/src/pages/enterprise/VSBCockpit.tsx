@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
-import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2 } from 'lucide-react';
+import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2, Paperclip } from 'lucide-react';
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -22,7 +22,7 @@ const TABS = [
   ['chat', 'Converse', MessageCircle],
 ] as const;
 
-interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_external?: boolean }
+interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_external?: boolean; attached?: boolean; image_understood?: boolean; image_served_by?: string | null; image_is_external?: boolean }
 
 export const VSBCockpit: React.FC = () => {
   const [vsbs, setVsbs] = useState<VSBRow[]>([]);
@@ -37,6 +37,7 @@ export const VSBCockpit: React.FC = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatting, setChatting] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{ b64: string; name: string } | null>(null);
   const [ledger, setLedger] = useState<Dict | null>(null);
   const [lastCycle, setLastCycle] = useState<Dict | null>(null);
   const [cycling, setCycling] = useState(false);
@@ -93,18 +94,33 @@ export const VSBCockpit: React.FC = () => {
 
   const sendChat = async (override?: string) => {
     const msg = (override ?? chatInput).trim();
-    if (!msg || chatting || !selected) return;
-    setMessages(m => [...m, { role: 'you', text: msg }]);
-    setChatInput(''); setChatting(true);
+    if ((!msg && !pendingImage) || chatting || !selected) return;
+    const img = pendingImage;
+    setMessages(m => [...m, { role: 'you', text: msg || '(image)', attached: !!img }]);
+    setChatInput(''); setPendingImage(null); setChatting(true);
     try {
-      const r = await axios.post('/api/v1/avatar/chat', { message: msg, context: 'vsb', vsb_id: selected });
+      const body: Record<string, any> = { message: msg || 'What is in this image?', context: 'vsb', vsb_id: selected };
+      if (img) body.image_base64 = img.b64;
+      const r = await axios.post('/api/v1/avatar/chat', body);
       const reply = r.data.response || '(no response)';
-      setMessages(m => [...m, { role: 'vsb', text: reply, served_by: r.data.served_by, is_external: r.data.is_external }]);
+      setMessages(m => [...m, { role: 'vsb', text: reply, served_by: r.data.served_by, is_external: r.data.is_external,
+                               image_understood: r.data.image_understood, image_served_by: r.data.image_served_by, image_is_external: r.data.image_is_external }]);
       speak(reply);
     } catch {
       setMessages(m => [...m, { role: 'vsb', text: 'The enterprise avatar is unavailable right now.', is_external: false }]);
     }
     setChatting(false);
+  };
+
+  const attachImage = (file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      const b64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;   // strip data: prefix
+      if (b64) setPendingImage({ b64, name: file.name });
+    };
+    reader.readAsDataURL(file);
   };
 
   const listenVoice = () => {
@@ -479,21 +495,40 @@ export const VSBCockpit: React.FC = () => {
                 {messages.map((m, i) => (
                   <div key={i} className={m.role === 'you' ? 'text-right' : ''}>
                     <div className={`inline-block max-w-[85%] text-left p-3 rounded-2xl text-[12px] leading-relaxed ${m.role === 'you' ? 'bg-highlight/15 text-slate-200' : 'bg-slate-900 border border-slate-800 text-slate-300'}`}>
+                      {m.attached && <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-aura mb-1"><Paperclip size={10} /> image attached</span>}
                       <p className="whitespace-pre-wrap font-sans">{m.text}</p>
-                      {m.role === 'vsb' && m.served_by && (
-                        <span className={`mt-2 inline-block text-[8px] font-black uppercase px-2 py-0.5 rounded ${m.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                          {m.is_external ? `via ${m.served_by}` : `in-house · ${m.served_by}`}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {m.role === 'vsb' && m.served_by && (
+                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${m.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                            {m.is_external ? `via ${m.served_by}` : `in-house · ${m.served_by}`}
+                          </span>
+                        )}
+                        {m.role === 'vsb' && m.image_served_by && (
+                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${m.image_is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                            vision: {m.image_served_by}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
+              {pendingImage && (
+                <div className="flex items-center gap-2 text-[10px] text-aura">
+                  <Paperclip size={11} /> {pendingImage.name}
+                  <button type="button" onClick={() => setPendingImage(null)} className="text-slate-500 hover:text-white">✕</button>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <input aria-label="Message the VSB" value={chatInput} onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') sendChat(); }}
                   placeholder={listening ? 'Listening…' : 'Ask the living enterprise…'}
                   className="flex-1 text-xs bg-slate-950 border border-slate-900 rounded-xl p-3 text-slate-300" />
+                <label aria-label="Attach an image" title="Attach an image (analysed by the in-house vision model)"
+                  className="p-3 rounded-xl shrink-0 bg-slate-800 text-slate-400 hover:text-white cursor-pointer transition-all">
+                  <Paperclip size={14} />
+                  <input type="file" accept="image/*" className="hidden" onChange={e => attachImage(e.target.files?.[0])} />
+                </label>
                 {SpeechRec && (
                   <button type="button" onClick={listenVoice} aria-label={listening ? 'Stop listening' : 'Speak to the enterprise'}
                     title="Voice input (browser-native, in-house)"
@@ -508,11 +543,11 @@ export const VSBCockpit: React.FC = () => {
                     <Volume2 size={14} />
                   </button>
                 )}
-                <Button type="button" onClick={() => sendChat()} disabled={chatting || !chatInput.trim()} className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
+                <Button type="button" onClick={() => sendChat()} disabled={chatting || (!chatInput.trim() && !pendingImage)} className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
                   {chatting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Send
                 </Button>
               </div>
-              {(SpeechRec || canSpeak) && <p className="text-[9px] text-slate-600">Voice is browser-native (speech-to-text in, text-to-speech out) — in-house, no external service.</p>}
+              <p className="text-[9px] text-slate-600">Voice (browser-native, in-house) + image (analysed in-house by a local Ollama vision model, with honest provenance) — no external service required.</p>
             </Card>
           )}
         </>
