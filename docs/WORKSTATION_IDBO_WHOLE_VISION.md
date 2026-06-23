@@ -288,9 +288,13 @@ green (137+ cases), Spine CI green on `main`.
   local inference (Ollama), and a `NativeOrchestrator` (`complete()`/`swarm()`, health-reordering).
   In-house-first gateway `query_meta()` reports `served_by` + `is_external`; the shared
   `agentic_core/api/_ai_provenance.ai_text` makes **every** AI-mediated response prove it ran in-house.
-- ✅ **Bespoke, reconfigurable swarm.** Native swarm cascades are first-class, user-definable, reusable,
-  re-runnable Resource-Fabric resources (`/api/v1/resources/swarm/*`); every established VSB is given
-  its OWN native swarm; the AI-CEO → C-Suite → CoE org cascade runs in-house with proven provenance.
+- ✅ **Bespoke, reconfigurable swarm + the FULL org cascade.** Native swarm cascades are first-class,
+  user-definable, reusable, re-runnable Resource-Fabric resources (`/api/v1/resources/swarm/*`); every
+  established VSB is given its OWN native swarm; and the **complete organisational cascade runs in-house
+  with proven provenance, apex → operational delivery**: Chief of the Board of Directors (the founder's
+  digital twin) → Board of Directors → AI CEO → C-Suite → Centres of Excellence → Business
+  Transformation Office → Build-to-Order (operational delivery resources) → **Products/Services
+  catalogue** (`POST /api/v1/swarm/cascade`).
 - ✅ **18 user-reachable domain AI tools across all 6 domains** (Law · Science · Care · Education ·
   Religion · Employment) — each on the native fabric with honest provenance, CI-locked, edge-audited
   (no 500s on malformed input), **runnable → iteratively refinable** (`/api/v1/refine`) → **exportable**

@@ -1492,11 +1492,18 @@ def test_mega_project_synthesis_in_house_no_fabrication(client):
 
 
 def test_swarm_cascade_in_house_provenance(client):
-    # The flagship AI CEO -> C-Suite -> CoE org cascade runs on the native fabric and reports
-    # in-house provenance across all tiers.
+    # The FULL VSB org cascade — Chief of the Board (founder's digital twin) -> Board of Directors ->
+    # AI CEO -> C-Suite -> Centres of Excellence -> Business Transformation Office -> Build-to-Order
+    # (operational delivery resources) -> Products/Services catalogue — runs on the native fabric and
+    # reports in-house provenance across EVERY tier.
     r = client.post("/api/v1/swarm/cascade",
                     json={"mission": "launch a halal meal service", "domain": "enterprise"}).json()
-    assert all(k in r for k in ("level_1_ceo_directive", "level_2_csuite", "level_3_coe"))
+    for k in ("level_0_chief_of_board", "level_0b_board_resolution", "level_1_ceo_directive",
+              "level_2_csuite", "level_3_coe", "level_4_business_transformation_office",
+              "level_5_build_to_order", "products_services_catalogue"):
+        assert r.get(k), f"cascade missing tier '{k}'"
+    assert r["org_hierarchy"][0] == "Chief of the Board of Directors"
+    assert "Build-to-Order" in r["org_hierarchy"] and "Business Transformation Office" in r["org_hierarchy"]
     p = r["ai_provenance"]
     assert p["posture"] == "in-house-first" and p["any_external"] is False
     assert set(p["served_by"]) <= {"native", "ollama"}

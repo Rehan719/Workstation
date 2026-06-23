@@ -173,8 +173,11 @@ class CascadeRequest(BaseModel):
 @router.post("/cascade")
 async def cascade_orchestration(req: CascadeRequest):
     """
-    Three-level cascade: CEO → C-Suite → CoE.
-    Simulates the full VSB organisational intelligence hierarchy.
+    Full VSB org cascade, apex → operational delivery, every tier run on Workstation's OWN native
+    fabric with proven in-house provenance:
+      Chief of the Board (founder's digital twin) → Board of Directors → AI CEO → C-Suite →
+      Centres of Excellence → Business Transformation Office → Build-to-Order (operational delivery
+      resources) → Products/Services catalogue.
     """
     run_id = uuid.uuid4().hex[:10]
     start = time.time()
@@ -192,11 +195,39 @@ async def cascade_orchestration(req: CascadeRequest):
         provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
         return res.get("output", "")
 
-    # Level 1: CEO sets mission
-    ceo_prompt = (
-        f"You are the AI CEO of a VSB. You have received this mission:\n\"{req.mission}\"\n"
+    # Tier 0a: Chief of the Board of Directors (the Owner's digital twin) — the founding mandate
+    chief_prompt = (
+        f"You are the Chief of the Board of Directors — the founder's own digital twin and the apex of "
+        f"this VSB's governance. A mission has been raised:\n\"{req.mission}\"\n"
         f"Domain: {req.domain}\nRealm: {req.realm}\n\n"
-        "Issue a CEO Mission Directive:\n"
+        "Set the Founding Mandate that the Board and the whole organisation must serve:\n"
+        "## Intent & Values (why this matters; the non-negotiable principles — ethical, beneficent)\n"
+        "## Strategic North Star (the outcome that defines success)\n"
+        "## Boundaries (what we will NOT do)\n"
+        "## Mandate to the Board (what you direct the Board to govern and approve)\n"
+        "Speak with founder-level conviction and care."
+    )
+    chief_mandate = await _q(chief_prompt, "cascade_chief")
+
+    # Tier 0b: Board of Directors — governance resolution on the Chief's mandate
+    board_prompt = (
+        "You are the Board of Directors of this VSB. The Chief of the Board (founder's digital twin) "
+        f"has issued this Founding Mandate:\n\n{chief_mandate[:600]}\n\n"
+        f"Mission: {req.mission}\nDomain: {req.domain}\n\n"
+        "Issue a Board Resolution that authorises and frames execution:\n"
+        "## Resolution (approve / approve-with-conditions, with reasons)\n"
+        "## Governance Guardrails (risk, compliance, ethics the executive must honour)\n"
+        "## Authority Delegated to the AI CEO (scope + accountabilities)\n"
+        "## Board-level Success Criteria"
+    )
+    board_resolution = await _q(board_prompt, "cascade_board")
+
+    # Tier 1: AI CEO — executes under the Board's resolution
+    ceo_prompt = (
+        f"You are the AI CEO of a VSB, accountable to the Board. The Board has resolved:\n\n"
+        f"{board_resolution[:600]}\n\n"
+        f"Mission:\n\"{req.mission}\"\nDomain: {req.domain}\nRealm: {req.realm}\n\n"
+        "Issue a CEO Mission Directive that honours the Board's guardrails:\n"
         "## Mission Statement (what we are achieving and why)\n"
         "## Strategic Priorities (top 3)\n"
         "## C-Suite Assignments (which executive owns which priority)\n"
@@ -237,15 +268,64 @@ async def cascade_orchestration(req: CascadeRequest):
         )
         coe_responses[specialism] = await _q(prompt, f"cascade_coe_{specialism}")
 
+    # Tier 4: Business Transformation Office — turns strategy + CoE input into a transformation programme
+    bto_prompt = (
+        "You are the Business Transformation Office (BTO) of this VSB. The CEO directive and the Centres "
+        f"of Excellence have shaped the approach for this mission:\n\"{req.mission}\"\n\n"
+        f"CEO directive (extract):\n{ceo_directive[:400]}\n\n"
+        "Define the Transformation Programme that converts strategy into delivery:\n"
+        "## Workstreams (the transformation initiatives, sequenced)\n"
+        "## Operating Model Changes (capabilities, processes, roles to stand up)\n"
+        "## Delivery Roadmap (phases with milestones)\n"
+        "## Dependencies & Risks\n"
+        "## Handover to Build-to-Order (what the delivery engine must produce)"
+    )
+    bto_programme = await _q(bto_prompt, "cascade_bto")
+
+    # Tier 5: Build-to-Order — operational delivery: assemble delivery resources + a work breakdown
+    build_prompt = (
+        "You are the Build-to-Order (BTO) operational delivery engine of this VSB. You receive this "
+        f"transformation programme:\n\n{bto_programme[:500]}\n\n"
+        f"Mission: {req.mission}\nDomain: {req.domain}\n\n"
+        "Produce the Operational Delivery Plan:\n"
+        "## Operational Delivery Resources (the engines/reactors/factories/labs/teams + digital "
+        "resources to assemble from the Resource Fabric, and how they combine)\n"
+        "## Work Breakdown (build order, owners, sequence)\n"
+        "## Quality Gates & Acceptance Criteria\n"
+        "## Go-Live & Operations (how it runs once delivered)"
+    )
+    build_to_order = await _q(build_prompt, "cascade_build_to_order")
+
+    # Products / Services catalogue — what Build-to-Order will actually deliver to customers
+    catalogue_prompt = (
+        "You are the Build-to-Order delivery engine compiling the customer-facing Products & Services "
+        f"Catalogue for this venture.\nMission: {req.mission}\nDomain: {req.domain}\n\n"
+        "List 4-8 concrete products/services this VSB will deliver. For EACH item give:\n"
+        "- Name\n- One-line description (the value to the customer)\n- Type (product | service)\n"
+        "- Primary delivery resource(s) that produce it\n"
+        "Be specific and realistic to the mission and domain; do not invent metrics or guarantees."
+    )
+    products_services_catalogue = await _q(catalogue_prompt, "cascade_catalogue")
+
     duration_ms = int((time.time() - start) * 1000)
-    biobus.record_operation("swarm_cascade", "swarm.cascade", success=True, payload=f"CEO+{len(csuite_responses)} CSuite+{len(coe_responses)} CoE, {duration_ms}ms")
+    biobus.record_operation("swarm_cascade", "swarm.cascade", success=True, payload=f"Chief+Board+CEO+{len(csuite_responses)} CSuite+{len(coe_responses)} CoE+BTO+BuildToOrder, {duration_ms}ms")
 
     return {
         "run_id": run_id,
         "mission": req.mission,
+        # Full org hierarchy, apex → operational delivery, every tier run in-house (see ai_provenance).
+        "org_hierarchy": [
+            "Chief of the Board of Directors", "Board of Directors", "AI CEO", "C-Suite",
+            "Centres of Excellence", "Business Transformation Office", "Build-to-Order",
+        ],
+        "level_0_chief_of_board": chief_mandate,
+        "level_0b_board_resolution": board_resolution,
         "level_1_ceo_directive": ceo_directive,
         "level_2_csuite": csuite_responses,
         "level_3_coe": coe_responses,
+        "level_4_business_transformation_office": bto_programme,
+        "level_5_build_to_order": build_to_order,
+        "products_services_catalogue": products_services_catalogue,
         "ai_provenance": provenance,
         "duration_ms": duration_ms,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
