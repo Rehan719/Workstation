@@ -1555,6 +1555,7 @@ _DOMAIN_TOOLS = [
     ("/api/v1/employment/cover-letter", {"target_role": "Product Manager", "company": "Acme", "highlights": "launched 3 products", "tone": "professional"}, "cover_letter"),
     ("/api/v1/employment/interview-prep", {"target_role": "Backend Engineer", "seniority": "mid", "competencies": ["system design"]}, "prep"),
     ("/api/v1/employment/career-path", {"current_role": "QA Analyst", "target_role": "SDET", "experience_years": 4, "constraints": "evenings only"}, "roadmap"),
+    ("/api/v1/employment/application", {"target_role": "Band 5 Staff Nurse", "organisation": "NHS Trust", "person_spec": "Essential: NMC registration; person-centred care.", "experience": "3 years on a surgical ward", "questions": ["Describe handling a deteriorating patient."], "word_limit": 500}, "statement"),
 ]
 
 

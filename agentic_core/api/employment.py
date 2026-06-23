@@ -27,6 +27,7 @@ _SERVICES = [
     {"id": "cover_letter", "name": "Cover Letter", "description": "Draft a focused, tailored cover letter for a specific role and employer."},
     {"id": "interview_prep", "name": "Interview Preparation", "description": "Likely questions plus STAR-method answer frameworks for the role."},
     {"id": "career_path", "name": "Career Path & Skills Gap", "description": "A development roadmap and skills-gap analysis from current to target role."},
+    {"id": "application", "name": "Application Form & Supporting Statement", "description": "Address a person specification point-by-point and draft answers to application-form questions."},
 ]
 
 
@@ -166,6 +167,60 @@ async def career_path(req: CareerPathRequest):
         "current_role": req.current_role,
         "target_role": req.target_role,
         "roadmap": roadmap,
+        "ai_provenance": provenance,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+# ── Application form & supporting statement ────────────────────────────────────
+class ApplicationRequest(BaseModel):
+    target_role: str
+    person_spec: str = ""                # the job's person specification / selection criteria
+    experience: str = ""                 # candidate's relevant experience/evidence
+    questions: List[str] = []            # specific application-form questions to answer
+    word_limit: int = 0                  # 0 = no explicit limit
+    organisation: str = ""
+
+
+@router.post("/application")
+async def application_support(req: ApplicationRequest):
+    """Draft a supporting statement that addresses the person specification criterion-by-criterion
+    with evidence, plus tailored answers to any application-form questions."""
+    org_text = f"Organisation: {req.organisation}\n" if req.organisation else ""
+    spec_text = (f"Person specification / selection criteria:\n{req.person_spec}\n\n"
+                 if req.person_spec else "")
+    exp_text = f"Candidate experience and evidence:\n{req.experience}\n\n" if req.experience else ""
+    limit_text = (f"Keep the supporting statement within roughly {req.word_limit} words.\n"
+                  if req.word_limit and req.word_limit > 0 else "")
+    if req.questions:
+        questions_block = ("## Application Question Answers\n"
+                           "Draft a strong, evidence-based answer to each question below:\n"
+                           + "\n".join(f"  {i+1}. {q}" for i, q in enumerate(req.questions)) + "\n\n")
+    else:
+        questions_block = ""
+
+    prompt = (
+        "You are an expert job-application coach (UK public sector, NHS, charity and graduate schemes). "
+        "Help the candidate write a compelling, HONEST application.\n\n"
+        f"Target role: {req.target_role}\n"
+        f"{org_text}{spec_text}{exp_text}{limit_text}\n"
+        "Produce:\n"
+        "## Supporting Statement\n"
+        "Address each essential and desirable criterion from the person specification in turn, evidencing "
+        "it with concrete, STAR-structured examples from the candidate's experience. If a criterion has no "
+        "clear evidence, say so honestly and suggest the closest transferable evidence — never invent "
+        "experience the candidate does not have.\n\n"
+        f"{questions_block}"
+        "## Criteria Coverage Check\n"
+        "A short checklist of which person-spec criteria are well-evidenced, partially evidenced, or a gap."
+    )
+    statement, provenance = await ai_text(prompt, "employment_application")
+    return {
+        "application_id": uuid.uuid4().hex[:10],
+        "target_role": req.target_role,
+        "organisation": req.organisation,
+        "questions_answered": len(req.questions),
+        "statement": statement,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

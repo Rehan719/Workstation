@@ -57,7 +57,7 @@ export const EmploymentHub: React.FC = () => {
                <span className="truncate">Employment Engines</span>
             </h3>
             <div className="flex gap-2 @[480px]:gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800 max-w-full overflow-x-auto custom-scrollbar">
-               {([['studio', 'Application Studio'], ['cv', 'CV Tailor'], ['cover', 'Cover Letter'], ['interview', 'Interview Prep'], ['path', 'Career Path'], ['qep', 'QEP Flagship']] as [string, string][]).map(([id, label]) => (
+               {([['studio', 'Application Studio'], ['cv', 'CV Tailor'], ['cover', 'Cover Letter'], ['application', 'Application Form'], ['interview', 'Interview Prep'], ['path', 'Career Path'], ['qep', 'QEP Flagship']] as [string, string][]).map(([id, label]) => (
                  <button key={id} type="button" onClick={() => setActiveTab(id)} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === id ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>{label}</button>
                ))}
             </div>
@@ -102,6 +102,22 @@ export const EmploymentHub: React.FC = () => {
                   { name: 'company', label: 'Company (optional)', type: 'text', placeholder: 'e.g. Acme Ltd' },
                   { name: 'highlights', label: 'What to emphasise', type: 'textarea', placeholder: 'key achievements / motivation' },
                   { name: 'tone', label: 'Tone', type: 'select', options: ['professional', 'warm', 'concise', 'enthusiastic'], default: 'professional' },
+                ]}
+              />
+            ) : activeTab === 'application' ? (
+              <DomainTool
+                title="Application Form & Supporting Statement"
+                description={<>Paste the person specification and your experience — Workstation's <span className="text-aura">own</span> AI drafts a criterion-by-criterion supporting statement and answers your form questions, in-house, never inventing experience.</>}
+                endpoint="/api/v1/employment/application"
+                resultKey="statement"
+                submitLabel="Draft application"
+                fields={[
+                  { name: 'target_role', label: 'Target role', type: 'text', placeholder: 'e.g. Band 5 Staff Nurse' },
+                  { name: 'organisation', label: 'Organisation (optional)', type: 'text', placeholder: 'e.g. NHS Trust / charity name' },
+                  { name: 'person_spec', label: 'Person specification / selection criteria', type: 'textarea', placeholder: 'paste the essential & desirable criteria' },
+                  { name: 'experience', label: 'Your relevant experience', type: 'textarea', placeholder: 'your evidence, achievements, and context' },
+                  { name: 'questions', label: 'Application-form questions (one per line)', type: 'list', placeholder: 'Describe a time you handled a deteriorating patient.\nWhy this organisation?' },
+                  { name: 'word_limit', label: 'Word limit (0 = none)', type: 'text', default: '0' },
                 ]}
               />
             ) : activeTab === 'interview' ? (
