@@ -139,7 +139,7 @@ def list_products() -> List[Dict[str, Any]]:
     return [
         _load_product(entry.name, entry)
         for entry in sorted(PRODUCTS_DIR.iterdir())
-        if entry.is_dir()
+        if entry.is_dir() and not entry.name.startswith((".", "_"))  # skip __pycache__/dotdirs (not products)
     ]
 
 

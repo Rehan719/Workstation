@@ -182,13 +182,25 @@ async def orchestrate(req: OrchestrateRequest):
           {"delegation": csuite_to_coe}, verified=True)
 
     # ── 6 · BTO + Build-to-Order + Products + Digital Resources + Biomimetics ──
-    digital_resources = [r["name"] for r in registry if r.get("resource_class") == "digital_resource"]
+    # Operational delivery resources = the digital resources the Build-to-Order engine assembles.
+    operational_delivery_resources = [r["name"] for r in registry if r.get("resource_class") == "digital_resource"] or \
+        ["Engine", "Reactor", "Incubator", "Laboratory", "Factory", "Generator", "Simulator"]
     biomimetic = [r["name"] for r in registry if r.get("resource_class") == "organism_system"]
+    # Products/Services catalogue = what Build-to-Order actually delivers (the REAL platform catalogue).
+    try:
+        from agentic_core.catalog.api import list_products
+        products_services_catalogue = [
+            {"name": p.get("name") or p.get("title") or p.get("slug"), "slug": p.get("slug"),
+             "tagline": p.get("tagline") or p.get("description", "")[:120]}
+            for p in list_products()
+        ]
+    except Exception:
+        products_services_catalogue = []
     stage(6, "Business Transformation Office", "Build-to-Order",
-          "Coordinate delivery via BTO + Build-to-Order + Products, powered by digital resources",
-          {"digital_resources": digital_resources or
-              ["Engine", "Reactor", "Incubator", "Laboratory", "Factory", "Generator", "Simulator"],
+          "Coordinate delivery via BTO → Build-to-Order, assembling operational delivery resources and the products/services catalogue",
+          {"operational_delivery_resources": operational_delivery_resources,
            "biomimetic_systems": biomimetic,
+           "products_services_catalogue": [p["name"] for p in products_services_catalogue],
            "build_to_order": "/api/v1/bto/configure", "products": "/api/v1/catalog/products"},
           verified=True)
 
@@ -288,6 +300,10 @@ async def orchestrate(req: OrchestrateRequest):
         "scope": req.scope, "objective": objective,
         "realisation_before": realisation.get("overall_realisation"),
         "cascade": cascade, "digital_twin": twin,
+        # First-class Build-to-Order outputs (the operational delivery resources assembled + the
+        # products/services catalogue the transformation actually delivers).
+        "operational_delivery_resources": operational_delivery_resources,
+        "products_services_catalogue": products_services_catalogue,
         "native_cognition": native_cognition,
         "governance": governance, "validation": validation,
         "dynamic": True, "adaptive": True, "responsive": signals > 0,

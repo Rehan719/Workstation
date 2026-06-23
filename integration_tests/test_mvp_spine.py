@@ -1194,6 +1194,11 @@ def test_transformation_orchestrate_end_to_end(client):
     tiers = [s["tier"] for s in b["cascade"]]
     assert tiers[0].startswith("Chief")                                    # starts at the Chief
     assert any("Business Transformation" in t for t in tiers)             # reaches the BTO
+    # Build-to-Order yields first-class operational delivery resources + the products/services catalogue
+    assert b["operational_delivery_resources"]                            # the resources assembled
+    cat = b["products_services_catalogue"]
+    assert cat and all(p.get("name") for p in cat)                       # real catalogue items
+    assert not any(str(p.get("name", "")).startswith(("_", ".")) for p in cat)  # no __pycache__/dotdirs leaked
     v = b["validation"]
     assert v["verified_stages"] == v["stages"]                            # every stage verified
     assert v["end_to_end_chief_to_bto"] is True
