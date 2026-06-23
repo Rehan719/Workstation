@@ -1591,3 +1591,16 @@ _EDGE_PROBES = [
 def test_endpoints_no_500_on_edge_inputs(client, endpoint, payload):
     r = client.post(endpoint, json=payload)
     assert r.status_code < 500, f"{endpoint} 500'd on edge input: {r.text[:200]}"
+
+
+def test_ai_calls_recorded_to_learning_loop(client):
+    # Every in-house AI tool call (via _ai_provenance.ai_text) records a real outcome into the
+    # operational-excellence learning loop, so rankings/summary reflect ACTUAL platform usage —
+    # which OWNED resource served each domain tool — not just swarm runs.
+    client.post("/api/v1/science/synthesise", json={"research_question": "does X affect Y?"})
+    summ = client.get("/api/v1/operations/summary").json()
+    assert "ai_call" in summ["kinds"]
+    assert 0.0 <= summ["in_house_rate"] <= 1.0
+    ranks = client.get("/api/v1/operations/rankings").json()["rankings"]
+    agent_rows = [r for r in ranks if str(r["resource"]).startswith("agent:")]
+    assert agent_rows and all(0.0 <= r["success_rate"] <= 1.0 for r in agent_rows)
