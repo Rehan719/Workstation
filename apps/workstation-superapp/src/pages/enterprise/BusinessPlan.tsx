@@ -3,7 +3,9 @@ import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown } from 'lucide-react';
 
 interface Objective { id: string; title: string; kpi: string; timeline: string; owner_role: string; progress_pct: number; status: string }
-interface Plan { scope: string; owner: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; updated_at: string | null }
+interface RoadmapPhase { timeline: string; progress_pct: number; complete: boolean; count: number; objectives: { title: string }[] }
+interface Roadmap { living: boolean; phases: RoadmapPhase[]; overall_progress_pct: number; current_phase: string | null; next_milestone: { phase: string; title: string } | null; note?: string }
+interface Plan { scope: string; owner: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; roadmap?: Roadmap; updated_at: string | null }
 
 const STATUS_TONE: Record<string, string> = { done: 'text-emerald-400', in_progress: 'text-highlight', blocked: 'text-vital', planned: 'text-slate-500' };
 
@@ -67,6 +69,28 @@ export const BusinessPlan: React.FC = () => {
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">overall objective progress · {plan.objectives.length} objectives</span>
             </div>
           </Card>
+
+          {plan.roadmap && plan.roadmap.phases.length > 0 && (
+            <Card className="p-6 border-highlight/30">
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-highlight flex items-center gap-2"><Target size={14} /> Living roadmap</h3>
+                <span className="text-[9px] font-black uppercase text-slate-500">overall {plan.roadmap.overall_progress_pct}% · current: {plan.roadmap.current_phase ?? '—'}</span>
+              </div>
+              <div className="space-y-3">
+                {plan.roadmap.phases.map((ph, i) => (
+                  <div key={i} className={`p-3 rounded-xl border ${ph.timeline === plan.roadmap!.current_phase ? 'bg-highlight/5 border-highlight/40' : 'bg-slate-900 border-slate-800'}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-white">{ph.timeline}</p>
+                      <span className="text-[9px] font-black text-highlight">{ph.progress_pct}% · {ph.count} obj{ph.complete ? ' ✓' : ''}</span>
+                    </div>
+                    <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden"><div className="h-full bg-highlight" style={{ width: `${ph.progress_pct}%` }} /></div>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5">{ph.objectives.map((o, j) => <span key={j} className="text-[9px] text-slate-400">· {o.title}</span>)}</div>
+                  </div>
+                ))}
+              </div>
+              {plan.roadmap.next_milestone && <p className="text-[10px] text-slate-500 mt-3">Next milestone: <span className="text-white font-bold">{plan.roadmap.next_milestone.title}</span> ({plan.roadmap.next_milestone.phase})</p>}
+            </Card>
+          )}
 
           <div>
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Target size={14} /> Objectives</h3>
