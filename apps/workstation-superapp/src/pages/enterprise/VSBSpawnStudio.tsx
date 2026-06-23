@@ -121,6 +121,8 @@ export const VSBSpawnStudio: React.FC = () => {
   const [events, setEvents] = useState<SpawnEvent[]>([]);
   const [error, setError] = useState('');
   const [entities, setEntities] = useState<VSBEntity[]>([]);
+  const [entityFilter, setEntityFilter] = useState('');
+  const [showAllEntities, setShowAllEntities] = useState(false);
   const [loadingEntities, setLoadingEntities] = useState(false);
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(null);
@@ -316,28 +318,49 @@ export const VSBSpawnStudio: React.FC = () => {
 
       {/* Existing VSB entities */}
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
           <h3 className="text-sm font-black uppercase tracking-widest text-white">
             Spawned Entities ({entities.length})
           </h3>
-          <button
-            type="button"
-            onClick={fetchEntities}
-            aria-label="Refresh VSB entities"
-            title="Refresh entities"
-            className="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-all"
-          >
-            <RefreshCw size={14} className={loadingEntities ? 'animate-spin' : ''} />
-          </button>
+          <div className="flex items-center gap-2">
+            {entities.length > 8 && (
+              <input
+                aria-label="Filter entities"
+                value={entityFilter}
+                onChange={e => { setEntityFilter(e.target.value); setShowAllEntities(false); }}
+                placeholder="Filter by name, domain, stage, id…"
+                className="min-w-[200px] bg-slate-950 border border-slate-900 rounded-lg px-3 py-2 text-xs text-slate-300"
+              />
+            )}
+            <button
+              type="button"
+              onClick={fetchEntities}
+              aria-label="Refresh VSB entities"
+              title="Refresh entities"
+              className="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-all"
+            >
+              <RefreshCw size={14} className={loadingEntities ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
 
         {entities.length === 0 ? (
           <p className="text-slate-600 text-sm font-bold uppercase tracking-widest text-center py-10">
             No VSB entities yet. Spawn your first one above.
           </p>
-        ) : (
+        ) : (() => {
+          const q = entityFilter.trim().toLowerCase();
+          const matched = q
+            ? entities.filter(e => `${e.name || ''} ${e.domain || ''} ${e.stage || ''} ${e.vsb_id}`.toLowerCase().includes(q))
+            : entities;
+          const CAP = 50;
+          const visible = showAllEntities ? matched : matched.slice(0, CAP);
+          return (
           <div className="space-y-3">
-            {entities.map(e => (
+            {matched.length === 0 && (
+              <p className="text-slate-600 text-xs font-bold uppercase tracking-widest text-center py-6">No entity matches “{entityFilter}”.</p>
+            )}
+            {visible.map(e => (
               <React.Fragment key={e.vsb_id}>
               <div
                 onClick={() => openDetail(e.vsb_id)}
@@ -391,8 +414,15 @@ export const VSBSpawnStudio: React.FC = () => {
               )}
               </React.Fragment>
             ))}
+            {!showAllEntities && matched.length > CAP && (
+              <button type="button" onClick={() => setShowAllEntities(true)}
+                className="w-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white py-3 rounded-xl border border-slate-900 hover:border-slate-700 transition-all">
+                Showing {CAP} of {matched.length}{q ? ' matches' : ''} — show all
+              </button>
+            )}
           </div>
-        )}
+          );
+        })()}
       </Card>
     </div>
   );
