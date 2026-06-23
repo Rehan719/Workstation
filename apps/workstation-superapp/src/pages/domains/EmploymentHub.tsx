@@ -6,6 +6,7 @@ import { QEPDashboard } from '../../components/QEPDashboard';
 import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { ApplicationStudio } from '../../components/employment/ApplicationStudio';
+import { DomainTool } from '../../components/DomainTool';
 
 export const EmploymentHub: React.FC = () => {
   const { layout, emotionalAdjustment } = useAdaptiveUI();
@@ -56,9 +57,9 @@ export const EmploymentHub: React.FC = () => {
                <span className="truncate">Employment Engines</span>
             </h3>
             <div className="flex gap-2 @[480px]:gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800 max-w-full overflow-x-auto custom-scrollbar">
-               <button type="button" onClick={() => setActiveTab('studio')} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'studio' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Application Studio</button>
-               <button type="button" onClick={() => setActiveTab('skills')} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Skills</button>
-               <button type="button" onClick={() => setActiveTab('qep')} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
+               {([['studio', 'Application Studio'], ['cv', 'CV Tailor'], ['cover', 'Cover Letter'], ['interview', 'Interview Prep'], ['path', 'Career Path'], ['qep', 'QEP Flagship']] as [string, string][]).map(([id, label]) => (
+                 <button key={id} type="button" onClick={() => setActiveTab(id)} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === id ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>{label}</button>
+               ))}
             </div>
          </div>
 
@@ -75,9 +76,64 @@ export const EmploymentHub: React.FC = () => {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                  <ApplicationStudio />
               </motion.div>
+            ) : activeTab === 'cv' ? (
+              <DomainTool
+                title="CV / Résumé Tailor"
+                description={<>Tailor your CV to a target role — Workstation's <span className="text-aura">own</span> AI rewrites it as achievement-led, ATS-friendly bullets, in-house.</>}
+                endpoint="/api/v1/employment/cv"
+                resultKey="cv"
+                submitLabel="Tailor CV"
+                fields={[
+                  { name: 'target_role', label: 'Target role', type: 'text', placeholder: 'e.g. Senior Data Engineer' },
+                  { name: 'experience', label: 'Experience summary', type: 'textarea', placeholder: 'your career history, achievements, and context' },
+                  { name: 'skills', label: 'Key skills (one per line)', type: 'list', placeholder: 'Python\nSpark\nAWS' },
+                  { name: 'seniority', label: 'Seniority', type: 'select', options: ['entry', 'mid', 'senior', 'lead', 'executive'], default: 'mid' },
+                ]}
+              />
+            ) : activeTab === 'cover' ? (
+              <DomainTool
+                title="Cover Letter"
+                description={<>Draft a focused, tailored cover letter — Workstation's <span className="text-aura">own</span> AI, in-house, no generic filler.</>}
+                endpoint="/api/v1/employment/cover-letter"
+                resultKey="cover_letter"
+                submitLabel="Draft cover letter"
+                fields={[
+                  { name: 'target_role', label: 'Target role', type: 'text', placeholder: 'e.g. Product Manager' },
+                  { name: 'company', label: 'Company (optional)', type: 'text', placeholder: 'e.g. Acme Ltd' },
+                  { name: 'highlights', label: 'What to emphasise', type: 'textarea', placeholder: 'key achievements / motivation' },
+                  { name: 'tone', label: 'Tone', type: 'select', options: ['professional', 'warm', 'concise', 'enthusiastic'], default: 'professional' },
+                ]}
+              />
+            ) : activeTab === 'interview' ? (
+              <DomainTool
+                title="Interview Preparation"
+                description={<>Prepare for an interview — Workstation's <span className="text-aura">own</span> AI gives likely questions + STAR frameworks, in-house.</>}
+                endpoint="/api/v1/employment/interview-prep"
+                resultKey="prep"
+                submitLabel="Prepare"
+                fields={[
+                  { name: 'target_role', label: 'Target role', type: 'text', placeholder: 'e.g. Backend Engineer' },
+                  { name: 'seniority', label: 'Seniority', type: 'select', options: ['entry', 'mid', 'senior', 'lead', 'executive'], default: 'mid' },
+                  { name: 'competencies', label: 'Focus competencies (one per line)', type: 'list', placeholder: 'system design\nownership' },
+                ]}
+              />
+            ) : activeTab === 'path' ? (
+              <DomainTool
+                title="Career Path & Skills Gap"
+                description={<>Map a development roadmap from your current to your target role — Workstation's <span className="text-aura">own</span> AI, in-house, with an honest assessment.</>}
+                endpoint="/api/v1/employment/career-path"
+                resultKey="roadmap"
+                submitLabel="Map roadmap"
+                fields={[
+                  { name: 'current_role', label: 'Current role', type: 'text', placeholder: 'e.g. QA Analyst' },
+                  { name: 'target_role', label: 'Target role', type: 'text', placeholder: 'e.g. SDET' },
+                  { name: 'experience_years', label: 'Years of experience', type: 'text', default: '3' },
+                  { name: 'constraints', label: 'Constraints (optional)', type: 'text', placeholder: 'e.g. evenings only, 12-month horizon' },
+                ]}
+              />
             ) : (
               <div className="p-20 text-center border-2 border-dashed border-slate-900 rounded-[3rem]">
-                 <p className="text-slate-600 font-black uppercase tracking-widest">Update your skills to see matches.</p>
+                 <p className="text-slate-600 font-black uppercase tracking-widest">Select an engine to begin.</p>
               </div>
             )}
          </div>

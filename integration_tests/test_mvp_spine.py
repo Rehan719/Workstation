@@ -339,6 +339,16 @@ def test_care_tools(client):
     assert len(body["tools"]) >= 5
 
 
+def test_employment_services(client):
+    # Employment domain brought to parity with the other domains: a service catalogue + clean tools.
+    r = client.get("/api/v1/employment/services")
+    assert r.status_code == 200
+    body = r.json()
+    assert "services" in body and body["total"] >= 4
+    ids = {s["id"] for s in body["services"]}
+    assert {"cv", "cover_letter", "interview_prep", "career_path"} <= ids
+
+
 # ── Evolution engine ──────────────────────────────────────────────────────────
 
 def test_evolution_proposals_empty(client):
@@ -1541,6 +1551,10 @@ _DOMAIN_TOOLS = [
     ("/api/v1/religion/fatwa-research", {"question": "What are the conditions for fasting while travelling?"}, "research"),
     ("/api/v1/religion/quran-tafsir", {"surah": 1, "ayah_start": 1}, "tafsir"),
     ("/api/v1/religion/halal-review", {"product_name": "Gummy sweets", "product_description": "Chewy fruit sweets", "ingredients": ["bovine gelatin", "glucose syrup"], "target_markets": ["UK"]}, "assessment"),
+    ("/api/v1/employment/cv", {"target_role": "Senior Data Engineer", "experience": "5 years building ETL pipelines in Python", "skills": ["Python", "Spark"], "seniority": "senior"}, "cv"),
+    ("/api/v1/employment/cover-letter", {"target_role": "Product Manager", "company": "Acme", "highlights": "launched 3 products", "tone": "professional"}, "cover_letter"),
+    ("/api/v1/employment/interview-prep", {"target_role": "Backend Engineer", "seniority": "mid", "competencies": ["system design"]}, "prep"),
+    ("/api/v1/employment/career-path", {"current_role": "QA Analyst", "target_role": "SDET", "experience_years": 4, "constraints": "evenings only"}, "roadmap"),
 ]
 
 
