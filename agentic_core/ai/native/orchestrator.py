@@ -251,6 +251,23 @@ class NativeOrchestrator:
         except Exception:
             decision = None
 
+        # UEG PROVENANCE (owned ledger): record this run to the real hash-chained SHA3-512 Merkle-DAG
+        # audit ledger — the in-house AI's actions get verifiable, tamper-evident provenance. Best-effort.
+        ueg_hash = None
+        try:
+            from agentic_core.ueg.registry import ueg_ledger
+            ueg_hash = await ueg_ledger.log_event("native.tree.run", {
+                "goal": (goal or "")[:200],
+                "node_count": len(nodes),
+                "parallel_levels": sum(1 for lv in levels if len(lv) > 1),
+                "immune_threat": threat,
+                "any_external": any_external,
+                "qms_passed": (governance or {}).get("qms_passed"),
+                "decision": (decision or {}).get("recommendation"),
+            }, actor="native.tree")
+        except Exception:
+            ueg_hash = None
+
         return {
             "goal": goal,
             "posture": "in-house-first",
@@ -262,6 +279,8 @@ class NativeOrchestrator:
             "immune_threat": threat,
             "governance": governance,
             "decision": decision,
+            "ueg_hash": ueg_hash,
+            "ueg_ledger": "hash-chained SHA3-512 Merkle-DAG (owned, verifiable)" if ueg_hash else None,
             "nodes": [{"id": nid, "role": by_id[nid]["role"], "depends_on": by_id[nid]["depends_on"],
                        "served_by": results[nid]["served_by"], "is_external": results[nid]["is_external"],
                        "output": results[nid]["output"]} for nid in order if nid in results],

@@ -1703,6 +1703,20 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_ueg_provenance_ledger_in_house(client):
+    # The in-house AI records its workflow-tree runs to a REAL hash-chained SHA3-512 Merkle-DAG audit
+    # ledger (agentic_core/ueg) — cryptographically verifiable, tamper-evident, grows per run.
+    t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    assert t.get("ueg_hash") and len(t["ueg_hash"]) == 128
+    v = client.get("/api/v1/ueg/verify").json()
+    assert v["chain_valid"] is True and v["algo"] == "sha3_512" and len(v["merkle_root"]) == 128
+    r = client.get("/api/v1/ueg/recent", params={"limit": 5}).json()
+    assert r["count"] >= 1 and any(e["event_type"] == "native.tree.run" for e in r["events"])
+    # a second run keeps the chain cryptographically valid (real append-only integrity)
+    client.post("/api/v1/native-ai/tree", json={"goal": "Design an education service"})
+    assert client.get("/api/v1/ueg/verify").json()["chain_valid"] is True
+
+
 def test_native_minimax_decision_in_house(client):
     # The OWNED cognition module (agentic_core/cognition.MinimaxOptimizer) is integrated into the
     # in-house AI as a REAL maximin decision capability — game-theory over actions under worst-case

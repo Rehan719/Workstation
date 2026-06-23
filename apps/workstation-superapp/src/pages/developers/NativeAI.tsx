@@ -20,6 +20,7 @@ interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
   node_count: number; parallel_levels: number; max_parallel: number; immune_threat: string;
   governance?: TreeGovernance | null; decision?: TreeDecision | null;
+  ueg_hash?: string | null; ueg_ledger?: string | null;
   nodes: TreeNodeResult[]; final: string; any_external: boolean;
 }
 interface SavedCascade { id: string; name: string; stages: Stage[]; usage_area: string; created_at: string }
@@ -112,6 +113,14 @@ function TreeView({ run }: { run: TreeRun }) {
           <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-highlight/15 text-highlight">{run.decision.recommendation}</span>
           <span className="text-[8px] font-bold uppercase text-slate-500">consistency {Math.round(run.decision.consistency * 100)}% · worst-case {run.decision.worst_case_utility}</span>
           <span className="text-[8px] text-slate-600">vs {run.decision.stressors.join(' · ')}</span>
+        </div>
+      )}
+      {run.ueg_hash && (
+        <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2">
+          <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">UEG provenance</span>
+          <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">chain-logged</span>
+          <span className="text-[8px] text-slate-600">{run.ueg_ledger}</span>
+          <span className="text-[8px] font-mono text-slate-600" title={run.ueg_hash}>{run.ueg_hash.slice(0, 16)}…</span>
         </div>
       )}
       {run.final && (

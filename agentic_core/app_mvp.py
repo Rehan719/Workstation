@@ -325,6 +325,9 @@ app.include_router(native_ai_api.router)
 from agentic_core.api import vbs_systems as vbs_systems_api
 app.include_router(vbs_systems_api.router)
 
+from agentic_core.api import ueg as ueg_api
+app.include_router(ueg_api.router)
+
 from agentic_core.api import deliverables as deliverables_api
 app.include_router(deliverables_api.router)
 

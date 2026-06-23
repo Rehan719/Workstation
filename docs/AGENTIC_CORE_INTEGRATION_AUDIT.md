@@ -70,3 +70,11 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
    fabricate; keep heavy/broken deps out of the lightweight boot/CI path.
 4. **Cadence:** the autonomous loop surfaces 1–2 Tier-B capabilities per cycle, verifies (boot + full
    suite + CI), and logs to `AUTONOMOUS_PROGRESS.md`. This is a multi-cycle programme, tracked here.
+
+## W61 scan (integration theme)
+- **agentic_core/ueg** (VSBUEGLogger) — ✅ REAL (hash-chained SHA3-512 Merkle-DAG ledger + verify_chain). INTEGRATED: the native workflow tree records every run to it; `/api/v1/ueg/verify|recent|log`.
+- **agentic_core/cognition/minimax_optimizer** — ✅ REAL (maximin game-theory). INTEGRATED in W60.
+- **agentic_core/vbs** — ✅ REAL. INTEGRATED in W59.
+- **agentic_core/tree_knowledge** — ❌ SKIP (MOCK): `query()` fabricates accuracy via `np.random.normal`; hardcoded node/edge counts; no real graph or retrieval. Would surface fabrication — not integrated.
+- **agentic_core/causal/csl** — ⏸ DEFERRED: delegates to `simverse.causal_simulator` (heavy/uncertain dependency chain) — needs a deeper real-vs-mock check before integrating.
+- **agentic_core/optimizer/allocator** — real but trivial tier→cpu-quota logic; poor fit for the workflow tree (no user-tier concept there).
