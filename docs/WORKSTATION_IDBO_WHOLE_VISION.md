@@ -7,7 +7,9 @@
   intent rather than a sampled or assumed subset.
   Companions: WORKSTATION_IDBO_UNDERSTANDING.md (same-page summary), WORKSTATION_IDBO_LIVING_PLAN.md
   (vision↔state↔action), ACTION_PLAN.md (timed plan), VSB_ECONOMIC_LEGAL_MODEL.md.
-  Status: LIVING · authored 2026-06-21 from the Owner's "whole platform" directive.
+  Status: LIVING · authored 2026-06-21 from the Owner's "whole platform" directive ·
+  execution progress updated 2026-06-23 (see §16 — the §6 native-AI mandate is substantially
+  delivered; full cycle log in docs/AUTONOMOUS_PROGRESS.md, W1–W38).
 -->
 
 # Workstation IDBO — The Whole Vision (Fine Resolution)
@@ -171,6 +173,10 @@ composes bespoke agent-cascade trees as first-class, reconfigurable, biomimetic 
 external providers becoming *optional accelerants*, never *dependencies*. (See Action Plan, new
 workstream **W1 — Native AI Resource Fabric**.)
 
+> **✅ DELIVERED (2026-06-23):** this mandate is now substantially built — the native AI resource
+> fabric, in-platform orchestrator, and bespoke reconfigurable swarm engine are live and in-house-first;
+> external providers are optional, never dependencies. See **§16** for the full execution ledger.
+
 ## 7. The Reconfigurable Resource Fabric + Digital Resources (with user design control)
 
 Across **Synthesis Lab · Build-to-Order · Forge**, users **access, select, reconfigure, and combine**
@@ -267,16 +273,52 @@ individually and collectively.
 6. **Ethics architecturally binding**; **honesty over polish** (never fabricate; label simulation).
 7. **For all humanity, all realms and domains** — democratised, accessible, personalised.
 
-## 16. Fidelity Check — vision vs. live system (the real gap to close)
+## 16. Fidelity Check & Execution Progress — vision vs. live system
 
-The platform has *a great deal* of this already built and verified (process-intelligence engines,
-Genesis Concept→Commercialisation, the VSB with Board/Chief/Economy/Plan, the resource fabric, the
-end-to-end transformation orchestration through the org, biomimetic systems, gaas governance, the
-living plan, the digital-twin generation/simulation, real CI). **The principal divergence from this
-vision is §6: the AI capability is currently external API calls, not Workstation's own native,
-reconfigurable AI swarm/models/orchestration.** Closing that — plus deeper user design-control over
-org/resource/swarm reconfiguration, the full multimodal avatar interaction, and bespoke-per-solution
-swarm synthesis — is the next major scope expansion (see `ACTION_PLAN.md`, workstreams W1–W6).
+**Update — 2026-06-23.** At authoring (2026-06-21) the principal divergence from this vision was §6:
+*the AI was external API calls, not Workstation's own native swarm/models/orchestration.* **That gap
+is now substantially closed** — the platform runs its OWN native AI fabric, in-house-first; external
+providers are optional and never a dependency. Full cycle-by-cycle execution log:
+`docs/AUTONOMOUS_PROGRESS.md` (workstreams W1–W38). Verified state: 355 routes, integration suite
+green (137+ cases), Spine CI green on `main`.
+
+**Delivered / closed:**
+- ✅ **§6 — Native AI fabric.** `agentic_core/ai/native/`: a `NativeReasoningEngine` honest
+  structured-reasoning floor (`is_model=False`, never fabricates), a `ModelResourceRegistry` owning
+  local inference (Ollama), and a `NativeOrchestrator` (`complete()`/`swarm()`, health-reordering).
+  In-house-first gateway `query_meta()` reports `served_by` + `is_external`; the shared
+  `agentic_core/api/_ai_provenance.ai_text` makes **every** AI-mediated response prove it ran in-house.
+- ✅ **Bespoke, reconfigurable swarm.** Native swarm cascades are first-class, user-definable, reusable,
+  re-runnable Resource-Fabric resources (`/api/v1/resources/swarm/*`); every established VSB is given
+  its OWN native swarm; the AI-CEO → C-Suite → CoE org cascade runs in-house with proven provenance.
+- ✅ **18 user-reachable domain AI tools across all 6 domains** (Law · Science · Care · Education ·
+  Religion · Employment) — each on the native fabric with honest provenance, CI-locked, edge-audited
+  (no 500s on malformed input), **runnable → iteratively refinable** (`/api/v1/refine`) → **exportable**
+  (Copy / Download .md), and discoverable via the unified `/ai-tools` launcher with `?tab=` deep-linking.
+- ✅ **Self-observing.** Every in-house AI call is recorded into the operational-excellence learning
+  loop; the orchestrator reorders resources by recorded health — real (never fabricated) feedback.
+- ✅ **Existing capabilities integrated, honestly.** Orphaned agentic_core capabilities surfaced into
+  the fabric (omnimedia, federation mesh, `mega_project` redone honestly after stripping fabricated
+  figures, `resource_optimizer`, `truth_consensus`); mock/fabricated Jules modules quarantined and
+  documented (`docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`).
+- ✅ **(pre-existing, still live)** process-intelligence engines, Genesis Concept→Commercialisation,
+  the VSB with Board/Chief/Economy/Plan, the resource fabric, end-to-end transformation orchestration
+  through the org, biomimetic systems, gaas governance, the living plan, digital-twin
+  generation/simulation, real CI.
+
+**Remaining scope — the genuine work still ahead (priority order, on the native-first foundation):**
+- ◻ **Deeper user design-control** over org/resource/swarm reconfiguration *from the UI* (the control
+  plane and fabric exist; richer user-facing reconfiguration UX remains).
+- ◻ **Full multimodal avatar interaction** — the avatar already runs in-house (always-online) and
+  grounds in a live VSB; full voice/vision multimodal exchange remains.
+- ◻ **Local-model depth** — the native floor is honest structured reasoning; richer local inference
+  (larger Ollama models / fine-tunes) deepens output quality without changing the in-house guarantee.
+- ◻ **Owner-gated (designed, not switched on):** the VSB economic model with *real* money (virtual WST
+  only today — the live Stripe key must never move money), production-deployment hardening, and an
+  optional live external AI key.
+
+The vision is **not** redefined down to current capability — the ◻ items above are the work, in order,
+built on the native-first foundation now in place. (Companion plan: `ACTION_PLAN.md`, W1–W6.)
 
 ---
 
