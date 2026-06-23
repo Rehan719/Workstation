@@ -1614,6 +1614,29 @@ def test_ai_calls_recorded_to_learning_loop(client):
     assert agent_rows and all(0.0 <= r["success_rate"] <= 1.0 for r in agent_rows)
 
 
+def test_cca_immune_reconfigurator(client):
+    # The arms-length Change Control Agency is wired to the Immune system + the Reconfiguration engine:
+    # under threat the immune system proposes a SAFE, reversible defensive reconfiguration which the CCA
+    # governs (audits + auto-approves) and applies via the reconfiguration engine. NOMINAL → no action.
+    n = client.post("/api/v1/cca/immune-reconfigure", json={}).json()
+    assert n["governed_by"].startswith("Change Control Agency")
+    # ELEVATED → tighten generation (benign, reversible) — governed + applied via the reconfig engine
+    e = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": "ELEVATED"}).json()
+    assert e["status"] == "implemented" and e["applied"]
+    assert e["reconfiguration"]["section"] == "gateway" and e["reconfiguration"]["key"] == "temperature_bias"
+    rec = client.get(f"/api/v1/cca/{e['cca_id']}").json()
+    assert rec["change_type"] == "immune_reconfiguration" and rec["immune_threat_at_submit"] == "ELEVATED"
+    assert any(a["event"] == "implemented" for a in rec["audit_trail"])
+    # CRITICAL containment is MEDIUM-tier + flagged for Board ratification
+    cr = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": "CRITICAL"}).json()
+    assert cr["impact_tier"] == "MEDIUM" and cr["requires_ratification"] is True
+    # a submitted change records the live immune threat that governed the decision
+    assert "immune_threat_at_submit" in rec
+    # reset the risky lever so the suite leaves clean organism state
+    client.post("/api/v1/organism/config/update",
+                json={"section": "organism", "key": "immune_quarantine", "value": False, "reason": "test reset"})
+
+
 def test_refine_iterates_in_house(client):
     # Iterative refinement: ANY tool output can be advanced in-house via /api/v1/refine, building on
     # the previous version. Returns the FULL refined text + honest in-house provenance.

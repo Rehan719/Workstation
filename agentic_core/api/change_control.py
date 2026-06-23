@@ -133,6 +133,29 @@ class ReviewDecision(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+# ── Biomimetic immune integration ─────────────────────────────────────────────
+
+def _immune_threat() -> str:
+    """Current immune threat level (NOMINAL | ELEVATED | HIGH | CRITICAL); safe if immune absent."""
+    try:
+        from agentic_core.organism.immune import immune
+        return immune.status().get("threat_level", "NOMINAL")
+    except Exception:
+        return "NOMINAL"
+
+
+# The immune system's defensive reconfiguration levers — SAFE, REVERSIBLE config changes only,
+# escalating with threat. Applied via the reconfiguration engine under arms-length CCA governance.
+_IMMUNE_DEFENCE: dict[str, dict] = {
+    "ELEVATED": {"section": "gateway",  "key": "temperature_bias",  "value": "precise", "tier": "LOW",
+                 "why": "Elevated error patterns — tighten generation to precise."},
+    "HIGH":     {"section": "organism", "key": "metabolic_throttle", "value": True,     "tier": "LOW",
+                 "why": "High threat — throttle metabolic load to relieve the organism."},
+    "CRITICAL": {"section": "organism", "key": "immune_quarantine",  "value": True,     "tier": "MEDIUM",
+                 "why": "Critical threat — quarantine failing endpoints (innate containment)."},
+}
+
+
 @router.post("/submit")
 async def submit_change(req: SubmitChangeRequest):
     """Submit a change request to the Change Control Agency."""
@@ -160,17 +183,25 @@ async def submit_change(req: SubmitChangeRequest):
         "audit_trail": [{"event": "submitted", "ts": now, "by": req.submitted_by}],
     }
 
-    # AUTO-APPROVE low-tier changes when organism is healthy
+    # AUTO-APPROVE low-tier changes only when the organism is healthy AND the immune system is not
+    # under active threat — biomimetic: do NOT push changes while the organism is fighting an
+    # infection (HIGH/CRITICAL immune threat holds even LOW changes for human/AI review).
     ctx = biobus.organism_context()
-    if tier == "LOW" and ctx["composite_health"] >= 0.6:
+    threat = _immune_threat()
+    change["immune_threat_at_submit"] = threat
+    if tier == "LOW" and ctx["composite_health"] >= 0.6 and threat in ("NOMINAL", "ELEVATED"):
         change["status"] = "approved"
         change["decision"] = "auto_approved"
         change["reviewed_at"] = now
-        change["review_result"] = "Auto-approved: LOW impact change, organism healthy."
-        change["audit_trail"].append({"event": "auto_approved", "ts": now, "by": "biobus"})
+        change["review_result"] = f"Auto-approved: LOW impact, organism healthy, immune threat {threat}."
+        change["audit_trail"].append({"event": "auto_approved", "ts": now, "by": "biobus", "immune_threat": threat})
         biobus.fire_signal("motor", "cca.auto_approve", f"Auto-approved: {req.title}", 0.3)
     else:
-        biobus.fire_signal("sensory", "cca.submit", f"Change submitted: {req.title} [{tier}]", 0.5)
+        if tier == "LOW" and threat in ("HIGH", "CRITICAL"):
+            change["review_result"] = (f"Held for review: immune threat {threat} — auto-approval paused "
+                                       "while the organism defends itself.")
+            change["audit_trail"].append({"event": "held_immune_threat", "ts": now, "immune_threat": threat})
+        biobus.fire_signal("sensory", "cca.submit", f"Change submitted: {req.title} [{tier}] (immune: {threat})", 0.5)
 
     _save_change(change)
     return {
@@ -178,6 +209,88 @@ async def submit_change(req: SubmitChangeRequest):
         "impact_tier": tier,
         "status": change["status"],
         "message": f"Change request {cca_id} submitted. Tier: {tier}. Status: {change['status']}.",
+    }
+
+
+class ImmuneReconfigureRequest(BaseModel):
+    # Default reads the LIVE immune threat. `simulate_threat` is an honest demonstration/test input
+    # that exercises the defensive mapping without mutating global immune state.
+    simulate_threat: str | None = None
+
+
+@router.post("/immune-reconfigure")
+async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRequest()):
+    """Immune-system reconfigurator, governed arms-length by the CCA.
+
+    Biomimetic defence: when the immune system is under threat it proposes a SAFE, REVERSIBLE
+    defensive reconfiguration (tighten generation → throttle load → quarantine failing endpoints).
+    The CCA records it as a change-controlled, audited action and — because these are low-risk,
+    reversible defensive levers — auto-approves and APPLIES it via the reconfiguration engine (a fast
+    innate-immune reflex that is nonetheless governed; MEDIUM-tier containment is flagged for Board
+    ratification). This wires the arms-length CCA to the Immune system and the Reconfiguration engine.
+    """
+    threat = (req.simulate_threat or _immune_threat()).upper()
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    plan = _IMMUNE_DEFENCE.get(threat)
+    if plan is None:
+        return {"threat_level": threat, "action": "none", "governed_by": "Change Control Agency (arms-length)",
+                "reason": "Immune state nominal — no defensive reconfiguration required."}
+
+    cca_id = f"cca-{uuid.uuid4().hex[:10]}"
+    requires_ratification = plan["tier"] != "LOW"
+    change = {
+        "cca_id": cca_id,
+        "title": f"Immune defence: {plan['section']}.{plan['key']} = {plan['value']}",
+        "change_type": "immune_reconfiguration",
+        "description": plan["why"],
+        "rationale": f"Immune threat level {threat}; defensive, reversible reconfiguration.",
+        "affected_systems": ["organism", plan["section"], "immune_system", "reconfiguration_engine"],
+        "submitted_by": "immune_system",
+        "submitted_at": now,
+        "impact_tier": plan["tier"],
+        "status": "submitted",
+        "immune_threat_at_submit": threat,
+        "requires_ratification": requires_ratification,
+        "rollback_plan": f"Revert {plan['section']}.{plan['key']} to its prior value via /config/update.",
+        "review_result": None, "decision": None, "reviewed_at": None, "implemented_at": None,
+        "audit_trail": [{"event": "submitted", "ts": now, "by": "immune_system", "immune_threat": threat}],
+    }
+    biobus.fire_signal("sensory", "cca.immune_reconfigure", f"Immune defence proposed [{threat}]", 0.6)
+
+    # Arms-length governance: auto-approve the defensive (reversible) reconfiguration, then apply it.
+    change["status"] = "approved"
+    change["decision"] = "auto_approved_immune_defence"
+    change["reviewed_at"] = now
+    change["review_result"] = (f"Auto-approved defensive reconfiguration under immune threat {threat}."
+                               + (" Flagged for Board ratification (MEDIUM containment)." if requires_ratification else ""))
+    change["audit_trail"].append({"event": "auto_approved", "ts": now, "by": "cca"})
+
+    applied = None
+    try:
+        from agentic_core.organism.reconfiguration import update_config, ConfigUpdateRequest
+        res = await update_config(ConfigUpdateRequest(
+            section=plan["section"], key=plan["key"], value=plan["value"],
+            reason=f"Immune reconfigurator (threat={threat}, cca={cca_id})"))
+        applied = res.get("change")
+        change["status"] = "implemented"
+        change["implemented_at"] = now
+        change["audit_trail"].append({"event": "implemented", "ts": now, "applied": applied})
+        biobus.fire_signal("motor", "cca.immune_reconfigure.apply",
+                           f"Applied immune defence: {plan['section']}.{plan['key']}={plan['value']}", 0.7)
+    except Exception as e:
+        change["audit_trail"].append({"event": "apply_failed", "ts": now, "error": str(e)})
+
+    _save_change(change)
+    return {
+        "cca_id": cca_id,
+        "threat_level": threat,
+        "impact_tier": plan["tier"],
+        "status": change["status"],
+        "requires_ratification": requires_ratification,
+        "reconfiguration": {"section": plan["section"], "key": plan["key"], "value": plan["value"], "why": plan["why"]},
+        "applied": applied,
+        "governed_by": "Change Control Agency (arms-length)",
+        "message": f"Immune reconfigurator: {threat} → {plan['section']}.{plan['key']}={plan['value']} ({change['status']}).",
     }
 
 
