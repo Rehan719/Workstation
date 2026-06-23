@@ -77,3 +77,21 @@ async def native_swarm(req: SwarmRequest):
         ]
     res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external)
     return res
+
+
+class TreeRequest(BaseModel):
+    goal: str
+    context: str = ""
+    max_parallel: int = 4
+    prefer_external: bool = False
+    timeout: float = 30.0
+
+
+@router.post("/tree")
+async def native_tree(req: TreeRequest):
+    """Autonomous workflow-TREE orchestration: the native swarm decomposes the goal into a dependency
+    tree and runs it in-house-first with PARALLEL branches — the living-organism cascade (immune-throttled
+    parallelism + biobus signals + learning loop). Every node reports the OWNED resource that served it."""
+    return await orchestrator.orchestrate_tree(
+        req.goal, context=req.context, max_parallel=req.max_parallel,
+        prefer_external=req.prefer_external, timeout=req.timeout)

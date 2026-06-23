@@ -1682,6 +1682,37 @@ def test_cca_immune_reconfigurator(client):
                 json={"section": "organism", "key": "immune_quarantine", "value": False, "reason": "test reset"})
 
 
+def test_native_workflow_tree_in_house(client):
+    # The native swarm AUTONOMOUSLY decomposes a goal into a workflow TREE (DAG) and runs it
+    # in-house-first per node, with PARALLEL branches + dependency ordering — orchestrated as a
+    # living-organism cascade (biobus signals + immune-throttled parallelism). No fabrication:
+    # every node reports which OWNED resource served it; nothing external in the test env.
+    r = client.post("/api/v1/native-ai/tree",
+                    json={"goal": "Build and launch a halal compliance review service"})
+    assert r.status_code == 200, r.text
+    b = r.json()
+    assert b["posture"] == "in-house-first"
+    # a real TREE, not a linear chain: >=4 nodes and at least one level fans out (>1 node in parallel)
+    assert b["node_count"] >= 4 and b["parallel_levels"] >= 1
+    # dependency ordering: every node runs only after ALL its dependencies (levels are topo-ordered)
+    seen: set = set()
+    tree_by_id = {n["id"]: n for n in b["tree"]}
+    for level in b["levels"]:
+        for nid in level:
+            assert all(d in seen for d in tree_by_id[nid]["depends_on"]), f"{nid} ran before its deps"
+        seen.update(level)
+    # every node served in-house with honest provenance; final synthesis present
+    assert b["any_external"] is False
+    assert b["nodes"] and all(n["is_external"] is False and n["served_by"] for n in b["nodes"])
+    assert b["final"] and isinstance(b["final"], str)
+    # adaptive planner expanded the tree for THIS goal: build->implementation, halal/compliance->risk
+    ids = set(tree_by_id)
+    assert {"frame", "synthesise", "review", "implementation", "risk"} <= ids
+    # the fan-out level has the parallel investigation branches depending only on frame
+    fanout = next((lv for lv in b["levels"] if len(lv) > 1), [])
+    assert all(tree_by_id[nid]["depends_on"] == ["frame"] for nid in fanout)
+
+
 def test_avatar_vision_in_house_and_honest(client):
     # The avatar accepts an image (multimodal) and analyses it IN-HOUSE FIRST (local Ollama vision
     # model) — never an external dependency. When no vision model is available it stays HONEST:

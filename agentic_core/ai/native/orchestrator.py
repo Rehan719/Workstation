@@ -112,6 +112,109 @@ class NativeOrchestrator:
             return comp.choices[0].message.content or ""
         return ""
 
+    def _immune_threat(self) -> str:
+        """Current immune threat level — the living organism's self-protection signal."""
+        try:
+            from agentic_core.organism.immune import immune
+            return immune.status().get("threat_level", "NOMINAL")
+        except Exception:
+            return "NOMINAL"
+
+    def _plan_tree(self, goal: str) -> List[Dict[str, Any]]:
+        """Autonomously decompose a goal into a workflow TREE (DAG): a framing node, several
+        investigation branches that run in PARALLEL (adapted to the goal's content), a synthesis that
+        depends on all branches, and a critical review. Honest: a principled analytical decomposition —
+        real dependency structure + real per-node in-house reasoning; the branch set adapts to the goal."""
+        g = (goal or "").lower()
+        nodes: List[Dict[str, Any]] = [
+            {"id": "frame", "role": "framing analyst", "depends_on": [],
+             "task": f"Frame the goal precisely: scope, success criteria, and the key questions to resolve. Goal: {goal}"},
+        ]
+        branches: List[tuple] = [
+            ("research", "research analyst", "Gather the key facts, prior art, and constraints relevant to the goal."),
+            ("design", "solution designer", "Design the approach and the main options to achieve the goal."),
+        ]
+        if any(k in g for k in ("build", "implement", "deliver", "ship", "develop", "create", "launch", "make")):
+            branches.append(("implementation", "delivery planner", "Produce a concrete, sequenced implementation plan with milestones."))
+        if any(k in g for k in ("risk", "complian", "legal", "safe", "secur", "govern", "ethic", "halal", "assur")):
+            branches.append(("risk", "risk & assurance", "Identify risks, compliance/assurance needs, and concrete mitigations."))
+        if any(k in g for k in ("cost", "budget", "econom", "price", "fund", "invest", "revenue", "profit")):
+            branches.append(("economics", "economics analyst", "Assess costs, value, and economic viability."))
+        for bid, role, task in branches:
+            nodes.append({"id": bid, "role": role, "depends_on": ["frame"], "task": task})
+        nodes.append({"id": "synthesise", "role": "chief synthesiser", "depends_on": [b[0] for b in branches],
+                      "task": "Synthesise the branch outputs into one coherent recommendation/plan for the goal."})
+        nodes.append({"id": "review", "role": "critical reviewer", "depends_on": ["synthesise"],
+                      "task": "Critically review the synthesis: gaps, risks, and a clear go/no-go with next actions."})
+        return nodes
+
+    async def orchestrate_tree(self, goal: str, context: str = "", max_parallel: int = 4,
+                               prefer_external: bool = False, timeout: float = 30.0) -> Dict[str, Any]:
+        """Plan + run an autonomous workflow TREE for a goal — the living-organism cascade: the goal is
+        decomposed into a dependency tree, executed IN-HOUSE-FIRST per node with PARALLEL branches,
+        biomimetically mediated (immune-throttled parallelism + biobus nervous signals + the learning
+        loop via complete()). Every node reports which OWNED resource served it; never fabricated."""
+        nodes = self._plan_tree(goal)
+        by_id = {n["id"]: n for n in nodes}
+        threat = self._immune_threat()
+        # BIOMIMETIC self-protection: under immune stress the organism reduces concurrent cognitive load.
+        if threat in ("HIGH", "CRITICAL"):
+            max_parallel = 1
+        elif threat == "ELEVATED":
+            max_parallel = min(max_parallel, 2)
+        max_parallel = max(1, int(max_parallel))
+        _fire("cognitive", "native.tree", f"plan {len(nodes)} nodes: {goal[:48]}", 0.6)
+
+        results: Dict[str, Dict[str, Any]] = {}
+
+        async def run_node(nid: str) -> tuple:
+            n = by_id[nid]
+            dep_ctx = "\n\n".join(f"[{d}] {results[d]['output'][:600]}" for d in n["depends_on"] if d in results)
+            prompt = (
+                f"You are the '{n['role']}' agent in Workstation's native swarm, executing node '{nid}' "
+                f"of an autonomously-planned workflow tree.\n"
+                f"{('Overall context:\\n' + context[:600] + '\\n\\n') if context else ''}"
+                f"Overall goal: {goal}\n"
+                f"{('Inputs from upstream nodes:\\n' + dep_ctx + '\\n\\n') if dep_ctx else ''}"
+                f"Your task: {n['task']}\n\n## {nid} output"
+            )
+            res = await self.complete(prompt, agent=f"tree:{nid}", timeout=timeout, prefer_external=prefer_external)
+            return nid, res
+
+        levels: List[List[str]] = []
+        done: set = set()
+        any_external = False
+        while len(done) < len(nodes):
+            ready = [n["id"] for n in nodes if n["id"] not in done and all(d in done for d in n["depends_on"])]
+            if not ready:
+                break  # dependency-cycle guard (the planner never produces one)
+            levels.append(ready)
+            for i in range(0, len(ready), max_parallel):       # bounded parallelism within the level
+                chunk = ready[i:i + max_parallel]
+                for nid, res in await asyncio.gather(*[run_node(x) for x in chunk]):
+                    results[nid] = res
+                    any_external = any_external or bool(res.get("is_external"))
+                    done.add(nid)
+                    _fire("motor", "native.tree", f"node {nid} served by {res['served_by']}", 0.4)
+
+        final = (results.get("review") or results.get("synthesise") or {}).get("output", "")
+        order = [n["id"] for n in nodes]
+        return {
+            "goal": goal,
+            "posture": "in-house-first",
+            "tree": [{"id": n["id"], "role": n["role"], "depends_on": n["depends_on"]} for n in nodes],
+            "levels": levels,
+            "node_count": len(nodes),
+            "parallel_levels": sum(1 for lv in levels if len(lv) > 1),
+            "max_parallel": max_parallel,
+            "immune_threat": threat,
+            "nodes": [{"id": nid, "role": by_id[nid]["role"], "depends_on": by_id[nid]["depends_on"],
+                       "served_by": results[nid]["served_by"], "is_external": results[nid]["is_external"],
+                       "output": results[nid]["output"]} for nid in order if nid in results],
+            "final": final,
+            "any_external": any_external,
+        }
+
     async def swarm(self, agent: str, stages: List[Dict[str, str]],
                     context: str = "", prefer_external: bool = False,
                     timeout: float = 30.0) -> Dict[str, Any]:
