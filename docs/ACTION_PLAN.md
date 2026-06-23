@@ -3,7 +3,7 @@
   Objective → Strategy → Gap → timed task breakdown. Living artifact; updated as work proceeds.
   Companion to WORKSTATION_IDBO_LIVING_PLAN.md (vision↔state↔action) and DEVELOPMENT_TIMELINE.md (history).
   Status: LIVING · started 2026-06-21 · transformation plan reviewed & updated 2026-06-23 against
-  execution (see "Workstream execution status" below; W1/W2/W4/W5 DELIVERED, W3/W6 in progress;
+  execution (see "Workstream execution status" below; W1/W2/W3/W4/W5 DELIVERED, W6 in progress (Owner-gated);
   full cycle log docs/AUTONOMOUS_PROGRESS.md cycles W1–W48).
 -->
 
@@ -127,10 +127,11 @@ items (Stripe, production deploy) when the Owner directs.
 - **W2 — Bespoke VSB org + resource synthesis — ✅ DELIVERED.** Every established VSB gets its OWN
   reconfigurable native swarm; the Resource Fabric is select + compose + **run** (`/resource-fabric`);
   Build-to-Order configurator assembles a build blueprint; twin pre-validation in the transformation run.
-- **W3 — Multimodal avatar + Chief/AI-CEO interaction — 🟡 PARTIAL (advancing).** The avatar is
-  always-online in-house and VSB-grounded (Cockpit "Converse"), now with browser-native **voice**
-  (speech-to-text in / text-to-speech out, in-house — W50); the full org cascade Chief→Board→AI-CEO→…→
-  Build-to-Order runs in-house with provenance. **Remaining:** image input + all-language UI.
+- **W3 — Multimodal avatar + Chief/AI-CEO interaction — ✅ DELIVERED.** The avatar is always-online
+  in-house and VSB-grounded (Cockpit "Converse"), and now fully **multimodal in-house**: text + **voice**
+  (browser-native STT/TTS) + **image** (local Ollama vision model, honest provenance) + **all-language**
+  (responds in any requested language). The full org cascade Chief→Board→AI-CEO→…→Build-to-Order runs
+  in-house with provenance.
 - **W4 — Living deliverables — ✅ DELIVERED.** Living, versioned, re-runnable deliverables
   (`/api/v1/deliverables/*`); every domain-tool output is **runnable → iteratively refinable
   (`/api/v1/refine`) → exportable (Copy/Download .md)**; omnimedia output formats surfaced.

@@ -38,6 +38,7 @@ export const VSBCockpit: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const [chatting, setChatting] = useState(false);
   const [pendingImage, setPendingImage] = useState<{ b64: string; name: string } | null>(null);
+  const [chatLang, setChatLang] = useState('');   // '' = English; otherwise respond in this language
   const [ledger, setLedger] = useState<Dict | null>(null);
   const [lastCycle, setLastCycle] = useState<Dict | null>(null);
   const [cycling, setCycling] = useState(false);
@@ -101,6 +102,7 @@ export const VSBCockpit: React.FC = () => {
     try {
       const body: Record<string, any> = { message: msg || 'What is in this image?', context: 'vsb', vsb_id: selected };
       if (img) body.image_base64 = img.b64;
+      if (chatLang) body.language = chatLang;
       const r = await axios.post('/api/v1/avatar/chat', body);
       const reply = r.data.response || '(no response)';
       setMessages(m => [...m, { role: 'vsb', text: reply, served_by: r.data.served_by, is_external: r.data.is_external,
@@ -543,6 +545,13 @@ export const VSBCockpit: React.FC = () => {
                     <Volume2 size={14} />
                   </button>
                 )}
+                <select aria-label="Response language" value={chatLang} onChange={e => setChatLang(e.target.value)}
+                  title="Respond in this language (in-house)"
+                  className="text-[10px] font-black uppercase bg-slate-800 border border-slate-800 rounded-xl text-slate-300 px-2 py-3 shrink-0">
+                  {['', 'Arabic', 'Urdu', 'French', 'Spanish', 'Hindi', 'Bengali', 'Mandarin', 'Turkish', 'Malay', 'Swahili'].map(l => (
+                    <option key={l || 'en'} value={l}>{l || 'English'}</option>
+                  ))}
+                </select>
                 <Button type="button" onClick={() => sendChat()} disabled={chatting || (!chatInput.trim() && !pendingImage)} className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
                   {chatting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Send
                 </Button>

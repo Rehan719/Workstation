@@ -1700,6 +1700,17 @@ def test_avatar_vision_in_house_and_honest(client):
     assert b["response"] and b["is_external"] is False
 
 
+def test_avatar_all_language_in_house(client):
+    # All-language: the avatar accepts a `language` and instructs the in-house fabric to answer in it
+    # (echoed back); the answer stays in-house. Default (no language) is not forced.
+    r = client.post("/api/v1/avatar/chat", json={"message": "Summarise the mission", "context": "general", "language": "Arabic"})
+    assert r.status_code == 200
+    b = r.json()
+    assert b["language"] == "Arabic" and b["response"] and b["is_external"] is False
+    d = client.post("/api/v1/avatar/chat", json={"message": "hi", "context": "general"}).json()
+    assert d["language"] is None
+
+
 def test_refine_iterates_in_house(client):
     # Iterative refinement: ANY tool output can be advanced in-house via /api/v1/refine, building on
     # the previous version. Returns the FULL refined text + honest in-house provenance.

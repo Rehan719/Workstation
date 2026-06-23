@@ -66,6 +66,7 @@ class ChatRequest(BaseModel):
     context: str = "general"
     image_base64: Optional[str] = None
     vsb_id: Optional[str] = None       # when set, the avatar is grounded in this live VSB entity
+    language: Optional[str] = None     # respond in this language (e.g. "Arabic", "Urdu", "French"); default English
 
 
 class ChatResponse(BaseModel):
@@ -78,6 +79,7 @@ class ChatResponse(BaseModel):
     served_by: str = "native"          # which OWNED resource answered the TEXT (in-house-first provenance)
     is_external: bool = False
     grounded_in: Optional[str] = None  # the vsb_id the answer was grounded in, if any
+    language: Optional[str] = None     # the language the answer was requested in (echoed back)
 
 
 def _vsb_grounding(vsb_id: str) -> str:
@@ -223,8 +225,12 @@ async def chat(request: ChatRequest):
 
     grounding = _vsb_grounding(request.vsb_id) if request.vsb_id else ""
     history_block = "\n".join(f"{h['role']}: {h['content']}" for h in history[-10:])
+    # All-language: instruct the in-house fabric to answer in the requested language (default English).
+    lang = (request.language or "").strip()
+    lang_instr = f"Respond ENTIRELY in {lang}. " if lang and lang.lower() not in ("english", "en") else ""
     prompt = (
         f"{domain_prompt}{grounding}\n\n"
+        f"{lang_instr}"
         f"{f'Conversation so far:\n{history_block}\n\n' if history_block else ''}"
         f"{f'Image analysis: {image_note}\n\n' if image_note else ''}"
         f"User: {request.message}"
@@ -249,6 +255,7 @@ async def chat(request: ChatRequest):
         served_by=meta.get("served_by", "native"),
         is_external=bool(meta.get("is_external")),
         grounded_in=request.vsb_id,
+        language=lang or None,
     )
 
 
