@@ -1517,3 +1517,29 @@ def test_collective_truth_consensus_surfaced(client):
     assert by["price is optimal"]["accepted"] is False
     fab = client.get("/api/v1/resources?resource_class=process_intelligence").json()
     assert any(x["id"] == "truth_consensus" for x in fab["resources"])
+
+
+# The user-reachable domain-tool surface — the reusable <DomainTool> frontend component posts to
+# exactly these endpoints/keys. This locks them in: each returns its text result + honest in-house
+# provenance (no external dependency), so a regression to any tool's contract fails CI.
+_DOMAIN_TOOLS = [
+    ("/api/v1/law/analyse", {"document_text": "This agreement is between A and B for consulting services."}, "analysis"),
+    ("/api/v1/science/synthesise", {"research_question": "Does X improve Y?"}, "report"),
+    ("/api/v1/science/literature", {"research_question": "Does X improve Y?"}, "outline"),
+    ("/api/v1/care/handover", {"patient_summary": "72yo M, community-acquired pneumonia.", "current_situation": "Stable post-op, observations within range."}, "handover"),
+    ("/api/v1/education/lesson-plan", {"subject": "Biology", "topic": "Cells", "level": "GCSE"}, "lesson_plan"),
+    ("/api/v1/education/curriculum", {"subject": "Mathematics", "level": "GCSE"}, "curriculum"),
+    ("/api/v1/religion/fatwa-research", {"question": "What are the conditions for fasting while travelling?"}, "research"),
+    ("/api/v1/religion/quran-tafsir", {"surah": 1, "ayah_start": 1}, "tafsir"),
+]
+
+
+@pytest.mark.parametrize("endpoint,payload,result_key", _DOMAIN_TOOLS)
+def test_domain_tools_reachable_in_house(client, endpoint, payload, result_key):
+    r = client.post(endpoint, json=payload)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body.get(result_key), f"{endpoint} missing '{result_key}'"
+    prov = body.get("ai_provenance") or {}
+    assert prov.get("posture") == "in-house-first"
+    assert prov.get("is_external") is False

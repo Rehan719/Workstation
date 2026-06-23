@@ -63,7 +63,8 @@ export const CareHub: React.FC = () => {
                 resultKey="handover"
                 submitLabel="Compose handover"
                 fields={[
-                  { name: 'current_situation', label: 'Current situation', type: 'textarea', placeholder: 'e.g. 72yo M, post-op day 2, rising NEWS2, new confusion' },
+                  { name: 'patient_summary', label: 'Patient summary', type: 'textarea', placeholder: 'e.g. 72yo M, admitted with community-acquired pneumonia, day 2 post-op' },
+                  { name: 'current_situation', label: 'Current situation', type: 'textarea', placeholder: 'e.g. rising NEWS2, new confusion, sats 92% on 2L' },
                   { name: 'background', label: 'Background', type: 'text', placeholder: 'relevant history / admission reason' },
                   { name: 'assessment', label: 'Assessment', type: 'text', placeholder: 'your clinical assessment' },
                   { name: 'recommendation', label: 'Recommendation', type: 'text', placeholder: 'what you recommend / are asking for' },

@@ -43,6 +43,7 @@ export const ScienceHub: React.FC = () => {
             </h3>
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                <button type="button" onClick={() => setActiveTab('research')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'research' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Research</button>
+               <button type="button" onClick={() => setActiveTab('literature')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'literature' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Literature</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
@@ -56,6 +57,19 @@ export const ScienceHub: React.FC = () => {
                     <QEPImmersiveTools domain="science" />
                  </div>
               </motion.div>
+            ) : activeTab === 'literature' ? (
+              <DomainTool
+                title="Literature Review"
+                description={<>Pose a research question — Workstation's <span className="text-aura">own</span> AI maps the literature into a structured review outline (themes, key works, gaps), in-house.</>}
+                endpoint="/api/v1/science/literature"
+                resultKey="outline"
+                submitLabel="Map the literature"
+                fields={[
+                  { name: 'research_question', label: 'Research question', type: 'textarea', placeholder: 'e.g. How does sleep affect memory consolidation?' },
+                  { name: 'domain', label: 'Domain', type: 'text', default: 'neuroscience', placeholder: 'neuroscience | economics | …' },
+                  { name: 'scope_years', label: 'Scope (years back)', type: 'text', default: '10' },
+                ]}
+              />
             ) : (
               <DomainTool
                 title="Research Synthesiser"
