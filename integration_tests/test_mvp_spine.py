@@ -1635,6 +1635,8 @@ _EDGE_PROBES = [
     ("/api/v1/collective/consensus", {"claims": [{"claim": "x", "confidence": 0.9, "reputation": 0}]}),
     ("/api/v1/mega-project/synthesise", {"concept": "", "domain": ""}),
     ("/api/v1/refine", {"previous": "", "instruction": ""}),
+    ("/api/v1/avatar/chat", {"message": "", "context": "", "language": ""}),  # empty multimodal turn must not 500
+    ("/api/v1/business-plan/objective", {"scope": "edge-probe", "title": ""}),  # blank objective must not 500
 ]
 
 
