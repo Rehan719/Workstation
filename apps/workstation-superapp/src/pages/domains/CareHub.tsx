@@ -43,6 +43,7 @@ export const CareHub: React.FC = () => {
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                <button type="button" onClick={() => setActiveTab('clinical')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'clinical' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Clinical</button>
                <button type="button" onClick={() => setActiveTab('care-plan')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'care-plan' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Care Plan</button>
+               <button type="button" onClick={() => setActiveTab('risk')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'risk' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Risk Assess</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
@@ -69,6 +70,19 @@ export const CareHub: React.FC = () => {
                   { name: 'setting', label: 'Setting', type: 'select', options: ['community', 'hospital', 'care_home', 'mental_health'], default: 'community' },
                   { name: 'duration_weeks', label: 'Duration (weeks)', type: 'text', default: '4' },
                   { name: 'care_model', label: 'Care model', type: 'text', default: 'person_centred' },
+                ]}
+              />
+            ) : activeTab === 'risk' ? (
+              <DomainTool
+                title="Clinical Risk Assessment"
+                description={<>Pick a validated tool and enter the observations — Workstation's <span className="text-vital">own</span> AI scores and interprets the risk, in-house, as a clinical aid.</>}
+                endpoint="/api/v1/care/risk-assess"
+                resultKey="assessment"
+                submitLabel="Assess risk"
+                fields={[
+                  { name: 'tool', label: 'Tool', type: 'select', options: ['news2', 'must', 'waterlow', 'falls_risk', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], default: 'news2' },
+                  { name: 'patient_data', label: 'Observations / data (key: value per line)', type: 'keyvalue', default: 'resp_rate: \nspo2: \nsystolic_bp: \npulse: \ntemp: \nconsciousness: ' },
+                  { name: 'clinical_context', label: 'Clinical context (optional)', type: 'textarea', placeholder: 'e.g. 72yo post-op day 2, query chest infection' },
                 ]}
               />
             ) : (
