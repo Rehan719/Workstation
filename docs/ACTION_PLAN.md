@@ -2,7 +2,9 @@
   DETAILED ACTION PLAN — Workstation IDBO
   Objective → Strategy → Gap → timed task breakdown. Living artifact; updated as work proceeds.
   Companion to WORKSTATION_IDBO_LIVING_PLAN.md (vision↔state↔action) and DEVELOPMENT_TIMELINE.md (history).
-  Status: LIVING · started 2026-06-21 (autonomous overnight session)
+  Status: LIVING · started 2026-06-21 · transformation plan reviewed & updated 2026-06-23 against
+  execution (see "Workstream execution status" below; W1/W2/W4/W5 DELIVERED, W3/W6 in progress;
+  full cycle log docs/AUTONOMOUS_PROGRESS.md cycles W1–W48).
 -->
 
 # Workstation IDBO — Detailed Action Plan
@@ -30,11 +32,18 @@ Computed vision realisation: **100%** (live evidence) for the 11 core pillars. S
 
 ---
 
-## Validated current state (2026-06-21 — landed on `main`)
-- **Phase 1 integration arc is COMPLETE and merged to `main`** (PR #354, fast-forward, pushed). 14 commits.
-- **Frontend↔backend wiring: 61/61 prefixes wired, 0 broken** — every frontend API call resolves to a real `agentic_core` route.
-- Backend boots clean (**313 routes**); **78 integration tests pass / 0 fail**; production build `tsc && vite build` clean; **64 pages swept** (0 errors).
-- Transformation engine: `overall_realisation = 1.0` (11/11 pillars). All financial flows **virtual/simulated only**.
+## Validated current state (updated 2026-06-23 — landed on `main`)
+- **Phase 1 integration arc COMPLETE** + the **whole-vision workstreams W1/W2/W4/W5 delivered** across
+  the autonomous cycle programme (W1–W48 in `docs/AUTONOMOUS_PROGRESS.md`), all merged to `main`, CI green.
+- Backend boots clean (**355 routes**); **142 integration tests pass / 0 fail** (suite runs on the native
+  floor via `AI_DISABLE_LOCAL=1`); production build `tsc && vite build` clean (0 TS errors).
+- **Native AI fabric is in-house-first** — every AI-mediated response proves `served_by` + `is_external`;
+  the whole AI surface is edge-audited (no 500s on malformed input) and self-observing (learning loop).
+- **Living VSB journey is interactive end-to-end**: spawn → "Open in Cockpit" → 7-tab VSB Cockpit
+  (Organisation · Chief & Board · Business Plan · Living Systems [BMS/QMS/DCS/EMS] · Economy · Transformation
+  [orchestration + Build-to-Order configurator] · Converse [VSB-grounded avatar]).
+- Transformation engine: `overall_realisation = 1.0` (11/11 pillars). All financial flows **virtual WST
+  only** (the live Stripe key must never move money — Owner-gated).
 
 ## Phases & Task Breakdown
 
@@ -108,6 +117,35 @@ Domain AI depth across all Realm × Domain; persistence hardening (SQLite/Postgr
 coverage (incl. AI-path contract tests once W1 provides native AI); observability; and the gated launch
 items (Stripe, production deploy) when the Owner directs.
 
+### ★ Workstream execution status — updated 2026-06-23 (against `docs/AUTONOMOUS_PROGRESS.md` W1–W48)
+
+- **W1 — Native AI Resource Fabric — ✅ DELIVERED.** `agentic_core/ai/native/` (NativeReasoningEngine
+  honest floor [`is_model=False`], ModelResourceRegistry owning Ollama, NativeOrchestrator + swarm);
+  in-house-first gateway `query_meta`; `_ai_provenance.ai_text` proves every AI call ran in-house.
+  **Acceptance MET:** the suite runs full cascades with `AI_DISABLE_LOCAL=1` (no external key) producing
+  real native output; external providers are optional accelerants only. (W1.1–W1.5 across cycles.)
+- **W2 — Bespoke VSB org + resource synthesis — ✅ DELIVERED.** Every established VSB gets its OWN
+  reconfigurable native swarm; the Resource Fabric is select + compose + **run** (`/resource-fabric`);
+  Build-to-Order configurator assembles a build blueprint; twin pre-validation in the transformation run.
+- **W3 — Multimodal avatar + Chief/AI-CEO interaction — 🟡 PARTIAL.** The avatar is always-online
+  in-house and VSB-grounded (Cockpit "Converse"); the full org cascade Chief→Board→AI-CEO→…→Build-to-Order
+  runs in-house with provenance. **Remaining:** full voice/vision multimodal exchange + all-language UI.
+- **W4 — Living deliverables — ✅ DELIVERED.** Living, versioned, re-runnable deliverables
+  (`/api/v1/deliverables/*`); every domain-tool output is **runnable → iteratively refinable
+  (`/api/v1/refine`) → exportable (Copy/Download .md)**; omnimedia output formats surfaced.
+- **W5 — Operational excellence + learning organism — ✅ DELIVERED.** Operational-excellence loop records
+  EVERY in-house AI call (`ai_text` instrumented); orchestrator reorders resources by recorded health;
+  arms-length Change Control wired to the Immune system + Reconfigurator (immune-aware governance +
+  immune-system reconfigurator). Knowledge accrues from real (never fabricated) outcomes.
+- **W6 — Depth, persistence, scale, launch-readiness — 🟡 ONGOING.** Domain AI depth done (6 domains ×
+  18 CI-locked tools); broad test coverage (**142 tests**); whole AI surface edge-audited robust.
+  **Remaining (Owner-gated):** persistence hardening (SQLite→Postgres), production deploy, live AI key,
+  real-money rails (virtual WST only today).
+
+**Net:** the headline native-AI transformation (W1) and the bespoke/living/operational workstreams
+(W2/W4/W5) are delivered and verified in-house; W3 (multimodal depth) and W6 (persistence/scale/launch)
+are the genuine remaining work — W6's launch items remain Owner-gated.
+
 **Sequencing:** W1 is foundational (it changes what every other AI-mediated workflow runs on) and is the
 priority. W2–W5 build the bespoke/living/multimodal/operational depth on top of W1. W6 runs continuously.
 Each workstream decomposes into timed, resourced tasks owned by the VSB delivery org (Board → AI CEO →
@@ -118,3 +156,4 @@ Orchestration cascade where practical (dogfooding).
 
 ## Progress Log (this session)
 - **2026-06-21 (overnight)** — Plan generated (T1). Executing T2→T8 autonomously; see `WORKSTATION_IDBO_LIVING_PLAN.md` §8 + the overnight session log for verified outcomes.
+- **2026-06-23 — transformation-plan review & update.** Reviewed the companion docs (WHOLE_VISION §16, LIVING_PLAN, UNDERSTANDING, AUTONOMOUS_PROGRESS W1–W48) against execution and updated this plan: marked the whole-vision workstreams (W1 native AI fabric, W2 bespoke VSB/resource synthesis, W4 living deliverables, W5 operational-excellence/learning organism) **✅ DELIVERED**, W3 (multimodal avatar) and W6 (persistence/scale/launch) **in progress / Owner-gated**; refreshed current-state metrics (355 routes; 142 tests; in-house-first native fabric; interactive 7-tab VSB Cockpit). Execution continues via the autonomous cycle loop on `main` (CI-green per cycle). Remaining non-gated focus: **W3 multimodal-avatar depth**; gated: persistence hardening, production deploy, live AI key, real-money rails.
