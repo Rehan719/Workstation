@@ -1524,6 +1524,7 @@ def test_collective_truth_consensus_surfaced(client):
 # provenance (no external dependency), so a regression to any tool's contract fails CI.
 _DOMAIN_TOOLS = [
     ("/api/v1/law/analyse", {"document_text": "This agreement is between A and B for consulting services."}, "analysis"),
+    ("/api/v1/law/generate", {"template_id": "nda", "parties": {"party_a": "Workstation Ltd", "party_b": "Client Co"}, "jurisdiction": "England & Wales"}, "document"),
     ("/api/v1/science/synthesise", {"research_question": "Does X improve Y?"}, "report"),
     ("/api/v1/science/literature", {"research_question": "Does X improve Y?"}, "outline"),
     ("/api/v1/care/handover", {"patient_summary": "72yo M, community-acquired pneumonia.", "current_situation": "Stable post-op, observations within range."}, "handover"),

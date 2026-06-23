@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { QEPDashboard } from '../../components/QEPDashboard';
 import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
+import { DomainTool } from '../../components/DomainTool';
 
 export const LawHub: React.FC = () => {
   const navigate = useNavigate();
@@ -59,6 +60,7 @@ export const LawHub: React.FC = () => {
             </h3>
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                <button type="button" onClick={() => setActiveTab('compliance')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'compliance' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Compliance</button>
+               <button type="button" onClick={() => setActiveTab('draft')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'draft' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Draft</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
@@ -72,6 +74,20 @@ export const LawHub: React.FC = () => {
                     <QEPImmersiveTools domain="law" />
                  </div>
               </motion.div>
+            ) : activeTab === 'draft' ? (
+              <DomainTool
+                title="Legal Document Drafter"
+                description={<>Pick a template — Workstation's <span className="text-aura">own</span> AI drafts the full document (clause-numbered Markdown) for your parties and jurisdiction, in-house.</>}
+                endpoint="/api/v1/law/generate"
+                resultKey="document"
+                submitLabel="Draft document"
+                fields={[
+                  { name: 'template_id', label: 'Template', type: 'select', options: ['nda', 'employment_contract', 'service_agreement', 'partnership_deed', 'privacy_policy', 'terms_of_service', 'ip_assignment', 'et1_claim', 'cease_desist', 'data_processing_agreement'], default: 'nda' },
+                  { name: 'parties', label: 'Parties (key: value per line)', type: 'keyvalue', default: 'party_a: \nparty_b: ' },
+                  { name: 'custom_instructions', label: 'Custom instructions (optional)', type: 'textarea', placeholder: 'e.g. 2-year term, mutual confidentiality, governed by English law' },
+                  { name: 'jurisdiction', label: 'Jurisdiction', type: 'text', default: 'England & Wales' },
+                ]}
+              />
             ) : (
               <div className="space-y-5">
                  <div>
