@@ -13,7 +13,7 @@ import { DomainTool } from '../../components/DomainTool';
 export const ScienceHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState('research');
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'research');
 
   return (
     <div className="space-y-12 pb-24">

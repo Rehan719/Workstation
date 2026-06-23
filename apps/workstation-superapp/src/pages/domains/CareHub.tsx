@@ -12,7 +12,7 @@ import { DomainTool } from '../../components/DomainTool';
 export const CareHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState('clinical');
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'clinical');
 
   return (
     <div className="space-y-12 pb-24">

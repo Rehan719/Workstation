@@ -27,6 +27,7 @@ import { QEPReligionHub } from './pages/domains/QEPReligionHub';
 import { QEPStudentPortalPage } from './pages/domains/QEPStudentPortalPage';
 import { QEPCommunityPortalPage } from './pages/domains/QEPCommunityPortalPage';
 import { ScienceHub } from './pages/domains/ScienceHub';
+import { AIToolsCatalogue } from './pages/AIToolsCatalogue';
 import { LawHub } from './pages/domains/LawHub';
 import { EmploymentHub } from './pages/domains/EmploymentHub';
 import { EducationHub } from './pages/domains/EducationHub';
@@ -202,6 +203,7 @@ function App() {
           <Route path="/religion"    element={<ReligionHub />} />
           <Route path="/qep-religion" element={<QEPReligionHub />} />
           <Route path="/qep"         element={<QEPReligionHub />} />
+          <Route path="/ai-tools"    element={<AIToolsCatalogue />} />
           <Route path="/science"     element={<ScienceHub />} />
           <Route path="/law"         element={<LawHub />} />
           <Route path="/employment"  element={<EmploymentHub />} />

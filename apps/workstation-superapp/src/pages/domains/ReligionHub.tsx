@@ -18,7 +18,7 @@ export const ReligionHub: React.FC = () => {
   const navigate = useNavigate();
    const { layout, emotionalAdjustment } = useAdaptiveUI();
   const { user } = useStore();
-  const [activeTab, setActiveTab] = useState('wisdom');
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'wisdom');
   const [madhabs, setMadhabs] = useState<Madhab[]>([]);
 
   useEffect(() => {

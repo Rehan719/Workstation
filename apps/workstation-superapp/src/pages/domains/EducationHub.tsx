@@ -12,7 +12,7 @@ import { DomainTool } from '../../components/DomainTool';
 export const EducationHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState('lessons');
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'lessons');
 
   return (
     <div className="space-y-12 pb-24">

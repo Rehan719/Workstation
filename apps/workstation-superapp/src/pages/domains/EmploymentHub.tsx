@@ -10,7 +10,7 @@ import { DomainTool } from '../../components/DomainTool';
 
 export const EmploymentHub: React.FC = () => {
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState('studio');
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'studio');
 
   const scrollToSection = (id: string) => {
     // Defer until the tab's content has mounted.

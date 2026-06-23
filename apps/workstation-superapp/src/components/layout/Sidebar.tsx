@@ -49,6 +49,7 @@ const allNavItems: NavItem[] = [
     icon: Layers,
     id: 'qep-facet',
     subItems: [
+      { name: 'AI Tools',    icon: Sparkles,     id: 'ai-tools' },
       { name: 'Religion',    icon: Heart,        id: 'qep-religion' },
       { name: 'Science',     icon: Microscope,   id: 'science' },
       { name: 'Education',   icon: GraduationCap, id: 'education' },

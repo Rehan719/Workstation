@@ -13,7 +13,7 @@ import { DomainTool } from '../../components/DomainTool';
 export const LawHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState('compliance');
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'compliance');
   const [docText, setDocText] = useState('');
   const [focus, setFocus] = useState('risk');
   const [analyzing, setAnalyzing] = useState(false);
