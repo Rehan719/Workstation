@@ -36,6 +36,7 @@ import { KnowledgeGarden } from './pages/learner/KnowledgeGarden';
 import { LearnerRealm } from './pages/learner/LearnerRealm';
 import { EnterpriseRealm } from './pages/enterprise/EnterpriseRealm';
 import { VSBSpawnStudio } from './pages/enterprise/VSBSpawnStudio';
+import { VSBCockpit } from './pages/enterprise/VSBCockpit';
 import { IntelligenceLab } from './pages/IntelligenceLab';
 import { AuthorshipEngine } from './pages/synthesis/AuthorshipEngine';
 import { DesignDevEngine } from './pages/developers/DesignDevEngine';
@@ -247,6 +248,7 @@ function App() {
           <Route path="/enterprise"      element={<EnterpriseRealm />} />
           <Route path="/vsb"             element={<VSBSpawnStudio />} />
           <Route path="/vsb-spawn"       element={<VSBSpawnStudio />} />
+          <Route path="/vsb-cockpit"     element={<VSBCockpit />} />
           <Route path="/intelligence"    element={<IntelligenceLab />} />
           <Route path="/authorship"      element={<AuthorshipEngine />} />
           <Route path="/design-dev"      element={<DesignDevEngine />} />

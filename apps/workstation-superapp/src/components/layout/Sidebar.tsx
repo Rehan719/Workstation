@@ -40,6 +40,7 @@ const allNavItems: NavItem[] = [
       { name: 'Capital Fund',      icon: DollarSign,    id: 'capital'    },
       { name: 'Solutions',         icon: Rocket,        id: 'solutions'  },
       { name: 'VSB Spawn Studio',  icon: Building2,     id: 'vsb'        },
+      { name: 'VSB Cockpit',       icon: Crown,         id: 'vsb-cockpit'},
       { name: 'Management Systems',icon: Shield,        id: 'management' },
     ]
   },
