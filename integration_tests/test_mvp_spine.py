@@ -1050,6 +1050,26 @@ def test_economy_cycle(client):
     assert "vsb_id" in cycle and "intake_revenue" in cycle
 
 
+def test_cockpit_bto_and_ledger_backends(client):
+    # Guards the VSB Cockpit's Build-to-Order configurator + Economy ledger backends.
+    # 1. BTO components catalogue is offered for selection.
+    comp = client.get("/api/v1/bto/components").json()
+    ids = {c["id"] for c in comp["components"]}
+    assert {"vsb", "csuite", "coe", "products"} <= ids
+    # 2. BTO configure assembles a blueprint from exactly the selected components.
+    bp = client.post("/api/v1/bto/configure",
+                     json={"entity_name": "Cockpit Test Co", "components": ["vsb", "csuite", "coe"], "product_resources": []}).json()
+    assert bp["blueprint_id"] and bp["component_count"] == 3
+    assert set(bp["components"].keys()) == {"vsb", "csuite", "coe"}
+    # 3. Economy ledger for an established VSB is virtual WST with a balances breakdown (honest, no real money).
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "ledger lock-in", "domain": "care", "owner_id": "pytest"}).json()
+    client.post("/api/v1/economy/cycle", json={"vsb_id": est["vsb_id"]})   # seed a cycle so the ledger has entries
+    led = client.get(f"/api/v1/economy/ledger/{est['vsb_id']}").json()
+    assert led["currency"] == "WST (virtual)"
+    assert "balances" in led and led.get("total_revenue", 0) >= 0
+
+
 def test_resource_compose(client):
     r = client.post("/api/v1/resources/compose",
                     json={"name": "test-composition", "resource_ids": ["genesis"]})
