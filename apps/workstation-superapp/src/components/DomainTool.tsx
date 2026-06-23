@@ -6,7 +6,7 @@ import { Loader2, Sparkles } from 'lucide-react';
 export interface DomainField {
   name: string;
   label: string;
-  type?: 'text' | 'textarea' | 'select' | 'keyvalue' | 'list';
+  type?: 'text' | 'textarea' | 'select' | 'keyvalue' | 'list' | 'claims';
   options?: string[];
   placeholder?: string;
   default?: string;
@@ -28,6 +28,18 @@ function parseKeyValue(raw: string): Record<string, string> {
 // A `list` field is edited one-item-per-line and posted as an array of strings.
 function parseList(raw: string): string[] {
   return (raw || '').split('\n').map((s) => s.trim()).filter(Boolean);
+}
+
+// A `claims` field is edited one-claim-per-line as "claim text | confidence | reputation" and posted
+// as an array of {claim, confidence, reputation} objects (for the collective truth-consensus engine).
+function parseClaims(raw: string): { claim: string; confidence: number; reputation: number }[] {
+  return (raw || '').split('\n').map((line) => {
+    const parts = line.split('|').map((p) => p.trim());
+    const claim = parts[0] || '';
+    const confidence = parts[1] !== undefined && parts[1] !== '' ? parseFloat(parts[1]) : 0.8;
+    const reputation = parts[2] !== undefined && parts[2] !== '' ? parseFloat(parts[2]) : 1.0;
+    return { claim, confidence: isNaN(confidence) ? 0.8 : confidence, reputation: isNaN(reputation) ? 1.0 : reputation };
+  }).filter((c) => c.claim);
 }
 
 interface DomainToolProps {
@@ -61,6 +73,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       for (const f of fields) {
         body[f.name] = f.type === 'keyvalue' ? parseKeyValue(form[f.name])
           : f.type === 'list' ? parseList(form[f.name])
+          : f.type === 'claims' ? parseClaims(form[f.name])
           : form[f.name];
       }
       const r = await axios.post(endpoint, body);
@@ -88,10 +101,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
               className="block mt-1 text-[11px] font-black uppercase bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2">
               {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
             </select>
-          ) : (f.type === 'textarea' || f.type === 'keyvalue' || f.type === 'list') ? (
+          ) : (f.type === 'textarea' || f.type === 'keyvalue' || f.type === 'list' || f.type === 'claims') ? (
             <textarea aria-label={f.label} value={form[f.name]} onChange={e => setForm({ ...form, [f.name]: e.target.value })} rows={3}
-              placeholder={f.placeholder || (f.type === 'keyvalue' ? 'one per line — key: value' : f.type === 'list' ? 'one item per line' : undefined)}
-              className={`block w-full mt-1 text-xs bg-slate-950 border border-slate-900 rounded-2xl p-3 text-slate-300 ${(f.type === 'keyvalue' || f.type === 'list') ? 'font-mono' : ''}`} />
+              placeholder={f.placeholder || (f.type === 'keyvalue' ? 'one per line — key: value' : f.type === 'list' ? 'one item per line' : f.type === 'claims' ? 'one per line — claim | confidence | reputation' : undefined)}
+              className={`block w-full mt-1 text-xs bg-slate-950 border border-slate-900 rounded-2xl p-3 text-slate-300 ${(f.type === 'keyvalue' || f.type === 'list' || f.type === 'claims') ? 'font-mono' : ''}`} />
           ) : (
             <input aria-label={f.label} value={form[f.name]} onChange={e => setForm({ ...form, [f.name]: e.target.value })}
               placeholder={f.placeholder}

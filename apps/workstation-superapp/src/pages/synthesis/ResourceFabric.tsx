@@ -55,6 +55,17 @@ const RUN_CONFIGS: Record<string, React.ComponentProps<typeof DomainTool>> = {
       { name: 'tier', label: 'Tier', type: 'text', default: 'standard' },
     ],
   },
+  truth_consensus: {
+    title: 'Truth Consensus',
+    description: <>Reputation-weighted consensus over a set of claims — accepts a claim when its weighted confidence clears the threshold.</>,
+    endpoint: '/api/v1/collective/consensus',
+    resultKey: '_full',   // no such key → DomainTool shows the full JSON consensus result
+    submitLabel: 'Reach consensus',
+    fields: [
+      { name: 'claims', label: 'Claims (claim | confidence | reputation, one per line)', type: 'claims', default: 'halal supply is verified | 0.95 | 2\nprice is optimal | 0.4 | 1' },
+      { name: 'threshold', label: 'Threshold', type: 'text', default: '0.85' },
+    ],
+  },
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
