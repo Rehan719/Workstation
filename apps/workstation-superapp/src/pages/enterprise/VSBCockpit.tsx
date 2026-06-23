@@ -40,6 +40,10 @@ export const VSBCockpit: React.FC = () => {
   const [ledger, setLedger] = useState<Dict | null>(null);
   const [lastCycle, setLastCycle] = useState<Dict | null>(null);
   const [cycling, setCycling] = useState(false);
+  const [btoComponents, setBtoComponents] = useState<Dict[]>([]);
+  const [btoSel, setBtoSel] = useState<string[]>(['vsb', 'csuite', 'coe', 'domains']);
+  const [btoBlueprint, setBtoBlueprint] = useState<Dict | null>(null);
+  const [btoBusy, setBtoBusy] = useState(false);
 
   useEffect(() => {
     axios.get('/api/v1/vsb').then(r => {
@@ -51,6 +55,7 @@ export const VSBCockpit: React.FC = () => {
       if (chosen) setSelected(chosen.vsb_id);
     }).catch(() => {});
     axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(() => {});
+    axios.get('/api/v1/bto/components').then(r => setBtoComponents(r.data.components || [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -99,6 +104,17 @@ export const VSBCockpit: React.FC = () => {
       if (l) setLedger(l);
     } catch { /* keep */ }
     setCycling(false);
+  };
+
+  const configureBto = async () => {
+    if (btoBusy) return;
+    setBtoBusy(true);
+    try {
+      const r = await axios.post('/api/v1/bto/configure',
+        { entity_name: detail?.name || 'Enterprise', components: btoSel, product_resources: [] });
+      setBtoBlueprint(r.data);
+    } catch { /* keep */ }
+    setBtoBusy(false);
   };
 
   const board = detail?.board || {};
@@ -365,6 +381,36 @@ export const VSBCockpit: React.FC = () => {
                   )}
                 </>
               )}
+
+              {/* Build-to-Order configurator — assemble the entity's components into a build blueprint */}
+              <Card className="p-6 space-y-4">
+                <h4 className="text-sm font-black text-white uppercase tracking-wide flex items-center gap-2"><Boxes size={15} className="text-aura" /> Build-to-Order configurator</h4>
+                <p className="text-[11px] text-slate-500">Select the components to assemble into this entity's build blueprint.</p>
+                <div className="flex flex-wrap gap-2">
+                  {btoComponents.map(comp => {
+                    const on = btoSel.includes(comp.id);
+                    return (
+                      <button key={comp.id} type="button"
+                        onClick={() => setBtoSel(s => on ? s.filter(x => x !== comp.id) : [...s, comp.id])}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${on ? 'bg-aura/20 text-aura border border-aura/40' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:text-white'}`}>
+                        {comp.label || comp.id}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Button type="button" onClick={configureBto} disabled={btoBusy || btoSel.length === 0} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
+                  {btoBusy ? <Loader2 size={14} className="animate-spin" /> : <Boxes size={14} />} Configure build ({btoSel.length})
+                </Button>
+                {btoBlueprint && (
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <p className="text-[11px] text-slate-300"><span className="text-white font-black">{btoBlueprint.entity_name}</span> — {btoBlueprint.component_count} components · {btoBlueprint.resource_count} product resources</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.keys(btoBlueprint.components || {}).map(k => <span key={k} className="px-2 py-0.5 rounded-md bg-slate-800 text-[9px] font-black uppercase text-slate-300">{k}</span>)}
+                    </div>
+                    <p className="text-[8px] font-mono text-slate-600">blueprint {String(btoBlueprint.blueprint_id).slice(0, 8)}</p>
+                  </div>
+                )}
+              </Card>
             </div>
           )}
 
