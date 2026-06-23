@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
-import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send } from 'lucide-react';
+import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins } from 'lucide-react';
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -17,6 +17,7 @@ const TABS = [
   ['chief', 'Chief & Board', Crown],
   ['plan', 'Business Plan', Target],
   ['systems', 'Living Systems', ShieldCheck],
+  ['economy', 'Economy', Coins],
   ['transform', 'Transformation', Workflow],
   ['chat', 'Converse', MessageCircle],
 ] as const;
@@ -36,6 +37,9 @@ export const VSBCockpit: React.FC = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatting, setChatting] = useState(false);
+  const [ledger, setLedger] = useState<Dict | null>(null);
+  const [lastCycle, setLastCycle] = useState<Dict | null>(null);
+  const [cycling, setCycling] = useState(false);
 
   useEffect(() => {
     axios.get('/api/v1/vsb').then(r => {
@@ -51,11 +55,12 @@ export const VSBCockpit: React.FC = () => {
 
   useEffect(() => {
     if (!selected) return;
-    setLoading(true); setTx(null); setMessages([]);
+    setLoading(true); setTx(null); setMessages([]); setLastCycle(null);
     Promise.all([
       axios.get(`/api/v1/vsb/${selected}`).then(r => r.data).catch(() => null),
       axios.get('/api/v1/business-plan', { params: { scope: selected } }).then(r => r.data).catch(() => null),
-    ]).then(([d, p]) => { setDetail(d); setPlan(p); setLoading(false); });
+      axios.get(`/api/v1/economy/ledger/${selected}`).then(r => r.data).catch(() => null),
+    ]).then(([d, p, l]) => { setDetail(d); setPlan(p); setLedger(l); setLoading(false); });
   }, [selected]);
 
   const runTransformation = async () => {
@@ -84,7 +89,21 @@ export const VSBCockpit: React.FC = () => {
     setChatting(false);
   };
 
+  const runCycle = async () => {
+    if (!selected || cycling) return;
+    setCycling(true);
+    try {
+      const r = await axios.post('/api/v1/economy/cycle', { vsb_id: selected });
+      setLastCycle(r.data.cycle || null);
+      const l = await axios.get(`/api/v1/economy/ledger/${selected}`).then(x => x.data).catch(() => null);
+      if (l) setLedger(l);
+    } catch { /* keep */ }
+    setCycling(false);
+  };
+
   const board = detail?.board || {};
+  const economy = detail?.economy || {};
+  const waterfall: Dict = economy.waterfall || {};
   const chief = board.chief || {};
   const directors: Dict[] = board.directors || [];
   const swarm = detail?.native_swarm || {};
@@ -233,6 +252,67 @@ export const VSBCockpit: React.FC = () => {
                 {standards.length === 0 && <p className="text-slate-600 text-xs">Management systems unavailable.</p>}
               </div>
             </Card>
+          )}
+
+          {/* Economy — the VSB's economic metabolism (virtual WST only; capital-preserving waterfall) */}
+          {tab === 'economy' && (
+            <div className="space-y-4">
+              <Card className="p-6 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Coins size={14} /> Economic model — {economy.entity_name || economy.entity_type || 'entity'}</h4>
+                  <span className="text-[8px] font-black uppercase px-2 py-1 rounded bg-amber-500/15 text-amber-400">{economy.currency || 'WST (virtual)'}</span>
+                </div>
+                {economy.capital_preserved && <p className="text-[10px] text-emerald-400 font-bold">Capital-preserving (waqf principle): the endowment base is protected.</p>}
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Profit waterfall</p>
+                  <div className="space-y-1.5">
+                    {Object.entries(waterfall).map(([k, v]) => (
+                      <div key={k} className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold text-slate-400 w-32 capitalize">{k.replace(/_/g, ' ')}</span>
+                        <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden"><div className="h-full bg-highlight" style={{ width: `${Math.round((v as number) * 100)}%` }} /></div>
+                        <span className="text-[10px] font-black text-highlight w-10 text-right">{Math.round((v as number) * 100)}%</span>
+                      </div>
+                    ))}
+                    {Object.keys(waterfall).length === 0 && <p className="text-slate-600 text-xs">No waterfall configured.</p>}
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Virtual ledger {ledger?.currency ? `· ${ledger.currency}` : ''}</h4>
+                  <Button type="button" onClick={runCycle} disabled={cycling} className="bg-highlight text-sovereign flex items-center gap-2 text-xs">
+                    {cycling ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Run economic cycle
+                  </Button>
+                </div>
+                {ledger ? (
+                  <>
+                    <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3">
+                      {Object.entries(ledger.balances || {}).map(([k, v]) => (
+                        <div key={k} className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                          <p className="text-[9px] font-black uppercase tracking-wider text-slate-500 capitalize">{k.replace(/_/g, ' ')}</p>
+                          <p className="text-sm font-black text-white mt-0.5">{Number(v).toLocaleString()}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-3">Total revenue: <span className="text-white font-bold">{Number(ledger.total_revenue || 0).toLocaleString()}</span> · distributed: <span className="text-white font-bold">{Number(ledger.total_distributed || 0).toLocaleString()}</span> · entries: {ledger.entry_count ?? 0}</p>
+                  </>
+                ) : <p className="text-slate-600 text-xs">No ledger yet — run an economic cycle to seed it.</p>}
+                {ledger?.disclaimer && <p className="text-[9px] text-slate-600 italic mt-3">{ledger.disclaimer}</p>}
+              </Card>
+
+              {lastCycle && (
+                <Card className="p-6 border-highlight/30">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-3">Latest metabolic cycle</h4>
+                  <div className="grid grid-cols-2 @[560px]:grid-cols-3 gap-3 text-[11px]">
+                    {[['Intake revenue', lastCycle.intake_revenue], ['Homeostasis reserves', lastCycle.homeostasis_reserves], ['Distributable profit', lastCycle.distributable_profit], ['Giving back', lastCycle.giving_back], ['Metabolic energy', lastCycle.metabolic_energy]].map(([label, val]) => val != null && (
+                      <div key={label as string}><span className="text-slate-500">{label}: </span><span className="text-white font-bold">{typeof val === 'number' ? Number(val).toLocaleString() : String(val)}</span></div>
+                    ))}
+                  </div>
+                  {lastCycle.disclaimer && <p className="text-[9px] text-slate-600 italic mt-3">{lastCycle.disclaimer}</p>}
+                </Card>
+              )}
+            </div>
           )}
 
           {/* Transformation */}
