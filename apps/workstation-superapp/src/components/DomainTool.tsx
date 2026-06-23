@@ -66,8 +66,16 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const primary = fields.find(f => f.type === 'textarea')?.name ?? fields[0]?.name;
   const canSubmit = !primary || (form[primary] || '').trim().length > 0;
 
+  const [copied, setCopied] = useState(false);
+  const [refineText, setRefineText] = useState('');
+  const [refining, setRefining] = useState(false);
+  const [refinedText, setRefinedText] = useState<string | null>(null);
+  const [refineProv, setRefineProv] = useState<Record<string, any> | null>(null);
+  const [refineCount, setRefineCount] = useState(0);
+
   const run = async () => {
     setBusy(true); setError(''); setResult(null);
+    setRefinedText(null); setRefineProv(null); setRefineText(''); setRefineCount(0);
     try {
       const body: Record<string, any> = {};
       for (const f of fields) {
@@ -86,14 +94,29 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
 
   const prov = result?.ai_provenance;
   const resultText = result ? String(result[resultKey] ?? result.deliverable ?? JSON.stringify(result, null, 2)) : '';
-  const [copied, setCopied] = useState(false);
+  // Iterative refinement: each refine builds on the currently-displayed text (in-house /api/v1/refine).
+  const displayText = refinedText ?? resultText;
+  const effectiveProv = refineProv ?? prov;
+
+  const refine = async () => {
+    if (!refineText.trim() || refining) return;
+    setRefining(true);
+    try {
+      const r = await axios.post('/api/v1/refine', { previous: displayText, instruction: refineText, context: title });
+      setRefinedText(String(r.data.refined ?? displayText));
+      setRefineProv(r.data.ai_provenance ?? null);
+      setRefineCount(c => c + 1);
+      setRefineText('');
+    } catch { /* keep current output */ }
+    setRefining(false);
+  };
 
   const copyResult = async () => {
-    try { await navigator.clipboard.writeText(resultText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+    try { await navigator.clipboard.writeText(displayText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
   };
   const downloadResult = () => {
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'result';
-    const blob = new Blob([resultText], { type: 'text/markdown' });
+    const blob = new Blob([displayText], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `${slug}.md`;
@@ -138,9 +161,12 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <h4 className="text-sm font-black text-white uppercase tracking-wide">Result</h4>
             <div className="flex items-center gap-2">
-              {prov && (
-                <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${prov.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                  {prov.is_external ? `via ${prov.served_by}` : `in-house · ${prov.served_by ?? 'native'}`}
+              {refineCount > 0 && (
+                <span className="text-[8px] font-black uppercase px-2 py-1 rounded bg-aura/15 text-aura">refined ×{refineCount}</span>
+              )}
+              {effectiveProv && (
+                <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${effectiveProv.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                  {effectiveProv.is_external ? `via ${effectiveProv.served_by}` : `in-house · ${effectiveProv.served_by ?? 'native'}`}
                 </span>
               )}
               <button type="button" onClick={copyResult} aria-label="Copy result"
@@ -154,9 +180,23 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
             </div>
           </div>
           <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">
-            {resultText}
+            {displayText}
           </pre>
           {result.disclaimer && <p className="text-[10px] text-slate-600 italic leading-relaxed">{result.disclaimer}</p>}
+
+          {/* Iterative refinement — advance/develop/refine this output in-house, each step builds on the last */}
+          <div className="pt-3 border-t border-slate-800/60 space-y-2">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Refine this output</label>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input aria-label="Refinement instruction" value={refineText} onChange={e => setRefineText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') refine(); }}
+                placeholder="e.g. make it more concise · add a risks section · adjust tone for a lay reader"
+                className="flex-1 min-w-[220px] text-xs bg-slate-950 border border-slate-900 rounded-xl p-2.5 text-slate-300" />
+              <Button type="button" onClick={refine} disabled={refining || !refineText.trim()} className="bg-slate-800 text-aura flex items-center gap-2 text-xs">
+                {refining ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Refine
+              </Button>
+            </div>
+          </div>
         </Card>
       )}
     </div>

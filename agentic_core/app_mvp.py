@@ -343,6 +343,9 @@ app.include_router(collective_api.router)
 from agentic_core.api import employment as employment_api
 app.include_router(employment_api.router)
 
+from agentic_core.api import refine as refine_api
+app.include_router(refine_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime

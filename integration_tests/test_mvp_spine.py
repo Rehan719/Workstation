@@ -1584,6 +1584,7 @@ _EDGE_PROBES = [
     ("/api/v1/optimizer/allocate", {"domain": "x", "requirements": {"CPU": "lots", "RAM": ""}}),
     ("/api/v1/collective/consensus", {"claims": [{"claim": "x", "confidence": 0.9, "reputation": 0}]}),
     ("/api/v1/mega-project/synthesise", {"concept": "", "domain": ""}),
+    ("/api/v1/refine", {"previous": "", "instruction": ""}),
 ]
 
 
@@ -1604,3 +1605,15 @@ def test_ai_calls_recorded_to_learning_loop(client):
     ranks = client.get("/api/v1/operations/rankings").json()["rankings"]
     agent_rows = [r for r in ranks if str(r["resource"]).startswith("agent:")]
     assert agent_rows and all(0.0 <= r["success_rate"] <= 1.0 for r in agent_rows)
+
+
+def test_refine_iterates_in_house(client):
+    # Iterative refinement: ANY tool output can be advanced in-house via /api/v1/refine, building on
+    # the previous version. Returns the FULL refined text + honest in-house provenance.
+    r = client.post("/api/v1/refine", json={"previous": "## Plan\nA brief care plan.",
+                                            "instruction": "Add a falls-prevention section.", "context": "Care Plan"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body.get("refined")
+    p = body.get("ai_provenance") or {}
+    assert p.get("posture") == "in-house-first" and p.get("is_external") is False
