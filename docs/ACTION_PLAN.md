@@ -127,9 +127,10 @@ items (Stripe, production deploy) when the Owner directs.
 - **W2 — Bespoke VSB org + resource synthesis — ✅ DELIVERED.** Every established VSB gets its OWN
   reconfigurable native swarm; the Resource Fabric is select + compose + **run** (`/resource-fabric`);
   Build-to-Order configurator assembles a build blueprint; twin pre-validation in the transformation run.
-- **W3 — Multimodal avatar + Chief/AI-CEO interaction — 🟡 PARTIAL.** The avatar is always-online
-  in-house and VSB-grounded (Cockpit "Converse"); the full org cascade Chief→Board→AI-CEO→…→Build-to-Order
-  runs in-house with provenance. **Remaining:** full voice/vision multimodal exchange + all-language UI.
+- **W3 — Multimodal avatar + Chief/AI-CEO interaction — 🟡 PARTIAL (advancing).** The avatar is
+  always-online in-house and VSB-grounded (Cockpit "Converse"), now with browser-native **voice**
+  (speech-to-text in / text-to-speech out, in-house — W50); the full org cascade Chief→Board→AI-CEO→…→
+  Build-to-Order runs in-house with provenance. **Remaining:** image input + all-language UI.
 - **W4 — Living deliverables — ✅ DELIVERED.** Living, versioned, re-runnable deliverables
   (`/api/v1/deliverables/*`); every domain-tool output is **runnable → iteratively refinable
   (`/api/v1/refine`) → exportable (Copy/Download .md)**; omnimedia output formats surfaced.

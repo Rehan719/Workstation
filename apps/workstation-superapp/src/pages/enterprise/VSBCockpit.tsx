@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
-import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins } from 'lucide-react';
+import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2 } from 'lucide-react';
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -44,6 +44,12 @@ export const VSBCockpit: React.FC = () => {
   const [btoSel, setBtoSel] = useState<string[]>(['vsb', 'csuite', 'coe', 'domains']);
   const [btoBlueprint, setBtoBlueprint] = useState<Dict | null>(null);
   const [btoBusy, setBtoBusy] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [speakReplies, setSpeakReplies] = useState(false);
+  const recognitionRef = React.useRef<any>(null);
+  // Browser-native multimodal — speech-to-text in / text-to-speech out, fully in-house (no external API).
+  const SpeechRec: any = typeof window !== 'undefined' ? ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) : null;
+  const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
   useEffect(() => {
     axios.get('/api/v1/vsb').then(r => {
@@ -80,18 +86,40 @@ export const VSBCockpit: React.FC = () => {
     setTxRunning(false);
   };
 
-  const sendChat = async () => {
-    const msg = chatInput.trim();
+  const speak = (text: string) => {
+    if (!speakReplies || !canSpeak || !text) return;
+    try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(text.slice(0, 600))); } catch { /* ignore */ }
+  };
+
+  const sendChat = async (override?: string) => {
+    const msg = (override ?? chatInput).trim();
     if (!msg || chatting || !selected) return;
     setMessages(m => [...m, { role: 'you', text: msg }]);
     setChatInput(''); setChatting(true);
     try {
       const r = await axios.post('/api/v1/avatar/chat', { message: msg, context: 'vsb', vsb_id: selected });
-      setMessages(m => [...m, { role: 'vsb', text: r.data.response || '(no response)', served_by: r.data.served_by, is_external: r.data.is_external }]);
+      const reply = r.data.response || '(no response)';
+      setMessages(m => [...m, { role: 'vsb', text: reply, served_by: r.data.served_by, is_external: r.data.is_external }]);
+      speak(reply);
     } catch {
       setMessages(m => [...m, { role: 'vsb', text: 'The enterprise avatar is unavailable right now.', is_external: false }]);
     }
     setChatting(false);
+  };
+
+  const listenVoice = () => {
+    if (!SpeechRec) return;
+    if (listening) { try { recognitionRef.current?.stop(); } catch { /* ignore */ } return; }
+    const rec = new SpeechRec();
+    recognitionRef.current = rec;
+    rec.lang = 'en-GB'; rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onresult = (e: any) => {
+      const transcript = e.results?.[0]?.[0]?.transcript || '';
+      if (transcript) { setChatInput(transcript); sendChat(transcript); }   // speak → transcribe → send
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    try { rec.start(); setListening(true); } catch { setListening(false); }
   };
 
   const runCycle = async () => {
@@ -440,12 +468,27 @@ export const VSBCockpit: React.FC = () => {
               <div className="flex items-center gap-2">
                 <input aria-label="Message the VSB" value={chatInput} onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') sendChat(); }}
-                  placeholder="Ask the living enterprise…"
+                  placeholder={listening ? 'Listening…' : 'Ask the living enterprise…'}
                   className="flex-1 text-xs bg-slate-950 border border-slate-900 rounded-xl p-3 text-slate-300" />
-                <Button type="button" onClick={sendChat} disabled={chatting || !chatInput.trim()} className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
+                {SpeechRec && (
+                  <button type="button" onClick={listenVoice} aria-label={listening ? 'Stop listening' : 'Speak to the enterprise'}
+                    title="Voice input (browser-native, in-house)"
+                    className={`p-3 rounded-xl shrink-0 transition-all ${listening ? 'bg-vital/20 text-vital animate-pulse' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
+                    <Mic size={14} />
+                  </button>
+                )}
+                {canSpeak && (
+                  <button type="button" onClick={() => setSpeakReplies(s => !s)} aria-label="Toggle spoken replies"
+                    title="Speak the enterprise's replies aloud (browser-native)"
+                    className={`p-3 rounded-xl shrink-0 transition-all ${speakReplies ? 'bg-aura/20 text-aura' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
+                    <Volume2 size={14} />
+                  </button>
+                )}
+                <Button type="button" onClick={() => sendChat()} disabled={chatting || !chatInput.trim()} className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
                   {chatting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Send
                 </Button>
               </div>
+              {(SpeechRec || canSpeak) && <p className="text-[9px] text-slate-600">Voice is browser-native (speech-to-text in, text-to-speech out) — in-house, no external service.</p>}
             </Card>
           )}
         </>
