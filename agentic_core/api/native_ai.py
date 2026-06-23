@@ -87,6 +87,22 @@ class TreeRequest(BaseModel):
     timeout: float = 30.0
 
 
+class ValidateRequest(BaseModel):
+    prediction: Any
+    actual: Any
+    task_type: str = "SEMANTIC"   # SEMANTIC | NUMERICAL | APP_CODE | GENERIC
+
+
+@router.post("/validate")
+async def native_validate(req: ValidateRequest):
+    """Owned validation capability (agentic_core/validation.AccuracyValidator): real difflib semantic
+    similarity / numerical-tolerance / code-presence checks against a REFERENCE — not LLM self-grading."""
+    from agentic_core.validation.accuracy_validator import AccuracyValidator
+    res = AccuracyValidator().validate_output(req.prediction, req.actual, task_type=req.task_type)
+    return {"is_accurate": bool(res["is_accurate"]), "confidence": float(res["confidence"]),
+            "task_type": res["task_type"], "method": "agentic_core/validation.AccuracyValidator (difflib, real)"}
+
+
 class DecideRequest(BaseModel):
     state: Dict[str, Any] = {}
     actions: List[str] = []

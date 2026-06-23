@@ -16,10 +16,12 @@ interface TreeNodeDef { id: string; role: string; depends_on: string[] }
 interface TreeNodeResult extends TreeNodeDef { served_by: string; is_external: boolean; output: string }
 interface TreeGovernance { governed_by: string; qms_passed: boolean; qms_coverage_proxy: number; dcms_hash: string; dcms_algo: string; dcms_version: number }
 interface TreeDecision { recommendation: string; consistency: number; worst_case_utility: number; method: string; stressors: string[] }
+interface TreeValidation { max_branch_overlap: number; integrated: boolean; branches_checked: number; method: string }
 interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
   node_count: number; parallel_levels: number; max_parallel: number; immune_threat: string;
   governance?: TreeGovernance | null; decision?: TreeDecision | null;
+  validation?: TreeValidation | null;
   ueg_hash?: string | null; ueg_ledger?: string | null;
   nodes: TreeNodeResult[]; final: string; any_external: boolean;
 }
@@ -105,6 +107,14 @@ function TreeView({ run }: { run: TreeRun }) {
           <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.governance.qms_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>QMS {run.governance.qms_passed ? 'passed' : 'flagged'}</span>
           <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-slate-900 text-slate-400">DCMS {run.governance.dcms_algo} v{run.governance.dcms_version}</span>
           <span className="text-[8px] font-mono text-slate-600" title={run.governance.dcms_hash}>{run.governance.dcms_hash.slice(0, 16)}…</span>
+        </div>
+      )}
+      {run.validation && (
+        <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2">
+          <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Validation</span>
+          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.validation.integrated ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>{run.validation.integrated ? 'integrated' : 'near-copy'}</span>
+          <span className="text-[8px] font-bold uppercase text-slate-500">max branch overlap {Math.round(run.validation.max_branch_overlap * 100)}% · {run.validation.branches_checked} branches</span>
+          <span className="text-[8px] text-slate-600">difflib</span>
         </div>
       )}
       {run.decision && (

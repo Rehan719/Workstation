@@ -1703,6 +1703,26 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_validation_capability_in_house(client):
+    # The owned validation capability (agentic_core/validation.AccuracyValidator) is integrated: REAL
+    # difflib semantic similarity / numerical tolerance — not LLM self-grading — exposed standalone AND
+    # used by the tree to check the synthesis genuinely INTEGRATES (vs near-copies) its branches.
+    hi = client.post("/api/v1/native-ai/validate",
+                     json={"prediction": "the quick brown fox", "actual": "the quick brown fox", "task_type": "SEMANTIC"}).json()
+    lo = client.post("/api/v1/native-ai/validate",
+                     json={"prediction": "totally unrelated content", "actual": "the quick brown fox", "task_type": "SEMANTIC"}).json()
+    assert hi["is_accurate"] is True and hi["confidence"] > 0.9
+    assert lo["is_accurate"] is False and lo["confidence"] < hi["confidence"]
+    num = client.post("/api/v1/native-ai/validate",
+                      json={"prediction": 100.0, "actual": 100.5, "task_type": "NUMERICAL"}).json()
+    assert num["is_accurate"] is True
+    # the workflow tree carries a real difflib synthesis-integration check
+    t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    v = t.get("validation")
+    assert v and "difflib" in v["method"]
+    assert 0.0 <= v["max_branch_overlap"] <= 1.0 and isinstance(v["integrated"], bool) and v["branches_checked"] >= 1
+
+
 def test_ueg_provenance_ledger_in_house(client):
     # The in-house AI records its workflow-tree runs to a REAL hash-chained SHA3-512 Merkle-DAG audit
     # ledger (agentic_core/ueg) — cryptographically verifiable, tamper-evident, grows per run.

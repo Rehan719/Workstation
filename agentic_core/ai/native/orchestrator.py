@@ -218,6 +218,27 @@ class NativeOrchestrator:
         except Exception:
             governance = None
 
+        # VALIDATION (owned): a REAL difflib check — did the synthesis genuinely INTEGRATE the branches,
+        # or just near-copy one? (difflib SequenceMatcher excels at near-duplication detection.) High
+        # overlap with a single branch ⇒ not a real synthesis; moderate/low ⇒ genuine integration.
+        validation: Dict[str, Any] = None
+        try:
+            from agentic_core.validation.accuracy_validator import AccuracyValidator
+            av = AccuracyValidator(target_accuracy=0.85)
+            overlaps = []
+            for n in nodes:
+                if n["depends_on"] == ["frame"] and n["id"] in results:
+                    bo = results[n["id"]]["output"]
+                    if bo.strip() and final.strip():
+                        overlaps.append(float(av.validate_output(final, bo, task_type="SEMANTIC")["confidence"]))
+            if overlaps:
+                max_ov = max(overlaps)
+                validation = {"max_branch_overlap": round(max_ov, 3), "integrated": bool(max_ov < 0.85),
+                              "branches_checked": len(overlaps),
+                              "method": "difflib SequenceMatcher (owned validation)"}
+        except Exception:
+            validation = None
+
         # MINIMAX DECISION (owned cognition): a REAL maximin decision over {proceed · refine · hold} under
         # worst-case stressors, grounded in the run's ACTUAL signals (QMS gate, immune threat, in-house,
         # coverage). The in-house AI uses an owned decision algorithm — not LLM text — to recommend.
@@ -278,6 +299,7 @@ class NativeOrchestrator:
             "max_parallel": max_parallel,
             "immune_threat": threat,
             "governance": governance,
+            "validation": validation,
             "decision": decision,
             "ueg_hash": ueg_hash,
             "ueg_ledger": "hash-chained SHA3-512 Merkle-DAG (owned, verifiable)" if ueg_hash else None,

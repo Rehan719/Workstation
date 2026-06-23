@@ -78,3 +78,10 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 - **agentic_core/tree_knowledge** — ❌ SKIP (MOCK): `query()` fabricates accuracy via `np.random.normal`; hardcoded node/edge counts; no real graph or retrieval. Would surface fabrication — not integrated.
 - **agentic_core/causal/csl** — ⏸ DEFERRED: delegates to `simverse.causal_simulator` (heavy/uncertain dependency chain) — needs a deeper real-vs-mock check before integrating.
 - **agentic_core/optimizer/allocator** — real but trivial tier→cpu-quota logic; poor fit for the workflow tree (no user-tier concept there).
+
+## W62 scan (owner: review validation / verification / triad)
+- **agentic_core/validation/accuracy_validator** — ✅ REAL (difflib.SequenceMatcher semantic similarity + numerical tolerance + code-presence). INTEGRATED: `POST /api/v1/native-ai/validate` + the workflow tree's synthesis-integration check (is the synthesis a genuine integration vs a near-copy of one branch).
+- **agentic_core/validation/statistical_rigor** — ✅ REAL (scipy CI / t-test / p-values) BUT `power_analysis` imports **statsmodels (NOT installed)** → integrable later via `validate_metric` only (scipy), guarded; deferred to avoid a heavy hard dep.
+- **agentic_core/verification/framework** — ❌ MOCK (`_verify_l1..l5` all hardcode `return True`). SKIP.
+- **agentic_core/verification/cegar_engine** — ⚠️ ships a `mock_verifier` default; the CEGAR loop may be real but needs a real property-verifier to be meaningful. Deferred.
+- **agentic_core/triad** — ⛔ EMPTY at top level (.gitkeep + empty __init__; subdirs neuro_symbolic/quantum/xai). Nothing to integrate.
