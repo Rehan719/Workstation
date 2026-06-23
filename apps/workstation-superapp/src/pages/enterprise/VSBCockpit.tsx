@@ -26,6 +26,7 @@ interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_ex
 
 export const VSBCockpit: React.FC = () => {
   const [vsbs, setVsbs] = useState<VSBRow[]>([]);
+  const [vsbFilter, setVsbFilter] = useState('');
   const [selected, setSelected] = useState<string>('');
   const [detail, setDetail] = useState<Dict | null>(null);
   const [plan, setPlan] = useState<Dict | null>(null);
@@ -182,16 +183,35 @@ export const VSBCockpit: React.FC = () => {
         </p>
       </header>
 
-      {/* VSB selector */}
-      <Card className="p-5 flex items-center gap-4 flex-wrap">
-        <Building2 size={18} className="text-highlight" />
-        <select aria-label="Select VSB" value={selected} onChange={e => setSelected(e.target.value)}
-          className="flex-1 min-w-[240px] bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white">
-          {vsbs.length === 0 && <option value="">No established VSBs yet — spawn one in the VSB Spawn Studio</option>}
-          {vsbs.map(v => <option key={v.vsb_id} value={v.vsb_id}>{v.name || v.vsb_id}{v.domain ? ` · ${v.domain}` : ''}{v.has_board ? ' ✓' : ''}</option>)}
-        </select>
-        {loading && <Loader2 size={16} className="animate-spin text-highlight" />}
-      </Card>
+      {/* VSB selector — searchable (the established-VSB list can grow large) */}
+      {(() => {
+        const q = vsbFilter.trim().toLowerCase();
+        const filtered = q
+          ? vsbs.filter(v => `${v.name || ''} ${v.domain || ''} ${v.entity_type || ''} ${v.vsb_id}`.toLowerCase().includes(q))
+          : vsbs;
+        // keep the current selection selectable even if filtered out
+        const options = (selected && !filtered.some(v => v.vsb_id === selected))
+          ? [...filtered, ...vsbs.filter(v => v.vsb_id === selected)]
+          : filtered;
+        return (
+          <Card className="p-5 flex items-center gap-3 flex-wrap">
+            <Building2 size={18} className="text-highlight shrink-0" />
+            {vsbs.length > 8 && (
+              <input aria-label="Filter VSBs" value={vsbFilter} onChange={e => setVsbFilter(e.target.value)}
+                placeholder="Filter by name, domain, type, id…"
+                className="min-w-[180px] bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300" />
+            )}
+            <select aria-label="Select VSB" value={selected} onChange={e => setSelected(e.target.value)}
+              className="flex-1 min-w-[240px] bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white">
+              {vsbs.length === 0 && <option value="">No established VSBs yet — spawn one in the VSB Spawn Studio</option>}
+              {vsbs.length > 0 && options.length === 0 && <option value="">No VSB matches “{vsbFilter}”</option>}
+              {options.map(v => <option key={v.vsb_id} value={v.vsb_id}>{v.name || v.vsb_id}{v.domain ? ` · ${v.domain}` : ''}{v.has_board ? ' ✓' : ''}</option>)}
+            </select>
+            {vsbs.length > 8 && <span className="text-[10px] font-black uppercase text-slate-500 shrink-0">{q ? `${filtered.length} of ${vsbs.length}` : `${vsbs.length} VSBs`}</span>}
+            {loading && <Loader2 size={16} className="animate-spin text-highlight" />}
+          </Card>
+        );
+      })()}
 
       {detail && (
         <>
