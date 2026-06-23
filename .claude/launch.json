@@ -4,8 +4,16 @@
     {
       "name": "Backend (FastAPI — uvicorn :8000)",
       "runtimeExecutable": "venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "agentic_core.app_mvp:app", "--reload", "--port", "8000"],
-      "port": 8000
+      "runtimeArgs": ["-m", "uvicorn", "agentic_core.app_mvp:app", "--port", "8000"],
+      "port": 8000,
+      "autoPort": false
+    },
+    {
+      "name": "Backend Alt (FastAPI — uvicorn :8010, current code)",
+      "runtimeExecutable": "venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "agentic_core.app_mvp:app", "--port", "8010"],
+      "port": 8010,
+      "autoPort": false
     },
     {
       "name": "Frontend (Vite — workstation-superapp :5173)",

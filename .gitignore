@@ -62,3 +62,7 @@ sandbox/
 # Runtime UEG / GaaS audit-log state (generated, hash-chained — not source)
 meta/*ueg*.json
 **/meta/*ueg*.json
+
+# local env overrides (Vite) — never commit
+.env.local
+.env*.local
