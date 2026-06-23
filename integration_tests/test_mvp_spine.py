@@ -1154,6 +1154,24 @@ def test_business_plan_lifecycle(client):
     assert r.status_code == 404
 
 
+def test_business_plan_living_roadmap(client):
+    # The Chief delivers the plan via Strategy AND a LIVING roadmap — time-phased from the objectives,
+    # recomputed each read so it tracks progress (no fabrication; derived only from real objectives).
+    import uuid
+    scope = f"pytest-rm-{uuid.uuid4().hex[:8]}"
+    client.post("/api/v1/business-plan/set", json={"scope": scope, "mission": "M", "vision": "V", "strategy": "S"})
+    client.post("/api/v1/business-plan/objective", json={"scope": scope, "title": "Phase A obj", "timeline": "Q3 2026"})
+    o2 = client.post("/api/v1/business-plan/objective", json={"scope": scope, "title": "Phase B obj", "timeline": "Q4 2026"}).json()
+    client.post(f"/api/v1/business-plan/objective/{o2['id']}/review", json={"scope": scope, "progress_pct": 50})
+    rm = client.get("/api/v1/business-plan/roadmap", params={"scope": scope}).json()
+    assert rm["living"] is True and rm["phase_count"] == 2
+    assert {"Q3 2026", "Q4 2026"} <= {p["timeline"] for p in rm["phases"]}
+    assert rm["current_phase"] == "Q3 2026" and 0 < rm["overall_progress_pct"] < 100
+    # integrated into the main plan response (the roadmap is part of the living business plan)
+    bp = client.get("/api/v1/business-plan", params={"scope": scope}).json()
+    assert bp["roadmap"]["living"] is True
+
+
 # ── Genesis → Business-Plan wiring (Phase 2) ──────────────────────────────────
 # Every established VSB IDBO auto-seeds a living business plan with objectives
 # mapped to its Concept→Design→Commercialisation lifecycle.

@@ -258,8 +258,32 @@ export const VSBCockpit: React.FC = () => {
                   <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">{plan.aims.map((a: string, i: number) => <li key={i}>{a}</li>)}</ul>
                 </Card>
               )}
+              {plan.roadmap && plan.roadmap.phases?.length > 0 && (
+                <Card className="p-6 border-highlight/30">
+                  <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight flex items-center gap-2"><Workflow size={14} /> Living roadmap</h4>
+                    <span className="text-[9px] font-black uppercase text-slate-500">overall {plan.roadmap.overall_progress_pct}% · current: {plan.roadmap.current_phase || '—'}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {plan.roadmap.phases.map((ph: Dict, i: number) => (
+                      <div key={i} className={`p-3 rounded-xl border ${ph.timeline === plan.roadmap.current_phase ? 'bg-highlight/5 border-highlight/40' : 'bg-slate-900 border-slate-800'}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] font-black uppercase tracking-wider text-white">{ph.timeline}</p>
+                          <span className="text-[9px] font-black text-highlight">{ph.progress_pct}% · {ph.count} objective{ph.count === 1 ? '' : 's'}{ph.complete ? ' ✓' : ''}</span>
+                        </div>
+                        <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden"><div className="h-full bg-highlight" style={{ width: `${ph.progress_pct}%` }} /></div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {(ph.objectives || []).map((o: Dict, j: number) => <span key={j} className="text-[9px] text-slate-400">· {o.title}</span>)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {plan.roadmap.next_milestone && <p className="text-[10px] text-slate-500 mt-3">Next milestone: <span className="text-white font-bold">{plan.roadmap.next_milestone.title}</span> ({plan.roadmap.next_milestone.phase})</p>}
+                  <p className="text-[9px] text-slate-600 italic mt-2">{plan.roadmap.note}</p>
+                </Card>
+              )}
               <Card className="p-6">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-3">Objectives &amp; Roadmap ({(plan.objectives || []).length})</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-3">Objectives ({(plan.objectives || []).length})</h4>
                 <div className="space-y-3">
                   {(plan.objectives || []).map((o: Dict, i: number) => (
                     <div key={o.id || i} className="p-4 rounded-xl bg-slate-900 border border-slate-800">

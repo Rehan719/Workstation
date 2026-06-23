@@ -65,9 +65,63 @@ async def _q(prompt: str, agent: str) -> str:
         return f"[{agent} unavailable: {e}]"
 
 
+def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
+    """LIVING roadmap — derived from the plan's objectives (the Chief delivers Aims/Mission/Objectives
+    via Strategy AND a living Roadmap). Time-phases the objectives, computes per-phase + overall
+    progress, the current phase and next milestone. Not persisted — recomputed each read so it stays
+    live as objectives progress. Honest: built only from real objectives, never invented."""
+    objs = plan.get("objectives", []) or []
+    phases: Dict[str, list] = {}
+    order: List[str] = []
+    for o in objs:
+        tl = (str(o.get("timeline") or "").strip() or "Unscheduled")
+        if tl not in phases:
+            phases[tl] = []
+            order.append(tl)
+        phases[tl].append(o)
+    phase_list = []
+    for tl in order:
+        items = phases[tl]
+        prog = round(sum(int(i.get("progress_pct") or 0) for i in items) / len(items)) if items else 0
+        complete = bool(items) and all((int(i.get("progress_pct") or 0) >= 100) or i.get("status") == "done" for i in items)
+        phase_list.append({
+            "timeline": tl,
+            "progress_pct": prog,
+            "complete": complete,
+            "count": len(items),
+            "objectives": [{"id": i.get("id"), "title": i.get("title"), "progress_pct": i.get("progress_pct", 0),
+                            "status": i.get("status"), "kpi": i.get("kpi"), "owner_role": i.get("owner_role")} for i in items],
+        })
+    overall = round(sum(int(o.get("progress_pct") or 0) for o in objs) / len(objs)) if objs else 0
+    current = next((p for p in phase_list if not p["complete"]), None)
+    next_milestone = None
+    if current:
+        nm = next((o for o in current["objectives"] if int(o.get("progress_pct") or 0) < 100), None)
+        if nm:
+            next_milestone = {"phase": current["timeline"], "title": nm["title"], "progress_pct": nm.get("progress_pct", 0)}
+    return {
+        "living": True,
+        "phases": phase_list,
+        "phase_count": len(phase_list),
+        "objective_count": len(objs),
+        "overall_progress_pct": overall,
+        "current_phase": current["timeline"] if current else None,
+        "next_milestone": next_milestone,
+        "note": "Living roadmap derived from the plan's objectives — it updates as objectives progress.",
+    }
+
+
 @router.get("")
 async def get_plan(scope: str = "workstation"):
-    return _load(scope)
+    plan = _load(scope)
+    plan["roadmap"] = _roadmap(plan)   # living, derived — integrated into the plan, not persisted
+    return plan
+
+
+@router.get("/roadmap")
+async def get_roadmap(scope: str = "workstation"):
+    """The Chief's living delivery roadmap for this scope (time-phased objectives + trajectory)."""
+    return _roadmap(_load(scope))
 
 
 @router.get("/list")

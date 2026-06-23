@@ -116,7 +116,9 @@ instruct the Board/genome):
   modelled, simulated and iterated specifically for the founder's instructions and input data;
   instructed through **multimodal communication** or by **navigation/guidance through any platform
   area** via the enterprise-aware avatar. The Chief owns the living Business Plan (Aims · Mission ·
-  Objectives) and delivers it via **Strategy**.
+  Objectives) and delivers it via **Strategy** and a **living Roadmap** — a time-phased view of the
+  objectives (phases · per-phase progress · current phase · next milestone) that updates as the plan
+  progresses (`GET /api/v1/business-plan/roadmap`; integrated into the plan + the VSB Cockpit).
 - **Board of specialist Directors** — receive the strategy; deliver via **Action Planning** with
   **timelines, resourced tasks, and project management**; delegate downward.
 - **AI CEO** — receives the action plan; integrates the **living management systems (BMS · QMS · DCS ·
