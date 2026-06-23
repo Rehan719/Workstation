@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Copy, Download, Check } from 'lucide-react';
 
 export interface DomainField {
   name: string;
@@ -85,6 +85,21 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   };
 
   const prov = result?.ai_provenance;
+  const resultText = result ? String(result[resultKey] ?? result.deliverable ?? JSON.stringify(result, null, 2)) : '';
+  const [copied, setCopied] = useState(false);
+
+  const copyResult = async () => {
+    try { await navigator.clipboard.writeText(resultText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  };
+  const downloadResult = () => {
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'result';
+    const blob = new Blob([resultText], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${slug}.md`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-5">
@@ -120,16 +135,26 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
 
       {result && (
         <Card className="p-6 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <h4 className="text-sm font-black text-white uppercase tracking-wide">Result</h4>
-            {prov && (
-              <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${prov.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                {prov.is_external ? `via ${prov.served_by}` : `in-house · ${prov.served_by ?? 'native'}`}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {prov && (
+                <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${prov.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                  {prov.is_external ? `via ${prov.served_by}` : `in-house · ${prov.served_by ?? 'native'}`}
+                </span>
+              )}
+              <button type="button" onClick={copyResult} aria-label="Copy result"
+                className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1">
+                {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />} {copied ? 'Copied' : 'Copy'}
+              </button>
+              <button type="button" onClick={downloadResult} aria-label="Download result as Markdown"
+                className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1">
+                <Download size={11} /> .md
+              </button>
+            </div>
           </div>
           <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">
-            {String(result[resultKey] ?? result.deliverable ?? JSON.stringify(result, null, 2))}
+            {resultText}
           </pre>
           {result.disclaimer && <p className="text-[10px] text-slate-600 italic leading-relaxed">{result.disclaimer}</p>}
         </Card>
