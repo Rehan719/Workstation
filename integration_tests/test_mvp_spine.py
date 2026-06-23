@@ -1539,6 +1539,7 @@ _DOMAIN_TOOLS = [
     ("/api/v1/education/curriculum", {"subject": "Mathematics", "level": "GCSE"}, "curriculum"),
     ("/api/v1/religion/fatwa-research", {"question": "What are the conditions for fasting while travelling?"}, "research"),
     ("/api/v1/religion/quran-tafsir", {"surah": 1, "ayah_start": 1}, "tafsir"),
+    ("/api/v1/religion/halal-review", {"product_name": "Gummy sweets", "product_description": "Chewy fruit sweets", "ingredients": ["bovine gelatin", "glucose syrup"], "target_markets": ["UK"]}, "assessment"),
 ]
 
 
