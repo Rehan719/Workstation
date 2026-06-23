@@ -40,13 +40,31 @@ class AllocateRequest(BaseModel):
     user_id: str = "default"
 
 
+def _numeric_requirements(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Coerce requirement values to numbers. The engine compares them against inventory capacity,
+    so a string value (e.g. from a web form / key-value field) would otherwise raise `int < str`
+    and 500. Numeric strings are coerced; non-numeric values are dropped (can't allocate against)."""
+    out: Dict[str, Any] = {}
+    for k, v in (raw or {}).items():
+        if isinstance(v, bool):
+            continue
+        if isinstance(v, (int, float)):
+            out[k] = v
+            continue
+        try:
+            out[k] = int(float(str(v).strip()))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 @router.post("/allocate")
 async def allocate(req: AllocateRequest):
     """Run a resource request through the adaptive optimiser (verify → schedule → assemble →
     allocate). Real engine logic; capacity is a simulated single-node baseline (honestly flagged)."""
     from agentic_core.optimizer.engine import AdaptiveResourceOptimizer
     spec = json.dumps({"id": f"ral-{uuid.uuid4().hex[:8]}", "domain": req.domain,
-                       "requirements": req.requirements})
+                       "requirements": _numeric_requirements(req.requirements)})
     out = await AdaptiveResourceOptimizer().process_ral_request(req.user_id, req.tier, spec)
     return {"posture": "in-house adaptive resource optimiser", "simulated_capacity": True,
             "note": _NOTE, **out}

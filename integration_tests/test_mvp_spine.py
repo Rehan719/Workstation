@@ -1502,6 +1502,12 @@ def test_resource_optimizer_surfaced(client):
     assert inv["simulated"] is True and "compute" in inv["inventory"]
     fab = client.get("/api/v1/resources?resource_class=digital_resource").json()
     assert any(x["id"] == "resource_optimizer" for x in fab["resources"])
+    # robustness: STRING requirement values (what a web form / key-value field posts) must NOT 500 —
+    # they are coerced to numbers (the engine compares them against capacity).
+    s = client.post("/api/v1/optimizer/allocate",
+                    json={"domain": "science", "requirements": {"CPU": "8", "RAM": "2048"}, "tier": "standard"})
+    assert s.status_code == 200, s.text
+    assert s.json()["status"] == "SUCCESS"
 
 
 def test_collective_truth_consensus_surfaced(client):
