@@ -6,7 +6,7 @@ import { Loader2, Sparkles } from 'lucide-react';
 export interface DomainField {
   name: string;
   label: string;
-  type?: 'text' | 'textarea' | 'select' | 'keyvalue';
+  type?: 'text' | 'textarea' | 'select' | 'keyvalue' | 'list';
   options?: string[];
   placeholder?: string;
   default?: string;
@@ -23,6 +23,11 @@ function parseKeyValue(raw: string): Record<string, string> {
     }
   });
   return obj;
+}
+
+// A `list` field is edited one-item-per-line and posted as an array of strings.
+function parseList(raw: string): string[] {
+  return (raw || '').split('\n').map((s) => s.trim()).filter(Boolean);
 }
 
 interface DomainToolProps {
@@ -54,7 +59,9 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
     try {
       const body: Record<string, any> = {};
       for (const f of fields) {
-        body[f.name] = f.type === 'keyvalue' ? parseKeyValue(form[f.name]) : form[f.name];
+        body[f.name] = f.type === 'keyvalue' ? parseKeyValue(form[f.name])
+          : f.type === 'list' ? parseList(form[f.name])
+          : form[f.name];
       }
       const r = await axios.post(endpoint, body);
       setResult(r.data);
@@ -81,10 +88,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
               className="block mt-1 text-[11px] font-black uppercase bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2">
               {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
             </select>
-          ) : (f.type === 'textarea' || f.type === 'keyvalue') ? (
+          ) : (f.type === 'textarea' || f.type === 'keyvalue' || f.type === 'list') ? (
             <textarea aria-label={f.label} value={form[f.name]} onChange={e => setForm({ ...form, [f.name]: e.target.value })} rows={3}
-              placeholder={f.placeholder || (f.type === 'keyvalue' ? 'one per line — key: value' : undefined)}
-              className={`block w-full mt-1 text-xs bg-slate-950 border border-slate-900 rounded-2xl p-3 text-slate-300 ${f.type === 'keyvalue' ? 'font-mono' : ''}`} />
+              placeholder={f.placeholder || (f.type === 'keyvalue' ? 'one per line — key: value' : f.type === 'list' ? 'one item per line' : undefined)}
+              className={`block w-full mt-1 text-xs bg-slate-950 border border-slate-900 rounded-2xl p-3 text-slate-300 ${(f.type === 'keyvalue' || f.type === 'list') ? 'font-mono' : ''}`} />
           ) : (
             <input aria-label={f.label} value={form[f.name]} onChange={e => setForm({ ...form, [f.name]: e.target.value })}
               placeholder={f.placeholder}

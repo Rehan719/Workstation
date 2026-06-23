@@ -1528,6 +1528,7 @@ _DOMAIN_TOOLS = [
     ("/api/v1/science/synthesise", {"research_question": "Does X improve Y?"}, "report"),
     ("/api/v1/science/literature", {"research_question": "Does X improve Y?"}, "outline"),
     ("/api/v1/care/handover", {"patient_summary": "72yo M, community-acquired pneumonia.", "current_situation": "Stable post-op, observations within range."}, "handover"),
+    ("/api/v1/care/care-plan", {"patient_profile": {"age": "78", "condition": "COPD"}, "care_needs": ["breathlessness management", "falls prevention"], "setting": "community", "duration_weeks": "6", "care_model": "person_centred"}, "care_plan"),
     ("/api/v1/education/lesson-plan", {"subject": "Biology", "topic": "Cells", "level": "GCSE"}, "lesson_plan"),
     ("/api/v1/education/curriculum", {"subject": "Mathematics", "level": "GCSE"}, "curriculum"),
     ("/api/v1/religion/fatwa-research", {"question": "What are the conditions for fasting while travelling?"}, "research"),

@@ -42,6 +42,7 @@ export const CareHub: React.FC = () => {
             </h3>
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                <button type="button" onClick={() => setActiveTab('clinical')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'clinical' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Clinical</button>
+               <button type="button" onClick={() => setActiveTab('care-plan')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'care-plan' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Care Plan</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
@@ -55,6 +56,21 @@ export const CareHub: React.FC = () => {
                     <QEPImmersiveTools domain="care" />
                  </div>
               </motion.div>
+            ) : activeTab === 'care-plan' ? (
+              <DomainTool
+                title="Care Plan Builder"
+                description={<>Describe the person and their needs — Workstation's <span className="text-vital">own</span> AI drafts a structured, person-centred care plan (goals, interventions, review schedule), in-house.</>}
+                endpoint="/api/v1/care/care-plan"
+                resultKey="care_plan"
+                submitLabel="Build care plan"
+                fields={[
+                  { name: 'patient_profile', label: 'Patient profile (key: value per line)', type: 'keyvalue', default: 'age: \ncondition: \nmobility: ' },
+                  { name: 'care_needs', label: 'Care needs (one per line)', type: 'list', placeholder: 'breathlessness management\nfalls prevention' },
+                  { name: 'setting', label: 'Setting', type: 'select', options: ['community', 'hospital', 'care_home', 'mental_health'], default: 'community' },
+                  { name: 'duration_weeks', label: 'Duration (weeks)', type: 'text', default: '4' },
+                  { name: 'care_model', label: 'Care model', type: 'text', default: 'person_centred' },
+                ]}
+              />
             ) : (
               <DomainTool
                 title="Clinical Handover (SBAR)"
