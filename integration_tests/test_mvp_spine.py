@@ -1568,3 +1568,25 @@ def test_domain_tools_reachable_in_house(client, endpoint, payload, result_key):
     prov = body.get("ai_provenance") or {}
     assert prov.get("posture") == "in-house-first"
     assert prov.get("is_external") is False
+
+
+# Robustness guard: edge inputs (empty strings, empty dicts/lists, non-numeric where numbers are
+# expected, zero reputation) must NEVER 500 — a 422 is acceptable, a 500 is a bug. This locks the whole
+# AI surface against the crash class we hit in care/handover (W22) and the optimizer (W25).
+_EDGE_PROBES = [
+    ("/api/v1/law/generate", {"template_id": "nonexistent", "parties": {}}),
+    ("/api/v1/care/care-plan", {"patient_profile": {}, "care_needs": [], "duration_weeks": "0"}),
+    ("/api/v1/care/risk-assess", {"tool": "", "patient_data": {}}),
+    ("/api/v1/education/curriculum", {"subject": "", "level": "", "duration_weeks": "0"}),
+    ("/api/v1/religion/halal-review", {"product_name": "", "product_description": "", "ingredients": []}),
+    ("/api/v1/employment/application", {"target_role": "", "questions": [], "word_limit": "0"}),
+    ("/api/v1/optimizer/allocate", {"domain": "x", "requirements": {"CPU": "lots", "RAM": ""}}),
+    ("/api/v1/collective/consensus", {"claims": [{"claim": "x", "confidence": 0.9, "reputation": 0}]}),
+    ("/api/v1/mega-project/synthesise", {"concept": "", "domain": ""}),
+]
+
+
+@pytest.mark.parametrize("endpoint,payload", _EDGE_PROBES)
+def test_endpoints_no_500_on_edge_inputs(client, endpoint, payload):
+    r = client.post(endpoint, json=payload)
+    assert r.status_code < 500, f"{endpoint} 500'd on edge input: {r.text[:200]}"
