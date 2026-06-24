@@ -8,8 +8,9 @@
   Companions: WORKSTATION_IDBO_UNDERSTANDING.md (same-page summary), WORKSTATION_IDBO_LIVING_PLAN.md
   (vision↔state↔action), ACTION_PLAN.md (timed plan), VSB_ECONOMIC_LEGAL_MODEL.md.
   Status: LIVING · authored 2026-06-21 from the Owner's "whole platform" directive ·
-  execution progress updated 2026-06-23 (see §16 — the §6 native-AI mandate is substantially
-  delivered; full cycle log in docs/AUTONOMOUS_PROGRESS.md, W1–W38).
+  execution progress updated 2026-06-24 (see §16 — the §6 native-AI mandate is DELIVERED and the
+  in-house integration sweep is complete; full cycle log in docs/AUTONOMOUS_PROGRESS.md, W1–W76;
+  real-vs-mock ledger in docs/AGENTIC_CORE_INTEGRATION_AUDIT.md).
 -->
 
 # Workstation IDBO — The Whole Vision (Fine Resolution)
@@ -175,9 +176,13 @@ composes bespoke agent-cascade trees as first-class, reconfigurable, biomimetic 
 external providers becoming *optional accelerants*, never *dependencies*. (See Action Plan, new
 workstream **W1 — Native AI Resource Fabric**.)
 
-> **✅ DELIVERED (2026-06-23):** this mandate is now substantially built — the native AI resource
-> fabric, in-platform orchestrator, and bespoke reconfigurable swarm engine are live and in-house-first;
-> external providers are optional, never dependencies. See **§16** for the full execution ledger.
+> **✅ DELIVERED (2026-06-24):** this mandate is built and the in-house-integration sweep is complete —
+> the native AI resource fabric, in-platform orchestrator, and bespoke reconfigurable swarm engine are
+> live and in-house-first; the **autonomous workflow-TREE** ("dynamic, adaptive, autonomous workflow /
+> pipeline / cascade trees", §6) runs goals through 12 real owned capabilities (governance · validation ·
+> decision · consensus · biomimetic signal · provenance); external providers are optional, never
+> dependencies. See **§16** for the full execution ledger and `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`
+> for the real-vs-mock record.
 
 ## 7. The Reconfigurable Resource Fabric + Digital Resources (with user design control)
 
@@ -277,12 +282,15 @@ individually and collectively.
 
 ## 16. Fidelity Check & Execution Progress — vision vs. live system
 
-**Update — 2026-06-23.** At authoring (2026-06-21) the principal divergence from this vision was §6:
+**Update — 2026-06-24.** At authoring (2026-06-21) the principal divergence from this vision was §6:
 *the AI was external API calls, not Workstation's own native swarm/models/orchestration.* **That gap
-is now substantially closed** — the platform runs its OWN native AI fabric, in-house-first; external
-providers are optional and never a dependency. Full cycle-by-cycle execution log:
-`docs/AUTONOMOUS_PROGRESS.md` (workstreams W1–W38). Verified state: 355 routes, integration suite
-green (137+ cases), Spine CI green on `main`.
+is now closed** — the platform runs its OWN native AI fabric, in-house-first; external providers are
+optional and never a dependency. Since then a **systematic in-house-integration sweep** (W58–W76) has
+pulled the genuinely-real `agentic_core`/`core` capabilities INTO that fabric, and a **living-organism
+workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-by-cycle execution log:
+`docs/AUTONOMOUS_PROGRESS.md` (workstreams W1–W76); real-vs-mock integration ledger:
+`docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` (~44 areas scanned). Verified state: integration suite green
+(**170 cases**), Spine CI green on `main`.
 
 **Delivered / closed:**
 - ✅ **§6 — Native AI fabric.** `agentic_core/ai/native/`: a `NativeReasoningEngine` honest
@@ -303,28 +311,51 @@ green (137+ cases), Spine CI green on `main`.
   (Copy / Download .md), and discoverable via the unified `/ai-tools` launcher with `?tab=` deep-linking.
 - ✅ **Self-observing.** Every in-house AI call is recorded into the operational-excellence learning
   loop; the orchestrator reorders resources by recorded health — real (never fabricated) feedback.
-- ✅ **Existing capabilities integrated, honestly.** Orphaned agentic_core capabilities surfaced into
-  the fabric (omnimedia, federation mesh, `mega_project` redone honestly after stripping fabricated
-  figures, `resource_optimizer`, `truth_consensus`); mock/fabricated Jules modules quarantined and
-  documented (`docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`).
+  Real **performance-degradation detection** runs over that telemetry (`/api/v1/operations/degradation`).
+- ✅ **Autonomous workflow-TREE orchestration (the living-organism cascade).** Beyond the linear swarm,
+  `orchestrate_tree` (`POST /api/v1/native-ai/tree`) decomposes a goal into a dependency **DAG**, runs it
+  **in-house-first with parallel branches**, and threads it through owned capabilities end-to-end:
+  immune-throttled parallelism + biobus nervous signals + learning loop → **VBS QMS/DCMS governance** →
+  **difflib validation** → **minimax decision** → **swarm consensus** → **biomimetic Hill-cascade signal**
+  → **UEG hash-chained provenance**. Visualised on `/native-ai`.
+- ✅ **The Chief delivers a business-plan OBJECTIVE via the tree** (`POST /api/v1/business-plan/
+  objective/{oid}/orchestrate`; one-click on the Business Plan page) — grounded in the VSB + plan,
+  governed, and recorded as an auditable review (decision · consensus · QMS · UEG hash).
+- ✅ **Full multimodal avatar interaction** (was "remaining"): the avatar is always-online in-house and
+  VSB-grounded, now **text + voice (browser-native STT/TTS) + image (local Ollama vision, honest
+  provenance) + all-language** — every mode in-house, never fabricating what it can't do.
+- ✅ **In-house integration sweep — 12 real `agentic_core` modules pulled INTO the fabric** (W58–W76),
+  each catalogued (`GET /api/v1/native-ai/capabilities`) + import-self-checked (`/native-ai/selfcheck`)
+  + surfaced on `/native-ai`: cognition **minimax** decision, **difflib validation**, **scipy** statistical
+  rigor, swarm **consensus**, biomimetic **Hill-cascade signal transduction**, bacterial **quorum sensing**,
+  **NLI** intent/entailment, **SHA3 entropy** pool, graph **topology** (Betti numbers), the **VBS** living
+  systems (QMS/DCMS/BMS/EMS/backbone), the **UEG** hash-chained audit ledger, and **degradation** detection.
+  Honestly: 3 real correctness bugs were fixed along the way; every mock and **two fabrication-claiming
+  modules** (a fake "Halo2 zk" proof, a fake "Pearl-do" causal proof) were skipped and documented so they
+  are **never surfaced as real** (`docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`).
+- ✅ **Earlier integrations still live** — omnimedia, federation mesh, `mega_project` (redone honestly
+  after stripping fabricated figures), `resource_optimizer`, `truth_consensus` — surfaced into the fabric
+  with mock/fabricated Jules modules quarantined and documented.
 - ✅ **(pre-existing, still live)** process-intelligence engines, Genesis Concept→Commercialisation,
   the VSB with Board/Chief/Economy/Plan, the resource fabric, end-to-end transformation orchestration
   through the org, biomimetic systems, gaas governance, the living plan, digital-twin
   generation/simulation, real CI.
 
 **Remaining scope — the genuine work still ahead (priority order, on the native-first foundation):**
-- ◻ **Deeper user design-control** over org/resource/swarm reconfiguration *from the UI* (the control
-  plane and fabric exist; richer user-facing reconfiguration UX remains).
-- ◻ **Full multimodal avatar interaction** — the avatar already runs in-house (always-online) and
-  grounds in a live VSB; full voice/vision multimodal exchange remains.
 - ◻ **Local-model depth** — the native floor is honest structured reasoning; richer local inference
-  (larger Ollama models / fine-tunes) deepens output quality without changing the in-house guarantee.
-- ◻ **Owner-gated (designed, not switched on):** the VSB economic model with *real* money (virtual WST
-  only today — the live Stripe key must never move money), production-deployment hardening, and an
-  optional live external AI key.
+  (larger Ollama models / fine-tunes, incl. a pulled vision model for the avatar) deepens output quality
+  without changing the in-house guarantee.
+- ◻ **Deeper user design-control from the UI** — much is now reachable (the VSB Cockpit, the workflow-tree
+  visualiser, bespoke saved swarm cascades, the capabilities catalogue, one-click Chief delivery); richer
+  drag-to-reconfigure UX over org/resource/swarm remains.
+- ◻ **Owner-gated (designed, not switched on) — the W6 launch items:** the VSB economic model with *real*
+  money (virtual WST only today — the live Stripe key must never move money), persistence hardening
+  (SQLite/file → Postgres), production-deployment, and an optional live external AI key.
 
-The vision is **not** redefined down to current capability — the ◻ items above are the work, in order,
-built on the native-first foundation now in place. (Companion plan: `ACTION_PLAN.md`, W1–W6.)
+The integration sweep is **complete** — the genuinely-real `agentic_core`/`core` capabilities are now
+in-house (the ledger documents what was real vs. mock). The vision is **not** redefined down to current
+capability — the ◻ items above are the work that remains, with the W6 launch items gated on the Owner.
+(Companion plan: `ACTION_PLAN.md`, W1–W6.)
 
 ---
 

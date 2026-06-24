@@ -8,7 +8,7 @@
 
 # Workstation IDBO — Living Design & Development Action Plan
 
-**Status:** LIVING · **Last reconciled:** 2026-06-20 · **Grounded baseline:** 262 API routes, tests 54✓/0✗, frontend tsc 0 errors
+**Status:** LIVING · **Last reconciled:** 2026-06-24 · **Grounded baseline:** in-house-first native AI fabric (12 real owned capabilities + autonomous workflow tree), integration suite 170✓/0✗, frontend tsc 0 errors, Spine CI green
 **Canonical companion data:** `GET /api/v1/plan/state` (auto-introspected current state) · `GET /api/v1/plan` (phases + progress)
 
 ---
@@ -66,9 +66,9 @@ Across **Synthesis Lab, Build-to-Order, and the Forge**, users **access, select,
 
 ## 4. Current State (GROUNDED — what exists today)
 
-> Auto-verifiable: `GET /api/v1/plan/state`. Hand-reconciled 2026-06-20.
+> Auto-verifiable: `GET /api/v1/plan/state`. Hand-reconciled 2026-06-24.
 
-**Platform:** FastAPI backend (`agentic_core/app_mvp.py`, **54 routers / 262 routes**), Vite+React+TS frontend (`apps/workstation-superapp`, **tsc 0 errors**). Tests: `integration_tests/test_mvp_spine.py` → **54 pass / 15 skip / 0 fail**. AI via `ai/gateway.py` (Claude → OpenAI → Ollama).
+**Platform:** FastAPI backend (`agentic_core/app_mvp.py`), Vite+React+TS frontend (`apps/workstation-superapp`, **tsc 0 errors**). Tests: `integration_tests/test_mvp_spine.py` → **170 pass / 15 skip / 0 fail** (run on the native floor via `AI_DISABLE_LOCAL=1`); Spine CI green on `main`. **AI is now IN-HOUSE-FIRST** via the native fabric (`ai/native/` + `ai/gateway.query_meta`), NOT external API calls — external providers are optional accelerants only. **In-house integration sweep complete (W1–W76):** an autonomous workflow-TREE orchestrator + **12 real owned `agentic_core` capabilities** (minimax · difflib validation · scipy rigor · consensus · biomimetic Hill signal · quorum · NLI · entropy · topology · VBS living systems · UEG ledger · degradation), catalogued at `/api/v1/native-ai/capabilities` + self-checked at `/native-ai/selfcheck`. The Chief delivers business-plan objectives via the tree. See `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` (real-vs-mock) + `docs/AUTONOMOUS_PROGRESS.md` (W1–W76).
 
 **Process-Intelligence engines (live):**
 | Engine | Endpoint | Stages |
