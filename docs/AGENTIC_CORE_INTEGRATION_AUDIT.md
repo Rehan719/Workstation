@@ -100,3 +100,10 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 - **agentic_core/swarm/orchestration_engine.OrchestrationEngine** — real-ish goal decomposition but OVERLAPS with (and is weaker than) the native orchestrate_tree. SKIP (already have a better one).
 - **agentic_core/tools** (ToolRegistry, ToolDiscoveryEngine, FileOperations) — REAL registry/discovery, ALREADY WIRED to `agentic_core/api/tools.py`. No new integration needed.
 - **agentic_core/synthesis** — mixed: `agentic_orchestrator` (subprocess-based) overlaps with the tree; `alphafold3_v16` shells out to an external binary (documented mock per Jules). Already partly wired to api/v138/ceo. Deferred — no clean in-house-AI integration without external deps.
+
+## W65 scan (owner: review signaling / sensory / self_improvement)
+- **agentic_core/signaling/empirical_transduction.EmpiricalSignalTransduction** — ✅ REAL biomimetic math (Hill-equation sigmoidal cascade `x^n/(K^n+x^n)` + pulsatile decoding; latency inversely scales with signal). INTEGRATED: `POST /api/v1/native-ai/transduce` + the workflow tree's biomimetic `signal_response` (models whether the run's consensus signal propagates supra-threshold).
+- **agentic_core/signaling/signal_transduction + pathway_registry** — real-looking transduction engine + pathway registry; not yet wired (candidate for organism/biobus coupling later).
+- **agentic_core/self_improvement/complexity_scorer, degradation_detector, engagement_scorer** — ✅ REAL deterministic scorers (telemetry degradation = latency +12.7% / accuracy -9.3% over 3 cycles; cognitive-load mapping). Integrable later into the operational-excellence learning loop.
+- **agentic_core/self_improvement/evolution_nexus + genetic_algorithm** — real-looking GA/mutation; OVERLAPS the existing Sovereign Evolution Office — review for dedup before integrating.
+- **agentic_core/sensory** (active_sensing, audition, chemosensation, curiosity_drive, memory, proprioception, touch) — real data-structures (deque buffers) but lightweight perception stubs; low integration value for the fabric now. Deferred.

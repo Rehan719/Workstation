@@ -87,6 +87,29 @@ class TreeRequest(BaseModel):
     timeout: float = 30.0
 
 
+class TransduceRequest(BaseModel):
+    input_signal: float
+    frequency: float = 0.5
+    hill: float = 4.5
+    include_trajectory: bool = False
+
+
+@router.post("/transduce")
+async def native_transduce(req: TransduceRequest):
+    """Owned biomimetic signal transduction (agentic_core/signaling.EmpiricalSignalTransduction): a REAL
+    Hill-equation (sigmoidal) pulsatile cascade — models whether a signal of a given strength propagates
+    (peak >= 0.5 ⇒ supra-threshold) and its latency. Real biochemical-kinetics math, not a constant."""
+    from agentic_core.signaling.empirical_transduction import EmpiricalSignalTransduction
+    r = EmpiricalSignalTransduction(frequency=req.frequency, hill=req.hill).simulate_cascade(req.input_signal)
+    out = {"input_signal": req.input_signal, "peak_intensity": float(r["peak_intensity"]),
+           "latency_s": float(r["latency"]), "hill": req.hill, "frequency": req.frequency,
+           "propagated": bool(r["peak_intensity"] >= 0.5), "trajectory_points": len(r["trajectory"]),
+           "method": "Hill-equation pulsatile cascade (owned signaling)"}
+    if req.include_trajectory:
+        out["trajectory"] = [float(x) for x in r["trajectory"]]
+    return out
+
+
 class Vote(BaseModel):
     voter: str
     choice: str

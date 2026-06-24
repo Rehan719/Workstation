@@ -296,6 +296,22 @@ class NativeOrchestrator:
         except Exception:
             consensus = None
 
+        # BIOMIMETIC SIGNAL TRANSDUCTION (owned): model whether the run's signal is strong enough to
+        # PROPAGATE through the organism's biochemical cascade — a REAL Hill-equation (sigmoidal)
+        # response to the run's consensus strength. peak >= 0.5 ⇒ supra-threshold (the signal fires).
+        signal_response: Dict[str, Any] = None
+        try:
+            from agentic_core.signaling.empirical_transduction import EmpiricalSignalTransduction
+            strength = float((consensus or {}).get("proceed_fraction", 0.5))
+            casc = EmpiricalSignalTransduction(frequency=0.5, hill=4.5).simulate_cascade(strength)
+            peak = float(casc["peak_intensity"])
+            signal_response = {"input_strength": round(strength, 3), "peak_intensity": round(peak, 4),
+                               "latency_s": round(float(casc["latency"]), 2), "propagated": bool(peak >= 0.5),
+                               "hill": 4.5, "method": "Hill-equation cascade (owned signaling)"}
+            _fire("sensory", "native.tree", f"signal transduction peak={peak:.2f}", 0.4)
+        except Exception:
+            signal_response = None
+
         # UEG PROVENANCE (owned ledger): record this run to the real hash-chained SHA3-512 Merkle-DAG
         # audit ledger — the in-house AI's actions get verifiable, tamper-evident provenance. Best-effort.
         ueg_hash = None
@@ -326,6 +342,7 @@ class NativeOrchestrator:
             "validation": validation,
             "decision": decision,
             "consensus": consensus,
+            "signal_response": signal_response,
             "ueg_hash": ueg_hash,
             "ueg_ledger": "hash-chained SHA3-512 Merkle-DAG (owned, verifiable)" if ueg_hash else None,
             "nodes": [{"id": nid, "role": by_id[nid]["role"], "depends_on": by_id[nid]["depends_on"],

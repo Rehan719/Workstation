@@ -1703,6 +1703,21 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_biomimetic_signaling_in_house(client):
+    # Owned biomimetic signal transduction (agentic_core/signaling.EmpiricalSignalTransduction): a REAL
+    # Hill-equation sigmoidal cascade — strong signals propagate (peak>=0.5), weak ones stay
+    # sub-threshold; latency decreases as the signal strengthens (real kinetics, not a constant).
+    strong = client.post("/api/v1/native-ai/transduce", json={"input_signal": 0.8}).json()
+    weak = client.post("/api/v1/native-ai/transduce", json={"input_signal": 0.2}).json()
+    assert strong["propagated"] is True and weak["propagated"] is False
+    assert strong["peak_intensity"] > weak["peak_intensity"] and "Hill" in strong["method"]
+    assert strong["latency_s"] < weak["latency_s"]
+    # the workflow tree carries a real biomimetic signal_response over its consensus strength
+    t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    sr = t.get("signal_response")
+    assert sr and 0.0 <= sr["peak_intensity"] <= 1.0 and isinstance(sr["propagated"], bool) and "Hill" in sr["method"]
+
+
 def test_native_swarm_consensus_in_house(client):
     # The owned swarm ConsensusEngine (agentic_core/swarm) is integrated (it was DEAD — a missing
     # Optional import — now fixed): REAL threshold vote-tally — a choice wins at >= threshold of total

@@ -18,11 +18,12 @@ interface TreeGovernance { governed_by: string; qms_passed: boolean; qms_coverag
 interface TreeDecision { recommendation: string; consistency: number; worst_case_utility: number; method: string; stressors: string[] }
 interface TreeValidation { max_branch_overlap: number; integrated: boolean; branches_checked: number; method: string }
 interface TreeConsensus { reached: boolean; choice: string | null; threshold: number; votes: Record<string, string>; proceed_fraction: number; method: string }
+interface TreeSignal { input_strength: number; peak_intensity: number; latency_s: number; propagated: boolean; hill: number; method: string }
 interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
   node_count: number; parallel_levels: number; max_parallel: number; immune_threat: string;
   governance?: TreeGovernance | null; decision?: TreeDecision | null;
-  validation?: TreeValidation | null; consensus?: TreeConsensus | null;
+  validation?: TreeValidation | null; consensus?: TreeConsensus | null; signal_response?: TreeSignal | null;
   ueg_hash?: string | null; ueg_ledger?: string | null;
   nodes: TreeNodeResult[]; final: string; any_external: boolean;
 }
@@ -131,6 +132,13 @@ function TreeView({ run }: { run: TreeRun }) {
           <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-highlight/15 text-highlight">{run.decision.recommendation}</span>
           <span className="text-[8px] font-bold uppercase text-slate-500">consistency {Math.round(run.decision.consistency * 100)}% · worst-case {run.decision.worst_case_utility}</span>
           <span className="text-[8px] text-slate-600">vs {run.decision.stressors.join(' · ')}</span>
+        </div>
+      )}
+      {run.signal_response && (
+        <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2">
+          <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Biomimetic signal</span>
+          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.signal_response.propagated ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}>{run.signal_response.propagated ? 'propagated' : 'sub-threshold'}</span>
+          <span className="text-[8px] font-bold uppercase text-slate-500">peak {Math.round(run.signal_response.peak_intensity * 100)}% · latency {run.signal_response.latency_s}s · Hill {run.signal_response.hill}</span>
         </div>
       )}
       {run.ueg_hash && (
