@@ -50,8 +50,10 @@ def _load(scope: str) -> Dict[str, Any]:
             return json.loads(p.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             pass
-    return {"scope": scope, "owner": "Rehan", "mission": "", "vision": "", "strategy": "",
-            "aims": [], "objectives": [], "updated_at": None}
+    return {"scope": scope, "owner": "Rehan",
+            # Chief-owned opening sections (the founder's idea, framed by the digital-twin Chief)
+            "executive_summary": "", "concept": "", "vision": "",
+            "mission": "", "strategy": "", "aims": [], "objectives": [], "updated_at": None}
 
 
 def _save(plan: Dict[str, Any]) -> None:
@@ -142,8 +144,10 @@ async def list_plans():
 class SetPlanRequest(BaseModel):
     scope: str = "workstation"
     owner: str = "Rehan"
-    mission: str = ""
+    executive_summary: str = ""      # Chief-owned opening sections (the founder's idea, framed by the Chief)
+    concept: str = ""
     vision: str = ""
+    mission: str = ""
     strategy: str = ""
     aims: List[str] = []
 
@@ -153,7 +157,7 @@ async def set_plan(req: SetPlanRequest):
     """Chief/Board set the plan's constitutional + strategic layers."""
     plan = _load(req.scope)
     plan.update({"owner": req.owner or plan.get("owner", "Rehan")})
-    for f in ("mission", "vision", "strategy"):
+    for f in ("executive_summary", "concept", "vision", "mission", "strategy"):
         v = getattr(req, f)
         if v:
             plan[f] = v
@@ -296,10 +300,30 @@ async def generate_plan(req: GenerateRequest):
         + (f"Current vision realisation: {int(realisation*100)}%\n" if realisation is not None else "")
         + (f"Existing strategy: {plan.get('strategy','')[:300]}\n" if plan.get("strategy") else "")
         + (f"Owner context: {req.context}\n" if req.context else "")
-        + "\nProduce:\n## Mission (one line)\n## Strategy (3-4 sentences)\n"
+        + "\nProduce these sections, each under its own '## ' heading:\n"
+        "## Executive Summary (2-3 sentences)\n## Concept (2-3 sentences)\n## Vision (one line)\n"
+        "## Mission (one line)\n## Strategy (3-4 sentences)\n"
         "## Objectives (4-6, each: TITLE | KPI | TIMELINE | OWNER_ROLE)"
     )
     draft = await _q(prompt, "business_plan_chief")
+
+    # Parse the Chief's prose '## Section' blocks into the plan (Executive Summary · Concept · Vision ·
+    # Mission · Strategy). Only fill EMPTY fields — never clobber owner-edited content on a refresh.
+    _sec_map = {"executive summary": "executive_summary", "concept": "concept", "vision": "vision",
+                "mission": "mission", "strategy": "strategy"}
+    _cur = None
+    _buf: Dict[str, List[str]] = {}
+    for _line in draft.splitlines():
+        _s = _line.strip()
+        if _s.startswith("## "):
+            _cur = _sec_map.get(_s[3:].split("(")[0].strip().lower())
+            continue
+        if _cur and _s and "|" not in _s:
+            _buf.setdefault(_cur, []).append(_s)
+    for _field, _lines in _buf.items():
+        _text = " ".join(_lines).strip()
+        if _text and not plan.get(_field):
+            plan[_field] = _text[:1200]
 
     # Parse objectives from the draft (TITLE | KPI | TIMELINE | OWNER_ROLE lines).
     added = 0

@@ -9,8 +9,12 @@
   (vision↔state↔action), ACTION_PLAN.md (timed plan), VSB_ECONOMIC_LEGAL_MODEL.md.
   Status: LIVING · authored 2026-06-21 from the Owner's "whole platform" directive ·
   execution progress updated 2026-06-24 (see §16 — the §6 native-AI mandate is DELIVERED and the
-  in-house integration sweep is complete; full cycle log in docs/AUTONOMOUS_PROGRESS.md, W1–W76;
+  in-house integration sweep is complete; full cycle log in docs/AUTONOMOUS_PROGRESS.md, W1–W90;
   real-vs-mock ledger in docs/AGENTIC_CORE_INTEGRATION_AUDIT.md).
+  2026-06-24 clarification (Owner): added §3A — the TWO distinct, in-house-AI-first ways IDBO serves a
+  user (1: Domains = domain-specific AI-mediated tools/resources for working in all domains/realms;
+  2: end-to-end Concept→Commercialisation → a living VSB IDBO Enterprise entity) — and the Chief-owned
+  Business Plan now opens with Executive Summary · Concept · Vision (§5).
 -->
 
 # Workstation IDBO — The Whole Vision (Fine Resolution)
@@ -68,6 +72,31 @@ It is simultaneously:
 5. **An economic organism** — the VSB as an autonomous, compliant, hybrid Waqf/Trust/Multinational
    entity (virtual/simulated money until the Owner directs real rails).
 
+### 3A. Two distinct ways Workstation IDBO serves each user — both in-house-AI-first
+
+Workstation IDBO mediates a user's work in **two complementary, clearly-distinct ways**, and **both run
+on Workstation's OWN native AI first** (its own swarm · models · orchestration — external providers
+optional accelerants, never dependencies; §6):
+
+1. **Domain Working — domain-specific AI-mediated tools & resources.** The **Domains** section offers
+   **domain-specific AI-mediated tools and resources** so users can do **AI-mediated working across all
+   domains and realms** — Religion · Science · Education · Law · Employment/Career · Care, throughout the
+   Enterprise / Learning / Developing / Scholarship realms. These are immediate, usable, in-house-AI-mediated
+   working capabilities (research · analyse · generate · plan · assess · author · design · review …): the
+   user works *with* AI mediation **inside their domain**, getting best-in-class capability on demand —
+   without necessarily establishing an enterprise.
+
+2. **End-to-End Lifecycle — Concept → Commercialisation → a living VSB IDBO Enterprise.** *Separately*,
+   Workstation IDBO AI-mediates the user through the **complete end-to-end lifecycle (Concept →
+   Commercialisation)** (§4) to research · design · develop · deliver · commercialise a **solution for any
+   problem / challenge / opportunity** — establishing a bespoke **VSB IDBO Enterprise Living Entity** that
+   then **continually, intelligently and autonomously operates, improves and evolves** that solution
+   forever, led by the **Chief (the founder's digital twin)**.
+
+The first gives a user **AI-mediated capability to work now**; the second gives a user an **autonomous
+living enterprise that delivers and forever runs a whole solution**. A user may use either independently
+or flow from the first into the second.
+
 ## 4. The End-to-End Lifecycle — Concept → Commercialisation (fine resolution)
 
 One **continuous, intelligent, autonomous workflow** — "cascade pipeline trees of AI agent swarms,
@@ -116,10 +145,14 @@ instruct the Board/genome):
   the founder's role and responsibilities **autonomously** in the founder's presence *and* absence;
   modelled, simulated and iterated specifically for the founder's instructions and input data;
   instructed through **multimodal communication** or by **navigation/guidance through any platform
-  area** via the enterprise-aware avatar. The Chief owns the living Business Plan (Aims · Mission ·
-  Objectives) and delivers it via **Strategy** and a **living Roadmap** — a time-phased view of the
-  objectives (phases · per-phase progress · current phase · next milestone) that updates as the plan
-  progresses (`GET /api/v1/business-plan/roadmap`; integrated into the plan + the VSB Cockpit).
+  area** via the enterprise-aware avatar. The Chief owns the living Business Plan — and it now opens, as
+  a Chief-owned artefact, with an **Executive Summary · Concept · Vision** (the founder's idea and intent
+  framed by the Chief), followed by **Mission · Strategy · Aims · Objectives** — and the Chief delivers it
+  via **Strategy** and a **living Roadmap**: a time-phased view of the objectives (phases · per-phase
+  progress · current phase · next milestone) that updates as the plan progresses
+  (`GET /api/v1/business-plan/roadmap`; integrated into the plan + the VSB Cockpit). The Executive
+  Summary / Concept / Vision can themselves be **AI-generated in-house** by the Chief from the founder's
+  description, then owner-edited.
 - **Board of specialist Directors** — receive the strategy; deliver via **Action Planning** with
   **timelines, resourced tasks, and project management**; delegate downward.
 - **AI CEO** — receives the action plan; integrates the **living management systems (BMS · QMS · DCS ·
@@ -279,6 +312,11 @@ individually and collectively.
 5. **Modelled · simulated · optimised · ranked** before delivery; **verified · tested · validated**.
 6. **Ethics architecturally binding**; **honesty over polish** (never fabricate; label simulation).
 7. **For all humanity, all realms and domains** — democratised, accessible, personalised.
+8. **Two in-house-AI-first offerings (§3A):** (1) the **Domains** section's domain-specific AI-mediated
+   **tools & resources** for working in any domain/realm; and (2) the **end-to-end Concept→Commercialisation**
+   that establishes a **living VSB IDBO Enterprise**. Distinct, complementary, both native-AI-first.
+9. **The Chief-owned Business Plan opens with Executive Summary · Concept · Vision** (then Mission ·
+   Strategy · Aims · Objectives) — the founder's idea, framed by the digital-twin Chief, AI-generable in-house.
 
 ## 16. Fidelity Check & Execution Progress — vision vs. live system
 
@@ -368,7 +406,9 @@ architecture). This is the exact structural skeleton the fine-grained vision han
 **17.1 The product grid — 4 Realms × 6 Domains × 4 Products (96 combinations), one lifecycle pattern.**
 - **Realms (who the user is):** Enterprise (business/commercial) · Learning (education/knowledge) ·
   Developing (innovation/technical) · Scholarship (research/academic).
-- **Domains (the problem space):** Religion · Science · Education · Law · Employment/Career · Care.
+- **Domains (the problem space):** Religion · Science · Education · Law · Employment/Career · Care. The
+  **Domains section** surfaces **domain-specific AI-mediated tools & resources** for AI-mediated working
+  in each (offering 1, §3A) — usable directly, independent of establishing an enterprise.
 - **Products (how work runs):** Reactor (rapid AI generation) · Incubator (iterative development) ·
   Factory (production-grade delivery) · Laboratory (experimental/research).
 - All 96 follow the same **Concept → Design → Build → Launch → Commercialise** stage-gated lifecycle.

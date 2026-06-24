@@ -5,7 +5,7 @@ import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crow
 interface Objective { id: string; title: string; kpi: string; timeline: string; owner_role: string; progress_pct: number; status: string }
 interface RoadmapPhase { timeline: string; progress_pct: number; complete: boolean; count: number; objectives: { title: string }[] }
 interface Roadmap { living: boolean; phases: RoadmapPhase[]; overall_progress_pct: number; current_phase: string | null; next_milestone: { phase: string; title: string } | null; note?: string }
-interface Plan { scope: string; owner: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; roadmap?: Roadmap; updated_at: string | null }
+interface Plan { scope: string; owner: string; executive_summary: string; concept: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; roadmap?: Roadmap; updated_at: string | null }
 
 const STATUS_TONE: Record<string, string> = { done: 'text-emerald-400', in_progress: 'text-highlight', blocked: 'text-vital', planned: 'text-slate-500' };
 
@@ -54,12 +54,25 @@ export const BusinessPlan: React.FC = () => {
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Business Plan</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The living plan owned by your <span className="text-highlight">Chief</span> (your digital twin) and the Board —
-          mission, strategy, and timelined objectives with KPIs, reviewed for progress. You set direction; the org delivers.
+          opening with <span className="text-highlight">Executive Summary · Concept · Vision</span>, then mission, strategy,
+          and timelined objectives with KPIs, reviewed for progress. You set direction; the org delivers.
         </p>
       </header>
 
       {plan && (
         <>
+          {(plan.executive_summary || plan.concept || plan.vision) && (
+            <Card className="p-8 border-highlight/40 bg-gradient-to-br from-highlight/10 to-transparent">
+              <div className="flex items-center gap-3 mb-4">
+                <Crown size={18} className="text-highlight" />
+                <h3 className="text-sm font-black text-white uppercase tracking-wide">Chief's Opening — Executive Summary · Concept · Vision</h3>
+              </div>
+              {plan.executive_summary && <Field label="Executive Summary" value={plan.executive_summary} />}
+              {plan.concept && <Field label="Concept" value={plan.concept} />}
+              {plan.vision && <Field label="Vision" value={plan.vision} />}
+            </Card>
+          )}
+
           <Card className="p-8 border-highlight/30 bg-highlight/5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3"><Crown size={18} className="text-highlight" /><h3 className="text-sm font-black text-white uppercase tracking-wide">Strategic Layer</h3></div>
@@ -68,7 +81,6 @@ export const BusinessPlan: React.FC = () => {
               </Button>
             </div>
             {plan.mission && <Field label="Mission" value={plan.mission} />}
-            {plan.vision && <Field label="Vision" value={plan.vision} />}
             {plan.strategy && <Field label="Strategy" value={plan.strategy} />}
             {plan.aims?.length > 0 && (
               <div className="mt-3">

@@ -1125,11 +1125,14 @@ def test_business_plan_lifecycle(client):
     import uuid
     # unique scope per run → fully isolated + idempotent (the plan store persists to data/)
     scope = f"pytest-bp-{uuid.uuid4().hex[:8]}"
-    # 1. Chief sets the plan's strategic layers
+    # 1. Chief sets the plan — incl. the Chief-owned opening (Executive Summary · Concept · Vision)
     r = client.post("/api/v1/business-plan/set",
-                    json={"scope": scope, "mission": "M", "vision": "V", "strategy": "S"})
+                    json={"scope": scope, "executive_summary": "ES", "concept": "C",
+                          "mission": "M", "vision": "V", "strategy": "S"})
     assert r.status_code == 200
-    assert r.json()["mission"] == "M"
+    body = r.json()
+    assert body["mission"] == "M"
+    assert body["executive_summary"] == "ES" and body["concept"] == "C" and body["vision"] == "V"
     # 2. add a timelined objective
     r = client.post("/api/v1/business-plan/objective",
                     json={"scope": scope, "title": "Test objective", "timeline": "Q3 2026"})
