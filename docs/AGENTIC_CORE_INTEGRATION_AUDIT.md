@@ -137,3 +137,11 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 ## W71 scan (causal/simverse deeper read) + crypto/entropy_pool integration
 - **agentic_core/simverse/causal_simulator + agentic_core/causal/csl** — ❌ COSMETIC (skip): `run_causal_forecast` computes a FIXED toy linear SCM (`y = 0.5x + 0.2z + noise` → interventional_mean always ≈ 0.5·x), but `fidelity=0.924`, `backdoor_criterion_verified=True`, and `identifiability_proof` (a LaTeX string) are all HARDCODED. CSL's "Pearl-do-Proof" just returns that string. Integrating it would surface a FAKE causal-identifiability proof → SKIP (would be fabrication).
 - **agentic_core/crypto/entropy_pool.EntropyPool** — ✅ REAL (SHA3-512 + XOR entropy mixing → deterministic 64-bit seed + pool-integrity digest). INTEGRATED: `POST /api/v1/native-ai/entropy` (reproducible in-house seeding; same sources ⇒ same seed).
+
+## W73 scan (aging / digestion / cardiovascular / ubiquitin / topology / microbiome)
+- **agentic_core/topology/defense.compute_persistent_homology** — ✅ REAL graph topology (β₁ = E−V+β₀ = independent cycles). FIXED a real bug: β₀ was hardcoded to 1 ("assume connected") → now computes real connected components via union-find. INTEGRATED: `POST /api/v1/native-ai/topology` (β₀ components + β₁ cycles; detects structural fractures/holes). NOTE: `simplicial_repair` is a stub (success=True hardcoded) — not integrated; honestly labelled "Betti via Euler characteristic" not full Vietoris-Rips persistent homology.
+- **agentic_core/aging** (apoptosis_manager, longevity_engine, senescence_detector, telomere_tracker) — state counters/flags, no real algorithm → defer.
+- **agentic_core/digestion** (appetite_engine, nutrient_quality) — REAL but trivial weighted-sum scorers (caller supplies the sub-scores) → low value, defer.
+- **agentic_core/cardiovascular** (route_resources, route_packet) — trivial routing → defer.
+- **agentic_core/ubiquitin** (tag_resource, autophagy recycle) — tagging + recycle stubs → defer.
+- **agentic_core/microbiome** — ⛔ EMPTY.

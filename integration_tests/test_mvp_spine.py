@@ -1719,6 +1719,22 @@ def test_native_capabilities_catalogue(client):
         assert s in sources, f"missing capability source {s}"
 
 
+def test_native_topology_betti_in_house(client):
+    # Owned graph-topology analysis (agentic_core/topology.TopologyDefense, with beta0 FIXED to real
+    # connected components): REAL Betti numbers of the 1-complex — tree -> beta1=0, cycle -> beta1=1,
+    # fracture (disconnection) -> beta0>1.
+    tree = client.post("/api/v1/native-ai/topology",
+                       json={"nodes": ["a", "b", "c", "d"], "edges": [["a", "b"], ["b", "c"], ["c", "d"]]}).json()
+    cyc = client.post("/api/v1/native-ai/topology",
+                      json={"nodes": ["a", "b", "c"], "edges": [["a", "b"], ["b", "c"], ["c", "a"]]}).json()
+    frac = client.post("/api/v1/native-ai/topology",
+                       json={"nodes": ["a", "b", "c", "d"], "edges": [["a", "b"]]}).json()
+    assert tree["beta0_components"] == 1 and tree["beta1_cycles"] == 0    # connected tree, no cycles
+    assert cyc["beta0_components"] == 1 and cyc["beta1_cycles"] == 1      # one independent cycle
+    assert frac["beta0_components"] == 3                                  # disconnected -> 3 components
+    assert "topology" in tree["method"]
+
+
 def test_native_entropy_pool_in_house(client):
     # Owned entropy pool (agentic_core/crypto.EntropyPool): REAL SHA3-512 + XOR entropy mixing — a
     # deterministic seed for fixed sources (reproducible in-house seeding), not a PRNG call.

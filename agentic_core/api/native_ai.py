@@ -171,6 +171,23 @@ async def native_transduce(req: TransduceRequest):
     return out
 
 
+class TopologyRequest(BaseModel):
+    nodes: List[Any] = []
+    edges: List[Any] = []     # each edge: [u, v] (or {source, target})
+
+
+@router.post("/topology")
+async def native_topology(req: TopologyRequest):
+    """Owned graph-topology analysis (agentic_core/topology.TopologyDefense): REAL Betti numbers of the
+    1-complex — β₀ = connected components (union-find), β₁ = E−V+β₀ = independent cycles ('structural
+    holes'). A tree → β₁=0; a cycle → β₁≥1; a fracture (disconnection) raises β₀. Real graph math."""
+    from agentic_core.topology.defense import TopologyDefense
+    res = await TopologyDefense().compute_persistent_homology({"nodes": req.nodes, "edges": req.edges})
+    return {"beta0_components": res["beta0"], "beta1_cycles": res["beta1"], "status": res["status"],
+            "nodes": len(req.nodes), "edges": len(req.edges),
+            "method": "graph Betti numbers via Euler characteristic (owned topology)"}
+
+
 class EntropyRequest(BaseModel):
     sources: List[Dict[str, Any]] = []   # each: {size, source, content_hash, timestamp}
 

@@ -28,9 +28,33 @@ class TopologyDefense:
         nodes = state_graph.get("nodes", [])
         edges = state_graph.get("edges", [])
 
-        # β₁ = E - V + β₀ (Euler characteristic for 1D)
-        beta0 = 1 # assume connected
-        beta1 = max(0, len(edges) - len(nodes) + beta0)
+        # β₀ = number of connected components (real union-find over the edges) — NOT assumed-connected.
+        node_ids = list(nodes)
+        parent = {n: n for n in node_ids}
+
+        def _find(x):
+            root = x
+            while parent.get(root, root) != root:
+                root = parent[root]
+            while parent.get(x, x) != root:   # path compression
+                parent[x], x = root, parent[x]
+            return root
+
+        for e in edges:
+            if isinstance(e, (list, tuple)) and len(e) >= 2:
+                a, b = e[0], e[1]
+            elif isinstance(e, dict):
+                a, b = e.get("source", e.get("from")), e.get("target", e.get("to"))
+            else:
+                continue
+            if a in parent and b in parent:
+                ra, rb = _find(a), _find(b)
+                if ra != rb:
+                    parent[ra] = rb
+
+        beta0 = len({_find(n) for n in node_ids}) if node_ids else 0
+        # β₁ = E - V + β₀ (first Betti number of a 1-complex = independent cycles)
+        beta1 = max(0, len(edges) - len(node_ids) + beta0)
 
         result = {
             "beta0": beta0,
