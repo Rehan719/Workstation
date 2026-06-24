@@ -1703,6 +1703,26 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_swarm_consensus_in_house(client):
+    # The owned swarm ConsensusEngine (agentic_core/swarm) is integrated (it was DEAD — a missing
+    # Optional import — now fixed): REAL threshold vote-tally — a choice wins at >= threshold of total
+    # nodes, else no consensus. Plus the workflow tree's INDEPENDENT owned checks vote + reach consensus.
+    won = client.post("/api/v1/native-ai/consensus", json={"total_nodes": 4, "votes": [
+        {"voter": "a", "choice": "go"}, {"voter": "b", "choice": "go"},
+        {"voter": "c", "choice": "go"}, {"voter": "d", "choice": "stop"}]}).json()
+    assert won["reached"] is True and won["choice"] == "go"          # 3/4 >= 0.66
+    split = client.post("/api/v1/native-ai/consensus", json={"total_nodes": 4, "votes": [
+        {"voter": "a", "choice": "x"}, {"voter": "b", "choice": "x"},
+        {"voter": "c", "choice": "y"}, {"voter": "d", "choice": "z"}]}).json()
+    assert split["reached"] is False and split["choice"] is None     # 2/4 < 0.66
+    # the tree carries a real consensus across its OWN independent owned signals
+    t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
+    con = t.get("consensus")
+    assert con and "swarm" in con["method"] and isinstance(con["reached"], bool)
+    assert set(con["votes"].keys()) == {"qms", "validation", "minimax", "immune"}
+    assert 0.0 <= con["proceed_fraction"] <= 1.0
+
+
 def test_native_statistical_rigor_in_house(client):
     # The owned statistical-rigor capability (agentic_core/statistics.LiveRigorMonitor) is integrated:
     # REAL scipy 95% CI + one-sample t-test over a live metric series (not a fabricated confidence),

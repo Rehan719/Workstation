@@ -272,6 +272,30 @@ class NativeOrchestrator:
         except Exception:
             decision = None
 
+        # SWARM CONSENSUS (owned): the tree's INDEPENDENT owned checks VOTE — do they agree? Real
+        # threshold consensus (agentic_core/swarm.ConsensusEngine) over the QMS · validation · minimax ·
+        # immune signals. Consensus "proceed" ⇒ the independent governance/decision layers concur.
+        consensus: Dict[str, Any] = None
+        try:
+            from agentic_core.swarm.conflict_resolution import ConsensusEngine
+            voters = {
+                "qms": "proceed" if (governance or {}).get("qms_passed") else "caution",
+                "validation": "proceed" if (validation or {}).get("integrated") else "caution",
+                "minimax": "proceed" if (decision or {}).get("recommendation") == "proceed" else "caution",
+                "immune": "proceed" if threat == "NOMINAL" else "caution",
+            }
+            ce = ConsensusEngine(threshold=0.66)
+            for voter, choice in voters.items():
+                ce.record_vote("tree", voter, choice)
+            agreed = ce.check_consensus("tree", len(voters))
+            proceed_votes = sum(1 for c in voters.values() if c == "proceed")
+            consensus = {"reached": agreed is not None, "choice": agreed, "threshold": ce.threshold,
+                         "votes": voters, "proceed_fraction": round(proceed_votes / len(voters), 3),
+                         "method": "threshold consensus (owned swarm)"}
+            _fire("cognitive", "native.tree", f"swarm consensus: {agreed or 'none'}", 0.4)
+        except Exception:
+            consensus = None
+
         # UEG PROVENANCE (owned ledger): record this run to the real hash-chained SHA3-512 Merkle-DAG
         # audit ledger — the in-house AI's actions get verifiable, tamper-evident provenance. Best-effort.
         ueg_hash = None
@@ -301,6 +325,7 @@ class NativeOrchestrator:
             "governance": governance,
             "validation": validation,
             "decision": decision,
+            "consensus": consensus,
             "ueg_hash": ueg_hash,
             "ueg_ledger": "hash-chained SHA3-512 Merkle-DAG (owned, verifiable)" if ueg_hash else None,
             "nodes": [{"id": nid, "role": by_id[nid]["role"], "depends_on": by_id[nid]["depends_on"],

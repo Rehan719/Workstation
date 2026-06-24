@@ -87,6 +87,33 @@ class TreeRequest(BaseModel):
     timeout: float = 30.0
 
 
+class Vote(BaseModel):
+    voter: str
+    choice: str
+
+
+class ConsensusRequest(BaseModel):
+    proposal_id: str = "proposal"
+    votes: List[Vote] = []
+    total_nodes: int = 0          # 0 → use the number of votes cast
+    threshold: float = 0.66
+
+
+@router.post("/consensus")
+async def native_consensus(req: ConsensusRequest):
+    """Owned swarm consensus (agentic_core/swarm.ConsensusEngine): REAL threshold vote-tally over swarm
+    members — a choice wins when its share of total_nodes ≥ threshold, else no consensus. Not LLM."""
+    from agentic_core.swarm.conflict_resolution import ConsensusEngine
+    ce = ConsensusEngine(threshold=req.threshold)
+    for v in req.votes:
+        ce.record_vote(req.proposal_id, v.voter, v.choice)
+    total = req.total_nodes or len(req.votes)
+    agreed = ce.check_consensus(req.proposal_id, total) if total else None
+    return {"reached": agreed is not None, "choice": agreed, "threshold": req.threshold,
+            "total_nodes": total, "votes_cast": len(req.votes),
+            "method": "threshold consensus (owned swarm)"}
+
+
 class RigorRequest(BaseModel):
     metric_name: str
     value: float

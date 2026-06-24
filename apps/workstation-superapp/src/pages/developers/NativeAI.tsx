@@ -17,11 +17,12 @@ interface TreeNodeResult extends TreeNodeDef { served_by: string; is_external: b
 interface TreeGovernance { governed_by: string; qms_passed: boolean; qms_coverage_proxy: number; dcms_hash: string; dcms_algo: string; dcms_version: number }
 interface TreeDecision { recommendation: string; consistency: number; worst_case_utility: number; method: string; stressors: string[] }
 interface TreeValidation { max_branch_overlap: number; integrated: boolean; branches_checked: number; method: string }
+interface TreeConsensus { reached: boolean; choice: string | null; threshold: number; votes: Record<string, string>; proceed_fraction: number; method: string }
 interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
   node_count: number; parallel_levels: number; max_parallel: number; immune_threat: string;
   governance?: TreeGovernance | null; decision?: TreeDecision | null;
-  validation?: TreeValidation | null;
+  validation?: TreeValidation | null; consensus?: TreeConsensus | null;
   ueg_hash?: string | null; ueg_ledger?: string | null;
   nodes: TreeNodeResult[]; final: string; any_external: boolean;
 }
@@ -115,6 +116,13 @@ function TreeView({ run }: { run: TreeRun }) {
           <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.validation.integrated ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>{run.validation.integrated ? 'integrated' : 'near-copy'}</span>
           <span className="text-[8px] font-bold uppercase text-slate-500">max branch overlap {Math.round(run.validation.max_branch_overlap * 100)}% · {run.validation.branches_checked} branches</span>
           <span className="text-[8px] text-slate-600">difflib</span>
+        </div>
+      )}
+      {run.consensus && (
+        <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2">
+          <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Swarm consensus</span>
+          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.consensus.reached && run.consensus.choice === 'proceed' ? 'bg-emerald-500/15 text-emerald-400' : run.consensus.reached ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'}`}>{run.consensus.reached ? (run.consensus.choice || 'reached') : 'no consensus'}</span>
+          <span className="text-[8px] font-bold uppercase text-slate-500">{Math.round(run.consensus.proceed_fraction * 100)}% proceed · {Object.keys(run.consensus.votes).length} voters · ≥{Math.round(run.consensus.threshold * 100)}%</span>
         </div>
       )}
       {run.decision && (

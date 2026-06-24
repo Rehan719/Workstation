@@ -92,3 +92,11 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 - **agentic_core/ethics/ethical_sentinel** — ✅ REAL but MINIMAL (3-keyword non-maleficence screen + reasoning-trace check). Integrable later (would want a broader, honest keyword/rule set).
 - **agentic_core/ethics/lexical_coherence** — ❌ MOCK (`analyze_coherence` returns hardcoded 0.98, "Simulated analysis"). SKIP.
 - **agentic_core/governance/** (ai_constitutional_judge, ai_governor, audit_trail — hashlib-based) — UNREVIEWED in detail; flagged for a future cycle (likely real audit/governance code).
+
+## W64 scan (owner: review tools / synthesis / swarm)
+- **agentic_core/swarm/conflict_resolution.ConsensusEngine** — ✅ REAL threshold vote-tally, BUT was DEAD CODE (missing `Optional` import → NameError on import). FIXED the import + INTEGRATED: `POST /api/v1/native-ai/consensus` + the workflow tree's independent owned checks (QMS·validation·minimax·immune) now vote and reach a real consensus.
+- **agentic_core/swarm/conflict_resolution.ConflictResolution.resolve** — ⚠️ STUB ("Simplified arbitration" → returns options[0]). Not integrated.
+- **agentic_core/swarm/swarm_orchestrator.SovereignSwarmCoordinator** — ❌ MOCK (`hotstuff2_consensus` = "Simulated Multi-Phase Voting", "Dilithium5_mock_sig", "Simulated Halo2" ZK). SKIP. (Its `share_epigenetic_weights` does use a real `np.random.laplace` DP mechanism, but the attestation is simulated.)
+- **agentic_core/swarm/orchestration_engine.OrchestrationEngine** — real-ish goal decomposition but OVERLAPS with (and is weaker than) the native orchestrate_tree. SKIP (already have a better one).
+- **agentic_core/tools** (ToolRegistry, ToolDiscoveryEngine, FileOperations) — REAL registry/discovery, ALREADY WIRED to `agentic_core/api/tools.py`. No new integration needed.
+- **agentic_core/synthesis** — mixed: `agentic_orchestrator` (subprocess-based) overlaps with the tree; `alphafold3_v16` shells out to an external binary (documented mock per Jules). Already partly wired to api/v138/ceo. Deferred — no clean in-house-AI integration without external deps.

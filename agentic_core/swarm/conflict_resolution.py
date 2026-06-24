@@ -1,5 +1,5 @@
 import logging
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Optional
 from .signal_types import SwarmSignal, SignalType
 
 logger = logging.getLogger(__name__)
