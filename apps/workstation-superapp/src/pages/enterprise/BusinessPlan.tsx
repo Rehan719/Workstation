@@ -13,6 +13,8 @@ export const BusinessPlan: React.FC = () => {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [busy, setBusy] = useState(false);
   const [newObj, setNewObj] = useState({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' });
+  const [orchestrating, setOrchestrating] = useState('');
+  const [orchResult, setOrchResult] = useState<Record<string, any>>({});
 
   const load = () => fetch('/api/v1/business-plan?scope=workstation').then(r => r.json()).then(setPlan).catch(() => {});
   useEffect(() => { load(); }, []);
@@ -31,6 +33,16 @@ export const BusinessPlan: React.FC = () => {
   const review = async (oid: string, progress_pct: number, status: string) => {
     await fetch(`/api/v1/business-plan/objective/${oid}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: 'workstation', progress_pct, status }) });
     load();
+  };
+  const orchestrate = async (oid: string) => {
+    setOrchestrating(oid);
+    try {
+      const r = await fetch(`/api/v1/business-plan/objective/${oid}/orchestrate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: 'workstation' }) });
+      const data = await r.json();
+      if (r.ok && data?.tree) setOrchResult(m => ({ ...m, [oid]: data.tree }));
+      await load();
+    } catch { /* leave result unset; the run is best-effort */ }
+    setOrchestrating('');
   };
 
   const overall = plan && plan.objectives.length ? Math.round(plan.objectives.reduce((s, o) => s + o.progress_pct, 0) / plan.objectives.length) : 0;
@@ -105,10 +117,25 @@ export const BusinessPlan: React.FC = () => {
                     <span className={`text-[10px] font-black uppercase shrink-0 ${STATUS_TONE[o.status] ?? 'text-slate-500'}`}>{o.progress_pct}% · {o.status.replace('_', ' ')}</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden mb-3"><div className="h-full bg-highlight transition-all" style={{ width: `${o.progress_pct}%` }} /></div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <button type="button" onClick={() => review(o.id, Math.min(100, o.progress_pct + 25), o.progress_pct + 25 >= 100 ? 'done' : 'in_progress')} className="text-[9px] font-black uppercase text-highlight border border-highlight/30 px-2 py-1 rounded">+25% progress</button>
                     <button type="button" onClick={() => review(o.id, o.progress_pct, 'blocked')} className="text-[9px] font-black uppercase text-vital border border-vital/30 px-2 py-1 rounded">Mark blocked</button>
+                    <button type="button" onClick={() => orchestrate(o.id)} disabled={orchestrating === o.id} className="text-[9px] font-black uppercase text-aura border border-aura/30 px-2 py-1 rounded flex items-center gap-1 disabled:opacity-50">
+                      {orchestrating === o.id ? <Loader2 size={10} className="animate-spin" /> : <Crown size={10} />} Chief: deliver via tree
+                    </button>
                   </div>
+                  {orchResult[o.id] && (
+                    <div className="mt-3 p-3 rounded-xl bg-aura/5 border border-aura/20">
+                      <div className="flex items-center flex-wrap gap-2 mb-1.5">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-aura">Chief workflow-tree</span>
+                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-highlight/15 text-highlight">decision: {orchResult[o.id].decision?.recommendation ?? '—'}</span>
+                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${orchResult[o.id].consensus?.choice === 'proceed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>consensus: {orchResult[o.id].consensus?.choice ?? 'none'}</span>
+                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{orchResult[o.id].node_count} nodes</span>
+                        {orchResult[o.id].ueg_hash && <span className="text-[8px] font-mono text-slate-600" title={orchResult[o.id].ueg_hash}>UEG {orchResult[o.id].ueg_hash.slice(0, 12)}…</span>}
+                      </div>
+                      <p className="text-[10px] text-slate-400 whitespace-pre-wrap line-clamp-4">{orchResult[o.id].final}</p>
+                    </div>
+                  )}
                 </Card>
               ))}
             </div>
