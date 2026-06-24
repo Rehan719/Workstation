@@ -376,11 +376,17 @@ except Exception:
     _XLSX_OK = False
 
 
+def _xml_safe(s: str) -> str:
+    """Strip control characters that are illegal in OOXML/XML (so python-docx/openpyxl never raise on a
+    deliverable whose content happens to contain a NULL byte or control char). Keeps tab/newline/CR."""
+    return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", s or "")
+
+
 def _demark(s: str) -> str:
     s = re.sub(r"\*\*(.+?)\*\*", r"\1", s)
     s = re.sub(r"`([^`]+)`", r"\1", s)
     s = re.sub(r"(?<!\*)\*(?!\s)([^*]+?)\*", r"\1", s)
-    return s
+    return _xml_safe(s)
 
 
 def _latin1(s: str) -> str:
@@ -438,10 +444,10 @@ def _docx_bytes(d: Dict[str, Any]) -> bytes:
     import io
     from docx import Document
     doc = Document()
-    doc.add_heading(d.get("title", "Deliverable"), level=0)
-    doc.add_paragraph(_doc_subtitle(d)).runs[0].italic = True
+    doc.add_heading(_xml_safe(d.get("title", "Deliverable")), level=0)
+    doc.add_paragraph(_xml_safe(_doc_subtitle(d))).runs[0].italic = True
     if d.get("brief"):
-        doc.add_paragraph("Brief: " + d["brief"]).runs[0].italic = True
+        doc.add_paragraph(_xml_safe("Brief: " + d["brief"])).runs[0].italic = True
     for raw in (d.get("content", "") or "").split("\n"):
         line = raw.rstrip()
         if not line.strip() or line.strip() == "---":
@@ -470,9 +476,9 @@ def _pptx_bytes(d: Dict[str, Any]) -> bytes:
     from pptx import Presentation
     prs = Presentation()
     title_slide = prs.slides.add_slide(prs.slide_layouts[0])
-    title_slide.shapes.title.text = d.get("title", "Deliverable")
+    title_slide.shapes.title.text = _xml_safe(d.get("title", "Deliverable"))
     try:
-        title_slide.placeholders[1].text = _doc_subtitle(d)
+        title_slide.placeholders[1].text = _xml_safe(_doc_subtitle(d))
     except Exception:
         pass
     # split the content into sections by its own ## headings (mirrors the HTML slide deck)
@@ -493,7 +499,7 @@ def _pptx_bytes(d: Dict[str, Any]) -> bytes:
         if not (stitle or bullets):
             continue
         slide = prs.slides.add_slide(prs.slide_layouts[1])
-        slide.shapes.title.text = str(stitle)[:140]
+        slide.shapes.title.text = _xml_safe(str(stitle))[:140]
         try:
             tf = slide.placeholders[1].text_frame
             tf.clear()
@@ -512,10 +518,10 @@ def _xlsx_bytes(d: Dict[str, Any]) -> bytes:
     from openpyxl import Workbook
     from openpyxl.styles import Font
     wb = Workbook(); ws = wb.active; ws.title = "Deliverable"
-    ws["A1"] = d.get("title", "Deliverable"); ws["A1"].font = Font(bold=True, size=14)
-    ws["A2"] = _doc_subtitle(d)
+    ws["A1"] = _xml_safe(d.get("title", "Deliverable")); ws["A1"].font = Font(bold=True, size=14)
+    ws["A2"] = _xml_safe(_doc_subtitle(d))
     if d.get("brief"):
-        ws["A3"] = "Brief: " + d["brief"]
+        ws["A3"] = _xml_safe("Brief: " + d["brief"])
     row = 5
     ws.cell(row, 1, "Section").font = Font(bold=True); ws.cell(row, 2, "Content").font = Font(bold=True)
     row += 1
@@ -533,7 +539,7 @@ def _xlsx_bytes(d: Dict[str, Any]) -> bytes:
                         for ln in slines if ln.strip() and ln.strip() != "---")
         if not (stitle or body):
             continue
-        ws.cell(row, 1, str(stitle)[:240]); c = ws.cell(row, 2, body[:4000]); c.alignment = c.alignment.copy(wrap_text=True)
+        ws.cell(row, 1, _xml_safe(str(stitle))[:240]); c = ws.cell(row, 2, body[:4000]); c.alignment = c.alignment.copy(wrap_text=True)
         row += 1
     ws.column_dimensions["A"].width = 30; ws.column_dimensions["B"].width = 96
     buf = io.BytesIO(); wb.save(buf); return buf.getvalue()

@@ -1562,6 +1562,21 @@ def test_deliverables_leverage_own_omnimedia(client):
     assert any(r["id"] == "omnimedia" for r in fab["resources"])
 
 
+def test_deliverables_binary_export_edge_inputs_no_crash():
+    # The binary renderers must NEVER 500 on edge content (control chars / NULL bytes / unicode):
+    # openpyxl + python-docx reject control chars, so deliverables._xml_safe strips them. Guards that fix.
+    from agentic_core.api import deliverables as D
+    assert D._xml_safe("a\x00b\x1fc\x08d") == "abcd"   # control chars stripped; tab/newline kept
+    edge = {"id": "t", "title": "T\x00\x07", "type": "report",
+            "brief": "b\x1f", "content": "## Sec\x00\nbody \x08 \x1b\n报告 \U0001F4CA — dash"}
+    for ok, fn, sig in [(D._PDF_OK, D._pdf_bytes, b"%PDF-"), (D._DOCX_OK, D._docx_bytes, b"PK"),
+                        (D._PPTX_OK, D._pptx_bytes, b"PK"), (D._XLSX_OK, D._xlsx_bytes, b"PK")]:
+        if not ok:   # the lib may be absent under system-python; CI installs it via requirements
+            continue
+        out = fn(edge)
+        assert isinstance(out, (bytes, bytearray)) and out[:len(sig)] == sig
+
+
 def test_federation_mesh_surfaced(client):
     # Workstation's OWN federation mesh (agentic_core.mesh, previously 0 importers) is now reachable
     # and a first-class Resource-Fabric resource — honest: single-node peers are flagged simulated.
