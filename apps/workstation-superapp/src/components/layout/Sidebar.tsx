@@ -19,168 +19,150 @@ interface NavItem {
   realms?: RealmType[];
 }
 
+// Vision-aligned IA — eight sections, each mapping to wired/functional capability, plus a
+// collapsible "Explore" group for secondary wired pages. Every id maps to a live route in App.tsx.
 const allNavItems: NavItem[] = [
-  { name: 'Dashboard', icon: LayoutDashboard, id: 'dashboard' },
-
   {
-    name: 'Productivity',
-    icon: Zap,
-    id: 'prod-facet',
+    name: 'Home',
+    icon: LayoutDashboard,
+    id: 'home-facet',
     subItems: [
-      { name: 'Projects',          icon: Folders,       id: 'projects'   },
-      { name: 'AI CEO',            icon: MessageSquare, id: 'ceo'        },
-      { name: 'Factory',           icon: Factory,       id: 'factory'    },
-      { name: 'Digital Reactor',   icon: Zap,           id: 'reactor'    },
-      { name: 'Incubator',         icon: FlaskConical,  id: 'incubator'  },
-      { name: 'Creator Studio',    icon: Palette,       id: 'creator'    },
-      { name: 'Synthesis Studio',  icon: Sparkles,      id: 'synthesis'  },
-      { name: 'Build to Order',    icon: Package,       id: 'bto'        },
-      { name: 'Marketplace',       icon: ShoppingBag,   id: 'marketplace'},
-      { name: 'Entrepreneur',      icon: Briefcase,     id: 'entrepreneur'},
-      { name: 'Capital Fund',      icon: DollarSign,    id: 'capital'    },
-      { name: 'Solutions',         icon: Rocket,        id: 'solutions'  },
-      { name: 'VSB Spawn Studio',  icon: Building2,     id: 'vsb'        },
-      { name: 'VSB Cockpit',       icon: Crown,         id: 'vsb-cockpit'},
-      { name: 'Management Systems',icon: Shield,        id: 'management' },
+      { name: 'Dashboard',     icon: LayoutDashboard, id: 'dashboard' },
+      { name: 'Grand Ops',     icon: Gauge,           id: 'grand-ops' },
+      { name: 'Introspection', icon: Eye,             id: 'introspection' },
+      { name: 'Organism',      icon: Activity,        id: 'organism' },
+      { name: 'Heartbeat',     icon: HeartPulse,      id: 'heartbeat' },
+      { name: 'Cognition',     icon: Network,         id: 'cognition' },
     ]
   },
 
   {
-    name: 'Domains Suite',
+    name: 'Native AI Fabric',
+    icon: Cpu,
+    id: 'ai-facet',
+    subItems: [
+      { name: 'Native AI',          icon: Cpu,           id: 'native-ai' },
+      { name: 'AI Tools',           icon: Sparkles,      id: 'ai-tools' },
+      { name: 'AI CEO',             icon: MessageSquare, id: 'ceo' },
+      { name: 'Board of Directors', icon: Crown,         id: 'board' },
+      { name: 'Visual Composer',    icon: Workflow,      id: 'visual-composer' },
+      { name: 'Swarm Intelligence', icon: Network,       id: 'swarm-intelligence' },
+    ]
+  },
+
+  {
+    name: 'Domains',
     icon: Layers,
-    id: 'qep-facet',
+    id: 'domains-facet',
     subItems: [
-      { name: 'AI Tools',    icon: Sparkles,     id: 'ai-tools' },
-      { name: 'Religion',    icon: Heart,        id: 'qep-religion' },
-      { name: 'Science',     icon: Microscope,   id: 'science' },
-      { name: 'Education',   icon: GraduationCap, id: 'education' },
-      { name: 'Law',         icon: Gavel,         id: 'law' },
-      { name: 'Care',        icon: HeartPulse,    id: 'care' },
-      { name: 'Employment',  icon: Briefcase,     id: 'employment' }
+      { name: 'Religion',   icon: Heart,         id: 'religion' },
+      { name: 'Science',    icon: Microscope,    id: 'science' },
+      { name: 'Education',  icon: GraduationCap, id: 'education' },
+      { name: 'Law',        icon: Gavel,         id: 'law' },
+      { name: 'Care',       icon: HeartPulse,    id: 'care' },
+      { name: 'Employment', icon: Briefcase,     id: 'employment' },
     ]
   },
 
   {
-    name: 'Realms',
-    icon: Globe,
-    id: 'realms-facet',
+    name: 'VSB Enterprises',
+    icon: Building2,
+    id: 'vsb-facet',
     subItems: [
-      { name: 'Learner Realm',    icon: BookOpen,     id: 'learner' },
-      { name: 'Knowledge Garden', icon: Book,          id: 'garden' },
-      { name: 'Scholar Realm',    icon: GraduationCap, id: 'scholar' },
-      { name: 'Observatory',      icon: Eye,           id: 'observatory' },
-      { name: 'Legacy Vault',     icon: Archive,       id: 'legacy-vault' },
-      { name: 'Enterprise',       icon: Building2,     id: 'enterprise' },
-      { name: 'Developer Portal', icon: Code2,         id: 'dev-portal' },
+      { name: 'VSB Spawn Studio',  icon: Building2,  id: 'vsb' },
+      { name: 'VSB Cockpit',       icon: Crown,      id: 'vsb-cockpit' },
+      { name: 'Enterprise',        icon: Briefcase,  id: 'enterprise' },
+      { name: 'Genesis Journey',   icon: Rocket,     id: 'genesis' },
+      { name: 'Business Plan',     icon: FileText,   id: 'business-plan' },
+      { name: 'Management Systems',icon: Shield,     id: 'management' },
+      { name: 'Change Control',    icon: GitBranch,  id: 'change-control' },
+      { name: 'Digital Twins',     icon: Boxes,      id: 'digital-twins' },
+      { name: 'Capital Fund',      icon: DollarSign, id: 'capital' },
+      { name: 'Projects',          icon: Folders,    id: 'projects' },
     ]
   },
 
   {
-    name: 'Evolution',
-    icon: Brain,
-    id: 'evo-facet',
+    name: 'Resource Fabric',
+    icon: Layers,
+    id: 'fabric-facet',
     subItems: [
-      { name: 'Genome',            icon: Fingerprint,  id: 'genome-explorer' },
-      { name: 'GRN Mesh',          icon: Network,      id: 'grn-dashboard' },
-      { name: 'Introspection',     icon: Brain,         id: 'introspection' },
-      { name: 'Organism Dashboard',icon: Activity,      id: 'organism'      },
-      { name: 'Evolution Hub',     icon: GitBranch,     id: 'evolution' },
-      { name: 'AB Testing',        icon: Target,        id: 'ab-testing' },
-      { name: 'Learning Dashboard',icon: BarChart3,     id: 'learning-dashboard' },
-      { name: 'Homeostasis',       icon: HeartPulse,    id: 'orchestrator' },
+      { name: 'Resource Fabric',  icon: Layers,      id: 'resource-fabric' },
+      { name: 'Synthesis Studio', icon: Sparkles,    id: 'synthesis' },
+      { name: 'Synthesis Nexus',  icon: Sparkles,    id: 'nexus' },
+      { name: 'Forge Pipeline',   icon: Hammer,      id: 'forge-pipeline' },
+      { name: 'Digital Reactor',  icon: Zap,         id: 'reactor' },
+      { name: 'Incubator',        icon: FlaskConical, id: 'incubator' },
+      { name: 'Factory',          icon: Factory,     id: 'factory' },
+      { name: 'Intelligence Lab', icon: Brain,       id: 'intelligence' },
+      { name: 'Authorship Engine',icon: BookOpen,    id: 'authorship' },
+      { name: 'Design & Dev',     icon: Code2,       id: 'design-dev' },
+      { name: 'Solutions',        icon: Rocket,      id: 'solutions' },
+      { name: 'Build to Order',   icon: Package,     id: 'bto' },
     ]
   },
 
   {
-    name: 'Governance',
+    name: 'Transformation & Economy',
+    icon: Coins,
+    id: 'econ-facet',
+    subItems: [
+      { name: 'Transformation',   icon: Target,      id: 'transformation' },
+      { name: 'Economic Metabolism', icon: Coins,    id: 'economy' },
+      { name: 'Marketplace',      icon: ShoppingBag, id: 'marketplace' },
+      { name: 'Deliverables',     icon: FileText,    id: 'deliverables' },
+      { name: 'Prediction Market',icon: TrendingUp,  id: 'prediction-market' },
+      { name: 'Product Catalog',  icon: Package,     id: 'product-catalog' },
+      { name: 'Wallet',           icon: DollarSign,  id: 'wallet' },
+      { name: 'Impact',           icon: Activity,    id: 'impact' },
+      { name: 'Soul Record',      icon: Archive,     id: 'soul-record' },
+    ]
+  },
+
+  {
+    name: 'Governance & Ops',
     icon: Shield,
     id: 'gov-facet',
     subItems: [
-      { name: 'Governance Hub',   icon: Shield,       id: 'governance-hub' },
-      { name: 'Constitution',     icon: FileText,     id: 'constitution' },
-      { name: 'The Sanctum',      icon: Star,          id: 'sanctum' },
-      { name: 'DAO Dashboard',    icon: Globe2,        id: 'dao' },
-      { name: 'Delegation',       icon: Users,         id: 'delegation' },
-      { name: 'Credentials',      icon: Fingerprint,   id: 'credentials' },
-      { name: 'Council',          icon: Scale,         id: 'council' },
-      { name: 'Change Control',    icon: GitBranch,     id: 'change-control' },
-      { name: 'Entity Control',   icon: ShieldCheck,   id: 'admin' },
+      { name: 'Governance Hub',     icon: Shield,      id: 'governance-hub' },
+      { name: 'Constitution',       icon: FileText,    id: 'constitution' },
+      { name: 'Compliance',         icon: ShieldCheck, id: 'compliance' },
+      { name: 'Operational Excellence', icon: Gauge,   id: 'operations' },
+      { name: 'Sovereign Evolution',icon: Dna,         id: 'sovereign-evolution' },
+      { name: 'CoE Hub',            icon: Trophy,      id: 'coe' },
+      { name: 'AB Testing',         icon: Target,      id: 'ab-testing' },
+      { name: 'Learning Dashboard', icon: BarChart3,   id: 'learning-dashboard' },
+      { name: 'Audit Dashboard',    icon: ShieldCheck, id: 'audit-dashboard' },
     ]
   },
 
   {
-    name: 'Intelligence',
-    icon: Cpu,
-    id: 'intel-facet',
+    name: 'Developer & System',
+    icon: Code2,
+    id: 'dev-facet',
     subItems: [
-      { name: 'Intelligence Lab',      icon: Brain,        id: 'intelligence' },
-      { name: 'Authorship Engine',     icon: BookOpen,     id: 'authorship' },
-      { name: 'Design & Dev Engine',   icon: Code2,        id: 'design-dev' },
-      { name: 'Synthesis Nexus',       icon: Sparkles,     id: 'nexus' },
-      { name: 'Genesis Journey',       icon: Rocket,       id: 'genesis' },
-      { name: 'Vision · Transformation', icon: Target,     id: 'transformation' },
-      { name: 'Organism Heartbeat',    icon: HeartPulse,   id: 'heartbeat' },
-      { name: 'Cognition · Wiring',    icon: Network,      id: 'cognition' },
-      { name: 'Board of Directors',    icon: Crown,        id: 'board' },
-      { name: 'Economic Metabolism',   icon: Coins,        id: 'economy' },
-      { name: 'Business Plan',         icon: Briefcase,    id: 'business-plan' },
-      { name: 'Forge Pipeline',        icon: Hammer,       id: 'forge-pipeline' },
-      { name: 'Digital Twins',         icon: Boxes,        id: 'digital-twins' },
-      { name: 'Native AI',             icon: Cpu,          id: 'native-ai' },
-      { name: 'Deliverables',          icon: FileText,     id: 'deliverables' },
-      { name: 'Operational Excellence', icon: Gauge,       id: 'operations' },
-      { name: 'Compliance',            icon: ShieldCheck,  id: 'compliance' },
-      { name: 'Sovereign Evolution',   icon: Dna,          id: 'sovereign-evolution' },
-      { name: 'Resource Fabric',       icon: Layers,       id: 'resource-fabric' },
-      { name: 'Civilization Brain',    icon: Globe,        id: 'civilization' },
-      { name: 'Reality Dashboard',     icon: Radio,        id: 'reality' },
-      { name: 'Grand Ops',             icon: Gauge,        id: 'grand-ops' },
-      { name: 'Prediction Market',     icon: TrendingUp,   id: 'prediction-market' },
-      { name: 'CFO Analytics',         icon: DollarSign,   id: 'cfo' },
-      { name: 'CTO Infrastructure',    icon: Cpu,          id: 'cto' },
-      { name: 'CoE Hub',               icon: Trophy,       id: 'coe' },
-    ]
-  },
-
-  {
-    name: 'Profile',
-    icon: User,
-    id: 'profile-facet',
-    subItems: [
-      { name: 'Wallet',        icon: DollarSign, id: 'wallet' },
-      { name: 'Impact',        icon: Activity,   id: 'impact' },
-      { name: 'Soul Record',   icon: Archive,    id: 'soul-record' },
-    ]
-  },
-
-  {
-    name: 'Federation',
-    icon: Map,
-    id: 'fed-facet',
-    subItems: [
-      { name: 'Federation Portal',    icon: Globe,      id: 'federation' },
-      { name: 'Federation Map',       icon: Map,        id: 'fed-map' },
-      { name: 'Join Federation',      icon: Plus,       id: 'join-federation' },
-      { name: 'Twin Management',      icon: Copy,       id: 'twin-management' },
-      { name: 'Workstation Explorer', icon: Search,     id: 'workstation-explorer' },
-      { name: 'Treaty Studio',        icon: FileText,   id: 'treaty-studio' },
-      { name: 'Orbital',              icon: Satellite,  id: 'orbital' },
-    ]
-  },
-
-  {
-    name: 'Advanced',
-    icon: Settings,
-    id: 'adv-facet',
-    subItems: [
-      { name: 'The Forge',        icon: Terminal,    id: 'forge' },
-      { name: 'Dev Marketplace',  icon: ShoppingBag, id: 'dev-marketplace' },
-      { name: 'File Hub',         icon: FolderOpen,  id: 'file-hub' },
-      { name: 'AR/VR Lab',        icon: Camera,      id: 'ar-vr' },
-      { name: 'Physical',         icon: Wifi,        id: 'physical' },
-      { name: 'Audit Portal',     icon: ShieldCheck, id: 'audit-portal' },
-      { name: 'Security Bounty',  icon: Shield,      id: 'security/bounty' },
+      { name: 'Developer Portal', icon: Code2,       id: 'dev-portal' },
+      { name: 'Creator Studio',   icon: Palette,     id: 'creator' },
+      { name: 'Contribute',       icon: Plus,        id: 'contribute' },
+      { name: 'Entity Control',   icon: ShieldCheck, id: 'admin' },
+      { name: 'Public Roadmap',   icon: Map,         id: 'roadmap' },
       { name: 'System Settings',  icon: Settings,    id: 'settings' },
+    ]
+  },
+
+  {
+    name: 'Explore',
+    icon: Globe,
+    id: 'explore-facet',
+    subItems: [
+      { name: 'Scholar Realm',     icon: GraduationCap, id: 'scholar' },
+      { name: 'Civilization Brain',icon: Globe,         id: 'civilization' },
+      { name: 'Reality Dashboard', icon: Radio,         id: 'reality' },
+      { name: 'Cosmic Nervous Sys',icon: Satellite,     id: 'cosmic-nervous' },
+      { name: 'QEP Suite',         icon: Layers,        id: 'qep' },
+      { name: 'AR/VR Lab',         icon: Camera,        id: 'ar-vr' },
+      { name: 'Wearables',         icon: Watch,         id: 'wearables' },
+      { name: 'Embodiment',        icon: Smartphone,    id: 'embodiment' },
     ]
   }
 ];
