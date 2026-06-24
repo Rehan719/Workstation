@@ -1703,6 +1703,21 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_entropy_pool_in_house(client):
+    # Owned entropy pool (agentic_core/crypto.EntropyPool): REAL SHA3-512 + XOR entropy mixing — a
+    # deterministic seed for fixed sources (reproducible in-house seeding), not a PRNG call.
+    src = [{"size": 100, "source": "a", "content_hash": "h1", "timestamp": 1},
+           {"size": 200, "source": "b", "content_hash": "h2", "timestamp": 2}]
+    r = client.post("/api/v1/native-ai/entropy", json={"sources": src}).json()
+    assert isinstance(r["seed"], int) and r["bits_harvested"] == 256 and r["sources_mixed"] == 2
+    assert len(r["pool_integrity"]) == 16 and "sha3" in r["algo"]
+    # deterministic for the same fixed-timestamp sources; different sources -> different seed
+    assert client.post("/api/v1/native-ai/entropy", json={"sources": src}).json()["seed"] == r["seed"]
+    other = client.post("/api/v1/native-ai/entropy",
+                        json={"sources": [{"size": 1, "source": "x", "content_hash": "z", "timestamp": 9}]}).json()
+    assert other["seed"] != r["seed"]
+
+
 def test_native_quorum_sensing_in_house(client):
     # Owned biomimetic swarm quorum sensing (agentic_core/quorum.QuorumSensing): REAL AI-2 density
     # threshold — the swarm flips to COOPERATIVE once aggregate concentration crosses the threshold.

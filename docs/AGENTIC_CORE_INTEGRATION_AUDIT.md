@@ -133,3 +133,7 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 - **core/biofoundry/ginkgo_bridge** — DBTL cycle bridged to **Ginkgo Bioworks** (external biofoundry) — external/simulated → SKIP.
 - **core/convergence/mirf_engine** — trivial signal routing (no real algorithm) → defer.
 - **agentic_core/economy** (VirtualLedger, CharityIntelligence) — REAL but ALREADY WIRED (api/economy.py).
+
+## W71 scan (causal/simverse deeper read) + crypto/entropy_pool integration
+- **agentic_core/simverse/causal_simulator + agentic_core/causal/csl** — ❌ COSMETIC (skip): `run_causal_forecast` computes a FIXED toy linear SCM (`y = 0.5x + 0.2z + noise` → interventional_mean always ≈ 0.5·x), but `fidelity=0.924`, `backdoor_criterion_verified=True`, and `identifiability_proof` (a LaTeX string) are all HARDCODED. CSL's "Pearl-do-Proof" just returns that string. Integrating it would surface a FAKE causal-identifiability proof → SKIP (would be fabrication).
+- **agentic_core/crypto/entropy_pool.EntropyPool** — ✅ REAL (SHA3-512 + XOR entropy mixing → deterministic 64-bit seed + pool-integrity digest). INTEGRATED: `POST /api/v1/native-ai/entropy` (reproducible in-house seeding; same sources ⇒ same seed).

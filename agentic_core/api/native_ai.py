@@ -110,6 +110,24 @@ async def native_transduce(req: TransduceRequest):
     return out
 
 
+class EntropyRequest(BaseModel):
+    sources: List[Dict[str, Any]] = []   # each: {size, source, content_hash, timestamp}
+
+
+@router.post("/entropy")
+async def native_entropy(req: EntropyRequest):
+    """Owned entropy pool (agentic_core/crypto.EntropyPool): REAL SHA3-512 + XOR entropy mixing over the
+    provided sources, yielding a deterministic 64-bit seed + a pool-integrity digest. Real crypto, not a
+    PRNG call — same sources (fixed timestamps) ⇒ same seed (reproducible in-house seeding)."""
+    from agentic_core.crypto.entropy_pool import EntropyPool
+    pool = EntropyPool()
+    for s in req.sources:
+        pool.add_entropy(s)
+    return {"seed": pool.get_seed(), "bits_harvested": pool.total_bits_harvested,
+            "pool_integrity": pool.get_status()["pool_integrity"], "sources_mixed": len(req.sources),
+            "algo": "sha3_512 + XOR mixing", "method": "entropy pool (owned crypto)"}
+
+
 class QuorumRequest(BaseModel):
     agents: int = 1            # number of agents currently signalling into the shared field
     secretion: float = 10.0    # AI-2 analog secreted per agent
