@@ -1427,14 +1427,23 @@ def test_deliverables_living_lifecycle(client):
     assert "<h1>" in client.get(f"/api/v1/deliverables/{did}/export", params={"format": "html"}).text
     assert client.get(f"/api/v1/deliverables/{did}/export", params={"format": "mp4"}).status_code == 400  # never faked
     of = client.get("/api/v1/deliverables/output-formats").json()
-    from agentic_core.api.deliverables import _PDF_OK   # PDF is live only when fpdf2 is installed
-    assert set(of["live_ids"]) == {"md", "html", "slides", "txt", "json"} | ({"pdf"} if _PDF_OK else set())
+    from agentic_core.api.deliverables import _PDF_OK, _DOCX_OK   # live only when the lib is installed
+    expected = {"md", "html", "slides", "txt", "json"}
+    expected |= {"pdf"} if _PDF_OK else set()
+    expected |= {"docx"} if _DOCX_OK else set()
+    assert set(of["live_ids"]) == expected
     if _PDF_OK:   # real in-house PDF via fpdf2 (pure-python)
         pr = client.get(f"/api/v1/deliverables/{did}/export", params={"format": "pdf"})
         assert pr.status_code == 200 and pr.headers["content-type"].startswith("application/pdf")
         assert pr.content[:5] == b"%PDF-"
     else:
         assert "pdf" in of["catalogue_not_yet_produced"]
+    if _DOCX_OK:   # real in-house Word doc via python-docx (.docx is a zip → PK header)
+        dr = client.get(f"/api/v1/deliverables/{did}/export", params={"format": "docx"})
+        assert dr.status_code == 200 and "wordprocessingml" in dr.headers["content-type"]
+        assert dr.content[:2] == b"PK"
+    else:
+        assert "docx" in of["catalogue_not_yet_produced"]
     assert "mp4" in of["catalogue_not_yet_produced"]   # honestly listed, not produced
 
 
@@ -1527,9 +1536,10 @@ def test_deliverables_leverage_own_omnimedia(client):
     # catalogue, and omnimedia is registered as a first-class Resource-Fabric resource (so existing
     # in-house capabilities are surfaced into the unified fabric the swarm/delivery draws from).
     of = client.get("/api/v1/deliverables/output-formats").json()
-    from agentic_core.api.deliverables import _PDF_OK
+    from agentic_core.api.deliverables import _PDF_OK, _DOCX_OK
     assert {"md", "html", "slides", "txt", "json"} <= set(of["live_ids"])    # real in-house renders
     assert ("pdf" in of["live_ids"]) == _PDF_OK                              # pdf live iff fpdf2 present
+    assert ("docx" in of["live_ids"]) == _DOCX_OK                            # docx live iff python-docx present
     assert "pptx" in of["catalogue_not_yet_produced"] and "mp4" in of["catalogue_not_yet_produced"]
     assert "omnimedia" in of["source"]
     fab = client.get("/api/v1/resources?resource_class=output_media").json()

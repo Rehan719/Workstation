@@ -342,10 +342,11 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   Vision) FROM the journey** — visible on the scope-aware `/business-plan?scope=vsb-…` AND in the VSB
   Cockpit's plan tab.
 - ✅ **§4.9 / §13 — selectable in-house output formats.** Living deliverables export end-to-end as
-  **md · html (document/website) · slides (HTML presentation) · txt · json · pdf** — every one a real
-  deterministic in-house render via `/api/v1/deliverables/{id}/export?format=` (**PDF** produced by the
-  pure-python `fpdf2`, in-house, no external service; guarded so it degrades gracefully if absent); the
-  remaining binary/AV catalogue (pptx/docx/xlsx/mp4/…) is honestly listed as *not yet produced*, never faked.
+  **md · html (document/website) · slides (HTML presentation) · txt · json · pdf · docx (editable Word)**
+  — every one a real deterministic in-house render via `/api/v1/deliverables/{id}/export?format=` (**PDF**
+  via pure-python `fpdf2`, **DOCX** via pure-python `python-docx` — in-house, no external service; each
+  guarded so it degrades gracefully if absent; the UI selector is populated from real backend capability);
+  the remaining binary/AV catalogue (pptx/xlsx/mp4/…) is honestly listed as *not yet produced*, never faked.
 - ✅ **Launch-readiness (cost-free).** Production `Dockerfile`/compose/`.env.example`/`render.yaml`;
   **`DATA_DIR` honoured by every store** (data survives redeploys); the backend optionally **serves the
   built SPA** single-service; **fixed a real prod-mount bug** (a bad `manualChunks` chunk-split that left
@@ -402,9 +403,9 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
 
 **Remaining scope — the genuine work still ahead (priority order, on the native-first foundation):**
 - ◻ **Rich binary/AV output formats** — deliverable export is live for md · html · slides · txt · json
-  · **pdf** (real in-house renders); the remaining catalogue (pptx · docx · xlsx · mp4 · mp3 · png · svg)
-  is honestly listed but **not yet produced** — wiring real in-house generators for them (without
-  fabricating, e.g. python-docx / python-pptx / openpyxl) is the next §4.9 step.
+  · **pdf** · **docx** (real in-house renders); the remaining catalogue (pptx · xlsx · mp4 · mp3 · png ·
+  svg) is honestly listed but **not yet produced** — `pptx` (python-pptx) and `xlsx` (openpyxl) are the
+  next honest in-house steps; AV/image formats need genuine generation (not faked).
 - ◻ **Local-model depth** — the native floor is honest structured reasoning; richer local inference
   (larger Ollama models / fine-tunes, incl. a pulled vision model for the avatar) deepens output quality
   without changing the in-house guarantee.

@@ -127,6 +127,8 @@ async def output_formats():
     ]
     if _PDF_OK:   # produced in-house by fpdf2 when available
         live.append({"id": "pdf", "label": "PDF document", "kind": "document"})
+    if _DOCX_OK:  # produced in-house by python-docx when available
+        live.append({"id": "docx", "label": "Word document (.docx)", "kind": "document"})
     try:
         from agentic_core.omnimedia.factory import OutputFormat
         catalogue = [f.value for f in OutputFormat if f.value not in {x["id"] for x in live}]
@@ -351,6 +353,12 @@ try:
 except Exception:
     _PDF_OK = False
 
+try:
+    import docx as _docxmod  # noqa: F401  (python-docx → editable Word documents, pure-python)
+    _DOCX_OK = True
+except Exception:
+    _DOCX_OK = False
+
 
 def _demark(s: str) -> str:
     s = re.sub(r"\*\*(.+?)\*\*", r"\1", s)
@@ -408,6 +416,37 @@ def _pdf_bytes(d: Dict[str, Any]) -> bytes:
     return bytes(pdf.output())
 
 
+def _docx_bytes(d: Dict[str, Any]) -> bytes:
+    """A real in-house editable Word (.docx) render of the deliverable (python-docx, pure-python).
+    Unicode-native, so no glyph mapping needed; markdown structure → Word headings/bullets/quotes."""
+    import io
+    from docx import Document
+    doc = Document()
+    doc.add_heading(d.get("title", "Deliverable"), level=0)
+    doc.add_paragraph(_doc_subtitle(d)).runs[0].italic = True
+    if d.get("brief"):
+        doc.add_paragraph("Brief: " + d["brief"]).runs[0].italic = True
+    for raw in (d.get("content", "") or "").split("\n"):
+        line = raw.rstrip()
+        if not line.strip() or line.strip() == "---":
+            continue
+        h = re.match(r"^(#{1,6})\s+(.*)", line)
+        if h:
+            doc.add_heading(_demark(h.group(2)), level=min(len(h.group(1)), 4)); continue
+        li = re.match(r"^[-*]\s+(.*)", line)
+        if li:
+            doc.add_paragraph(_demark(li.group(1)), style="List Bullet"); continue
+        bq = re.match(r"^>\s?(.*)", line)
+        if bq:
+            try:
+                doc.add_paragraph(_demark(bq.group(1)), style="Quote")
+            except Exception:
+                doc.add_paragraph(_demark(bq.group(1))).runs[0].italic = True
+            continue
+        doc.add_paragraph(_demark(line))
+    buf = io.BytesIO(); doc.save(buf); return buf.getvalue()
+
+
 # Live, end-to-end in-house formats (real renders) — keep in sync with /output-formats.
 _LIVE_FORMATS = {
     "md":     ("text/markdown; charset=utf-8", "md"),
@@ -418,6 +457,8 @@ _LIVE_FORMATS = {
 }
 if _PDF_OK:
     _LIVE_FORMATS["pdf"] = ("application/pdf", "pdf")
+if _DOCX_OK:
+    _LIVE_FORMATS["docx"] = ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx")
 
 
 def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
@@ -449,7 +490,12 @@ async def export_deliverable(deliverable_id: str, format: str = "md"):
         if d["id"] == deliverable_id:
             slug = "".join(c if c.isalnum() else "-" for c in d.get("title", "deliverable")).strip("-")[:60] or "deliverable"
             media_type, ext = _LIVE_FORMATS[fmt]
-            content: Any = _pdf_bytes(d) if fmt == "pdf" else _render_deliverable(d, fmt)
+            if fmt == "pdf":
+                content: Any = _pdf_bytes(d)
+            elif fmt == "docx":
+                content = _docx_bytes(d)
+            else:
+                content = _render_deliverable(d, fmt)
             return Response(
                 content=content,
                 media_type=media_type,
