@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
   Sparkles, Loader2, AlertCircle, ChevronDown, ChevronUp,
@@ -26,6 +27,7 @@ const DOMAINS = ['enterprise', 'science', 'law', 'care', 'education', 'career', 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const GenesisJourney: React.FC = () => {
+  const navigate = useNavigate();
   const [problem, setProblem] = useState('');
   const [domain, setDomain] = useState('enterprise');
   const [realm, setRealm] = useState('enterprise');
@@ -232,6 +234,19 @@ export const GenesisJourney: React.FC = () => {
                   </p>
                   <p className="text-[10px] text-emerald-400 font-bold mt-1">
                     Living Enterprise IDBO generated — dashboard {vsb.dashboard}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <button type="button" onClick={() => navigate(`/business-plan?scope=${encodeURIComponent(vsb.vsb_id)}`)}
+                      className="text-[10px] font-black uppercase tracking-widest text-highlight border border-highlight/40 px-3 py-1.5 rounded-lg hover:bg-highlight/10 transition-colors">
+                      Open the VSB’s Business Plan →
+                    </button>
+                    <button type="button" onClick={() => navigate('/vsb-cockpit')}
+                      className="text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
+                      VSB Cockpit →
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-slate-500 mt-2 leading-relaxed">
+                    Its plan already opens with an Executive Summary · Concept · Vision, seeded from this journey.
                   </p>
                 </div>
               )}

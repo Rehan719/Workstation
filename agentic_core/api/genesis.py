@@ -262,8 +262,15 @@ async def genesis_establish(req: EstablishRequest):
         import uuid as _uuid
         plan = bp_mod._load(vsb_id)
         plan["owner"] = req.owner_id
-        plan["mission"] = f"Deliver: {req.problem[:160]}"
+        # Chief-owned opening (W91) — seeded FROM the Genesis journey so the living entity's plan
+        # opens with the founder's idea exactly as conceived end-to-end (Concept→Commercialisation).
+        plan["executive_summary"] = (
+            f"{name} is a living VSB IDBO established to solve: {req.problem[:200]}."
+            + (f" Go-to-market & operating model: {req.commercialisation[:280]}" if req.commercialisation else "")
+        ).strip()[:1200]
+        plan["concept"] = (req.concept or f"Optimal solution concept for: {req.problem[:160]}").strip()[:1200]
         plan["vision"] = f"A self-running {req.entity_type} VSB IDBO that commercialises this solution beneficently."
+        plan["mission"] = f"Deliver: {req.problem[:160]}"
         plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
                             "(Chief = owner's digital twin) → AI CEO → C-Suite → CoE → BTO.")
         plan.setdefault("objectives", [])

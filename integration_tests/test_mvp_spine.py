@@ -1187,6 +1187,9 @@ def test_genesis_establish_seeds_business_plan(client):
     bp = client.get("/api/v1/business-plan", params={"scope": vsb}).json()
     assert bp["mission"].startswith("Deliver:")
     assert len(bp["objectives"]) == 3
+    # The VSB's Chief-owned plan opens with Executive Summary · Concept · Vision, seeded from Genesis (W92)
+    assert "VSB IDBO established to solve" in bp["executive_summary"]
+    assert bp["concept"] and bp["vision"]
 
 
 # ── Payments — honest, launch-ready rails (Phase 3, test-mode safe) ───────────

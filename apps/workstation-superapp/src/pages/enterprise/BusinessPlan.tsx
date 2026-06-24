@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown } from 'lucide-react';
 
@@ -15,29 +16,31 @@ export const BusinessPlan: React.FC = () => {
   const [newObj, setNewObj] = useState({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' });
   const [orchestrating, setOrchestrating] = useState('');
   const [orchResult, setOrchResult] = useState<Record<string, any>>({});
+  const [sp] = useSearchParams();
+  const scope = sp.get('scope') || 'workstation';   // workstation IDBO, or a generated VSB (vsb-xxxx)
 
-  const load = () => fetch('/api/v1/business-plan?scope=workstation').then(r => r.json()).then(setPlan).catch(() => {});
-  useEffect(() => { load(); }, []);
+  const load = () => fetch(`/api/v1/business-plan?scope=${encodeURIComponent(scope)}`).then(r => r.json()).then(setPlan).catch(() => {});
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [scope]);
 
   const generate = async () => {
     setBusy(true);
-    try { await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: 'workstation' }) }); await load(); } catch {}
+    try { await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope }) }); await load(); } catch {}
     setBusy(false);
   };
   const addObjective = async () => {
     if (!newObj.title.trim()) return;
     setBusy(true);
-    try { await fetch('/api/v1/business-plan/objective', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: 'workstation', ...newObj }) }); setNewObj({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' }); await load(); } catch {}
+    try { await fetch('/api/v1/business-plan/objective', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, ...newObj }) }); setNewObj({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' }); await load(); } catch {}
     setBusy(false);
   };
   const review = async (oid: string, progress_pct: number, status: string) => {
-    await fetch(`/api/v1/business-plan/objective/${oid}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: 'workstation', progress_pct, status }) });
+    await fetch(`/api/v1/business-plan/objective/${oid}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, progress_pct, status }) });
     load();
   };
   const orchestrate = async (oid: string) => {
     setOrchestrating(oid);
     try {
-      const r = await fetch(`/api/v1/business-plan/objective/${oid}/orchestrate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: 'workstation' }) });
+      const r = await fetch(`/api/v1/business-plan/objective/${oid}/orchestrate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope }) });
       const data = await r.json();
       if (r.ok && data?.tree) setOrchResult(m => ({ ...m, [oid]: data.tree }));
       await load();
@@ -50,7 +53,7 @@ export const BusinessPlan: React.FC = () => {
   return (
     <div className="space-y-10 pb-24">
       <header>
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">VSB · Living Business Plan</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">{scope === 'workstation' ? 'Workstation IDBO' : `VSB · ${scope}`} · Living Business Plan</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Business Plan</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The living plan owned by your <span className="text-highlight">Chief</span> (your digital twin) and the Board —
