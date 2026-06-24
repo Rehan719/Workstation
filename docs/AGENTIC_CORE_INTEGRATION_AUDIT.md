@@ -155,3 +155,15 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 ## W76 scan (core/identity) + fabric self-check
 - **core/identity/federated_did.FederatedDIDManager** — ⚠️ SKIP: real registry mechanics (deterministic `did:vsb:{id}` + existence-verify) BUT over-claims "PQC/Dilithium5" + "valid quorum proof" it never computes (verify is just `did in registry`), AND `core/` is not an importable package (no `__init__.py`). Not worth adding package scaffolding to surface a half-real crypto claim → documented, not integrated.
 - **Added a real fabric integrity check:** `GET /api/v1/native-ai/selfcheck` actually imports each integrated capability's source module and reports `all_live` — guards the whole integration arc (12 real modules) against regressions. Currently 13/13 source modules live.
+
+## W78 — Launch-ready cleanup: unwired code archived (Stage 1)
+Per the Owner's whole-of-Workstation directive (deliver a launch-ready, commercially-ready codebase),
+computed the import-reachability closure from the live entrypoints (`app_mvp` + the integration suite;
+AST capturing top-level + lazy + relative + dynamic-string imports). Of ~1402 backend modules in ~183
+top-level dirs, only ~233 were reachable. **Archived 122 fully-unwired top-level dirs (~533 files) to
+`_archive/`** via `git mv` (history preserved) — mocks, stubs, aspirational scaffolds, alternate
+entrypoints, duplicated/legacy modules. Partial dirs (≥1 reachable module) kept intact. `agentic_core`
+top-level dirs: ~180 → **69**. **Verified:** boot OK, full suite **174 pass / 0 fail**, fabric
+self-check all_live (13/13), no missing modules. One dir (`agentic_core/network`) was dynamically
+imported by reachable code → restored/kept live. See `_archive/README.md` (incl. how to restore). A
+later Stage 2 can surgically archive unreachable modules WITHIN partially-wired dirs.
