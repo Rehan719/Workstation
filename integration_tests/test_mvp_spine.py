@@ -1703,6 +1703,22 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_capabilities_catalogue(client):
+    # The in-house AI fabric publishes a discoverable catalogue of its OWNED capabilities — each backed
+    # by a real, integrated agentic_core module. Consolidates the integration sweep into one surface.
+    r = client.get("/api/v1/native-ai/capabilities")
+    assert r.status_code == 200
+    b = r.json()
+    assert b["posture"] == "in-house-first" and b["count"] >= 12
+    caps = b["capabilities"]
+    assert all(c["in_house"] is True and c["name"] and c["endpoint"] and c["source"] and c["description"] for c in caps)
+    # the genuinely-integrated real modules are represented
+    sources = {c["source"] for c in caps}
+    for s in ("cognition.minimax_optimizer", "quorum.sensing", "nlp.nli_engine",
+              "signaling.empirical_transduction", "statistics.live_rigor_monitor", "crypto.entropy_pool"):
+        assert s in sources, f"missing capability source {s}"
+
+
 def test_native_entropy_pool_in_house(client):
     # Owned entropy pool (agentic_core/crypto.EntropyPool): REAL SHA3-512 + XOR entropy mixing — a
     # deterministic seed for fixed sources (reproducible in-house seeding), not a PRNG call.

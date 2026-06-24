@@ -40,6 +40,67 @@ async def native_resources():
     return {"resources": registry.available(), "selection_order": registry.select()}
 
 
+# Catalogue of Workstation's OWN AI capabilities — each backed by a REAL, integrated agentic_core module
+# (the integration sweep; see docs/AGENTIC_CORE_INTEGRATION_AUDIT.md). Discoverability for the fabric.
+_CAPABILITIES = [
+    {"name": "Workflow tree", "endpoint": "POST /api/v1/native-ai/tree", "kind": "orchestration",
+     "source": "ai.native.orchestrator", "in_house": True,
+     "description": "Autonomously decompose a goal into a dependency DAG and run it in-house-first with parallel branches, biomimetically governed + logged."},
+    {"name": "Agent swarm cascade", "endpoint": "POST /api/v1/native-ai/swarm", "kind": "orchestration",
+     "source": "ai.native.orchestrator", "in_house": True,
+     "description": "Run a bespoke linear agent-cascade over owned resources."},
+    {"name": "In-house completion", "endpoint": "POST /api/v1/native-ai/complete", "kind": "orchestration",
+     "source": "ai.native.orchestrator", "in_house": True,
+     "description": "In-house-first completion with health-based resource selection + the always-available native floor."},
+    {"name": "Minimax decision", "endpoint": "POST /api/v1/native-ai/decide", "kind": "decision",
+     "source": "cognition.minimax_optimizer", "in_house": True,
+     "description": "Real maximin game-theory decision over actions under worst-case stressors."},
+    {"name": "Validation", "endpoint": "POST /api/v1/native-ai/validate", "kind": "validation",
+     "source": "validation.accuracy_validator", "in_house": True,
+     "description": "Real difflib semantic-similarity / numerical-tolerance / code-presence checks against a reference."},
+    {"name": "Statistical rigor", "endpoint": "POST /api/v1/native-ai/rigor", "kind": "analysis",
+     "source": "statistics.live_rigor_monitor", "in_house": True,
+     "description": "Real scipy 95% CI + one-sample t-test + power-gated significance over a live metric series."},
+    {"name": "Swarm consensus", "endpoint": "POST /api/v1/native-ai/consensus", "kind": "swarm",
+     "source": "swarm.conflict_resolution", "in_house": True,
+     "description": "Real threshold vote-tally — a choice wins once its share crosses the threshold."},
+    {"name": "Signal transduction", "endpoint": "POST /api/v1/native-ai/transduce", "kind": "biomimetic",
+     "source": "signaling.empirical_transduction", "in_house": True,
+     "description": "Real Hill-equation sigmoidal cascade — does a signal propagate supra-threshold? (with latency kinetics)."},
+    {"name": "Quorum sensing", "endpoint": "POST /api/v1/native-ai/quorum", "kind": "biomimetic",
+     "source": "quorum.sensing", "in_house": True,
+     "description": "Real bacterial-style AI-2 density model — the swarm flips COOPERATIVE/INDEPENDENT at a population threshold."},
+    {"name": "Intent inference", "endpoint": "POST /api/v1/native-ai/intent", "kind": "nlp",
+     "source": "nlp.nli_engine", "in_house": True,
+     "description": "Real regex keyword-pattern intent classification (deterministic, not LLM)."},
+    {"name": "Entailment", "endpoint": "POST /api/v1/native-ai/entailment", "kind": "nlp",
+     "source": "nlp.nli_engine", "in_house": True,
+     "description": "Real word-overlap natural-language inference (ENTAILED / PARTIAL / NEUTRAL)."},
+    {"name": "Entropy pool", "endpoint": "POST /api/v1/native-ai/entropy", "kind": "crypto",
+     "source": "crypto.entropy_pool", "in_house": True,
+     "description": "Real SHA3-512 + XOR entropy mixing → a deterministic seed for reproducible in-house seeding."},
+    {"name": "VBS governance", "endpoint": "POST /api/v1/vbs/*", "kind": "governance",
+     "source": "vbs", "in_house": True,
+     "description": "Real QMS quality gates + DCMS SHA3-512 versioning + BMS unit-economics + EMS + Mycelial backbone."},
+    {"name": "UEG provenance", "endpoint": "GET /api/v1/ueg/verify", "kind": "provenance",
+     "source": "ueg.logger", "in_house": True,
+     "description": "Real hash-chained SHA3-512 Merkle-DAG audit ledger with full-chain verify_chain()."},
+    {"name": "Degradation detection", "endpoint": "GET /api/v1/operations/degradation", "kind": "analysis",
+     "source": "self_improvement.degradation_detector", "in_house": True,
+     "description": "Real telemetry degradation detection (latency rise / accuracy drop) over the learning loop."},
+]
+
+
+@router.get("/capabilities")
+async def native_capabilities():
+    """Catalogue of Workstation's OWN AI capabilities — each backed by a REAL, integrated agentic_core
+    module (no external dependency). The fabric's breadth, discoverable."""
+    return {"posture": "in-house-first", "count": len(_CAPABILITIES),
+            "note": "Every capability is backed by a real, integrated agentic_core module — see "
+                    "docs/AGENTIC_CORE_INTEGRATION_AUDIT.md for the full real-vs-mock sweep.",
+            "capabilities": _CAPABILITIES}
+
+
 class CompleteRequest(BaseModel):
     prompt: str
     agent: str = "assistant"

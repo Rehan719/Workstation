@@ -9,6 +9,7 @@ interface Status {
   posture: string; external_allowed: boolean; owned_resources_available: string[];
   selection_order: string[]; guarantee: string; resources: ModelResource[];
 }
+interface Capability { name: string; endpoint: string; kind: string; source: string; in_house: boolean; description: string }
 interface SwarmStep { step: number; role: string; served_by: string; output: string }
 interface SwarmRun { agent: string; stages: number; trace: SwarmStep[]; final: string; any_external: boolean }
 interface Stage { role: string; instruction: string }
@@ -161,6 +162,7 @@ function TreeView({ run }: { run: TreeRun }) {
 
 export const NativeAI: React.FC = () => {
   const [status, setStatus] = useState<Status | null>(null);
+  const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [context, setContext] = useState('a halal, zero-waste community meal service for elderly Londoners');
   const [run, setRun] = useState<SwarmRun | null>(null);
   const [running, setRunning] = useState(false);
@@ -189,6 +191,7 @@ export const NativeAI: React.FC = () => {
     fetch('/api/v1/native-ai/status').then(r => r.json()).then(setStatus)
       .catch(() => setError('Failed to load fabric status'))
       .finally(() => setLoading(false));
+    fetch('/api/v1/native-ai/capabilities').then(r => r.json()).then(d => setCapabilities(d.capabilities || [])).catch(() => {});
     loadCascades();
   }, []);
 
@@ -286,6 +289,30 @@ export const NativeAI: React.FC = () => {
               <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-aura/10 text-aura">owned available: {status.owned_resources_available.join(', ')}</span>
             </div>
           </Card>
+
+          {/* Owned AI capabilities catalogue */}
+          {capabilities.length > 0 && (
+            <div>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-2"><Cpu size={14} /> Owned AI capabilities ({capabilities.length})</h3>
+              <p className="text-[10px] text-slate-600 mb-3">Each is backed by a real, integrated <span className="text-aura">agentic_core</span> module — no external dependency.</p>
+              <div className="grid grid-cols-1 @[640px]:grid-cols-2 @[960px]:grid-cols-3 gap-2">
+                {capabilities.map(cap => (
+                  <Card key={cap.endpoint + cap.name} className="p-3">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <p className="text-[11px] font-black text-white truncate">{cap.name}</p>
+                      <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 shrink-0">{cap.kind}</span>
+                    </div>
+                    <p className="text-[9px] text-slate-500 leading-snug line-clamp-3 mb-1.5">{cap.description}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[8px] font-mono text-slate-600 truncate">{cap.endpoint}</span>
+                      {cap.in_house && <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/10 text-aura shrink-0">in-house</span>}
+                    </div>
+                    <p className="text-[8px] font-mono text-slate-700 mt-1 truncate">↳ {cap.source}</p>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Resources */}
           <div>
