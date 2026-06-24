@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Zap, Sparkles, MessageCircle, X, Moon, Play, GraduationCap, Terminal, Briefcase, Microscope, Binary, LayoutDashboard, ShieldCheck, Loader2 } from 'lucide-react';
+import { Bell, Zap, Sparkles, MessageCircle, X, Moon, Play, ShieldCheck, Loader2 } from 'lucide-react';
 import { useStore } from '@workstation/shared';
 import { useNavigate } from 'react-router-dom';
 import type { UseAvatarSessionReturn } from '../../hooks/useAvatarSession';
@@ -42,19 +42,10 @@ const IDBOIcon = () => (
 );
 
 export const Header: React.FC<HeaderProps> = ({ avatar }) => {
-  const { currentRealm, setCurrentRealm, currentMode, setCurrentMode, setCurrentTab } = useStore();
+  const { currentMode, setCurrentMode, setCurrentTab } = useStore();
   const navigate = useNavigate();
   const [showAssistant, setShowAssistant] = useState(false);
   const { messages, input, setInput, sending, sendMessage } = avatar;
-
-  const realms: { id: typeof currentRealm; label: string; icon: any }[] = [
-    { id: 'LEARNER', label: 'Learner', icon: GraduationCap },
-    { id: 'DEVELOPER', label: 'Developer', icon: Terminal },
-    { id: 'ENTERPRISE', label: 'Enterprise', icon: Briefcase },
-    { id: 'SCHOLAR', label: 'Scholar', icon: Microscope },
-    { id: 'GENOME', label: 'Genome', icon: Binary },
-    { id: 'UNIFIED', label: 'Unified', icon: LayoutDashboard },
-  ];
 
   const modes = [
     { id: 'ACTIVE' as const, label: 'Active', icon: Zap, color: 'text-aura' },
@@ -76,22 +67,12 @@ export const Header: React.FC<HeaderProps> = ({ avatar }) => {
         </div>
       </div>
 
-      {/* Realm selector — flex-1 fills available width; labels auto-hide on narrow screens */}
-      <div className="flex-1 min-w-0 flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800 shadow-inner overflow-hidden">
-        {realms.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            onClick={() => setCurrentRealm(r.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-lg transition-all min-w-0 ${currentRealm === r.id ? 'bg-slate-800 shadow-lg border border-white/5' : 'opacity-40 hover:opacity-100'}`}
-            title={`${r.label} Realm`}
-          >
-            <r.icon size={14} className={`shrink-0 ${currentRealm === r.id ? 'text-aura' : 'text-slate-400'}`} />
-            {currentRealm === r.id && (
-              <span className="text-[9px] font-black uppercase tracking-widest text-aura truncate hidden sm:block">{r.label}</span>
-            )}
-          </button>
-        ))}
+      {/* Vision tagline — fills the space the legacy realm-selector occupied; the IDBO is one
+          living organism navigated via the eight vision sections in the sidebar. */}
+      <div className="flex-1 min-w-0 flex items-center px-3 overflow-hidden">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-600 truncate hidden md:block">
+          One living in-house AI organism · Concept → Commercialise
+        </p>
       </div>
 
       {/* Mode selector — shrink-0, labels auto-hide when needed */}
