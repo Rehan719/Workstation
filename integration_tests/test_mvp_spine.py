@@ -1703,6 +1703,30 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_chief_orchestrates_objective_in_house(client):
+    # The Chief delivers a business-plan OBJECTIVE via the autonomous in-house workflow TREE — grounded
+    # in the plan, governed (QMS/validation/minimax/consensus/signal), sealed into the UEG chain, and
+    # recorded as an auditable review on the objective. The whole living-organism pipeline, end to end.
+    scope = "test-chief-tree"
+    obj = client.post("/api/v1/business-plan/objective",
+                      json={"scope": scope, "title": "Launch a halal compliance service",
+                            "kpi": "10 pilots", "timeline": "Q3 2026"}).json()
+    oid = obj["id"]
+    r = client.post(f"/api/v1/business-plan/objective/{oid}/orchestrate", json={"scope": scope})
+    assert r.status_code == 200, r.text
+    b = r.json()
+    assert b["objective_id"] == oid and b["grounded_in"] == scope
+    assert b["tree"]["node_count"] >= 4 and b["tree"]["final"]
+    assert b["tree"]["ueg_hash"] and len(b["tree"]["ueg_hash"]) == 128
+    assert b["tree"]["decision"]["recommendation"] in ("proceed", "refine", "hold")
+    # the run is recorded as an auditable review (with the orchestration provenance) on the objective
+    plan = client.get("/api/v1/business-plan", params={"scope": scope}).json()
+    o = next(o for o in plan["objectives"] if o["id"] == oid)
+    assert any("workflow-tree" in rv.get("note", "") and "orchestration" in rv for rv in o.get("reviews", []))
+    # 404 for an unknown objective
+    assert client.post("/api/v1/business-plan/objective/nope/orchestrate", json={"scope": scope}).status_code == 404
+
+
 def test_native_biomimetic_signaling_in_house(client):
     # Owned biomimetic signal transduction (agentic_core/signaling.EmpiricalSignalTransduction): a REAL
     # Hill-equation sigmoidal cascade — strong signals propagate (peak>=0.5), weak ones stay

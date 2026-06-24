@@ -206,6 +206,71 @@ async def review_objective(oid: str, req: ReviewRequest):
     raise HTTPException(status_code=404, detail=f"Objective {oid} not found in {req.scope}.")
 
 
+class OrchestrateRequest(BaseModel):
+    scope: str = "workstation"
+
+
+@router.post("/objective/{oid}/orchestrate")
+async def orchestrate_objective(oid: str, req: OrchestrateRequest):
+    """The Chief delivers an objective via the autonomous in-house workflow TREE — grounded in the VSB +
+    plan, governed (VBS QMS/DCMS · validation · minimax · swarm consensus · biomimetic signal) and sealed
+    into the UEG provenance chain. The run is recorded as an auditable review on the objective."""
+    plan = _load(req.scope)
+    obj = next((o for o in plan["objectives"] if o["id"] == oid), None)
+    if not obj:
+        raise HTTPException(status_code=404, detail=f"Objective {oid} not found in {req.scope}.")
+
+    # Ground the run in the live VSB entity (when the scope is a generated VSB) + the plan's strategy.
+    grounding = ""
+    try:
+        from agentic_core.api.vsb import _load_vsb
+        v = _load_vsb(req.scope)
+        if v:
+            grounding = (f"VSB: {v.get('name')} (domain {v.get('domain')}, stage {v.get('stage')}); "
+                         f"mission: {str(v.get('challenge', ''))[:160]}. ")
+    except Exception:
+        pass
+    goal = (f"Deliver this objective: {obj['title']}."
+            + (f" KPI: {obj['kpi']}." if obj.get("kpi") else "")
+            + (f" Timeline: {obj['timeline']}." if obj.get("timeline") else ""))
+    context = grounding + (f"Plan mission: {str(plan.get('mission', ''))[:200]}. "
+                           f"Strategy: {str(plan.get('strategy', ''))[:200]}.")
+
+    from agentic_core.ai.native import orchestrator
+    tree = await orchestrator.orchestrate_tree(goal, context=context)
+
+    decision = (tree.get("decision") or {}).get("recommendation")
+    consensus = (tree.get("consensus") or {}).get("choice")
+    propagated = bool((tree.get("signal_response") or {}).get("propagated"))
+    review = {
+        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "progress_pct": obj.get("progress_pct", 0), "status": obj.get("status", "in_progress"),
+        "note": (f"Chief workflow-tree delivery — decision={decision}, consensus={consensus}, "
+                 f"signal={'propagated' if propagated else 'sub-threshold'}, nodes={tree.get('node_count')}"),
+        "orchestration": {
+            "decision": decision, "consensus": consensus,
+            "qms_passed": (tree.get("governance") or {}).get("qms_passed"),
+            "signal_propagated": propagated, "node_count": tree.get("node_count"),
+            "ueg_hash": tree.get("ueg_hash"),
+        },
+    }
+    obj.setdefault("reviews", []).append(review)
+    _save(plan)
+
+    try:
+        from agentic_core.organism.biobus import biobus
+        biobus.fire_signal("cognitive", "business_plan.orchestrate",
+                           f"{req.scope}: Chief delivered '{obj['title'][:40]}' via tree ({decision})", 0.7)
+    except Exception:
+        pass
+
+    return {"objective_id": oid, "goal": goal, "grounded_in": req.scope,
+            "tree": {"node_count": tree.get("node_count"), "decision": tree.get("decision"),
+                     "consensus": tree.get("consensus"), "governance": tree.get("governance"),
+                     "validation": tree.get("validation"), "signal_response": tree.get("signal_response"),
+                     "ueg_hash": tree.get("ueg_hash"), "final": tree.get("final")}}
+
+
 class GenerateRequest(BaseModel):
     scope: str = "workstation"
     context: str = ""
