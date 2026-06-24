@@ -5,6 +5,19 @@ import time
 import os
 from typing import Dict, List, Any, Optional
 
+
+def _ser_default(o: Any) -> Any:
+    """Serialise non-JSON-native payload values (e.g. numpy scalars/bools from scipy) so the ledger
+    never crashes on a real-world payload. numpy scalars -> native python; everything else -> str."""
+    try:
+        import numpy as _np
+        if isinstance(o, _np.generic):
+            return o.item()
+    except Exception:
+        pass
+    return str(o)
+
+
 class VSBUEGLogger:
     """
     IDBO Layer 7: Module Library / UEG.
@@ -44,13 +57,13 @@ class VSBUEGLogger:
             "parent_hash": self.merkle_root
         }
 
-        payload_str = json.dumps(payload, sort_keys=True)
+        payload_str = json.dumps(payload, sort_keys=True, default=_ser_default)
         event_hash = hashlib.sha3_512(payload_str.encode()).hexdigest()
 
         entry = {"hash": event_hash, "payload": payload}
 
         with open(self.log_path, "a") as f:
-            f.write(json.dumps(entry) + "\n")
+            f.write(json.dumps(entry, default=_ser_default) + "\n")
 
         self.merkle_root = event_hash
         self.logger.info(f"UEG: Event {event_type} logged with hash {event_hash[:16]}...")

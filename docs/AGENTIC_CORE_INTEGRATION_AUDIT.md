@@ -85,3 +85,10 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 - **agentic_core/verification/framework** — ❌ MOCK (`_verify_l1..l5` all hardcode `return True`). SKIP.
 - **agentic_core/verification/cegar_engine** — ⚠️ ships a `mock_verifier` default; the CEGAR loop may be real but needs a real property-verifier to be meaningful. Deferred.
 - **agentic_core/triad** — ⛔ EMPTY at top level (.gitkeep + empty __init__; subdirs neuro_symbolic/quantum/xai). Nothing to integrate.
+
+## W63 scan (statistics / ethics / governance)
+- **agentic_core/statistics/live_rigor_monitor** — ✅ REAL (scipy 95% CI + one-sample t-test + power-gated significance; scipy only, NO statsmodels). INTEGRATED: `POST /api/v1/native-ai/rigor`; logs each validation to the owned UEG chain. Also FIXED a real ledger bug found here: UEG `log_event` crashed on numpy scalars/bools (scipy outputs) → added a numpy-safe json serialiser so the chain never breaks on real payloads.
+- **agentic_core/ethics/constitutional_enforcer** — ✅ REAL (deterministic constitutional rule engine: survival-hierarchy ordering, tier-1 immutability, audit log + compliance rate). Integrable later as a governance capability (no natural workflow-tree fit yet; better wired to the CCA/config-update path).
+- **agentic_core/ethics/ethical_sentinel** — ✅ REAL but MINIMAL (3-keyword non-maleficence screen + reasoning-trace check). Integrable later (would want a broader, honest keyword/rule set).
+- **agentic_core/ethics/lexical_coherence** — ❌ MOCK (`analyze_coherence` returns hardcoded 0.98, "Simulated analysis"). SKIP.
+- **agentic_core/governance/** (ai_constitutional_judge, ai_governor, audit_trail — hashlib-based) — UNREVIEWED in detail; flagged for a future cycle (likely real audit/governance code).

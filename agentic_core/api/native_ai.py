@@ -87,6 +87,37 @@ class TreeRequest(BaseModel):
     timeout: float = 30.0
 
 
+class RigorRequest(BaseModel):
+    metric_name: str
+    value: float
+    baseline: float = 0.0
+
+
+# Shared statistical-rigor monitor — real scipy CI + t-tests over a live metric series; logs each
+# validation to the owned UEG provenance chain. Stateful (accumulates per-metric history) by design.
+def _rigor_monitor():
+    from agentic_core.statistics.live_rigor_monitor import LiveRigorMonitor
+    from agentic_core.ueg.registry import ueg_ledger
+    global _RIGOR
+    try:
+        return _RIGOR
+    except NameError:
+        _RIGOR = LiveRigorMonitor(ueg=ueg_ledger)
+        return _RIGOR
+
+
+@router.post("/rigor")
+async def native_rigor(req: RigorRequest):
+    """Owned statistical-rigor capability (agentic_core/statistics.LiveRigorMonitor): REAL scipy 95% CI
+    + one-sample t-test (p-value) + power-gated significance over a live metric series — not a fabricated
+    confidence. Each validation is sealed into the owned UEG provenance chain."""
+    res = await _rigor_monitor().validate_metric(req.metric_name, req.value, req.baseline)
+    return {"metric": res["metric"], "value": res["value"], "baseline": res["baseline"],
+            "ci_95": [float(res["ci_95"][0]), float(res["ci_95"][1])], "p_value": float(res["p_value"]),
+            "power": float(res["power"]), "significant": bool(res["significant"]),
+            "method": "scipy CI + one-sample t-test (owned statistics)"}
+
+
 class ValidateRequest(BaseModel):
     prediction: Any
     actual: Any

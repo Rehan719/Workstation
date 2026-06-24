@@ -1703,6 +1703,24 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_statistical_rigor_in_house(client):
+    # The owned statistical-rigor capability (agentic_core/statistics.LiveRigorMonitor) is integrated:
+    # REAL scipy 95% CI + one-sample t-test over a live metric series (not a fabricated confidence),
+    # each validation sealed into the owned UEG provenance chain.
+    last = None
+    for v in [0.82, 0.80, 0.85, 0.79, 0.88, 0.83]:
+        last = client.post("/api/v1/native-ai/rigor",
+                           json={"metric_name": "rate_x", "value": v, "baseline": 0.6}).json()
+    assert last["ci_95"][0] <= last["ci_95"][1] and "scipy" in last["method"]
+    assert 0.0 <= last["p_value"] <= 1.0 and isinstance(last["significant"], bool)
+    # a series clearly above baseline 0.6 yields a tiny p-value (real t-test, not fabricated)
+    assert last["p_value"] < 0.05
+    # a non-significant metric produces a numpy bool internally — the owned UEG chain must STILL
+    # serialise it and stay cryptographically valid (regression for the numpy-serialisation fix)
+    client.post("/api/v1/native-ai/rigor", json={"metric_name": "flat_y", "value": 0.6, "baseline": 0.6})
+    assert client.get("/api/v1/ueg/verify").json()["chain_valid"] is True
+
+
 def test_native_validation_capability_in_house(client):
     # The owned validation capability (agentic_core/validation.AccuracyValidator) is integrated: REAL
     # difflib semantic similarity / numerical tolerance — not LLM self-grading — exposed standalone AND
