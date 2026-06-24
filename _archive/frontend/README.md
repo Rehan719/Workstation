@@ -18,3 +18,12 @@ Then re-add its `import` + `<Route>` in `apps/workstation-superapp/src/App.tsx` 
 
 > Two pages (`synthesis/PresentationPlayer.tsx`, `synthesis/BusinessModelDashboard.tsx`) were initially
 > moved then restored — they are imported by the kept `SynthesisStudio` page.
+
+## Orphaned components (W88)
+`_archive/frontend/components/` holds components that became **unreachable** after the page archive — a
+reachability graph from `src/main.tsx` found them imported by no kept file (only by archived pages, or by
+each other). Verified by `tsc && vite build` staying green after removal. Includes the unused `ui/*`
+shadcn primitives (badge/button/card/input/progress/scroll-area/textarea — zero importers anywhere), the
+QEP student-portal cluster (`QEPStudentPortal` + `HifzProgress` + `TajweedMeter`), several
+`organism/*` visualisers, and others. Restore the same way (git mv back) and re-add the importer.
+
