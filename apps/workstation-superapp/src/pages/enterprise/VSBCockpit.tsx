@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
-import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2, Paperclip } from 'lucide-react';
+import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2, Paperclip, Download } from 'lucide-react';
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -16,6 +16,7 @@ const TABS = [
   ['org', 'Organisation', Building2],
   ['chief', 'Chief & Board', Crown],
   ['plan', 'Business Plan', Target],
+  ['deliverables', 'Deliverables', ScrollText],
   ['systems', 'Living Systems', ShieldCheck],
   ['economy', 'Economy', Coins],
   ['transform', 'Transformation', Workflow],
@@ -32,6 +33,12 @@ export const VSBCockpit: React.FC = () => {
   const [plan, setPlan] = useState<Dict | null>(null);
   const [objOrch, setObjOrch] = useState('');                 // objective id being delivered by the Chief
   const [objOrchResult, setObjOrchResult] = useState<Dict>({}); // tree result per objective id
+  const [deliverables, setDeliverables] = useState<Dict[]>([]); // this VSB's living outputs (§13)
+  const [delivType, setDelivType] = useState('report');
+  const [delivBrief, setDelivBrief] = useState('');
+  const [delivProducing, setDelivProducing] = useState(false);
+  const [delivFormat, setDelivFormat] = useState('md');
+  const [delivFormats, setDelivFormats] = useState<{ id: string; label: string }[]>([{ id: 'md', label: 'Markdown (.md)' }]);
   const [standards, setStandards] = useState<Dict[]>([]);
   const [tab, setTab] = useState<string>('org');
   const [loading, setLoading] = useState(false);
@@ -67,6 +74,9 @@ export const VSBCockpit: React.FC = () => {
     }).catch(() => {});
     axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(() => {});
     axios.get('/api/v1/bto/components').then(r => setBtoComponents(r.data.components || [])).catch(() => {});
+    axios.get('/api/v1/deliverables/output-formats').then(r => {
+      if (Array.isArray(r.data?.live) && r.data.live.length) setDelivFormats(r.data.live.map((f: any) => ({ id: f.id, label: f.label })));
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -77,6 +87,7 @@ export const VSBCockpit: React.FC = () => {
       axios.get('/api/v1/business-plan', { params: { scope: selected } }).then(r => r.data).catch(() => null),
       axios.get(`/api/v1/economy/ledger/${selected}`).then(r => r.data).catch(() => null),
     ]).then(([d, p, l]) => { setDetail(d); setPlan(p); setLedger(l); setLoading(false); });
+    loadDeliverables(selected);
   }, [selected]);
 
   const runTransformation = async () => {
@@ -101,6 +112,23 @@ export const VSBCockpit: React.FC = () => {
       if (r.data?.tree) setObjOrchResult(m => ({ ...m, [oid]: r.data.tree }));
     } catch { /* best-effort — the run is recorded server-side */ }
     setObjOrch('');
+  };
+
+  // This VSB's living deliverables (§13) — its actual outputs, produced on the native fabric and
+  // exportable in any of the in-house formats.
+  const loadDeliverables = (vid: string) =>
+    axios.get('/api/v1/deliverables', { params: { vsb_id: vid } })
+      .then(r => setDeliverables(r.data.deliverables || [])).catch(() => setDeliverables([]));
+
+  const produceDeliverable = async () => {
+    if (!selected || !delivBrief.trim()) return;
+    setDelivProducing(true);
+    try {
+      await axios.post('/api/v1/deliverables/produce', { type: delivType, brief: delivBrief, vsb_id: selected });
+      setDelivBrief('');
+      await loadDeliverables(selected);
+    } catch { /* surfaced by the list not growing */ }
+    setDelivProducing(false);
   };
 
   const speak = (text: string) => {
@@ -384,6 +412,46 @@ export const VSBCockpit: React.FC = () => {
                     </div>
                   ))}
                   {(plan.objectives || []).length === 0 && <p className="text-slate-600 text-xs">No objectives yet.</p>}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Deliverables — this VSB's living outputs (§13), exportable in any in-house format */}
+          {tab === 'deliverables' && (
+            <div className="space-y-4">
+              <Card className="p-6">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-3 flex items-center gap-2"><ScrollText size={14} /> Produce a living deliverable for this VSB</h4>
+                <div className="grid grid-cols-1 @[560px]:grid-cols-4 gap-2 mb-2">
+                  <select value={delivType} onChange={e => setDelivType(e.target.value)} aria-label="Deliverable type" className="bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-300">
+                    {['report', 'presentation', 'website', 'brief', 'service', 'app_spec'].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <input value={delivBrief} onChange={e => setDelivBrief(e.target.value)} placeholder="Brief — what should it cover?" className="bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white @[560px]:col-span-2" />
+                  <Button onClick={produceDeliverable} disabled={delivProducing || !delivBrief.trim()} className="bg-highlight text-sovereign text-xs flex items-center gap-2">
+                    {delivProducing ? <Loader2 size={14} className="animate-spin" /> : <ScrollText size={14} />} Produce
+                  </Button>
+                </div>
+                <p className="text-[9px] text-slate-600">Produced on Workstation’s own native AI fabric (honest in-house provenance) and filed under this VSB.</p>
+              </Card>
+              <Card className="p-6">
+                <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight">Outputs ({deliverables.length})</h4>
+                  <select value={delivFormat} onChange={e => setDelivFormat(e.target.value)} aria-label="Export format" className="text-[10px] bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-slate-300">
+                    {delivFormats.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  {deliverables.map((d: Dict) => (
+                    <div key={d.id} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-900 border border-slate-800">
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-white truncate">{d.title}</p>
+                        <p className="text-[9px] text-slate-500 uppercase tracking-widest">{d.type} · {d.versions} version{d.versions === 1 ? '' : 's'} · {d.served_by || 'native'}</p>
+                      </div>
+                      <a href={`/api/v1/deliverables/${d.id}/export?format=${delivFormat}`} download
+                        className="shrink-0 text-[10px] font-black uppercase text-sovereign bg-aura px-3 py-1.5 rounded-lg flex items-center gap-1 hover:opacity-90"><Download size={11} /> Export</a>
+                    </div>
+                  ))}
+                  {deliverables.length === 0 && <p className="text-slate-600 text-xs">No deliverables yet — produce one above.</p>}
                 </div>
               </Card>
             </div>
