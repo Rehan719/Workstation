@@ -284,7 +284,23 @@ export const VSBCockpit: React.FC = () => {
           {/* Business Plan */}
           {tab === 'plan' && plan && (
             <div className="space-y-4">
-              {[['Mission', plan.mission], ['Vision', plan.vision], ['Strategy', plan.strategy]].map(([label, val]) => (
+              {/* Chief's Opening (W91/W93) — Executive Summary · Concept · Vision, seeded from the Genesis journey */}
+              {(plan.executive_summary || plan.concept || plan.vision) && (
+                <Card className="p-6 border-highlight/40 bg-gradient-to-br from-highlight/10 to-transparent">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Crown size={15} className="text-highlight" />
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white">Chief’s Opening — Executive Summary · Concept · Vision</h4>
+                  </div>
+                  {([['Executive Summary', plan.executive_summary], ['Concept', plan.concept], ['Vision', plan.vision]] as [string, string][])
+                    .filter(([, v]) => v).map(([label, val]) => (
+                    <div key={label} className="mb-3 last:mb-0">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-highlight/70 mb-1">{label}</p>
+                      <p className="text-sm text-slate-300 leading-relaxed">{val}</p>
+                    </div>
+                  ))}
+                </Card>
+              )}
+              {[['Mission', plan.mission], ['Strategy', plan.strategy]].map(([label, val]) => (
                 <Card key={label as string} className="p-6">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-2">{label}</h4>
                   <p className="text-sm text-slate-300 leading-relaxed">{(val as string) || <span className="text-slate-600">Not set.</span>}</p>
