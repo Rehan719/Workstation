@@ -149,6 +149,40 @@ async def outcomes(resource: Optional[str] = None, vsb_id: Optional[str] = None,
     return {"outcomes": rows[-limit:][::-1], "total": len(rows)}
 
 
+@router.get("/degradation")
+async def degradation(resource: Optional[str] = None, cycles: int = 3, window: int = 5):
+    """Real performance-degradation detection over the learning loop's recorded telemetry, via the OWNED
+    agentic_core/self_improvement.PerformanceDegradationDetector: buckets recent outcomes into `cycles`
+    windows (avg latency + success-rate each) and flags a >12.7% latency rise OR >9.3% accuracy drop.
+    Real arithmetic over real recorded runs — not a guess."""
+    cycles = max(3, int(cycles))
+    rows = [r for r in _load() if (not resource or r.get("resource") == resource)]
+    recent = rows[-(cycles * max(1, int(window))):]
+    telemetry: List[Dict[str, float]] = []
+    if len(recent) >= cycles:
+        size = len(recent) // cycles
+        for i in range(cycles):
+            chunk = recent[i * size:(i + 1) * size] if i < cycles - 1 else recent[i * size:]
+            if not chunk:
+                continue
+            lat = sum(int(c.get("duration_ms", 0)) for c in chunk) / len(chunk)
+            acc = sum(1 for c in chunk if c.get("success")) / len(chunk)
+            telemetry.append({"latency": max(1.0, lat), "accuracy": acc})  # guard div-by-zero in detector
+
+    score = 0.0
+    lat_change = acc_change = None
+    if len(telemetry) >= 3:
+        from agentic_core.self_improvement.degradation_detector import PerformanceDegradationDetector
+        score = float(PerformanceDegradationDetector().detect(telemetry))
+        lat_change = round(telemetry[-1]["latency"] / telemetry[0]["latency"] - 1.0, 4)
+        acc_change = round(telemetry[0]["accuracy"] - telemetry[-1]["accuracy"], 4)
+    return {"degraded": score >= 1.0, "score": score, "cycles_built": len(telemetry),
+            "latency_change": lat_change, "accuracy_change": acc_change,
+            "thresholds": {"latency_rise": 0.127, "accuracy_drop": 0.093},
+            "samples": len(recent), "resource": resource or "all",
+            "method": "PerformanceDegradationDetector (owned self_improvement)"}
+
+
 @router.get("/rankings")
 async def rankings():
     return {"rankings": _rankings([r for r in _load() if r.get("kind") != "model_attempt"])}

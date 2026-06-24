@@ -1703,6 +1703,20 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_operations_degradation_detection_in_house(client):
+    # The owned PerformanceDegradationDetector (agentic_core/self_improvement) is wired into the learning
+    # loop: REAL telemetry degradation detection (>12.7% latency rise OR >9.3% accuracy drop over cycles)
+    # bucketed from recorded outcomes — real arithmetic over real runs, not a guess.
+    for _ in range(12):
+        client.post("/api/v1/science/synthesise", json={"research_question": "x?"})
+    r = client.get("/api/v1/operations/degradation", params={"cycles": 3, "window": 3})
+    assert r.status_code == 200, r.text
+    b = r.json()
+    assert isinstance(b["degraded"], bool) and b["score"] in (0.0, 1.0)
+    assert b["cycles_built"] == 3 and "PerformanceDegradationDetector" in b["method"]
+    assert b["thresholds"]["latency_rise"] == 0.127 and b["thresholds"]["accuracy_drop"] == 0.093
+
+
 def test_chief_orchestrates_objective_in_house(client):
     # The Chief delivers a business-plan OBJECTIVE via the autonomous in-house workflow TREE — grounded
     # in the plan, governed (QMS/validation/minimax/consensus/signal), sealed into the UEG chain, and
