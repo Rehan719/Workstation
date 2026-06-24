@@ -129,6 +129,8 @@ async def output_formats():
         live.append({"id": "pdf", "label": "PDF document", "kind": "document"})
     if _DOCX_OK:  # produced in-house by python-docx when available
         live.append({"id": "docx", "label": "Word document (.docx)", "kind": "document"})
+    if _PPTX_OK:  # produced in-house by python-pptx when available
+        live.append({"id": "pptx", "label": "PowerPoint (.pptx)", "kind": "presentation"})
     try:
         from agentic_core.omnimedia.factory import OutputFormat
         catalogue = [f.value for f in OutputFormat if f.value not in {x["id"] for x in live}]
@@ -359,6 +361,12 @@ try:
 except Exception:
     _DOCX_OK = False
 
+try:
+    import pptx as _pptxmod  # noqa: F401  (python-pptx → editable PowerPoint, pure-python)
+    _PPTX_OK = True
+except Exception:
+    _PPTX_OK = False
+
 
 def _demark(s: str) -> str:
     s = re.sub(r"\*\*(.+?)\*\*", r"\1", s)
@@ -447,6 +455,48 @@ def _docx_bytes(d: Dict[str, Any]) -> bytes:
     buf = io.BytesIO(); doc.save(buf); return buf.getvalue()
 
 
+def _pptx_bytes(d: Dict[str, Any]) -> bytes:
+    """A real in-house editable PowerPoint (.pptx) render — a title slide plus one content slide per
+    deliverable ## section, bullets from the section body (python-pptx, pure-python, Unicode-native)."""
+    import io
+    from pptx import Presentation
+    prs = Presentation()
+    title_slide = prs.slides.add_slide(prs.slide_layouts[0])
+    title_slide.shapes.title.text = d.get("title", "Deliverable")
+    try:
+        title_slide.placeholders[1].text = _doc_subtitle(d)
+    except Exception:
+        pass
+    # split the content into sections by its own ## headings (mirrors the HTML slide deck)
+    sections: List[tuple] = []
+    cur_title, cur_lines = None, []
+    for line in (d.get("content", "") or "").split("\n"):
+        h = re.match(r"^##\s+(.*)", line)
+        if h:
+            if cur_title is not None or cur_lines:
+                sections.append((cur_title or d.get("title", ""), cur_lines))
+            cur_title, cur_lines = h.group(1), []
+        else:
+            cur_lines.append(line)
+    sections.append((cur_title or d.get("title", ""), cur_lines))
+    for stitle, slines in sections:
+        bullets = [_demark(re.sub(r"^\s*[#>*\-]+\s*", "", ln)).strip()
+                   for ln in slines if ln.strip() and ln.strip() != "---"]
+        if not (stitle or bullets):
+            continue
+        slide = prs.slides.add_slide(prs.slide_layouts[1])
+        slide.shapes.title.text = str(stitle)[:140]
+        try:
+            tf = slide.placeholders[1].text_frame
+            tf.clear()
+            for i, b in enumerate(bullets[:14]):   # cap bullets so a slide never overflows
+                p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+                p.text = b[:200]
+        except Exception:
+            pass
+    buf = io.BytesIO(); prs.save(buf); return buf.getvalue()
+
+
 # Live, end-to-end in-house formats (real renders) — keep in sync with /output-formats.
 _LIVE_FORMATS = {
     "md":     ("text/markdown; charset=utf-8", "md"),
@@ -459,6 +509,8 @@ if _PDF_OK:
     _LIVE_FORMATS["pdf"] = ("application/pdf", "pdf")
 if _DOCX_OK:
     _LIVE_FORMATS["docx"] = ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx")
+if _PPTX_OK:
+    _LIVE_FORMATS["pptx"] = ("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx")
 
 
 def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
@@ -494,6 +546,8 @@ async def export_deliverable(deliverable_id: str, format: str = "md"):
                 content: Any = _pdf_bytes(d)
             elif fmt == "docx":
                 content = _docx_bytes(d)
+            elif fmt == "pptx":
+                content = _pptx_bytes(d)
             else:
                 content = _render_deliverable(d, fmt)
             return Response(
