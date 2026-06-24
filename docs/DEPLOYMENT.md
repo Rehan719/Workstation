@@ -51,6 +51,19 @@ The image runs `uvicorn agentic_core.app_mvp:app` as a non-root user with a `/he
 `DATA_DIR=/app/data` (mount a volume there for durable data). Optional managed Postgres is commented in
 `docker-compose.yml` — enable only if/when you choose (it incurs hosting cost; the app does not require it).
 
+## Single-service option (backend serves the SPA)
+
+If the frontend is **built** into `apps/workstation-superapp/dist`, the backend automatically serves it
+from `/` (and falls back to the SPA shell for client routes), so the API + UI share one origin — handy
+for the local dev preview and for a single-container deploy. **Fully optional**: when no `dist` exists
+(CI, or the split deploy with the frontend on Vercel) the backend stays API-only and this is skipped.
+`/api/*`, `/health`, and `/docs` always take precedence over the SPA fallback.
+
+```
+npm --prefix apps/workstation-superapp run build   # produce dist/
+uvicorn agentic_core.app_mvp:app --port 8000       # GET / now serves the app
+```
+
 ## Cost summary (what is / isn't chargeable)
 
 **$0 by default:** local/Docker run, in-house native AI + self-hosted Ollama, file persistence, Stripe

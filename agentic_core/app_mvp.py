@@ -540,3 +540,40 @@ async def _startup():
     except Exception as exc:
         logger.debug("heartbeat start deferred: %s", exc)
     logger.info("Workstation MVP started — spine routers + organism heartbeat.")
+
+
+# ── Single-service SPA serving (optional: dev preview + single-service deploy) ─────────
+# When the frontend has been built (apps/workstation-superapp/dist), serve it from the backend so the
+# API and UI share ONE origin: the backend root (/) shows the app instead of a bare {"detail":"Not
+# Found"}, deep links / refresh work via SPA fallback, and same-origin /api calls need no proxy. These
+# routes are registered AFTER every router, so /api/*, /health and /docs always win. Skipped entirely
+# when no build exists (CI, or pure-API dev with Vite on :5173) — so it never affects boot or the suite.
+from pathlib import Path as _Path  # noqa: E402
+from fastapi import HTTPException as _HTTPException  # noqa: E402
+from fastapi.responses import FileResponse as _FileResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles as _StaticFiles  # noqa: E402
+
+_FRONTEND_DIST = _Path(__file__).resolve().parent.parent / "apps" / "workstation-superapp" / "dist"
+if (_FRONTEND_DIST / "index.html").is_file():
+    _spa_assets = _FRONTEND_DIST / "assets"
+    if _spa_assets.is_dir():
+        app.mount("/assets", _StaticFiles(directory=str(_spa_assets)), name="spa-assets")
+
+    _API_PREFIXES = ("api/", "api", "health", "docs", "openapi", "redoc", "ws/", "ws")
+
+    @app.get("/", include_in_schema=False)
+    async def _spa_root():
+        return _FileResponse(str(_FRONTEND_DIST / "index.html"))
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def _spa_fallback(full_path: str):
+        # Never shadow the API/health/docs surface — let those resolve (or 404 as JSON) normally.
+        if full_path.startswith(_API_PREFIXES):
+            raise _HTTPException(status_code=404)
+        candidate = (_FRONTEND_DIST / full_path).resolve()
+        # stay inside dist (no path traversal); serve a real asset if present, else the SPA shell
+        if str(candidate).startswith(str(_FRONTEND_DIST.resolve())) and candidate.is_file():
+            return _FileResponse(str(candidate))
+        return _FileResponse(str(_FRONTEND_DIST / "index.html"))
+
+    logger.info("SPA serving enabled — backend serves the built UI from %s", _FRONTEND_DIST)

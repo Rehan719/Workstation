@@ -1733,6 +1733,22 @@ def test_data_dir_configurable(client):
     assert out.endswith("custom_data_root/vsb_entities"), out
 
 
+def test_spa_serving_when_built(client):
+    # Single-service SPA serving: when the frontend is built (dist present), the backend serves the app
+    # at / and falls back to the SPA shell for client routes, while /api still 404s as JSON and /health
+    # works. Skipped in CI / pure-API dev (no build) so it never affects the lightweight suite.
+    import pathlib
+    from agentic_core.app_mvp import _FRONTEND_DIST  # always module-level
+    if not (pathlib.Path(_FRONTEND_DIST) / "index.html").is_file():
+        import pytest
+        pytest.skip("frontend not built (no dist) — single-service SPA serving inactive")
+    root = client.get("/")
+    assert root.status_code == 200 and ("<!doctype" in root.text.lower() or "<html" in root.text.lower())
+    assert client.get("/native-ai").status_code == 200            # client route -> SPA shell
+    assert client.get("/api/v1/__definitely_not_a_route__").status_code == 404   # API 404 preserved (JSON)
+    assert client.get("/health").json().get("status") == "healthy"
+
+
 def test_native_fabric_selfcheck(client):
     # Fabric integrity: every integrated capability's backing agentic_core module actually IMPORTS.
     # Guards the whole integration arc — a broken integration would flip all_live to false.
