@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
-import { Loader2, Sparkles, Copy, Download, Check } from 'lucide-react';
+import { Loader2, Sparkles, Copy, Download, Check, Rocket } from 'lucide-react';
 
 export interface DomainField {
   name: string;
@@ -57,8 +58,12 @@ interface DomainToolProps {
  * domain backends (Science/Care/Education/Law…) genuinely reachable by users — DRY across hubs.
  */
 export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate' }) => {
+  const navigate = useNavigate();
   const [form, setForm] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map(f => [f.name, f.default ?? ''])));
+  // Offering-1 -> Offering-2 bridge (WHOLE_VISION §3A): the domain segment is the endpoint's 4th part
+  // (/api/v1/<domain>/...), used to deep-link a seeded Genesis Concept->Commercialisation journey.
+  const domainSeed = endpoint.match(/\/api\/v1\/([a-z0-9-]+)\//)?.[1] ?? '';
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Record<string, any> | null>(null);
   const [error, setError] = useState('');
@@ -197,6 +202,20 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
               </Button>
             </div>
           </div>
+
+          {/* Offering 1 -> Offering 2 (§3A): take this work end-to-end into a living VSB IDBO enterprise */}
+          {primary && (form[primary] || '').trim() && (
+            <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-[10px] text-slate-500 leading-relaxed max-w-sm">
+                Want to take this further? Commercialise it end-to-end into your own self-running <span className="text-highlight font-bold">VSB IDBO enterprise</span>.
+              </p>
+              <Button type="button"
+                onClick={() => navigate(`/genesis?problem=${encodeURIComponent((form[primary] || '').slice(0, 600))}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`)}
+                className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
+                <Rocket size={14} /> Commercialise via Genesis
+              </Button>
+            </div>
+          )}
         </Card>
       )}
     </div>

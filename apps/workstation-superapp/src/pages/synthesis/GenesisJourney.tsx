@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
   Sparkles, Loader2, AlertCircle, ChevronDown, ChevronUp,
@@ -22,15 +22,16 @@ interface JourneyResult {
 }
 
 const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
-const DOMAINS = ['enterprise', 'science', 'law', 'care', 'education', 'career', 'fintech', 'healthtech', 'edtech'];
+const DOMAINS = ['enterprise', 'religion', 'science', 'law', 'care', 'education', 'employment', 'career', 'fintech', 'healthtech', 'edtech'];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const GenesisJourney: React.FC = () => {
   const navigate = useNavigate();
-  const [problem, setProblem] = useState('');
-  const [domain, setDomain] = useState('enterprise');
-  const [realm, setRealm] = useState('enterprise');
+  const [sp] = useSearchParams();   // seedable from a domain tool (offering 1 -> offering 2, §3A)
+  const [problem, setProblem] = useState(() => sp.get('problem') || '');
+  const [domain, setDomain] = useState(() => { const d = sp.get('domain') || 'enterprise'; return DOMAINS.includes(d) ? d : 'enterprise'; });
+  const [realm, setRealm] = useState(() => { const r = sp.get('realm') || 'enterprise'; return REALMS.includes(r) ? r : 'enterprise'; });
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<JourneyResult | null>(null);
