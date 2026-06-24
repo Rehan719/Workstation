@@ -55,6 +55,7 @@ const allNavItems: NavItem[] = [
     icon: Layers,
     id: 'domains-facet',
     subItems: [
+      { name: 'Overview',   icon: Layers,        id: 'domains' },
       { name: 'Religion',   icon: Heart,         id: 'religion' },
       { name: 'Science',    icon: Microscope,    id: 'science' },
       { name: 'Education',  icon: GraduationCap, id: 'education' },

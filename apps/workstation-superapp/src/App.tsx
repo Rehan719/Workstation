@@ -24,6 +24,7 @@ import VisualAgentComposer from './components/organism/VisualAgentComposer';
 import SwarmIntelligence from './components/organism/SwarmIntelligence';
 
 // ── 3. Domains ───────────────────────────────────────────────────────────
+import { DomainsHub } from './pages/domains/DomainsHub';
 import { ReligionHub } from './pages/domains/ReligionHub';
 import { ScienceHub } from './pages/domains/ScienceHub';
 import { LawHub } from './pages/domains/LawHub';
@@ -140,6 +141,7 @@ function App() {
           <Route path="/swarm-intelligence" element={<SwarmIntelligence />} />
 
           {/* ── 3. Domains ──────────────────────────────────────────── */}
+          <Route path="/domains"    element={<DomainsHub />} />
           <Route path="/religion"   element={<ReligionHub />} />
           <Route path="/science"    element={<ScienceHub />} />
           <Route path="/law"        element={<LawHub />} />
