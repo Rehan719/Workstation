@@ -25,6 +25,7 @@ export const Deliverables: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [dlFormat, setDlFormat] = useState('md');   // §4.9 — selectable in-house export format
 
   const loadList = () =>
     fetch('/api/v1/deliverables').then(r => r.json()).then(d => setList(d.deliverables || [])).catch(() => {});
@@ -143,9 +144,17 @@ export const Deliverables: React.FC = () => {
                 <Button onClick={regenerate} disabled={busy} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[11px]">
                   {busy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Regenerate
                 </Button>
-                <a href={`/api/v1/deliverables/${selected.id}/export`} download
+                <select value={dlFormat} onChange={e => setDlFormat(e.target.value)} aria-label="Export format"
+                  className="text-[11px] bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-300">
+                  <option value="md">Markdown (.md)</option>
+                  <option value="html">HTML document (.html)</option>
+                  <option value="slides">Presentation (.html)</option>
+                  <option value="txt">Plain text (.txt)</option>
+                  <option value="json">JSON (.json)</option>
+                </select>
+                <a href={`/api/v1/deliverables/${selected.id}/export?format=${dlFormat}`} download
                   className="flex items-center gap-1.5 bg-aura text-sovereign text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90">
-                  <Download size={12} /> Download .md
+                  <Download size={12} /> Download
                 </a>
               </div>
             </Card>

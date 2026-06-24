@@ -326,11 +326,31 @@ is now closed** — the platform runs its OWN native AI fabric, in-house-first; 
 optional and never a dependency. Since then a **systematic in-house-integration sweep** (W58–W76) has
 pulled the genuinely-real `agentic_core`/`core` capabilities INTO that fabric, and a **living-organism
 workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-by-cycle execution log:
-`docs/AUTONOMOUS_PROGRESS.md` (workstreams W1–W76); real-vs-mock integration ledger:
+`docs/AUTONOMOUS_PROGRESS.md` (workstreams W1–W96); real-vs-mock integration ledger:
 `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` (~44 areas scanned). Verified state: integration suite green
-(**170 cases**), Spine CI green on `main`.
+(**~177 cases**), Spine CI green on `main`.
 
-**Delivered / closed:**
+**Delivered since (W77–W96, 2026-06-24):**
+- ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
+  (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
+  Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan
+  components archived (restorable); every remaining page backend-wired or a real launcher.
+- ✅ **§3A — the two offerings are now connected + walkable in the product.** A `/domains` overview
+  front-door (offering 1); every domain tool result has a **"Commercialise via Genesis"** bridge
+  (seeded `?problem=&domain=`); the **Genesis Concept→Commercialisation** journey prefills from the seed,
+  establishes a VSB, and **seeds that VSB's Chief Business Plan opening (Executive Summary · Concept ·
+  Vision) FROM the journey** — visible on the scope-aware `/business-plan?scope=vsb-…` AND in the VSB
+  Cockpit's plan tab.
+- ✅ **§4.9 / §13 — selectable in-house output formats.** Living deliverables export end-to-end as
+  **md · html (document/website) · slides (HTML presentation) · txt · json** — every one a real
+  deterministic in-house render via `/api/v1/deliverables/{id}/export?format=`; binary/AV catalogue
+  formats (pptx/pdf/docx/mp4/…) are honestly listed as *not yet produced*, never faked.
+- ✅ **Launch-readiness (cost-free).** Production `Dockerfile`/compose/`.env.example`/`render.yaml`;
+  **`DATA_DIR` honoured by every store** (data survives redeploys); the backend optionally **serves the
+  built SPA** single-service; **fixed a real prod-mount bug** (a bad `manualChunks` chunk-split that left
+  React unmounted on every static build, incl. Vercel). All cost-incurring switches stay Owner-gated.
+
+**Delivered / closed (earlier):**
 - ✅ **§6 — Native AI fabric.** `agentic_core/ai/native/`: a `NativeReasoningEngine` honest
   structured-reasoning floor (`is_model=False`, never fabricates), a `ModelResourceRegistry` owning
   local inference (Ollama), and a `NativeOrchestrator` (`complete()`/`swarm()`, health-reordering).
@@ -380,15 +400,20 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   generation/simulation, real CI.
 
 **Remaining scope — the genuine work still ahead (priority order, on the native-first foundation):**
+- ◻ **Rich binary/AV output formats** — deliverable export is live for md · html · slides · txt · json
+  (real in-house renders); the heavier catalogue (pptx · pdf · docx · xlsx · mp4 · mp3 · png · svg) is
+  honestly listed but **not yet produced** — wiring the omnimedia generators to emit them (without
+  fabricating) is the next §4.9 step.
 - ◻ **Local-model depth** — the native floor is honest structured reasoning; richer local inference
   (larger Ollama models / fine-tunes, incl. a pulled vision model for the avatar) deepens output quality
   without changing the in-house guarantee.
 - ◻ **Deeper user design-control from the UI** — much is now reachable (the VSB Cockpit, the workflow-tree
-  visualiser, bespoke saved swarm cascades, the capabilities catalogue, one-click Chief delivery); richer
-  drag-to-reconfigure UX over org/resource/swarm remains.
+  visualiser, bespoke saved swarm cascades, the capabilities catalogue, one-click Chief delivery, the
+  Domains↔Genesis bridge); richer drag-to-reconfigure UX over org/resource/swarm remains.
 - ◻ **Owner-gated (designed, not switched on) — the W6 launch items:** the VSB economic model with *real*
   money (virtual WST only today — the live Stripe key must never move money), persistence hardening
-  (SQLite/file → Postgres), production-deployment, and an optional live external AI key.
+  (file → Postgres; `DATA_DIR` is now honoured everywhere), production-deployment, and an optional live
+  external AI key.
 
 The integration sweep is **complete** — the genuinely-real `agentic_core`/`core` capabilities are now
 in-house (the ledger documents what was real vs. mock). The vision is **not** redefined down to current

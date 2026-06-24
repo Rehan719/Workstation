@@ -1418,6 +1418,17 @@ def test_deliverables_living_lifecycle(client):
     assert "attachment" in exp.headers.get("content-disposition", "")
     assert exp.text.startswith("# ") and "own AI fabric" in exp.text
     assert client.get("/api/v1/deliverables/nope/export").status_code == 404
+    # §4.9 — selectable IN-HOUSE export formats are real renders (not faked), bad formats rejected
+    fmt_ct = {"html": "text/html", "slides": "text/html", "txt": "text/plain", "json": "application/json"}
+    for fmt, ct in fmt_ct.items():
+        r = client.get(f"/api/v1/deliverables/{did}/export", params={"format": fmt})
+        assert r.status_code == 200 and r.headers["content-type"].startswith(ct), (fmt, r.status_code)
+        assert f".{ 'slides.html' if fmt=='slides' else fmt }" in r.headers.get("content-disposition", "")
+    assert "<h1>" in client.get(f"/api/v1/deliverables/{did}/export", params={"format": "html"}).text
+    assert client.get(f"/api/v1/deliverables/{did}/export", params={"format": "mp4"}).status_code == 400  # never faked
+    of = client.get("/api/v1/deliverables/output-formats").json()
+    assert set(of["live_ids"]) == {"md", "html", "slides", "txt", "json"}
+    assert "mp4" in of["catalogue_not_yet_produced"]   # honestly listed, not produced
 
 
 def test_operations_learning_loop(client):
@@ -1509,8 +1520,8 @@ def test_deliverables_leverage_own_omnimedia(client):
     # catalogue, and omnimedia is registered as a first-class Resource-Fabric resource (so existing
     # in-house capabilities are surfaced into the unified fabric the swarm/delivery draws from).
     of = client.get("/api/v1/deliverables/output-formats").json()
-    assert of["live"] == ["md"]
-    assert "pptx" in of["omnimedia_formats"] and "mp4" in of["omnimedia_formats"]
+    assert set(of["live_ids"]) == {"md", "html", "slides", "txt", "json"}    # real in-house renders
+    assert "pptx" in of["catalogue_not_yet_produced"] and "mp4" in of["catalogue_not_yet_produced"]
     assert "omnimedia" in of["source"]
     fab = client.get("/api/v1/resources?resource_class=output_media").json()
     assert any(r["id"] == "omnimedia" for r in fab["resources"])

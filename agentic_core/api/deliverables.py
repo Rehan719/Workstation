@@ -14,7 +14,9 @@ version history. Deliverables can be grounded in a live VSB entity and are filed
 """
 from __future__ import annotations
 
+import html as _htmlmod
 import json
+import re
 import time
 import uuid
 from pathlib import Path
@@ -112,19 +114,28 @@ async def deliverable_types():
 
 @router.get("/output-formats")
 async def output_formats():
-    """Output formats a deliverable can be rendered into — drawn from Workstation's OWN omnimedia
-    factory (`agentic_core.omnimedia`). Markdown export (`/export`) is live now; the richer formats
-    (pptx/pdf/docx/xlsx/html/mp4/mp3/png/svg) are produced by the omnimedia generators. Honest: only
-    `md` is wired end-to-end today — the rest are the catalogue the omnimedia module exposes."""
+    """Output formats a deliverable can be exported in (§4.9). Honest by construction: `live` formats are
+    rendered end-to-end IN-HOUSE today (real deterministic renders of the deliverable's own content) via
+    `/export?format=`; `catalogue` formats are the richer omnimedia targets (pptx/pdf/docx/mp4/…) NOT yet
+    produced — listed, never faked."""
+    live = [
+        {"id": "md", "label": "Markdown", "kind": "document"},
+        {"id": "html", "label": "HTML document / website", "kind": "website"},
+        {"id": "slides", "label": "HTML presentation (slide deck)", "kind": "presentation"},
+        {"id": "txt", "label": "Plain text", "kind": "document"},
+        {"id": "json", "label": "Structured JSON", "kind": "data"},
+    ]
     try:
         from agentic_core.omnimedia.factory import OutputFormat
-        omnimedia = [f.value for f in OutputFormat]
+        catalogue = [f.value for f in OutputFormat if f.value not in {x["id"] for x in live}]
     except Exception:
-        omnimedia = []
+        catalogue = []
     return {
-        "live": ["md"],
-        "omnimedia_formats": omnimedia,
+        "live": live,
+        "live_ids": [x["id"] for x in live],
+        "catalogue_not_yet_produced": catalogue,
         "source": "agentic_core.omnimedia (the platform's own multimedia output factory)",
+        "note": "live = real in-house renders via /export?format=; catalogue = documented targets, not faked.",
     }
 
 
@@ -207,17 +218,172 @@ def _to_markdown(d: Dict[str, Any]) -> str:
     )
 
 
+# ── Honest in-house renderers (§4.9 / §13 — output in multiple selectable formats) ────────────────────
+# Every format below is a REAL, deterministic in-house render of the deliverable's own content — no
+# fabrication. Binary office/AV formats (pptx/docx/mp4/…) are NOT faked here; they remain a documented
+# catalogue (see /output-formats) until the omnimedia generators produce them honestly.
+
+def _md_inline(s: str) -> str:
+    s = _htmlmod.escape(s)
+    s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
+    s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
+    s = re.sub(r"(?<!\*)\*(?!\s)([^*]+?)\*", r"<em>\1</em>", s)
+    return s
+
+
+def _md_to_html_body(md: str) -> str:
+    """Minimal, faithful Markdown→HTML for the constructs deliverables use (headings, lists, blockquotes,
+    rules, bold/italic/code, paragraphs). Deterministic structural render — not a guess."""
+    out: List[str] = []
+    in_ul = False
+    for raw in md.split("\n"):
+        line = raw.rstrip()
+        if not line.strip():
+            if in_ul:
+                out.append("</ul>"); in_ul = False
+            continue
+        if line.strip() == "---":
+            if in_ul:
+                out.append("</ul>"); in_ul = False
+            out.append("<hr/>"); continue
+        h = re.match(r"^(#{1,6})\s+(.*)", line)
+        if h:
+            if in_ul:
+                out.append("</ul>"); in_ul = False
+            lvl = len(h.group(1)); out.append(f"<h{lvl}>{_md_inline(h.group(2))}</h{lvl}>"); continue
+        li = re.match(r"^[-*]\s+(.*)", line)
+        if li:
+            if not in_ul:
+                out.append("<ul>"); in_ul = True
+            out.append(f"<li>{_md_inline(li.group(1))}</li>"); continue
+        bq = re.match(r"^>\s?(.*)", line)
+        if bq:
+            if in_ul:
+                out.append("</ul>"); in_ul = False
+            out.append(f"<blockquote>{_md_inline(bq.group(1))}</blockquote>"); continue
+        if in_ul:
+            out.append("</ul>"); in_ul = False
+        out.append(f"<p>{_md_inline(line)}</p>")
+    if in_ul:
+        out.append("</ul>")
+    return "\n".join(out)
+
+
+_DOC_CSS = (
+    "body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.65;"
+    "color:#1f2937;background:#f8fafc;margin:0;padding:2.5rem 1rem}main{max-width:820px;margin:0 auto;"
+    "background:#fff;padding:3rem 3.5rem;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}"
+    "h1{font-size:2rem;letter-spacing:-.02em}h2{margin-top:2rem;border-bottom:1px solid #e5e7eb;padding-bottom:.3rem}"
+    "blockquote{border-left:3px solid #14b8a6;margin:1rem 0;padding:.3rem 1rem;color:#475569;background:#f1f5f9}"
+    "code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.9em}hr{border:none;border-top:1px solid #e5e7eb;margin:2rem 0}"
+    ".sub{color:#64748b;font-size:.85rem;margin-top:-.5rem}.foot{color:#94a3b8;font-size:.75rem;margin-top:2.5rem}"
+    "section.slide{page-break-after:always;border:1px solid #e5e7eb;border-radius:12px;padding:2rem;margin:1.5rem 0}"
+)
+
+
+def _doc_subtitle(d: Dict[str, Any]) -> str:
+    prov = d.get("ai_provenance", {})
+    served = prov.get("served_by", "native")
+    mode = "in-house" if not prov.get("is_external") else f"via {served}"
+    return f"{d.get('type', 'deliverable')} · produced on Workstation IDBO's own AI fabric ({mode} · {served})"
+
+
+def _html_doc(d: Dict[str, Any]) -> str:
+    title = d.get("title", "Deliverable")
+    body = _md_to_html_body(d.get("content", ""))
+    brief = d.get("brief", "")
+    return (
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+        "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+        f"<title>{_htmlmod.escape(title)}</title><style>{_DOC_CSS}</style></head><body><main>"
+        f"<h1>{_htmlmod.escape(title)}</h1><p class=\"sub\">{_htmlmod.escape(_doc_subtitle(d))}</p>"
+        + (f"<blockquote><strong>Brief:</strong> {_htmlmod.escape(brief)}</blockquote>" if brief else "")
+        + body
+        + f"<p class=\"foot\">Living deliverable {_htmlmod.escape(str(d.get('id','')))} — re-generate or reconfigure it any time in Workstation IDBO.</p>"
+        "</main></body></html>"
+    )
+
+
+def _slides_doc(d: Dict[str, Any]) -> str:
+    """A self-contained HTML slide deck — an honest 'Presentation' render: the deliverable split by its
+    own ## section headings into one slide each (title slide first). Not a .pptx; a real, printable deck."""
+    content = d.get("content", "")
+    slides: List[tuple] = []
+    cur_title, cur_lines = d.get("title", "Deliverable"), []
+    for line in content.split("\n"):
+        h = re.match(r"^##\s+(.*)", line)
+        if h:
+            slides.append((cur_title, "\n".join(cur_lines))); cur_title, cur_lines = h.group(1), []
+        else:
+            cur_lines.append(line)
+    slides.append((cur_title, "\n".join(cur_lines)))
+    body = [f"<section class=\"slide\"><h1>{_htmlmod.escape(d.get('title','Deliverable'))}</h1>"
+            f"<p class=\"sub\">{_htmlmod.escape(_doc_subtitle(d))}</p></section>"]
+    for stitle, sbody in slides:
+        if not (stitle or sbody.strip()):
+            continue
+        body.append(f"<section class=\"slide\"><h2>{_htmlmod.escape(stitle)}</h2>{_md_to_html_body(sbody)}</section>")
+    return (
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+        f"<title>{_htmlmod.escape(d.get('title','Deliverable'))} — slides</title><style>{_DOC_CSS}</style>"
+        f"</head><body><main>{''.join(body)}</main></body></html>"
+    )
+
+
+def _strip_md(md: str) -> str:
+    t = re.sub(r"^#{1,6}\s*", "", md, flags=re.M)
+    t = re.sub(r"\*\*(.+?)\*\*", r"\1", t)
+    t = re.sub(r"(?<!\*)\*(?!\s)([^*]+?)\*", r"\1", t)
+    t = re.sub(r"(?<!_)_(?!\s)([^_]+?)_", r"\1", t)
+    t = re.sub(r"`([^`]+)`", r"\1", t)
+    t = re.sub(r"^>\s?", "", t, flags=re.M)
+    t = re.sub(r"^[-*]\s+", "• ", t, flags=re.M)
+    return t
+
+
+# Live, end-to-end in-house formats (real renders) — keep in sync with /output-formats.
+_LIVE_FORMATS = {
+    "md":     ("text/markdown; charset=utf-8", "md"),
+    "html":   ("text/html; charset=utf-8", "html"),
+    "slides": ("text/html; charset=utf-8", "slides.html"),
+    "txt":    ("text/plain; charset=utf-8", "txt"),
+    "json":   ("application/json; charset=utf-8", "json"),
+}
+
+
+def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
+    if fmt == "md":
+        return _to_markdown(d)
+    if fmt == "txt":
+        return _strip_md(_to_markdown(d))
+    if fmt == "json":
+        keep = ("id", "type", "title", "brief", "domain", "vsb_id", "sections", "content",
+                "ai_provenance", "created_at", "updated_at")
+        return json.dumps({k: d.get(k) for k in keep}, indent=2, ensure_ascii=False)
+    if fmt == "html":
+        return _html_doc(d)
+    if fmt == "slides":
+        return _slides_doc(d)
+    return _to_markdown(d)
+
+
 @router.get("/{deliverable_id}/export")
-async def export_deliverable(deliverable_id: str):
-    """Export a living deliverable as a downloadable Markdown document so the user can take it
-    out and use it — the platform's output, in the user's hands."""
+async def export_deliverable(deliverable_id: str, format: str = "md"):
+    """Export a living deliverable in a selectable in-house format (§4.9) so the user can take it out and
+    use it. Live formats: md · html (styled document/website) · slides (HTML presentation) · txt · json —
+    every one a REAL deterministic render of the deliverable's own content (no fabrication)."""
+    fmt = (format or "md").lower()
+    if fmt not in _LIVE_FORMATS:
+        raise HTTPException(status_code=400,
+                            detail=f"Unsupported format '{fmt}'. Live in-house formats: {sorted(_LIVE_FORMATS)}.")
     for d in _load():
         if d["id"] == deliverable_id:
             slug = "".join(c if c.isalnum() else "-" for c in d.get("title", "deliverable")).strip("-")[:60] or "deliverable"
+            media_type, ext = _LIVE_FORMATS[fmt]
             return Response(
-                content=_to_markdown(d),
-                media_type="text/markdown",
-                headers={"Content-Disposition": f'attachment; filename="{slug}.md"'},
+                content=_render_deliverable(d, fmt),
+                media_type=media_type,
+                headers={"Content-Disposition": f'attachment; filename="{slug}.{ext}"'},
             )
     raise HTTPException(status_code=404, detail=f"Deliverable {deliverable_id} not found.")
 
