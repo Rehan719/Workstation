@@ -24,8 +24,8 @@ export const LandingPage: React.FC = () => {
               <button type="button" onClick={() => navigate('/')} className="px-10 py-5 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all text-xl shadow-[0_0_50px_rgba(100,255,218,0.3)]">
                 Launch My Node
               </button>
-              <button type="button" onClick={() => navigate('/fed-map')} className="px-10 py-5 bg-white/5 border border-white/10 backdrop-blur-xl font-black rounded-2xl hover:bg-white/10 transition-all text-xl">
-                Explore the Federation
+              <button type="button" onClick={() => navigate('/ai-tools')} className="px-10 py-5 bg-white/5 border border-white/10 backdrop-blur-xl font-black rounded-2xl hover:bg-white/10 transition-all text-xl">
+                Explore the Platform
               </button>
            </div>
         </div>
