@@ -1645,6 +1645,10 @@ _EDGE_PROBES = [
     ("/api/v1/native-ai/decide", {"actions": []}),
     ("/api/v1/native-ai/intent", {"text": ""}),
     ("/api/v1/native-ai/rigor", {"metric_name": "", "value": 0.0, "baseline": 0.0}),
+    ("/api/v1/native-ai/tree", {"goal": ""}),               # centerpiece: empty goal must not 500
+    ("/api/v1/native-ai/transduce", {"input_signal": 0.0}),  # zero signal
+    ("/api/v1/native-ai/entailment", {"premise": "", "hypothesis": ""}),
+    ("/api/v1/native-ai/validate", {"prediction": "", "actual": "", "task_type": "SEMANTIC"}),
 ]
 
 
