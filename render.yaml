@@ -37,7 +37,16 @@ services:
         value: anthropic
       - key: LOG_LEVEL
         value: INFO
+      # DATA_DIR — where ALL persistent stores live (now honoured everywhere via config.data_path()).
+      # Default "data" is EPHEMERAL on Render (lost on redeploy). For durable data, attach the disk
+      # below and set this to the disk's mountPath (e.g. /var/data). Stripe/payments stay virtual.
       - key: DATA_DIR
         value: data
     healthCheckPath: /health
     autoDeploy: true
+    # ── OPTIONAL persistent disk (INCURS COST when enabled — your decision). Uncomment + set DATA_DIR
+    #    above to the mountPath so platform data survives redeploys. Cost-free until you enable it.
+    # disk:
+    #   name: workstation-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
