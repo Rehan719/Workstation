@@ -151,3 +151,7 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 - **agentic_core/genetics** — ⛔ EMPTY (no class/def). **agentic_core/immunity** — ⛔ EMPTY.
 - **agentic_core/federation** (AutonomousMesh peer-discovery/treaties, ConnectionManager handshake) — hashlib-based but simulated networking (peer discovery / bilateral treaties); not a clean in-house-AI capability → defer.
 - **Conclusion: no NEW clean integration this batch.** Did the real completeness/hardening increment instead: added the integrated `topology` capability to the `/native-ai/capabilities` catalogue (was live but unlisted), and edge-probed the newer native-ai endpoints (topology/quorum/entropy/consensus/decide/intent/rigor) for no-500 on degenerate inputs.
+
+## W76 scan (core/identity) + fabric self-check
+- **core/identity/federated_did.FederatedDIDManager** — ⚠️ SKIP: real registry mechanics (deterministic `did:vsb:{id}` + existence-verify) BUT over-claims "PQC/Dilithium5" + "valid quorum proof" it never computes (verify is just `did in registry`), AND `core/` is not an importable package (no `__init__.py`). Not worth adding package scaffolding to surface a half-real crypto claim → documented, not integrated.
+- **Added a real fabric integrity check:** `GET /api/v1/native-ai/selfcheck` actually imports each integrated capability's source module and reports `all_live` — guards the whole integration arc (12 real modules) against regressions. Currently 13/13 source modules live.

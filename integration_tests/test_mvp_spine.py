@@ -1711,6 +1711,15 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_fabric_selfcheck(client):
+    # Fabric integrity: every integrated capability's backing agentic_core module actually IMPORTS.
+    # Guards the whole integration arc — a broken integration would flip all_live to false.
+    b = client.get("/api/v1/native-ai/selfcheck").json()
+    assert b["posture"] == "in-house-first"
+    assert b["total"] >= 12 and b["live"] == b["total"] and b["all_live"] is True
+    assert all(m["live"] is True for m in b["modules"])
+
+
 def test_native_capabilities_catalogue(client):
     # The in-house AI fabric publishes a discoverable catalogue of its OWNED capabilities — each backed
     # by a real, integrated agentic_core module. Consolidates the integration sweep into one surface.

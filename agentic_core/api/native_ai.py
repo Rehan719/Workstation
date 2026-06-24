@@ -104,6 +104,25 @@ async def native_capabilities():
             "capabilities": _CAPABILITIES}
 
 
+@router.get("/selfcheck")
+async def native_selfcheck():
+    """Fabric integrity check: actually IMPORT each integrated capability's source module and report
+    which are live. Guards the whole integration arc — if any owned capability's backing module breaks,
+    this flips all_live to false (honest, real import probe — not a static claim)."""
+    import importlib
+    sources = sorted({c["source"] for c in _CAPABILITIES})
+    modules = []
+    for src in sources:
+        try:
+            importlib.import_module(f"agentic_core.{src}")
+            modules.append({"source": src, "live": True})
+        except Exception as e:
+            modules.append({"source": src, "live": False, "error": type(e).__name__})
+    live = sum(1 for m in modules if m["live"])
+    return {"posture": "in-house-first", "total": len(modules), "live": live,
+            "all_live": live == len(modules), "modules": modules}
+
+
 class CompleteRequest(BaseModel):
     prompt: str
     agent: str = "assistant"
