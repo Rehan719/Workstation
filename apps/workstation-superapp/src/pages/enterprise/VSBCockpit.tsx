@@ -30,6 +30,8 @@ export const VSBCockpit: React.FC = () => {
   const [selected, setSelected] = useState<string>('');
   const [detail, setDetail] = useState<Dict | null>(null);
   const [plan, setPlan] = useState<Dict | null>(null);
+  const [objOrch, setObjOrch] = useState('');                 // objective id being delivered by the Chief
+  const [objOrchResult, setObjOrchResult] = useState<Dict>({}); // tree result per objective id
   const [standards, setStandards] = useState<Dict[]>([]);
   const [tab, setTab] = useState<string>('org');
   const [loading, setLoading] = useState(false);
@@ -87,6 +89,18 @@ export const VSBCockpit: React.FC = () => {
       setTx(r.data);
     } catch { /* keep */ }
     setTxRunning(false);
+  };
+
+  // The Chief delivers a single objective via the autonomous in-house workflow TREE — grounded in THIS
+  // VSB (scope=selected), governed + sealed into the UEG chain. Mirrors the Business Plan page action.
+  const orchestrateObjective = async (oid: string) => {
+    if (!selected) return;
+    setObjOrch(oid);
+    try {
+      const r = await axios.post(`/api/v1/business-plan/objective/${oid}/orchestrate`, { scope: selected });
+      if (r.data?.tree) setObjOrchResult(m => ({ ...m, [oid]: r.data.tree }));
+    } catch { /* best-effort — the run is recorded server-side */ }
+    setObjOrch('');
   };
 
   const speak = (text: string) => {
@@ -351,6 +365,22 @@ export const VSBCockpit: React.FC = () => {
                       <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                         <div className="h-full bg-highlight" style={{ width: `${Math.max(0, Math.min(100, o.progress_pct || 0))}%` }} />
                       </div>
+                      <button type="button" onClick={() => orchestrateObjective(o.id)} disabled={objOrch === o.id}
+                        className="mt-2 text-[9px] font-black uppercase tracking-widest text-aura border border-aura/30 px-2 py-1 rounded flex items-center gap-1 disabled:opacity-50">
+                        {objOrch === o.id ? <Loader2 size={10} className="animate-spin" /> : <Crown size={10} />} Chief: deliver via tree
+                      </button>
+                      {objOrchResult[o.id] && (
+                        <div className="mt-2 p-2 rounded-lg bg-aura/5 border border-aura/20">
+                          <div className="flex items-center flex-wrap gap-1.5">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-aura">Chief workflow-tree</span>
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-highlight/15 text-highlight">decision: {objOrchResult[o.id].decision?.recommendation ?? '—'}</span>
+                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${objOrchResult[o.id].consensus?.choice === 'proceed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>consensus: {objOrchResult[o.id].consensus?.choice ?? 'none'}</span>
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{objOrchResult[o.id].node_count} nodes</span>
+                            {objOrchResult[o.id].ueg_hash && <span className="text-[8px] font-mono text-slate-600" title={objOrchResult[o.id].ueg_hash}>UEG {String(objOrchResult[o.id].ueg_hash).slice(0, 12)}…</span>}
+                          </div>
+                          {objOrchResult[o.id].final && <p className="text-[10px] text-slate-400 whitespace-pre-wrap line-clamp-3 mt-1">{objOrchResult[o.id].final}</p>}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {(plan.objectives || []).length === 0 && <p className="text-slate-600 text-xs">No objectives yet.</p>}
