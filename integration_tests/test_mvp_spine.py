@@ -1703,6 +1703,16 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_quorum_sensing_in_house(client):
+    # Owned biomimetic swarm quorum sensing (agentic_core/quorum.QuorumSensing): REAL AI-2 density
+    # threshold — the swarm flips to COOPERATIVE once aggregate concentration crosses the threshold.
+    coop = client.post("/api/v1/native-ai/quorum", json={"agents": 6, "secretion": 10, "threshold": 50}).json()
+    indep = client.post("/api/v1/native-ai/quorum", json={"agents": 3, "secretion": 10, "threshold": 50}).json()
+    assert coop["behavior_mode"] == "COOPERATIVE" and coop["cooperative"] is True
+    assert indep["behavior_mode"] == "INDEPENDENT" and indep["cooperative"] is False
+    assert coop["concentration"] > indep["concentration"] and "quorum" in coop["method"]
+
+
 def test_native_nlp_intent_entailment_in_house(client):
     # Owned NLP (agentic_core/nlp.NLIEngine): REAL regex intent inference + word-overlap entailment —
     # deterministic, not LLM, no external dependency.

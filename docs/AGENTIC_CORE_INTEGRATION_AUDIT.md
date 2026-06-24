@@ -125,3 +125,11 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 - **agentic_core/perception** (adaptive_fusion, attention, binding, fusion) — simple dict-manipulation fusion, no real algorithms (no numpy/regex). Low integration value → deferred.
 - **agentic_core/simverse/causal_simulator** — np.mean + hashlib; drives causal/csl; needs a deeper real-vs-simulated read before reviving CSL → deferred.
 - **agentic_core/circadian/scheduler** — time-based cycle phase (real-ish but trivial) → deferred.
+
+## W70 scan (core/biofoundry,convergence,identity + economy/crypto/quorum)
+- **agentic_core/quorum/sensing.QuorumSensing** — ✅ REAL biomimetic (exponential-decay AI-2 kinetics `C*=exp(-k·dt)` + population-density threshold → COOPERATIVE/INDEPENDENT). INTEGRATED: `POST /api/v1/native-ai/quorum` (N agents secrete → aggregate concentration → behavior mode).
+- **agentic_core/crypto/entropy_pool.EntropyPool** — ✅ REAL (sha3-512 + XOR entropy mixing + seed derivation). Integrable later as an owned crypto utility (no clean in-house-AI wiring yet).
+- **core/identity/federated_did.FederatedDIDManager** — REAL-ish (hash-based DID register/verify) → defer (identity layer; needs the quorum_proof flow).
+- **core/biofoundry/ginkgo_bridge** — DBTL cycle bridged to **Ginkgo Bioworks** (external biofoundry) — external/simulated → SKIP.
+- **core/convergence/mirf_engine** — trivial signal routing (no real algorithm) → defer.
+- **agentic_core/economy** (VirtualLedger, CharityIntelligence) — REAL but ALREADY WIRED (api/economy.py).

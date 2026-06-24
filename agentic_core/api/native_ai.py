@@ -110,6 +110,27 @@ async def native_transduce(req: TransduceRequest):
     return out
 
 
+class QuorumRequest(BaseModel):
+    agents: int = 1            # number of agents currently signalling into the shared field
+    secretion: float = 10.0    # AI-2 analog secreted per agent
+    threshold: float = 50.0
+
+
+@router.post("/quorum")
+async def native_quorum(req: QuorumRequest):
+    """Owned biomimetic swarm quorum sensing (agentic_core/quorum.QuorumSensing): REAL bacterial-style
+    AI-2 density model — N agents secrete into a shared field; the swarm flips to COOPERATIVE once the
+    aggregate concentration crosses the threshold, else stays INDEPENDENT. Real threshold kinetics."""
+    from agentic_core.quorum.sensing import QuorumSensing
+    q = QuorumSensing("swarm", threshold=req.threshold)
+    for _ in range(max(0, int(req.agents))):
+        q.secrete_ai2(req.secretion)
+    mode = q.get_behavior_mode()
+    return {"agents": req.agents, "concentration": round(q.ai2_concentration, 2), "threshold": req.threshold,
+            "behavior_mode": mode, "cooperative": mode == "COOPERATIVE",
+            "method": "quorum sensing (owned biomimetic swarm)"}
+
+
 class IntentRequest(BaseModel):
     text: str
 
