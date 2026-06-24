@@ -31,6 +31,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter
@@ -42,7 +43,7 @@ router = APIRouter(prefix="/api/v1/transformation", tags=["transformation-orches
 
 _UEG = UEGLogger("meta/gaas_v5_ueg.json")
 _GOV = UnifiedConstitutionalInterceptorV16Omega("transformation-orchestration-node", _UEG)
-_RUNS = Path("data/transformation_runs")
+_RUNS = data_path("transformation_runs")
 
 
 def _fire(signal_type: str, source: str, msg: str, intensity: float = 0.6) -> bool:

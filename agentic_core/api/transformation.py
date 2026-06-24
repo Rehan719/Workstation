@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Callable, Dict, List, Set
 
 from fastapi import APIRouter
@@ -50,7 +51,7 @@ def _evidence_counts() -> Dict[str, Any]:
     except Exception:
         d["vsbs"] = 0
     try:
-        d["economy_ledgers"] = len(list(Path("data/economy").glob("*_ledger.json")))
+        d["economy_ledgers"] = len(list(data_path("economy").glob("*_ledger.json")))
     except Exception:
         d["economy_ledgers"] = 0
     try:

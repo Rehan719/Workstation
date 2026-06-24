@@ -31,6 +31,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
@@ -41,7 +42,7 @@ from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1/cca", tags=["change-control-agency"])
 
-_CCA_STORE = Path("data/change_control")
+_CCA_STORE = data_path("change_control")
 _CCA_STORE.mkdir(parents=True, exist_ok=True)
 
 ChangeStatus = Literal["submitted", "under_review", "approved", "rejected", "implemented", "withdrawn"]

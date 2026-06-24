@@ -13,6 +13,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -22,7 +23,7 @@ from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1/twin", tags=["digital-twin"])
 
-_TWIN_STORE = Path("data/digital_twins")
+_TWIN_STORE = data_path("digital_twins")
 _TWIN_STORE.mkdir(parents=True, exist_ok=True)
 
 

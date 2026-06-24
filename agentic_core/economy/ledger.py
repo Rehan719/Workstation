@@ -9,9 +9,10 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List
 
-_STORE = Path("data/economy")
+_STORE = data_path("economy")
 
 # Chart of accounts (simplified, biomimetic-aware).
 ACCOUNTS = ["revenue", "reserves", "owner", "self_investment",

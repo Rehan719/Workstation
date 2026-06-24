@@ -1715,6 +1715,24 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_data_dir_configurable(client):
+    # Persistence is routed through the configured DATA_DIR (default 'data') so a deployment can point
+    # all data at a durable volume (survives redeploys). Default behaviour is unchanged.
+    from pathlib import Path
+    from agentic_core.config import data_path
+    assert data_path("vsb_entities") == Path("data") / "vsb_entities"       # default unchanged
+    assert data_path("a", "b.json") == Path("data") / "a" / "b.json"
+    # DATA_DIR relocates everything — verified in a FRESH process (stores capture the dir at import)
+    import os
+    import subprocess
+    import sys
+    env = {**os.environ, "DATA_DIR": "custom_data_root"}
+    out = subprocess.check_output(
+        [sys.executable, "-c", "from agentic_core.config import data_path; print(data_path('vsb_entities'))"],
+        env=env, text=True).strip().replace("\\", "/")
+    assert out.endswith("custom_data_root/vsb_entities"), out
+
+
 def test_native_fabric_selfcheck(client):
     # Fabric integrity: every integrated capability's backing agentic_core module actually IMPORTS.
     # Guards the whole integration arc — a broken integration would flip all_live to false.

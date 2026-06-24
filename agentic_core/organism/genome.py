@@ -21,6 +21,7 @@ import time
 import uuid
 import random
 from pathlib import Path
+from agentic_core.config import data_path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -29,7 +30,7 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/api/v1/organism", tags=["idbo-organism"])
 
-_GENOME_STORE = Path("data/genomes")
+_GENOME_STORE = data_path("genomes")
 _GENOME_STORE.mkdir(parents=True, exist_ok=True)
 
 # Trait axes — each genome encodes values 0.0–1.0 on these axes

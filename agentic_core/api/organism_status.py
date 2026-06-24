@@ -26,6 +26,7 @@ import datetime
 import json
 import time
 from pathlib import Path
+from agentic_core.config import data_path
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -71,7 +72,7 @@ def _lifecycle_state() -> dict:
 def _vsb_state() -> dict:
     """Aggregate VSB entity state."""
     try:
-        vsb_store = Path("data/vsb_entities")
+        vsb_store = data_path("vsb_entities")
         if not vsb_store.exists():
             return {"total": 0, "active": 0, "domains": []}
         entities = []
@@ -91,7 +92,7 @@ def _vsb_state() -> dict:
 def _cca_state() -> dict:
     """Get CCA queue summary."""
     try:
-        cca_store = Path("data/change_control")
+        cca_store = data_path("change_control")
         if not cca_store.exists():
             return {"pending": 0, "approved": 0, "implemented": 0}
         pending = approved = implemented = 0
@@ -115,7 +116,7 @@ def _cca_state() -> dict:
 def _genome_state() -> dict:
     """Summarise the genome registry."""
     try:
-        genome_store = Path("data/genomes")
+        genome_store = data_path("genomes")
         if not genome_store.exists():
             return {"total_genomes": 0}
         genomes = list(genome_store.glob("*.json"))

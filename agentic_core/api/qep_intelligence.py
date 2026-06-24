@@ -25,6 +25,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter
@@ -34,7 +35,7 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/api/v1/qep", tags=["qep-intelligence"])
 
-_STORE = Path("data/qep_intel")
+_STORE = data_path("qep_intel")
 _STORE.mkdir(parents=True, exist_ok=True)
 _REGISTRY = _STORE / "adaptation_registry.json"
 _MODEL = _STORE / "recommendation_model.json"

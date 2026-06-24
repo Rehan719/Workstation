@@ -28,6 +28,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import AsyncIterator
 
 from fastapi import APIRouter
@@ -39,7 +40,7 @@ from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1/studio", tags=["synthesis-studio"])
 
-_VSB_STORE = Path("data/vsb_entities")
+_VSB_STORE = data_path("vsb_entities")
 _VSB_STORE.mkdir(parents=True, exist_ok=True)
 
 

@@ -21,6 +21,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException
@@ -30,7 +31,7 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/api/v1/business-plan", tags=["business-plan"])
 
-_STORE = Path("data/business_plans")
+_STORE = data_path("business_plans")
 
 
 def _key(scope: str) -> str:

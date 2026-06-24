@@ -66,6 +66,19 @@ class Settings:
 
 settings = Settings()
 
+
+def data_path(*parts: str):
+    """Resolve a path under the configured DATA_DIR (default 'data').
+
+    Single source of truth for persistent storage locations so a deployment can point all data at a
+    durable volume via the DATA_DIR env var (data survives redeploys). Behaviour is unchanged when
+    DATA_DIR is unset — it defaults to 'data', so data_path('vsb_entities') == Path('data/vsb_entities').
+    Returns a pathlib.Path (works with open()/Path()/.mkdir()).
+    """
+    from pathlib import Path
+    return Path(settings.data_dir).joinpath(*parts)
+
+
 # Emit validation warnings at import time — never crash, just warn
 for _issue in settings.validate():
     warnings.warn(f"[Workstation Config] {_issue}", stacklevel=2)

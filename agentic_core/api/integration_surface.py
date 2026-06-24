@@ -17,6 +17,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter
@@ -26,7 +27,7 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(tags=["integration-surface"])
 
-_DATA = Path("data/integration")
+_DATA = data_path("integration")
 
 
 def _store(name: str) -> Path:
@@ -352,7 +353,7 @@ async def twin_blueprint(twin_id: str):
 async def iot_devices():
     devices = []
     try:
-        sessions = json.loads(Path("data/frontier/platform_sessions.json").read_text(encoding="utf-8"))
+        sessions = json.loads(data_path("frontier/platform_sessions.json").read_text(encoding="utf-8"))
         for s in sessions:
             if s.get("kind") in ("arvr", "embodiment") or "wearable" in str(s.get("kind", "")):
                 devices.append({"id": s.get("id"), "type": s.get("kind"), "status": s.get("status")})

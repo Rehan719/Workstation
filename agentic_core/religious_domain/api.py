@@ -26,6 +26,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Optional
 
 import httpx
@@ -47,7 +48,7 @@ except Exception:
     _gamification = None
 
 _QURAN_API = "https://api.alquran.cloud/v1"
-_HIFZ_STORE = Path("data/hifz_progress")
+_HIFZ_STORE = data_path("hifz_progress")
 _HIFZ_STORE.mkdir(parents=True, exist_ok=True)
 
 _SURAH_NAMES_CACHE: dict[int, str] = {}  # loaded lazily

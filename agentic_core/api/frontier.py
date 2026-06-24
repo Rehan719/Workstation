@@ -27,6 +27,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter
@@ -37,7 +38,7 @@ from agentic_core.organism.nervous import nervous
 
 router = APIRouter(prefix="/api/v1/frontier", tags=["frontier-phase4"])
 
-_STORE = Path("data/frontier")
+_STORE = data_path("frontier")
 _STORE.mkdir(parents=True, exist_ok=True)
 _GRANTS = _STORE / "reality_grants.json"
 _SESSIONS = _STORE / "platform_sessions.json"

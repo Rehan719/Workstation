@@ -19,6 +19,7 @@ import os
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -221,7 +222,7 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest) -> dict:
         "status": "confirmed",
     }
     # Persist receipt
-    receipts_dir = Path("data/marketplace/receipts")
+    receipts_dir = data_path("marketplace/receipts")
     receipts_dir.mkdir(parents=True, exist_ok=True)
     (receipts_dir / f"{receipt['receipt_id']}.json").write_text(json.dumps(receipt, indent=2))
 

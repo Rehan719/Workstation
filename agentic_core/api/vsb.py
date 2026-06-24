@@ -26,6 +26,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -54,7 +55,7 @@ try:
 except Exception:
     pass
 
-_VSB_STORE = Path("data/vsb_entities")
+_VSB_STORE = data_path("vsb_entities")
 _VSB_STORE.mkdir(parents=True, exist_ok=True)
 
 _CONCEPT_TO_COMMERCIALISE_STAGES = [
