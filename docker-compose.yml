@@ -1,60 +1,37 @@
-version: '3.8'
-
+# Workstation IDBO — local/self-hosted run. COST-FREE by default: in-house-first AI (no external key),
+# file-based persistence (no managed DB), no paid services. `docker compose up` and open :8000.
+# Paid options (managed Postgres, external AI keys) are documented + commented — enable them ONLY on
+# your own accounts. See docs/DEPLOYMENT.md.
 services:
   backend:
     build:
       context: .
-      target: backend
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://jules:sovereign@db:5432/workstation
-      - REDIS_URL=redis://redis:6379/0
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-    depends_on:
-      - db
-      - redis
-
-  frontend:
-    build:
-      context: .
-      target: frontend
-    ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8000
-    depends_on:
-      - backend
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=jules
-      - POSTGRES_PASSWORD=sovereign
-      - POSTGRES_DB=workstation
-    ports:
-      - "5432:5432"
+      - ENVIRONMENT=production
+      - AI_ALLOW_EXTERNAL=false          # in-house-first; native floor always serves, $0
+      - DATA_DIR=/app/data
+      # - OLLAMA_URL=http://host.docker.internal:11434/api/generate  # optional self-hosted local model ($0)
+      # - ANTHROPIC_API_KEY=...   # OPTIONAL external accelerant — per-token cost; only with AI_ALLOW_EXTERNAL=true
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - workstation_data:/app/data       # persistent data across restarts (local volume, $0)
+    restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
+  # ── OPTIONAL: Postgres (INCURS COST when hosted; the app uses file persistence by default and does
+  #    NOT require this). Uncomment + wire DATABASE_URL only if/when you choose to.
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     - POSTGRES_USER=workstation
+  #     - POSTGRES_PASSWORD=change-me-before-use
+  #     - POSTGRES_DB=workstation
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
 
 volumes:
-  pgdata:
-
-  jules_organism:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - MJM_SECRET_KEY=production_beta_master_key
-    volumes:
-      - ./data:/app/data
-    ports:
-      - "3000:3000"
-    restart: always
+  workstation_data:
+  # pgdata:

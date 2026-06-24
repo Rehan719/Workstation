@@ -1,0 +1,17 @@
+# Keep the production image lean + correct — ship only the live, integrated backend.
+.git
+.github
+_archive/
+apps/                      # frontend is built + hosted separately (Vercel/Netlify/static)
+node_modules/
+**/__pycache__/
+**/*.pyc
+.venv/
+venv/
+data/                      # runtime data — mounted as a volume / DATA_DIR in production
+*.log
+.env
+.env.*
+docs/
+integration_tests/         # tests run in CI, not shipped in the runtime image
+.claude/

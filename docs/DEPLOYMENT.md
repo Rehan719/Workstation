@@ -37,6 +37,27 @@ Excellence page (`/operations`) surfaces the in-house rate.
 3. **Payments are virtual/simulated by default and safe.** See the safety section below — do **not**
    set a live Stripe key.
 
+## Docker / self-host (any container host) — COST-FREE by default
+
+A production [`Dockerfile`](../Dockerfile) (+ [`.dockerignore`](../.dockerignore)) and
+[`docker-compose.yml`](../docker-compose.yml) ship the **live backend only** (`_archive/`, the frontend,
+and tests are excluded). In-house-first, file persistence on a local volume, no paid services:
+
+```bash
+docker compose up --build        # backend on :8000, persistent local volume — $0
+```
+
+The image runs `uvicorn agentic_core.app_mvp:app` as a non-root user with a `/health` healthcheck and
+`DATA_DIR=/app/data` (mount a volume there for durable data). Optional managed Postgres is commented in
+`docker-compose.yml` — enable only if/when you choose (it incurs hosting cost; the app does not require it).
+
+## Cost summary (what is / isn't chargeable)
+
+**$0 by default:** local/Docker run, in-house native AI + self-hosted Ollama, file persistence, Stripe
+**test** mode. **Costs money only when YOU enable it on your own account:** hosting the backend
+(Render/any host), a managed Postgres, an external AI key (per-token), Stripe **live** mode (real money +
+fees). Nothing chargeable is triggered autonomously.
+
 ## Frontend (Vercel)
 
 - Root: `apps/workstation-superapp` (npm workspace). Build `npm run build` → `dist` (Vite).
