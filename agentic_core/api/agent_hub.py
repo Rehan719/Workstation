@@ -29,6 +29,7 @@ import os
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, AsyncIterator, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -40,9 +41,9 @@ from agentic_core.organism.biobus import biobus
 # All paths are relative to the process working directory (repo root), which
 # matches how projects/api.py and products.py handle `data/…` paths.
 
-_MSG_DIR = Path(os.getenv("ACH_MESSAGES_DIR", "data/agent_messages"))
-_REG_DIR = Path(os.getenv("ACH_REGISTRY_DIR", "data/agent_registry"))
-_HANDOFF_DIR = Path(os.getenv("ACH_HANDOFFS_DIR", "data/handoffs"))
+_MSG_DIR = Path((os.getenv("ACH_MESSAGES_DIR") or str(data_path("agent_messages"))))
+_REG_DIR = Path((os.getenv("ACH_REGISTRY_DIR") or str(data_path("agent_registry"))))
+_HANDOFF_DIR = Path((os.getenv("ACH_HANDOFFS_DIR") or str(data_path("handoffs"))))
 
 for _d in (_MSG_DIR, _REG_DIR, _HANDOFF_DIR):
     _d.mkdir(parents=True, exist_ok=True)

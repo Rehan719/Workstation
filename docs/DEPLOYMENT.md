@@ -32,7 +32,7 @@ Excellence page (`/operations`) surfaces the in-house rate.
    | `AI_DISABLE_LOCAL` | unset | Set `1` to skip the local model and always use the native floor (fast/deterministic). |
    | `CORS_ORIGINS` | — | Your frontend origin(s), e.g. `https://<app>.vercel.app`. |
    | `AUTH_ENABLED` / `JWT_SECRET` / `ADMIN_PASSWORD` | `false` / auto / — | Set before a public launch. |
-   | `DATA_DIR` | `data` | Persistent stores resolve through `config.data_path()` and **honour `DATA_DIR`** (locked by `test_data_dir_configurable`). Point it at a Render disk / mounted volume so data survives redeploys. |
+   | `DATA_DIR` | `data` | **All** persistent stores resolve through `config.data_path()` and honour `DATA_DIR` (locked by `test_data_dir_configurable`). Point it at a Render disk / mounted volume so data survives redeploys. Default (`data/`) is unchanged. |
 
 3. **Payments are virtual/simulated by default and safe.** See the safety section below — do **not**
    set a live Stripe key.

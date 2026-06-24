@@ -16,6 +16,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -25,7 +26,7 @@ from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1/swarm", tags=["agent-swarm"])
 
-_RUNS_STORE = Path("data/swarm_runs.json")
+_RUNS_STORE = data_path("swarm_runs.json")
 
 
 def _load_runs() -> list[dict]:

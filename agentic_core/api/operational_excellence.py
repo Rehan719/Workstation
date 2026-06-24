@@ -21,6 +21,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter
@@ -28,7 +29,7 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/operations", tags=["operational-excellence"])
 
-_STORE = Path("data/operations_outcomes.json")
+_STORE = data_path("operations_outcomes.json")
 _CAP = 2000
 
 

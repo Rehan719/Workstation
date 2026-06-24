@@ -11,6 +11,7 @@ import os
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import List, Optional
 
 from fastapi import APIRouter
@@ -18,7 +19,7 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/realms/v2", tags=["Sovereign Realms 2.0"])
 
-_REALMS_DIR = Path(os.getenv("PROJECTS_DIR", "data/projects")).parent / "realms"
+_REALMS_DIR = Path((os.getenv("PROJECTS_DIR") or str(data_path("projects")))).parent / "realms"
 _REALMS_DIR.mkdir(parents=True, exist_ok=True)
 
 

@@ -33,6 +33,7 @@ import secrets
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -74,7 +75,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 _AUTH_ENABLED = os.getenv("AUTH_ENABLED", "false").lower() == "true"
 
-_SECRET_FILE = Path("data/jwt_secret.key")
+_SECRET_FILE = data_path("jwt_secret.key")
 
 def _get_jwt_secret() -> str:
     env_secret = os.getenv("JWT_SECRET", "")
@@ -100,7 +101,7 @@ _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=
 
 # ── User store ────────────────────────────────────────────────────────────────
 
-_USER_STORE = Path("data/users.json")
+_USER_STORE = data_path("users.json")
 
 
 def _load_users() -> dict[str, dict]:

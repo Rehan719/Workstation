@@ -21,6 +21,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -28,7 +29,7 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/resources", tags=["resource-fabric"])
 
-_STORE = Path("data/resource_compositions.json")
+_STORE = data_path("resource_compositions.json")
 
 # Usage areas a resource can be selected into.
 # synthesis | design | development | delivery | build_to_order | forge | commercialisation | governance | evolution
@@ -281,7 +282,7 @@ async def get_composition(cid: str):
 # SAVED as a reusable resource, and can be RE-RUN on demand — the result reports served_by per
 # stage so it is provably running on owned resources. (Declared before /{resource_id} so the
 # static /swarm* paths win over the dynamic resource lookup.)
-_SWARM_STORE = Path("data/swarm_cascades.json")
+_SWARM_STORE = data_path("swarm_cascades.json")
 
 
 def _load_swarms() -> List[Dict[str, Any]]:

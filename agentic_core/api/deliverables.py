@@ -18,6 +18,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -28,7 +29,7 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/api/v1/deliverables", tags=["living-deliverables"])
 
-_STORE = Path("data/deliverables.json")
+_STORE = data_path("deliverables.json")
 
 # Each living-deliverable type maps to a sensible default section structure (reconfigurable).
 _TYPES: Dict[str, List[str]] = {

@@ -28,6 +28,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter
@@ -37,7 +38,7 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/api/v1/sovereign-evolution", tags=["sovereign-evolution"])
 
-_ROADMAP = Path("data/sovereign_evolution_roadmap.json")
+_ROADMAP = data_path("sovereign_evolution_roadmap.json")
 
 _SELF_FUNCTIONS = {
     "improvement": "Self-improvement — optimise what already works (UX, performance, cost)",

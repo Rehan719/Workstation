@@ -21,6 +21,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.config import data_path
 
 router = APIRouter(tags=["products"])
 
@@ -371,7 +372,7 @@ async def intelligence_forecasts() -> dict:
     import os
     from pathlib import Path
 
-    cache_path = Path("data/forecasts_cache.json")
+    cache_path = data_path("forecasts_cache.json")
     cache_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Return cached forecast if less than 1 hour old

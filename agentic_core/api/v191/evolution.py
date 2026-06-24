@@ -16,6 +16,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -24,7 +25,7 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/evolution", tags=["evolution"])
 
-_STORE = Path("data/evolution_proposals.json")
+_STORE = data_path("evolution_proposals.json")
 
 
 def _load() -> list[dict]:

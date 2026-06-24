@@ -26,6 +26,7 @@ import os
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import AsyncIterator, Literal, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -38,7 +39,7 @@ from agentic_core.organism.biobus import biobus
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 # ── Persistence ───────────────────────────────────────────────────────────────
-_STORE = Path(os.getenv("PROJECTS_DIR", "data/projects"))
+_STORE = Path((os.getenv("PROJECTS_DIR") or str(data_path("projects"))))
 _STORE.mkdir(parents=True, exist_ok=True)
 
 Stage = Literal["concept", "prototype", "commercialise"]
@@ -141,7 +142,7 @@ def _all_projects() -> list[Project]:
 
 
 # ── Output persistence (reuses synthesis download dir) ───────────────────────
-_OUTPUTS_DIR = Path(os.getenv("SYNTHESIS_OUTPUT_DIR", "data/synthesis_outputs"))
+_OUTPUTS_DIR = Path((os.getenv("SYNTHESIS_OUTPUT_DIR") or str(data_path("synthesis_outputs"))))
 _OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -162,7 +163,7 @@ def _save_output(project: Project, text: str) -> ProjectOutput:
 
 # ── Governance proposals (models + helpers — routes registered BEFORE /{project_id}) ──
 
-_PROPOSALS_DIR = Path(os.getenv("PROPOSALS_DIR", "data/proposals"))
+_PROPOSALS_DIR = Path((os.getenv("PROPOSALS_DIR") or str(data_path("proposals"))))
 _PROPOSALS_DIR.mkdir(parents=True, exist_ok=True)
 
 

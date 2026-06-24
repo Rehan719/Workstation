@@ -27,7 +27,7 @@ from pydantic import BaseModel
 
 router = APIRouter(tags=["Marketplace"])
 
-_LISTINGS_DIR = Path(os.getenv("LISTINGS_DIR", "data/marketplace"))
+_LISTINGS_DIR = Path((os.getenv("LISTINGS_DIR") or str(data_path("marketplace"))))
 _LISTINGS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Models ────────────────────────────────────────────────────────────────────

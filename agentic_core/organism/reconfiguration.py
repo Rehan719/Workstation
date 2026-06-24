@@ -23,6 +23,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any
 
 from fastapi import APIRouter
@@ -32,8 +33,8 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/api/v1/organism", tags=["idbo-organism"])
 
-_CONFIG_STORE = Path("data/organism_config.json")
-_CONFIG_HISTORY = Path("data/organism_config_history.json")
+_CONFIG_STORE = data_path("organism_config.json")
+_CONFIG_HISTORY = data_path("organism_config_history.json")
 
 _DEFAULT_CONFIG: dict[str, Any] = {
     "version": "1.0.0",

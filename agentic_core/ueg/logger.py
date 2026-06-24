@@ -4,6 +4,7 @@ import logging
 import time
 import os
 from typing import Dict, List, Any, Optional
+from agentic_core.config import data_path
 
 
 def _ser_default(o: Any) -> Any:
@@ -23,7 +24,7 @@ class VSBUEGLogger:
     IDBO Layer 7: Module Library / UEG.
     Immutable SHA-3-512 Merkle-DAG Logger with IPFS pinning logic.
     """
-    def __init__(self, log_path: str = "data/ueg_audit.log"):
+    def __init__(self, log_path: str = str(data_path("ueg_audit.log"))):
         self.logger = logging.getLogger("VSB_UEG")
         self.log_path = log_path
         os.makedirs(os.path.dirname(self.log_path), exist_ok=True)

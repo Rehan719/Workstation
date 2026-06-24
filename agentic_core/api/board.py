@@ -24,6 +24,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter
@@ -33,7 +34,7 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/api/v1/board", tags=["board-of-directors"])
 
-_STORE = Path("data/board_directives.json")
+_STORE = data_path("board_directives.json")
 
 # The Owner this top-level board represents. (Per-VSB boards carry their own owner.)
 _OWNER = {

@@ -3,12 +3,13 @@ import time
 import asyncio
 import httpx
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import AsyncIterator
 from agentic_core.ai.guardrails import validate_response
 from agentic_core.ai.logger import interaction_logger
 from agentic_core.ai.memory import memory
 
-_RECONFIG_PATH = Path("data/organism_config.json")
+_RECONFIG_PATH = data_path("organism_config.json")
 
 
 class _RateLimiter:

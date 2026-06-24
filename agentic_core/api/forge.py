@@ -23,6 +23,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException
@@ -32,7 +33,7 @@ from agentic_core.ai.gateway import gateway
 
 router = APIRouter(prefix="/api/v1/forge", tags=["forge-pipelines"])
 
-_STORE = Path("data/forge_runs.json")
+_STORE = data_path("forge_runs.json")
 
 # The digital resources, each an executable cascade stage (biomimetic + reconfigurable).
 _STAGES: Dict[str, Dict[str, Any]] = {

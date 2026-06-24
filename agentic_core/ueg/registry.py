@@ -9,7 +9,8 @@ write to a single, continuously-verifiable chain — giving the AI's actions ver
 from __future__ import annotations
 
 from agentic_core.ueg.logger import VSBUEGLogger
+from agentic_core.config import data_path
 
 # Dedicated chain for the in-house AI fabric (separate from any legacy audit file) so it starts clean
 # and stays continuously verifiable through this single writer.
-ueg_ledger = VSBUEGLogger(log_path="data/ueg_native_ai.log")
+ueg_ledger = VSBUEGLogger(log_path=str(data_path("ueg_native_ai.log")))

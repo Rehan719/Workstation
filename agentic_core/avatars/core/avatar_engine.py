@@ -9,6 +9,7 @@ import hashlib
 import json
 import base64
 import logging
+from agentic_core.config import data_path
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ class AvatarIdentityManager:
     """
     def __init__(self, ueg_logger: Any):
         self.ueg = ueg_logger
-        self._keys_path = "data/avatar_keys.json"
+        self._keys_path = str(data_path("avatar_keys.json"))
 
     async def create_avatar(self, user_id: str) -> AvatarState:
         """Generate PQC DID and initialize converged avatar state."""

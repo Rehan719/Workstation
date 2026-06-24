@@ -19,6 +19,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from agentic_core.config import data_path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -28,8 +29,8 @@ from agentic_core.organism.biobus import biobus
 
 router = APIRouter(prefix="/api/v1", tags=["capital-fund"])
 
-_FUND_STORE = Path("data/capital_fund.json")
-_MARKET_STORE = Path("data/marketplace_listings.json")
+_FUND_STORE = data_path("capital_fund.json")
+_MARKET_STORE = data_path("marketplace_listings.json")
 
 
 def _load_fund() -> dict:
