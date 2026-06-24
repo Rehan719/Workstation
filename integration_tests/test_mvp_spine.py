@@ -1637,6 +1637,14 @@ _EDGE_PROBES = [
     ("/api/v1/refine", {"previous": "", "instruction": ""}),
     ("/api/v1/avatar/chat", {"message": "", "context": "", "language": ""}),  # empty multimodal turn must not 500
     ("/api/v1/business-plan/objective", {"scope": "edge-probe", "title": ""}),  # blank objective must not 500
+    # newer in-house-fabric capabilities must survive degenerate inputs (empty graph / no agents / no sources)
+    ("/api/v1/native-ai/topology", {"nodes": [], "edges": []}),
+    ("/api/v1/native-ai/quorum", {"agents": 0}),
+    ("/api/v1/native-ai/entropy", {"sources": []}),
+    ("/api/v1/native-ai/consensus", {"votes": [], "total_nodes": 0}),
+    ("/api/v1/native-ai/decide", {"actions": []}),
+    ("/api/v1/native-ai/intent", {"text": ""}),
+    ("/api/v1/native-ai/rigor", {"metric_name": "", "value": 0.0, "baseline": 0.0}),
 ]
 
 

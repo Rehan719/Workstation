@@ -145,3 +145,9 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 - **agentic_core/cardiovascular** (route_resources, route_packet) — trivial routing → defer.
 - **agentic_core/ubiquitin** (tag_resource, autophagy recycle) — tagging + recycle stubs → defer.
 - **agentic_core/microbiome** — ⛔ EMPTY.
+
+## W75 scan (mesh / federation / genetics / immunity / economy) + fabric completeness/hardening
+- **agentic_core/mesh** — REAL but ALREADY WIRED (api/mesh.py). **agentic_core/economy** — REAL, ALREADY WIRED (api/economy.py).
+- **agentic_core/genetics** — ⛔ EMPTY (no class/def). **agentic_core/immunity** — ⛔ EMPTY.
+- **agentic_core/federation** (AutonomousMesh peer-discovery/treaties, ConnectionManager handshake) — hashlib-based but simulated networking (peer discovery / bilateral treaties); not a clean in-house-AI capability → defer.
+- **Conclusion: no NEW clean integration this batch.** Did the real completeness/hardening increment instead: added the integrated `topology` capability to the `/native-ai/capabilities` catalogue (was live but unlisted), and edge-probed the newer native-ai endpoints (topology/quorum/entropy/consensus/decide/intent/rigor) for no-500 on degenerate inputs.
