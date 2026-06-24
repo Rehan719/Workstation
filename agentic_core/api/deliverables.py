@@ -131,6 +131,8 @@ async def output_formats():
         live.append({"id": "docx", "label": "Word document (.docx)", "kind": "document"})
     if _PPTX_OK:  # produced in-house by python-pptx when available
         live.append({"id": "pptx", "label": "PowerPoint (.pptx)", "kind": "presentation"})
+    if _XLSX_OK:  # produced in-house by openpyxl when available
+        live.append({"id": "xlsx", "label": "Excel spreadsheet (.xlsx)", "kind": "data"})
     try:
         from agentic_core.omnimedia.factory import OutputFormat
         catalogue = [f.value for f in OutputFormat if f.value not in {x["id"] for x in live}]
@@ -367,6 +369,12 @@ try:
 except Exception:
     _PPTX_OK = False
 
+try:
+    import openpyxl as _openpyxlmod  # noqa: F401  (openpyxl → editable Excel, pure-python)
+    _XLSX_OK = True
+except Exception:
+    _XLSX_OK = False
+
 
 def _demark(s: str) -> str:
     s = re.sub(r"\*\*(.+?)\*\*", r"\1", s)
@@ -497,6 +505,40 @@ def _pptx_bytes(d: Dict[str, Any]) -> bytes:
     buf = io.BytesIO(); prs.save(buf); return buf.getvalue()
 
 
+def _xlsx_bytes(d: Dict[str, Any]) -> bytes:
+    """A real in-house editable spreadsheet (.xlsx) render — a header plus a Section|Content table, one
+    row per deliverable ## section (openpyxl, pure-python, Unicode-native)."""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+    wb = Workbook(); ws = wb.active; ws.title = "Deliverable"
+    ws["A1"] = d.get("title", "Deliverable"); ws["A1"].font = Font(bold=True, size=14)
+    ws["A2"] = _doc_subtitle(d)
+    if d.get("brief"):
+        ws["A3"] = "Brief: " + d["brief"]
+    row = 5
+    ws.cell(row, 1, "Section").font = Font(bold=True); ws.cell(row, 2, "Content").font = Font(bold=True)
+    row += 1
+    sections: List[tuple] = []
+    cur_title, cur_lines = "Overview", []
+    for line in (d.get("content", "") or "").split("\n"):
+        h = re.match(r"^##\s+(.*)", line)
+        if h:
+            sections.append((cur_title, cur_lines)); cur_title, cur_lines = h.group(1), []
+        else:
+            cur_lines.append(line)
+    sections.append((cur_title, cur_lines))
+    for stitle, slines in sections:
+        body = " ".join(_demark(re.sub(r"^\s*[#>*\-]+\s*", "", ln)).strip()
+                        for ln in slines if ln.strip() and ln.strip() != "---")
+        if not (stitle or body):
+            continue
+        ws.cell(row, 1, str(stitle)[:240]); c = ws.cell(row, 2, body[:4000]); c.alignment = c.alignment.copy(wrap_text=True)
+        row += 1
+    ws.column_dimensions["A"].width = 30; ws.column_dimensions["B"].width = 96
+    buf = io.BytesIO(); wb.save(buf); return buf.getvalue()
+
+
 # Live, end-to-end in-house formats (real renders) — keep in sync with /output-formats.
 _LIVE_FORMATS = {
     "md":     ("text/markdown; charset=utf-8", "md"),
@@ -511,6 +553,8 @@ if _DOCX_OK:
     _LIVE_FORMATS["docx"] = ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx")
 if _PPTX_OK:
     _LIVE_FORMATS["pptx"] = ("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx")
+if _XLSX_OK:
+    _LIVE_FORMATS["xlsx"] = ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx")
 
 
 def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
@@ -548,6 +592,8 @@ async def export_deliverable(deliverable_id: str, format: str = "md"):
                 content = _docx_bytes(d)
             elif fmt == "pptx":
                 content = _pptx_bytes(d)
+            elif fmt == "xlsx":
+                content = _xlsx_bytes(d)
             else:
                 content = _render_deliverable(d, fmt)
             return Response(

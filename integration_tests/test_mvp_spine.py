@@ -1427,11 +1427,12 @@ def test_deliverables_living_lifecycle(client):
     assert "<h1>" in client.get(f"/api/v1/deliverables/{did}/export", params={"format": "html"}).text
     assert client.get(f"/api/v1/deliverables/{did}/export", params={"format": "mp4"}).status_code == 400  # never faked
     of = client.get("/api/v1/deliverables/output-formats").json()
-    from agentic_core.api.deliverables import _PDF_OK, _DOCX_OK, _PPTX_OK   # live only when lib installed
+    from agentic_core.api.deliverables import _PDF_OK, _DOCX_OK, _PPTX_OK, _XLSX_OK   # live iff lib installed
     expected = {"md", "html", "slides", "txt", "json"}
     expected |= {"pdf"} if _PDF_OK else set()
     expected |= {"docx"} if _DOCX_OK else set()
     expected |= {"pptx"} if _PPTX_OK else set()
+    expected |= {"xlsx"} if _XLSX_OK else set()
     assert set(of["live_ids"]) == expected
     if _PDF_OK:   # real in-house PDF via fpdf2 (pure-python)
         pr = client.get(f"/api/v1/deliverables/{did}/export", params={"format": "pdf"})
@@ -1451,7 +1452,13 @@ def test_deliverables_living_lifecycle(client):
         assert ppr.content[:2] == b"PK"
     else:
         assert "pptx" in of["catalogue_not_yet_produced"]
-    assert "mp4" in of["catalogue_not_yet_produced"]   # honestly listed, not produced
+    if _XLSX_OK:   # real in-house Excel via openpyxl (.xlsx is a zip → PK header)
+        xr = client.get(f"/api/v1/deliverables/{did}/export", params={"format": "xlsx"})
+        assert xr.status_code == 200 and "spreadsheetml" in xr.headers["content-type"]
+        assert xr.content[:2] == b"PK"
+    else:
+        assert "xlsx" in of["catalogue_not_yet_produced"]
+    assert "mp4" in of["catalogue_not_yet_produced"]   # AV stays catalogue — never faked
 
 
 def test_operations_learning_loop(client):
@@ -1543,11 +1550,12 @@ def test_deliverables_leverage_own_omnimedia(client):
     # catalogue, and omnimedia is registered as a first-class Resource-Fabric resource (so existing
     # in-house capabilities are surfaced into the unified fabric the swarm/delivery draws from).
     of = client.get("/api/v1/deliverables/output-formats").json()
-    from agentic_core.api.deliverables import _PDF_OK, _DOCX_OK, _PPTX_OK
+    from agentic_core.api.deliverables import _PDF_OK, _DOCX_OK, _PPTX_OK, _XLSX_OK
     assert {"md", "html", "slides", "txt", "json"} <= set(of["live_ids"])    # real in-house renders
     assert ("pdf" in of["live_ids"]) == _PDF_OK                              # pdf live iff fpdf2 present
     assert ("docx" in of["live_ids"]) == _DOCX_OK                            # docx live iff python-docx present
     assert ("pptx" in of["live_ids"]) == _PPTX_OK                            # pptx live iff python-pptx present
+    assert ("xlsx" in of["live_ids"]) == _XLSX_OK                            # xlsx live iff openpyxl present
     assert "mp4" in of["catalogue_not_yet_produced"]   # AV stays catalogue — never faked
     assert "omnimedia" in of["source"]
     fab = client.get("/api/v1/resources?resource_class=output_media").json()

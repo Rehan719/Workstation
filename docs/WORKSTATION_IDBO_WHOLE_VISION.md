@@ -343,11 +343,12 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   Cockpit's plan tab.
 - ✅ **§4.9 / §13 — selectable in-house output formats.** Living deliverables export end-to-end as
   **md · html (document/website) · slides (HTML deck) · txt · json · pdf · docx (editable Word) · pptx
-  (editable PowerPoint)** — every one a real deterministic in-house render via
-  `/api/v1/deliverables/{id}/export?format=` (**PDF** via `fpdf2`, **DOCX** via `python-docx`, **PPTX**
-  via `python-pptx` — all pure-python, in-house, no external service; each guarded so it degrades
-  gracefully if absent; the UI selector is populated from real backend capability); the remaining binary/
-  AV catalogue (xlsx/mp4/mp3/png/svg) is honestly listed as *not yet produced*, never faked.
+  (editable PowerPoint) · xlsx (editable Excel)** — **9 real in-house formats**, each a deterministic
+  render via `/api/v1/deliverables/{id}/export?format=` (PDF=`fpdf2`, DOCX=`python-docx`, PPTX=
+  `python-pptx`, XLSX=`openpyxl` — all pure-python, in-house, no external service; each guarded so it
+  degrades gracefully if absent; the UI selector is populated from real backend capability). **Every
+  document/presentation/spreadsheet format is now genuinely produced**; only AV/image (mp4/mp3/png/svg)
+  remain in the catalogue — honestly *not yet produced* (they need real media generation), never faked.
 - ✅ **Launch-readiness (cost-free).** Production `Dockerfile`/compose/`.env.example`/`render.yaml`;
   **`DATA_DIR` honoured by every store** (data survives redeploys); the backend optionally **serves the
   built SPA** single-service; **fixed a real prod-mount bug** (a bad `manualChunks` chunk-split that left
@@ -403,10 +404,10 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   generation/simulation, real CI.
 
 **Remaining scope — the genuine work still ahead (priority order, on the native-first foundation):**
-- ◻ **Rich binary/AV output formats** — deliverable export is live for md · html · slides · txt · json
-  · **pdf** · **docx** · **pptx** (real in-house renders); the remaining catalogue (xlsx · mp4 · mp3 ·
-  png · svg) is honestly listed but **not yet produced** — `xlsx` (openpyxl) is the next honest in-house
-  step; AV/image formats need genuine generation (not faked).
+- ◻ **AV / image output formats** — deliverable export is live for **9** real in-house formats (md · html
+  · slides · txt · json · pdf · docx · pptx · xlsx); every document/presentation/spreadsheet format is now
+  genuinely produced. Only **mp4 · mp3 · png · svg** remain in the catalogue — they need *real* media
+  generation (audio/video/image), so they stay honestly listed and are **never faked**.
 - ◻ **Local-model depth** — the native floor is honest structured reasoning; richer local inference
   (larger Ollama models / fine-tunes, incl. a pulled vision model for the avatar) deepens output quality
   without changing the in-house guarantee.
