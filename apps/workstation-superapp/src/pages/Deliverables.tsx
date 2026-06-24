@@ -26,12 +26,22 @@ export const Deliverables: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [dlFormat, setDlFormat] = useState('md');   // §4.9 — selectable in-house export format
+  // The live export formats are fetched from the backend so the selector reflects REAL capability
+  // (e.g. PDF appears only when the in-house renderer is available). Falls back to the always-on set.
+  const [formats, setFormats] = useState<{ id: string; label: string }[]>([
+    { id: 'md', label: 'Markdown (.md)' }, { id: 'html', label: 'HTML document (.html)' },
+    { id: 'slides', label: 'Presentation (.html)' }, { id: 'txt', label: 'Plain text (.txt)' },
+    { id: 'json', label: 'JSON (.json)' },
+  ]);
 
   const loadList = () =>
     fetch('/api/v1/deliverables').then(r => r.json()).then(d => setList(d.deliverables || [])).catch(() => {});
 
   useEffect(() => {
     fetch('/api/v1/deliverables/types').then(r => r.json()).then(d => setTypes(d.types || [])).catch(() => setError('Failed to load types'));
+    fetch('/api/v1/deliverables/output-formats').then(r => r.json())
+      .then(d => { if (Array.isArray(d.live) && d.live.length) setFormats(d.live.map((f: any) => ({ id: f.id, label: f.label }))); })
+      .catch(() => {});
     loadList().finally(() => setLoading(false));
   }, []);
 
@@ -146,11 +156,7 @@ export const Deliverables: React.FC = () => {
                 </Button>
                 <select value={dlFormat} onChange={e => setDlFormat(e.target.value)} aria-label="Export format"
                   className="text-[11px] bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-300">
-                  <option value="md">Markdown (.md)</option>
-                  <option value="html">HTML document (.html)</option>
-                  <option value="slides">Presentation (.html)</option>
-                  <option value="txt">Plain text (.txt)</option>
-                  <option value="json">JSON (.json)</option>
+                  {formats.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
                 </select>
                 <a href={`/api/v1/deliverables/${selected.id}/export?format=${dlFormat}`} download
                   className="flex items-center gap-1.5 bg-aura text-sovereign text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90">

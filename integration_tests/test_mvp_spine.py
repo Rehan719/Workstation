@@ -1427,7 +1427,14 @@ def test_deliverables_living_lifecycle(client):
     assert "<h1>" in client.get(f"/api/v1/deliverables/{did}/export", params={"format": "html"}).text
     assert client.get(f"/api/v1/deliverables/{did}/export", params={"format": "mp4"}).status_code == 400  # never faked
     of = client.get("/api/v1/deliverables/output-formats").json()
-    assert set(of["live_ids"]) == {"md", "html", "slides", "txt", "json"}
+    from agentic_core.api.deliverables import _PDF_OK   # PDF is live only when fpdf2 is installed
+    assert set(of["live_ids"]) == {"md", "html", "slides", "txt", "json"} | ({"pdf"} if _PDF_OK else set())
+    if _PDF_OK:   # real in-house PDF via fpdf2 (pure-python)
+        pr = client.get(f"/api/v1/deliverables/{did}/export", params={"format": "pdf"})
+        assert pr.status_code == 200 and pr.headers["content-type"].startswith("application/pdf")
+        assert pr.content[:5] == b"%PDF-"
+    else:
+        assert "pdf" in of["catalogue_not_yet_produced"]
     assert "mp4" in of["catalogue_not_yet_produced"]   # honestly listed, not produced
 
 
@@ -1520,7 +1527,9 @@ def test_deliverables_leverage_own_omnimedia(client):
     # catalogue, and omnimedia is registered as a first-class Resource-Fabric resource (so existing
     # in-house capabilities are surfaced into the unified fabric the swarm/delivery draws from).
     of = client.get("/api/v1/deliverables/output-formats").json()
-    assert set(of["live_ids"]) == {"md", "html", "slides", "txt", "json"}    # real in-house renders
+    from agentic_core.api.deliverables import _PDF_OK
+    assert {"md", "html", "slides", "txt", "json"} <= set(of["live_ids"])    # real in-house renders
+    assert ("pdf" in of["live_ids"]) == _PDF_OK                              # pdf live iff fpdf2 present
     assert "pptx" in of["catalogue_not_yet_produced"] and "mp4" in of["catalogue_not_yet_produced"]
     assert "omnimedia" in of["source"]
     fab = client.get("/api/v1/resources?resource_class=output_media").json()

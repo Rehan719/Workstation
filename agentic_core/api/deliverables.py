@@ -125,6 +125,8 @@ async def output_formats():
         {"id": "txt", "label": "Plain text", "kind": "document"},
         {"id": "json", "label": "Structured JSON", "kind": "data"},
     ]
+    if _PDF_OK:   # produced in-house by fpdf2 when available
+        live.append({"id": "pdf", "label": "PDF document", "kind": "document"})
     try:
         from agentic_core.omnimedia.factory import OutputFormat
         catalogue = [f.value for f in OutputFormat if f.value not in {x["id"] for x in live}]
@@ -341,6 +343,71 @@ def _strip_md(md: str) -> str:
     return t
 
 
+# PDF is produced IN-HOUSE by the pure-python fpdf2 library when available (no external service, no
+# system deps). Guarded so the app degrades gracefully if the lib is absent (PDF simply isn't offered).
+try:
+    import fpdf as _fpdf  # noqa: F401  (fpdf2 provides the `fpdf` module)
+    _PDF_OK = True
+except Exception:
+    _PDF_OK = False
+
+
+def _demark(s: str) -> str:
+    s = re.sub(r"\*\*(.+?)\*\*", r"\1", s)
+    s = re.sub(r"`([^`]+)`", r"\1", s)
+    s = re.sub(r"(?<!\*)\*(?!\s)([^*]+?)\*", r"\1", s)
+    return s
+
+
+def _latin1(s: str) -> str:
+    """fpdf2's core fonts are Latin-1; map the common Unicode punctuation our content uses to safe
+    equivalents, then drop anything still unmappable. Honest: a real PDF, with minor glyph substitution."""
+    for k, v in {"—": "-", "–": "-", "’": "'", "‘": "'", "“": '"',
+                 "”": '"', "…": "...", "→": "->", "•": "-", " ": " "}.items():
+        s = s.replace(k, v)
+    return s.encode("latin-1", "replace").decode("latin-1")
+
+
+def _pdf_bytes(d: Dict[str, Any]) -> bytes:
+    """A real in-house PDF render of the deliverable (title · subtitle · brief · structured content)."""
+    from fpdf import FPDF
+    from fpdf.enums import XPos, YPos
+    pdf = FPDF(format="A4")
+    pdf.set_auto_page_break(auto=True, margin=18)
+    pdf.set_margins(20, 18, 20)
+    pdf.add_page()
+
+    def mc(h: float, text: str) -> None:
+        # always return to the left margin on the next line (default advances X to the right margin,
+        # which leaves zero width for the following cell — the cause of "no horizontal space").
+        pdf.multi_cell(0, h, _latin1(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    pdf.set_font("Helvetica", "B", 20); mc(9, d.get("title", "Deliverable"))
+    pdf.set_text_color(110, 110, 110); pdf.set_font("Helvetica", "I", 9)
+    mc(5, _doc_subtitle(d)); pdf.set_text_color(0, 0, 0); pdf.ln(2)
+    if d.get("brief"):
+        pdf.set_font("Helvetica", "I", 10); mc(5, "Brief: " + d["brief"]); pdf.ln(2)
+    for raw in (d.get("content", "") or "").split("\n"):
+        line = raw.rstrip()
+        if not line.strip():
+            pdf.ln(2); continue
+        if line.strip() == "---":
+            pdf.ln(1); continue
+        h = re.match(r"^(#{1,6})\s+(.*)", line)
+        if h:
+            pdf.ln(1); pdf.set_font("Helvetica", "B", {1: 16, 2: 14, 3: 12}.get(len(h.group(1)), 11))
+            mc(7, _demark(h.group(2))); continue
+        li = re.match(r"^[-*]\s+(.*)", line)
+        if li:
+            pdf.set_font("Helvetica", "", 11); mc(6, "  -  " + _demark(li.group(1))); continue
+        bq = re.match(r"^>\s?(.*)", line)
+        if bq:
+            pdf.set_text_color(80, 80, 80); pdf.set_font("Helvetica", "I", 11)
+            mc(6, _demark(bq.group(1))); pdf.set_text_color(0, 0, 0); continue
+        pdf.set_font("Helvetica", "", 11); mc(6, _demark(line))
+    return bytes(pdf.output())
+
+
 # Live, end-to-end in-house formats (real renders) — keep in sync with /output-formats.
 _LIVE_FORMATS = {
     "md":     ("text/markdown; charset=utf-8", "md"),
@@ -349,6 +416,8 @@ _LIVE_FORMATS = {
     "txt":    ("text/plain; charset=utf-8", "txt"),
     "json":   ("application/json; charset=utf-8", "json"),
 }
+if _PDF_OK:
+    _LIVE_FORMATS["pdf"] = ("application/pdf", "pdf")
 
 
 def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
@@ -380,8 +449,9 @@ async def export_deliverable(deliverable_id: str, format: str = "md"):
         if d["id"] == deliverable_id:
             slug = "".join(c if c.isalnum() else "-" for c in d.get("title", "deliverable")).strip("-")[:60] or "deliverable"
             media_type, ext = _LIVE_FORMATS[fmt]
+            content: Any = _pdf_bytes(d) if fmt == "pdf" else _render_deliverable(d, fmt)
             return Response(
-                content=_render_deliverable(d, fmt),
+                content=content,
                 media_type=media_type,
                 headers={"Content-Disposition": f'attachment; filename="{slug}.{ext}"'},
             )
