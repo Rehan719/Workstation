@@ -1703,6 +1703,21 @@ def test_vbs_living_systems_integrated_in_house(client):
     assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
 
 
+def test_native_nlp_intent_entailment_in_house(client):
+    # Owned NLP (agentic_core/nlp.NLIEngine): REAL regex intent inference + word-overlap entailment —
+    # deterministic, not LLM, no external dependency.
+    i = client.post("/api/v1/native-ai/intent", json={"text": "build and generate an app"}).json()
+    assert i["intent"] == "BUILD_APP" and 0.0 <= i["confidence"] <= 1.0 and "all_scores" in i
+    d = client.post("/api/v1/native-ai/intent", json={"text": "deploy this release to the cloud"}).json()
+    assert d["intent"] == "DEPLOY_APP"
+    e_same = client.post("/api/v1/native-ai/entailment",
+                         json={"premise": "the cat sat on the mat", "hypothesis": "the cat sat on the mat"}).json()
+    e_none = client.post("/api/v1/native-ai/entailment",
+                         json={"premise": "the cat sat on the mat", "hypothesis": "quantum rocket science"}).json()
+    assert e_same["label"] == "ENTAILED" and e_none["label"] == "NEUTRAL"
+    assert "nlp" in e_same["method"]
+
+
 def test_operations_degradation_detection_in_house(client):
     # The owned PerformanceDegradationDetector (agentic_core/self_improvement) is wired into the learning
     # loop: REAL telemetry degradation detection (>12.7% latency rise OR >9.3% accuracy drop over cycles)

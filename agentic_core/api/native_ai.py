@@ -110,6 +110,33 @@ async def native_transduce(req: TransduceRequest):
     return out
 
 
+class IntentRequest(BaseModel):
+    text: str
+
+
+@router.post("/intent")
+async def native_intent(req: IntentRequest):
+    """Owned NLP intent inference (agentic_core/nlp.NLIEngine): REAL regex keyword-pattern scoring over
+    the text — deterministic, not LLM. Returns the best intent + confidence + all per-intent scores."""
+    from agentic_core.nlp.nli_engine import NLIEngine
+    return NLIEngine().infer_intent(req.text)
+
+
+class EntailmentRequest(BaseModel):
+    premise: str
+    hypothesis: str
+
+
+@router.post("/entailment")
+async def native_entailment(req: EntailmentRequest):
+    """Owned NLP entailment (agentic_core/nlp.NLIEngine): REAL word-overlap natural-language inference —
+    does the premise entail the hypothesis? ENTAILED | PARTIAL_ENTAILMENT | NEUTRAL. Deterministic."""
+    from agentic_core.nlp.nli_engine import NLIEngine
+    label = NLIEngine().verify_premise_entailment(req.premise, req.hypothesis)
+    return {"premise": req.premise, "hypothesis": req.hypothesis, "label": label,
+            "method": "word-overlap NLI (owned nlp)"}
+
+
 class Vote(BaseModel):
     voter: str
     choice: str

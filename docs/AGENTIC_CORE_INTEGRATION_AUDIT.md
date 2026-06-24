@@ -118,3 +118,10 @@ These are the digital-organism metaphor modules; they belong to the `organism`/`
 - **agentic_core/homeostasis** — ⛔ EMPTY (no modules). 
 - **agentic_core/reactor** — REAL-ish (LiveAPIClient httpx + DigitalReactor ABC) but ALREADY WIRED to `agentic_core/api/forge.py`. No new integration.
 - **agentic_core/self_improvement/degradation_detector.PerformanceDegradationDetector** — ✅ REAL deterministic (latency >12.7% rise / accuracy >9.3% drop over 3 cycles). INTEGRATED into the learning loop: `GET /api/v1/operations/degradation` buckets the operational-excellence recorded telemetry into cycles and runs the real detector.
+
+## W69 scan (nlp / perception / simverse / circadian / p53)
+- **agentic_core/nlp/nli_engine.NLIEngine** — ✅ REAL (`infer_intent` = regex keyword-pattern scoring; `verify_premise_entailment` = word-overlap NLI; `get_intent_confidence` is a placeholder but minor). INTEGRATED: `POST /api/v1/native-ai/intent` + `POST /api/v1/native-ai/entailment` (deterministic, no deps).
+- **agentic_core/p53/genomic_integrity** — MIXED: `P53Oscillator.get_phase` REAL (time-based ultradian REPAIR/PLASTICITY clock), `mismatch_repair` REAL (exact runtime-vs-blueprint compare), but `proofread` uses `np.random.random()` → mock. Integrable parts later (biomimetic clock / integrity compare); not this cycle.
+- **agentic_core/perception** (adaptive_fusion, attention, binding, fusion) — simple dict-manipulation fusion, no real algorithms (no numpy/regex). Low integration value → deferred.
+- **agentic_core/simverse/causal_simulator** — np.mean + hashlib; drives causal/csl; needs a deeper real-vs-simulated read before reviving CSL → deferred.
+- **agentic_core/circadian/scheduler** — time-based cycle phase (real-ish but trivial) → deferred.
