@@ -32,11 +32,8 @@ import { EducationHub } from './pages/domains/EducationHub';
 import { CareHub } from './pages/domains/CareHub';
 import { EmploymentHub } from './pages/domains/EmploymentHub';
 import { QEPReligionHub } from './pages/domains/QEPReligionHub';
-import { QEPCommunityPortalPage } from './pages/domains/QEPCommunityPortalPage';
-import { QEPEngine } from './pages/QEPEngine';
-import { SovereignXAIObservatory as QEPObservatoryPage } from './pages/domains/QEPObservatoryPage';
-import { QEPGovernancePortal } from './pages/domains/QEPGovernancePortal';
-import HumanOversightQueue from './components/qep/scholar/HumanOversightQueue';
+// QEP sprawl (engine/community/observatory/governance/oversight) archived to _archive/frontend-pages —
+// grandiose/mock/fabricated-metrics; the genuine Qur'an Education Platform (QEPReligionHub, /qep) is kept.
 
 // ── 4. VSB Enterprises ───────────────────────────────────────────────────
 import { VSBSpawnStudio } from './pages/enterprise/VSBSpawnStudio';
@@ -96,7 +93,7 @@ import { PublicRoadmap } from './pages/PublicRoadmap';
 import { LandingPage } from './pages/landing/LandingPage';
 
 // ── Extended (wired, reachable by URL — not in primary nav) ───────────────
-import { ScholarRealm } from './pages/scholar/ScholarRealm';
+// ScholarRealm archived to _archive/frontend-pages — grandiose research hub with fabricated "50+ federated nodes".
 import { Introspection as CognitiveIntrospection } from './pages/cognitive/Introspection';
 
 function App() {
@@ -145,11 +142,6 @@ function App() {
           <Route path="/employment" element={<EmploymentHub />} />
           <Route path="/qep"            element={<QEPReligionHub />} />
           <Route path="/qep-religion"   element={<QEPReligionHub />} />
-          <Route path="/qep-community"  element={<QEPCommunityPortalPage />} />
-          <Route path="/qep-engine"     element={<QEPEngine />} />
-          <Route path="/qep/observatory" element={<QEPObservatoryPage />} />
-          <Route path="/qep/governance"  element={<QEPGovernancePortal />} />
-          <Route path="/qep/oversight"   element={<HumanOversightQueue />} />
 
           {/* ── 4. VSB Enterprises ──────────────────────────────────── */}
           <Route path="/vsb"            element={<VSBSpawnStudio />} />
@@ -221,7 +213,6 @@ function App() {
           } />
 
           {/* ── Extended (wired, reachable by URL) ───────────────────── */}
-          <Route path="/scholar"      element={<ScholarRealm />} />
           <Route path="/cognitive-introspection" element={<CognitiveIntrospection />} />
           {/* Off-vision experimental pages (Cosmic/Reality/AR-VR/Wearables/Embodiment/Civilization)
               archived to _archive/frontend-pages — not part of the Workstation IDBO vision. */}

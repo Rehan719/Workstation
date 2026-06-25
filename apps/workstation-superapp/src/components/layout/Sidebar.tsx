@@ -57,6 +57,7 @@ const allNavItems: NavItem[] = [
     subItems: [
       { name: 'Overview',   icon: Layers,        id: 'domains' },
       { name: 'Religion',   icon: Heart,         id: 'religion' },
+      { name: "Qur'an Platform", icon: Book,     id: 'qep' },
       { name: 'Science',    icon: Microscope,    id: 'science' },
       { name: 'Education',  icon: GraduationCap, id: 'education' },
       { name: 'Law',        icon: Gavel,         id: 'law' },
@@ -149,16 +150,6 @@ const allNavItems: NavItem[] = [
       { name: 'Entity Control',   icon: ShieldCheck, id: 'admin' },
       { name: 'Public Roadmap',   icon: Map,         id: 'roadmap' },
       { name: 'System Settings',  icon: Settings,    id: 'settings' },
-    ]
-  },
-
-  {
-    name: 'Explore',
-    icon: Globe,
-    id: 'explore-facet',
-    subItems: [
-      { name: 'Scholar Realm',     icon: GraduationCap, id: 'scholar' },
-      { name: 'QEP Suite',         icon: Layers,        id: 'qep' },
     ]
   }
 ];

@@ -37,9 +37,10 @@ only **Scholar Realm** (a vision realm) + **QEP Suite** (pending review). Verifi
 build`; served build → Genesis (core) renders, nav no longer lists the cut pages, an archived route
 (`/cosmic-nervous`) falls through to the graceful "Page Not Found" (no crash), console clean.
 
+### ✅ Cycle 2 (W128) — QEP Suite + Explore section
+Exercised each: `/qep` (QEPReligionHub) = a **genuine Qur'an Education Platform** (real Qur'anic text — Al-Baqarah, Hafs recitation — memorization coaching) → **KEEP**, consolidated into the **Domains** section as "Qur'an Platform" (faith-rooted Religion-domain capability, §3A·1). The rest were grandiose/mock/mislabeled incoherent output → **ARCHIVE**: `/qep-engine` (mislabeled organism "Quad Engine Reactor" dashboard, redundant with /organism), `/qep-community` ("Signature Product v8.4 · SLA 99.99%" status placeholder), `/qep/observatory` (XAI observatory with fabricated F1/precision metrics), `/qep/governance` (mock voting UI with fake proposals/votes), `/qep/oversight` (no-fetch mock queue). Also archived `/scholar` (ScholarRealm — grandiose "Observatory of Understanding" claiming a fabricated "50+ federated nodes"). **The entire Explore nav section is now eliminated.** Verified: clean `tsc && vite build`; served build → /qep renders under Domains, Explore gone, archived routes graceful Page-Not-Found, console clean. Running total: 9 sections/~85 pages → **7 sections / ~73 pages**.
+
 ### ⏳ Next cycles (planned, one section per cycle — review outputs, then keep/fix/consolidate/archive)
-- **QEP Suite** (`/qep`, `/qep-community`, `/qep-engine`, `/qep/observatory`, `/qep/governance`,
-  `/qep/oversight`) — verify each output; consolidate into Religion domain or archive if niche/incoherent.
 - **Transformation & Economy** extras — `prediction-market`, `product-catalog`, `wallet`, `impact`,
   `soul-record`: verify outputs; consolidate the coherent ones, archive placeholders. (Economy §12 itself
   is Owner-gated — keep the designed surface, do not wire real money.)
