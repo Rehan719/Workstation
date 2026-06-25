@@ -394,6 +394,13 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   (enter an objective → run → see the per-stage trace + in-house + QMS-gate badges). So a configuration
   the user designs (§7/§9) is not just modelled and committed but **runs on the owned AI fabric (§6),
   composing the living organisation (§5)** — the four sections integrated in one flow.
+- ✅ **§5 org structure designable through the §7 fabric.** The org-cascade resource now exposes
+  **`csuite_roles`** (and `coe_specialisms`) as reconfigurable parameters — so a user composing a
+  configuration can **design the §5 living-organisation's C-Suite** through the fabric's parameter editor
+  (§7/§9 user design control), the model/simulate honours it, and the composition run delivers the
+  fine-resolution Chief→Build-to-Order tiers (AI CEO directive → each chosen officer's plan → CoE →
+  Build-to-Order) with the user-designed structure, on the native swarm (§6). §5's reconfigurable org
+  (W104–105) is now reachable from §7.
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

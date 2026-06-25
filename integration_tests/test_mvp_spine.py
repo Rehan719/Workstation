@@ -1121,11 +1121,20 @@ def test_resource_composition_run_on_native_swarm(client):
     # §7↔§6↔§5 — a committed configuration is RERUNNABLE on Workstation's OWN native swarm: each composed
     # resource (incl. the §5 org-cascade resource) becomes a stage, the user's reconfigured params feed in,
     # it runs in-house-first, and the combined run is QMS-gated + document-controlled (§10/§8).
+    # §5 org-structure design control is reachable through the §7 fabric: the org resource exposes
+    # csuite_roles (which C-Suite officers) as a reconfigurable parameter.
+    org_res = client.get("/api/v1/resources/vsb_org_swarm").json()
+    assert "csuite_roles" in org_res["reconfigurable_params"]
     comp = client.post("/api/v1/resources/compose",
                        json={"name": "run-rig", "resource_ids": ["bdp", "vsb_org_swarm"],
                              "usage_area": "commercialisation",
-                             "config": {"bdp": {"challenge": "a halal meal service"}}}).json()
+                             "config": {"bdp": {"challenge": "a halal meal service"},
+                                        "vsb_org_swarm": {"csuite_roles": "CSO, CFO, Policy"}}}).json()
     cid = comp["id"]
+    # the user-designed C-Suite is carried in the saved configuration (and no longer "unset")
+    org_cfg = next(r for r in comp["resources"] if r["id"] == "vsb_org_swarm")["config"]
+    assert org_cfg["csuite_roles"] == "CSO, CFO, Policy"
+    assert "csuite_roles" not in (comp["model"]["unset_params"].get("vsb_org_swarm") or [])
     run = client.post(f"/api/v1/resources/compositions/{cid}/run",
                       json={"objective": "Launch a halal community meal service"}).json()
     assert run["posture"] == "in-house-first" and len(run["trace"]) == 2

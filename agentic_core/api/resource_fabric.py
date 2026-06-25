@@ -143,9 +143,13 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"problem": "str", "domain": "str", "concept": "str", "commercialisation": "str"},
        "/api/v1/genesis/establish", ["delivery", "commercialisation"]),
     _R("vsb_org_swarm", "AI CEO → C-Suite → CoE", "enterprise_org", "org_swarm",
-       "The VSB organisational cascade: AI CEO directs, C-Suite delegates, CoE delivers.",
-       ["ceo directive", "c-suite delegation", "coe synthesis"],
-       {"mission": "str", "domain": "str"}, "/api/v1/swarm/cascade",
+       "The §5 living-organisation cascade: the AI CEO directs a USER-DESIGNED C-Suite, each officer drives "
+       "its Centre of Excellence, and the Business Transformation Office build-to-orders the delivery. "
+       "Reconfigure the org structure — which C-Suite officers — via csuite_roles (design control).",
+       ["ceo directive", "reconfigurable c-suite", "coe synthesis", "build-to-order"],
+       {"mission": "str", "domain": "str",
+        "csuite_roles": "e.g. CSO,CFO,CTO,COO,CLO,Forecasting,Policy", "coe_specialisms": "e.g. Pricing,Compliance"},
+       "/api/v1/swarm/cascade",
        ["delivery", "build_to_order", "commercialisation", "governance"]),
     _R("change_control", "Change Control Agency", "enterprise_org", "governance",
        "Arms-length governance: LOW auto-approve, MEDIUM/HIGH AI review, CRITICAL blocked.",
@@ -302,10 +306,23 @@ async def run_composition(cid: str, req: RunCompositionRequest):
         configured = {k: v for k, v in (r.get("config") or {}).items()
                       if v != base.get("reconfigurable_params", {}).get(k)}
         cfg_txt = "; ".join(f"{k}={v}" for k, v in configured.items())
-        instruction = (f"As the «{r['name']}» resource ({base.get('type', r.get('resource_class', ''))}), "
-                       f"apply your capabilities ({caps}) to advance the objective."
-                       + (f" Configured parameters: {cfg_txt}." if cfg_txt else "")
-                       + " Build on the prior stage's output; be specific and actionable.")
+        if r["id"] == "vsb_org_swarm":
+            # §5 fine-resolution: run the living organisation with the USER-DESIGNED C-Suite (§7 design
+            # control over the §5 org structure), on the native swarm — the Chief→Build-to-Order tiers.
+            roles = configured.get("csuite_roles") or "CSO, CFO, CTO, COO, CLO"
+            coes = configured.get("coe_specialisms")
+            instruction = (
+                f"You are the §5 living organisation. Run the org cascade for the objective: the AI CEO "
+                f"directs the user-designed C-Suite ({roles}); each named officer drives its Centre of "
+                f"Excellence" + (f" (specialisms: {coes})" if coes else "") + "; and the Business "
+                f"Transformation Office build-to-orders the delivery. Provide:\n"
+                "## AI CEO Directive\n## C-Suite Plans (one section per officer)\n"
+                "## Centres of Excellence\n## Build-to-Order Delivery")
+        else:
+            instruction = (f"As the «{r['name']}» resource ({base.get('type', r.get('resource_class', ''))}), "
+                           f"apply your capabilities ({caps}) to advance the objective."
+                           + (f" Configured parameters: {cfg_txt}." if cfg_txt else "")
+                           + " Build on the prior stage's output; be specific and actionable.")
         stages.append({"role": r["name"], "instruction": instruction})
     if not stages:
         raise HTTPException(status_code=400, detail="Composition has no resources to run.")
