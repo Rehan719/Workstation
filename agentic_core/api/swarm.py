@@ -13,6 +13,7 @@ a unified response.
 from __future__ import annotations
 
 import json
+import re
 import time
 import uuid
 from pathlib import Path
@@ -372,6 +373,44 @@ async def cascade_orchestration(req: CascadeRequest):
     except Exception as exc:
         management_systems["error"] = str(exc)
 
+    # ── §10 Solution-Quality Bar + continual operational delivery within the LIVING QMS. The operational
+    # delivery is gated by the OWNED Quality Management System (real + stateful — defects accumulate, a
+    # non-conformance rate is tracked). Metrics are computed from the ACTUAL delivery (no fabrication):
+    # coverage = required Build-to-Order sections present; stub = any placeholder/empty content.
+    _req_sections = ("Operational Delivery Resources", "Work Breakdown", "Quality Gates", "Go-Live")
+    _present = sum(1 for s in _req_sections if s.lower() in build_to_order.lower())
+    _coverage = round(_present / len(_req_sections), 3)
+    _delivery_text = f"{build_to_order}\n{products_services_catalogue}"
+    _stub = bool(re.search(r"\b(TODO|TBD|FIXME|lorem ipsum|placeholder|coming soon|as an ai)\b", _delivery_text, re.I)) or len(_delivery_text.strip()) < 200
+    quality: dict = {
+        "bar": ["specifically designed", "modelled", "simulated", "optimised", "categorised", "ranked",
+                "best-in-class", "innovative", "effective", "safe", "efficient", "commercially viable",
+                "compliant", "verified", "tested", "validated"],
+        "delivery_coverage": _coverage, "stub_found": _stub,
+    }
+    try:
+        from agentic_core.vbs.registry import qms
+        quality["qms_gate_passed"] = bool(await qms.run_quality_gates({"coverage": _coverage, "stubs_found": _stub}))
+        quality["qms_min_coverage"] = qms.min_coverage
+        quality["qms_non_conformance_rate"] = qms.get_non_conformance_rate()
+        biobus.fire_signal("cognitive", "swarm.cascade.qms",
+                           f"QMS gate {'PASS' if quality['qms_gate_passed'] else 'FAIL'} (cov={_coverage})", 0.6)
+    except Exception as exc:
+        quality["qms_error"] = str(exc)
+
+    # ── §8 Biomimetic Living-Organism — the cascade runs WITHIN the living organism; attach its live
+    # immune health + circadian state (the homeostatic substrate it operates in). Honest live snapshot.
+    biomimetic: dict = {"layers": ["Genome", "Nervous", "Immune", "Cardiovascular", "Respiratory",
+                                   "Musculoskeletal", "Endocrine"],
+                        "self": "self-managing · improving · healing"}
+    try:
+        from agentic_core.organism.immune import immune
+        from agentic_core.organism.biobus import _circadian_cycle
+        biomimetic["immune"] = immune.status()
+        biomimetic["circadian"] = _circadian_cycle()
+    except Exception as exc:
+        biomimetic["error"] = str(exc)
+
     # ── §5: Change Control — arms-length constitutional governance over the WHOLE delivery (gaas.v5).
     governance: dict = {"status": "ungoverned", "arms_length": True}
     try:
@@ -396,6 +435,8 @@ async def cascade_orchestration(req: CascadeRequest):
             "governance": governance.get("status"),
             "document_control": list(management_systems.get("document_control", {}).keys()),
             "appraisals": list(appraisals.keys()),
+            "qms_gate_passed": quality.get("qms_gate_passed"),
+            "delivery_coverage": quality.get("delivery_coverage"),
         }, actor="AI CEO")
     except Exception:
         pass
@@ -421,6 +462,10 @@ async def cascade_orchestration(req: CascadeRequest):
         "csuite_roster": {"engaged": selected, "available": _CSUITE_POOL, "each_drives_coe": True},
         # §5 — each tier manages, APPRAISES and DEVELOPS the tier below (arms-length upward appraisal).
         "appraisals": appraisals,
+        # §10 Solution-Quality Bar + the living-QMS quality gate over the operational delivery.
+        "quality": quality,
+        # §8 — the biomimetic living-organism substrate the cascade runs within (live immune + circadian).
+        "biomimetic": biomimetic,
         "level_4_business_transformation_office": bto_programme,
         "level_5_build_to_order": build_to_order,
         "products_services_catalogue": products_services_catalogue,

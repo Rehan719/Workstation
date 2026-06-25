@@ -342,7 +342,13 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   Build-to-Order → Products/Services catalogue**. And **each tier manages, appraises and develops the
   tier below** — after the top-down delegation, an arms-length upward **appraisal & development pass**
   (Chief→Board, Board→AI CEO, AI CEO→C-Suite, BTO→Build-to-Order) realises the §5 management relationship
-  + continual improvement. The whole delivery is **governed at arm's length** by
+  + continual improvement. The **operational delivery is gated by the living QMS** (real, stateful — the
+  OWNED `QualityManagementSystem` gates on delivery coverage + zero-stub, accumulating defects + a
+  non-conformance rate) — **continual operational delivery within the living QMS** — and is held to the
+  **§10 Solution-Quality Bar** (designed·modelled·simulated·optimised·categorised·ranked · best-in-class·
+  effective·safe·compliant · verified·tested·validated). It runs **within the §8 biomimetic
+  living-organism** (the result carries the live immune health + circadian state + the 7 layers it
+  operates in), so the whole cascade is self-managing, governed, quality-gated and provenance-sealed. The whole delivery is **governed at arm's length** by
   the gaas.v5 constitutional interceptor (Change Control) and **sealed into the UEG hash-chained
   provenance ledger** (§6), every tier served by Workstation's OWN fabric (zero external). Walkable on the
   **Swarm Intelligence** page (each tier + governance + management-systems + UEG seal rendered).

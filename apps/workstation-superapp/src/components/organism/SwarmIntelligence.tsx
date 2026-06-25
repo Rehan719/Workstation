@@ -188,6 +188,17 @@ const SwarmIntelligence: React.FC = () => {
               {Array.isArray(cascade.management_systems?.integrated) && cascade.management_systems.integrated.length > 0 && (
                 <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">mgmt: {cascade.management_systems.integrated.join('·')}</span>
               )}
+              {cascade.quality && typeof cascade.quality.qms_gate_passed === 'boolean' && (
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                  title={`§10 quality bar: ${(cascade.quality.bar || []).join(' · ')}`}>
+                  QMS gate: {cascade.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((cascade.quality.delivery_coverage || 0) * 100)}%
+                </span>
+              )}
+              {cascade.biomimetic?.immune && (
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300" title={`7 biomimetic layers · ${cascade.biomimetic.self}`}>
+                  organism: immune {Math.round((cascade.biomimetic.immune.health ?? 0) * 100)}% · {cascade.biomimetic.circadian}
+                </span>
+              )}
               {cascade.ueg_hash && <span className="text-[8px] font-mono text-white/30" title={cascade.ueg_hash}>UEG {String(cascade.ueg_hash).slice(0, 12)}…</span>}
             </div>
             {([

@@ -1641,6 +1641,15 @@ def test_swarm_cascade_in_house_provenance(client):
     appr = r["appraisals"]
     assert {"chief_appraises_board", "board_appraises_ceo", "ceo_appraises_csuite", "bto_appraises_build"} <= set(appr)
     assert all(appr[k] for k in appr)
+    # §10 Solution-Quality Bar + continual operational delivery within the LIVING QMS (real gate)
+    q = r["quality"]
+    assert isinstance(q["qms_gate_passed"], bool) and 0.0 <= q["delivery_coverage"] <= 1.0
+    assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
+    assert len(q["bar"]) >= 12 and {"verified", "compliant", "ranked", "safe"} <= set(q["bar"])
+    # §8 — the biomimetic living-organism substrate the cascade runs within (live immune + circadian)
+    bio = r["biomimetic"]
+    assert len(bio["layers"]) == 7 and {"Genome", "Immune", "Endocrine"} <= set(bio["layers"])
+    assert "immune" in bio and bio.get("circadian")
 
 
 def test_swarm_cascade_user_reconfigurable_org(client):
