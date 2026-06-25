@@ -190,7 +190,7 @@ export const VSBSpawnStudio: React.FC = () => {
   return (
     <div className="space-y-10 pb-24">
       <header>
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-aura mb-2">Enterprise Realm</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-aura mb-2">VSB Enterprises</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">
           VSB Spawn Studio
         </h1>
