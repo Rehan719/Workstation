@@ -1348,6 +1348,30 @@ def test_vsb_repo_generation(client):
     assert client.post("/api/v1/vsb/nope-xyz-404/repo").status_code == 404
 
 
+def test_vsb_website_generation(client):
+    # §13 (D1 increment 2) — the integrated Website: real multi-page static HTML/CSS generated in-house
+    # from the entity, written into the repo's web/, QMS-gated + compliance-screened + document-controlled;
+    # the pages are served as real HTML (known pages only — no path traversal).
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+    vid = est.json()["vsb_id"]
+    m = client.post(f"/api/v1/vsb/{vid}/website").json()
+    assert m["kind"] == "static_website" and m["page_count"] == 3
+    paths = {p["path"] for p in m["pages"]} | {a["path"] for a in m["assets"]}
+    assert {"web/index.html", "web/about.html", "web/solution.html", "web/styles.css"} <= paths
+    q = m["quality_assurance"]["quality"]
+    assert q["qms_gate_passed"] is True and q["document_controlled"] is True
+    assert q["compliance"]["overall"] in ("pass", "review", "fail")
+    assert m["ai_provenance"]["any_external"] is False                 # copy generated in-house (§6)
+    # generated pages are served as real HTML; styles too; unknown page is 404 (no traversal)
+    pg = client.get(f"/api/v1/vsb/{vid}/website/page/index")
+    assert pg.status_code == 200 and pg.text.strip().lower().startswith("<!doctype html") and "<nav>" in pg.text
+    assert client.get(f"/api/v1/vsb/{vid}/website/page/styles").status_code == 200
+    assert client.get(f"/api/v1/vsb/{vid}/website/page/evil").status_code == 404
+    assert client.get(f"/api/v1/vsb/{vid}/website").json()["page_count"] == 3
+    assert client.post("/api/v1/vsb/nope-xyz-404/website").status_code == 404
+
+
 # ── Payments — honest, launch-ready rails (Phase 3, test-mode safe) ───────────
 # Verifies the rails never fabricate a connection and default to safe simulation.
 

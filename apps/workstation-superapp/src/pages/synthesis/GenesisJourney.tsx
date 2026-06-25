@@ -32,6 +32,12 @@ interface RepoManifest {
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
 }
+interface WebsiteManifest {
+  vsb_id: string; name: string; kind: string; page_count: number; total_bytes: number;
+  nav: { label: string; href: string }[]; preview: string;
+  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
+    compliance?: { overall?: string; compliant?: boolean } } };
+}
 
 const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
 const DOMAINS = ['enterprise', 'religion', 'science', 'law', 'care', 'education', 'employment', 'career', 'fintech', 'healthtech', 'edtech'];
@@ -53,6 +59,8 @@ export const GenesisJourney: React.FC = () => {
   // §13 — the VSB IDBO Entity Repository (integrated Website · Web app · Phone app scaffold)
   const [repo, setRepo] = useState<RepoManifest | null>(null);
   const [repoBusy, setRepoBusy] = useState(false);
+  const [site, setSite] = useState<WebsiteManifest | null>(null);
+  const [siteBusy, setSiteBusy] = useState(false);
 
   const run = async () => {
     if (!problem.trim()) return;
@@ -102,6 +110,17 @@ export const GenesisJourney: React.FC = () => {
       if (res.ok) setRepo(await res.json());
     } catch { /* ignore */ }
     setRepoBusy(false);
+  };
+
+  // §13 increment 2 — generate the integrated Website (real multi-page static HTML/CSS into the repo)
+  const generateWebsite = async () => {
+    if (!vsb) return;
+    setSiteBusy(true); setSite(null);
+    try {
+      const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/website`, { method: 'POST' });
+      if (res.ok) setSite(await res.json());
+    } catch { /* ignore */ }
+    setSiteBusy(false);
   };
 
   const phases = result ? [
@@ -325,6 +344,37 @@ export const GenesisJourney: React.FC = () => {
                         <p className="text-[9px] text-slate-500">Integrated surfaces — Website: <span className="text-slate-400">{repo.integrated_surfaces.website}</span> · Web app: <span className="text-slate-400">{repo.integrated_surfaces.webapp}</span> · Phone app: <span className="text-slate-400">{repo.integrated_surfaces.mobile}</span></p>
                       </div>
                     )}
+
+                    {/* §13 increment 2 — generate the integrated Website (real multi-page static HTML/CSS) */}
+                    <div className="mt-3">
+                      <Button onClick={generateWebsite} disabled={siteBusy} className="flex items-center gap-2 bg-slate-900 text-aura text-[11px]">
+                        {siteBusy ? <Loader2 size={13} className="animate-spin" /> : <Layers size={13} />}
+                        {siteBusy ? 'Generating website…' : 'Generate integrated Website'}
+                      </Button>
+                      {site && (
+                        <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-aura">Website · {site.kind}</span>
+                            <span className="text-[8px] font-mono text-slate-500">{site.page_count} pages · {site.total_bytes} bytes</span>
+                            {typeof site.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
+                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${site.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                QMS: {site.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{site.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                              </span>
+                            )}
+                            {site.quality_assurance?.quality?.compliance && (
+                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${site.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                compliance: {site.quality_assurance.quality.compliance.overall}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[9px] text-slate-500">Pages: {site.nav.map(n => n.label).join(' · ')}</p>
+                          <a href={site.preview} target="_blank" rel="noreferrer"
+                            className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
+                            Open the live site →
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

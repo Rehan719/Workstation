@@ -29,7 +29,7 @@ from pathlib import Path
 from agentic_core.config import data_path
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -206,6 +206,155 @@ async def get_vsb_repo(vsb_id: str):
     if not p.exists():
         raise HTTPException(status_code=404, detail=f"No repository generated for VSB {vsb_id} yet.")
     return json.loads(p.read_text(encoding="utf-8"))
+
+
+# ── §13 D1 increment 2 — integrated Website generator (real multi-page static HTML/CSS) ──────────
+def _esc(s) -> str:
+    return (str(s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;"))
+
+
+def _website_page(title: str, active: str, body: str) -> str:
+    nav = "".join(
+        f'<a href="{href}" class="{ "active" if active == key else "" }">{label}</a>'
+        for key, href, label in (("index", "index.html", "Home"), ("about", "about.html", "About"),
+                                  ("solution", "solution.html", "Solution")))
+    return (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+            f"<title>{_esc(title)}</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"
+            f"<header class=\"nav\"><nav>{nav}</nav></header><main>{body}</main>"
+            f"<footer>Living VSB IDBO enterprise · generated in-house on Workstation's own AI fabric · "
+            f"quality-gated, compliance-screened, document-controlled.</footer></body></html>")
+
+
+def _build_website_files(vsb: dict, copy: dict) -> dict:
+    """Build a real, multi-page static website (path -> content) from REAL entity data + in-house copy."""
+    name = vsb.get("name") or vsb.get("vsb_id")
+    challenge = vsb.get("challenge", "")
+    domain, realm = vsb.get("domain", "enterprise"), vsb.get("realm", "enterprise")
+    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
+    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
+    design = str(bp.get("phase_2_design_development", "")) if bp else ""
+    commercial = str(bp.get("phase_3_commercialisation", "")) if bp else ""
+    hero, about, solution = copy.get("hero", ""), copy.get("about", ""), copy.get("solution", "")
+    f: dict = {}
+    f["web/styles.css"] = (
+        ":root{--ink:#0f172a;--bg:#fff;--mut:#475569;--accent:#4f46e5;--soft:#eef2ff}"
+        "*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;"
+        "color:var(--ink);background:var(--bg);line-height:1.6}"
+        ".nav{border-bottom:1px solid #e2e8f0;padding:14px 24px}.nav nav{display:flex;gap:18px;max-width:980px;margin:0 auto}"
+        ".nav a{color:var(--mut);text-decoration:none;font-weight:600;font-size:14px}.nav a.active{color:var(--accent)}"
+        "main{max-width:980px;margin:0 auto;padding:32px 24px}"
+        ".hero{background:var(--soft);border-radius:18px;padding:48px 32px;margin-bottom:28px}"
+        ".hero h1{font-size:34px;margin:0 0 8px}.hero p.tag{font-size:18px;color:var(--accent);font-weight:700;margin:0 0 12px}"
+        ".meta{color:var(--mut);font-size:13px}h2{margin-top:28px}section p{color:#1e293b}"
+        ".cta{display:inline-block;margin-top:18px;background:var(--accent);color:#fff;padding:10px 18px;border-radius:10px;"
+        "text-decoration:none;font-weight:700}footer{max-width:980px;margin:24px auto;padding:16px 24px;color:#94a3b8;"
+        "font-size:12px;border-top:1px solid #e2e8f0}")
+    f["web/index.html"] = _website_page(name, "index",
+        f"<div class=\"hero\"><p class=\"tag\">{_esc(hero) or 'A living, intelligently autonomous enterprise'}</p>"
+        f"<h1>{_esc(name)}</h1><p>{_esc(challenge)}</p>"
+        f"<p class=\"meta\">Domain: {_esc(domain)} · Realm: {_esc(realm)}</p>"
+        f"<a class=\"cta\" href=\"solution.html\">See the solution →</a></div>"
+        f"<section><h2>What we do</h2><p>{_esc((about or concept or challenge)[:600])}</p></section>")
+    f["web/about.html"] = _website_page(f"About — {name}", "about",
+        f"<h1>About {_esc(name)}</h1>"
+        f"<section><h2>Concept</h2><p>{_esc((concept or challenge)[:900])}</p></section>"
+        f"<section><h2>Our approach</h2><p>{_esc(about[:900])}</p></section>"
+        f"<section><h2>Commercialisation</h2><p>{_esc(commercial[:600])}</p></section>")
+    f["web/solution.html"] = _website_page(f"Solution — {name}", "solution",
+        f"<h1>The Solution</h1>"
+        f"<section><h2>Overview</h2><p>{_esc(solution[:900])}</p></section>"
+        f"<section><h2>Design &amp; delivery</h2><p>{_esc(design[:900])}</p></section>"
+        f"<a class=\"cta\" href=\"index.html\">← Back home</a>")
+    return f
+
+
+@router.post("/{vsb_id}/website")
+async def generate_vsb_website(vsb_id: str):
+    """§13 (D1 increment 2) — generate the VSB's integrated WEBSITE: a real, multi-page static HTML/CSS
+    site built from the entity's data + in-house copy, written into the repo's `web/` dir, QMS-gated +
+    compliance-screened + document-controlled. HONEST: a static info/marketing site (real HTML/CSS) — NOT
+    a running web app (increment 3) and not deployed/hosted."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    name, challenge, domain = vsb.get("name"), vsb.get("challenge", ""), vsb.get("domain", "enterprise")
+    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
+    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+
+    async def _q(prompt: str) -> str:
+        m = await gateway.query_meta(prompt, agent="vsb-website")
+        sb = m.get("served_by", "native")
+        prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
+        prov["any_external"] = prov["any_external"] or bool(m.get("is_external"))
+        return (m.get("output", "") or "").strip()
+
+    copy = {
+        "hero": await _q(f"Write ONE compelling website hero tagline (max 16 words, no quotes, one line) "
+                         f"for '{name}', which addresses: {challenge}."),
+        "about": await _q(f"Write 2 short plain-prose paragraphs of website 'About' copy for '{name}' "
+                          f"(domain {domain}); concept: {concept[:500]}. No headings, no markdown."),
+        "solution": await _q(f"Write 2 short plain-prose paragraphs of website 'Solution' copy for '{name}' "
+                             f"addressing: {challenge}. No headings, no markdown."),
+    }
+    files = _build_website_files(vsb, copy)
+    from agentic_core.vbs.quality import assure_delivery
+    combined = "\n".join(c for p, c in files.items() if p.endswith(".html"))
+    qa = await assure_delivery(combined, ["About", "Solution", "What we do"], label="vsb_website")
+
+    root = _REPO_STORE / vsb_id
+    written = []
+    for path, content in files.items():
+        fp = root / path
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        fp.write_text(content, encoding="utf-8")
+        written.append({"path": path, "bytes": len(content.encode("utf-8"))})
+    manifest = {
+        "vsb_id": vsb_id, "name": name, "kind": "static_website",
+        "pages": [w for w in written if w["path"].endswith(".html")],
+        "assets": [w for w in written if not w["path"].endswith(".html")],
+        "page_count": sum(1 for w in written if w["path"].endswith(".html")),
+        "total_bytes": sum(w["bytes"] for w in written),
+        "nav": [{"label": "Home", "href": "index.html"}, {"label": "About", "href": "about.html"},
+                {"label": "Solution", "href": "solution.html"}],
+        "entry": "web/index.html", "preview": f"/api/v1/vsb/{vsb_id}/website/page/index",
+        "repo_root": str(root), "quality_assurance": qa, "ai_provenance": prov, "posture": "in-house-first",
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "note": ("Bespoke static website (real HTML/CSS) generated in-house from the VSB entity, written "
+                 "into the repo's web/ dir. Static info site — NOT a running web app (increment 3), not "
+                 "deployed/hosted."),
+    }
+    (root / "web" / "site.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    _REPO_STORE.mkdir(parents=True, exist_ok=True)
+    (_REPO_STORE / f"{vsb_id}.website.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    try:
+        biobus.fire_signal("motor", "vsb.website.generate", f"{name}: {manifest['page_count']} pages", 0.6)
+    except Exception:
+        pass
+    return manifest
+
+
+@router.get("/{vsb_id}/website")
+async def get_vsb_website(vsb_id: str):
+    """Retrieve the generated website manifest (pages · nav · quality record · preview link)."""
+    p = _REPO_STORE / f"{vsb_id}.website.json"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"No website generated for VSB {vsb_id} yet.")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+@router.get("/{vsb_id}/website/page/{name}", response_class=HTMLResponse)
+async def get_vsb_website_page(vsb_id: str, name: str):
+    """Serve a generated website page (real HTML) for preview. Known pages only (no path traversal)."""
+    if name not in {"index", "about", "solution", "styles"}:
+        raise HTTPException(status_code=404, detail="Unknown page.")
+    fname = "styles.css" if name == "styles" else f"{name}.html"
+    fp = _REPO_STORE / vsb_id / "web" / fname
+    if not fp.exists():
+        raise HTTPException(status_code=404, detail=f"Website not generated for VSB {vsb_id} yet.")
+    media = "text/css" if name == "styles" else "text/html"
+    return HTMLResponse(fp.read_text(encoding="utf-8"), media_type=media)
 
 
 def _list_vsbs() -> list[dict]:
