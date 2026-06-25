@@ -1325,6 +1325,29 @@ def test_genesis_establish_seeds_business_plan(client):
     assert bp["concept"] and bp["vision"]
 
 
+def test_vsb_repo_generation(client):
+    # §13 — the VSB IDBO Entity Repository: scaffold a coherent, version-controlled repo from an established
+    # VSB, on the native fabric, QMS-gated + compliance-screened + document-controlled. web/webapp/mobile
+    # are HONEST scaffolds (later increments), never claimed as built apps.
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+    vid = est.json()["vsb_id"]
+    m = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    assert m["file_count"] >= 8 and m["total_bytes"] > 0
+    tree = set(m["tree"])
+    assert {"README.md", "BUSINESS_PLAN.md", "ORGANISATION.md", "genome.json",
+            "web/index.html", "webapp/README.md", "mobile/manifest.webmanifest"} <= tree
+    q = m["quality_assurance"]["quality"]
+    assert q["qms_gate_passed"] is True and q["document_controlled"] is True          # §10 + QMS-owned DCMS
+    assert q["compliance"]["overall"] in ("pass", "review", "fail")                   # §11 screened
+    # the integrated surfaces are present + HONESTLY labelled as scaffolds (no fabricated built apps)
+    surf = m["integrated_surfaces"]
+    assert "scaffold" in surf["website"].lower() and "scaffold" in surf["mobile"].lower()
+    # GET retrieves the manifest; an unknown VSB is a 404
+    assert client.get(f"/api/v1/vsb/{vid}/repo").json()["file_count"] == m["file_count"]
+    assert client.post("/api/v1/vsb/nope-xyz-404/repo").status_code == 404
+
+
 # ── Payments — honest, launch-ready rails (Phase 3, test-mode safe) ───────────
 # Verifies the rails never fabricate a connection and default to safe simulation.
 

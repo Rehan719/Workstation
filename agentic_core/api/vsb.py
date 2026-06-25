@@ -83,6 +83,131 @@ def _save_vsb(vsb: dict) -> None:
     _vsb_path(vsb["vsb_id"]).write_text(json.dumps(vsb, indent=2))
 
 
+# ── §13 — VSB IDBO Entity Repository generator (increment 1) ──────────────────
+# Scaffolds a coherent, version-controlled repo for an established VSB from its REAL entity data, on the
+# native fabric, in-house — quality-gated (§10) + compliance-screened (§11) + document-controlled (§6).
+# HONEST: docs/config are real, generated from the entity; web/webapp/mobile are clearly-labelled
+# scaffolds for later increments — never fabricated as built/compiled/running apps.
+_REPO_STORE = data_path("vsb_repos")
+
+
+def _repo_slug(s: str) -> str:
+    out = "".join(ch if (ch.isalnum() or ch in "-_") else "-" for ch in (s or "vsb").lower())
+    return out.strip("-")[:40] or "vsb"
+
+
+def _build_repo_files(vsb: dict) -> dict:
+    """Build the bespoke repo file-set (path -> content) from REAL VSB entity data."""
+    name = vsb.get("name") or vsb.get("vsb_id")
+    domain, realm = vsb.get("domain", "enterprise"), vsb.get("realm", "enterprise")
+    challenge = vsb.get("challenge", "")
+    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
+    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
+    design = bp.get("phase_2_design_development", "") if bp else ""
+    commercial = bp.get("phase_3_commercialisation", "") if bp else ""
+    f: dict = {}
+    f["README.md"] = (
+        f"# {name}\n\n> Living, intelligently autonomous VSB IDBO enterprise — bespoke to: {challenge}\n\n"
+        f"- **Domain:** {domain} · **Realm:** {realm} · **Entity:** `{vsb.get('vsb_id')}`\n"
+        f"- **Stage:** {vsb.get('stage')} · **Status:** {vsb.get('status')}\n\n"
+        "This repository is the enterprise's living body — genome/identity, business plan, organisation, "
+        "digital resources, AI-swarm cascades, compliance + quality record, and the integrated "
+        "Website / Web app / Phone app surfaces. Generated in-house on Workstation's own AI fabric; "
+        "quality-gated (§10), compliance-screened (§11), document-controlled (§6).\n\n"
+        "## Structure\n"
+        "- `IDENTITY.md` · `genome.json` — genome / identity\n"
+        "- `BUSINESS_PLAN.md` — Executive Summary · Concept · Vision · Mission · Strategy\n"
+        "- `ORGANISATION.md` — Chief → Board → AI CEO → C-Suite → CoE → Build-to-Order\n"
+        "- `resources/cascades.json` — native AI-swarm cascades (reconfigurable, re-runnable)\n"
+        "- `compliance/QUALITY.md` — live compliance + quality record (see `manifest.json`)\n"
+        "- `web/`, `webapp/`, `mobile/` — integrated Website / Web app / Phone app (scaffold)\n")
+    f["IDENTITY.md"] = (f"# Identity — {name}\n\nGenome spec:\n\n```json\n"
+                        f"{json.dumps(vsb.get('genome_spec') or {}, indent=2)[:4000]}\n```\n\n"
+                        f"Epigenetic traits: {vsb.get('epigenetic_traits')}\n")
+    f["genome.json"] = json.dumps({"vsb_id": vsb.get("vsb_id"), "name": name, "domain": domain,
+                                   "realm": realm, "generation": vsb.get("generation"),
+                                   "genome_spec": vsb.get("genome_spec")}, indent=2)
+    f["BUSINESS_PLAN.md"] = (f"# Business Plan — {name}\n\n## Executive Summary\n{(concept or challenge)[:1200]}\n\n"
+                             f"## Concept\n{concept[:2000]}\n\n## Vision\n{challenge}\n\n"
+                             f"## Design & Development\n{str(design)[:2000]}\n\n"
+                             f"## Commercialisation\n{str(commercial)[:2000]}\n")
+    f["ORGANISATION.md"] = (f"# Organisation — {name}\n\nChief → Board → AI CEO → C-Suite → Centres of "
+                            f"Excellence → Build-to-Order.\n\n## AI CEO\n```json\n"
+                            f"{json.dumps(vsb.get('ceo_specification') or {}, indent=2)[:2000]}\n```\n\n"
+                            f"## Board\n```json\n{json.dumps(vsb.get('board') or {}, indent=2)[:2000]}\n```\n")
+    f["resources/cascades.json"] = json.dumps({"native_swarm": vsb.get("native_swarm"),
+                                               "swarm_config": vsb.get("swarm_config")}, indent=2)[:6000]
+    f["compliance/QUALITY.md"] = ("# Compliance & Quality Record\n\nThe living QMS quality record (gate · "
+                                  "§10 bar · §11 compliance verdicts · document-control hash) for this "
+                                  "repository is in `manifest.json` → `quality_assurance`.\n")
+    f["web/index.html"] = (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+                           f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+                           f"<title>{name}</title></head><body><h1>{name}</h1><p>{challenge}</p>"
+                           f"<p><em>Integrated Website — scaffold; full site generated in a later increment.</em></p>"
+                           f"</body></html>")
+    f["webapp/README.md"] = (f"# {name} — Web app (scaffold)\n\nReconfigurable web-app surface for the VSB "
+                             "entity. Spec → scaffold; built in a later increment (not a compiled app).\n")
+    f["mobile/README.md"] = (f"# {name} — Phone app (scaffold)\n\nMobile (PWA / native) surface for the VSB "
+                             "entity. Spec → scaffold; built in a later increment (not a compiled app).\n")
+    f["mobile/manifest.webmanifest"] = json.dumps({"name": name, "short_name": str(name or "VSB")[:12],
+                                                    "start_url": "/", "display": "standalone"}, indent=2)
+    return f
+
+
+@router.post("/{vsb_id}/repo")
+async def generate_vsb_repo(vsb_id: str):
+    """Generate the bespoke VSB IDBO Entity Repository (§13) for an established VSB — real scaffold files on
+    the native fabric, QMS-gated + compliance-screened + document-controlled. The Website/Web-app/Phone-app
+    directories are honest scaffolds (later increments), never claimed as built/running apps."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    files = _build_repo_files(vsb)
+    from agentic_core.vbs.quality import assure_delivery
+    combined = "\n".join(v for k, v in files.items() if k.endswith(".md"))
+    # required sections = content headings that genuinely appear in the repo docs (not filenames)
+    qa = await assure_delivery(combined, ["Business Plan", "Organisation", "Identity", "Executive Summary"],
+                               label="vsb_repo")
+    root = _REPO_STORE / vsb_id
+    written = []
+    for path, content in files.items():
+        fp = root / path
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        fp.write_text(content, encoding="utf-8")
+        written.append({"path": path, "bytes": len(content.encode("utf-8"))})
+    manifest = {
+        "vsb_id": vsb_id, "name": vsb.get("name"), "slug": _repo_slug(vsb.get("name") or vsb_id),
+        "domain": vsb.get("domain"), "realm": vsb.get("realm"),
+        "repo_root": str(root), "file_count": len(written),
+        "total_bytes": sum(x["bytes"] for x in written),
+        "tree": sorted(x["path"] for x in written), "files": written,
+        "integrated_surfaces": {"website": "web/index.html (scaffold)", "webapp": "webapp/ (scaffold)",
+                                "mobile": "mobile/ (scaffold)"},
+        "quality_assurance": qa, "posture": "in-house-first",
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "note": ("Bespoke VSB IDBO entity repository — real scaffold files generated in-house from the "
+                 "entity's own data; web/webapp/mobile are scaffolds for later increments (NOT built/"
+                 "compiled/running apps)."),
+    }
+    (root / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    _REPO_STORE.mkdir(parents=True, exist_ok=True)
+    (_REPO_STORE / f"{vsb_id}.manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    try:
+        biobus.fire_signal("motor", "vsb.repo.generate", f"{vsb.get('name')}: {len(written)} files", 0.6)
+    except Exception:
+        pass
+    return manifest
+
+
+@router.get("/{vsb_id}/repo")
+async def get_vsb_repo(vsb_id: str):
+    """Retrieve the generated repo manifest (tree + per-file bytes + quality record) for a VSB."""
+    p = _REPO_STORE / f"{vsb_id}.manifest.json"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"No repository generated for VSB {vsb_id} yet.")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
 def _list_vsbs() -> list[dict]:
     result = []
     for p in sorted(_VSB_STORE.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):

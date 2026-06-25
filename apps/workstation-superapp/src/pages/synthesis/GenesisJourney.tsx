@@ -26,6 +26,12 @@ interface JourneyResult {
   deliverable: string;
   status: string;
 }
+interface RepoManifest {
+  vsb_id: string; name: string; file_count: number; total_bytes: number; tree: string[];
+  integrated_surfaces: { website: string; webapp: string; mobile: string };
+  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
+    compliance?: { overall?: string; compliant?: boolean } } };
+}
 
 const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
 const DOMAINS = ['enterprise', 'religion', 'science', 'law', 'care', 'education', 'employment', 'career', 'fintech', 'healthtech', 'edtech'];
@@ -44,6 +50,9 @@ export const GenesisJourney: React.FC = () => {
   const [open, setOpen] = useState<string>('phase1');
   const [establishing, setEstablishing] = useState(false);
   const [vsb, setVsb] = useState<{ vsb_id: string; name: string; dashboard: string; governance?: any } | null>(null);
+  // §13 — the VSB IDBO Entity Repository (integrated Website · Web app · Phone app scaffold)
+  const [repo, setRepo] = useState<RepoManifest | null>(null);
+  const [repoBusy, setRepoBusy] = useState(false);
 
   const run = async () => {
     if (!problem.trim()) return;
@@ -82,6 +91,17 @@ export const GenesisJourney: React.FC = () => {
       setVsb(await res.json());
     } catch { /* surfaced by absence of vsb */ }
     setEstablishing(false);
+  };
+
+  // §13 — generate the bespoke VSB IDBO Entity Repository (integrated Website · Web app · Phone app scaffold)
+  const generateRepo = async () => {
+    if (!vsb) return;
+    setRepoBusy(true); setRepo(null);
+    try {
+      const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/repo`, { method: 'POST' });
+      if (res.ok) setRepo(await res.json());
+    } catch { /* ignore */ }
+    setRepoBusy(false);
   };
 
   const phases = result ? [
@@ -278,6 +298,34 @@ export const GenesisJourney: React.FC = () => {
                   <p className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                     Its plan already opens with an Executive Summary · Concept · Vision, seeded from this journey.
                   </p>
+
+                  {/* §13 — generate the bespoke VSB IDBO Entity Repository (Website · Web app · Phone app scaffold) */}
+                  <div className="mt-3 pt-3 border-t border-slate-800">
+                    <Button onClick={generateRepo} disabled={repoBusy} className="flex items-center gap-2 bg-slate-900 text-highlight text-[11px]">
+                      {repoBusy ? <Loader2 size={13} className="animate-spin" /> : <Layers size={13} />}
+                      {repoBusy ? 'Generating repository…' : 'Generate VSB Repository'}
+                    </Button>
+                    {repo && (
+                      <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Repository</span>
+                          <span className="text-[8px] font-mono text-slate-500">{repo.file_count} files · {repo.total_bytes} bytes</span>
+                          {typeof repo.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
+                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${repo.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                              QMS: {repo.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{repo.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                            </span>
+                          )}
+                          {repo.quality_assurance?.quality?.compliance && (
+                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${repo.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                              compliance: {repo.quality_assurance.quality.compliance.overall}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[9px] font-mono text-slate-400 leading-relaxed">{repo.tree.join('  ·  ')}</p>
+                        <p className="text-[9px] text-slate-500">Integrated surfaces — Website: <span className="text-slate-400">{repo.integrated_surfaces.website}</span> · Web app: <span className="text-slate-400">{repo.integrated_surfaces.webapp}</span> · Phone app: <span className="text-slate-400">{repo.integrated_surfaces.mobile}</span></p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
