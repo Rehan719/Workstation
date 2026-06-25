@@ -949,6 +949,12 @@ def test_compliance_frameworks(client):
     r = client.get("/api/v1/compliance/frameworks")
     assert r.status_code == 200
     assert r.json()
+    # §11 — the federated check flags prohibited content (Halal) and clears clean content
+    clean = client.post("/api/v1/compliance/check", json={"subject": "a halal community meal service"}).json()
+    assert clean["overall"] == "pass" and clean["compliant"] is True
+    haram = client.post("/api/v1/compliance/check", json={"subject": "fund it via riba interest-bearing loans"}).json()
+    assert haram["overall"] == "fail" and haram["compliant"] is False
+    assert any(v["framework"] == "sharia_halal" and v["status"] == "fail" for v in haram["verdicts"])
 
 
 def test_transformation_realisation(client):
@@ -1789,6 +1795,10 @@ def test_swarm_cascade_in_house_provenance(client):
     # the QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5)
     assert isinstance(q.get("quality_record_hash"), str) and len(q["quality_record_hash"]) == 128
     assert q.get("document_controlled") is True
+    # §11 — live compliance woven into EVERY delivery (not bolted on): Halal·Legal·Regulatory·EHS·Ethical
+    comp = q["compliance"]
+    assert isinstance(comp["compliant"], bool) and comp["overall"] in ("pass", "review", "fail")
+    assert {v["framework"] for v in comp["verdicts"]} >= {"sharia_halal", "uk_legal", "ehs", "ethical"}
     # §8 — the biomimetic living-organism substrate the cascade runs within (live immune + circadian)
     bio = r["biomimetic"]
     assert len(bio["layers"]) == 7 and {"Genome", "Immune", "Endocrine"} <= set(bio["layers"])

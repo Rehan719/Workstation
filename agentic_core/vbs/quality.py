@@ -74,6 +74,17 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     except Exception as exc:  # never break a delivery on a QMS hiccup
         quality["qms_error"] = str(exc)
 
+    # §11 — live compliance woven into EVERY delivery (not bolted on): screen the content across
+    # Sharia/Halal · UK Legal · Regulatory · EHS · Ethical. Deterministic + explainable; flags (does not
+    # silently block) so compliance is continuously monitored + evaluated on every workflow.
+    try:
+        from agentic_core.api.compliance import screen_compliance
+        screen = screen_compliance(content or "")
+        quality["compliance"] = {"overall": screen["overall"], "compliant": screen["compliant"],
+                                 "verdicts": screen["verdicts"]}
+    except Exception as exc:
+        quality["compliance_error"] = str(exc)
+
     biomimetic: Dict[str, Any] = {"layers": list(BIOMIMETIC_LAYERS),
                                   "self": "self-managing · improving · healing"}
     try:

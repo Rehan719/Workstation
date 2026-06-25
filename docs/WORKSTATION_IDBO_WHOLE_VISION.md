@@ -423,6 +423,7 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   A dedicated **Studio** page (route `/reactor-studio`, in the Resource Fabric nav) renders real **SVG
   bar/line/scatter charts** (scatter carries an optional **z** magnitude → 3D), the analytics cards, and
   the insight. **The §7 Reactor is now fully delivered: Incubator · Experimentation · Studio.**
+- ✅ **§11 live compliance woven into the universal delivery gate.** `assure_delivery` now also runs `screen_compliance` (Sharia/Halal · UK Legal · Regulatory · EHS · Ethical) on **every** delivery (cascade · Deliverables · Genesis · composition-run · experiment · studio) — `quality.compliance = {overall, compliant, verdicts}`, continuously monitored + flagged (not bolted on, §11). Surfaced as a `compliance: pass|review|fail` badge on the Deliverables panel. A prioritised/ranked/categorised gap plan vs the whole vision is in `docs/WORKSTATION_IDBO_GAP_PLAN.md`.
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

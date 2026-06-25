@@ -55,26 +55,26 @@ def _verdict(framework: str, status: str, reason: str) -> Dict[str, str]:
     return {"framework": framework, "status": status, "reason": reason}
 
 
-@router.post("/check")
-async def check(req: ComplianceCheck):
-    """Check a subject across all frameworks. status: pass | review | fail."""
-    text = req.subject or ""
+def screen_compliance(text: str, jurisdiction: str = "UK / London") -> Dict[str, Any]:
+    """Reusable, deterministic compliance screen over arbitrary delivery text — Sharia/Halal · UK Legal ·
+    Regulatory · EHS · Ethical. Pure + explainable (regex rules; engines layered where present). Returns
+    {overall, compliant, verdicts}. Shared by the /check endpoint AND the universal delivery gate
+    (`assure_delivery`) so compliance is woven into every workflow (§11), not bolted on. (The gaas.v5
+    Constitutional gate is applied separately by the org cascade / Change Control.)"""
+    text = text or ""
     verdicts: List[Dict[str, str]] = []
 
-    # Sharia / Halal — attempt the engine, fall back to deterministic rules.
     halal_status, halal_reason = "pass", "No prohibited (haram) elements detected."
     if _HARAM.search(text):
         halal_status, halal_reason = "fail", f"Prohibited element: '{_HARAM.search(text).group(0)}'"
     try:
         from agentic_core.business.governance.halal_compliance_officer import HalalComplianceOfficer  # noqa
-        # engine present — verdict already deterministic above; mark engine-backed
         halal_reason += " (engine-backed)"
     except Exception:
         pass
     verdicts.append(_verdict("sharia_halal", halal_status, halal_reason))
 
-    # UK Legal
-    legal_status, legal_reason = "pass", f"No unlawful elements; jurisdiction {req.jurisdiction}."
+    legal_status, legal_reason = "pass", f"No unlawful elements; jurisdiction {jurisdiction}."
     if _ILLEGAL.search(text):
         legal_status, legal_reason = "fail", f"Unlawful element: '{_ILLEGAL.search(text).group(0)}'"
     try:
@@ -84,22 +84,30 @@ async def check(req: ComplianceCheck):
         pass
     verdicts.append(_verdict("uk_legal", legal_status, legal_reason))
 
-    # Regulatory
     reg_status, reg_reason = "pass", "No regulated-activity triggers."
     if _REGULATED.search(text):
         reg_status, reg_reason = "review", f"Regulated activity — review required: '{_REGULATED.search(text).group(0)}'"
     verdicts.append(_verdict("regulatory", reg_status, reg_reason))
 
-    # EHS
     ehs_status, ehs_reason = "pass", "No environmental/health/safety hazards detected."
     if _EHS.search(text):
         ehs_status, ehs_reason = "review", f"Potential EHS concern: '{_EHS.search(text).group(0)}'"
     verdicts.append(_verdict("ehs", ehs_status, ehs_reason))
 
-    # Ethical
     verdicts.append(_verdict("ethical", "pass", "Beneficence/honesty/no-harm upheld (no violations detected)."))
 
-    # Constitutional (gaas.v5)
+    statuses = [v["status"] for v in verdicts]
+    overall = "fail" if "fail" in statuses else ("review" if "review" in statuses else "pass")
+    return {"overall": overall, "compliant": overall != "fail", "verdicts": verdicts}
+
+
+@router.post("/check")
+async def check(req: ComplianceCheck):
+    """Check a subject across all frameworks. status: pass | review | fail."""
+    screen = screen_compliance(req.subject or "", req.jurisdiction)
+    verdicts = list(screen["verdicts"])
+
+    # Constitutional (gaas.v5) — added to the full endpoint check (needs domain/kind context)
     const_status, const_reason = "pass", "Constitutional gate clear."
     try:
         from agentic_core.gaas.v5 import ConstitutionalPolicyGate

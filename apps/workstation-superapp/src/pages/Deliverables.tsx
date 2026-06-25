@@ -9,7 +9,8 @@ interface DeliverableSummary {
 }
 interface QualityAssurance {
   quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[];
-    qms_non_conformance_rate?: number; quality_record_hash?: string; document_controlled?: boolean };
+    qms_non_conformance_rate?: number; quality_record_hash?: string; document_controlled?: boolean;
+    compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } };
   biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
 }
 interface Deliverable {
@@ -170,6 +171,12 @@ export const Deliverables: React.FC = () => {
                     <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
                       title={`7 biomimetic layers · ${selected.quality_assurance.biomimetic.self || ''}`}>
                       organism: immune {Math.round((selected.quality_assurance.biomimetic.immune.health ?? 0) * 100)}% · {selected.quality_assurance.biomimetic.circadian}
+                    </span>
+                  )}
+                  {selected.quality_assurance.quality?.compliance && (
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${selected.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                      title={`§11 live compliance — ${(selected.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
+                      compliance: {selected.quality_assurance.quality.compliance.overall}
                     </span>
                   )}
                 </div>
