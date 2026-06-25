@@ -9,7 +9,7 @@ interface DeliverableSummary {
 }
 interface QualityAssurance {
   quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[];
-    qms_non_conformance_rate?: number };
+    qms_non_conformance_rate?: number; quality_record_hash?: string; document_controlled?: boolean };
   biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
 }
 interface Deliverable {
@@ -162,8 +162,8 @@ export const Deliverables: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-1.5 mb-3">
                   {typeof selected.quality_assurance.quality.qms_gate_passed === 'boolean' && (
                     <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${selected.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
-                      title={`§10 Solution-Quality Bar: ${(selected.quality_assurance.quality.bar || []).join(' · ')}`}>
-                      Living-QMS gate: {selected.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((selected.quality_assurance.quality.delivery_coverage || 0) * 100)}%
+                      title={`§10 Solution-Quality Bar: ${(selected.quality_assurance.quality.bar || []).join(' · ')}${selected.quality_assurance.quality.quality_record_hash ? `\nDocument-controlled under the QMS (DCMS) · record ${selected.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>
+                      Living-QMS gate: {selected.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((selected.quality_assurance.quality.delivery_coverage || 0) * 100)}%{selected.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
                     </span>
                   )}
                   {selected.quality_assurance.biomimetic?.immune && (

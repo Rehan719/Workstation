@@ -63,6 +63,14 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         quality["qms_gate_passed"] = bool(await qms.run_quality_gates({"coverage": coverage, "stubs_found": stub}))
         quality["qms_min_coverage"] = qms.min_coverage
         quality["qms_non_conformance_rate"] = qms.get_non_conformance_rate()
+        # The QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5):
+        # the gate verdict becomes a versioned, SHA3-512-sealed controlled document.
+        quality["quality_record_hash"] = await qms.control_document(
+            f"qms_record:{label}",
+            {"label": label, "delivery_coverage": coverage, "stub_found": stub,
+             "qms_gate_passed": quality["qms_gate_passed"], "bar": SOLUTION_QUALITY_BAR},
+            actor="QMS")
+        quality["document_controlled"] = True
     except Exception as exc:  # never break a delivery on a QMS hiccup
         quality["qms_error"] = str(exc)
 

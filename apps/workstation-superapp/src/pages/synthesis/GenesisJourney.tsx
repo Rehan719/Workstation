@@ -17,7 +17,8 @@ interface JourneyResult {
   phase_3_commercialisation: string;
   governance: { status: string; checkpoint: string | null; node: string };
   quality_assurance?: {
-    quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[] };
+    quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[];
+      quality_record_hash?: string; document_controlled?: boolean };
     biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
   };
   engines_used: string[];
@@ -223,8 +224,8 @@ export const GenesisJourney: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 {typeof result.quality_assurance.quality.qms_gate_passed === 'boolean' && (
                   <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${result.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
-                    title={`§10 Solution-Quality Bar: ${(result.quality_assurance.quality.bar || []).join(' · ')}`}>
-                    Living-QMS gate: {result.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((result.quality_assurance.quality.delivery_coverage || 0) * 100)}%
+                    title={`§10 Solution-Quality Bar: ${(result.quality_assurance.quality.bar || []).join(' · ')}${result.quality_assurance.quality.quality_record_hash ? `\nDocument-controlled under the QMS (DCMS) · record ${result.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>
+                    Living-QMS gate: {result.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((result.quality_assurance.quality.delivery_coverage || 0) * 100)}%{result.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
                   </span>
                 )}
                 {result.quality_assurance.biomimetic?.immune && (

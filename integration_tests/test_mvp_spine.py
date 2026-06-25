@@ -1666,6 +1666,9 @@ def test_swarm_cascade_in_house_provenance(client):
     assert isinstance(q["qms_gate_passed"], bool) and 0.0 <= q["delivery_coverage"] <= 1.0
     assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
     assert len(q["bar"]) >= 12 and {"verified", "compliant", "ranked", "safe"} <= set(q["bar"])
+    # the QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5)
+    assert isinstance(q.get("quality_record_hash"), str) and len(q["quality_record_hash"]) == 128
+    assert q.get("document_controlled") is True
     # §8 — the biomimetic living-organism substrate the cascade runs within (live immune + circadian)
     bio = r["biomimetic"]
     assert len(bio["layers"]) == 7 and {"Genome", "Immune", "Endocrine"} <= set(bio["layers"])
@@ -1840,6 +1843,17 @@ def test_vbs_living_systems_integrated_in_house(client):
     a = client.post("/api/v1/vbs/dcms/commit", json={"artifact_id": "t-vbs", "content": {"v": 1}}).json()
     b = client.post("/api/v1/vbs/dcms/commit", json={"artifact_id": "t-vbs", "content": {"v": 2}}).json()
     assert a["algo"] == "sha3_512" and a["hash"] != b["hash"] and b["version"] == a["version"] + 1
+    # W110 — the QMS OWNS the DCMS (ISO 9001 §7.5): document control is a function OF the QMS, not a sibling
+    import asyncio as _aio
+    from agentic_core.vbs.registry import qms as _qms, dcms as _dcms
+    assert _qms.dcms is _dcms                                   # one DCMS instance, owned by the QMS
+    _h = _aio.run(_qms.control_document("t-qms-owns-dcms", {"v": 1}, "pytest"))
+    assert isinstance(_h, str) and len(_h) == 128              # QMS places a doc under control via its DCMS
+    dc = client.get("/api/v1/vbs/qms/document-control").json()
+    assert dc["qms_owns_dcms"] is True and dc["owned_subsystem"].startswith("DCMS")
+    assert dc["controlled_documents"] >= 1 and dc["audit_integrity"] == 1.0
+    cat = {s["id"]: s for s in sysz["systems"]}                 # catalogue declares ownership both ways
+    assert "dcms" in (cat["qms"].get("owns") or []) and cat["dcms"].get("owned_by") == "qms"
     # INTEGRATED INTO THE IN-HOUSE AI: the native workflow tree's output is governed by VBS QMS + DCMS
     tree = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
     gov = tree.get("governance")

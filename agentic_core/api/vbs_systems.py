@@ -55,6 +55,13 @@ async def dcms_commit(req: DCMSCommit):
             "audit_integrity": dcms.get_audit_integrity(), "real": True}
 
 
+@router.get("/qms/document-control")
+async def qms_document_control():
+    """The QMS OWNS the DCMS (ISO 9001 §7.5): document control is a function of the QMS. This exposes the
+    QMS's document-control posture — proving the DCMS is operated as the QMS's subsystem."""
+    return {"qms_owns_dcms": qms.dcms is dcms, **qms.document_control_status(), "real": True}
+
+
 class BMSEcon(BaseModel):
     insights_count: int = 1
     wh_consumed: float = 0.0

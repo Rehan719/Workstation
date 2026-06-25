@@ -190,8 +190,8 @@ const SwarmIntelligence: React.FC = () => {
               )}
               {cascade.quality && typeof cascade.quality.qms_gate_passed === 'boolean' && (
                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
-                  title={`§10 quality bar: ${(cascade.quality.bar || []).join(' · ')}`}>
-                  QMS gate: {cascade.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((cascade.quality.delivery_coverage || 0) * 100)}%
+                  title={`§10 quality bar: ${(cascade.quality.bar || []).join(' · ')}${cascade.quality.quality_record_hash ? `\nDocument-controlled under the QMS (DCMS) · record ${String(cascade.quality.quality_record_hash).slice(0, 16)}…` : ''}`}>
+                  QMS gate: {cascade.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((cascade.quality.delivery_coverage || 0) * 100)}%{cascade.quality.document_controlled ? ' · doc-controlled' : ''}
                 </span>
               )}
               {cascade.biomimetic?.immune && (

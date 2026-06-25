@@ -364,6 +364,14 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   commercialisation phases) is QMS-gated, held to the §10 bar, recorded within the §8 organism, and the
   gate + organism are surfaced on the Genesis page. **Both core offerings (#1 domain deliverables, #2 the
   end-to-end journey) and the living-organisation cascade now deliver through the one living QMS.**
+- ✅ **The QMS OWNS document control (ISO 9001 §7.5).** Document control is now a function *of* the QMS,
+  not a sibling system: the `QualityManagementSystem` owns the `DocumentControlManagementSystem`
+  (`qms.dcms`; the registry's `dcms` is the same single instance), and exposes `control_document(...)` +
+  `document_control_status()` (live at `GET /api/v1/vbs/qms/document-control`). Every quality assurance now
+  **document-controls its quality record** through the QMS-owned DCMS — the gate verdict becomes a
+  versioned, SHA3-512-sealed controlled document (`quality_record_hash`), surfaced as a **doc-controlled**
+  marker on every QMS-gate badge. So the QMS and DCMS are integrated: quality gating and document control
+  are one act, under one owner.
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan
