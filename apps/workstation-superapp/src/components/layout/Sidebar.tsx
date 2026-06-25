@@ -28,8 +28,6 @@ const allNavItems: NavItem[] = [
     id: 'home-facet',
     subItems: [
       { name: 'Dashboard',     icon: LayoutDashboard, id: 'dashboard' },
-      { name: 'Grand Ops',     icon: Gauge,           id: 'grand-ops' },
-      { name: 'Introspection', icon: Eye,             id: 'introspection' },
       { name: 'Organism',      icon: Activity,        id: 'organism' },
       { name: 'Heartbeat',     icon: HeartPulse,      id: 'heartbeat' },
       { name: 'Cognition',     icon: Network,         id: 'cognition' },
@@ -131,8 +129,6 @@ const allNavItems: NavItem[] = [
       { name: 'Operational Excellence', icon: Gauge,   id: 'operations' },
       { name: 'Sovereign Evolution',icon: Dna,         id: 'sovereign-evolution' },
       { name: 'CoE Hub',            icon: Trophy,      id: 'coe' },
-      { name: 'AB Testing',         icon: Target,      id: 'ab-testing' },
-      { name: 'Learning Dashboard', icon: BarChart3,   id: 'learning-dashboard' },
       { name: 'Audit Dashboard',    icon: ShieldCheck, id: 'audit-dashboard' },
     ]
   },

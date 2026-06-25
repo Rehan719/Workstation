@@ -9,8 +9,8 @@ import Joyride from 'react-joyride';
 
 // ── 1. Home / organism overview ──────────────────────────────────────────
 import { DashboardNew as Dashboard } from './pages/DashboardNew';
-import GrandOpsDashboard from './pages/GrandOpsDashboard';
-import { IntrospectionDashboard } from './pages/IntrospectionDashboard';
+// GrandOpsDashboard + IntrospectionDashboard archived — fabricated static infra/reasoning metrics
+// (no backend); redundant with /organism + the real cognition pages.
 import { OrganismDashboard } from './pages/organism/OrganismDashboard';
 import { HeartbeatMonitor } from './pages/organism/HeartbeatMonitor';
 import { CognitionIntegration } from './pages/CognitionIntegration';
@@ -80,8 +80,8 @@ import { ComplianceChecker } from './pages/governance/ComplianceChecker';
 import { OperationalExcellence } from './pages/OperationalExcellence';
 import { SovereignEvolution } from './pages/evolution/SovereignEvolution';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
-import { ABTestingPanel } from './pages/evolution/ABTesting';
-import { LearningDashboard } from './pages/evolution/LearningDashboard';
+// ABTestingPanel + LearningDashboard archived — fabricated experiment/"evolutionary impact" metrics;
+// LearningDashboard was redundant with /impact.
 import { AuditDashboard } from './pages/tools/AuditDashboard';
 
 // ── 8. Developer Portal & system ─────────────────────────────────────────
@@ -118,8 +118,6 @@ function App() {
           {/* ── 1. Home / organism overview ─────────────────────────── */}
           <Route path="/"               element={<Dashboard />} />
           <Route path="/dashboard"      element={<Navigate to="/" replace />} />
-          <Route path="/grand-ops"      element={<GrandOpsDashboard />} />
-          <Route path="/introspection"  element={<IntrospectionDashboard />} />
           <Route path="/organism"       element={<OrganismDashboard />} />
           <Route path="/heartbeat"      element={<HeartbeatMonitor />} />
           <Route path="/cognition"      element={<CognitionIntegration />} />
@@ -189,8 +187,6 @@ function App() {
           <Route path="/operations"         element={<OperationalExcellence />} />
           <Route path="/sovereign-evolution" element={<SovereignEvolution />} />
           <Route path="/coe"                element={<KnowledgeHub />} />
-          <Route path="/ab-testing"         element={<ABTestingPanel />} />
-          <Route path="/learning-dashboard" element={<LearningDashboard />} />
           <Route path="/audit-dashboard"    element={<AuditDashboard />} />
           <Route path="/audit"              element={<Navigate to="/governance-hub" replace />} />
           <Route path="/transparency"       element={<Navigate to="/governance-hub" replace />} />
