@@ -16,12 +16,13 @@ import time
 import uuid
 from typing import AsyncIterator, Literal, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.config import data_path
+from agentic_core.vbs.quality import assure_delivery
 
 router = APIRouter(tags=["products"])
 
@@ -316,6 +317,77 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
         analysis=analysis,
         completed_at=time.time(),
         generations_run=gens,
+    )
+
+
+# ── §7 Reactor — Experimentation ("what-if" scenarios) ───────────────────────
+class ExperimentRequest(BaseModel):
+    subject: str
+    domain: str = "general"
+    scenarios: list[str] = []   # the "what-if" scenarios to project + compare (capped at 6)
+    fitness_criteria: str = "impact, feasibility, risk, opportunity"
+
+
+class ScenarioOutcome(BaseModel):
+    scenario: str
+    outcome: str
+    served_by: str
+
+
+class ExperimentResult(BaseModel):
+    experiment_id: str
+    subject: str
+    domain: str
+    scenarios_run: int
+    outcomes: list[ScenarioOutcome]
+    comparison: str
+    ai_provenance: dict
+    quality_assurance: dict
+    completed_at: float
+
+
+@router.post("/api/v1/reactor/experiment", response_model=ExperimentResult)
+async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
+    """The §7 Reactor's Experimentation engine: project the outcome of each user-defined WHAT-IF scenario
+    against the subject, then compare + rank them — on Workstation's OWN fabric (in-house provenance),
+    QMS-gated + document-controlled (§10/§8)."""
+    scenarios = [s.strip() for s in req.scenarios if s and s.strip()][:6]
+    if not scenarios:
+        raise HTTPException(status_code=400, detail="Provide at least one 'what-if' scenario.")
+    eid = uuid.uuid4().hex[:10]
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+
+    def _record(meta: dict) -> str:
+        sb = meta.get("served_by", "native")
+        prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
+        prov["any_external"] = prov["any_external"] or bool(meta.get("is_external"))
+        return sb
+
+    outcomes: list[ScenarioOutcome] = []
+    for sc in scenarios:
+        meta = await gateway.query_meta(
+            f"You are the §7 Reactor's Experimentation engine. Subject: {req.subject} (domain: {req.domain}).\n"
+            f"WHAT-IF scenario: {sc}\n\nProject the outcome under this scenario:\n"
+            "## Projected Outcome\n## Key Risks\n## Opportunities\n## Net Assessment (one line)",
+            agent="reactor-experiment")
+        outcomes.append(ScenarioOutcome(scenario=sc, outcome=(meta.get("output", "") or "")[:1200],
+                                        served_by=_record(meta)))
+
+    comp_meta = await gateway.query_meta(
+        f"Compare these what-if scenario outcomes for «{req.subject}». Rank them best→worst against: "
+        f"{req.fitness_criteria}. Provide:\n## Ranking\n## Key Differences\n## Recommendation\n\n"
+        + "\n\n".join(f"SCENARIO: {o.scenario}\n{o.outcome[:500]}" for o in outcomes),
+        agent="reactor-experiment")
+    comparison = comp_meta.get("output", "") or ""
+    _record(comp_meta)
+
+    combined = comparison + "\n" + "\n".join(o.outcome for o in outcomes)
+    qa = await assure_delivery(combined, [o.scenario for o in outcomes], label="experiment")
+
+    return ExperimentResult(
+        experiment_id=eid, subject=req.subject, domain=req.domain, scenarios_run=len(scenarios),
+        outcomes=outcomes, comparison=comparison, ai_provenance=prov, quality_assurance=qa,
+        completed_at=time.time(),
     )
 
 

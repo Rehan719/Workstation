@@ -1166,6 +1166,23 @@ def test_incubator_parameterised_evolution(client):
     assert {"temperature", "mutation", "iterations"} <= set(res["reconfigurable_params"])
 
 
+def test_reactor_experimentation_whatif(client):
+    # §7 Reactor — Experimentation: project + compare outcomes across user-defined what-if scenarios,
+    # in-house, QMS-gated + document-controlled (§10/§8).
+    r = client.post("/api/v1/reactor/experiment",
+                    json={"subject": "a halal meal-service pricing model", "domain": "enterprise",
+                          "scenarios": ["What if we cut price 20%?", "What if we add a subscription tier?"]}).json()
+    assert r["scenarios_run"] == 2 and len(r["outcomes"]) == 2
+    assert all(o["outcome"] and o["scenario"] for o in r["outcomes"]) and r["comparison"]
+    assert r["ai_provenance"]["any_external"] is False        # ran on OWNED resources (§6)
+    assert r["quality_assurance"]["quality"]["document_controlled"] is True
+    # at least one scenario is required
+    assert client.post("/api/v1/reactor/experiment", json={"subject": "x", "scenarios": []}).status_code == 400
+    # the §7 fabric exposes the Experimentation resource (user design control)
+    res = client.get("/api/v1/resources/experimentation").json()
+    assert res["type"] == "experimentation" and "scenarios" in res["reconfigurable_params"]
+
+
 def test_resource_fabric_native_swarm_cascade(client):
     # W1-d: native AI resources are first-class in the fabric, and bespoke swarm cascades are
     # reconfigurable, reusable, re-runnable resources that run on Workstation's OWN resources.

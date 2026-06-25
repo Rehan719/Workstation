@@ -409,6 +409,13 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   with `generations_run`. The `incubator` fabric resource exposes `{base_prompt, variants, temperature,
   mutation, iterations}` so the loop is **user-reconfigurable** via the §7 design surface (param editor +
   model/simulate + composition run).
+- ✅ **§7 Reactor — Experimentation ("what-if" scenarios).** The Reactor's second sub-part: `POST
+  /api/v1/reactor/experiment` projects the outcome of each user-defined **what-if scenario** against a
+  subject (## Projected Outcome · Risks · Opportunities · Net Assessment), then **compares + ranks** them
+  against fitness criteria (## Ranking · Key Differences · Recommendation) — on Workstation's OWN fabric
+  (in-house provenance), **QMS-gated + document-controlled** (§10/§8). Surfaced as the `experimentation`
+  fabric resource with an inline **Run experiment** panel on the Resource Fabric page (subject + scenarios
+  list, §9). (Remaining Reactor sub-part: the Studio's 2D/3D visual analytics.)
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

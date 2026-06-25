@@ -74,6 +74,18 @@ const RUN_CONFIGS: Record<string, React.ComponentProps<typeof DomainTool>> = {
       { name: 'tier', label: 'Tier', type: 'text', default: 'standard' },
     ],
   },
+  experimentation: {
+    title: 'Reactor · Experimentation (what-if)',
+    description: <>Project and compare the outcomes of what-if scenarios against a subject — in-house, ranked, QMS-gated.</>,
+    endpoint: '/api/v1/reactor/experiment',
+    resultKey: 'comparison',
+    submitLabel: 'Run experiment',
+    fields: [
+      { name: 'subject', label: 'Subject', type: 'textarea', placeholder: 'e.g. our halal meal-service pricing model' },
+      { name: 'scenarios', label: 'What-if scenarios (one per line)', type: 'list', default: 'What if we cut price 20%?\nWhat if we add a subscription tier?\nWhat if we expand to a second city?' },
+      { name: 'domain', label: 'Domain', type: 'text', default: 'enterprise' },
+    ],
+  },
   truth_consensus: {
     title: 'Truth Consensus',
     description: <>Reputation-weighted consensus over a set of claims — accepts a claim when its weighted confidence clears the threshold.</>,

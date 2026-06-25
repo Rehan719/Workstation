@@ -109,6 +109,12 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"base_prompt": "str", "variants": "int (2-5)", "temperature": "float 0-1 (diversity)",
         "mutation": "float 0-1 (per-generation change)", "iterations": "int 1-4 (generations)"},
        "/api/v1/incubator/evolve", ["development", "forge", "evolution"]),
+    _R("experimentation", "Reactor · Experimentation", "digital_resource", "experimentation",
+       "The §7 Reactor's what-if engine: projects + compares the outcomes of user-defined scenarios, "
+       "ranked against fitness criteria — on the native fabric (in-house), QMS-gated.",
+       ["what-if scenarios", "outcome projection", "scenario comparison", "ranking"],
+       {"subject": "str", "scenarios": "list (one what-if per line)", "domain": "str"},
+       "/api/v1/reactor/experiment", ["synthesis", "design", "development", "forge", "evolution"]),
     _R("digital_twin", "Digital Twin & Simulator", "digital_resource", "simulator",
        "Generates AI models and runs scenario simulations / optimisation (generators + simulators).",
        ["model generation", "scenario simulation", "optimisation"],
