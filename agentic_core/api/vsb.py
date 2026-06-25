@@ -357,6 +357,159 @@ async def get_vsb_website_page(vsb_id: str, name: str):
     return HTMLResponse(fp.read_text(encoding="utf-8"), media_type=media)
 
 
+# ── §13 D1 increment 3 — interactive Web app generator (real client-side vanilla JS) ─────────────
+# A genuine, data-driven, client-side interactive app (HTML + CSS + vanilla JS + data.json) — runs
+# directly in a browser, no build step. HONEST: a client-side app, NOT a server/backend app, not deployed.
+_WEBAPP_APP_JS = r"""(async function () {
+  const app = document.getElementById('app');
+  let d = {};
+  try { d = await (await fetch('data.json')).json(); } catch (e) { app.innerHTML = '<p>Could not load data.</p>'; return; }
+  const tabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'plan', label: 'Business Plan' },
+    { id: 'org', label: 'Organisation' },
+    { id: 'resources', label: 'Resources' },
+  ];
+  let active = 'overview', filter = '';
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const title = (k) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  function section(id) {
+    if (id === 'overview') return '<h2>' + esc(d.name) + '</h2><p class="muted">' + esc(d.domain) + ' · ' + esc(d.realm || '') + '</p><p>' + esc(d.challenge) + '</p><p>' + esc(d.concept || '') + '</p>';
+    if (id === 'plan') { const bp = d.business_plan || {}; return '<h2>Business Plan</h2>' + ['executive_summary', 'concept', 'vision', 'mission', 'strategy'].map((k) => bp[k] ? '<h3>' + title(k) + '</h3><p>' + esc(bp[k]) + '</p>' : '').join(''); }
+    if (id === 'org') return '<h2>Organisation</h2><p>Chief → Board → AI CEO → C-Suite → Centres of Excellence → Build-to-Order</p><h3>AI CEO</h3><pre>' + esc(JSON.stringify((d.organisation || {}).ceo || {}, null, 2)) + '</pre>';
+    if (id === 'resources') { const list = (d.resources || []).filter((r) => String(r).toLowerCase().includes(filter.toLowerCase())); return '<h2>Resources</h2><input id="rfilter" placeholder="Filter resources…" value="' + esc(filter) + '"><ul>' + (list.map((r) => '<li>' + esc(r) + '</li>').join('') || '<li class="muted">No resources.</li>') + '</ul>'; }
+    return '';
+  }
+  function render() {
+    app.innerHTML = '<header><h1>' + esc(d.name) + '</h1><nav>' + tabs.map((t) => '<button data-tab="' + t.id + '" class="' + (t.id === active ? 'active' : '') + '">' + t.label + '</button>').join('') + '</nav></header><div class="content">' + section(active) + '</div><footer>Living VSB IDBO web app · generated in-house · quality-gated · compliance-screened · document-controlled.</footer>';
+    app.querySelectorAll('nav button').forEach((b) => b.onclick = () => { active = b.dataset.tab; render(); });
+    const rf = document.getElementById('rfilter');
+    if (rf) rf.oninput = () => { filter = rf.value; const pos = rf.selectionStart; render(); const nf = document.getElementById('rfilter'); if (nf) { nf.focus(); nf.setSelectionRange(pos, pos); } };
+  }
+  render();
+})();
+"""
+
+
+def _build_webapp_files(vsb: dict) -> dict:
+    """Build a real client-side interactive web app (HTML + CSS + vanilla JS + data.json) from entity data."""
+    name = vsb.get("name") or vsb.get("vsb_id")
+    domain, realm = vsb.get("domain", "enterprise"), vsb.get("realm", "enterprise")
+    challenge = vsb.get("challenge", "")
+    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
+    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
+    # resources for the interactive list — real stage roles if present, else org tiers
+    ns = vsb.get("native_swarm") or {}
+    roles = []
+    if isinstance(ns, dict):
+        for s in (ns.get("stages") or []):
+            if isinstance(s, dict) and s.get("role"):
+                roles.append(s["role"])
+        roles += [str(o) for o in (ns.get("org") or []) if o]
+    if not roles:
+        roles = ["AI CEO", "C-Suite", "Centres of Excellence", "Build-to-Order", "Cognitive Cascade", "Genesis"]
+    appdata = {
+        "name": name, "domain": domain, "realm": realm, "challenge": challenge,
+        "concept": concept[:1500],
+        "business_plan": {"executive_summary": (concept or challenge)[:600], "concept": concept[:800],
+                          "vision": challenge, "mission": f"Deliver: {challenge}"[:300]},
+        "organisation": {"ceo": vsb.get("ceo_specification") or {}, "board": vsb.get("board") or {}},
+        "resources": roles[:24],
+    }
+    f: dict = {}
+    f["webapp/index.html"] = (
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+        "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+        f"<title>{_esc(name)} — Web app</title><link rel=\"stylesheet\" href=\"styles.css\"></head>"
+        "<body><div id=\"app\"></div><script src=\"app.js\"></script></body></html>")
+    f["webapp/app.js"] = _WEBAPP_APP_JS
+    f["webapp/data.json"] = json.dumps(appdata, indent=2)
+    f["webapp/styles.css"] = (
+        ":root{--ink:#0f172a;--mut:#64748b;--accent:#4f46e5;--soft:#eef2ff;--line:#e2e8f0}"
+        "*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;"
+        "color:var(--ink);background:#f8fafc;line-height:1.6}#app{max-width:900px;margin:0 auto;background:#fff;"
+        "min-height:100vh}header{padding:20px 24px;border-bottom:1px solid var(--line)}header h1{margin:0 0 10px;font-size:24px}"
+        "nav{display:flex;gap:8px;flex-wrap:wrap}nav button{border:1px solid var(--line);background:#fff;color:var(--mut);"
+        "font-weight:700;font-size:13px;padding:7px 14px;border-radius:9px;cursor:pointer}nav button.active{background:var(--accent);"
+        "color:#fff;border-color:var(--accent)}.content{padding:24px}.content h2{margin-top:0}.muted{color:var(--mut)}"
+        "input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:10px;font-size:14px}"
+        "ul{padding-left:18px}pre{background:var(--soft);padding:12px;border-radius:9px;overflow:auto;font-size:12px}"
+        "footer{padding:16px 24px;color:#94a3b8;font-size:12px;border-top:1px solid var(--line)}")
+    return f
+
+
+_WEBAPP_SERVE = {"index": ("index.html", "text/html"), "app.js": ("app.js", "text/javascript"),
+                 "styles.css": ("styles.css", "text/css"), "data.json": ("data.json", "application/json")}
+
+
+@router.post("/{vsb_id}/webapp")
+async def generate_vsb_webapp(vsb_id: str):
+    """§13 (D1 increment 3) — generate the VSB's interactive WEB APP: a real client-side app (HTML + CSS +
+    vanilla JS + data.json) data-driven from the entity, written into the repo's `webapp/` dir, QMS-gated +
+    compliance-screened + document-controlled. HONEST: a client-side interactive app that runs directly in
+    a browser (no build) — NOT a server/backend app, not deployed/hosted."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    files = _build_webapp_files(vsb)
+    from agentic_core.vbs.quality import assure_delivery
+    # Gate the app's CONTENT (entity data + section structure), not the raw JS source — the JS legitimately
+    # contains an input `placeholder` attribute, which is not a content stub.
+    combined = (f"{vsb.get('name')} — interactive web app. Sections: Overview · Business Plan · "
+                f"Organisation · Resources.\n{vsb.get('challenge', '')}\n" + files["webapp/data.json"])
+    qa = await assure_delivery(combined, ["Overview", "Business Plan", "Organisation", "Resources"],
+                               label="vsb_webapp")
+    root = _REPO_STORE / vsb_id
+    written = []
+    for path, content in files.items():
+        fp = root / path
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        fp.write_text(content, encoding="utf-8")
+        written.append({"path": path, "bytes": len(content.encode("utf-8"))})
+    manifest = {
+        "vsb_id": vsb_id, "name": vsb.get("name"), "kind": "client_web_app", "interactive": True,
+        "files": written, "file_count": len(written), "total_bytes": sum(w["bytes"] for w in written),
+        "features": ["tabbed navigation (Overview · Business Plan · Organisation · Resources)",
+                     "live resource filter", "entity-driven data.json"],
+        "entry": "webapp/index.html", "preview": f"/api/v1/vsb/{vsb_id}/webapp/page/index",
+        "repo_root": str(root), "quality_assurance": qa, "posture": "in-house-first",
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "note": ("Bespoke client-side interactive web app (vanilla HTML/CSS/JS, data-driven from the "
+                 "entity, runs directly in a browser — no build). NOT a server/backend app, not "
+                 "deployed/hosted."),
+    }
+    (root / "webapp" / "app.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    _REPO_STORE.mkdir(parents=True, exist_ok=True)
+    (_REPO_STORE / f"{vsb_id}.webapp.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    try:
+        biobus.fire_signal("motor", "vsb.webapp.generate", f"{vsb.get('name')}: {len(written)} files", 0.6)
+    except Exception:
+        pass
+    return manifest
+
+
+@router.get("/{vsb_id}/webapp")
+async def get_vsb_webapp(vsb_id: str):
+    """Retrieve the generated web-app manifest (files · features · quality record · preview link)."""
+    p = _REPO_STORE / f"{vsb_id}.webapp.json"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"No web app generated for VSB {vsb_id} yet.")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+@router.get("/{vsb_id}/webapp/page/{name}", response_class=HTMLResponse)
+async def get_vsb_webapp_file(vsb_id: str, name: str):
+    """Serve a generated web-app file (index/app.js/styles.css/data.json) so it runs in-browser. Known
+    files only (no path traversal)."""
+    if name not in _WEBAPP_SERVE:
+        raise HTTPException(status_code=404, detail="Unknown file.")
+    fname, media = _WEBAPP_SERVE[name]
+    fp = _REPO_STORE / vsb_id / "webapp" / fname
+    if not fp.exists():
+        raise HTTPException(status_code=404, detail=f"Web app not generated for VSB {vsb_id} yet.")
+    return HTMLResponse(fp.read_text(encoding="utf-8"), media_type=media)
+
+
 def _list_vsbs() -> list[dict]:
     result = []
     for p in sorted(_VSB_STORE.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):

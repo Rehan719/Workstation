@@ -1372,6 +1372,33 @@ def test_vsb_website_generation(client):
     assert client.post("/api/v1/vsb/nope-xyz-404/website").status_code == 404
 
 
+def test_vsb_webapp_generation(client):
+    # §13 (D1 increment 3) — the interactive Web app: a real client-side app (HTML + CSS + vanilla JS +
+    # data.json) data-driven from the entity, written into the repo's webapp/, QMS-gated + compliance-
+    # screened + document-controlled; the files are served so the app runs in-browser (known files only).
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+    vid = est.json()["vsb_id"]
+    m = client.post(f"/api/v1/vsb/{vid}/webapp").json()
+    assert m["kind"] == "client_web_app" and m["interactive"] is True
+    paths = {f["path"] for f in m["files"]}
+    assert {"webapp/index.html", "webapp/app.js", "webapp/data.json", "webapp/styles.css"} <= paths
+    q = m["quality_assurance"]["quality"]
+    assert q["qms_gate_passed"] is True and q["document_controlled"] is True
+    assert q["compliance"]["overall"] in ("pass", "review", "fail")
+    # served as real, runnable client-side files; data-driven; known files only (no traversal)
+    idx = client.get(f"/api/v1/vsb/{vid}/webapp/page/index")
+    assert idx.status_code == 200 and 'src="app.js"' in idx.text
+    js = client.get(f"/api/v1/vsb/{vid}/webapp/page/app.js")
+    assert js.status_code == 200 and js.headers["content-type"].startswith("text/javascript")
+    assert "function render" in js.text and "data.json" in js.text
+    dj = client.get(f"/api/v1/vsb/{vid}/webapp/page/data.json").json()
+    assert dj["name"] and "business_plan" in dj and isinstance(dj["resources"], list)
+    assert client.get(f"/api/v1/vsb/{vid}/webapp/page/evil").status_code == 404
+    assert client.get(f"/api/v1/vsb/{vid}/webapp").json()["interactive"] is True
+    assert client.post("/api/v1/vsb/nope-xyz-404/webapp").status_code == 404
+
+
 # ── Payments — honest, launch-ready rails (Phase 3, test-mode safe) ───────────
 # Verifies the rails never fabricate a connection and default to safe simulation.
 

@@ -38,6 +38,12 @@ interface WebsiteManifest {
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
 }
+interface WebAppManifest {
+  vsb_id: string; name: string; kind: string; interactive: boolean; file_count: number;
+  features: string[]; preview: string;
+  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
+    compliance?: { overall?: string; compliant?: boolean } } };
+}
 
 const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
 const DOMAINS = ['enterprise', 'religion', 'science', 'law', 'care', 'education', 'employment', 'career', 'fintech', 'healthtech', 'edtech'];
@@ -61,6 +67,8 @@ export const GenesisJourney: React.FC = () => {
   const [repoBusy, setRepoBusy] = useState(false);
   const [site, setSite] = useState<WebsiteManifest | null>(null);
   const [siteBusy, setSiteBusy] = useState(false);
+  const [webapp, setWebapp] = useState<WebAppManifest | null>(null);
+  const [webappBusy, setWebappBusy] = useState(false);
 
   const run = async () => {
     if (!problem.trim()) return;
@@ -121,6 +129,17 @@ export const GenesisJourney: React.FC = () => {
       if (res.ok) setSite(await res.json());
     } catch { /* ignore */ }
     setSiteBusy(false);
+  };
+
+  // §13 increment 3 — generate the interactive Web app (real client-side vanilla-JS app into the repo)
+  const generateWebApp = async () => {
+    if (!vsb) return;
+    setWebappBusy(true); setWebapp(null);
+    try {
+      const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/webapp`, { method: 'POST' });
+      if (res.ok) setWebapp(await res.json());
+    } catch { /* ignore */ }
+    setWebappBusy(false);
   };
 
   const phases = result ? [
@@ -374,6 +393,37 @@ export const GenesisJourney: React.FC = () => {
                           </a>
                         </div>
                       )}
+
+                      {/* §13 increment 3 — generate the interactive Web app (real client-side vanilla JS) */}
+                      <div className="mt-3">
+                        <Button onClick={generateWebApp} disabled={webappBusy} className="flex items-center gap-2 bg-slate-900 text-highlight text-[11px]">
+                          {webappBusy ? <Loader2 size={13} className="animate-spin" /> : <Layers size={13} />}
+                          {webappBusy ? 'Generating web app…' : 'Generate interactive Web app'}
+                        </Button>
+                        {webapp && (
+                          <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Web app · {webapp.kind}</span>
+                              {webapp.interactive && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">interactive</span>}
+                              {typeof webapp.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${webapp.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                  QMS: {webapp.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{webapp.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                                </span>
+                              )}
+                              {webapp.quality_assurance?.quality?.compliance && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${webapp.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                  compliance: {webapp.quality_assurance.quality.compliance.overall}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[9px] text-slate-500">{webapp.features.join(' · ')}</p>
+                            <a href={webapp.preview} target="_blank" rel="noreferrer"
+                              className="inline-block text-[10px] font-black uppercase tracking-widest text-highlight border border-highlight/40 px-3 py-1.5 rounded-lg hover:bg-highlight/10 transition-colors">
+                              Open the web app →
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
