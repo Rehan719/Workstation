@@ -115,6 +115,13 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["what-if scenarios", "outcome projection", "scenario comparison", "ranking"],
        {"subject": "str", "scenarios": "list (one what-if per line)", "domain": "str"},
        "/api/v1/reactor/experiment", ["synthesis", "design", "development", "forge", "evolution"]),
+    _R("studio", "Reactor · Studio", "digital_resource", "studio",
+       "The §7 Reactor's Studio: 2D/3D visual analytics & insight over a REAL data series — computes "
+       "deterministic stats (count/total/mean/min/max/range) and an in-house insight narrative; renders "
+       "bar/line/scatter charts (scatter carries an optional z magnitude). Visualises real data, never faked.",
+       ["2d charts", "scatter / z-magnitude", "computed analytics", "insight narrative"],
+       {"title": "str", "series": "list of {label,value[,z]}", "chart_type": "bar|line|scatter"},
+       "/api/v1/reactor/studio", ["synthesis", "design", "development", "forge", "evolution", "delivery"]),
     _R("digital_twin", "Digital Twin & Simulator", "digital_resource", "simulator",
        "Generates AI models and runs scenario simulations / optimisation (generators + simulators).",
        ["model generation", "scenario simulation", "optimisation"],

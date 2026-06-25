@@ -391,6 +391,81 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
     )
 
 
+# ── §7 Reactor — Studio (2D/3D visual analytics & insight) ───────────────────
+class StudioPoint(BaseModel):
+    label: str
+    value: float
+    z: Optional[float] = None   # optional 3rd dimension (magnitude) for scatter — honest 2D + magnitude
+
+
+class StudioRequest(BaseModel):
+    title: str
+    domain: str = "general"
+    chart_type: str = "bar"     # bar | line | scatter
+    series: list[StudioPoint] = []
+    insight: bool = True
+
+
+class StudioResult(BaseModel):
+    title: str
+    domain: str
+    chart_type: str
+    dimensions: int             # 2, or 3 when any point carries a z magnitude
+    series: list[StudioPoint]
+    analytics: dict             # deterministic stats computed from the REAL series (no fabrication)
+    insight: str
+    ai_provenance: dict
+    quality_assurance: dict
+    generated_at: float
+
+
+@router.post("/api/v1/reactor/studio", response_model=StudioResult)
+async def reactor_studio(req: StudioRequest) -> StudioResult:
+    """The §7 Reactor's Studio: 2D/3D visual analytics & insight over a REAL data series. Computes
+    deterministic statistics (count/total/mean/min/max/range) from the provided values — never invents
+    numbers — and an in-house insight narrative interpreting them; the chart is rendered client-side
+    (bar/line/scatter; scatter carries an optional z magnitude). QMS-gated + document-controlled."""
+    pts = [p for p in req.series if p.label and p.label.strip()]
+    if not pts:
+        raise HTTPException(status_code=400, detail="Provide at least one data point (label + value).")
+    chart_type = req.chart_type if req.chart_type in ("bar", "line", "scatter") else "bar"
+    values = [p.value for p in pts]
+    total = round(sum(values), 4)
+    mean = round(total / len(values), 4)
+    pmin = min(pts, key=lambda p: p.value)
+    pmax = max(pts, key=lambda p: p.value)
+    dimensions = 3 if any(p.z is not None for p in pts) else 2
+    analytics = {
+        "count": len(pts), "total": total, "mean": mean,
+        "min": {"label": pmin.label, "value": pmin.value},
+        "max": {"label": pmax.label, "value": pmax.value},
+        "range": round(pmax.value - pmin.value, 4),
+    }
+
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    insight = ""
+    if req.insight:
+        meta = await gateway.query_meta(
+            f"You are the §7 Reactor's Studio analyst. Title: {req.title} (domain: {req.domain}, {dimensions}D "
+            f"{chart_type} chart). Interpret ONLY these real data points (do not invent any numbers):\n"
+            + "; ".join(f"{p.label}={p.value}" + (f"/z{p.z}" if p.z is not None else "") for p in pts)
+            + f"\nStats: total {total}, mean {mean}, max {pmax.label} ({pmax.value}), min {pmin.label} ({pmin.value}).\n\n"
+            "## Insight (3-4 sentences)\n## Notable Pattern\n## Recommended Action",
+            agent="reactor-studio")
+        insight = meta.get("output", "") or ""
+        sb = meta.get("served_by", "native")
+        prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
+        prov["any_external"] = bool(meta.get("is_external"))
+
+    qa = await assure_delivery(insight or f"{req.title}: {analytics}", [p.label for p in pts], label="studio")
+
+    return StudioResult(
+        title=req.title, domain=req.domain, chart_type=chart_type, dimensions=dimensions,
+        series=pts, analytics=analytics, insight=insight, ai_provenance=prov,
+        quality_assurance=qa, generated_at=time.time(),
+    )
+
+
 # ── Intelligence (replaces missing v320 endpoints) ───────────────────────────
 
 @router.get("/api/v1/intelligence/insights")

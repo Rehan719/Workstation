@@ -57,6 +57,7 @@ import { SynthesisNexus } from './pages/synthesis/SynthesisNexus';
 import { ForgePipeline } from './pages/developers/ForgePipeline';
 import { DigitalReactor } from './pages/developers/DigitalReactor';
 import { Incubator } from './pages/developers/Incubator';
+import { ReactorStudio } from './pages/synthesis/ReactorStudio';
 import { Factory } from './pages/developers/Factory';
 import { IntelligenceLab } from './pages/IntelligenceLab';
 import { AuthorshipEngine } from './pages/synthesis/AuthorshipEngine';
@@ -176,6 +177,7 @@ function App() {
           <Route path="/forge-pipeline"  element={<ForgePipeline />} />
           <Route path="/reactor"         element={<DigitalReactor />} />
           <Route path="/incubator"       element={<Incubator />} />
+          <Route path="/reactor-studio"  element={<ReactorStudio />} />
           <Route path="/factory"         element={<Factory />} />
           <Route path="/intelligence"    element={<IntelligenceLab />} />
           <Route path="/authorship"      element={<AuthorshipEngine />} />

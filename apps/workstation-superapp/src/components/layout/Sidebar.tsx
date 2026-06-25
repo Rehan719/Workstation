@@ -94,6 +94,7 @@ const allNavItems: NavItem[] = [
       { name: 'Forge Pipeline',   icon: Hammer,      id: 'forge-pipeline' },
       { name: 'Digital Reactor',  icon: Zap,         id: 'reactor' },
       { name: 'Incubator',        icon: FlaskConical, id: 'incubator' },
+      { name: 'Reactor Studio',   icon: BarChart3,   id: 'reactor-studio' },
       { name: 'Factory',          icon: Factory,     id: 'factory' },
       { name: 'Intelligence Lab', icon: Brain,       id: 'intelligence' },
       { name: 'Authorship Engine',icon: BookOpen,    id: 'authorship' },

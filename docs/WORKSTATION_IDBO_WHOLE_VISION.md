@@ -415,7 +415,14 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   against fitness criteria (## Ranking · Key Differences · Recommendation) — on Workstation's OWN fabric
   (in-house provenance), **QMS-gated + document-controlled** (§10/§8). Surfaced as the `experimentation`
   fabric resource with an inline **Run experiment** panel on the Resource Fabric page (subject + scenarios
-  list, §9). (Remaining Reactor sub-part: the Studio's 2D/3D visual analytics.)
+  list, §9).
+- ✅ **§7 Reactor — Studio (2D/3D visual analytics & insight).** The Reactor's third sub-part completes the
+  trilogy (Incubator + Experimentation + Studio): `POST /api/v1/reactor/studio` computes **deterministic
+  statistics** (count/total/mean/min/max/range) from a **real** provided data series — it never invents
+  numbers — plus an in-house **insight** narrative interpreting them, **QMS-gated + document-controlled**.
+  A dedicated **Studio** page (route `/reactor-studio`, in the Resource Fabric nav) renders real **SVG
+  bar/line/scatter charts** (scatter carries an optional **z** magnitude → 3D), the analytics cards, and
+  the insight. **The §7 Reactor is now fully delivered: Incubator · Experimentation · Studio.**
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

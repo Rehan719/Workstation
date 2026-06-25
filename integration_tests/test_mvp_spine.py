@@ -1183,6 +1183,29 @@ def test_reactor_experimentation_whatif(client):
     assert res["type"] == "experimentation" and "scenarios" in res["reconfigurable_params"]
 
 
+def test_reactor_studio_visual_analytics(client):
+    # §7 Reactor — Studio: 2D/3D visual analytics over a REAL series — deterministic stats (never invented),
+    # in-house insight, QMS-gated + document-controlled.
+    r = client.post("/api/v1/reactor/studio",
+                    json={"title": "signups", "chart_type": "bar",
+                          "series": [{"label": "Q1", "value": 120}, {"label": "Q2", "value": 180},
+                                     {"label": "Q3", "value": 150}, {"label": "Q4", "value": 240}]}).json()
+    a = r["analytics"]
+    assert r["dimensions"] == 2 and r["chart_type"] == "bar"
+    assert a["count"] == 4 and a["total"] == 690 and a["mean"] == 172.5
+    assert a["max"]["label"] == "Q4" and a["max"]["value"] == 240 and a["range"] == 120
+    assert r["ai_provenance"]["any_external"] is False         # in-house insight (§6)
+    assert r["quality_assurance"]["quality"]["document_controlled"] is True
+    # a z magnitude makes it a 3D scatter
+    r3 = client.post("/api/v1/reactor/studio",
+                     json={"title": "risk-reward", "chart_type": "scatter",
+                           "series": [{"label": "A", "value": 3, "z": 10}, {"label": "B", "value": 7, "z": 4}]}).json()
+    assert r3["dimensions"] == 3 and r3["chart_type"] == "scatter"
+    # at least one point required; the §7 fabric exposes the Studio resource
+    assert client.post("/api/v1/reactor/studio", json={"title": "x", "series": []}).status_code == 400
+    assert client.get("/api/v1/resources/studio").json()["type"] == "studio"
+
+
 def test_resource_fabric_native_swarm_cascade(client):
     # W1-d: native AI resources are first-class in the fabric, and bespoke swarm cascades are
     # reconfigurable, reusable, re-runnable resources that run on Workstation's OWN resources.
