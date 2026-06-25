@@ -359,7 +359,11 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   tracked), held to the **§10 Solution-Quality Bar**, and recorded within the **§8 biomimetic organism**
   (live immune + circadian), surfaced on the **Deliverables** page (per-item QMS-gate + organism badges).
   So **continual operational delivery within the living QMS** now holds across every surface where users
-  actually receive products — not just the cascade.
+  actually receive products — not just the cascade. This now also covers the **§3A offering #2 — the
+  Genesis Concept→Commercialisation journey**: its buildable + go-to-market delivery (design +
+  commercialisation phases) is QMS-gated, held to the §10 bar, recorded within the §8 organism, and the
+  gate + organism are surfaced on the Genesis page. **Both core offerings (#1 domain deliverables, #2 the
+  end-to-end journey) and the living-organisation cascade now deliver through the one living QMS.**
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

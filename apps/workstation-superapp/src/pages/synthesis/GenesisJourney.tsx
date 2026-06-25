@@ -16,6 +16,10 @@ interface JourneyResult {
   phase_2_design_development: string;
   phase_3_commercialisation: string;
   governance: { status: string; checkpoint: string | null; node: string };
+  quality_assurance?: {
+    quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[] };
+    biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
+  };
   engines_used: string[];
   deliverable: string;
   status: string;
@@ -214,6 +218,23 @@ export const GenesisJourney: React.FC = () => {
             <p className="text-[9px] font-mono text-slate-500 mt-3">
               governance: {result.governance.status} · checkpoint {result.governance.checkpoint ?? '—'}
             </p>
+            {/* Continual operational delivery within the living QMS — §10 bar + §8 organism */}
+            {result.quality_assurance?.quality && (
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {typeof result.quality_assurance.quality.qms_gate_passed === 'boolean' && (
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${result.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                    title={`§10 Solution-Quality Bar: ${(result.quality_assurance.quality.bar || []).join(' · ')}`}>
+                    Living-QMS gate: {result.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((result.quality_assurance.quality.delivery_coverage || 0) * 100)}%
+                  </span>
+                )}
+                {result.quality_assurance.biomimetic?.immune && (
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-violet-500/15 text-violet-300"
+                    title={`7 biomimetic layers · ${result.quality_assurance.biomimetic.self || ''}`}>
+                    organism: immune {Math.round((result.quality_assurance.biomimetic.immune.health ?? 0) * 100)}% · {result.quality_assurance.biomimetic.circadian}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="mt-5 pt-4 border-t border-highlight/20">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">

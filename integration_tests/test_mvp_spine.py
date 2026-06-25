@@ -932,10 +932,17 @@ def test_genesis_journey_in_house_provenance(client):
     # W1-d.2: the Genesis Concept→Commercialisation journey runs its synthesis stages in-house.
     r = client.post("/api/v1/genesis/journey", json={"problem": "pytest genesis provenance"})
     assert r.status_code == 200
-    prov = r.json()["ai_provenance"]
+    body = r.json()
+    prov = body["ai_provenance"]
     assert prov["posture"] == "in-house-first"
     assert prov["any_external"] is False
     assert set(prov["served_by"]) <= {"native", "ollama"}
+    # W109 — continual operational delivery within the LIVING QMS: the journey's buildable + go-to-market
+    # delivery is QMS-gated, held to the §10 bar, recorded within the §8 organism (same shared capability).
+    qa = body["quality_assurance"]; q = qa["quality"]; bio = qa["biomimetic"]
+    assert isinstance(q["qms_gate_passed"], bool) and 0.0 <= q["delivery_coverage"] <= 1.0
+    assert q["qms_min_coverage"] == 0.95 and len(q["bar"]) >= 12 and {"verified", "safe"} <= set(q["bar"])
+    assert len(bio["layers"]) == 7 and "immune" in bio and bio.get("circadian")
 
 
 def test_compliance_frameworks(client):

@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from agentic_core.ai.gateway import gateway
 from agentic_core.api.intelligence import _ai_cognitive_prime, _ai_mjm_lifecycle
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
+from agentic_core.vbs.quality import assure_delivery
 
 router = APIRouter(prefix="/api/v1/genesis", tags=["genesis-journey"])
 
@@ -120,6 +121,15 @@ async def genesis_journey(req: JourneyRequest):
         return "Sovereign Journey synthesised under v16-Omega constitutional supervision."
     gov = await _GOV.intercept({"intent": "genesis_journey", "domain": req.domain}, _attest)
 
+    # ── Continual operational delivery within the LIVING QMS: the journey's buildable + go-to-market
+    # delivery is gated by the OWNED QMS, held to the §10 Solution-Quality Bar, recorded within the §8
+    # biomimetic organism — the same capability the cascade + deliverables deliver through.
+    quality_assurance = await assure_delivery(
+        f"{design}\n{commercial}",
+        ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope",
+         "Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"],
+        label="genesis")
+
     return {
         "problem": req.problem,
         "domain": req.domain,
@@ -128,6 +138,7 @@ async def genesis_journey(req: JourneyRequest):
         "phase_2_design_development": design,
         "phase_3_commercialisation": commercial,
         "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id, "node": gov.node},
+        "quality_assurance": quality_assurance,
         "ai_provenance": provenance,
         "engines_used": [
             "Inkashaf", "Samajh", "Soch", "Aqal", "Hoshiyari", "Iman",
