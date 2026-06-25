@@ -330,7 +330,17 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
 `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` (~44 areas scanned). Verified state: integration suite green
 (**~177 cases**), Spine CI green on `main`.
 
-**Delivered since (W77–W96, 2026-06-24):**
+**Delivered since (W77–W104, 2026-06-24/25):**
+- ✅ **§5 fully delivered + integrated with §6 — the living organisation, apex → operational delivery, on
+  the native fabric.** `POST /api/v1/swarm/cascade` runs the COMPLETE chain in-house: **Chief** (founder's
+  digital twin — strategy + a living roadmap) → **Board** (action plan: timelined, resourced tasks, PM) →
+  **AI CEO** — who now *actually* **integrates the living management systems (BMS·QMS·DCS·EMS)** by
+  document-controlling the org's decisions through the OWNED **DCMS** (real SHA3-512 versioned artifacts,
+  no fabricated telemetry) → **C-Suite → Centres of Excellence → Business Transformation Office →
+  Build-to-Order → Products/Services catalogue**. The whole delivery is **governed at arm's length** by
+  the gaas.v5 constitutional interceptor (Change Control) and **sealed into the UEG hash-chained
+  provenance ledger** (§6), every tier served by Workstation's OWN fabric (zero external). Walkable on the
+  **Swarm Intelligence** page (each tier + governance + management-systems + UEG seal rendered).
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

@@ -61,6 +61,7 @@ const SwarmIntelligence: React.FC = () => {
   const [delegating, setDelegating] = useState(false);
   const [streamOutput, setStreamOutput] = useState('');
   const [streaming, setStreaming] = useState(false);
+  const [cascade, setCascade] = useState<any>(null);   // full org-cascade delivery (Chief → Build-to-Order)
   const outputRef = useRef<HTMLDivElement>(null);
 
   const loadRuns = async () => {
@@ -84,41 +85,23 @@ const SwarmIntelligence: React.FC = () => {
     setStreaming(false);
 
     try {
-      // First try cascade (streaming)
-      setStreaming(true);
+      // Run the FULL org cascade (Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order →
+      // Products) on Workstation's OWN native fabric. The endpoint returns the structured delivery as
+      // JSON (every tier + the integrated living management systems + arms-length governance + the
+      // UEG provenance seal) — render it, don't treat it as a stream.
+      setStreaming(true); setCascade(null); setStreamOutput('');
       const response = await fetch('/api/v1/swarm/cascade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mission: task, domains: [], n_agents: 4 }),
+        body: JSON.stringify({ mission: task, domain: 'enterprise', realm: 'enterprise' }),
       });
-
-      if (!response.ok || !response.body) {
-        // Fallback to delegate
+      if (response.ok) {
+        setCascade(await response.json());
+      } else {
         const res = await axios.post('/api/v1/swarm/delegate', { task, n_agents: 3 });
         setStreamOutput(JSON.stringify(res.data, null, 2));
-        setStreaming(false);
-      } else {
-        const reader = response.body.getReader();
-        const dec = new TextDecoder();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = dec.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.content) setStreamOutput(p => p + data.content);
-                else if (data.stage) setStreamOutput(p => p + `\n[${data.stage}] `);
-              } catch { setStreamOutput(p => p + line.slice(6)); }
-            }
-          }
-        }
-        setStreaming(false);
       }
-
-      // Reload runs after completion
+      setStreaming(false);
       await loadRuns();
       setTask('');
     } catch (e: any) {
@@ -165,10 +148,45 @@ const SwarmIntelligence: React.FC = () => {
           </button>
         </div>
 
+        {streaming && !cascade && (
+          <div className="mt-3 flex items-center gap-2 text-[10px] text-white/40"><Loader2 size={12} className="animate-spin" /> The living organisation is delivering — Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order…</div>
+        )}
         {streamOutput && (
           <div ref={outputRef} className="mt-3 max-h-48 overflow-y-auto font-mono text-[9px] text-green-400 bg-black/40 rounded-lg p-3 leading-relaxed whitespace-pre-wrap border border-white/5">
             {streamOutput}
             {streaming && <span className="animate-pulse">█</span>}
+          </div>
+        )}
+        {cascade && (
+          <div className="mt-3 space-y-2">
+            {/* §5↔§6 — the living organisation's delivery, in-house + governed + provenance-sealed */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[8px] font-black uppercase tracking-widest text-fuchsia-400">Living-Organisation delivery</span>
+              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.ai_provenance && !cascade.ai_provenance.any_external ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                {cascade.ai_provenance && !cascade.ai_provenance.any_external ? 'in-house' : 'external used'}
+              </span>
+              {cascade.governance && <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.governance.status === 'allowed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>gov: {cascade.governance.status}{cascade.governance.arms_length ? ' · arms-length' : ''}</span>}
+              {Array.isArray(cascade.management_systems?.integrated) && cascade.management_systems.integrated.length > 0 && (
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">mgmt: {cascade.management_systems.integrated.join('·')}</span>
+              )}
+              {cascade.ueg_hash && <span className="text-[8px] font-mono text-white/30" title={cascade.ueg_hash}>UEG {String(cascade.ueg_hash).slice(0, 12)}…</span>}
+            </div>
+            {([
+              ['Chief of the Board (founder digital twin)', cascade.level_0_chief_of_board],
+              ['Board of Directors — action plan', cascade.level_0b_board_resolution],
+              ['AI CEO — directive', cascade.level_1_ceo_directive],
+              ['Business Transformation Office', cascade.level_4_business_transformation_office],
+              ['Build-to-Order — operational delivery', cascade.level_5_build_to_order],
+              ['Products & Services catalogue', cascade.products_services_catalogue],
+            ] as [string, string][]).filter(([, v]) => v).map(([label, text]) => (
+              <details key={label} className="bg-black/40 rounded-lg border border-white/5">
+                <summary className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">{label}</summary>
+                <pre className="text-[9px] text-white/50 font-mono whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto px-3 pb-3">{String(text).slice(0, 1400)}</pre>
+              </details>
+            ))}
+            {cascade.management_systems?.document_control && Object.keys(cascade.management_systems.document_control).length > 0 && (
+              <p className="text-[8px] text-white/30 leading-relaxed">Document-controlled (DCMS, SHA3-512): {Object.entries(cascade.management_systems.document_control).map(([k, v]: any) => `${k} ${String(v).slice(0, 8)}…`).join('  ·  ')}</p>
+            )}
           </div>
         )}
       </div>

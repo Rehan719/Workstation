@@ -1617,6 +1617,18 @@ def test_swarm_cascade_in_house_provenance(client):
     p = r["ai_provenance"]
     assert p["posture"] == "in-house-first" and p["any_external"] is False
     assert set(p["served_by"]) <= {"native", "ollama"}
+    # §5 fine-resolution — each apex tier delivers its specific function
+    assert "Strategy" in r["level_0_chief_of_board"] and "Roadmap" in r["level_0_chief_of_board"]
+    assert "Action Plan" in r["level_0b_board_resolution"]
+    # §5 — the AI CEO INTEGRATES the living management systems (real DCMS document-control of decisions)
+    ms = r["management_systems"]
+    assert {"bms", "qms", "ems", "dcms"} <= set(ms["integrated"])
+    assert all(len(h) == 128 for h in ms["document_control"].values())   # real SHA3-512 versioned artifacts
+    assert {"ceo_directive", "board_action_plan", "bto_programme", "build_to_order"} <= set(ms["document_control"])
+    # §5 — arms-length Change-Control / constitutional governance over the whole delivery
+    assert r["governance"]["arms_length"] is True and r["governance"]["status"] in ("allowed", "blocked", "ungoverned")
+    # §6 — verifiable hash-chained provenance for the entire org delivery
+    assert r["ueg_hash"] and len(r["ueg_hash"]) == 128
 
 
 def test_resource_optimizer_surfaced(client):

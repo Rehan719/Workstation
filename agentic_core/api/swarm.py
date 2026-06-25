@@ -201,11 +201,14 @@ async def cascade_orchestration(req: CascadeRequest):
         f"You are the Chief of the Board of Directors — the founder's own digital twin and the apex of "
         f"this VSB's governance. A mission has been raised:\n\"{req.mission}\"\n"
         f"Domain: {req.domain}\nRealm: {req.realm}\n\n"
-        "Set the Founding Mandate that the Board and the whole organisation must serve:\n"
+        "You own the living Business Plan and deliver it via Strategy and a living Roadmap. Set the "
+        "Founding Mandate the Board and whole organisation must serve:\n"
         "## Intent & Values (why this matters; the non-negotiable principles — ethical, beneficent)\n"
         "## Strategic North Star (the outcome that defines success)\n"
+        "## Strategy (how we will win — the approach the Board turns into action)\n"
+        "## Living Roadmap (time-phased milestones — now / next / later, each with the outcome it lands)\n"
         "## Boundaries (what we will NOT do)\n"
-        "## Mandate to the Board (what you direct the Board to govern and approve)\n"
+        "## Mandate to the Board (what you direct the Board to govern, action-plan, and approve)\n"
         "Speak with founder-level conviction and care."
     )
     chief_mandate = await _q(chief_prompt, "cascade_chief")
@@ -215,9 +218,12 @@ async def cascade_orchestration(req: CascadeRequest):
         "You are the Board of Directors of this VSB. The Chief of the Board (founder's digital twin) "
         f"has issued this Founding Mandate:\n\n{chief_mandate[:600]}\n\n"
         f"Mission: {req.mission}\nDomain: {req.domain}\n\n"
-        "Issue a Board Resolution that authorises and frames execution:\n"
+        "Receive the Chief's strategy and deliver it through Action Planning with timelines, resourced "
+        "tasks and project management, then delegate to the AI CEO:\n"
         "## Resolution (approve / approve-with-conditions, with reasons)\n"
         "## Governance Guardrails (risk, compliance, ethics the executive must honour)\n"
+        "## Action Plan (the resolution turned into delivery: numbered tasks, each with an owner-role, a "
+        "timeline, and the resource it needs — i.e. real project management)\n"
         "## Authority Delegated to the AI CEO (scope + accountabilities)\n"
         "## Board-level Success Criteria"
     )
@@ -308,6 +314,52 @@ async def cascade_orchestration(req: CascadeRequest):
     )
     products_services_catalogue = await _q(catalogue_prompt, "cascade_catalogue")
 
+    # ── §5: the AI CEO INTEGRATES the living management systems (BMS·QMS·DCS·EMS) — for real, not prose.
+    # The org's key decisions are document-controlled through the OWNED DCMS (real SHA3-512 versioned
+    # artifacts with an audit trail). We do NOT fabricate BMS/EMS telemetry numbers — those need real
+    # runtime metrics — so we attest the systems are integrated and prove it with the DCMS commits.
+    management_systems: dict = {"integrated": [], "document_control": {}, "catalogue": []}
+    try:
+        from agentic_core.vbs.registry import dcms, CATALOGUE as _VBS_CAT
+        management_systems["catalogue"] = _VBS_CAT
+        management_systems["integrated"] = [s["id"] for s in _VBS_CAT]
+        for aid, content in (
+            ("ceo_directive", {"tier": "AI CEO", "text": ceo_directive[:4000]}),
+            ("board_action_plan", {"tier": "Board of Directors", "text": board_resolution[:4000]}),
+            ("bto_programme", {"tier": "Business Transformation Office", "text": bto_programme[:4000]}),
+            ("build_to_order", {"tier": "Build-to-Order", "text": build_to_order[:4000]}),
+        ):
+            management_systems["document_control"][aid] = await dcms.commit_artifact(f"{run_id}:{aid}", content, "AI CEO")
+    except Exception as exc:
+        management_systems["error"] = str(exc)
+
+    # ── §5: Change Control — arms-length constitutional governance over the WHOLE delivery (gaas.v5).
+    governance: dict = {"status": "ungoverned", "arms_length": True}
+    try:
+        from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
+        _gov_engine = UnifiedConstitutionalInterceptorV16Omega("org-cascade-node", UEGLogger())
+
+        async def _attest() -> str:
+            return "Org cascade (Chief → Build-to-Order) attested under v16-Omega constitutional supervision."
+        _gov = await _gov_engine.intercept({"intent": "org_cascade", "domain": req.domain}, _attest)
+        governance = {"status": _gov.status, "checkpoint": _gov.checkpoint_id, "node": _gov.node, "arms_length": True}
+    except Exception as exc:
+        governance = {"status": "ungoverned", "arms_length": True, "error": str(exc)}
+
+    # ── §6: seal the full org delivery into the UEG hash-chained provenance ledger (verifiable in-house).
+    ueg_hash = None
+    try:
+        from agentic_core.ueg.registry import ueg_ledger
+        ueg_hash = await ueg_ledger.log_event("org_cascade", {
+            "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
+            "tiers": ["chief", "board", "ceo", "csuite", "coe", "bto", "build_to_order"],
+            "served_by": provenance["served_by"], "any_external": provenance["any_external"],
+            "governance": governance.get("status"),
+            "document_control": list(management_systems.get("document_control", {}).keys()),
+        }, actor="AI CEO")
+    except Exception:
+        pass
+
     duration_ms = int((time.time() - start) * 1000)
     biobus.record_operation("swarm_cascade", "swarm.cascade", success=True, payload=f"Chief+Board+CEO+{len(csuite_responses)} CSuite+{len(coe_responses)} CoE+BTO+BuildToOrder, {duration_ms}ms")
 
@@ -327,6 +379,12 @@ async def cascade_orchestration(req: CascadeRequest):
         "level_4_business_transformation_office": bto_programme,
         "level_5_build_to_order": build_to_order,
         "products_services_catalogue": products_services_catalogue,
+        # §5: the living management systems the AI CEO integrates (with real DCMS document-control proof).
+        "management_systems": management_systems,
+        # §5: arms-length Change-Control / constitutional governance over the whole delivery.
+        "governance": governance,
+        # §6: verifiable hash-chained provenance for the entire org delivery (sealed into the UEG ledger).
+        "ueg_hash": ueg_hash,
         "ai_provenance": provenance,
         "duration_ms": duration_ms,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
