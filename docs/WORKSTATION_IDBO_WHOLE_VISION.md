@@ -381,6 +381,10 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   the saved configuration (carries its `model` + quality record). The **Resource Fabric** page gained a
   **Model & Simulate** step (the §9 reconfigurable interface): select resources → model & simulate →
   see the pipeline, QMS-gate projection, organism, incompatibility warnings + unset params → then commit.
+  The page also has a **per-resource parameter editor** (a "Configure parameters" panel): users set each
+  selected resource's reconfigurable parameter VALUES, which flow into the model/simulate/compose `config`
+  — so reconfiguring the digital resources' parameters (not just their selection) is fully user-reachable,
+  and the model's `unset_params` shrinks live as values are set. This completes §7 **user design control**.
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

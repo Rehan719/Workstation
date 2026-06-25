@@ -97,6 +97,8 @@ export const ResourceFabric: React.FC = () => {
   const [runningId, setRunningId] = useState<string | null>(null);
   const [sim, setSim] = useState<Simulation | null>(null);   // §7 — model & simulate before commit
   const [simulating, setSimulating] = useState(false);
+  // §7 — user design control over each resource's reconfigurable parameters: {resourceId: {param: value}}
+  const [paramConfig, setParamConfig] = useState<Record<string, Record<string, string>>>({});
 
   const load = () => {
     const qs = new URLSearchParams();
@@ -118,6 +120,21 @@ export const ResourceFabric: React.FC = () => {
   const toggle = (id: string) =>
     setSelected(s => { setSim(null); return s.includes(id) ? s.filter(x => x !== id) : [...s, id]; });
 
+  // set a reconfigurable parameter value for a resource (user design control); invalidates the preview
+  const setParam = (rid: string, key: string, val: string) => {
+    setSim(null);
+    setParamConfig(pc => ({ ...pc, [rid]: { ...(pc[rid] || {}), [key]: val } }));
+  };
+  // only send params the user actually set (non-empty) so `unset_params` stays honest
+  const buildConfig = (): Record<string, Record<string, string>> => {
+    const out: Record<string, Record<string, string>> = {};
+    selected.forEach(rid => {
+      const entries = Object.entries(paramConfig[rid] || {}).filter(([, v]) => String(v).trim() !== '');
+      if (entries.length) out[rid] = Object.fromEntries(entries);
+    });
+    return out;
+  };
+
   // §7 — model & SIMULATE the configuration before commit (gated by the living QMS)
   const simulate = async () => {
     if (selected.length === 0) return;
@@ -125,7 +142,7 @@ export const ResourceFabric: React.FC = () => {
     try {
       const r = await fetch('/api/v1/resources/compose/simulate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name || '(unnamed)', resource_ids: selected, usage_area: usageArea }),
+        body: JSON.stringify({ name: name || '(unnamed)', resource_ids: selected, usage_area: usageArea, config: buildConfig() }),
       });
       setSim(await r.json());
     } catch { /* ignore */ }
@@ -138,9 +155,9 @@ export const ResourceFabric: React.FC = () => {
     try {
       await fetch('/api/v1/resources/compose', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, resource_ids: selected, usage_area: usageArea }),
+        body: JSON.stringify({ name, resource_ids: selected, usage_area: usageArea, config: buildConfig() }),
       });
-      setName(''); setSelected([]); setSim(null);
+      setName(''); setSelected([]); setSim(null); setParamConfig({});
       loadCompositions();
     } catch { /* ignore */ }
     setComposing(false);
@@ -250,6 +267,40 @@ export const ResourceFabric: React.FC = () => {
             Compose
           </Button>
         </div>
+
+        {/* §7 — user design control: reconfigure each selected resource's parameters before commit */}
+        {selected.length > 0 && (
+          <details className="mt-4 bg-slate-950/60 rounded-2xl border border-slate-800">
+            <summary className="cursor-pointer px-4 py-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+              Configure parameters ({selected.length} selected) — user design control
+            </summary>
+            <div className="px-4 pb-4 space-y-3">
+              {selected.map(id => {
+                const r = resources.find(x => x.id === id);
+                if (!r) return null;
+                const params = Object.entries(r.reconfigurable_params || {});
+                return (
+                  <div key={id} className="border-t border-slate-800/60 pt-2 first:border-t-0">
+                    <p className="text-[10px] font-black text-white mb-1.5">{r.name}</p>
+                    {params.length === 0 ? (
+                      <p className="text-[9px] text-slate-600 italic">No reconfigurable parameters.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {params.map(([key, type]) => (
+                          <input key={key} value={(paramConfig[id] || {})[key] ?? ''}
+                            onChange={e => setParam(id, key, e.target.value)}
+                            placeholder={`${key} (${type})`}
+                            className="text-[10px] bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-white placeholder:text-slate-600 min-w-[150px] focus:outline-none focus:border-highlight/50" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <p className="text-[8px] text-slate-600 italic">Set values, then Model &amp; Simulate — the model shows which parameters remain unset.</p>
+            </div>
+          </details>
+        )}
 
         {/* §7 — the platform models + simulates the configuration BEFORE commit (gated by the living QMS) */}
         {sim && sim.model && (

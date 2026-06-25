@@ -1106,6 +1106,12 @@ def test_resource_compose_model_and_simulate_before_commit(client):
                       json={"name": "bad", "resource_ids": ["bdp", "gaas_v5"], "usage_area": "design"}).json()
     assert len(bad["model"]["incompatibilities"]) == 1 and bad["model"]["usage_area_supported_by_all"] is False
     assert bad["commit_ready"] is False
+    # user design control over PARAMETER VALUES: setting a param removes it from unset_params (§7)
+    cfg = client.post("/api/v1/resources/compose/simulate",
+                      json={"name": "cfg", "resource_ids": ["bdp"], "usage_area": "synthesis",
+                            "config": {"bdp": {"challenge": "reduce food waste"}}}).json()
+    assert "challenge" not in (cfg["model"]["unset_params"].get("bdp") or [])
+    assert cfg["resources"][0]["config"]["challenge"] == "reduce food waste"
     # the preview saved nothing; empty/unknown selections are rejected
     assert client.post("/api/v1/resources/compose/simulate", json={"name": "x", "resource_ids": []}).status_code == 400
     assert client.post("/api/v1/resources/compose/simulate", json={"name": "x", "resource_ids": ["nope"]}).status_code == 400
