@@ -1637,6 +1637,10 @@ def test_swarm_cascade_in_house_provenance(client):
     for officer in ros["engaged"]:
         assert officer in r["level_2_csuite"]                 # the officer's functional plan
         assert f"{officer} CoE" in r["level_3_coe"]           # and the CoE that officer drives
+    # §5 — each tier manages, APPRAISES and DEVELOPS the tier below (arms-length upward appraisal pass)
+    appr = r["appraisals"]
+    assert {"chief_appraises_board", "board_appraises_ceo", "ceo_appraises_csuite", "bto_appraises_build"} <= set(appr)
+    assert all(appr[k] for k in appr)
 
 
 def test_swarm_cascade_user_reconfigurable_org(client):

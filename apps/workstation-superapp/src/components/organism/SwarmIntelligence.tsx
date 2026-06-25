@@ -222,6 +222,22 @@ const SwarmIntelligence: React.FC = () => {
                 </div>
               </details>
             )}
+            {/* §5 — each tier manages, appraises and develops the tier below (arms-length upward pass) */}
+            {cascade.appraisals && Object.keys(cascade.appraisals).length > 0 && (
+              <details className="bg-black/40 rounded-lg border border-white/5">
+                <summary className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">
+                  Management appraisal &amp; development (each tier develops the one below)
+                </summary>
+                <div className="px-3 pb-3 space-y-2">
+                  {Object.entries(cascade.appraisals).map(([k, v]: any) => (
+                    <div key={k} className="border-t border-white/5 pt-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-amber-300/80">{String(k).replace(/_/g, ' ')}</p>
+                      <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">{String(v).slice(0, 600)}</pre>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
             {cascade.management_systems?.document_control && Object.keys(cascade.management_systems.document_control).length > 0 && (
               <p className="text-[8px] text-white/30 leading-relaxed">Document-controlled (DCMS, SHA3-512): {Object.entries(cascade.management_systems.document_control).map(([k, v]: any) => `${k} ${String(v).slice(0, 8)}…`).join('  ·  ')}</p>
             )}

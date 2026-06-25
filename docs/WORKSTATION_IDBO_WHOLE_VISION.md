@@ -339,7 +339,10 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   no fabricated telemetry) → the **full specialist C-Suite** (CSO·CFO·CTO·CPO·COO·CIO·CLO·Forecasting·
   Policy — **user-reconfigurable** per `csuite_roles`, realising "reconfigurable with user design
   control"), **each officer driving its own Centre of Excellence** → **Business Transformation Office →
-  Build-to-Order → Products/Services catalogue**. The whole delivery is **governed at arm's length** by
+  Build-to-Order → Products/Services catalogue**. And **each tier manages, appraises and develops the
+  tier below** — after the top-down delegation, an arms-length upward **appraisal & development pass**
+  (Chief→Board, Board→AI CEO, AI CEO→C-Suite, BTO→Build-to-Order) realises the §5 management relationship
+  + continual improvement. The whole delivery is **governed at arm's length** by
   the gaas.v5 constitutional interceptor (Change Control) and **sealed into the UEG hash-chained
   provenance ledger** (§6), every tier served by Workstation's OWN fabric (zero external). Walkable on the
   **Swarm Intelligence** page (each tier + governance + management-systems + UEG seal rendered).

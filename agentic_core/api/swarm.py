@@ -335,6 +335,24 @@ async def cascade_orchestration(req: CascadeRequest):
     )
     products_services_catalogue = await _q(catalogue_prompt, "cascade_catalogue")
 
+    # ── §5: each tier MANAGES, APPRAISES and DEVELOPS the tier below (arms-length). After the top-down
+    # delegation, a bounded upward appraisal pass — each managing tier appraises the tier below's output
+    # and sets a development action (continual improvement), without lower tiers instructing higher ones.
+    appraisals: dict = {}
+    for key, manager, below_label, below_text in (
+        ("chief_appraises_board", "Chief of the Board", "the Board's action plan", board_resolution),
+        ("board_appraises_ceo", "Board of Directors", "the AI CEO's directive", ceo_directive),
+        ("ceo_appraises_csuite", "AI CEO", "the C-Suite's functional plans",
+         "\n".join(f"- {r}: {t[:160]}" for r, t in csuite_responses.items())),
+        ("bto_appraises_build", "Business Transformation Office", "Build-to-Order's delivery plan", build_to_order),
+    ):
+        appraisals[key] = await _q(
+            f"You are the {manager}. Arms-length, you MANAGE, APPRAISE and DEVELOP the tier directly below "
+            f"you. Appraise {below_label}:\n\n{str(below_text)[:600]}\n\n"
+            "## Appraisal (strengths · gaps · risks)\n"
+            "## Development Action (how you will develop and improve that tier next cycle)\n"
+            "Be specific and constructive.", f"appraise_{key}")
+
     # ── §5: the AI CEO INTEGRATES the living management systems (BMS·QMS·DCS·EMS) — for real, not prose.
     # The org's key decisions are document-controlled through the OWNED DCMS (real SHA3-512 versioned
     # artifacts with an audit trail). We do NOT fabricate BMS/EMS telemetry numbers — those need real
@@ -377,6 +395,7 @@ async def cascade_orchestration(req: CascadeRequest):
             "served_by": provenance["served_by"], "any_external": provenance["any_external"],
             "governance": governance.get("status"),
             "document_control": list(management_systems.get("document_control", {}).keys()),
+            "appraisals": list(appraisals.keys()),
         }, actor="AI CEO")
     except Exception:
         pass
@@ -400,6 +419,8 @@ async def cascade_orchestration(req: CascadeRequest):
         # §5 — the engaged specialist C-Suite (each drives its own CoE) + the full pool for user
         # design-control reconfiguration (pass csuite_roles to choose which officers run).
         "csuite_roster": {"engaged": selected, "available": _CSUITE_POOL, "each_drives_coe": True},
+        # §5 — each tier manages, APPRAISES and DEVELOPS the tier below (arms-length upward appraisal).
+        "appraisals": appraisals,
         "level_4_business_transformation_office": bto_programme,
         "level_5_build_to_order": build_to_order,
         "products_services_catalogue": products_services_catalogue,
