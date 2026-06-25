@@ -71,7 +71,6 @@ const allNavItems: NavItem[] = [
     subItems: [
       { name: 'VSB Spawn Studio',  icon: Building2,  id: 'vsb' },
       { name: 'VSB Cockpit',       icon: Crown,      id: 'vsb-cockpit' },
-      { name: 'Enterprise',        icon: Briefcase,  id: 'enterprise' },
       { name: 'Genesis Journey',   icon: Rocket,     id: 'genesis' },
       { name: 'Business Plan',     icon: FileText,   id: 'business-plan' },
       { name: 'Management Systems',icon: Shield,     id: 'management' },
@@ -112,9 +111,7 @@ const allNavItems: NavItem[] = [
       { name: 'Economic Metabolism', icon: Coins,    id: 'economy' },
       { name: 'Marketplace',      icon: ShoppingBag, id: 'marketplace' },
       { name: 'Deliverables',     icon: FileText,    id: 'deliverables' },
-      { name: 'Product Catalog',  icon: Package,     id: 'product-catalog' },
       { name: 'Wallet',           icon: DollarSign,  id: 'wallet' },
-      { name: 'Impact',           icon: Activity,    id: 'impact' },
     ]
   },
 

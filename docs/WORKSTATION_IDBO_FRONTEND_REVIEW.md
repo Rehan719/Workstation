@@ -54,6 +54,19 @@ Exercised the remaining unverified pages. **KEEP** (all real, coherent, vision-d
 
 ---
 
+## ▶ PHASE 2 — STREAMLINING (consolidate & align to a lean, vision-aligned UI)
+Owner (2026-06-25): "Further consolidate and align to deliver to vision an effective efficient streamlined user interface." The review removed the *incoherent*; streamlining removes the *redundant* + de-clutters + de-fabricates so each surviving surface is a distinct vision capability.
+
+### ✅ Streamline Cycle 1 (W133) — de-fabricate Marketplace + consolidate duplicate product/project/impact surfaces
+- **De-fabricated the §12 Marketplace** (`/marketplace`, LivingMarketplace): removed the entirely-fabricated "Trending Agents" storefront (8 hardcoded fake agents with invented `sales`/`trust`/prices + a fake "Economy Vitals" panel: "12.4K WST volume / 142 WST fee burn / 4.92 reputation" / "Connect Wallet via PQC"). The Marketplace now shows ONLY the real `/api/v1/catalog/products` (20 live, openable products) with an honest subtitle. A real VSB-to-VSB listings/orders economy is Owner-gated and will be built on real WST rails, not seeded with invented figures.
+- **Consolidated 3 redundant pages** (archived → _archive/frontend-pages/, route kept as a redirect so old links resolve): `/product-catalog` (ProductCatalog — a duplicate of the Marketplace's products view) → **/marketplace**; `/enterprise` (EnterpriseRealm — "Forest of Collaboration" grandiose shell over the same 3 projects) → **/projects**; `/impact` (UserImpact — thin personal aggregate of organism/projects/swarm data) → **/organism**.
+- Net: nav items 59 → **56**; VSB Enterprises 10→9, Transformation & Economy 7→5; one fabrication removed. Verified: clean `tsc && vite build`; served build → Marketplace shows 20 real products + zero fabricated agents, all 3 redirects land (/enterprise→/projects, /product-catalog→/marketplace, /impact→/organism), console clean.
+
+### ⏳ Streamlining backlog (next cycles)
+- **Resource Fabric section (13 nav items)** — the heaviest. The Fabric page federates the engines but only links 2 of them. Plan: add engine launcher links to the Resource Fabric page, THEN reduce the flat per-engine nav to a lean set (Resource Fabric · Reactor Studio · Build to Order + "all engines via the Fabric"). Verify no engine is orphaned from navigation before trimming.
+- **Home/Governance dashboards** — confirm organism/heartbeat/cognition + governance-hub/constitution/audit don't overlap; consolidate if they do.
+- Final alignment pass + a single coherent nav screenshot.
+
 ## ✅ REVIEW COMPLETE (W132)
 All 8 nav sections cycle-reviewed against §1–§17; every page's **output** exercised in the browser.
 

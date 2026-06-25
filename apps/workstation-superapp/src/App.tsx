@@ -38,7 +38,7 @@ import { QEPReligionHub } from './pages/domains/QEPReligionHub';
 // ── 4. VSB Enterprises ───────────────────────────────────────────────────
 import { VSBSpawnStudio } from './pages/enterprise/VSBSpawnStudio';
 import { VSBCockpit } from './pages/enterprise/VSBCockpit';
-import { EnterpriseRealm } from './pages/enterprise/EnterpriseRealm';
+// EnterpriseRealm archived — grandiose "Forest of Collaboration" shell over the same projects; /enterprise → /projects.
 import { GenesisJourney } from './pages/synthesis/GenesisJourney';
 import { BusinessPlan } from './pages/enterprise/BusinessPlan';
 import { ManagementSystemsHub } from './pages/enterprise/ManagementSystemsHub';
@@ -68,9 +68,9 @@ import { VSBEconomy } from './pages/enterprise/VSBEconomy';
 import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
 import { Deliverables } from './pages/Deliverables';
 // PredictionMarket archived — fabricated betting market (gambling-adjacent, conflicts halal ethics).
-import { ProductCatalog } from './pages/ProductCatalog';
+// ProductCatalog archived — duplicate of the Marketplace's live products view; /product-catalog → /marketplace.
 import { Wallet } from './pages/profile/Wallet';
-import { UserImpact } from './pages/profile/Impact';
+// UserImpact archived — thin personal aggregate (organism signals/projects/swarm); /impact → /organism.
 // SoulRecordExplorer archived — grandiose off-vision "multi-dimensional identity" page.
 
 // ── 7. Governance & Operations ───────────────────────────────────────────
@@ -147,7 +147,7 @@ function App() {
           <Route path="/vsb"            element={<VSBSpawnStudio />} />
           <Route path="/vsb-spawn"      element={<VSBSpawnStudio />} />
           <Route path="/vsb-cockpit"    element={<VSBCockpit />} />
-          <Route path="/enterprise"     element={<EnterpriseRealm />} />
+          <Route path="/enterprise"     element={<Navigate to="/projects" replace />} />
           <Route path="/genesis"        element={<GenesisJourney />} />
           <Route path="/business-plan"  element={<BusinessPlan />} />
           <Route path="/management"     element={<ManagementSystemsHub />} />
@@ -178,9 +178,9 @@ function App() {
           <Route path="/marketplace"       element={<LivingMarketplace />} />
           <Route path="/dev-marketplace"   element={<Navigate to="/marketplace" replace />} />
           <Route path="/deliverables"      element={<Deliverables />} />
-          <Route path="/product-catalog"   element={<ProductCatalog />} />
+          <Route path="/product-catalog"   element={<Navigate to="/marketplace" replace />} />
           <Route path="/wallet"            element={<Wallet />} />
-          <Route path="/impact"            element={<UserImpact />} />
+          <Route path="/impact"            element={<Navigate to="/organism" replace />} />
 
           {/* ── 7. Governance & Operations ──────────────────────────── */}
           <Route path="/governance-hub"     element={<GovernanceHub />} />
