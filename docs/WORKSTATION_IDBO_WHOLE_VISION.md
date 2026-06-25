@@ -561,7 +561,7 @@ architecture). This is the exact structural skeleton the fine-grained vision han
 - **Constitutional** (genome-locked): Mission · Vision · Values · Ethical mandate (rarely changes).
 - **Strategic** (AI CEO; quarterly + market signal): position, growth, resource posture.
 - **Action Plan** (BTO; weekly + KPI-triggered): sprint priorities, corrective actions, timelines.
-- **Board Pack** (on-demand): assembled fresh from live data, DCS-registered.
+- **Board Pack** (on-demand): assembled fresh from live data, DCS-registered. — ✅ DELIVERED (W125): `POST /api/v1/vsb/{id}/board-pack` assembles the pack fresh from the VSB's live data + an in-house AI-CEO narrative, QMS-gated + §11-compliance-screened + DCS-registered (document-controlled via the QMS-owned DCMS), with history; an **Assemble Board Pack** action on the Genesis page surfaces it.
 
 **17.4 The 3 Human–AI integration modes.**
 - **Mode 1** — Owner sets mission/values/ethical bounds → the IDBO executes everything else autonomously.

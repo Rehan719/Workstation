@@ -648,6 +648,106 @@ async def get_vsb_mobile_file(vsb_id: str, name: str):
     return HTMLResponse(fp.read_text(encoding="utf-8"), media_type=media)
 
 
+# ── §17.3 — Living Business System: the on-demand BOARD PACK (assembled fresh from live data, DCS-
+# registered). Completes the 4-layer LBS (Constitutional · Strategic · Action Plan · Board Pack). The
+# pack is built FRESH each call from the VSB's live entity data + an in-house AI-CEO narrative, then
+# QMS-gated + §11-compliance-screened + DOCUMENT-CONTROLLED (DCS-registered) via the QMS-owned DCMS.
+_BOARDPACK_STORE = data_path("vsb_board_packs")
+
+
+@router.post("/{vsb_id}/board-pack")
+async def generate_vsb_board_pack(vsb_id: str):
+    """Assemble a fresh Board Pack for the VSB from its live data (Constitutional · Strategic · Action ·
+    Operational), with an in-house AI-CEO narrative — QMS-gated + compliance-screened + DCS-registered
+    (document-controlled via the QMS-owned DCMS). The on-demand layer of the §17.3 Living Business System."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    name, challenge = vsb.get("name"), vsb.get("challenge", "")
+    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
+    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
+    commercial = str(bp.get("phase_3_commercialisation", "")) if bp else ""
+
+    constitutional = {"mission": f"Deliver: {challenge}"[:280], "vision": challenge,
+                      "values": "Integrity · Compassion · Excellence · Halal/Sharia · Beneficence · Stewardship",
+                      "genome_present": bool(vsb.get("genome_spec")), "entity": vsb_id}
+    operational = {"stage": vsb.get("stage"), "status": vsb.get("status"),
+                   "generation": vsb.get("generation", 0), "domain": vsb.get("domain"),
+                   "realm": vsb.get("realm"), "governance": (vsb.get("governance") or {}).get("status")}
+
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    meta = await gateway.query_meta(
+        f"You are the AI CEO assembling a fresh Board Pack for the VSB '{name}'. Live data — stage: "
+        f"{operational['stage']}; generation: {operational['generation']}; domain: {operational['domain']}; "
+        f"governance: {operational['governance']}. Concept: {concept[:500]}. Commercialisation: "
+        f"{commercial[:400]}.\n\nProduce a concise board pack:\n## Executive Summary\n## Strategic Position\n"
+        "## Action Priorities (this period)\n## Key Risks\n## Recommendation", agent="vsb-board-pack")
+    narrative = meta.get("output", "") or ""
+    sb = meta.get("served_by", "native")
+    prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
+    prov["any_external"] = bool(meta.get("is_external"))
+
+    from agentic_core.vbs.quality import assure_delivery
+    combined = (f"Board Pack — {name}. Sections: Executive Summary · Strategic Position · Action Priorities "
+                f"· Key Risks · Recommendation.\n{narrative}")
+    qa = await assure_delivery(combined, ["Executive Summary", "Strategic Position", "Action Priorities",
+                                          "Recommendation"], label="board_pack")
+    ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    pack = {
+        "vsb_id": vsb_id, "name": name, "kind": "board_pack", "generated_at": ts,
+        "layers": {
+            "constitutional": constitutional,                                  # genome-locked
+            "strategic": {"ceo": vsb.get("ceo_specification") or {}},           # AI CEO
+            "action_plan": {"board": vsb.get("board") or {}},                   # BTO / board
+            "operational": operational,                                         # live snapshot
+        },
+        "economy": vsb.get("economy") or {},
+        "narrative": narrative,
+        "ai_provenance": prov,
+        "quality_assurance": qa,
+        # DCS registration: the document-control hash from the QMS-owned DCMS (ISO 9001 §7.5)
+        "dcs_registered": bool(qa.get("quality", {}).get("document_controlled")),
+        "dcs_hash": qa.get("quality", {}).get("quality_record_hash"),
+        "note": "Living Business System — on-demand Board Pack, assembled fresh from live data, DCS-registered.",
+    }
+    root = _BOARDPACK_STORE / vsb_id
+    root.mkdir(parents=True, exist_ok=True)
+    (root / f"{ts.replace(':', '-')}.json").write_text(json.dumps(pack, indent=2), encoding="utf-8")
+    (root / "latest.json").write_text(json.dumps(pack, indent=2), encoding="utf-8")
+    try:
+        biobus.fire_signal("cognitive", "vsb.board_pack", f"{name}: board pack assembled", 0.6)
+    except Exception:
+        pass
+    return pack
+
+
+@router.get("/{vsb_id}/board-pack")
+async def get_vsb_board_pack(vsb_id: str):
+    """Retrieve the latest Board Pack for a VSB (assembled fresh on each POST)."""
+    p = _BOARDPACK_STORE / vsb_id / "latest.json"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"No board pack assembled for VSB {vsb_id} yet.")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+@router.get("/{vsb_id}/board-packs")
+async def list_vsb_board_packs(vsb_id: str):
+    """List the VSB's Board Pack history (each is a fresh, DCS-registered point-in-time pack)."""
+    root = _BOARDPACK_STORE / vsb_id
+    packs = []
+    if root.exists():
+        for fp in sorted(root.glob("*.json"), reverse=True):
+            if fp.name == "latest.json":
+                continue
+            try:
+                d = json.loads(fp.read_text(encoding="utf-8"))
+                packs.append({"generated_at": d.get("generated_at"), "dcs_hash": d.get("dcs_hash"),
+                              "dcs_registered": d.get("dcs_registered")})
+            except (json.JSONDecodeError, OSError):
+                pass
+    return {"vsb_id": vsb_id, "board_packs": packs, "total": len(packs)}
+
+
 def _list_vsbs() -> list[dict]:
     result = []
     for p in sorted(_VSB_STORE.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):

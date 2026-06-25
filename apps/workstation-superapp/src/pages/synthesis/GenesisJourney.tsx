@@ -50,6 +50,12 @@ interface PwaManifest {
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
 }
+interface BoardPack {
+  vsb_id: string; name: string; kind: string; narrative: string; dcs_registered: boolean; dcs_hash?: string;
+  layers: Record<string, unknown>;
+  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
+    compliance?: { overall?: string; compliant?: boolean } } };
+}
 
 const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
 const DOMAINS = ['enterprise', 'religion', 'science', 'law', 'care', 'education', 'employment', 'career', 'fintech', 'healthtech', 'edtech'];
@@ -77,6 +83,8 @@ export const GenesisJourney: React.FC = () => {
   const [webappBusy, setWebappBusy] = useState(false);
   const [pwa, setPwa] = useState<PwaManifest | null>(null);
   const [pwaBusy, setPwaBusy] = useState(false);
+  const [pack, setPack] = useState<BoardPack | null>(null);
+  const [packBusy, setPackBusy] = useState(false);
 
   const run = async () => {
     if (!problem.trim()) return;
@@ -159,6 +167,17 @@ export const GenesisJourney: React.FC = () => {
       if (res.ok) setPwa(await res.json());
     } catch { /* ignore */ }
     setPwaBusy(false);
+  };
+
+  // §17.3 — assemble the Living Business System's on-demand Board Pack (DCS-registered)
+  const generateBoardPack = async () => {
+    if (!vsb) return;
+    setPackBusy(true); setPack(null);
+    try {
+      const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/board-pack`, { method: 'POST' });
+      if (res.ok) setPack(await res.json());
+    } catch { /* ignore */ }
+    setPackBusy(false);
   };
 
   const phases = result ? [
@@ -472,6 +491,29 @@ export const GenesisJourney: React.FC = () => {
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
                               Open the phone app →
                             </a>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* §17.3 — the Living Business System's on-demand Board Pack (assembled fresh, DCS-registered) */}
+                      <div className="mt-3">
+                        <Button onClick={generateBoardPack} disabled={packBusy} className="flex items-center gap-2 bg-slate-900 text-highlight text-[11px]">
+                          {packBusy ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+                          {packBusy ? 'Assembling board pack…' : 'Assemble Board Pack'}
+                        </Button>
+                        {pack && (
+                          <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Board Pack</span>
+                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">{Object.keys(pack.layers).join(' · ')}</span>
+                              {pack.dcs_registered && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400" title={pack.dcs_hash}>DCS-registered</span>}
+                              {pack.quality_assurance?.quality?.compliance && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${pack.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                  compliance: {pack.quality_assurance.quality.compliance.overall}
+                                </span>
+                              )}
+                            </div>
+                            <pre className="text-[10px] text-slate-400 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto font-sans">{pack.narrative.slice(0, 1200)}</pre>
                           </div>
                         )}
                       </div>

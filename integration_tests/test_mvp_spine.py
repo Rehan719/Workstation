@@ -1429,6 +1429,29 @@ def test_vsb_mobile_pwa_generation(client):
     assert client.post("/api/v1/vsb/nope-xyz-404/mobile").status_code == 404
 
 
+def test_vsb_board_pack(client):
+    # §17.3 — the Living Business System's on-demand Board Pack: assembled FRESH from the VSB's live data
+    # (Constitutional · Strategic · Action · Operational) + an in-house AI-CEO narrative, QMS-gated +
+    # compliance-screened + DCS-registered (document-controlled via the QMS-owned DCMS).
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+    vid = est.json()["vsb_id"]
+    m = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
+    assert m["kind"] == "board_pack"
+    assert set(m["layers"]) == {"constitutional", "strategic", "action_plan", "operational"}
+    assert all(k in m["layers"]["constitutional"] for k in ("mission", "vision", "values"))
+    assert m["narrative"]
+    assert m["dcs_registered"] is True and isinstance(m["dcs_hash"], str) and len(m["dcs_hash"]) == 128
+    q = m["quality_assurance"]["quality"]
+    assert q["qms_gate_passed"] is True and q["compliance"]["overall"] in ("pass", "review", "fail")
+    assert m["ai_provenance"]["any_external"] is False
+    # GET latest + history; unknown VSB is a 404
+    assert client.get(f"/api/v1/vsb/{vid}/board-pack").json()["dcs_hash"] == m["dcs_hash"]
+    assert client.get(f"/api/v1/vsb/{vid}/board-packs").json()["total"] >= 1
+    assert client.post("/api/v1/vsb/nope-xyz-404/board-pack").status_code == 404
+    assert client.get("/api/v1/vsb/nope-xyz-404/board-pack").status_code == 404
+
+
 # ── Payments — honest, launch-ready rails (Phase 3, test-mode safe) ───────────
 # Verifies the rails never fabricate a connection and default to safe simulation.
 
