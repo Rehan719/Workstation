@@ -54,6 +54,8 @@ function RunCard({ run }: { run: SwarmRun }) {
   );
 }
 
+const CSUITE_POOL = ['CSO', 'CFO', 'CTO', 'CPO', 'COO', 'CIO', 'CLO', 'Forecasting', 'Policy'];
+
 const SwarmIntelligence: React.FC = () => {
   const [runs, setRuns] = useState<SwarmRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +64,8 @@ const SwarmIntelligence: React.FC = () => {
   const [streamOutput, setStreamOutput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [cascade, setCascade] = useState<any>(null);   // full org-cascade delivery (Chief → Build-to-Order)
+  // §5 user design-control: choose which specialist C-Suite officers run (each drives its own CoE).
+  const [csuiteSel, setCsuiteSel] = useState<string[]>(['CSO', 'CFO', 'CTO', 'COO', 'CLO']);
   const outputRef = useRef<HTMLDivElement>(null);
 
   const loadRuns = async () => {
@@ -93,7 +97,7 @@ const SwarmIntelligence: React.FC = () => {
       const response = await fetch('/api/v1/swarm/cascade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mission: task, domain: 'enterprise', realm: 'enterprise' }),
+        body: JSON.stringify({ mission: task, domain: 'enterprise', realm: 'enterprise', csuite_roles: csuiteSel }),
       });
       if (response.ok) {
         setCascade(await response.json());
@@ -148,6 +152,21 @@ const SwarmIntelligence: React.FC = () => {
           </button>
         </div>
 
+        {/* §5 user design-control — choose which specialist C-Suite officers run (each drives its own CoE) */}
+        <div className="mt-2 flex flex-wrap items-center gap-1">
+          <span className="text-[8px] font-black uppercase tracking-widest text-white/30 mr-1">C-Suite</span>
+          {CSUITE_POOL.map(role => {
+            const on = csuiteSel.includes(role);
+            return (
+              <button key={role} type="button" disabled={delegating}
+                onClick={() => setCsuiteSel(s => on ? s.filter(x => x !== role) : [...s, role])}
+                className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border transition-colors disabled:opacity-50 ${on ? 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/40' : 'bg-white/5 text-white/30 border-white/10 hover:text-white/60'}`}>
+                {role}
+              </button>
+            );
+          })}
+        </div>
+
         {streaming && !cascade && (
           <div className="mt-3 flex items-center gap-2 text-[10px] text-white/40"><Loader2 size={12} className="animate-spin" /> The living organisation is delivering — Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order…</div>
         )}
@@ -184,6 +203,25 @@ const SwarmIntelligence: React.FC = () => {
                 <pre className="text-[9px] text-white/50 font-mono whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto px-3 pb-3">{String(text).slice(0, 1400)}</pre>
               </details>
             ))}
+            {/* §5 — the specialist C-Suite, each officer driving its own Centre of Excellence */}
+            {Array.isArray(cascade.csuite_roster?.engaged) && cascade.csuite_roster.engaged.length > 0 && (
+              <details className="bg-black/40 rounded-lg border border-white/5">
+                <summary className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">
+                  C-Suite → Centres of Excellence ({cascade.csuite_roster.engaged.length} officers, each drives a CoE)
+                </summary>
+                <div className="px-3 pb-3 space-y-2">
+                  {cascade.csuite_roster.engaged.map((role: string) => (
+                    <div key={role} className="border-t border-white/5 pt-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-fuchsia-300">{role}</p>
+                      <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">{String(cascade.level_2_csuite?.[role] || '').slice(0, 700)}</pre>
+                      {cascade.level_3_coe?.[`${role} CoE`] && (
+                        <pre className="mt-1 text-[9px] text-sky-300/50 font-mono whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto border-l border-sky-500/20 pl-2">↳ CoE — {String(cascade.level_3_coe[`${role} CoE`]).slice(0, 500)}</pre>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
             {cascade.management_systems?.document_control && Object.keys(cascade.management_systems.document_control).length > 0 && (
               <p className="text-[8px] text-white/30 leading-relaxed">Document-controlled (DCMS, SHA3-512): {Object.entries(cascade.management_systems.document_control).map(([k, v]: any) => `${k} ${String(v).slice(0, 8)}…`).join('  ·  ')}</p>
             )}

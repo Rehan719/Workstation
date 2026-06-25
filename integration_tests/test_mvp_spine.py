@@ -1629,6 +1629,26 @@ def test_swarm_cascade_in_house_provenance(client):
     assert r["governance"]["arms_length"] is True and r["governance"]["status"] in ("allowed", "blocked", "ungoverned")
     # §6 — verifiable hash-chained provenance for the entire org delivery
     assert r["ueg_hash"] and len(r["ueg_hash"]) == 128
+    # §5 — the full specialist C-Suite is selectable (user design control), and EACH officer drives its CoE
+    ros = r["csuite_roster"]
+    assert ros["each_drives_coe"] is True
+    assert {"CSO", "CFO", "CTO", "CPO", "COO", "CIO", "CLO", "Forecasting", "Policy"} <= set(ros["available"])
+    assert set(ros["engaged"]) <= set(ros["available"]) and len(ros["engaged"]) >= 3
+    for officer in ros["engaged"]:
+        assert officer in r["level_2_csuite"]                 # the officer's functional plan
+        assert f"{officer} CoE" in r["level_3_coe"]           # and the CoE that officer drives
+
+
+def test_swarm_cascade_user_reconfigurable_org(client):
+    # §5 "reconfigurable with user design control": the user chooses which specialist C-Suite officers
+    # run (each still drives its own CoE). Honest: only known C-Suite roles are engaged.
+    r = client.post("/api/v1/swarm/cascade",
+                    json={"mission": "open a community clinic", "domain": "care",
+                          "csuite_roles": ["CFO", "Policy", "Forecasting"]}).json()
+    assert r["csuite_roster"]["engaged"] == ["CFO", "Policy", "Forecasting"]
+    assert set(r["level_2_csuite"]) == {"CFO", "Policy", "Forecasting"}
+    assert {"CFO CoE", "Policy CoE", "Forecasting CoE"} <= set(r["level_3_coe"])
+    assert r["ai_provenance"]["any_external"] is False        # still fully in-house (§6)
 
 
 def test_resource_optimizer_surfaced(client):

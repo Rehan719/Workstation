@@ -336,7 +336,9 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   digital twin — strategy + a living roadmap) → **Board** (action plan: timelined, resourced tasks, PM) →
   **AI CEO** — who now *actually* **integrates the living management systems (BMS·QMS·DCS·EMS)** by
   document-controlling the org's decisions through the OWNED **DCMS** (real SHA3-512 versioned artifacts,
-  no fabricated telemetry) → **C-Suite → Centres of Excellence → Business Transformation Office →
+  no fabricated telemetry) → the **full specialist C-Suite** (CSO·CFO·CTO·CPO·COO·CIO·CLO·Forecasting·
+  Policy — **user-reconfigurable** per `csuite_roles`, realising "reconfigurable with user design
+  control"), **each officer driving its own Centre of Excellence** → **Business Transformation Office →
   Build-to-Order → Products/Services catalogue**. The whole delivery is **governed at arm's length** by
   the gaas.v5 constitutional interceptor (Change Control) and **sealed into the UEG hash-chained
   provenance ledger** (§6), every tier served by Workstation's OWN fabric (zero external). Walkable on the

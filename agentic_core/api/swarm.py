@@ -52,6 +52,12 @@ _AGENTS: dict[str, dict] = {
     "CMO":      {"role": "Chief Marketing Officer",   "expertise": "Brand, messaging, GTM strategy, demand generation, customer acquisition"},
     "COO":      {"role": "Chief Operating Officer",   "expertise": "Process design, operational efficiency, scaling, supply chain, KPIs"},
     "CLO":      {"role": "Chief Legal Officer",       "expertise": "Contracts, compliance, IP, regulatory, employment law, risk mitigation"},
+    # Full specialist C-Suite per WHOLE_VISION §5 (each officer drives its own Centre of Excellence)
+    "CSO":      {"role": "Chief Strategy Officer",    "expertise": "Strategy, competitive positioning, growth options, partnerships, market entry"},
+    "CPO":      {"role": "Chief Product Officer",     "expertise": "Product vision, roadmap, UX, discovery, prioritisation, lifecycle"},
+    "CIO":      {"role": "Chief Information Officer",  "expertise": "Information systems, data governance, security posture, knowledge management"},
+    "Forecasting": {"role": "Chief Forecasting Officer", "expertise": "Demand/financial forecasting, scenario modelling, sensitivity analysis, planning assumptions"},
+    "Policy":   {"role": "Chief Policy Officer",      "expertise": "Policy, ethics, regulatory strategy, standards, public affairs, governance alignment"},
     "science":  {"role": "Chief Science Officer",     "expertise": "Research methodology, evidence synthesis, R&D strategy, academic partnerships"},
     "care":     {"role": "Chief Care Officer",        "expertise": "Healthcare pathways, patient safety, clinical governance, NICE compliance"},
     "education":{"role": "Chief Learning Officer",    "expertise": "Curriculum design, pedagogy, learning outcomes, EdTech, accreditation"},
@@ -169,6 +175,9 @@ class CascadeRequest(BaseModel):
     realm: str = "enterprise"
     domain: str = "general"
     coe_specialisms: list[str] = []
+    # User design control of the org structure (§5): which specialist C-Suite officers to engage — each
+    # drives its own CoE. Empty = a balanced default set. Choose from the _AGENTS C-Suite keys.
+    csuite_roles: list[str] = []
 
 
 @router.post("/cascade")
@@ -244,10 +253,16 @@ async def cascade_orchestration(req: CascadeRequest):
     )
     ceo_directive = await _q(ceo_prompt, "cascade_ceo")
 
-    # Level 2: C-Suite responds to directive
-    csuite_roles = ["CFO", "CTO", "CMO", "COO"]
+    # Level 2: the specialist C-Suite (§5) — user-reconfigurable (req.csuite_roles); each officer leads
+    # AND develops its own Centre of Excellence (the §5 "each drives their CoE" linkage). Empty selection
+    # → a balanced default set; only known C-Suite roles are engaged (CEO is the apex, not in the set).
+    _DEFAULT_CSUITE = ["CSO", "CFO", "CTO", "COO", "CLO"]
+    _CSUITE_POOL = ["CSO", "CFO", "CTO", "CPO", "COO", "CIO", "CLO", "Forecasting", "Policy"]
+    selected = [r for r in (req.csuite_roles or _DEFAULT_CSUITE) if r in _AGENTS and r != "CEO"] or _DEFAULT_CSUITE
+    selected = selected[:9]
     csuite_responses: dict[str, str] = {}
-    for role in csuite_roles:
+    coe_responses: dict[str, str] = {}
+    for role in selected:
         agent_info = _AGENTS[role]
         prompt = (
             f"You are the {agent_info['role']}. Your CEO has issued the following directive:\n\n"
@@ -257,21 +272,27 @@ async def cascade_orchestration(req: CascadeRequest):
             "## Your Workstream\n"
             "## Key Actions (numbered, this month)\n"
             "## Resources Required\n"
-            "## Metrics You Own"
+            "## Metrics You Own\n"
+            "## Your Centre of Excellence (the specialist team/capability you stand up and develop)"
         )
         csuite_responses[role] = await _q(prompt, f"cascade_{role.lower()}")
-
-    # Level 3: CoE synthesis
-    coe_specialisms = req.coe_specialisms or [req.domain, "quality", "innovation"]
-    coe_responses: dict[str, str] = {}
-    for specialism in coe_specialisms[:3]:
+        # That officer DRIVES its CoE — specialist functional + operational delivery for its workstream.
+        coe_prompt = (
+            f"You are the Head of the Centre of Excellence reporting to the {agent_info['role']} "
+            f"({agent_info['expertise']}). Your officer's plan:\n{csuite_responses[role][:400]}\n\n"
+            f"Mission: {req.mission}\nDomain: {req.domain}\n\n"
+            "Deliver your CoE contribution (100-150 words):\n"
+            "## Specialist Capability Applied\n## Operational Delivery (what your team produces)\n"
+            "## Standards & Best Practice Enforced"
+        )
+        coe_responses[f"{role} CoE"] = await _q(coe_prompt, f"cascade_coe_{role.lower()}")
+    # Optional additional domain CoEs the user explicitly requested (beyond the per-officer CoEs).
+    for specialism in (req.coe_specialisms or [])[:3]:
         prompt = (
             f"You are the Head of the {specialism.title()} Centre of Excellence (CoE). "
             f"The C-Suite has initiated this mission:\n\"{req.mission}\"\n\n"
-            f"Provide your CoE contribution (100-150 words):\n"
-            "## CoE Expertise Applied\n"
-            "## Specialist Support Offered\n"
-            "## Standards and Best Practice Input"
+            "Provide your CoE contribution (100-150 words):\n"
+            "## CoE Expertise Applied\n## Specialist Support Offered\n## Standards and Best Practice Input"
         )
         coe_responses[specialism] = await _q(prompt, f"cascade_coe_{specialism}")
 
@@ -376,6 +397,9 @@ async def cascade_orchestration(req: CascadeRequest):
         "level_1_ceo_directive": ceo_directive,
         "level_2_csuite": csuite_responses,
         "level_3_coe": coe_responses,
+        # §5 — the engaged specialist C-Suite (each drives its own CoE) + the full pool for user
+        # design-control reconfiguration (pass csuite_roles to choose which officers run).
+        "csuite_roster": {"engaged": selected, "available": _CSUITE_POOL, "each_drives_coe": True},
         "level_4_business_transformation_office": bto_programme,
         "level_5_build_to_order": build_to_order,
         "products_services_catalogue": products_services_catalogue,
