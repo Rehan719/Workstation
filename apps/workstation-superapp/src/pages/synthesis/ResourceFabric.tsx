@@ -27,7 +27,8 @@ interface Simulation {
     unset_params: Record<string, string[]>;
   };
   simulation: {
-    quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[]; document_controlled?: boolean };
+    quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[]; document_controlled?: boolean;
+      compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } };
     biomimetic?: { immune?: { health?: number }; circadian?: string };
   };
 }
@@ -35,7 +36,8 @@ interface CompositionRun {
   composition_id: string; name: string; objective: string; posture: string;
   trace: { step: number; role: string; served_by: string; output: string }[];
   final: string; any_external: boolean;
-  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean } };
+  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
+    compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } } };
 }
 
 const CLASS_ICON: Record<string, React.ComponentType<any>> = {
@@ -357,6 +359,12 @@ export const ResourceFabric: React.FC = () => {
                   organism: immune {Math.round((sim.simulation.biomimetic.immune.health ?? 0) * 100)}% · {sim.simulation.biomimetic.circadian}
                 </span>
               )}
+              {sim.simulation?.quality?.compliance && (
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.simulation.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                  title={`§11 live compliance — ${(sim.simulation.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
+                  compliance: {sim.simulation.quality.compliance.overall}
+                </span>
+              )}
             </div>
             <p className="text-[10px] text-slate-400"><span className="text-slate-600 font-black uppercase">Pipeline:</span> {sim.model.pipeline.join(' → ')}</p>
             <p className="text-[10px] text-slate-400"><span className="text-slate-600 font-black uppercase">Combined capabilities ({sim.model.combined_capabilities.length}):</span> {sim.model.combined_capabilities.slice(0, 12).join(' · ')}{sim.model.combined_capabilities.length > 12 ? ' …' : ''}</p>
@@ -416,6 +424,12 @@ export const ResourceFabric: React.FC = () => {
                         {typeof runResult.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
                           <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${runResult.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
                             QMS gate: {runResult.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{runResult.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                          </span>
+                        )}
+                        {runResult.quality_assurance?.quality?.compliance && (
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${runResult.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                            title={`§11 live compliance — ${(runResult.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
+                            compliance: {runResult.quality_assurance.quality.compliance.overall}
                           </span>
                         )}
                       </div>

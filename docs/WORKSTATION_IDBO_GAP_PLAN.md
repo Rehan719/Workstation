@@ -41,7 +41,7 @@ suite green, in-house provenance, no fabrication); "designed/gated" means intent
 |---|---|---|---|
 | C1 | Autonomous self-improvement of living deliverables on the heartbeat (deliverables "keep researching/improving") | §13 | heartbeat autonomy partly exists; deeper loop is heavier — confirm before building |
 | C2 | Surface the §8 homeostasis loops (immune↔nervous↔metabolic) as a live organism dashboard | §8 | visualization; the data exists |
-| C3 | Compliance badge rollout to the remaining delivery surfaces (cascade/Genesis/composition-run/studio panels) | §11 | backend already returns it everywhere; only the Deliverables UI surfaces it so far |
+| ~~C3~~ ✅ | Compliance badge rolled out to all delivery surfaces (cascade · Genesis · composition-run · simulate-preview · studio) | §11 | done W119 — every delivery panel now shows the `compliance: pass/review/fail` badge |
 | C4 | Personalisation to user history/preferences across the UI (§9 "personalised to each user") | §9 | needs a user-prefs store; moderate |
 | C5 | Broader robustness/test sweeps as new surfaces age | — | opportunistic, only on a real finding |
 

@@ -11,7 +11,8 @@ interface StudioResult {
     min: { label: string; value: number }; max: { label: string; value: number } };
   insight: string;
   ai_provenance: { any_external: boolean; served_by: Record<string, number> };
-  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean } };
+  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
+    compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } } };
 }
 
 // Parse "label, value[, z]" per line into points (real user data — never invented).
@@ -173,6 +174,12 @@ export const ReactorStudio: React.FC = () => {
                 </span>
                 {result.quality_assurance?.quality?.document_controlled && (
                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">QMS · doc-controlled</span>
+                )}
+                {result.quality_assurance?.quality?.compliance && (
+                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                    title={`§11 live compliance — ${(result.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
+                    compliance: {result.quality_assurance.quality.compliance.overall}
+                  </span>
                 )}
               </div>
               <p className="text-[11px] text-slate-400 whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto">{result.insight}</p>

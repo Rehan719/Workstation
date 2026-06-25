@@ -199,6 +199,12 @@ const SwarmIntelligence: React.FC = () => {
                   organism: immune {Math.round((cascade.biomimetic.immune.health ?? 0) * 100)}% · {cascade.biomimetic.circadian}
                 </span>
               )}
+              {cascade.quality?.compliance && (
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                  title={`§11 live compliance — ${(cascade.quality.compliance.verdicts || []).map((v: any) => `${v.framework}:${v.status}`).join(' · ')}`}>
+                  compliance: {cascade.quality.compliance.overall}
+                </span>
+              )}
               {cascade.ueg_hash && <span className="text-[8px] font-mono text-white/30" title={cascade.ueg_hash}>UEG {String(cascade.ueg_hash).slice(0, 12)}…</span>}
             </div>
             {([
