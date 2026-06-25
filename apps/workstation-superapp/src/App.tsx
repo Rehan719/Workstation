@@ -85,11 +85,13 @@ import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 import { AuditDashboard } from './pages/tools/AuditDashboard';
 
 // ── 8. Developer Portal & system ─────────────────────────────────────────
-import { DevPortal } from './pages/developers/DevPortal';
+// DevPortal archived — grandiose placeholder (fabricated "PQC-MANDATORY / CRYSTALS-Dilithium / third-party
+// reactors" claims), no backend, no real third-party developer ecosystem.
 import { Contribute } from './pages/Contribute';
 import { AdminPanel } from './pages/AdminPanel';
 import { CreatorStudio } from './pages/create/CreatorStudio';
-import { PublicRoadmap } from './pages/PublicRoadmap';
+// PublicRoadmap archived — grandiose hardcoded roadmap ("Workstation civilization, Guardian resonance"),
+// no backend; the real living roadmap is the Living Plan (/api/v1/plan).
 import { LandingPage } from './pages/landing/LandingPage';
 
 // ── Extended (wired, reachable by URL — not in primary nav) ───────────────
@@ -193,11 +195,9 @@ function App() {
           <Route path="/vault"              element={<Navigate to="/governance-hub" replace />} />
 
           {/* ── 8. Developer Portal & system ────────────────────────── */}
-          <Route path="/dev-portal" element={<DevPortal />} />
           <Route path="/contribute" element={<Contribute />} />
           <Route path="/creator"    element={<CreatorStudio />} />
           <Route path="/admin"      element={<AdminPanel />} />
-          <Route path="/roadmap"    element={<PublicRoadmap />} />
           <Route path="/landing"    element={<LandingPage />} />
           <Route path="/settings" element={
             <div className="p-10">

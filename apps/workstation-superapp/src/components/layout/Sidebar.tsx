@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart,
   Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
-  Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Globe,
+  Brain, Network, Palette, FileText, User, Cpu, DollarSign,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Code2, Star, Archive, Eye,
   HeartPulse, Workflow, Search, Globe2, Layers, Factory, ChevronDown,
@@ -138,11 +138,9 @@ const allNavItems: NavItem[] = [
     icon: Code2,
     id: 'dev-facet',
     subItems: [
-      { name: 'Developer Portal', icon: Code2,       id: 'dev-portal' },
       { name: 'Creator Studio',   icon: Palette,     id: 'creator' },
       { name: 'Contribute',       icon: Plus,        id: 'contribute' },
       { name: 'Entity Control',   icon: ShieldCheck, id: 'admin' },
-      { name: 'Public Roadmap',   icon: Map,         id: 'roadmap' },
       { name: 'System Settings',  icon: Settings,    id: 'settings' },
     ]
   }
