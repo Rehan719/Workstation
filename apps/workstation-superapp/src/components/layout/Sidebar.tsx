@@ -119,7 +119,6 @@ const allNavItems: NavItem[] = [
       { name: 'Operational Excellence', icon: Gauge,   id: 'operations' },
       { name: 'Sovereign Evolution',icon: Dna,         id: 'sovereign-evolution' },
       { name: 'CoE Hub',            icon: Trophy,      id: 'coe' },
-      { name: 'Audit Dashboard',    icon: ShieldCheck, id: 'audit-dashboard' },
     ]
   },
 

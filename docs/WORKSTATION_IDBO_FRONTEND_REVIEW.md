@@ -65,7 +65,28 @@ Owner (2026-06-25): "Further consolidate and align to deliver to vision an effec
 ### ✅ Streamline Cycle 2 (W135) — Resource Fabric nav de-clutter (13 → 3 items, zero capability lost)
 The heaviest section. SAFE approach (no orphaning): FIRST added a **"Process-Intelligence Studios" launcher grid** to the Resource Fabric hub page (`ResourceFabric.tsx`) — 12 clickable cards that `navigate()` to every engine route (synthesis · nexus · forge-pipeline · reactor · incubator · reactor-studio · factory · intelligence · authorship · design-dev · solutions · bto). VERIFIED in the browser: the grid renders ("12 engines"), and clicking a card navigates (Authorship → /authorship renders). THEN trimmed the Sidebar Resource Fabric section from **13 → 3** nav items (Resource Fabric hub · Reactor Studio · Build to Order); the 10 engines are now launched one-click from the hub. **All engine ROUTES stay live** (verified /factory still renders directly) — this is nav de-clutter, not removal; no real §7 capability lost. Cleaned 6 now-orphaned Sidebar icon imports (Hammer/Zap/FlaskConical/Factory/Brain/BookOpen). Verified: clean `tsc && vite build`; served build → Fabric shows the Studios grid, folded engine route renders directly, console clean. Nav items 56 → **46**.
 
-### ⏳ Streamlining backlog (next cycles)
+>### ✅ Streamline Cycle 3 (W136) — dashboard overlap sweep + fabrication sweep → PHASE 2 COMPLETE
+Swept the remaining sections for overlap. **Home** (Dashboard·Organism·Heartbeat·Cognition) — all 4 exercised + distinct (portfolio · composite-health · autonomy/circadian loop · knowledge-integration); no overlap. **Native AI Fabric** (6) — distinct (verified prior cycles). **Governance & Ops** — found ONE clear duplicate: `/audit-dashboard` rendered the same GAAS Audit Center that the **Governance Hub already contains as its "Audit" tab** → consolidated `/audit-dashboard` → **/governance-hub** (redirect; AuditDashboard archived; capability preserved in the Hub). `/constitution` confirmed distinct (Constitutional Core / self-modification engine). **Fabrication sweep** of kept pages: strict fake-metric patterns = 0 (the Marketplace was the only one, fixed W133); softened the lone grandiose residue on `/solutions` (deployment options: `Orbital-L1`→`On-Prem`, "Global sovereign mesh"→"Multi-region distribution"). Verified: clean `tsc && vite build`; served build → /audit-dashboard → /governance-hub (Audit Center intact), Solutions clean, console clean. Nav items 46 → **45**.
+
+---
+
+## ✅ PHASE 2 — STREAMLINING COMPLETE (W133–W136)
+The frontend is now a lean, honest, vision-aligned UI. Combined with Phase 1 (review), the convergence arc:
+
+| | Pre-convergence | Now |
+|---|---|---|
+| Nav sections | 9 | **8** |
+| Nav items | ~79 | **45** |
+| Routes | 90 | **70** (live; folded/consolidated paths kept as launchers/redirects) |
+| Pages archived | — | **24** (history-preserving) |
+| Fabricated surfaces | several | **0** |
+
+**Streamlining moves (Phase 2):** de-fabricated the §12 Marketplace (real catalog products only); consolidated 4 redundant surfaces via redirects (`product-catalog`→`marketplace`, `enterprise`→`projects`, `impact`→`organism`, `audit-dashboard`→`governance-hub`); de-cluttered the Resource Fabric section 13→3 by adding a "Studios" launcher grid on the hub (engines stay live, one click away); removed the last "Enterprise Realm" branding; cleared off-vision grandiosity (Orbital/sovereign-mesh wording).
+
+**The lean 8-section nav:** **Home** (Dashboard·Organism·Heartbeat·Cognition) · **Native AI Fabric** (Native AI·AI Tools·AI CEO·Board·Visual Composer·Swarm Intelligence) · **Domains** (Overview·Religion·Qur'an Platform·Science·Education·Law·Care·Employment) · **VSB Enterprises** (Spawn Studio·Cockpit·Genesis·Business Plan·Management·Change Control·Digital Twins·Capital·Projects) · **Resource Fabric** (Resource Fabric hub→12 Studios·Reactor Studio·Build to Order) · **Transformation & Economy** (Transformation·Economy·Marketplace·Deliverables·Wallet) · **Governance & Ops** (Governance Hub·Constitution·Compliance·Operations·Sovereign Evolution·CoE) · **Developer & System** (Creator·Contribute·Entity Control·Settings). Every surface is a distinct §1–§17 vision capability with browser-verified, honest output.
+
+### (historical) streamlining backlog — now cleared
+
 - **Home/Governance dashboards** — confirm organism/heartbeat/cognition + governance-hub/constitution/audit don't overlap; consolidate if they do.
 - Final alignment pass + a single coherent nav screenshot.
 

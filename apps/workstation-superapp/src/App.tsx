@@ -82,7 +82,7 @@ import { SovereignEvolution } from './pages/evolution/SovereignEvolution';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 // ABTestingPanel + LearningDashboard archived — fabricated experiment/"evolutionary impact" metrics;
 // LearningDashboard was redundant with /impact.
-import { AuditDashboard } from './pages/tools/AuditDashboard';
+// AuditDashboard archived — duplicate of the Governance Hub's "Audit" tab (same GAAS Audit Center); /audit-dashboard → /governance-hub.
 
 // ── 8. Developer Portal & system ─────────────────────────────────────────
 // DevPortal archived — grandiose placeholder (fabricated "PQC-MANDATORY / CRYSTALS-Dilithium / third-party
@@ -189,7 +189,7 @@ function App() {
           <Route path="/operations"         element={<OperationalExcellence />} />
           <Route path="/sovereign-evolution" element={<SovereignEvolution />} />
           <Route path="/coe"                element={<KnowledgeHub />} />
-          <Route path="/audit-dashboard"    element={<AuditDashboard />} />
+          <Route path="/audit-dashboard"    element={<Navigate to="/governance-hub" replace />} />
           <Route path="/audit"              element={<Navigate to="/governance-hub" replace />} />
           <Route path="/transparency"       element={<Navigate to="/governance-hub" replace />} />
           <Route path="/vault"              element={<Navigate to="/governance-hub" replace />} />

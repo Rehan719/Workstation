@@ -47,13 +47,13 @@ interface MissionLog {
 
 const AI_MODELS = ['Ollama · llama3', 'Ollama · mistral', 'Ollama · deepseek-r1', 'OpenAI · gpt-4o', 'Claude · sonnet-4'];
 const DOMAINS = ['Religion', 'Science', 'Law', 'Care', 'Education', 'Employment', 'Finance', 'Engineering', 'Health', 'Governance'];
-const REGIONS = ['EU-West', 'US-East', 'US-West', 'APAC', 'MEA', 'LATAM', 'Orbital-L1', 'Edge-Local'];
+const REGIONS = ['EU-West', 'US-East', 'US-West', 'APAC', 'MEA', 'LATAM', 'On-Prem', 'Edge-Local'];
 const FACILITY_TYPES = ['Data Centre', 'Industrial Plant', 'Smart Grid', 'Research Lab', 'Command Hub', 'Distributed Edge'];
 const SCALE_TIERS = [
   { id: 'micro',      label: 'Micro',      desc: '1–3 nodes · Dev & prototyping' },
   { id: 'standard',   label: 'Standard',   desc: '4–12 nodes · Production ready' },
   { id: 'enterprise', label: 'Enterprise', desc: '13–50 nodes · High availability' },
-  { id: 'planetary',  label: 'Planetary',  desc: '50+ nodes · Global sovereign mesh' },
+  { id: 'planetary',  label: 'Planetary',  desc: '50+ nodes · Multi-region distribution' },
 ] as const;
 
 const DEPLOY_MODES = [
