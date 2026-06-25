@@ -1,10 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
   Boxes, Cpu, FlaskConical, Factory, Dna, ShieldCheck, Layers,
   Check, Loader2, Sparkles, Recycle, Play, X,
+  Hammer, Zap, BarChart3, Brain, BookOpen, Code2, Rocket, Package, ArrowRight,
 } from 'lucide-react';
 import { DomainTool } from '../../components/DomainTool';
+
+// ── Process-intelligence studios ────────────────────────────────────────────────
+// The Resource Fabric is the single hub for every engine. Each standalone studio below
+// is a real §7 surface (its own page/route); launching from here keeps the nav lean while
+// nothing is orphaned — the engines remain first-class, reachable in one click from the Fabric.
+const STUDIOS: { name: string; desc: string; route: string; icon: React.ComponentType<any> }[] = [
+  { name: 'Synthesis Studio',  desc: 'Ingest & synthesise knowledge',      route: '/synthesis',     icon: Sparkles },
+  { name: 'Synthesis Nexus',   desc: 'Four-layer engine orchestration',     route: '/nexus',         icon: Sparkles },
+  { name: 'Forge Pipeline',    desc: 'Forge digital resources',             route: '/forge-pipeline',icon: Hammer },
+  { name: 'Digital Reactor',   desc: 'Mutate & iterate variants',           route: '/reactor',       icon: Zap },
+  { name: 'Incubator',         desc: 'Evolve fitness over generations',     route: '/incubator',     icon: FlaskConical },
+  { name: 'Reactor Studio',    desc: '2D/3D visual analytics',              route: '/reactor-studio',icon: BarChart3 },
+  { name: 'Factory',           desc: 'Produce deliverables at scale',       route: '/factory',       icon: Factory },
+  { name: 'Intelligence Lab',  desc: '8-stage BDP / SPI methodology',       route: '/intelligence',  icon: Brain },
+  { name: 'Authorship Engine', desc: '9-stage scholarship & authorship',    route: '/authorship',    icon: BookOpen },
+  { name: 'Design & Dev',      desc: '9-stage design & development',        route: '/design-dev',    icon: Code2 },
+  { name: 'Solutions',         desc: 'Design · Build · Launch a solution',  route: '/solutions',     icon: Rocket },
+  { name: 'Build to Order',    desc: 'Bespoke build-to-order pipeline',     route: '/bto',           icon: Package },
+];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -104,6 +125,7 @@ const RUN_CONFIGS: Record<string, React.ComponentProps<typeof DomainTool>> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const ResourceFabric: React.FC = () => {
+  const navigate = useNavigate();
   const [resources, setResources] = useState<Resource[]>([]);
   const [usageAreas, setUsageAreas] = useState<string[]>([]);
   const [classes, setClasses] = useState<Record<string, number>>({});
@@ -213,6 +235,28 @@ export const ResourceFabric: React.FC = () => {
           Synthesis, Design, Development, Delivery, Build-to-Order, and the Forge.
         </p>
       </header>
+
+      {/* Process-intelligence studios — every engine, one click from the hub (keeps the nav lean) */}
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <Cpu size={16} className="text-highlight" />
+          <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Process-Intelligence Studios</h3>
+          <span className="text-[9px] font-mono text-slate-600">{STUDIOS.length} engines</span>
+        </div>
+        <div className="grid grid-cols-2 @[560px]:grid-cols-3 @[900px]:grid-cols-4 gap-3">
+          {STUDIOS.map(s => (
+            <button key={s.route} type="button" onClick={() => navigate(s.route)}
+              className="group text-left p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-highlight/50 transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-8 h-8 rounded-xl bg-highlight/10 flex items-center justify-center"><s.icon size={14} className="text-highlight" /></div>
+                <ArrowRight size={13} className="text-slate-600 group-hover:text-highlight transition-colors" />
+              </div>
+              <p className="font-black text-white text-xs">{s.name}</p>
+              <p className="text-[10px] text-slate-500 leading-snug mt-0.5">{s.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Filters */}
       <Card className="p-6 space-y-4">

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart,
-  Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
-  Brain, Network, Palette, FileText, User, Cpu, DollarSign,
+  LayoutDashboard, MessageSquare, Package, Settings, ShieldCheck, Heart,
+  Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
+  Network, Palette, FileText, User, Cpu, DollarSign,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
-  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Code2, Star, Archive, Eye,
-  HeartPulse, Workflow, Search, Globe2, Layers, Factory, ChevronDown,
-  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Hammer, Boxes
+  GraduationCap, Trophy, Wifi, Beaker, History, Microscope, Gavel, Binary, Code2, Star, Archive, Eye,
+  HeartPulse, Workflow, Search, Globe2, Layers, ChevronDown,
+  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Boxes
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 
@@ -85,19 +85,12 @@ const allNavItems: NavItem[] = [
     name: 'Resource Fabric',
     icon: Layers,
     id: 'fabric-facet',
+    // The 10 process-intelligence engines (synthesis · nexus · forge · reactor · incubator · factory ·
+    // intelligence · authorship · design-dev · solutions) are launched one-click from the Resource Fabric
+    // hub's "Studios" grid — keeping the nav lean while every engine stays first-class and reachable.
     subItems: [
       { name: 'Resource Fabric',  icon: Layers,      id: 'resource-fabric' },
-      { name: 'Synthesis Studio', icon: Sparkles,    id: 'synthesis' },
-      { name: 'Synthesis Nexus',  icon: Sparkles,    id: 'nexus' },
-      { name: 'Forge Pipeline',   icon: Hammer,      id: 'forge-pipeline' },
-      { name: 'Digital Reactor',  icon: Zap,         id: 'reactor' },
-      { name: 'Incubator',        icon: FlaskConical, id: 'incubator' },
       { name: 'Reactor Studio',   icon: BarChart3,   id: 'reactor-studio' },
-      { name: 'Factory',          icon: Factory,     id: 'factory' },
-      { name: 'Intelligence Lab', icon: Brain,       id: 'intelligence' },
-      { name: 'Authorship Engine',icon: BookOpen,    id: 'authorship' },
-      { name: 'Design & Dev',     icon: Code2,       id: 'design-dev' },
-      { name: 'Solutions',        icon: Rocket,      id: 'solutions' },
       { name: 'Build to Order',   icon: Package,     id: 'bto' },
     ]
   },
