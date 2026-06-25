@@ -5,11 +5,17 @@ import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
   id: string; type: string; title: string; vsb_id?: string;
-  versions: number; served_by?: string; updated_at?: string;
+  versions: number; served_by?: string; updated_at?: string; qms_gate_passed?: boolean | null;
+}
+interface QualityAssurance {
+  quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[];
+    qms_non_conformance_rate?: number };
+  biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
 }
 interface Deliverable {
   id: string; type: string; title: string; brief: string; sections: string[];
   content: string; ai_provenance: { posture: string; served_by: string; is_external: boolean };
+  quality_assurance?: QualityAssurance;
   versions: { created_at: string }[];
 }
 
@@ -126,7 +132,12 @@ export const Deliverables: React.FC = () => {
               <button key={d.id} onClick={() => open(d.id)}
                 className={`w-full text-left p-3 rounded-xl border ${selected?.id === d.id ? 'border-aura/50 bg-aura/5' : 'border-slate-900 bg-slate-950'}`}>
                 <p className="text-xs font-black text-white truncate">{d.title}</p>
-                <p className="text-[9px] font-bold uppercase text-slate-600 mt-0.5">{d.type} · v{d.versions} · {d.served_by}</p>
+                <p className="text-[9px] font-bold uppercase text-slate-600 mt-0.5 flex items-center gap-1.5">
+                  {d.type} · v{d.versions} · {d.served_by}
+                  {typeof d.qms_gate_passed === 'boolean' && (
+                    <span className={d.qms_gate_passed ? 'text-emerald-400' : 'text-vital'} title={`Living-QMS gate: ${d.qms_gate_passed ? 'pass' : 'fail'}`}>● QMS</span>
+                  )}
+                </p>
               </button>
             ))}
           </div>
@@ -146,6 +157,23 @@ export const Deliverables: React.FC = () => {
                   {selected.ai_provenance.is_external ? `via ${selected.ai_provenance.served_by}` : `in-house · ${selected.ai_provenance.served_by}`}
                 </span>
               </div>
+              {/* Continual operational delivery within the living QMS — §10 bar + §8 organism */}
+              {selected.quality_assurance?.quality && (
+                <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                  {typeof selected.quality_assurance.quality.qms_gate_passed === 'boolean' && (
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${selected.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                      title={`§10 Solution-Quality Bar: ${(selected.quality_assurance.quality.bar || []).join(' · ')}`}>
+                      Living-QMS gate: {selected.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((selected.quality_assurance.quality.delivery_coverage || 0) * 100)}%
+                    </span>
+                  )}
+                  {selected.quality_assurance.biomimetic?.immune && (
+                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
+                      title={`7 biomimetic layers · ${selected.quality_assurance.biomimetic.self || ''}`}>
+                      organism: immune {Math.round((selected.quality_assurance.biomimetic.immune.health ?? 0) * 100)}% · {selected.quality_assurance.biomimetic.circadian}
+                    </span>
+                  )}
+                </div>
+              )}
               <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">{selected.content}</pre>
               <div className="mt-3 flex items-end gap-2">
                 <input value={regenBrief} onChange={e => setRegenBrief(e.target.value)}

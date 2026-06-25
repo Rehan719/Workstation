@@ -28,6 +28,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.vbs.quality import assure_delivery
 
 router = APIRouter(prefix="/api/v1/deliverables", tags=["living-deliverables"])
 
@@ -156,6 +157,9 @@ async def produce(req: ProduceRequest):
     _t0 = time.time()
     gen = await _generate(req.type, req.title, req.brief, req.domain, req.vsb_id, req.sections)
     _dur = int((time.time() - _t0) * 1000)
+    # Continual operational delivery within the LIVING QMS: every produced deliverable is gated by the
+    # OWNED QMS (real, stateful), held to the §10 Solution-Quality Bar, recorded within the §8 organism.
+    qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable")
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     deliverable = {
         "id": f"deliv-{uuid.uuid4().hex[:8]}",
@@ -167,8 +171,9 @@ async def produce(req: ProduceRequest):
         "sections": gen["sections"],
         "content": gen["content"],
         "ai_provenance": gen["ai_provenance"],
+        "quality_assurance": qa,
         "versions": [{"brief": req.brief, "content": gen["content"],
-                      "ai_provenance": gen["ai_provenance"], "created_at": now}],
+                      "ai_provenance": gen["ai_provenance"], "quality_assurance": qa, "created_at": now}],
         "reusable": True, "rerunnable": True, "living": True,
         "created_at": now, "updated_at": now,
     }
@@ -199,6 +204,7 @@ async def list_deliverables(vsb_id: Optional[str] = None):
         rows = [d for d in rows if d.get("vsb_id") == vsb_id]
     summaries = [{"id": d["id"], "type": d["type"], "title": d["title"], "vsb_id": d.get("vsb_id"),
                   "versions": len(d.get("versions", [])), "served_by": d.get("ai_provenance", {}).get("served_by"),
+                  "qms_gate_passed": d.get("quality_assurance", {}).get("quality", {}).get("qms_gate_passed"),
                   "updated_at": d.get("updated_at")} for d in rows]
     return {"deliverables": summaries[::-1], "total": len(summaries)}
 
@@ -620,14 +626,17 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest):
             sections = req.sections if req.sections is not None else d.get("sections", [])
             gen = await _generate(d["type"], d["title"], brief, d.get("domain", "enterprise"),
                                   d.get("vsb_id"), sections)
+            qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable")
             now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             d["brief"] = brief
             d["sections"] = gen["sections"]
             d["content"] = gen["content"]
             d["ai_provenance"] = gen["ai_provenance"]
+            d["quality_assurance"] = qa
             d["updated_at"] = now
             d.setdefault("versions", []).append({"brief": brief, "content": gen["content"],
-                                                 "ai_provenance": gen["ai_provenance"], "created_at": now})
+                                                 "ai_provenance": gen["ai_provenance"],
+                                                 "quality_assurance": qa, "created_at": now})
             _save(rows)
             return d
     raise HTTPException(status_code=404, detail=f"Deliverable {deliverable_id} not found.")

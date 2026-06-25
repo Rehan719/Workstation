@@ -352,6 +352,14 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   the gaas.v5 constitutional interceptor (Change Control) and **sealed into the UEG hash-chained
   provenance ledger** (§6), every tier served by Workstation's OWN fabric (zero external). Walkable on the
   **Swarm Intelligence** page (each tier + governance + management-systems + UEG seal rendered).
+- ✅ **Pervasive living-QMS quality assurance (one capability, every surface).** The QMS-gate / §10-bar /
+  §8-organism logic is now a single reusable capability — `agentic_core.vbs.quality.assure_delivery` — that
+  the org cascade AND the **living deliverables pipeline** both deliver through: every `produce` /
+  `regenerate` is gated by the OWNED QMS (real, stateful — defects accumulate, a non-conformance rate is
+  tracked), held to the **§10 Solution-Quality Bar**, and recorded within the **§8 biomimetic organism**
+  (live immune + circadian), surfaced on the **Deliverables** page (per-item QMS-gate + organism badges).
+  So **continual operational delivery within the living QMS** now holds across every surface where users
+  actually receive products — not just the cascade.
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

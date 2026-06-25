@@ -13,7 +13,6 @@ a unified response.
 from __future__ import annotations
 
 import json
-import re
 import time
 import uuid
 from pathlib import Path
@@ -24,6 +23,7 @@ from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.organism.biobus import biobus
+from agentic_core.vbs.quality import assure_delivery
 
 router = APIRouter(prefix="/api/v1/swarm", tags=["agent-swarm"])
 
@@ -373,43 +373,16 @@ async def cascade_orchestration(req: CascadeRequest):
     except Exception as exc:
         management_systems["error"] = str(exc)
 
-    # ── §10 Solution-Quality Bar + continual operational delivery within the LIVING QMS. The operational
-    # delivery is gated by the OWNED Quality Management System (real + stateful — defects accumulate, a
-    # non-conformance rate is tracked). Metrics are computed from the ACTUAL delivery (no fabrication):
-    # coverage = required Build-to-Order sections present; stub = any placeholder/empty content.
-    _req_sections = ("Operational Delivery Resources", "Work Breakdown", "Quality Gates", "Go-Live")
-    _present = sum(1 for s in _req_sections if s.lower() in build_to_order.lower())
-    _coverage = round(_present / len(_req_sections), 3)
-    _delivery_text = f"{build_to_order}\n{products_services_catalogue}"
-    _stub = bool(re.search(r"\b(TODO|TBD|FIXME|lorem ipsum|placeholder|coming soon|as an ai)\b", _delivery_text, re.I)) or len(_delivery_text.strip()) < 200
-    quality: dict = {
-        "bar": ["specifically designed", "modelled", "simulated", "optimised", "categorised", "ranked",
-                "best-in-class", "innovative", "effective", "safe", "efficient", "commercially viable",
-                "compliant", "verified", "tested", "validated"],
-        "delivery_coverage": _coverage, "stub_found": _stub,
-    }
-    try:
-        from agentic_core.vbs.registry import qms
-        quality["qms_gate_passed"] = bool(await qms.run_quality_gates({"coverage": _coverage, "stubs_found": _stub}))
-        quality["qms_min_coverage"] = qms.min_coverage
-        quality["qms_non_conformance_rate"] = qms.get_non_conformance_rate()
-        biobus.fire_signal("cognitive", "swarm.cascade.qms",
-                           f"QMS gate {'PASS' if quality['qms_gate_passed'] else 'FAIL'} (cov={_coverage})", 0.6)
-    except Exception as exc:
-        quality["qms_error"] = str(exc)
-
-    # ── §8 Biomimetic Living-Organism — the cascade runs WITHIN the living organism; attach its live
-    # immune health + circadian state (the homeostatic substrate it operates in). Honest live snapshot.
-    biomimetic: dict = {"layers": ["Genome", "Nervous", "Immune", "Cardiovascular", "Respiratory",
-                                   "Musculoskeletal", "Endocrine"],
-                        "self": "self-managing · improving · healing"}
-    try:
-        from agentic_core.organism.immune import immune
-        from agentic_core.organism.biobus import _circadian_cycle
-        biomimetic["immune"] = immune.status()
-        biomimetic["circadian"] = _circadian_cycle()
-    except Exception as exc:
-        biomimetic["error"] = str(exc)
+    # ── §10 Solution-Quality Bar + continual operational delivery within the LIVING QMS + §8 organism,
+    # via the ONE shared living-QMS capability the whole platform delivers through. The operational
+    # delivery (Build-to-Order + the customer catalogue) is gated on its required sections being present
+    # and free of stubs — real, stateful (defects accumulate, a non-conformance rate is tracked).
+    _qa = await assure_delivery(
+        f"{build_to_order}\n{products_services_catalogue}",
+        ["Operational Delivery Resources", "Work Breakdown", "Quality Gates", "Go-Live"],
+        label="cascade")
+    quality: dict = _qa["quality"]
+    biomimetic: dict = _qa["biomimetic"]
 
     # ── §5: Change Control — arms-length constitutional governance over the WHOLE delivery (gaas.v5).
     governance: dict = {"status": "ungoverned", "arms_length": True}

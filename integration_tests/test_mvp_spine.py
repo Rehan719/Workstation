@@ -1408,9 +1408,22 @@ def test_deliverables_living_lifecycle(client):
     assert d["ai_provenance"]["is_external"] is False
     assert d["ai_provenance"]["served_by"] in ("native", "ollama")
     assert any(x["id"] == did for x in client.get("/api/v1/deliverables").json()["deliverables"])
-    # re-run / reconfigure → appends a new version (living)
+    # W108 — continual operational delivery within the LIVING QMS: the produced deliverable is gated by
+    # the OWNED QMS, held to the §10 Solution-Quality Bar, recorded within the §8 biomimetic organism.
+    qa = d["quality_assurance"]; q = qa["quality"]; bio = qa["biomimetic"]
+    assert isinstance(q["qms_gate_passed"], bool) and 0.0 <= q["delivery_coverage"] <= 1.0
+    assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
+    assert len(q["bar"]) >= 12 and {"verified", "compliant", "safe", "ranked"} <= set(q["bar"])
+    assert len(bio["layers"]) == 7 and {"Genome", "Immune", "Endocrine"} <= set(bio["layers"])
+    assert "immune" in bio and bio.get("circadian")
+    assert d["versions"][0]["quality_assurance"]["quality"]["qms_gate_passed"] == q["qms_gate_passed"]
+    # the list summary surfaces the QMS gate (for the UI badge)
+    summ = [x for x in client.get("/api/v1/deliverables").json()["deliverables"] if x["id"] == did][0]
+    assert "qms_gate_passed" in summ
+    # re-run / reconfigure → appends a new version (living), itself QMS-gated
     r = client.post(f"/api/v1/deliverables/{did}/regenerate", json={"brief": "add a zero-waste angle"}).json()
     assert len(r["versions"]) == 2 and r["brief"] == "add a zero-waste angle"
+    assert r["quality_assurance"]["quality"] and r["versions"][1].get("quality_assurance")
     assert client.get("/api/v1/deliverables/nope").status_code == 404
     # the user can EXPORT the living deliverable as a downloadable Markdown document
     exp = client.get(f"/api/v1/deliverables/{did}/export")
