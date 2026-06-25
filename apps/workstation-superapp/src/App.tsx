@@ -97,13 +97,7 @@ import { LandingPage } from './pages/landing/LandingPage';
 
 // ── Extended (wired, reachable by URL — not in primary nav) ───────────────
 import { ScholarRealm } from './pages/scholar/ScholarRealm';
-import { CivilizationDashboard } from './pages/civilization/CivilizationDashboard';
-import { RealityDashboard } from './pages/civilization/RealityDashboard';
-import { CosmicNervousSystem } from './pages/cosmic/CosmicNervousSystem';
 import { Introspection as CognitiveIntrospection } from './pages/cognitive/Introspection';
-import { ARVRSandbox } from './pages/platforms/ARVRSandbox';
-import { WearableSync } from './pages/platforms/WearableSync';
-import { EmbodimentStudio } from './pages/platforms/EmbodimentStudio';
 
 function App() {
   const [runTutorial] = useState(false);
@@ -228,13 +222,9 @@ function App() {
 
           {/* ── Extended (wired, reachable by URL) ───────────────────── */}
           <Route path="/scholar"      element={<ScholarRealm />} />
-          <Route path="/civilization" element={<CivilizationDashboard />} />
-          <Route path="/reality"      element={<RealityDashboard />} />
-          <Route path="/cosmic-nervous" element={<CosmicNervousSystem />} />
           <Route path="/cognitive-introspection" element={<CognitiveIntrospection />} />
-          <Route path="/ar-vr"        element={<ARVRSandbox />} />
-          <Route path="/wearables"    element={<WearableSync />} />
-          <Route path="/embodiment"   element={<EmbodimentStudio />} />
+          {/* Off-vision experimental pages (Cosmic/Reality/AR-VR/Wearables/Embodiment/Civilization)
+              archived to _archive/frontend-pages — not part of the Workstation IDBO vision. */}
 
           {/* ── 404 ─────────────────────────────────────────────────── */}
           <Route path="*" element={

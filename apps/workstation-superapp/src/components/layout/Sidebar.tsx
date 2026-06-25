@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, MessageSquare, Package, BookOpen, Settings, ShieldCheck, Heart,
   Zap, Shield, ShoppingBag, Terminal, Rocket, Plus, Gauge, Sparkles, Activity,
-  Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Radio, Globe,
+  Brain, Network, Palette, FileText, User, Map, Cpu, DollarSign, Globe,
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
-  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Camera, Watch, Code2, Satellite, Star, Archive, Eye,
-  HeartPulse, Workflow, Search, Smartphone, Globe2, Layers, Factory, ChevronDown,
+  GraduationCap, Trophy, Wifi, Beaker, FlaskConical, History, Microscope, Gavel, Binary, Code2, Star, Archive, Eye,
+  HeartPulse, Workflow, Search, Globe2, Layers, Factory, ChevronDown,
   FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Hammer, Boxes
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
@@ -158,13 +158,7 @@ const allNavItems: NavItem[] = [
     id: 'explore-facet',
     subItems: [
       { name: 'Scholar Realm',     icon: GraduationCap, id: 'scholar' },
-      { name: 'Civilization Brain',icon: Globe,         id: 'civilization' },
-      { name: 'Reality Dashboard', icon: Radio,         id: 'reality' },
-      { name: 'Cosmic Nervous Sys',icon: Satellite,     id: 'cosmic-nervous' },
       { name: 'QEP Suite',         icon: Layers,        id: 'qep' },
-      { name: 'AR/VR Lab',         icon: Camera,        id: 'ar-vr' },
-      { name: 'Wearables',         icon: Watch,         id: 'wearables' },
-      { name: 'Embodiment',        icon: Smartphone,    id: 'embodiment' },
     ]
   }
 ];
