@@ -102,10 +102,13 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"product_type": "str", "brief": "str"}, "/api/v1/factory/produce",
        ["delivery", "build_to_order", "forge", "commercialisation"]),
     _R("incubator", "Evolution Incubator", "digital_resource", "incubator",
-       "Prompt tournament: generates N variations, scores and ranks them (iterative development).",
-       ["variation generation", "scoring", "ranking", "iterative evolution"],
-       {"brief": "str", "variations": "int"}, "/api/v1/incubator/evolve",
-       ["development", "forge", "evolution"]),
+       "The §7 Reactor's generation/evolution loop: each generation produces N variations at a diversity "
+       "Temperature, scores + ranks them, and across Iterations the winner is Mutation-evolved into the "
+       "next generation — a parameterised Temperature/Mutation/Iteration loop (user design control).",
+       ["variation generation", "scoring", "ranking", "parameterised evolution (temperature/mutation/iteration)"],
+       {"base_prompt": "str", "variants": "int (2-5)", "temperature": "float 0-1 (diversity)",
+        "mutation": "float 0-1 (per-generation change)", "iterations": "int 1-4 (generations)"},
+       "/api/v1/incubator/evolve", ["development", "forge", "evolution"]),
     _R("digital_twin", "Digital Twin & Simulator", "digital_resource", "simulator",
        "Generates AI models and runs scenario simulations / optimisation (generators + simulators).",
        ["model generation", "scenario simulation", "optimisation"],

@@ -401,6 +401,14 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   fine-resolution Chief→Build-to-Order tiers (AI CEO directive → each chosen officer's plan → CoE →
   Build-to-Order) with the user-designed structure, on the native swarm (§6). §5's reconfigurable org
   (W104–105) is now reachable from §7.
+- ✅ **§7 Reactor — the Incubator's parameterised Temperature/Mutation/Iteration loop.** The vision's
+  Reactor = "Incubator (generation/evolution: parameterised Temperature/Mutation/Iteration loops)". The
+  Incubator (`/api/v1/incubator/evolve`) now runs a real **multi-generation** evolution loop: each
+  generation produces N variants at a **Temperature** (diversity), scores + ranks them, and across
+  **Iterations** generations the winner is **Mutation**-evolved into the next generation's base — reported
+  with `generations_run`. The `incubator` fabric resource exposes `{base_prompt, variants, temperature,
+  mutation, iterations}` so the loop is **user-reconfigurable** via the §7 design surface (param editor +
+  model/simulate + composition run).
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

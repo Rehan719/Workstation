@@ -1147,6 +1147,25 @@ def test_resource_composition_run_on_native_swarm(client):
     assert client.post("/api/v1/resources/compositions/nope/run", json={}).status_code == 404
 
 
+def test_incubator_parameterised_evolution(client):
+    # §7 Reactor — the Incubator runs a parameterised Temperature/Mutation/Iteration evolution loop, and
+    # the fabric exposes those as user design control.
+    r = client.post("/api/v1/incubator/evolve",
+                    json={"name": "pytest evolve", "base_prompt": "a one-line pitch for a halal meal service",
+                          "domain": "enterprise", "variants": 3,
+                          "temperature": 0.8, "mutation": 0.6, "iterations": 2}).json()
+    assert r["generations_run"] == 2                         # the Iteration loop ran 2 generations
+    assert r["variants_evaluated"] == 3 and len(r["leaderboard"]) >= 2
+    assert r["winner"]["rank"] == 1 and r["winner"]["response"]
+    # iterations are capped (1..4); a single-generation run is the default
+    capped = client.post("/api/v1/incubator/evolve",
+                         json={"name": "x", "base_prompt": "a tagline", "variants": 2, "iterations": 9}).json()
+    assert capped["generations_run"] == 4
+    # the §7 fabric surfaces the parameterised loop as reconfigurable params (user design control)
+    res = client.get("/api/v1/resources/incubator").json()
+    assert {"temperature", "mutation", "iterations"} <= set(res["reconfigurable_params"])
+
+
 def test_resource_fabric_native_swarm_cascade(client):
     # W1-d: native AI resources are first-class in the fabric, and bespoke swarm cascades are
     # reconfigurable, reusable, re-runnable resources that run on Workstation's OWN resources.

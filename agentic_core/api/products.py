@@ -170,6 +170,10 @@ class EvolveTournamentRequest(BaseModel):
     domain: str = "general"
     variants: int = 3   # how many prompt variations to evaluate (capped at 5)
     fitness_criteria: str = "relevance, clarity, commercial value, originality"
+    # §7 Reactor — parameterised generation/evolution loop (with user design control):
+    temperature: float = 0.7   # variant diversity/creativity: 0 = conservative refinements, 1 = bold divergent
+    mutation: float = 0.5      # how much each generation mutates the prior winner (0 = refine, 1 = reimagine)
+    iterations: int = 1        # number of evolution generations (capped at 4)
 
 
 class TournamentVariant(BaseModel):
@@ -189,23 +193,18 @@ class TournamentResult(BaseModel):
     leaderboard: list[TournamentVariant]
     analysis: str
     completed_at: float
+    generations_run: int = 1   # §7 Reactor — Temperature/Mutation/Iteration generations actually run
 
 
-@router.post("/api/v1/incubator/evolve", response_model=TournamentResult)
-async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
-    """
-    Run a prompt evolution tournament.
-    Generates N variations of the base prompt, scores each against fitness criteria,
-    and returns a ranked leaderboard with analysis.
-    """
-    n = min(max(req.variants, 2), 5)
-    tournament_id = uuid.uuid4().hex[:10]
-
-    # Step 1: Generate N variants
+async def _tournament_generation(base_prompt: str, domain: str, n: int, fitness_criteria: str,
+                                 temperature: float, tournament_id: str, gen: int) -> list[TournamentVariant]:
+    """One generation of the evolution tournament: generate N variants at the given diversity
+    `temperature`, score them, and return the ranked leaderboard. Pure per-generation step."""
     variations_prompt = (
-        f"You are an AI Prompt Evolution Engine.\n"
-        f"Base task: {req.base_prompt}\n"
-        f"Domain: {req.domain}\n\n"
+        f"You are an AI Prompt Evolution Engine (generation {gen}).\n"
+        f"Base task: {base_prompt}\nDomain: {domain}\n\n"
+        f"Diversity temperature: {temperature:.2f} — 0.0 means conservative, tightly-refined variations; "
+        f"1.0 means bold, divergent, exploratory angles. Calibrate the spread accordingly.\n"
         f"Generate exactly {n} distinct variations of a response to this task. "
         f"Each variation should take a noticeably different angle, tone, or approach. "
         f"Label each with VARIANT_1:, VARIANT_2:, etc. and provide a complete, substantive response for each.\n\n"
@@ -213,10 +212,9 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
     )
     raw_variations = await gateway.query(variations_prompt, agent="incubator")
 
-    # Step 2: Score all variants
     score_prompt = (
         f"You are a Fitness Evaluator for an AI Evolution Engine.\n"
-        f"Fitness criteria: {req.fitness_criteria}\n\n"
+        f"Fitness criteria: {fitness_criteria}\n\n"
         f"Here are {n} variants to evaluate:\n{raw_variations}\n\n"
         f"For each variant (VARIANT_1 through VARIANT_{n}) provide:\n"
         f"- SCORE: a float 0.0–1.0\n"
@@ -228,12 +226,9 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
     )
     scores_raw = await gateway.query(score_prompt, agent="incubator")
 
-    # Parse scores
     leaderboard: list[TournamentVariant] = []
-    winner_idx = 0
     lines = [l.strip() for l in scores_raw.splitlines() if l.strip() and "|" in l]
 
-    # Extract variant text blocks
     variant_texts: dict[int, str] = {}
     current = None
     for line in raw_variations.splitlines():
@@ -253,7 +248,7 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
                 idx = int(parts[0].upper().replace("VARIANT_", "").strip())
                 score = float(parts[1].strip())
                 leaderboard.append(TournamentVariant(
-                    variant_id=f"v-{tournament_id}-{idx}",
+                    variant_id=f"v-{tournament_id}-g{gen}-{idx}",
                     rank=idx,
                     fitness_score=min(max(score, 0.0), 1.0),
                     response=variant_texts.get(idx, "")[:800],
@@ -262,17 +257,11 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
                 ))
             except (ValueError, IndexError):
                 pass
-        elif len(parts) >= 2 and parts[0].upper() == "WINNER":
-            try:
-                winner_idx = int(parts[1].upper().replace("VARIANT_", "").strip()) - 1
-            except ValueError:
-                winner_idx = 0
 
-    # Fallback if parsing failed
     if not leaderboard:
         for i in range(1, n + 1):
             leaderboard.append(TournamentVariant(
-                variant_id=f"v-{tournament_id}-{i}",
+                variant_id=f"v-{tournament_id}-g{gen}-{i}",
                 rank=i,
                 fitness_score=round(0.95 - (i - 1) * 0.05, 2),
                 response=variant_texts.get(i, raw_variations[:400]),
@@ -283,13 +272,38 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
     leaderboard.sort(key=lambda v: v.fitness_score, reverse=True)
     for rank, v in enumerate(leaderboard, 1):
         v.rank = rank
+    return leaderboard
 
-    winner = leaderboard[0]
 
-    # Step 3: Overall analysis
+@router.post("/api/v1/incubator/evolve", response_model=TournamentResult)
+async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
+    """Run the §7 Reactor's parameterised generation/evolution loop: each generation produces N variations
+    at the given `temperature` (diversity), scores + ranks them; across `iterations` generations the winner
+    is `mutation`-evolved into the next generation's base. Returns the final leaderboard + analysis."""
+    n = min(max(req.variants, 2), 5)
+    gens = min(max(req.iterations, 1), 4)          # cap the evolution loop
+    temperature = min(max(req.temperature, 0.0), 1.0)
+    mutation = min(max(req.mutation, 0.0), 1.0)
+    tournament_id = uuid.uuid4().hex[:10]
+
+    base = req.base_prompt
+    leaderboard: list[TournamentVariant] = []
+    winner: TournamentVariant | None = None
+    for gen in range(1, gens + 1):
+        leaderboard = await _tournament_generation(base, req.domain, n, req.fitness_criteria,
+                                                   temperature, tournament_id, gen)
+        winner = leaderboard[0]
+        # Mutation: the next generation evolves the winning approach (mutation rate shapes how far)
+        if gen < gens:
+            base = (f"Evolve and improve this winning approach with mutation rate {mutation:.2f} "
+                    f"(0 = refine carefully, 1 = reimagine boldly), keeping its strengths "
+                    f"('{winner.strengths}') and fixing its weaknesses ('{winner.weaknesses}'):\n"
+                    f"{winner.response[:600]}\n\nOriginal task: {req.base_prompt}")
+
     analysis_prompt = (
-        f"Summarise in 3 sentences: what makes VARIANT_{winner.rank} the winner of this '{req.name}' tournament? "
-        f"What should the next generation improve? Domain: {req.domain}."
+        f"Summarise in 3 sentences this '{req.name}' evolution tournament (ran {gens} generation(s) at "
+        f"temperature {temperature:.2f}, mutation {mutation:.2f}): what makes the winner strongest, and what "
+        f"should the next generation improve? Domain: {req.domain}."
     )
     analysis = await gateway.query(analysis_prompt, agent="incubator")
 
@@ -301,6 +315,7 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
         leaderboard=leaderboard,
         analysis=analysis,
         completed_at=time.time(),
+        generations_run=gens,
     )
 
 
