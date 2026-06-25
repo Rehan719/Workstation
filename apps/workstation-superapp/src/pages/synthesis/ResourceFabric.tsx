@@ -18,6 +18,19 @@ interface Composition {
   resources: { id: string; name: string; resource_class: string }[];
   reusable: boolean; rerunnable: boolean; created_at: string;
 }
+interface Simulation {
+  name: string; usage_area: string; commit_ready: boolean; saved: boolean; note?: string;
+  model: {
+    pipeline: string[]; combined_capabilities: string[]; resource_classes: Record<string, number>;
+    biomimetic_resources: number; shared_usage_areas: string[]; usage_area_supported_by_all: boolean;
+    incompatibilities: { id: string; name: string; reason: string }[];
+    unset_params: Record<string, string[]>;
+  };
+  simulation: {
+    quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[]; document_controlled?: boolean };
+    biomimetic?: { immune?: { health?: number }; circadian?: string };
+  };
+}
 
 const CLASS_ICON: Record<string, React.ComponentType<any>> = {
   process_intelligence: Cpu, digital_resource: FlaskConical,
@@ -82,6 +95,8 @@ export const ResourceFabric: React.FC = () => {
   const [composing, setComposing] = useState(false);
   const [compositions, setCompositions] = useState<Composition[]>([]);
   const [runningId, setRunningId] = useState<string | null>(null);
+  const [sim, setSim] = useState<Simulation | null>(null);   // §7 — model & simulate before commit
+  const [simulating, setSimulating] = useState(false);
 
   const load = () => {
     const qs = new URLSearchParams();
@@ -101,7 +116,21 @@ export const ResourceFabric: React.FC = () => {
   useEffect(() => { loadCompositions(); }, []);
 
   const toggle = (id: string) =>
-    setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+    setSelected(s => { setSim(null); return s.includes(id) ? s.filter(x => x !== id) : [...s, id]; });
+
+  // §7 — model & SIMULATE the configuration before commit (gated by the living QMS)
+  const simulate = async () => {
+    if (selected.length === 0) return;
+    setSimulating(true); setSim(null);
+    try {
+      const r = await fetch('/api/v1/resources/compose/simulate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name || '(unnamed)', resource_ids: selected, usage_area: usageArea }),
+      });
+      setSim(await r.json());
+    } catch { /* ignore */ }
+    setSimulating(false);
+  };
 
   const compose = async () => {
     if (!name.trim() || selected.length === 0) return;
@@ -111,7 +140,7 @@ export const ResourceFabric: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, resource_ids: selected, usage_area: usageArea }),
       });
-      setName(''); setSelected([]);
+      setName(''); setSelected([]); setSim(null);
       loadCompositions();
     } catch { /* ignore */ }
     setComposing(false);
@@ -125,8 +154,8 @@ export const ResourceFabric: React.FC = () => {
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           Every resource of the organism — process-intelligence engines, reactors, factories, incubators,
           labs, twins, organism systems, and the enterprise org — in one place to
-          <span className="text-highlight"> select, reconfigure, and combine</span> across Synthesis, Design,
-          Development, Delivery, Build-to-Order, and the Forge.
+          <span className="text-highlight"> select, reconfigure, combine, and model &amp; simulate before commit</span> across
+          Synthesis, Design, Development, Delivery, Build-to-Order, and the Forge.
         </p>
       </header>
 
@@ -208,15 +237,51 @@ export const ResourceFabric: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3">
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Composition name…"
             className="flex-1 min-w-[200px] bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50" />
-          <select value={usageArea} onChange={e => setUsageArea(e.target.value)}
+          <select value={usageArea} onChange={e => { setUsageArea(e.target.value); setSim(null); }}
             className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-highlight/50">
             {usageAreas.map(a => <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>)}
           </select>
+          <Button onClick={simulate} disabled={simulating || selected.length === 0} className="flex items-center gap-2 bg-slate-800 text-highlight">
+            {simulating ? <Loader2 size={16} className="animate-spin" /> : <FlaskConical size={16} />}
+            Model &amp; Simulate
+          </Button>
           <Button onClick={compose} disabled={composing || !name.trim() || selected.length === 0} className="flex items-center gap-2 bg-highlight text-sovereign">
             {composing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
             Compose
           </Button>
         </div>
+
+        {/* §7 — the platform models + simulates the configuration BEFORE commit (gated by the living QMS) */}
+        {sim && sim.model && (
+          <div className="mt-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Modelled &amp; simulated before commit</span>
+              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.commit_ready ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                {sim.commit_ready ? 'commit-ready' : 'not commit-ready'}
+              </span>
+              {typeof sim.simulation?.quality?.qms_gate_passed === 'boolean' && (
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.simulation.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                  title={`§10 quality bar: ${(sim.simulation.quality.bar || []).join(' · ')}`}>
+                  QMS gate: {sim.simulation.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((sim.simulation.quality.delivery_coverage || 0) * 100)}%{sim.simulation.quality.document_controlled ? ' · doc-controlled' : ''}
+                </span>
+              )}
+              {sim.simulation?.biomimetic?.immune && (
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300">
+                  organism: immune {Math.round((sim.simulation.biomimetic.immune.health ?? 0) * 100)}% · {sim.simulation.biomimetic.circadian}
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-400"><span className="text-slate-600 font-black uppercase">Pipeline:</span> {sim.model.pipeline.join(' → ')}</p>
+            <p className="text-[10px] text-slate-400"><span className="text-slate-600 font-black uppercase">Combined capabilities ({sim.model.combined_capabilities.length}):</span> {sim.model.combined_capabilities.slice(0, 12).join(' · ')}{sim.model.combined_capabilities.length > 12 ? ' …' : ''}</p>
+            {sim.model.incompatibilities.length > 0 && (
+              <p className="text-[10px] text-vital"><span className="font-black uppercase">Incompatible with “{sim.usage_area}”:</span> {sim.model.incompatibilities.map(i => i.name).join(', ')} — change the usage area or remove these.</p>
+            )}
+            {Object.keys(sim.model.unset_params).length > 0 && (
+              <p className="text-[9px] text-slate-500"><span className="text-slate-600 font-black uppercase">Params to set on run:</span> {Object.entries(sim.model.unset_params).map(([rid, ps]) => `${rid}: ${ps.join(', ')}`).join(' · ')}</p>
+            )}
+            {sim.note && <p className="text-[9px] text-slate-600 italic">{sim.note}</p>}
+          </div>
+        )}
       </Card>
 
       {/* Saved compositions */}

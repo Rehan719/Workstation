@@ -372,6 +372,15 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   versioned, SHA3-512-sealed controlled document (`quality_record_hash`), surfaced as a **doc-controlled**
   marker on every QMS-gate badge. So the QMS and DCMS are integrated: quality gating and document control
   are one act, under one owner.
+- ✅ **§7 model & simulate a configuration BEFORE commit (user design control) + §9 reconfigurable UX.**
+  The Resource Fabric now does the §7 *"modelling and simulating the configuration before commit"*:
+  `POST /api/v1/resources/compose/simulate` MODELS a proposed configuration (pipeline, combined
+  capabilities, class/biomimetic mix, shared usage areas, params still to set, usage-area
+  incompatibilities) and SIMULATES it through the living QMS (gate + §10 bar + §8 organism) — returning
+  `commit_ready` — **without saving**; `compose` (commit) then models + QMS-gates + **document-controls**
+  the saved configuration (carries its `model` + quality record). The **Resource Fabric** page gained a
+  **Model & Simulate** step (the §9 reconfigurable interface): select resources → model & simulate →
+  see the pipeline, QMS-gate projection, organism, incompatibility warnings + unset params → then commit.
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan

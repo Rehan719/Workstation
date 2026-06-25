@@ -27,6 +27,8 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from agentic_core.vbs.quality import assure_delivery
+
 router = APIRouter(prefix="/api/v1/resources", tags=["resource-fabric"])
 
 _STORE = data_path("resource_compositions.json")
@@ -425,29 +427,101 @@ class ComposeRequest(BaseModel):
     config: Dict[str, Dict[str, Any]] = {}   # per-resource param overrides {id: {param: value}}
 
 
+def _model_configuration(resource_ids: List[str], usage_area: str,
+                         config: Dict[str, Dict[str, Any]]) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """MODEL a proposed configuration (no save): resolve the resources with their reconfigured params,
+    and derive the pipeline, combined capabilities, class/biomimetic mix, shared usage areas, the params
+    still needing values, and any usage-area incompatibilities. The §7 'modelling … before commit'."""
+    resolved: List[Dict[str, Any]] = []
+    classes: Dict[str, int] = {}
+    caps: List[str] = []
+    biomimetic = 0
+    unset: Dict[str, List[str]] = {}
+    shared_areas: Optional[set] = None
+    incompatibilities: List[Dict[str, str]] = []
+    for rid in resource_ids:
+        base = _BY_ID[rid]
+        overrides = config.get(rid, {})
+        merged = {**base["reconfigurable_params"], **overrides}
+        resolved.append({"id": rid, "name": base["name"], "resource_class": base["resource_class"],
+                         "endpoint": base["endpoint"], "config": merged})
+        classes[base["resource_class"]] = classes.get(base["resource_class"], 0) + 1
+        caps.extend(base["capabilities"])
+        if base["biomimetic"]:
+            biomimetic += 1
+        still = [k for k in base["reconfigurable_params"] if k not in overrides]
+        if still:
+            unset[rid] = still
+        areas = set(base["usable_in"])
+        shared_areas = areas if shared_areas is None else (shared_areas & areas)
+        if usage_area not in base["usable_in"]:
+            incompatibilities.append({"id": rid, "name": base["name"],
+                                      "reason": f"does not support usage area '{usage_area}'"})
+    model = {
+        "pipeline": [r["name"] for r in resolved],
+        "combined_capabilities": sorted(set(caps)),
+        "resource_classes": classes,
+        "biomimetic_resources": biomimetic,
+        "shared_usage_areas": sorted(shared_areas or []),
+        "usage_area": usage_area,
+        "usage_area_supported_by_all": len(incompatibilities) == 0,
+        "incompatibilities": incompatibilities,
+        "unset_params": unset,
+    }
+    return resolved, model
+
+
+async def _simulate_configuration(name: str, resource_ids: List[str], usage_area: str,
+                                  config: Dict[str, Dict[str, Any]]):
+    """MODEL + SIMULATE a configuration before commit (§7): the config plan is gated by the living QMS
+    (held to the §10 bar, recorded within the §8 organism). commit_ready iff the gate passes AND every
+    selected resource supports the chosen usage area."""
+    resolved, model = _model_configuration(resource_ids, usage_area, config)
+    n = len(resolved)
+    plan_text = (f"Configuration '{name}' for usage area '{usage_area}', composing {n} resources: "
+                 + ", ".join(model["pipeline"]) + ". Combined capabilities: "
+                 + ", ".join(model["combined_capabilities"][:24]) + ".") if n else ""
+    qa = await assure_delivery(plan_text, [r["name"] for r in resolved], label="composition")
+    commit_ready = bool(qa["quality"].get("qms_gate_passed") and model["usage_area_supported_by_all"])
+    return resolved, model, qa, commit_ready
+
+
+@router.post("/compose/simulate")
+async def simulate_composition(req: ComposeRequest):
+    """§7 — MODEL + SIMULATE a configuration BEFORE commit. Returns the modelled structure + a living-QMS
+    simulation (gate + §10 bar + §8 organism) + commit-readiness. Nothing is saved."""
+    unknown = [rid for rid in req.resource_ids if rid not in _BY_ID]
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
+    if not req.resource_ids:
+        raise HTTPException(status_code=400, detail="Select at least one resource to model.")
+    resolved, model, qa, commit_ready = await _simulate_configuration(
+        req.name or "(unnamed)", req.resource_ids, req.usage_area, req.config)
+    return {"name": req.name, "usage_area": req.usage_area, "resources": resolved,
+            "model": model, "simulation": qa, "commit_ready": commit_ready, "saved": False,
+            "note": "Modelled + simulated before commit (§7) — not saved. Adjust the design, then compose."}
+
+
 @router.post("/compose")
 async def compose(req: ComposeRequest):
-    """Combine selected resources into a named, reusable, re-runnable configuration."""
+    """Combine selected resources into a named, reusable, re-runnable configuration — modelled +
+    QMS-gated, and document-controlled under the QMS on commit (the saved config carries its model +
+    quality record)."""
     unknown = [rid for rid in req.resource_ids if rid not in _BY_ID]
     if unknown:
         raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
 
-    resolved = []
-    for rid in req.resource_ids:
-        base = _BY_ID[rid]
-        resolved.append({
-            "id": rid,
-            "name": base["name"],
-            "resource_class": base["resource_class"],
-            "endpoint": base["endpoint"],
-            "config": {**base["reconfigurable_params"], **req.config.get(rid, {})},
-        })
+    resolved, model, qa, commit_ready = await _simulate_configuration(
+        req.name, req.resource_ids, req.usage_area, req.config)
 
     composition = {
         "id": f"comp-{uuid.uuid4().hex[:8]}",
         "name": req.name,
         "usage_area": req.usage_area,
         "resources": resolved,
+        "model": model,
+        "quality_assurance": qa,
+        "commit_ready": commit_ready,
         "reusable": True,
         "rerunnable": True,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

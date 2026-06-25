@@ -1084,6 +1084,31 @@ def test_resource_compose(client):
     body = r.json()
     assert body["name"] == "test-composition"
     assert len(body["resources"]) >= 1
+    # W111 — a committed configuration is modelled + QMS-gated + document-controlled under the QMS
+    assert body["model"]["pipeline"] and isinstance(body["commit_ready"], bool)
+    assert body["quality_assurance"]["quality"]["document_controlled"] is True
+
+
+def test_resource_compose_model_and_simulate_before_commit(client):
+    # §7 — the platform MODELS + SIMULATES a configuration BEFORE commit (user design control), gated by
+    # the living QMS; nothing is saved by the preview, and usage-area incompatibility blocks commit.
+    sim = client.post("/api/v1/resources/compose/simulate",
+                      json={"name": "concept-rig", "resource_ids": ["bdp", "ddpie", "genesis"],
+                            "usage_area": "design"}).json()
+    assert sim["saved"] is False
+    m = sim["model"]
+    assert m["pipeline"] and m["combined_capabilities"] and m["usage_area_supported_by_all"] is True
+    q = sim["simulation"]["quality"]
+    assert isinstance(q["qms_gate_passed"], bool) and len(q["bar"]) >= 12
+    assert sim["simulation"]["biomimetic"]["layers"] and sim["commit_ready"] is True
+    # an incompatible selection (gaas_v5 supports governance/delivery/evolution, not 'design') is caught
+    bad = client.post("/api/v1/resources/compose/simulate",
+                      json={"name": "bad", "resource_ids": ["bdp", "gaas_v5"], "usage_area": "design"}).json()
+    assert len(bad["model"]["incompatibilities"]) == 1 and bad["model"]["usage_area_supported_by_all"] is False
+    assert bad["commit_ready"] is False
+    # the preview saved nothing; empty/unknown selections are rejected
+    assert client.post("/api/v1/resources/compose/simulate", json={"name": "x", "resource_ids": []}).status_code == 400
+    assert client.post("/api/v1/resources/compose/simulate", json={"name": "x", "resource_ids": ["nope"]}).status_code == 400
 
 
 def test_resource_fabric_native_swarm_cascade(client):
