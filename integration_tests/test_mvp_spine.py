@@ -1117,6 +1117,27 @@ def test_resource_compose_model_and_simulate_before_commit(client):
     assert client.post("/api/v1/resources/compose/simulate", json={"name": "x", "resource_ids": ["nope"]}).status_code == 400
 
 
+def test_resource_composition_run_on_native_swarm(client):
+    # §7↔§6↔§5 — a committed configuration is RERUNNABLE on Workstation's OWN native swarm: each composed
+    # resource (incl. the §5 org-cascade resource) becomes a stage, the user's reconfigured params feed in,
+    # it runs in-house-first, and the combined run is QMS-gated + document-controlled (§10/§8).
+    comp = client.post("/api/v1/resources/compose",
+                       json={"name": "run-rig", "resource_ids": ["bdp", "vsb_org_swarm"],
+                             "usage_area": "commercialisation",
+                             "config": {"bdp": {"challenge": "a halal meal service"}}}).json()
+    cid = comp["id"]
+    run = client.post(f"/api/v1/resources/compositions/{cid}/run",
+                      json={"objective": "Launch a halal community meal service"}).json()
+    assert run["posture"] == "in-house-first" and len(run["trace"]) == 2
+    assert run["any_external"] is False                       # ran on OWNED native resources (§6)
+    assert all(t["served_by"] in ("native", "ollama") for t in run["trace"])
+    assert run["final"]                                       # produced a combined pipeline result
+    q = run["quality_assurance"]["quality"]                   # QMS-gated + document-controlled (§10/§8)
+    assert isinstance(q["qms_gate_passed"], bool) and q["document_controlled"] is True
+    # unknown composition is a 404
+    assert client.post("/api/v1/resources/compositions/nope/run", json={}).status_code == 404
+
+
 def test_resource_fabric_native_swarm_cascade(client):
     # W1-d: native AI resources are first-class in the fabric, and bespoke swarm cascades are
     # reconfigurable, reusable, re-runnable resources that run on Workstation's OWN resources.

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
   Boxes, Cpu, FlaskConical, Factory, Dna, ShieldCheck, Layers,
-  Check, Loader2, Sparkles, Recycle, RefreshCw, Play, X,
+  Check, Loader2, Sparkles, Recycle, Play, X,
 } from 'lucide-react';
 import { DomainTool } from '../../components/DomainTool';
 
@@ -30,6 +30,12 @@ interface Simulation {
     quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[]; document_controlled?: boolean };
     biomimetic?: { immune?: { health?: number }; circadian?: string };
   };
+}
+interface CompositionRun {
+  composition_id: string; name: string; objective: string; posture: string;
+  trace: { step: number; role: string; served_by: string; output: string }[];
+  final: string; any_external: boolean;
+  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean } };
 }
 
 const CLASS_ICON: Record<string, React.ComponentType<any>> = {
@@ -99,6 +105,11 @@ export const ResourceFabric: React.FC = () => {
   const [simulating, setSimulating] = useState(false);
   // §7 — user design control over each resource's reconfigurable parameters: {resourceId: {param: value}}
   const [paramConfig, setParamConfig] = useState<Record<string, Record<string, string>>>({});
+  // §7↔§6↔§5 — run a saved composition on the native swarm
+  const [runCompId, setRunCompId] = useState<string | null>(null);
+  const [runObjective, setRunObjective] = useState('');
+  const [runResult, setRunResult] = useState<CompositionRun | null>(null);
+  const [runningComp, setRunningComp] = useState(false);
 
   const load = () => {
     const qs = new URLSearchParams();
@@ -147,6 +158,19 @@ export const ResourceFabric: React.FC = () => {
       setSim(await r.json());
     } catch { /* ignore */ }
     setSimulating(false);
+  };
+
+  // §7↔§6↔§5 — run a saved configuration end-to-end on Workstation's OWN native swarm
+  const runComposition = async (cid: string) => {
+    setRunningComp(true); setRunResult(null);
+    try {
+      const r = await fetch(`/api/v1/resources/compositions/${cid}/run`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ objective: runObjective || undefined }),
+      });
+      setRunResult(await r.json());
+    } catch { /* ignore */ }
+    setRunningComp(false);
   };
 
   const compose = async () => {
@@ -349,13 +373,50 @@ export const ResourceFabric: React.FC = () => {
                   <p className="font-black text-white text-sm">{c.name}</p>
                   <p className="text-[9px] font-black uppercase text-slate-500 mt-0.5">{c.usage_area} · {c.resources.length} resources · {c.id}</p>
                 </div>
-                <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-emerald-400">
-                  <RefreshCw size={11} /> rerunnable
-                </div>
+                <button type="button"
+                  onClick={() => { setRunCompId(runCompId === c.id ? null : c.id); setRunResult(null); }}
+                  className="flex items-center gap-1.5 text-[9px] font-black uppercase text-highlight border border-highlight/40 px-2.5 py-1 rounded-lg hover:bg-highlight/10 transition-colors">
+                  <Play size={11} /> Run
+                </button>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {c.resources.map(r => <Tag key={r.id}>{r.name}</Tag>)}
               </div>
+
+              {/* §7↔§6↔§5 — run this configuration end-to-end on Workstation's OWN native swarm */}
+              {runCompId === c.id && (
+                <div className="mt-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-highlight">Run on the native swarm (§6)</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input value={runObjective} onChange={e => setRunObjective(e.target.value)}
+                      placeholder="Objective for this run (blank = default)…"
+                      className="flex-1 min-w-[200px] text-[11px] bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50" />
+                    <Button onClick={() => runComposition(c.id)} disabled={runningComp} className="flex items-center gap-1.5 bg-highlight text-sovereign text-[11px]">
+                      {runningComp ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Run pipeline
+                    </Button>
+                  </div>
+                  {runResult && runResult.composition_id === c.id && (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${!runResult.any_external ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                          {!runResult.any_external ? 'in-house' : 'external used'}
+                        </span>
+                        {typeof runResult.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${runResult.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                            QMS gate: {runResult.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{runResult.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                          </span>
+                        )}
+                      </div>
+                      {runResult.trace.map(t => (
+                        <div key={t.step} className="border-t border-slate-800/60 pt-2">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.step}. {t.role} <span className="text-slate-600 font-mono normal-case">· {t.served_by}</span></p>
+                          <p className="text-[10px] text-slate-400 whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto">{t.output.slice(0, 360)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
           ))}
         </div>

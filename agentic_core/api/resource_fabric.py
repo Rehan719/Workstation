@@ -278,6 +278,65 @@ async def get_composition(cid: str):
     raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
 
 
+class RunCompositionRequest(BaseModel):
+    objective: str = ""
+    prefer_external: bool = False
+    timeout: float = 12.0
+
+
+@router.post("/compositions/{cid}/run")
+async def run_composition(cid: str, req: RunCompositionRequest):
+    """Run a saved configuration end-to-end on Workstation's OWN native swarm (§6): each composed resource
+    becomes a pipeline stage (the org-cascade resource is a §5 stage), the user's reconfigured parameters
+    feed in, each stage completes in-house-first and feeds the next, and the combined run is QMS-gated +
+    document-controlled (§10/§8). Makes a committed composition fully rerunnable (§7)."""
+    comp = next((c for c in _load_compositions() if c["id"] == cid), None)
+    if not comp:
+        raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
+
+    stages: List[Dict[str, str]] = []
+    for r in comp.get("resources", []):
+        base = _BY_ID.get(r["id"], {})
+        caps = ", ".join(base.get("capabilities", [])) or base.get("type", r.get("resource_class", ""))
+        # the user-SET params are those whose value differs from the declared type placeholder
+        configured = {k: v for k, v in (r.get("config") or {}).items()
+                      if v != base.get("reconfigurable_params", {}).get(k)}
+        cfg_txt = "; ".join(f"{k}={v}" for k, v in configured.items())
+        instruction = (f"As the «{r['name']}» resource ({base.get('type', r.get('resource_class', ''))}), "
+                       f"apply your capabilities ({caps}) to advance the objective."
+                       + (f" Configured parameters: {cfg_txt}." if cfg_txt else "")
+                       + " Build on the prior stage's output; be specific and actionable.")
+        stages.append({"role": r["name"], "instruction": instruction})
+    if not stages:
+        raise HTTPException(status_code=400, detail="Composition has no resources to run.")
+
+    objective = req.objective or f"Execute the '{comp['name']}' configuration for {comp.get('usage_area', 'synthesis')}."
+    from agentic_core.ai.native import orchestrator
+    _t0 = time.time()
+    res = await orchestrator.swarm("composition-run", stages, context=objective,
+                                   prefer_external=req.prefer_external, timeout=req.timeout)
+    # §10/§8 — the combined run is gated by the living QMS + document-controlled under the QMS
+    qa = await assure_delivery(res.get("final", ""), [r["name"] for r in comp["resources"]],
+                               label="composition_run")
+    try:
+        from agentic_core.api.operational_excellence import record_outcome
+        served = res["trace"][0]["served_by"] if res.get("trace") else "native"
+        record_outcome("composition_run", f"composition:{comp['name']}", served_by=served,
+                       is_external=bool(res.get("any_external")),
+                       duration_ms=int((time.time() - _t0) * 1000),
+                       success=bool(res.get("trace")), ref=cid)
+    except Exception:
+        pass
+    try:
+        from agentic_core.organism.biobus import biobus
+        biobus.fire_signal("motor", "resource_fabric.composition.run",
+                           f"{comp['name']}: {len(stages)} stages", 0.6)
+    except Exception:
+        pass
+    return {"composition_id": cid, "name": comp["name"], "usage_area": comp.get("usage_area"),
+            "objective": objective, "posture": "in-house-first", "quality_assurance": qa, **res}
+
+
 # ── Native swarm cascades — first-class reconfigurable resources (user design control) ──
 # A swarm cascade is an ordered list of {role, instruction} stages run in-house-first on
 # Workstation's OWN resources. Users DEFINE a bespoke cascade (reconfigure the stages), it is

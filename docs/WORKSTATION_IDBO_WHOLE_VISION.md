@@ -385,6 +385,15 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   selected resource's reconfigurable parameter VALUES, which flow into the model/simulate/compose `config`
   — so reconfiguring the digital resources' parameters (not just their selection) is fully user-reachable,
   and the model's `unset_params` shrinks live as values are set. This completes §7 **user design control**.
+- ✅ **§7 compositions are RERUNNABLE on §6 native resources (integrating §5).** `POST
+  /api/v1/resources/compositions/{cid}/run` executes a committed configuration end-to-end on Workstation's
+  OWN native swarm (§6): each composed resource becomes a pipeline stage (the **org-cascade resource is a
+  §5 stage**), the user's reconfigured parameters feed in, each stage completes in-house-first and feeds
+  the next, and the combined run is **QMS-gated + document-controlled** (§10/§8) — reported with per-stage
+  `served_by` provenance. The **Resource Fabric** page gained a **Run** control on each saved composition
+  (enter an objective → run → see the per-stage trace + in-house + QMS-gate badges). So a configuration
+  the user designs (§7/§9) is not just modelled and committed but **runs on the owned AI fabric (§6),
+  composing the living organisation (§5)** — the four sections integrated in one flow.
 - ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
   (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
   Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan
