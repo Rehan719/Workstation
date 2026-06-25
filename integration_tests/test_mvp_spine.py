@@ -1399,6 +1399,36 @@ def test_vsb_webapp_generation(client):
     assert client.post("/api/v1/vsb/nope-xyz-404/webapp").status_code == 404
 
 
+def test_vsb_mobile_pwa_generation(client):
+    # §13 (D1 increment 4) — the Phone app: a real installable PWA (manifest + service worker + icon +
+    # mobile-first interactive app) generated from the entity into the repo's mobile/, QMS-gated +
+    # compliance-screened + document-controlled; served with correct content-types so it runs in-browser.
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+    vid = est.json()["vsb_id"]
+    m = client.post(f"/api/v1/vsb/{vid}/mobile").json()
+    assert m["kind"] == "installable_pwa" and m["installable"] is True and m["offline_capable"] is True
+    paths = {f["path"] for f in m["files"]}
+    assert {"mobile/index.html", "mobile/app.js", "mobile/manifest.webmanifest", "mobile/sw.js",
+            "mobile/icon.svg", "mobile/styles.css", "mobile/data.json"} <= paths
+    q = m["quality_assurance"]["quality"]
+    assert q["qms_gate_passed"] is True and q["document_controlled"] is True
+    assert q["compliance"]["overall"] in ("pass", "review", "fail")
+    # served PWA files with correct content-types; manifest + SW registration present
+    idx = client.get(f"/api/v1/vsb/{vid}/mobile/page/index")
+    assert idx.status_code == 200 and 'rel="manifest"' in idx.text and "serviceWorker" in idx.text
+    man = client.get(f"/api/v1/vsb/{vid}/mobile/page/manifest.webmanifest")
+    assert man.headers["content-type"].startswith("application/manifest+json")
+    assert man.json()["display"] == "standalone" and man.json()["icons"]
+    sw = client.get(f"/api/v1/vsb/{vid}/mobile/page/sw.js")
+    assert sw.status_code == 200 and "caches.open" in sw.text
+    assert client.get(f"/api/v1/vsb/{vid}/mobile/page/icon.svg").headers["content-type"].startswith("image/svg+xml")
+    # known files only; manifests retrievable; unknown VSB is a 404
+    assert client.get(f"/api/v1/vsb/{vid}/mobile/page/evil").status_code == 404
+    assert client.get(f"/api/v1/vsb/{vid}/mobile").json()["installable"] is True
+    assert client.post("/api/v1/vsb/nope-xyz-404/mobile").status_code == 404
+
+
 # ── Payments — honest, launch-ready rails (Phase 3, test-mode safe) ───────────
 # Verifies the rails never fabricate a connection and default to safe simulation.
 

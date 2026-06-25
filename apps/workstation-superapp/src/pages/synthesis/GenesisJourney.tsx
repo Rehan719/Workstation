@@ -44,6 +44,12 @@ interface WebAppManifest {
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
 }
+interface PwaManifest {
+  vsb_id: string; name: string; kind: string; installable: boolean; offline_capable: boolean;
+  file_count: number; features: string[]; preview: string;
+  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
+    compliance?: { overall?: string; compliant?: boolean } } };
+}
 
 const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
 const DOMAINS = ['enterprise', 'religion', 'science', 'law', 'care', 'education', 'employment', 'career', 'fintech', 'healthtech', 'edtech'];
@@ -69,6 +75,8 @@ export const GenesisJourney: React.FC = () => {
   const [siteBusy, setSiteBusy] = useState(false);
   const [webapp, setWebapp] = useState<WebAppManifest | null>(null);
   const [webappBusy, setWebappBusy] = useState(false);
+  const [pwa, setPwa] = useState<PwaManifest | null>(null);
+  const [pwaBusy, setPwaBusy] = useState(false);
 
   const run = async () => {
     if (!problem.trim()) return;
@@ -140,6 +148,17 @@ export const GenesisJourney: React.FC = () => {
       if (res.ok) setWebapp(await res.json());
     } catch { /* ignore */ }
     setWebappBusy(false);
+  };
+
+  // §13 increment 4 — generate the Phone app (real installable PWA into the repo's mobile/)
+  const generatePhoneApp = async () => {
+    if (!vsb) return;
+    setPwaBusy(true); setPwa(null);
+    try {
+      const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/mobile`, { method: 'POST' });
+      if (res.ok) setPwa(await res.json());
+    } catch { /* ignore */ }
+    setPwaBusy(false);
   };
 
   const phases = result ? [
@@ -420,6 +439,38 @@ export const GenesisJourney: React.FC = () => {
                             <a href={webapp.preview} target="_blank" rel="noreferrer"
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-highlight border border-highlight/40 px-3 py-1.5 rounded-lg hover:bg-highlight/10 transition-colors">
                               Open the web app →
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* §13 increment 4 — generate the Phone app (real installable PWA) */}
+                      <div className="mt-3">
+                        <Button onClick={generatePhoneApp} disabled={pwaBusy} className="flex items-center gap-2 bg-slate-900 text-aura text-[11px]">
+                          {pwaBusy ? <Loader2 size={13} className="animate-spin" /> : <Layers size={13} />}
+                          {pwaBusy ? 'Generating phone app…' : 'Generate Phone app (PWA)'}
+                        </Button>
+                        {pwa && (
+                          <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-aura">Phone app · {pwa.kind}</span>
+                              {pwa.installable && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">installable</span>}
+                              {pwa.offline_capable && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">offline</span>}
+                              {typeof pwa.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${pwa.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                  QMS: {pwa.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{pwa.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                                </span>
+                              )}
+                              {pwa.quality_assurance?.quality?.compliance && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${pwa.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                  compliance: {pwa.quality_assurance.quality.compliance.overall}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[9px] text-slate-500">{pwa.features.join(' · ')}</p>
+                            <a href={pwa.preview} target="_blank" rel="noreferrer"
+                              className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
+                              Open the phone app →
                             </a>
                           </div>
                         )}
