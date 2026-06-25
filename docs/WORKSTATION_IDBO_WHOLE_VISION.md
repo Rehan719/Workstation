@@ -292,6 +292,15 @@ reconfigurable, intelligent autonomous enterprises** — whether a Report, Prese
 Platform, App, Product or Service — each able to keep researching, improving, and serving its purpose,
 governed by its own Chief/Board, under the founder's intent.
 
+The canonical output is a **Repository of the IDBO Entity (VSB)** — a **living, intelligently autonomous
+enterprise**, **bespoke to the concept→commercialisation solution** — shipped as a coherent, version-
+controlled whole that **integrates a Website, a Web app, and a Phone (mobile) app** as the entity's
+public + operational surfaces. The repo is the enterprise's living body: its genome/identity, business
+plan, organisation (Chief→Build-to-Order), digital resources, AI-swarm cascades, compliance + quality
+record, and the integrated Website/Web-app/Phone-app are all reconfigurable and re-runnable, continuing
+to research, build, operate, improve and evolve under the founder's intent — quality-gated (§10),
+compliance-screened (§11), document-controlled and provenance-sealed (§6) throughout.
+
 ## 14. The Democratisation Outcome
 
 Capabilities and resources previously available **only to the best-funded governments, world-industry-

@@ -35,6 +35,12 @@ suite green, in-house provenance, no fabrication); "designed/gated" means intent
 | B4 | Production deploy / hosting | Owner's infra + cost |
 | B5 | Live external AI key (frontier accelerant) | Owner's account + cost; in-house-first remains default |
 
+## D — NEW vision element (added by Owner 2026-06-25) — HIGH priority, substantial, scope before building
+
+| Rank | Item | § | Current state (honest) | Scope |
+|---|---|---|---|---|
+| **D1** | **VSB IDBO Entity Repository** — a living, intelligently-autonomous enterprise bespoke to the concept→commercialisation solution, shipped as a version-controlled **repo** with an **integrated Website + Web app + Phone (mobile) app** | §13 | **PARTIAL.** Today: Deliverables produce *website*/*app* **specs** + a real in-house **HTML** render; Genesis produces a **VSB blueprint**; `/establish` persists a VSB entity as **data**. There is **no** version-controlled code repo, no built Web app, no Phone app. | LARGE — multi-increment. Likely: (1) a "VSB repo" generator that scaffolds a coherent repo (genome/identity · business plan · org · resources · cascades · compliance+quality record) on the native fabric, in-house, honest (real scaffold, never fabricated build output); (2) an integrated Website (extend the live HTML render) ; (3) a Web-app spec→scaffold; (4) a Phone-app (e.g. PWA/manifest or RN spec). Each QMS-gated + compliance-screened + document-controlled. **Confirm scope/sequencing with the Owner before building; do NOT fabricate built apps.** |
+
 ## C — CANDIDATE further-depth increments (genuine but lower-priority; confirm scope before building)
 
 | Rank | Item | § | Notes |
