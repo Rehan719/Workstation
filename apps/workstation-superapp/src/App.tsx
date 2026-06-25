@@ -67,11 +67,11 @@ import { TransformationDashboard } from './pages/TransformationDashboard';
 import { VSBEconomy } from './pages/enterprise/VSBEconomy';
 import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
 import { Deliverables } from './pages/Deliverables';
-import { PredictionMarket } from './pages/markets/PredictionMarket';
+// PredictionMarket archived — fabricated betting market (gambling-adjacent, conflicts halal ethics).
 import { ProductCatalog } from './pages/ProductCatalog';
 import { Wallet } from './pages/profile/Wallet';
 import { UserImpact } from './pages/profile/Impact';
-import { SoulRecordExplorer } from './pages/profile/SoulRecordExplorer';
+// SoulRecordExplorer archived — grandiose off-vision "multi-dimensional identity" page.
 
 // ── 7. Governance & Operations ───────────────────────────────────────────
 import { GovernanceHub } from './pages/governance/GovernanceHub';
@@ -178,11 +178,9 @@ function App() {
           <Route path="/marketplace"       element={<LivingMarketplace />} />
           <Route path="/dev-marketplace"   element={<Navigate to="/marketplace" replace />} />
           <Route path="/deliverables"      element={<Deliverables />} />
-          <Route path="/prediction-market" element={<PredictionMarket />} />
           <Route path="/product-catalog"   element={<ProductCatalog />} />
           <Route path="/wallet"            element={<Wallet />} />
           <Route path="/impact"            element={<UserImpact />} />
-          <Route path="/soul-record"       element={<SoulRecordExplorer />} />
 
           {/* ── 7. Governance & Operations ──────────────────────────── */}
           <Route path="/governance-hub"     element={<GovernanceHub />} />

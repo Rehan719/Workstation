@@ -114,11 +114,9 @@ const allNavItems: NavItem[] = [
       { name: 'Economic Metabolism', icon: Coins,    id: 'economy' },
       { name: 'Marketplace',      icon: ShoppingBag, id: 'marketplace' },
       { name: 'Deliverables',     icon: FileText,    id: 'deliverables' },
-      { name: 'Prediction Market',icon: TrendingUp,  id: 'prediction-market' },
       { name: 'Product Catalog',  icon: Package,     id: 'product-catalog' },
       { name: 'Wallet',           icon: DollarSign,  id: 'wallet' },
       { name: 'Impact',           icon: Activity,    id: 'impact' },
-      { name: 'Soul Record',      icon: Archive,     id: 'soul-record' },
     ]
   },
 
