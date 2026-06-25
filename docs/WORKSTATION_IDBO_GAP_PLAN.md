@@ -24,6 +24,7 @@ suite green, in-house provenance, no fabrication); "designed/gated" means intent
 | §11 | Compliance, Safety & Ethics (continuously live) | **woven into the universal `assure_delivery` gate (W118)** — Halal·Legal·Regulatory·EHS·Ethical screened on EVERY delivery, "not bolted on"; gaas.v5 constitutional gate on the org cascade |
 | §13 | Living deliverables | re-runnable, reconfigurable, versioned, QMS-gated |
 | — | QMS owns DCMS (ISO 9001 §7.5) | quality records document-controlled → `quality_record_hash` (W110) |
+| §17.4 | Human–AI integration **Mode 3** — optional per-stage human review gates (set in the VSB genome) | per-VSB `review_gates` config + human approve/reject decisions, each append-only DCS-audited; `blocks_progress` lets the lifecycle honour the gate (W126) |
 | §17.3 | Living Business System — 4 layers (Constitutional · Strategic · Action Plan · **Board Pack**) | the on-demand **Board Pack** (`POST /api/v1/vsb/{id}/board-pack`) is assembled fresh from the VSB's live data + an in-house AI-CEO narrative, **DCS-registered** (document-controlled via the QMS-owned DCMS), with history (W125) |
 
 ## B — OWNER-GATED (designed; do NOT build without the Owner's explicit go-ahead)

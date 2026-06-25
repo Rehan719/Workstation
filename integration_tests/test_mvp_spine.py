@@ -1452,6 +1452,32 @@ def test_vsb_board_pack(client):
     assert client.get("/api/v1/vsb/nope-xyz-404/board-pack").status_code == 404
 
 
+def test_vsb_review_gates_mode3(client):
+    # §17.4 Mode 3 — optional human review gates at any Concept→Commercialisation stage (set in the VSB
+    # genome). Configurable per-VSB; each config + decision is append-only DCS-audited (§17.5).
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+    vid = est.json()["vsb_id"]
+    g0 = client.get(f"/api/v1/vsb/{vid}/review-gates").json()
+    assert g0["mode"].startswith("Mode 3") and g0["stages"] == [] and len(g0["lifecycle"]) == 8
+    # set gates on two stages (genome config) — DCS-registered
+    s = client.post(f"/api/v1/vsb/{vid}/review-gates", json={"stages": ["design", "commercialise"]}).json()
+    assert set(s["stages"]) == {"design", "commercialise"} and isinstance(s["dcs_hash"], str) and len(s["dcs_hash"]) == 128
+    assert client.post(f"/api/v1/vsb/{vid}/review-gates", json={"stages": ["nope"]}).status_code == 400
+    # a gated stage is pending + blocks progress; a non-gated stage does not gate
+    st = client.get(f"/api/v1/vsb/{vid}/review-gates/design").json()
+    assert st["gated"] is True and st["status"] == "pending" and st["blocks_progress"] is True
+    assert client.get(f"/api/v1/vsb/{vid}/review-gates/build").json()["status"] == "not_gated"
+    # human approves the design gate -> approved, no longer blocks (decision DCS-audited)
+    d = client.post(f"/api/v1/vsb/{vid}/review-gates/design/decision", json={"decision": "approve", "note": "ok"}).json()
+    assert d["status"] == "approved" and d["blocks_progress"] is False and len(d["dcs_hash"]) == 128
+    assert client.get(f"/api/v1/vsb/{vid}/review-gates/design").json()["status"] == "approved"
+    # deciding on a non-gated stage is rejected; unknown VSB/stage are 404
+    assert client.post(f"/api/v1/vsb/{vid}/review-gates/build/decision", json={"decision": "approve"}).status_code == 400
+    assert client.get("/api/v1/vsb/nope-xyz-404/review-gates").status_code == 404
+    assert client.get(f"/api/v1/vsb/{vid}/review-gates/zzz").status_code == 404
+
+
 # ── Payments — honest, launch-ready rails (Phase 3, test-mode safe) ───────────
 # Verifies the rails never fabricate a connection and default to safe simulation.
 

@@ -567,7 +567,7 @@ architecture). This is the exact structural skeleton the fine-grained vision han
 - **Mode 1** — Owner sets mission/values/ethical bounds → the IDBO executes everything else autonomously.
 - **Mode 2** — Expert → **Digital-Twin human node** (24/7 expertise without the expert present). *This is
   the basis of the Chief = the founder's digital twin.*
-- **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome).
+- **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome). — ✅ DELIVERED (W126): per-VSB `review_gates` config (`GET/POST /api/v1/vsb/{id}/review-gates`, per-stage status + `blocks_progress`, human `…/{stage}/decision` approve|reject), each config + decision append-only DCS-audited (§17.5); a **Human review gates (Mode 3)** panel on the Genesis page.
 
 **17.5 The 10 architecture invariants (absolute).** User isolation (scoped to user_id) · mandatory GaaS
 gate on every output · append-only DCS audit · **Arms-Length Agency** (AI CEO cannot instruct the

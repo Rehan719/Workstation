@@ -748,6 +748,113 @@ async def list_vsb_board_packs(vsb_id: str):
     return {"vsb_id": vsb_id, "board_packs": packs, "total": len(packs)}
 
 
+# ── §17.4 Mode 3 — optional human review gates at any Concept→Commercialisation stage (set in the VSB
+# genome). Configurable per-VSB; each gate config + human decision is append-only DCS-audited (§17.5).
+_LIFECYCLE_STAGE_IDS = [s[0] for s in _CONCEPT_TO_COMMERCIALISE_STAGES]
+
+
+def _lifecycle_meta() -> list[dict]:
+    return [{"id": sid, "name": nm, "description": desc} for sid, nm, desc in _CONCEPT_TO_COMMERCIALISE_STAGES]
+
+
+def _gate_status(rg: dict, stage: str) -> dict:
+    gated = stage in (rg.get("stages") or [])
+    dec = (rg.get("decisions") or {}).get(stage)
+    if not gated:
+        status = "not_gated"
+    elif dec:
+        status = "approved" if dec.get("decision") == "approve" else "rejected"
+    else:
+        status = "pending"
+    return {"stage": stage, "gated": gated, "status": status, "decision": dec,
+            "blocks_progress": gated and (not dec or dec.get("decision") == "reject")}
+
+
+class ReviewGatesRequest(BaseModel):
+    stages: list[str] = []
+
+
+class GateDecisionRequest(BaseModel):
+    decision: str          # approve | reject
+    note: str = ""
+
+
+@router.get("/{vsb_id}/review-gates")
+async def get_review_gates(vsb_id: str):
+    """The VSB's Mode-3 human review-gate configuration (which lifecycle stages require human review)."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    rg = vsb.get("review_gates") or {"stages": [], "decisions": {}}
+    return {"vsb_id": vsb_id, "mode": "Mode 3 — optional human review gates (set in the VSB genome)",
+            "stages": rg.get("stages", []), "lifecycle": _lifecycle_meta(),
+            "statuses": [_gate_status(rg, s[0]) for s in _CONCEPT_TO_COMMERCIALISE_STAGES],
+            "gated_count": len(rg.get("stages", []))}
+
+
+@router.post("/{vsb_id}/review-gates")
+async def set_review_gates(vsb_id: str, req: ReviewGatesRequest):
+    """Set which Concept→Commercialisation stages require human review (genome config). Append-only
+    DCS-audited (§17.5). Decisions for stages no longer gated are cleared."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    unknown = [s for s in req.stages if s not in _LIFECYCLE_STAGE_IDS]
+    if unknown:
+        raise HTTPException(status_code=400,
+                            detail=f"Unknown lifecycle stages: {unknown}. Valid: {_LIFECYCLE_STAGE_IDS}")
+    rg = vsb.get("review_gates") or {"stages": [], "decisions": {}}
+    rg["stages"] = list(dict.fromkeys(req.stages))                      # dedupe, preserve order
+    rg["decisions"] = {k: v for k, v in (rg.get("decisions") or {}).items() if k in rg["stages"]}
+    vsb["review_gates"] = rg
+    from agentic_core.vbs.registry import qms
+    dcs_hash = await qms.control_document(f"vsb_review_gates:{vsb_id}", {"stages": rg["stages"]}, "Owner")
+    _save_vsb(vsb)
+    try:
+        biobus.fire_signal("cognitive", "vsb.review_gates", f"{vsb.get('name')}: {len(rg['stages'])} gated", 0.5)
+    except Exception:
+        pass
+    return {"vsb_id": vsb_id, "mode": "Mode 3 — optional human review gates (set in the VSB genome)",
+            "stages": rg["stages"], "lifecycle": _lifecycle_meta(),
+            "statuses": [_gate_status(rg, s[0]) for s in _CONCEPT_TO_COMMERCIALISE_STAGES],
+            "dcs_hash": dcs_hash}
+
+
+@router.get("/{vsb_id}/review-gates/{stage}")
+async def get_review_gate_status(vsb_id: str, stage: str):
+    """Whether a given stage gates for this VSB + its current status (used by the lifecycle to honour Mode 3)."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    if stage not in _LIFECYCLE_STAGE_IDS:
+        raise HTTPException(status_code=404, detail=f"Unknown lifecycle stage '{stage}'.")
+    rg = vsb.get("review_gates") or {"stages": [], "decisions": {}}
+    return {"vsb_id": vsb_id, **_gate_status(rg, stage)}
+
+
+@router.post("/{vsb_id}/review-gates/{stage}/decision")
+async def decide_review_gate(vsb_id: str, stage: str, req: GateDecisionRequest):
+    """Record a human review decision (approve|reject) for a gated stage. Append-only DCS-audited (§17.5)."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    if stage not in _LIFECYCLE_STAGE_IDS:
+        raise HTTPException(status_code=404, detail=f"Unknown lifecycle stage '{stage}'.")
+    if req.decision not in ("approve", "reject"):
+        raise HTTPException(status_code=400, detail="decision must be 'approve' or 'reject'.")
+    rg = vsb.get("review_gates") or {"stages": [], "decisions": {}}
+    if stage not in (rg.get("stages") or []):
+        raise HTTPException(status_code=400, detail=f"Stage '{stage}' is not gated for this VSB.")
+    rec = {"decision": req.decision, "note": req.note,
+           "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    rg.setdefault("decisions", {})[stage] = rec
+    vsb["review_gates"] = rg
+    from agentic_core.vbs.registry import qms
+    dcs_hash = await qms.control_document(f"vsb_review_decision:{vsb_id}:{stage}", rec, "human-reviewer")
+    _save_vsb(vsb)
+    return {"vsb_id": vsb_id, **_gate_status(rg, stage), "dcs_hash": dcs_hash}
+
+
 def _list_vsbs() -> list[dict]:
     result = []
     for p in sorted(_VSB_STORE.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):

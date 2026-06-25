@@ -56,6 +56,11 @@ interface BoardPack {
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
 }
+interface ReviewGates {
+  mode: string; stages: string[];
+  lifecycle: { id: string; name: string; description: string }[];
+  statuses: { stage: string; gated: boolean; status: string; blocks_progress: boolean }[];
+}
 
 const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
 const DOMAINS = ['enterprise', 'religion', 'science', 'law', 'care', 'education', 'employment', 'career', 'fintech', 'healthtech', 'edtech'];
@@ -85,6 +90,8 @@ export const GenesisJourney: React.FC = () => {
   const [pwaBusy, setPwaBusy] = useState(false);
   const [pack, setPack] = useState<BoardPack | null>(null);
   const [packBusy, setPackBusy] = useState(false);
+  const [gates, setGates] = useState<ReviewGates | null>(null);
+  const [gatesOpen, setGatesOpen] = useState(false);
 
   const run = async () => {
     if (!problem.trim()) return;
@@ -178,6 +185,32 @@ export const GenesisJourney: React.FC = () => {
       if (res.ok) setPack(await res.json());
     } catch { /* ignore */ }
     setPackBusy(false);
+  };
+
+  // §17.4 Mode 3 — configure optional human review gates (genome-set) for the VSB
+  const openGates = async () => {
+    setGatesOpen(true);
+    if (!vsb) return;
+    try { setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json())); } catch { /* */ }
+  };
+  const toggleGate = async (stageId: string) => {
+    if (!vsb || !gates) return;
+    const next = gates.stages.includes(stageId) ? gates.stages.filter(s => s !== stageId) : [...gates.stages, stageId];
+    try {
+      const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stages: next }),
+      });
+      if (res.ok) setGates(await res.json());
+    } catch { /* */ }
+  };
+  const decideGate = async (stage: string, decision: 'approve' | 'reject') => {
+    if (!vsb) return;
+    try {
+      await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates/${stage}/decision`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decision }),
+      });
+      setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json()));
+    } catch { /* */ }
   };
 
   const phases = result ? [
@@ -514,6 +547,42 @@ export const GenesisJourney: React.FC = () => {
                               )}
                             </div>
                             <pre className="text-[10px] text-slate-400 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto font-sans">{pack.narrative.slice(0, 1200)}</pre>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* §17.4 Mode 3 — optional human review gates at any Concept→Commercialisation stage */}
+                      <div className="mt-3">
+                        <Button onClick={openGates} disabled={gatesOpen && !!gates} className="flex items-center gap-2 bg-slate-900 text-aura text-[11px]">
+                          <ShieldCheck size={13} /> Human review gates (Mode 3)
+                        </Button>
+                        {gatesOpen && gates && (
+                          <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                            <p className="text-[9px] text-slate-500">{gates.mode} — tap a stage to gate/ungate; each change is DCS-audited.</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {gates.lifecycle.map(stage => {
+                                const st = gates.statuses.find(s => s.stage === stage.id);
+                                const gated = !!st?.gated;
+                                const tone = !gated ? 'bg-slate-800 text-slate-400 border-slate-700'
+                                  : st?.status === 'approved' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40'
+                                  : st?.status === 'rejected' ? 'bg-vital/15 text-vital border-vital/40'
+                                  : 'bg-amber-500/15 text-amber-400 border-amber-500/40';
+                                return (
+                                  <div key={stage.id} className={`flex items-center gap-1 rounded-lg border px-2 py-1 ${tone}`}>
+                                    <button type="button" onClick={() => toggleGate(stage.id)} title={stage.description}
+                                      className="text-[9px] font-black uppercase tracking-wider">
+                                      {stage.name}{gated ? ` · ${st?.status}` : ''}
+                                    </button>
+                                    {gated && st?.status === 'pending' && (
+                                      <>
+                                        <button type="button" onClick={() => decideGate(stage.id, 'approve')} className="text-emerald-400 text-[10px] font-black" title="Approve">✓</button>
+                                        <button type="button" onClick={() => decideGate(stage.id, 'reject')} className="text-vital text-[10px] font-black" title="Reject">✗</button>
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>
