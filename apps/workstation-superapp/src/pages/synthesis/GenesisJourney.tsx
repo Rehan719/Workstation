@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
+import { AttachDocument, appendDocBlock } from '../../components/AttachDocument';
 import {
   Sparkles, Loader2, AlertCircle, ChevronDown, ChevronUp,
   Lightbulb, Layers, Rocket, ShieldCheck, Brain, Eye,
@@ -286,6 +287,12 @@ export const GenesisJourney: React.FC = () => {
             rows={4}
             className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none"
           />
+          {/* §9/§4.1 — bring your own data: attach a research report / brief / dataset to seed the journey */}
+          <div className="mt-2">
+            <AttachDocument
+              hint="bring your own data — research report, brief, dataset (read in-browser, stays with this request)"
+              onText={block => setProblem(p => appendDocBlock(p, block))} />
+          </div>
         </div>
         <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-6">
           <div>
