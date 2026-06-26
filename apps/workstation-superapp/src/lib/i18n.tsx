@@ -69,6 +69,11 @@ const ar: Dict = {
   'nav.marketplace': 'السوق', 'nav.wallet': 'المحفظة', 'nav.deliverables': 'المُخرجات', 'nav.compliance': 'الامتثال',
   'nav.constitution': 'الدستور', 'nav.settings': 'الإعدادات', 'nav.domains': 'نظرة عامة',
   'nav.religion': 'الدين', 'nav.science': 'العلوم', 'nav.education': 'التعليم', 'nav.law': 'القانون', 'nav.care': 'الرعاية', 'nav.employment': 'التوظيف',
+  'domains.eyebrow': 'وركستيشن IDBO · العرض 1', 'domains.title': 'المجالات',
+  'domains.intro.lead': 'أدوات وموارد خاصة بالمجال بوساطة الذكاء الاصطناعي',
+  'domains.off1.tag': 'العرض 1 · أنت هنا', 'domains.off1.title': 'اعمل الآن بأدوات المجال',
+  'domains.off2.tag': 'العرض 2', 'domains.off2.title': 'أنشئ مؤسسة حية',
+  'domains.six': 'المجالات الستة', 'domains.browseAll': 'تصفّح كل', 'domains.tools': 'أدوات', 'domains.open': 'افتح',
 };
 
 const fr: Dict = {
@@ -102,6 +107,12 @@ const fr: Dict = {
   'nav.marketplace': 'Marché', 'nav.wallet': 'Portefeuille', 'nav.deliverables': 'Livrables', 'nav.compliance': 'Conformité',
   'nav.constitution': 'Constitution', 'nav.settings': 'Paramètres', 'nav.domains': 'Aperçu',
   'nav.religion': 'Religion', 'nav.science': 'Science', 'nav.education': 'Éducation', 'nav.law': 'Droit', 'nav.care': 'Soins', 'nav.employment': 'Emploi',
+  // Domains hub
+  'domains.eyebrow': 'Workstation IDBO · Offre 1', 'domains.title': 'Domaines',
+  'domains.intro.lead': 'Outils & ressources spécifiques au domaine, médiés par l’IA',
+  'domains.off1.tag': 'Offre 1 · Vous êtes ici', 'domains.off1.title': 'Travaillez maintenant avec les outils de domaine',
+  'domains.off2.tag': 'Offre 2', 'domains.off2.title': 'Établir une entreprise vivante',
+  'domains.six': 'Les six domaines', 'domains.browseAll': 'Parcourir les', 'domains.tools': 'outils', 'domains.open': 'Ouvrir',
 };
 
 const es: Dict = {
@@ -133,6 +144,11 @@ const es: Dict = {
   'nav.marketplace': 'Mercado', 'nav.wallet': 'Cartera', 'nav.deliverables': 'Entregables', 'nav.compliance': 'Cumplimiento',
   'nav.constitution': 'Constitución', 'nav.settings': 'Ajustes', 'nav.domains': 'Resumen',
   'nav.religion': 'Religión', 'nav.science': 'Ciencia', 'nav.education': 'Educación', 'nav.law': 'Derecho', 'nav.care': 'Cuidado', 'nav.employment': 'Empleo',
+  'domains.eyebrow': 'Workstation IDBO · Oferta 1', 'domains.title': 'Dominios',
+  'domains.intro.lead': 'Herramientas y recursos específicos del dominio, mediados por IA',
+  'domains.off1.tag': 'Oferta 1 · Estás aquí', 'domains.off1.title': 'Trabaja ahora con herramientas de dominio',
+  'domains.off2.tag': 'Oferta 2', 'domains.off2.title': 'Establece una empresa viva',
+  'domains.six': 'Los seis dominios', 'domains.browseAll': 'Ver las', 'domains.tools': 'herramientas', 'domains.open': 'Abrir',
 };
 
 const ur: Dict = {
@@ -164,6 +180,11 @@ const ur: Dict = {
   'nav.marketplace': 'مارکیٹ', 'nav.wallet': 'والٹ', 'nav.deliverables': 'تیار نتائج', 'nav.compliance': 'تعمیل',
   'nav.constitution': 'آئین', 'nav.settings': 'ترتیبات', 'nav.domains': 'جائزہ',
   'nav.religion': 'مذہب', 'nav.science': 'سائنس', 'nav.education': 'تعلیم', 'nav.law': 'قانون', 'nav.care': 'نگہداشت', 'nav.employment': 'روزگار',
+  'domains.eyebrow': 'ورک سٹیشن IDBO · پیشکش 1', 'domains.title': 'شعبے',
+  'domains.intro.lead': 'شعبہ جاتی، اے آئی کی وساطت سے اوزار و وسائل',
+  'domains.off1.tag': 'پیشکش 1 · آپ یہاں ہیں', 'domains.off1.title': 'ابھی شعبہ جاتی اوزار سے کام کریں',
+  'domains.off2.tag': 'پیشکش 2', 'domains.off2.title': 'ایک زندہ ادارہ قائم کریں',
+  'domains.six': 'چھ شعبے', 'domains.browseAll': 'سب دیکھیں', 'domains.tools': 'اوزار', 'domains.open': 'کھولیں',
 };
 
 const DICTS: Record<string, Dict> = { en, ar, fr, es, ur };
