@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
 import { Loader2, Sparkles, Copy, Download, Check, Rocket } from 'lucide-react';
 import { AttachDocument, appendDocBlock } from './AttachDocument';
+import { saveOutput } from '../lib/outputHistory';
 
 export interface DomainField {
   name: string;
@@ -97,6 +98,12 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       }
       const r = await axios.post(endpoint, body);
       setResult(r.data);
+      // E3 — save to "My Work" history so the output is revisitable (not lost on navigate).
+      try {
+        const text = String(r.data?.[resultKey] ?? r.data?.deliverable ?? JSON.stringify(r.data, null, 2));
+        saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
+          input: primary ? form[primary] : undefined, output: text, provenance: r.data?.ai_provenance ?? null });
+      } catch { /* history is best-effort */ }
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Request failed — the backend may be unavailable.');
     }

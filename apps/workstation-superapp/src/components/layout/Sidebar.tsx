@@ -28,6 +28,7 @@ const allNavItems: NavItem[] = [
     id: 'home-facet',
     subItems: [
       { name: 'Dashboard',     icon: LayoutDashboard, id: 'dashboard' },
+      { name: 'My Work',       icon: FolderOpen,      id: 'my-work' },
       { name: 'Organism',      icon: Activity,        id: 'organism' },
       { name: 'Heartbeat',     icon: HeartPulse,      id: 'heartbeat' },
       { name: 'Cognition',     icon: Network,         id: 'cognition' },

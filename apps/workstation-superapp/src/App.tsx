@@ -11,6 +11,7 @@ import Joyride from 'react-joyride';
 import { DashboardNew as Dashboard } from './pages/DashboardNew';
 // GrandOpsDashboard + IntrospectionDashboard archived — fabricated static infra/reasoning metrics
 // (no backend); redundant with /organism + the real cognition pages.
+import { MyWork } from './pages/MyWork';
 import { OrganismDashboard } from './pages/organism/OrganismDashboard';
 import { HeartbeatMonitor } from './pages/organism/HeartbeatMonitor';
 import { CognitionIntegration } from './pages/CognitionIntegration';
@@ -120,6 +121,7 @@ function App() {
           {/* ── 1. Home / organism overview ─────────────────────────── */}
           <Route path="/"               element={<Dashboard />} />
           <Route path="/dashboard"      element={<Navigate to="/" replace />} />
+          <Route path="/my-work"        element={<MyWork />} />
           <Route path="/organism"       element={<OrganismDashboard />} />
           <Route path="/heartbeat"      element={<HeartbeatMonitor />} />
           <Route path="/cognition"      element={<CognitionIntegration />} />
