@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
 import { Loader2, Sparkles, Copy, Download, Check, Rocket } from 'lucide-react';
 import { AttachDocument, appendDocBlock } from './AttachDocument';
+import { DictateButton } from './DictateButton';
 import { saveOutput } from '../lib/outputHistory';
 
 export interface DomainField {
@@ -181,9 +182,12 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       ))}
 
       {canAttach && primary && (
-        <AttachDocument
-          hint="your own data — research, reviews, notes (read in-browser, stays with this request)"
-          onText={block => setForm(prev => ({ ...prev, [primary]: appendDocBlock(prev[primary], block) }))} />
+        <div className="flex items-start gap-2 flex-wrap">
+          <AttachDocument
+            hint="your own data — research, reviews, notes (read in-browser, stays with this request)"
+            onText={block => setForm(prev => ({ ...prev, [primary]: appendDocBlock(prev[primary], block) }))} />
+          <DictateButton onTranscript={text => setForm(prev => ({ ...prev, [primary]: (prev[primary] ? prev[primary] + ' ' : '') + text }))} />
+        </div>
       )}
 
       <Button type="button" onClick={run} disabled={busy || !canSubmit} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
