@@ -63,7 +63,8 @@ interface ReviewGates {
 }
 
 const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
-const DOMAINS = ['enterprise', 'religion', 'science', 'law', 'care', 'education', 'employment', 'career', 'fintech', 'healthtech', 'edtech'];
+// §17.1 — the six canonical Domains (matches the Domains section hubs). Realm (who you are) is separate.
+const DOMAINS = ['religion', 'science', 'education', 'law', 'employment', 'care'];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ export const GenesisJourney: React.FC = () => {
   const navigate = useNavigate();
   const [sp] = useSearchParams();   // seedable from a domain tool (offering 1 -> offering 2, §3A)
   const [problem, setProblem] = useState(() => sp.get('problem') || '');
-  const [domain, setDomain] = useState(() => { const d = sp.get('domain') || 'enterprise'; return DOMAINS.includes(d) ? d : 'enterprise'; });
+  const [domain, setDomain] = useState(() => { const d = sp.get('domain') || 'science'; return DOMAINS.includes(d) ? d : 'science'; });
   const [realm, setRealm] = useState(() => { const r = sp.get('realm') || 'enterprise'; return REALMS.includes(r) ? r : 'enterprise'; });
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
