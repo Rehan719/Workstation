@@ -125,6 +125,28 @@ Owner (2026-06-26): "Further consolidate and align… review the whole frontend 
 ### ✅ Phase-3 Cycle 1 (W137) — the unified front door (`/` Command Center)
 The default route was a grandiose "Command Center · Welcome, Conscious Guardian" with **fabricated "Active Objectives"** ("v1.0 Global Launch 100% / v2.0 Neural Mesh 12%"), an arbitrary action-card set, and a **dead link** ("Genome Core" → /genome-explorer, which is archived). Rebuilt it as a **unified, honest, vision-aligned front door** (`DashboardNew.tsx`): (1) **foregrounds §3A's two journeys** as the primary choice — "Work in a Domain" (offering 1 → /domains) and "Concept → Commercialisation" (offering 2 → /genesis); (2) **maps the capability pillars** (Native AI Fabric §6 · Resource Fabric §7 · Living Enterprises §13 · Governance & Compliance §10/§11 · Economic Organism §12 · Living Organism §8) — every one a real reachable surface; (3) **real status only** — composite health + mode from `/api/v1/organism/status`, vitals + project count from the stats endpoint, recent activity from `/api/v1/projects/` (removed the fabricated objectives). Also fixed the grandiose default identity string (`mockUserProfile` "Conscious Guardian" → "Founder"). Verified: clean `tsc && vite build`; served build → `/` shows the two journeys + 6 pillars + real "Full Power · 100% health", "Work in a Domain" card navigates to /domains, no fabrication, console clean.
 
+### ✅ Phase-3 Cycle 2 (W138) — §-coverage verification + the two journeys as a coherent pair
+Walked the frontend against the vision from the new front door. **All 8 front-door routes resolve live** (domains·genesis·native-ai·resource-fabric·projects·governance-hub·economy·organism); **whole-nav dead-link scan = 0** (all 45 nav ids map to live routes). Verified §3A's two journeys deliver and aligned their framing into a coherent **pair**: `/domains` = "Offering 1 · Work now"; `/genesis` eyebrow changed "IDBO · Sovereign Journey" → **"Workstation IDBO · Offering 2 · Build an Enterprise"** (now parallel to the front door + Domains).
+
+**§1–§17 frontend coverage matrix (each a reachable, verified, honest surface):**
+| § | Capability | Surface |
+|---|---|---|
+| §1/§3/§14 | Vision · platform · democratisation | Front door `/` (two journeys + 6 pillars) |
+| §3A.1 | Domain Working | `/domains` + 6 hubs + Qur'an Platform |
+| §3A.2 / §4 | Concept→Commercialisation lifecycle | `/genesis` |
+| §5 | Living Organisation (Chief→BTO) | `/board` · `/ceo` · `/coe` · `/bto` |
+| §6 | Native AI swarm/models/orchestration | `/native-ai` · `/swarm-intelligence` · `/visual-composer` |
+| §7 | Reconfigurable Resource Fabric | `/resource-fabric` (+12 Studios) · `/reactor-studio` |
+| §8 | Biomimetic organism | `/organism` · `/heartbeat` · `/cognition` |
+| §10 | Solution-quality bar | woven into deliveries; `/governance-hub` |
+| §11 | Compliance, safety & ethics | `/compliance` |
+| §12 | Economic organism | `/economy` · `/wallet` · `/marketplace` |
+| §13 | Living output (VSB repo+site+webapp+mobile) | `/deliverables` · `/vsb-cockpit` (Generate Repo/Website/Web app/Phone app/Board Pack) |
+| §15 | Founding principles | `/constitution` |
+| §17.3 / §17.4 | Board Pack · Mode-3 gates | Genesis / Cockpit actions |
+
+Honestly NOT separately surfaced as nav (noted, not a defect): §17.1 **Realms** (Enterprise/Learning/Developing/Scholarship) — currently a tagging dimension in the Genesis/project forms, not its own section; §9 multimodal avatar lives in the header. Verified: clean `tsc && vite build`; served build → Genesis shows "Offering 2", console clean.
+
 ### ⏳ Phase-3 backlog
 - **End-to-end §-coverage verification:** walk each §1–§17 capability and confirm a coherent delivering surface is reachable from the front door (fix any gap/dead link).
 - **Align the nav to the vision** where it adds coherence (e.g. surface the two §3A journeys / the Realms×Domains×Products structure in the IA).

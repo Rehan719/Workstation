@@ -235,7 +235,7 @@ export const GenesisJourney: React.FC = () => {
     <div className="space-y-10 pb-24">
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">
-          IDBO · Sovereign Journey
+          Workstation IDBO · Offering 2 · Build an Enterprise
         </p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">
           Genesis
