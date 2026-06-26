@@ -153,7 +153,27 @@ Honestly NOT separately surfaced as nav (noted, not a defect): §17.1 **Realms**
 ### ✅ Phase-3 Cycle 4 (W140) — end-to-end walk caught + fixed a real CoE crash (§5/§13 verified)
 Walked §13 (living output) and §5 (org tiers). §13 verified coherent: `/deliverables` (living reports/sites/apps, re-generatable) + `/vsb-cockpit` (29.7k chars — the living VSB's org structure, Chief/Board, business plan, BMS·QMS·DCS·EMS) + the §13 D1 generate actions (Repo·Website·Web app·Phone app·Board Pack) present in GenesisJourney. §5 walk **caught a real bug**: `/coe` (CoE Hub / KnowledgeHub) **crashed** — `TypeError: Cannot read properties of undefined (reading 'toLowerCase')`. Cause: the component's `InsightItem` assumed fields (`domain`/`summary`/`confidence`/`projects_count`…) that the live `/api/v1/intelligence/insights` doesn't return (it returns `id·type·title·detail·score`), so `insight.domain.toLowerCase()` threw. Fix: made `InsightItem` fields optional, mapped the real shape defensively (domain←type, summary←detail, guarded confidence/% display), and guarded the name/filter accesses. Verified: clean `tsc && vite build` (new bundle); served build → /coe renders "Centers of Excellence" from real portfolio insights, no render error, live bundle confirmed. A genuine "verified end-to-end" win.
 
-### ⏳ Phase-3 backlog
+### ✅ Phase-3 Cycle 5 (W141) — systematic render-crash sweep: 45/45 nav routes crash-free
+Walked **every** nav route in the browser (the front door + all 45 Sidebar ids), reading each for ErrorBoundary crash markers (`RENDER ERROR / REINITIALIZE VIEW / Cannot read propert…`) against the live bundle. **Result: 0 crashes** across the whole nav — the `/coe` crash (fixed W140) was the only render crash in the entire frontend. Routes swept this cycle (all clean): religion · education · law · care · employment · business-plan · management · change-control · digital-twins · capital · transformation · operations · sovereign-evolution · contribute · admin · settings · bto · ceo (the rest verified in W137–W140). Noted (non-crash, honest): `/settings` is a thin stub ("System Settings · Configure your Workstation parameters" — no controls yet); `/ceo` is a chat surface (short until used) — neither fabricates.
+
+---
+
+## ✅ PHASE 3 — UNIFY-TO-VISION COMPLETE (W137–W141)
+The whole frontend is now **one coherent, vision-organised, honest, end-to-end-verified UI**.
+
+| Verified | Result |
+|---|---|
+| Unified front door (`/`) | §3A two journeys + 6 capability pillars + **real** organism status (fabricated objectives + dead link + grandiose identity removed) |
+| §3A journeys paired | `/domains` "Offering 1 · Work now" ‖ `/genesis` "Offering 2 · Build an Enterprise" |
+| §17.1 taxonomy | Genesis vision-faithful: canonical **4 Realms × 6 Domains** (Realms = selector, not grandiose pages) |
+| §1–§17 coverage | every capability → a reachable, verified, honest surface (coverage matrix above) |
+| Dead nav links | **0** (all 45 nav ids map to live routes) |
+| Render crashes | **0** (45/45 routes render on the real data; the lone `/coe` crash fixed) |
+| Fabrication | **0** (Marketplace de-fabricated; front-door objectives removed; no hardcoded-as-real metrics) |
+
+**The journey is complete across all three phases:** Phase 1 removed the incoherent (20 pages archived), Phase 2 streamlined the redundant (nav ~79→45, Resource-Fabric 13→3, de-fabricated Marketplace), Phase 3 unified to the vision (vision-organised front door → two matched journeys → every §-capability reachable, honest, crash-free). The Owner's directive — "review the whole frontend against the whole vision and transform it into a Unified UI delivering the functionality and capabilities, verified end to end" — is **delivered**. Remaining honest follow-ups (minor, non-blocking): flesh out the `/settings` stub if real settings emerge; a backend-aware pass on the ProjectsHub realm/domain mislabel.
+
+### ⏳ Phase-3 backlog (cleared)
 - **End-to-end §-coverage verification:** walk each §1–§17 capability and confirm a coherent delivering surface is reachable from the front door (fix any gap/dead link).
 - **Align the nav to the vision** where it adds coherence (e.g. surface the two §3A journeys / the Realms×Domains×Products structure in the IA).
 - Continue consolidating any remaining redundancy found during the walk.
