@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { AttachDocument, appendDocBlock } from '../../components/AttachDocument';
 import { DictateButton } from '../../components/DictateButton';
+import { getPrefs } from '../../lib/userPrefs';
 import {
   Sparkles, Loader2, AlertCircle, ChevronDown, ChevronUp,
   Lightbulb, Layers, Rocket, ShieldCheck, Brain, Eye,
@@ -293,7 +294,7 @@ export const GenesisJourney: React.FC = () => {
             <AttachDocument
               hint="bring your own data — research report, brief, dataset (read in-browser, stays with this request)"
               onText={block => setProblem(p => appendDocBlock(p, block))} />
-            <DictateButton onTranscript={text => setProblem(p => (p ? p + ' ' : '') + text)} />
+            <DictateButton lang={getPrefs().language || 'en-US'} onTranscript={text => setProblem(p => (p ? p + ' ' : '') + text)} />
           </div>
         </div>
         <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-6">

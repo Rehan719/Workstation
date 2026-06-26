@@ -6,6 +6,7 @@ import { Loader2, Sparkles, Copy, Download, Check, Rocket } from 'lucide-react';
 import { AttachDocument, appendDocBlock } from './AttachDocument';
 import { DictateButton } from './DictateButton';
 import { saveOutput } from '../lib/outputHistory';
+import { getPrefs } from '../lib/userPrefs';
 
 export interface DomainField {
   name: string;
@@ -186,7 +187,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           <AttachDocument
             hint="your own data — research, reviews, notes (read in-browser, stays with this request)"
             onText={block => setForm(prev => ({ ...prev, [primary]: appendDocBlock(prev[primary], block) }))} />
-          <DictateButton onTranscript={text => setForm(prev => ({ ...prev, [primary]: (prev[primary] ? prev[primary] + ' ' : '') + text }))} />
+          <DictateButton lang={getPrefs().language || 'en-US'} onTranscript={text => setForm(prev => ({ ...prev, [primary]: (prev[primary] ? prev[primary] + ' ' : '') + text }))} />
         </div>
       )}
 

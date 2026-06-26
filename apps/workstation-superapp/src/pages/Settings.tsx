@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Check, Trash2, User, Settings as SettingsIcon } from 'lucide-react';
-import { getPrefs, setPrefs, clearPrefs, type UserPrefs } from '../lib/userPrefs';
+import { getPrefs, setPrefs, clearPrefs, LANGUAGES, type UserPrefs } from '../lib/userPrefs';
 import { clearOutputs } from '../lib/outputHistory';
 
 // §17.1 canonical realms × domains — kept consistent with Genesis.
@@ -57,6 +57,19 @@ export const Settings: React.FC = () => {
           </div>
         </div>
         <p className="text-[10px] text-slate-600">Defaults pre-seed a new Genesis journey (you can always change them there).</p>
+
+        <div>
+          <label htmlFor="pref-lang" className="text-[9px] font-black uppercase tracking-widest text-slate-500">Language</label>
+          <select id="pref-lang" value={prefs.language ?? 'en-US'} onChange={e => update({ language: e.target.value })}
+            className="block w-full @[440px]:w-72 mt-1.5 text-xs font-black bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2.5">
+            {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+          </select>
+          <p className="text-[10px] text-slate-600 mt-1.5 leading-relaxed">
+            <span className="text-emerald-400 font-bold">Voice dictation works in your language now.</span>{' '}
+            AI text responses in your language and full interface translation depend on the external AI accelerant
+            (Owner-gated) — the in-house engine currently reasons in English.
+          </p>
+        </div>
 
         <Button type="button" onClick={save} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
           {saved ? <><Check size={14} /> Saved</> : 'Save preferences'}
