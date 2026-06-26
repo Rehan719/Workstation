@@ -132,12 +132,23 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const copyResult = async () => {
     try { await navigator.clipboard.writeText(displayText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
   };
-  const downloadResult = () => {
+  // E4 — output-format selection (§4.9): export the result in any real, in-house-producible text format.
+  const downloadAs = (fmt: 'md' | 'txt' | 'html' | 'json') => {
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'result';
-    const blob = new Blob([displayText], { type: 'text/markdown' });
+    let content = displayText, mime = 'text/plain';
+    if (fmt === 'md') { mime = 'text/markdown'; }
+    else if (fmt === 'html') {
+      mime = 'text/html';
+      const esc = displayText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      content = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{font:16px/1.6 system-ui,-apple-system,sans-serif;max-width:48rem;margin:2rem auto;padding:0 1rem;color:#0f172a}h1{font-size:1.4rem}pre{white-space:pre-wrap;word-wrap:break-word;font-family:inherit}</style></head><body><h1>${title}</h1><pre>${esc}</pre></body></html>`;
+    } else if (fmt === 'json') {
+      mime = 'application/json';
+      content = JSON.stringify({ title, output: displayText, provenance: effectiveProv ?? null, generated_at: new Date().toISOString() }, null, 2);
+    }
+    const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `${slug}.md`;
+    a.href = url; a.download = `${slug}.${fmt}`;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   };
@@ -197,10 +208,15 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
                 className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1">
                 {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />} {copied ? 'Copied' : 'Copy'}
               </button>
-              <button type="button" onClick={downloadResult} aria-label="Download result as Markdown"
-                className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1">
-                <Download size={11} /> .md
-              </button>
+              <span className="inline-flex items-center rounded bg-slate-800 overflow-hidden">
+                <span className="text-[8px] font-black uppercase px-1.5 text-slate-500 flex items-center"><Download size={10} /></span>
+                {(['md', 'txt', 'html', 'json'] as const).map(fmt => (
+                  <button key={fmt} type="button" onClick={() => downloadAs(fmt)} aria-label={`Download as ${fmt.toUpperCase()}`}
+                    className="text-[8px] font-black uppercase px-1.5 py-1 text-slate-300 hover:text-white hover:bg-slate-700">
+                    {fmt}
+                  </button>
+                ))}
+              </span>
             </div>
           </div>
           <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">
