@@ -9,6 +9,8 @@ import {
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getPrefs } from '../lib/userPrefs';
+import { listOutputs, type OutputRecord } from '../lib/outputHistory';
 
 // The unified front door (§3A + §17). It orients every user to the two ways Workstation IDBO serves
 // them — (1) work now with AI across a domain, or (2) take a challenge Concept→Commercialisation into a
@@ -54,6 +56,20 @@ export const DashboardNew: React.FC = () => {
   const [vitals, setVitals] = useState<Vitals | null>(null);
   const [health, setHealth] = useState<{ composite: number; mode: string } | null>(null);
 
+  // E5 — personalisation: greet by the stored name and surface recent work from My Work history.
+  const prefs = getPrefs();
+  const greetName = prefs.displayName?.trim() || user?.displayName;
+  const genesisRoute = `/genesis${prefs.defaultRealm || prefs.defaultDomain
+    ? `?${[prefs.defaultRealm ? `realm=${encodeURIComponent(prefs.defaultRealm)}` : '', prefs.defaultDomain ? `domain=${encodeURIComponent(prefs.defaultDomain)}` : ''].filter(Boolean).join('&')}`
+    : ''}`;
+  const [recent, setRecent] = useState<OutputRecord[]>([]);
+  useEffect(() => {
+    const refresh = () => setRecent(listOutputs().slice(0, 3));
+    refresh();
+    window.addEventListener('ws:output-history', refresh);
+    return () => window.removeEventListener('ws:output-history', refresh);
+  }, []);
+
   useEffect(() => {
     axios.get('/api/v1/projects/').then(({ data }) => {
       const projects: any[] = data ?? [];
@@ -91,7 +107,7 @@ export const DashboardNew: React.FC = () => {
               Concept <span className="text-aura">&rarr;</span> Commercialisation
             </h1>
             <p className="text-slate-400 font-bold text-lg max-w-2xl leading-relaxed">
-              Welcome{user?.displayName ? <>, <span className="text-white">{user.displayName}</span></> : ''}. AI-mediated,
+              Welcome{greetName ? <>, <span className="text-white">{greetName}</span></> : ''}. AI-mediated,
               on Workstation&rsquo;s own native AI. <span className="text-white">Work in your domain now</span>, or
               <span className="text-white"> build a living enterprise</span> that runs itself.
             </p>
@@ -112,7 +128,7 @@ export const DashboardNew: React.FC = () => {
             <motion.div key={j.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
               <Card
                 className="p-8 group cursor-pointer hover:border-aura/50 transition-all bg-slate-950/40 border-slate-900 flex flex-col h-full"
-                onClick={() => { setCurrentTab(j.id); navigate(j.route); }}
+                onClick={() => { setCurrentTab(j.id); navigate(j.id === 'genesis' ? genesisRoute : j.route); }}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="w-14 h-14 rounded-2xl bg-aura/10 text-aura flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -129,6 +145,28 @@ export const DashboardNew: React.FC = () => {
             </motion.div>
           ))}
         </section>
+
+        {/* E5 — personalised "continue" strip: your recent outputs (from My Work), if any */}
+        {recent.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Continue · Recent work</h3>
+              <button type="button" onClick={() => navigate('/my-work')} className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white">My Work &rarr;</button>
+            </div>
+            <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3">
+              {recent.map(r => (
+                <button key={r.id} type="button" onClick={() => navigate('/my-work')}
+                  className="text-left p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-aura/50 transition-all">
+                  <p className="font-black text-white text-xs truncate">{r.title}</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mt-1 truncate">
+                    {new Date(r.ts).toLocaleDateString()}{r.domain ? ` · ${r.domain}` : ''}
+                  </p>
+                  {r.input && <p className="text-[10px] text-slate-500 mt-1.5 line-clamp-2">{r.input}</p>}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Capability pillars — the platform map */}
         <section>

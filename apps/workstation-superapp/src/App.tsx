@@ -12,6 +12,7 @@ import { DashboardNew as Dashboard } from './pages/DashboardNew';
 // GrandOpsDashboard + IntrospectionDashboard archived — fabricated static infra/reasoning metrics
 // (no backend); redundant with /organism + the real cognition pages.
 import { MyWork } from './pages/MyWork';
+import { Settings } from './pages/Settings';
 import { OrganismDashboard } from './pages/organism/OrganismDashboard';
 import { HeartbeatMonitor } from './pages/organism/HeartbeatMonitor';
 import { CognitionIntegration } from './pages/CognitionIntegration';
@@ -201,12 +202,7 @@ function App() {
           <Route path="/creator"    element={<CreatorStudio />} />
           <Route path="/admin"      element={<AdminPanel />} />
           <Route path="/landing"    element={<LandingPage />} />
-          <Route path="/settings" element={
-            <div className="p-10">
-              <h2 className="text-3xl font-black mb-6">System Settings</h2>
-              <p className="text-slate-500">Configure your Workstation parameters.</p>
-            </div>
-          } />
+          <Route path="/settings" element={<Settings />} />
 
           {/* ── Extended (wired, reachable by URL) ───────────────────── */}
           <Route path="/cognitive-introspection" element={<CognitiveIntrospection />} />
