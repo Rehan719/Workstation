@@ -6,13 +6,19 @@ import { Search, FileText, Shield, Activity, Globe, Brain, Sparkles, Loader2, Bo
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@workstation/ui';
 
+// The live /api/v1/intelligence/insights payload uses { id, type, title, detail, score };
+// earlier richer fields (domain/summary/confidence/…) may be absent, so every field is optional
+// and read defensively below.
 interface InsightItem {
-  title: string;
-  summary: string;
-  domain: string;
-  confidence: number;
-  projects_count: number;
-  outputs_count: number;
+  title?: string;
+  type?: string;
+  detail?: string;
+  score?: number;
+  summary?: string;
+  domain?: string;
+  confidence?: number;
+  projects_count?: number;
+  outputs_count?: number;
 }
 
 interface IntelligenceInsights {
@@ -31,19 +37,22 @@ const DOMAIN_META: Record<string, { icon: React.ElementType; description: string
 };
 
 function coeFromInsight(insight: InsightItem, idx: number) {
+  const domainLabel = insight.domain ?? insight.type ?? '';
+  const title = insight.title ?? '';
   const domainKey = Object.keys(DOMAIN_META).find(k =>
-    insight.domain.toLowerCase().includes(k.toLowerCase()) ||
-    insight.title.toLowerCase().includes(k.toLowerCase())
+    domainLabel.toLowerCase().includes(k.toLowerCase()) ||
+    title.toLowerCase().includes(k.toLowerCase())
   ) ?? Object.keys(DOMAIN_META)[idx % Object.keys(DOMAIN_META).length];
   const meta = DOMAIN_META[domainKey];
+  const label = domainLabel || domainKey;
   return {
-    name: insight.title.length > 30 ? insight.domain.charAt(0).toUpperCase() + insight.domain.slice(1) + ' CoE' : insight.title,
-    description: insight.summary,
+    name: title && title.length <= 30 ? title : `${label.charAt(0).toUpperCase()}${label.slice(1)} CoE`,
+    description: insight.summary ?? insight.detail ?? '',
     icon: meta.icon,
     color: meta.color,
-    articles: insight.projects_count + insight.outputs_count,
-    scholars: Math.max(1, Math.round(insight.confidence * 20)),
-    domain: insight.domain,
+    articles: (insight.projects_count ?? 0) + (insight.outputs_count ?? 0),
+    scholars: Math.max(1, Math.round((insight.confidence ?? 0) * 20)),
+    domain: label,
   };
 }
 
@@ -68,7 +77,7 @@ export const KnowledgeHub: React.FC = () => {
         { name: 'Global Affairs', description: 'Cross-domain synthesis and interfaith dialogue.', icon: Globe, color: 'text-yellow-400', articles: 0, scholars: 0, domain: 'global' },
       ];
 
-  const filtered = coes.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = coes.filter(c => (c.name ?? '').toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -148,9 +157,10 @@ export const KnowledgeHub: React.FC = () => {
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <FileText className="text-aura flex-shrink-0" size={18} />
                 <div className="min-w-0">
-                  <p className="font-bold text-white truncate">{insight.title}</p>
+                  <p className="font-bold text-white truncate">{insight.title ?? insight.type ?? 'Insight'}</p>
                   <p className="text-[10px] text-slate-500 font-bold uppercase mt-0.5">
-                    {insight.domain} · {(insight.confidence * 100).toFixed(0)}% confidence
+                    {insight.domain ?? insight.type ?? 'portfolio'}
+                    {insight.confidence != null ? ` · ${(insight.confidence * 100).toFixed(0)}% confidence` : ''}
                   </p>
                 </div>
               </div>
