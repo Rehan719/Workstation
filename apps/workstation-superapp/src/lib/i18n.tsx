@@ -63,6 +63,12 @@ const ar: Dict = {
   'home.myWork': 'أعمالي',
   'home.organism': 'الكائن الحي',
   'home.openOrganism': 'افتح الكائن الحي',
+  'navsec.home-facet': 'الرئيسية', 'navsec.domains-facet': 'المجالات', 'navsec.vsb-facet': 'مؤسسات VSB',
+  'navsec.econ-facet': 'التحوّل والاقتصاد', 'navsec.gov-facet': 'الحوكمة والعمليات', 'navsec.dev-facet': 'المطوّر والنظام',
+  'nav.dashboard': 'لوحة التحكم', 'nav.my-work': 'أعمالي', 'nav.organism': 'الكائن الحي', 'nav.projects': 'المشاريع',
+  'nav.marketplace': 'السوق', 'nav.wallet': 'المحفظة', 'nav.deliverables': 'المُخرجات', 'nav.compliance': 'الامتثال',
+  'nav.constitution': 'الدستور', 'nav.settings': 'الإعدادات', 'nav.domains': 'نظرة عامة',
+  'nav.religion': 'الدين', 'nav.science': 'العلوم', 'nav.education': 'التعليم', 'nav.law': 'القانون', 'nav.care': 'الرعاية', 'nav.employment': 'التوظيف',
 };
 
 const fr: Dict = {
@@ -88,6 +94,14 @@ const fr: Dict = {
   'home.myWork': 'Mon Travail',
   'home.organism': 'Organisme Vivant',
   'home.openOrganism': 'Ouvrir l’Organisme',
+  // nav sections
+  'navsec.home-facet': 'Accueil', 'navsec.domains-facet': 'Domaines', 'navsec.vsb-facet': 'Entreprises VSB',
+  'navsec.econ-facet': 'Transformation & Économie', 'navsec.gov-facet': 'Gouvernance & Ops', 'navsec.dev-facet': 'Développeur & Système',
+  // nav items (generic + domains; product names fall back to English)
+  'nav.dashboard': 'Tableau de bord', 'nav.my-work': 'Mon Travail', 'nav.organism': 'Organisme', 'nav.projects': 'Projets',
+  'nav.marketplace': 'Marché', 'nav.wallet': 'Portefeuille', 'nav.deliverables': 'Livrables', 'nav.compliance': 'Conformité',
+  'nav.constitution': 'Constitution', 'nav.settings': 'Paramètres', 'nav.domains': 'Aperçu',
+  'nav.religion': 'Religion', 'nav.science': 'Science', 'nav.education': 'Éducation', 'nav.law': 'Droit', 'nav.care': 'Soins', 'nav.employment': 'Emploi',
 };
 
 const es: Dict = {
@@ -113,6 +127,12 @@ const es: Dict = {
   'home.myWork': 'Mi Trabajo',
   'home.organism': 'Organismo Vivo',
   'home.openOrganism': 'Abrir Organismo',
+  'navsec.home-facet': 'Inicio', 'navsec.domains-facet': 'Dominios', 'navsec.vsb-facet': 'Empresas VSB',
+  'navsec.econ-facet': 'Transformación y Economía', 'navsec.gov-facet': 'Gobernanza y Ops', 'navsec.dev-facet': 'Desarrollador y Sistema',
+  'nav.dashboard': 'Panel', 'nav.my-work': 'Mi Trabajo', 'nav.organism': 'Organismo', 'nav.projects': 'Proyectos',
+  'nav.marketplace': 'Mercado', 'nav.wallet': 'Cartera', 'nav.deliverables': 'Entregables', 'nav.compliance': 'Cumplimiento',
+  'nav.constitution': 'Constitución', 'nav.settings': 'Ajustes', 'nav.domains': 'Resumen',
+  'nav.religion': 'Religión', 'nav.science': 'Ciencia', 'nav.education': 'Educación', 'nav.law': 'Derecho', 'nav.care': 'Cuidado', 'nav.employment': 'Empleo',
 };
 
 const ur: Dict = {
@@ -138,6 +158,12 @@ const ur: Dict = {
   'home.myWork': 'میرا کام',
   'home.organism': 'زندہ نظام',
   'home.openOrganism': 'نظام کھولیں',
+  'navsec.home-facet': 'ہوم', 'navsec.domains-facet': 'شعبے', 'navsec.vsb-facet': 'VSB ادارے',
+  'navsec.econ-facet': 'تبدیلی و معیشت', 'navsec.gov-facet': 'گورننس و آپریشنز', 'navsec.dev-facet': 'ڈویلپر و سسٹم',
+  'nav.dashboard': 'ڈیش بورڈ', 'nav.my-work': 'میرا کام', 'nav.organism': 'زندہ نظام', 'nav.projects': 'منصوبے',
+  'nav.marketplace': 'مارکیٹ', 'nav.wallet': 'والٹ', 'nav.deliverables': 'تیار نتائج', 'nav.compliance': 'تعمیل',
+  'nav.constitution': 'آئین', 'nav.settings': 'ترتیبات', 'nav.domains': 'جائزہ',
+  'nav.religion': 'مذہب', 'nav.science': 'سائنس', 'nav.education': 'تعلیم', 'nav.law': 'قانون', 'nav.care': 'نگہداشت', 'nav.employment': 'روزگار',
 };
 
 const DICTS: Record<string, Dict> = { en, ar, fr, es, ur };

@@ -10,6 +10,7 @@ import {
   FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Boxes
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
+import { useT } from '../../lib/i18n';
 
 interface NavItem {
   name: string;
@@ -177,6 +178,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const { currentRealm, currentMode, setCurrentTab, user } = useStore();
   const navigate = useNavigate();
+  const { t } = useT();
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
   const toggleGroup = (id: string) => {
@@ -222,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 }`}
               >
                 <item.icon size={16} className={`shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-sovereign' : 'text-aura/70'}`} />
-                <span className="flex-1 text-left text-[10px] font-black uppercase tracking-widest truncate">{item.name}</span>
+                <span className="flex-1 text-left text-[10px] font-black uppercase tracking-widest truncate">{t(`navsec.${item.id}`, item.name)}</span>
                 {hasChildren && (
                   <ChevronDown size={12} className={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${isActive ? 'text-sovereign' : 'text-slate-600'}`} />
                 )}
@@ -242,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                       }`}
                     >
                       <sub.icon size={12} className={`shrink-0 transition-opacity ${activeTab === sub.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-80'}`} />
-                      <span className="truncate">{sub.name}</span>
+                      <span className="truncate">{t(`nav.${sub.id}`, sub.name)}</span>
                     </button>
                   ))}
                 </div>
