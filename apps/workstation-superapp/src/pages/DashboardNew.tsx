@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getPrefs } from '../lib/userPrefs';
 import { listOutputs, type OutputRecord } from '../lib/outputHistory';
+import { useT } from '../lib/i18n';
 
 // The unified front door (§3A + §17). It orients every user to the two ways Workstation IDBO serves
 // them — (1) work now with AI across a domain, or (2) take a challenge Concept→Commercialisation into a
@@ -23,14 +24,14 @@ interface Vitals { cpu: number; memory: number; totalProjects: number; }
 // §3A — the two distinct, complementary ways the platform serves each user.
 const JOURNEYS = [
   {
-    id: 'domains', icon: Layers, route: '/domains',
+    id: 'domains', icon: Layers, route: '/domains', k: 'home.journey1',
     eyebrow: 'Offering 1 · Work now',
     title: 'Work in a Domain',
     desc: 'AI-mediated tools & resources across Religion · Science · Education · Law · Employment · Care — research, analyse, generate, plan, author and review, on Workstation’s own native AI.',
     cta: 'Open Domains',
   },
   {
-    id: 'genesis', icon: Rocket, route: '/genesis',
+    id: 'genesis', icon: Rocket, route: '/genesis', k: 'home.journey2',
     eyebrow: 'Offering 2 · Build an enterprise',
     title: 'Concept → Commercialisation',
     desc: 'Take any challenge through the full end-to-end lifecycle into a living VSB IDBO enterprise — bespoke, autonomous and self-running, led by your Chief (your digital twin).',
@@ -51,6 +52,7 @@ const PILLARS = [
 export const DashboardNew: React.FC = () => {
   const { user, setCurrentTab } = useStore();
   const navigate = useNavigate();
+  const { t, rtl } = useT();
   const [searchOpen, setSearchOpen] = useState(false);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [vitals, setVitals] = useState<Vitals | null>(null);
@@ -97,27 +99,27 @@ export const DashboardNew: React.FC = () => {
   return (
     <>
       <SearchMeshModal open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <div className="space-y-12 animate-in fade-in duration-700">
+      <div dir={rtl ? 'rtl' : undefined} className="space-y-12 animate-in fade-in duration-700">
 
         {/* Header — honest, vision-framed */}
         <header className="flex flex-col gap-6">
           <div className="space-y-3 min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-aura">Workstation IDBO · Command Center</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-aura">{t('home.eyebrow')}</p>
             <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black tracking-tighter text-white uppercase italic break-words">
-              Concept <span className="text-aura">&rarr;</span> Commercialisation
+              {t('home.title.concept')} <span className="text-aura">&rarr;</span> {t('home.title.commercialisation')}
             </h1>
             <p className="text-slate-400 font-bold text-lg max-w-2xl leading-relaxed">
-              Welcome{greetName ? <>, <span className="text-white">{greetName}</span></> : ''}. AI-mediated,
-              on Workstation&rsquo;s own native AI. <span className="text-white">Work in your domain now</span>, or
-              <span className="text-white"> build a living enterprise</span> that runs itself.
+              {t('home.welcome')}{greetName ? <>, <span className="text-white">{greetName}</span></> : ''}. {t('home.intro')}{' '}
+              <span className="text-white">{t('home.intro.work')}</span>, {t('home.intro.or', 'or')}
+              <span className="text-white"> {t('home.intro.build')}</span> {t('home.intro.tail')}
             </p>
           </div>
           <div className="flex flex-wrap gap-4 shrink-0">
             <Button onClick={() => setSearchOpen(true)} variant="outline" className="bg-slate-900 border-slate-800">
-              <Search size={18} /> Search Mesh
+              <Search size={18} /> {t('home.searchMesh')}
             </Button>
             <Button onClick={() => { setCurrentTab('ceo'); navigate('/ceo'); }} className="bg-aura text-sovereign shadow-2xl shadow-aura/20">
-              <MessageSquare size={18} /> Consult CEO
+              <MessageSquare size={18} /> {t('home.consultCEO')}
             </Button>
           </div>
         </header>
@@ -134,12 +136,12 @@ export const DashboardNew: React.FC = () => {
                   <div className="w-14 h-14 rounded-2xl bg-aura/10 text-aura flex items-center justify-center group-hover:scale-110 transition-transform">
                     <j.icon size={28} />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500">{j.eyebrow}</span>
+                  <span className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500">{t(`${j.k}.eyebrow`, j.eyebrow)}</span>
                 </div>
-                <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">{j.title}</h3>
+                <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">{t(`${j.k}.title`, j.title)}</h3>
                 <p className="text-sm text-slate-400 font-semibold leading-relaxed mb-6 flex-1">{j.desc}</p>
                 <div className="flex items-center gap-2 text-[11px] font-black uppercase text-aura tracking-widest">
-                  {j.cta} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  {t(`${j.k}.cta`, j.cta)} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </div>
               </Card>
             </motion.div>
@@ -150,8 +152,8 @@ export const DashboardNew: React.FC = () => {
         {recent.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Continue · Recent work</h3>
-              <button type="button" onClick={() => navigate('/my-work')} className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white">My Work &rarr;</button>
+              <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">{t('home.recent')}</h3>
+              <button type="button" onClick={() => navigate('/my-work')} className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white">{t('home.myWork')} &rarr;</button>
             </div>
             <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3">
               {recent.map(r => (
@@ -170,7 +172,7 @@ export const DashboardNew: React.FC = () => {
 
         {/* Capability pillars — the platform map */}
         <section>
-          <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-4">The Platform</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-4">{t('home.platform')}</h3>
           <div className="grid grid-cols-2 @[560px]:grid-cols-3 @[900px]:grid-cols-6 gap-3">
             {PILLARS.map(p => (
               <button key={p.route} type="button" onClick={() => navigate(p.route)}
@@ -218,7 +220,7 @@ export const DashboardNew: React.FC = () => {
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-aura flex items-center justify-center text-sovereign shadow-xl shadow-aura/20"><Activity size={24} /></div>
                 <div>
-                  <h4 className="text-lg font-black text-white uppercase">Living Organism</h4>
+                  <h4 className="text-lg font-black text-white uppercase">{t('home.organism')}</h4>
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{health ? `${health.mode} · ${Math.round(health.composite * 100)}% health` : 'reading vitals…'}</p>
                 </div>
               </div>
@@ -230,7 +232,7 @@ export const DashboardNew: React.FC = () => {
                   <span>Projects</span><span className="text-emerald-400">{vitals?.totalProjects ?? '—'}</span>
                 </div>
                 <Button onClick={() => navigate('/organism')} variant="outline" className="w-full text-[10px] py-4 uppercase font-black border-aura/20 text-aura">
-                  Open Organism
+                  {t('home.openOrganism')}
                 </Button>
               </div>
             </Card>
