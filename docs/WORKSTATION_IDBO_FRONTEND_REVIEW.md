@@ -116,3 +116,16 @@ All 8 nav sections cycle-reviewed against §1–§17; every page's **output** ex
 Every page in the final nav must answer: **which §-vision capability does this deliver, and does its
 output prove it?** If it can't, it is consolidated or archived. The unified UI is the §1–§17 vision made
 navigable and coherent — nothing more, nothing decorative.
+
+---
+
+## ▶ PHASE 3 — UNIFY TO THE WHOLE VISION (transform the frontend into one vision-delivering UI)
+Owner (2026-06-26): "Further consolidate and align… review the whole frontend against the whole vision (Fine Resolution) and intelligently review/transform the whole frontend as a Unified UI delivering the functionality and capabilities in vision, verified end to end." Phases 1–2 removed the incoherent/redundant; Phase 3 makes the surviving surfaces cohere into ONE experience organised around the vision (§3A two journeys · §17.1 Realms×Domains×Products · §4 lifecycle), and verifies each §-capability is delivered end-to-end.
+
+### ✅ Phase-3 Cycle 1 (W137) — the unified front door (`/` Command Center)
+The default route was a grandiose "Command Center · Welcome, Conscious Guardian" with **fabricated "Active Objectives"** ("v1.0 Global Launch 100% / v2.0 Neural Mesh 12%"), an arbitrary action-card set, and a **dead link** ("Genome Core" → /genome-explorer, which is archived). Rebuilt it as a **unified, honest, vision-aligned front door** (`DashboardNew.tsx`): (1) **foregrounds §3A's two journeys** as the primary choice — "Work in a Domain" (offering 1 → /domains) and "Concept → Commercialisation" (offering 2 → /genesis); (2) **maps the capability pillars** (Native AI Fabric §6 · Resource Fabric §7 · Living Enterprises §13 · Governance & Compliance §10/§11 · Economic Organism §12 · Living Organism §8) — every one a real reachable surface; (3) **real status only** — composite health + mode from `/api/v1/organism/status`, vitals + project count from the stats endpoint, recent activity from `/api/v1/projects/` (removed the fabricated objectives). Also fixed the grandiose default identity string (`mockUserProfile` "Conscious Guardian" → "Founder"). Verified: clean `tsc && vite build`; served build → `/` shows the two journeys + 6 pillars + real "Full Power · 100% health", "Work in a Domain" card navigates to /domains, no fabrication, console clean.
+
+### ⏳ Phase-3 backlog
+- **End-to-end §-coverage verification:** walk each §1–§17 capability and confirm a coherent delivering surface is reachable from the front door (fix any gap/dead link).
+- **Align the nav to the vision** where it adds coherence (e.g. surface the two §3A journeys / the Realms×Domains×Products structure in the IA).
+- Continue consolidating any remaining redundancy found during the walk.

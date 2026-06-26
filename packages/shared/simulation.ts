@@ -52,8 +52,8 @@ export const mockSystemVitals: SystemVitals = {
 
 export const mockUserProfile: UserProfile = {
   id: 'user_001',
-  email: 'guardian@vsb.ai',
-  displayName: 'Conscious Guardian',
+  email: 'founder@workstation.idbo',
+  displayName: 'Founder',
   role: 'ADMIN',
 };
 
