@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
-import { Loader2, Sparkles, Copy, Download, Check, Rocket } from 'lucide-react';
+import { Loader2, Sparkles, Copy, Download, Check, Rocket, Paperclip, X } from 'lucide-react';
+
+// §9 / §4.1 — "bring your own data": text-based documents a user can attach to a domain tool.
+const TEXT_DOC_EXT = ['.txt', '.md', '.markdown', '.csv', '.tsv', '.json', '.log', '.yaml', '.yml', '.xml', '.html', '.htm'];
+const MAX_DOC_BYTES = 200 * 1024; // keep prompts sane; larger files are truncated with a note
 
 export interface DomainField {
   name: string;
@@ -70,6 +74,38 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
 
   const primary = fields.find(f => f.type === 'textarea')?.name ?? fields[0]?.name;
   const canSubmit = !primary || (form[primary] || '').trim().length > 0;
+
+  // §9/§4.1 multimodal "bring your own data" — attach a text document; its content is read in-browser
+  // and inserted into the primary field, so it flows into the tool within the existing endpoint contract.
+  const primaryField = fields.find(f => f.name === primary);
+  const canAttach = !!primary && (primaryField?.type === undefined || primaryField?.type === 'text' || primaryField?.type === 'textarea');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [attached, setAttached] = useState<{ name: string; truncated: boolean } | null>(null);
+  const [attachErr, setAttachErr] = useState('');
+
+  const onAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = ''; // allow re-selecting the same file
+    if (!file || !primary) return;
+    setAttachErr('');
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    const looksText = TEXT_DOC_EXT.includes(ext) || file.type.startsWith('text/') || file.type === 'application/json';
+    if (!looksText) { setAttachErr(`Unsupported file type. Attach a text document (${TEXT_DOC_EXT.join(', ')}).`); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      let text = String(reader.result ?? '');
+      const truncated = text.length > MAX_DOC_BYTES;
+      if (truncated) text = text.slice(0, MAX_DOC_BYTES) + '\n…[truncated]';
+      setForm(prev => {
+        const existing = (prev[primary] || '').trim();
+        const block = `--- Attached document: ${file.name} ---\n${text}`;
+        return { ...prev, [primary]: existing ? `${existing}\n\n${block}` : block };
+      });
+      setAttached({ name: file.name, truncated });
+    };
+    reader.onerror = () => setAttachErr('Could not read the file.');
+    reader.readAsText(file);
+  };
 
   const [copied, setCopied] = useState(false);
   const [refineText, setRefineText] = useState('');
@@ -155,6 +191,27 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           )}
         </div>
       ))}
+
+      {canAttach && (
+        <div className="space-y-1.5">
+          <input ref={fileRef} type="file" onChange={onAttach}
+            accept={[...TEXT_DOC_EXT, 'text/*', 'application/json'].join(',')} className="hidden" aria-hidden="true" tabIndex={-1} />
+          <div className="flex items-center gap-2 flex-wrap">
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center gap-1.5">
+              <Paperclip size={11} /> Attach document
+            </button>
+            {attached && (
+              <span className="text-[9px] font-bold text-aura flex items-center gap-1.5 bg-aura/10 px-2 py-1 rounded-lg">
+                {attached.name}{attached.truncated ? ' (truncated)' : ''}
+                <button type="button" aria-label="Clear attached note" onClick={() => setAttached(null)} className="text-slate-500 hover:text-white"><X size={10} /></button>
+              </span>
+            )}
+            <span className="text-[9px] text-slate-600">your own data — research, reviews, notes (read in-browser, stays with this request)</span>
+          </div>
+          {attachErr && <p className="text-[9px] text-amber-400 font-bold">{attachErr}</p>}
+        </div>
+      )}
 
       <Button type="button" onClick={run} disabled={busy || !canSubmit} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} {submitLabel}

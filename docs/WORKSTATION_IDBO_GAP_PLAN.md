@@ -62,3 +62,21 @@ suite green, in-house provenance, no fabrication); "designed/gated" means intent
 **Honest position:** §1–§11, §13 and the §3A offerings are delivered to fine resolution with in-house,
 verified, end-to-end functionality. The substantive remainder is Owner-gated (B). C-items are real but
 lower-value; they are taken only when genuinely worthwhile, never as padding.
+
+---
+
+## E — USER-CAPABILITY GAP FILLING (Owner 2026-06-26: review §1–§17 vs codebase for user capabilities; fill gaps that add user value + ease access)
+
+Reviewed the Whole Vision for **user-facing functionality** gaps (capabilities a user should have but the codebase doesn't yet fully deliver). Prioritised by user value × feasibility (in-house, non-gated):
+
+| Rank | Gap (vision §) | State before | Plan |
+|---|---|---|---|
+| **E1** ✅ **DONE (W143)** | **"Bring your own data" — attach documents to domain tools** (§9 multimodal · §4.1 "uploaded data: research reports, reviews, data") | All 18 domain tools were **text-only** (DomainTool field types text/textarea/select/keyvalue/list/claims; no upload) | DONE — added a **document-attach** to the shared `DomainTool`: reads a text doc (.txt/.md/.csv/.tsv/.json/.log/.yaml/.xml/.html, ≤200 KB, truncates beyond) **in-browser** and inserts its content into the primary field, so it flows to the in-house endpoint within the existing contract (no backend change). One component change → **all 18 tools** gain it. Verified: attach renders, file content lands in the field, "attached <name>" note shows, /science renders, console clean. |
+| E2 | Same "bring your own data" on **Genesis Describe** (offering 2) + the **Refine** box | text-only `problem` textarea | apply the same attach pattern to GenesisJourney's Describe + DomainTool's refine input |
+| E3 | **Output history / "My Work"** — revisit past domain-tool + Genesis outputs | domain-tool outputs are ephemeral (lost on navigate) | persist a lightweight per-user outputs history + a retrieval view (Projects store exists to build on) |
+| E4 | **Output-format selection** (§4.9 Reports · Presentations · Videos · Websites · Apps…) | repo/website/webapp/mobile/report deliverable buttons are fixed | let the user pick/request which deliverable formats; surface presentation/report variants honestly |
+| E5 | **Personalisation to user history/preferences** (§9) | UI is not user-adaptive | needs a prefs store; moderate; non-gated |
+| E6 | **Voice / image input** (§9 multimodal) | not present | heavier (mic/vision); only if clearly valuable; honest about scope |
+| E7 | **i18n / all languages** (§9 "accessible to all — all languages") | English-only UI | large; scope before building |
+
+Execution: one verified increment per cycle, highest user-value first; in-house only; never fabricate; Owner-gated economic/real-money items remain in §B.
