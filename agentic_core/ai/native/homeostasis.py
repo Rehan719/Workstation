@@ -94,6 +94,27 @@ class HomeostaticController:
             "governed_by": "homeostatic controller (§8 organism → §6 cognition; real state)",
         }
 
+    def recover(self, cycles: int = 4) -> Dict[str, Any]:
+        """§8 SURVIVAL INSTINCT — actively RESTORE metabolic energy (rest), not merely throttle. Runs rest
+        cycles on the OWNED ATP simulator (zero cognitive load → net energy production, improved on the
+        circadian cycle) and fires a restoration signal. Real metabolic state; best-effort and fail-soft."""
+        try:
+            from agentic_core.organism.biobus import _get_atp, _circadian_cycle
+            atp = _get_atp()
+            if not atp:
+                return {"recovered": False, "reason": "metabolic simulator unavailable"}
+            before = round(min(1.0, atp.ratio / 15.0), 3)
+            eff = 1.0 if _circadian_cycle() == "ACTIVE_FOCUS" else 0.85   # rest is most efficient at peak
+            for _ in range(max(1, int(cycles))):
+                atp.update(dt=1.0, metabolic_load=0.0, circadian_efficiency=eff)
+            after = round(min(1.0, atp.ratio / 15.0), 3)
+            _fire("reflex", "native.homeostasis",
+                  f"metabolic recovery (rest): ATP {before:.2f}->{after:.2f}", 0.5)
+            return {"recovered": bool(after > before), "atp_before": before, "atp_after": after,
+                    "cycles": int(cycles), "method": "ATP rest cycles (owned metabolic simulator)"}
+        except Exception as e:
+            return {"recovered": False, "reason": str(e)[:80]}
+
     def snapshot(self) -> Dict[str, Any]:
         """Read-only current homeostatic posture (no extra metabolic load) — for surfacing live."""
         return self.assess(demand_nodes=0, requested_parallel=4)

@@ -320,6 +320,18 @@ async def trigger_homeostasis(req: HomeostasisRequest):
             ))
         except Exception:
             pass
+        # §8 SURVIVAL INSTINCT — don't just throttle: actively REST to restore metabolic energy.
+        try:
+            from agentic_core.ai.native.homeostasis import homeostasis
+            rec = homeostasis.recover(cycles=4)
+            if rec.get("recovered"):
+                adjustments.append({
+                    "system": "metabolic",
+                    "action": "rest_recovery",
+                    "reason": f"Rest cycles restored ATP {rec['atp_before']:.0%} -> {rec['atp_after']:.0%}",
+                })
+        except Exception:
+            pass
 
     # Immune recovery — fire recovery signals
     if ctx["immune"]["threat_level"] in ("HIGH", "CRITICAL"):

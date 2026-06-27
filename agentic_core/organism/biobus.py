@@ -153,7 +153,9 @@ class BiomimeticBus:
         now = time.monotonic()
         if now - self._atp_last_update < 1.0:
             atp = _get_atp()
-            return round(atp.ratio, 3) if atp else 0.8
+            # normalise to 0-1 (same scale as the non-throttled path) — the raw simulator ratio is 0.5-15.0;
+            # returning it raw here corrupted atp_ratio/composite_health on rapid successive reads.
+            return round(max(0.0, min(1.0, atp.ratio / 15.0)), 3) if atp else 0.8
         self._atp_last_update = now
         atp = _get_atp()
         if atp:
