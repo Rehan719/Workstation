@@ -45,7 +45,6 @@ import { BusinessPlan } from './pages/enterprise/BusinessPlan';
 import { ManagementSystemsHub } from './pages/enterprise/ManagementSystemsHub';
 import { ChangeControlAgency } from './pages/enterprise/ChangeControlAgency';
 import { DigitalTwins } from './pages/developers/DigitalTwins';
-import { CapitalDashboard } from './pages/enterprise/CapitalDashboard';
 import { ProjectsHub } from './pages/projects/ProjectsHub';
 
 // ── 5. Resource Fabric ───────────────────────────────────────────────────
@@ -65,19 +64,19 @@ import { BTOCatalog } from './pages/BTOCatalog';
 
 // ── 6. Transformation & Economy ──────────────────────────────────────────
 import { TransformationDashboard } from './pages/TransformationDashboard';
-import { VSBEconomy } from './pages/enterprise/VSBEconomy';
+// Economy · Capital Fund · Wallet consolidated into one tabbed EconomyCenter (§12 economic organism).
+import { EconomyCenter } from './pages/enterprise/EconomyCenter';
 import { LivingMarketplace } from './pages/marketplace/LivingMarketplace';
 import { Deliverables } from './pages/Deliverables';
 // PredictionMarket archived — fabricated betting market (gambling-adjacent, conflicts halal ethics).
 // ProductCatalog archived — duplicate of the Marketplace's live products view; /product-catalog → /marketplace.
-import { Wallet } from './pages/profile/Wallet';
+// Wallet folded into EconomyCenter (/economy?tab=wallet).
 // UserImpact archived — thin personal aggregate (organism signals/projects/swarm); /impact → /organism.
 // SoulRecordExplorer archived — grandiose off-vision "multi-dimensional identity" page.
 
 // ── 7. Governance & Operations ───────────────────────────────────────────
-import { GovernanceHub } from './pages/governance/GovernanceHub';
-import { ConstitutionalUI } from './pages/governance/ConstitutionalUI';
-import { ComplianceChecker } from './pages/governance/ComplianceChecker';
+// Governance Hub · Constitution · Compliance consolidated into one tabbed GovernanceCenter (§11).
+import { GovernanceCenter } from './pages/governance/GovernanceCenter';
 import { OperationalExcellence } from './pages/OperationalExcellence';
 import { SovereignEvolution } from './pages/evolution/SovereignEvolution';
 import { KnowledgeHub } from './pages/coe/KnowledgeHub';
@@ -155,7 +154,7 @@ function App() {
           <Route path="/management"     element={<ManagementSystemsHub />} />
           <Route path="/change-control" element={<ChangeControlAgency />} />
           <Route path="/digital-twins"  element={<DigitalTwins />} />
-          <Route path="/capital"        element={<CapitalDashboard />} />
+          <Route path="/capital"        element={<Navigate to="/economy?tab=capital" replace />} />
           <Route path="/projects"       element={<ProjectsHub />} />
 
           {/* ── 5. Resource Fabric ──────────────────────────────────── */}
@@ -176,18 +175,18 @@ function App() {
 
           {/* ── 6. Transformation & Economy ─────────────────────────── */}
           <Route path="/transformation"    element={<TransformationDashboard />} />
-          <Route path="/economy"           element={<VSBEconomy />} />
+          <Route path="/economy"           element={<EconomyCenter />} />
           <Route path="/marketplace"       element={<LivingMarketplace />} />
           <Route path="/dev-marketplace"   element={<Navigate to="/marketplace" replace />} />
           <Route path="/deliverables"      element={<Deliverables />} />
           <Route path="/product-catalog"   element={<Navigate to="/marketplace" replace />} />
-          <Route path="/wallet"            element={<Wallet />} />
+          <Route path="/wallet"            element={<Navigate to="/economy?tab=wallet" replace />} />
           <Route path="/impact"            element={<Navigate to="/organism" replace />} />
 
           {/* ── 7. Governance & Operations ──────────────────────────── */}
-          <Route path="/governance-hub"     element={<GovernanceHub />} />
-          <Route path="/constitution"       element={<ConstitutionalUI />} />
-          <Route path="/compliance"         element={<ComplianceChecker />} />
+          <Route path="/governance-hub"     element={<GovernanceCenter />} />
+          <Route path="/constitution"       element={<Navigate to="/governance-hub?tab=constitution" replace />} />
+          <Route path="/compliance"         element={<Navigate to="/governance-hub?tab=compliance" replace />} />
           <Route path="/operations"         element={<OperationalExcellence />} />
           <Route path="/sovereign-evolution" element={<SovereignEvolution />} />
           <Route path="/coe"                element={<KnowledgeHub />} />

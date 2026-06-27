@@ -67,7 +67,6 @@ const allNavItems: NavItem[] = [
       { name: 'Projects',           icon: Folders,    id: 'projects' },
       { name: 'Deliverables',       icon: FileText,   id: 'deliverables' },
       { name: 'Management Systems', icon: Shield,     id: 'management' },
-      { name: 'Capital Fund',       icon: DollarSign, id: 'capital' },
       { name: 'Economy',            icon: Coins,      id: 'economy' },
     ]
   },
@@ -103,8 +102,6 @@ const allNavItems: NavItem[] = [
     id: 'gov-facet',
     subItems: [
       { name: 'Governance Hub',         icon: Shield,      id: 'governance-hub' },
-      { name: 'Constitution',           icon: FileText,    id: 'constitution' },
-      { name: 'Compliance',             icon: ShieldCheck, id: 'compliance' },
       { name: 'Change Control',         icon: GitBranch,   id: 'change-control' },
       { name: 'Operational Excellence', icon: Gauge,       id: 'operations' },
       { name: 'CoE Hub',                icon: Trophy,      id: 'coe' },
@@ -117,7 +114,6 @@ const allNavItems: NavItem[] = [
     id: 'system-facet',
     subItems: [
       { name: 'Marketplace',     icon: ShoppingBag, id: 'marketplace' },
-      { name: 'Wallet',          icon: DollarSign,  id: 'wallet' },
       { name: 'Creator Studio',  icon: Palette,     id: 'creator' },
       { name: 'Contribute',      icon: Plus,        id: 'contribute' },
       { name: 'Entity Control',  icon: ShieldCheck, id: 'admin' },
