@@ -195,6 +195,15 @@ async def cascade_orchestration(req: CascadeRequest):
 
     biobus.fire_signal("cognitive", "swarm.cascade", f"CEO cascade: {req.mission[:80]}", 0.8)
 
+    # §8→§6: the full Chief→Build-to-Order cascade is heavy multi-tier cognition — register it with the
+    # homeostatic controller so it EXPENDS metabolic ATP (the §5 org-cascade now participates in the loop
+    # like the native swarm/tree). Runs sequentially on the gateway, so no concurrency cap; best-effort.
+    try:
+        from agentic_core.ai.native.homeostasis import homeostasis
+        homeo = homeostasis.assess(demand_nodes=8, requested_parallel=1)
+    except Exception:
+        homeo = None
+
     # In-house-first AI with provenance — the whole CEO→C-Suite→CoE cascade records which OWNED
     # resource served each tier (proves the org cascade runs on Workstation's own fabric).
     provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
@@ -439,6 +448,8 @@ async def cascade_orchestration(req: CascadeRequest):
         "quality": quality,
         # §8 — the biomimetic living-organism substrate the cascade runs within (live immune + circadian).
         "biomimetic": biomimetic,
+        # §8→§6 — the homeostatic posture this heavy cascade ran under (and the ATP it expended).
+        "homeostasis": homeo,
         "level_4_business_transformation_office": bto_programme,
         "level_5_build_to_order": build_to_order,
         "products_services_catalogue": products_services_catalogue,
