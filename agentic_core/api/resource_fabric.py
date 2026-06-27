@@ -366,8 +366,44 @@ async def run_composition(cid: str, req: RunCompositionRequest):
                            f"{comp['name']}: {len(stages)} stages", 0.6)
     except Exception:
         pass
+
+    # §7→§5→§6→§8 END-TO-END: when the configuration includes the living-organisation resource, ALSO run the
+    # REAL Chief→Build-to-Order cascade (fine-resolution §5: AI CEO → user-designed C-Suite → CoEs → BTO →
+    # Build-to-Order, with the living management systems, arms-length appraisals, constitutional governance,
+    # §8 homeostatic posture and §6 in-house provenance) for the objective — so the §7 fabric delivers the
+    # genuine §5 machinery, not just a prompt stage. Additive (keeps the swarm trace) + best-effort.
+    org_cascade = None
+    org_r = next((r for r in comp.get("resources", []) if r["id"] == "vsb_org_swarm"), None)
+    if org_r:
+        try:
+            from agentic_core.api.swarm import cascade_orchestration, CascadeRequest
+            cfg = org_r.get("config") or {}
+            def _csv(v): return [s.strip() for s in str(v).replace(";", ",").split(",") if s.strip()]
+            casc = await cascade_orchestration(CascadeRequest(
+                mission=objective, domain=(comp.get("usage_area") or "general"),
+                csuite_roles=_csv(cfg.get("csuite_roles", "")),
+                coe_specialisms=_csv(cfg.get("coe_specialisms", "")),
+            ))
+            org_cascade = {
+                "ran": "real §5 Chief→Build-to-Order cascade",
+                "run_id": casc.get("run_id"),
+                "org_hierarchy": casc.get("org_hierarchy"),
+                "csuite_engaged": (casc.get("csuite_roster") or {}).get("engaged"),
+                "management_systems": list((casc.get("management_systems") or {}).keys()),
+                "appraisals": list((casc.get("appraisals") or {}).keys()),
+                "quality": casc.get("quality"),
+                "biomimetic": casc.get("biomimetic"),
+                "homeostasis": casc.get("homeostasis"),
+                "governance": (casc.get("governance") or {}).get("status") if isinstance(casc.get("governance"), dict) else casc.get("governance"),
+                "ai_provenance": casc.get("ai_provenance"),
+                "ueg_hash": casc.get("ueg_hash"),
+            }
+        except Exception:
+            org_cascade = None
+
     return {"composition_id": cid, "name": comp["name"], "usage_area": comp.get("usage_area"),
-            "objective": objective, "posture": "in-house-first", "quality_assurance": qa, **res}
+            "objective": objective, "posture": "in-house-first", "quality_assurance": qa,
+            "org_cascade": org_cascade, **res}
 
 
 # ── Native swarm cascades — first-class reconfigurable resources (user design control) ──

@@ -59,6 +59,11 @@ interface CompositionRun {
   final: string; any_external: boolean;
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } } };
+  // §7→§5→§6→§8 — when the config includes the org resource, the real Chief→Build-to-Order cascade also runs.
+  org_cascade?: {
+    ran?: string; csuite_engaged?: string[]; management_systems?: string[]; appraisals?: string[];
+    homeostasis?: { posture?: string }; governance?: string; ueg_hash?: string;
+  } | null;
 }
 
 const CLASS_ICON: Record<string, React.ComponentType<any>> = {
@@ -477,6 +482,32 @@ export const ResourceFabric: React.FC = () => {
                           </span>
                         )}
                       </div>
+                      {/* §7→§5→§6→§8 — the real Chief→Build-to-Order cascade also ran (org resource present) */}
+                      {runResult.org_cascade && (
+                        <div className="border border-highlight/30 bg-highlight/5 rounded-lg p-2.5 space-y-1">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-highlight">§5 Living Organisation · real Chief→Build-to-Order cascade ran</p>
+                          {runResult.org_cascade.csuite_engaged && (
+                            <p className="text-[9px] text-slate-400">C-Suite engaged (your design): <span className="text-white">{runResult.org_cascade.csuite_engaged.join(' · ')}</span> — each drives a CoE</p>
+                          )}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {(runResult.org_cascade.management_systems || []).map(m => (
+                              <span key={m} className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{m}</span>
+                            ))}
+                            {runResult.org_cascade.homeostasis?.posture && (
+                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300">§8 {runResult.org_cascade.homeostasis.posture}</span>
+                            )}
+                            {runResult.org_cascade.governance && (
+                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">gov: {runResult.org_cascade.governance}</span>
+                            )}
+                            {runResult.org_cascade.ueg_hash && (
+                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300" title={runResult.org_cascade.ueg_hash}>§6 provenance sealed</span>
+                            )}
+                          </div>
+                          {runResult.org_cascade.appraisals && (
+                            <p className="text-[8px] text-slate-600">arms-length appraisals: {runResult.org_cascade.appraisals.length} tiers</p>
+                          )}
+                        </div>
+                      )}
                       {runResult.trace.map(t => (
                         <div key={t.step} className="border-t border-slate-800/60 pt-2">
                           <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.step}. {t.role} <span className="text-slate-600 font-mono normal-case">· {t.served_by}</span></p>
