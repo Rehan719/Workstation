@@ -54,6 +54,7 @@ class OrganismHeartbeat:
         self.last_beat: Optional[str] = None
         self.last_phase: Optional[str] = None
         self.last_realisation: Optional[float] = None
+        self.last_recovery: Optional[str] = None   # last autonomous metabolic self-recovery (ATP before->after)
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
         self.auto_economy = False             # opt-in: autonomous economy cycles
@@ -90,7 +91,9 @@ class OrganismHeartbeat:
         except Exception:
             pass
 
-        # 2. Homeostasis check (cheap)
+        # 2. Homeostasis check + AUTONOMOUS self-regulation (cheap, no AI) — the §8 survival instinct on the
+        #    beat: the organism reads its own state and, when energy is depleted, actively RESTS to restore it
+        #    (self-healing without manual trigger — §3 "runs, maintains, defends, heals itself").
         health = None
         try:
             from agentic_core.organism.immune import immune
@@ -99,6 +102,17 @@ class OrganismHeartbeat:
                 from agentic_core.organism.biobus import biobus
                 biobus.fire_signal("reflex", "organism.heartbeat.alert", f"health {health}", 0.9)
             actions.append("homeostasis")
+        except Exception:
+            pass
+        try:
+            from agentic_core.organism.biobus import biobus
+            atp = (biobus.organism_context().get("metabolic", {}) or {}).get("atp_ratio", 1.0)
+            if atp < 0.3:                       # energy depleted → autonomously rest & recover
+                from agentic_core.ai.native.homeostasis import homeostasis
+                rec = homeostasis.recover(cycles=3)
+                if rec.get("recovered"):
+                    self.last_recovery = f"{rec['atp_before']:.0%}->{rec['atp_after']:.0%}"
+                    actions.append("self_recovery")
         except Exception:
             pass
 
@@ -142,6 +156,7 @@ class OrganismHeartbeat:
 
         record = {"beat": self.beats, "phase": phase, "intensity": intensity,
                   "realisation": self.last_realisation, "health": health,
+                  "self_recovery": self.last_recovery if "self_recovery" in actions else None,
                   "actions": actions, "at": self.last_beat}
         self._log.append(record)
         self._log = self._log[-100:]
