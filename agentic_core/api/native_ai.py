@@ -35,6 +35,15 @@ async def native_status():
     }
 
 
+@router.get("/homeostasis")
+async def native_homeostasis():
+    """§8→§6: the live biomimetic homeostatic posture governing the native AI fabric — how the living
+    organism's state (immune · circadian · metabolic ATP · composite health) currently modulates how much
+    cognitive work the swarm/tree will admit. Real organism state; cognition also feeds ATP back (closed loop)."""
+    from agentic_core.ai.native.homeostasis import homeostasis
+    return homeostasis.snapshot()
+
+
 @router.get("/resources")
 async def native_resources():
     return {"resources": registry.available(), "selection_order": registry.select()}

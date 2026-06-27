@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
-import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save } from 'lucide-react';
+import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save, Activity } from 'lucide-react';
 
 interface ModelResource {
   name: string; kind: string; available: boolean; is_external: boolean; model?: string; note?: string;
@@ -171,6 +171,7 @@ export const NativeAI: React.FC = () => {
   const [treeRunning, setTreeRunning] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [homeo, setHomeo] = useState<any>(null);   // §8→§6 live homeostatic posture
 
   // ── bespoke cascade design (user design control) ──
   const [name, setName] = useState('Concept Validator');
@@ -192,6 +193,7 @@ export const NativeAI: React.FC = () => {
       .catch(() => setError('Failed to load fabric status'))
       .finally(() => setLoading(false));
     fetch('/api/v1/native-ai/capabilities').then(r => r.json()).then(d => setCapabilities(d.capabilities || [])).catch(() => {});
+    fetch('/api/v1/native-ai/homeostasis').then(r => r.json()).then(setHomeo).catch(() => {});
     loadCascades();
   }, []);
 
@@ -289,6 +291,34 @@ export const NativeAI: React.FC = () => {
               <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-aura/10 text-aura">owned available: {status.owned_resources_available.join(', ')}</span>
             </div>
           </Card>
+
+          {/* §8 → §6 — the living organism's homeostasis governs how much cognition the fabric admits;
+              cognitive work expends ATP (closed loop). Real organism state, never fabricated. */}
+          {homeo?.organism && (
+            <Card className="p-6 border-violet-500/30 bg-violet-500/5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-black text-white uppercase tracking-wide flex items-center gap-2">
+                  <Activity size={16} className="text-violet-300" /> Biomimetic Homeostasis · cognition control
+                </h3>
+                <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${
+                  homeo.posture === 'full' ? 'bg-emerald-500/20 text-emerald-400'
+                  : homeo.posture === 'reduced' ? 'bg-amber-500/20 text-amber-400'
+                  : 'bg-vital/20 text-vital'}`}>{homeo.posture}</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                The living organism (§8) modulates the native AI fabric (§6): immune, circadian rhythm and metabolic ATP
+                set how many swarm agents run in parallel — and each run expends ATP, which recovers on the circadian cycle.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-violet-500/10 text-violet-300">max parallel: {homeo.max_parallel}</span>
+                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">mode: {homeo.organism.mode}</span>
+                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">circadian: {homeo.organism.circadian}{homeo.organism.is_peak_focus ? ' · peak' : ''}</span>
+                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">ATP: {Math.round((homeo.organism.atp_ratio ?? 0) * 100)}%</span>
+                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">immune: {homeo.organism.immune_threat}</span>
+                <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">composite: {Math.round((homeo.organism.composite_health ?? 0) * 100)}%</span>
+              </div>
+            </Card>
+          )}
 
           {/* Owned AI capabilities catalogue */}
           {capabilities.length > 0 && (

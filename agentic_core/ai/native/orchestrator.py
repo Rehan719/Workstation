@@ -16,6 +16,7 @@ from typing import Any, Dict, List
 
 from agentic_core.ai.native.engine import native_engine
 from agentic_core.ai.native.model_resource import registry
+from agentic_core.ai.native.homeostasis import homeostasis
 
 
 def _fire(signal_type: str, source: str, msg: str, intensity: float = 0.5) -> None:
@@ -157,13 +158,12 @@ class NativeOrchestrator:
         nodes = self._plan_tree(goal)
         by_id = {n["id"]: n for n in nodes}
         threat = self._immune_threat()
-        # BIOMIMETIC self-protection: under immune stress the organism reduces concurrent cognitive load.
-        if threat in ("HIGH", "CRITICAL"):
-            max_parallel = 1
-        elif threat == "ELEVATED":
-            max_parallel = min(max_parallel, 2)
-        max_parallel = max(1, int(max_parallel))
-        _fire("cognitive", "native.tree", f"plan {len(nodes)} nodes: {goal[:48]}", 0.6)
+        # BIOMIMETIC HOMEOSTASIS (§8 → §6): admit cognitive work as a function of the WHOLE living-organism
+        # state — immune threat + circadian cycle + metabolic ATP + composite health — not immune alone; and
+        # FEED the cognitive demand back into metabolic load (heavier swarms expend more ATP). Fail-open.
+        homeo = homeostasis.assess(demand_nodes=len(nodes), requested_parallel=max_parallel)
+        max_parallel = max(1, int(homeo["max_parallel"]))
+        _fire("cognitive", "native.tree", f"plan {len(nodes)} nodes ({homeo['posture']}): {goal[:48]}", 0.6)
 
         results: Dict[str, Dict[str, Any]] = {}
 
@@ -338,6 +338,7 @@ class NativeOrchestrator:
             "parallel_levels": sum(1 for lv in levels if len(lv) > 1),
             "max_parallel": max_parallel,
             "immune_threat": threat,
+            "homeostasis": homeo,   # §8→§6: how the living organism modulated this cognition (+ ATP expended)
             "governance": governance,
             "validation": validation,
             "decision": decision,
