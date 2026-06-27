@@ -252,6 +252,44 @@ export const GenesisJourney: React.FC = () => {
         </p>
       </header>
 
+      {/* Whole-journey progress map (§4 / §9) — the full Concept→Commercialisation arc + where you are now.
+          Each milestone lights from REAL state (no fabrication): described → explored → established →
+          surfaces generated → operating. */}
+      {(() => {
+        const surfaces = !!(repo || site || webapp || pwa);
+        const steps = [
+          { id: 'describe',  label: 'Describe',     done: !!problem.trim(), hint: 'Your challenge / concept' },
+          { id: 'explore',   label: 'Explore',      done: !!result,         hint: 'Conceptualise · Design · Commercialise' },
+          { id: 'establish', label: 'Establish',    done: !!vsb,            hint: 'Your living VSB IDBO entity' },
+          { id: 'deliver',   label: 'Deliver',      done: surfaces,         hint: 'Repo · Website · Web app · Phone app' },
+          { id: 'operate',   label: 'Operate',      done: !!vsb && surfaces, hint: 'Run · defend · improve · grow' },
+        ];
+        const currentIdx = steps.findIndex(s => !s.done);
+        return (
+          <div className="flex items-stretch gap-2 overflow-x-auto pb-1">
+            {steps.map((s, i) => {
+              const isCurrent = i === currentIdx;
+              return (
+                <div key={s.id} className="flex items-center gap-2 shrink-0">
+                  <div className={`px-3 py-2 rounded-xl border min-w-[112px] transition-all ${
+                    s.done ? 'bg-highlight/10 border-highlight/30' : isCurrent ? 'bg-aura/10 border-aura/40' : 'bg-slate-900 border-slate-800'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black ${
+                        s.done ? 'bg-highlight text-sovereign' : isCurrent ? 'bg-aura text-sovereign' : 'bg-slate-800 text-slate-500'}`}>
+                        {s.done ? '✓' : i + 1}
+                      </span>
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${s.done ? 'text-highlight' : isCurrent ? 'text-aura' : 'text-slate-500'}`}>{s.label}</span>
+                    </div>
+                    <p className="text-[8px] text-slate-600 mt-1 leading-tight">{s.hint}</p>
+                  </div>
+                  {i < steps.length - 1 && <div className={`w-4 h-px ${s.done ? 'bg-highlight/40' : 'bg-slate-800'}`} />}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       {/* Phase rail */}
       <Card className="p-6">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-5">3-Phase Concept → Commercialisation Cascade</h3>
