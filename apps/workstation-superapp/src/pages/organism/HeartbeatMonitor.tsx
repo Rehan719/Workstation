@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { HeartPulse, Loader2, Play, Square, Activity, Sun, Moon, ShieldCheck, Zap } from 'lucide-react';
 
-interface Beat { beat: number; phase: string; intensity: number; realisation: number | null; health: number | null; actions: string[]; at: string }
+interface Beat { beat: number; phase: string; intensity: number; realisation: number | null; health: number | null; actions: string[]; at: string; self_recovery?: string | null }
 interface Status {
   running: boolean; beats: number; circadian_phase: string; phase_intensity: number;
   last_beat: string | null; last_realisation: number | null; interval_seconds: number;
@@ -93,6 +93,11 @@ export const HeartbeatMonitor: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-3 text-[9px] font-mono">
                       <span className="text-slate-500">{b.actions.join(' · ')}</span>
+                      {b.self_recovery && (
+                        <span className="text-amber-400 font-black uppercase" title="§8 survival instinct — the organism autonomously rested and restored its own energy on this beat">
+                          self-healed ATP {b.self_recovery}
+                        </span>
+                      )}
                       {b.realisation != null && <span className="text-emerald-400">{Math.round(b.realisation * 100)}%</span>}
                     </div>
                   </div>
