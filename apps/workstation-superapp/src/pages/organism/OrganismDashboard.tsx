@@ -124,14 +124,17 @@ export const OrganismDashboard: React.FC = () => {
   const [homeostasisLoading, setHomeostasisLoading] = useState(false);
   const [homeostasisResult, setHomeostasisResult] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [cognition, setCognition] = useState<any>(null);   // §8→§6: how the organism governs the AI fabric
 
   const loadAll = useCallback(() => {
     Promise.all([
       axios.get<OrganismStatus>('/api/v1/organism/status', { validateStatus: () => true }),
       axios.get<SignalFeed>('/api/v1/organism/signals?n=30', { validateStatus: () => true }),
-    ]).then(([statusRes, sigRes]) => {
+      axios.get('/api/v1/native-ai/homeostasis', { validateStatus: () => true }),
+    ]).then(([statusRes, sigRes, cogRes]) => {
       if (statusRes.status === 200 && statusRes.data) setStatus(statusRes.data);
       if (sigRes.status === 200 && sigRes.data) setSignals(sigRes.data);
+      if (cogRes.status === 200 && cogRes.data?.organism) setCognition(cogRes.data);
       setLastUpdated(new Date().toLocaleTimeString());
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -214,6 +217,26 @@ export const OrganismDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* ── §8 → §6 — the organism governs the native AI fabric's cognition ── */}
+      {cognition?.organism && (
+        <div className="bg-violet-500/5 border border-violet-500/25 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-black uppercase tracking-widest text-violet-300 flex items-center gap-2">
+              <Cpu size={14} /> Cognition control · native AI fabric (§6)
+            </span>
+            <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${
+              cognition.posture === 'full' ? 'bg-green-500/20 text-green-400'
+              : cognition.posture === 'reduced' ? 'bg-amber-500/20 text-amber-400'
+              : 'bg-red-500/20 text-red-400'}`}>{cognition.posture}</span>
+          </div>
+          <p className="text-[11px] text-white/45 leading-relaxed">
+            The organism is governing how much AI cognition the swarm admits — and each run expends ATP, which
+            recovers on the circadian cycle. Max parallel agents now: <span className="text-violet-300 font-bold">{cognition.max_parallel}</span>
+            {cognition.organism.should_throttle && <span className="text-amber-400"> · throttling</span>}.
+          </p>
+        </div>
+      )}
 
       {/* ── Composite Health Banner ─────────────────────────────────────── */}
       <motion.div

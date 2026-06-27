@@ -362,6 +362,10 @@ class NativeOrchestrator:
         trace: List[Dict[str, Any]] = []
         carry = context
         external_used = False
+        # §8→§6: a bespoke swarm cascade is cognitive work too — register its demand with the homeostatic
+        # controller so it EXPENDS metabolic ATP (the cascade runs sequentially, so concurrency isn't capped,
+        # but the metabolic loop + posture still apply). Best-effort; never blocks the cascade.
+        homeo = homeostasis.assess(demand_nodes=len(stages), requested_parallel=1)
         for i, stage in enumerate(stages):
             role = stage.get("role", f"agent_{i+1}")
             instruction = stage.get("instruction", "")
@@ -373,7 +377,7 @@ class NativeOrchestrator:
             carry = res["output"]
             trace.append({"step": i + 1, "role": role, "served_by": res["served_by"], "output": res["output"]})
         return {"agent": agent, "stages": len(stages), "trace": trace,
-                "final": carry, "any_external": external_used}
+                "final": carry, "any_external": external_used, "homeostasis": homeo}
 
 
 orchestrator = NativeOrchestrator()
