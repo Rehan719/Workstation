@@ -596,6 +596,14 @@ def _model_configuration(resource_ids: List[str], usage_area: str,
         "incompatibilities": incompatibilities,
         "unset_params": unset,
     }
+    # §7→§8 — project the living organism's CURRENT capacity for this configuration's cognitive load, so the
+    # user designs with awareness of whether the organism can admit it now (read-only; the run is governed by
+    # §8 homeostasis at execution time). Best-effort, fail-soft.
+    try:
+        from agentic_core.ai.native.homeostasis import homeostasis
+        model["organism_capacity"] = homeostasis.project(len(resolved))
+    except Exception:
+        model["organism_capacity"] = None
     return resolved, model
 
 

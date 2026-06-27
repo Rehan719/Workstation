@@ -115,6 +115,22 @@ class HomeostaticController:
         except Exception as e:
             return {"recovered": False, "reason": str(e)[:80]}
 
+    def project(self, demand_nodes: int) -> Dict[str, Any]:
+        """Read-only §7 PRE-COMMIT projection: the CURRENT living-organism posture + admitted concurrency,
+        and whether a cognitive demand of `demand_nodes` fits within it RIGHT NOW. Models, does not run —
+        no extra ATP is expended (a simulation shouldn't consume energy); the actual run is governed by §8
+        homeostasis at execution time."""
+        snap = self.snapshot()
+        cap = int(snap.get("max_parallel", 4))
+        return {
+            "projected_posture": snap.get("posture"),
+            "admitted_max_parallel": cap,
+            "demand_nodes": int(max(0, demand_nodes)),
+            "fits_current_capacity": int(max(0, demand_nodes)) <= cap,
+            "organism": snap.get("organism"),
+            "note": "current §8 living-organism capacity — the run will be homeostatically governed at execution time",
+        }
+
     def snapshot(self) -> Dict[str, Any]:
         """Read-only current homeostatic posture (no extra metabolic load) — for surfacing live."""
         return self.assess(demand_nodes=0, requested_parallel=4)

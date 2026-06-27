@@ -46,6 +46,11 @@ interface Simulation {
     biomimetic_resources: number; shared_usage_areas: string[]; usage_area_supported_by_all: boolean;
     incompatibilities: { id: string; name: string; reason: string }[];
     unset_params: Record<string, string[]>;
+    // §7→§8 — projected living-organism capacity for this config's cognitive load (read-only, pre-commit).
+    organism_capacity?: {
+      projected_posture?: string; admitted_max_parallel?: number; demand_nodes?: number;
+      fits_current_capacity?: boolean; organism?: { mode?: string; circadian?: string; atp_ratio?: number };
+    } | null;
   };
   simulation: {
     quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[]; document_controlled?: boolean;
@@ -412,6 +417,12 @@ export const ResourceFabric: React.FC = () => {
                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.simulation.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
                   title={`§11 live compliance — ${(sim.simulation.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
                   compliance: {sim.simulation.quality.compliance.overall}
+                </span>
+              )}
+              {sim.model.organism_capacity && (
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.model.organism_capacity.fits_current_capacity ? 'bg-violet-500/15 text-violet-300' : 'bg-amber-500/15 text-amber-400'}`}
+                  title={`§8 living-organism capacity now — mode ${sim.model.organism_capacity.organism?.mode}, ATP ${Math.round((sim.model.organism_capacity.organism?.atp_ratio ?? 0) * 100)}%, ${sim.model.organism_capacity.organism?.circadian}. The run will be homeostatically governed at execution time.`}>
+                  §8 capacity: {sim.model.organism_capacity.projected_posture} · admits {sim.model.organism_capacity.admitted_max_parallel} {sim.model.organism_capacity.fits_current_capacity ? '· fits' : '· over capacity'}
                 </span>
               )}
             </div>
