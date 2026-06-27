@@ -13,9 +13,8 @@ import { DashboardNew as Dashboard } from './pages/DashboardNew';
 // (no backend); redundant with /organism + the real cognition pages.
 import { MyWork } from './pages/MyWork';
 import { Settings } from './pages/Settings';
-import { OrganismDashboard } from './pages/organism/OrganismDashboard';
-import { HeartbeatMonitor } from './pages/organism/HeartbeatMonitor';
-import { CognitionIntegration } from './pages/CognitionIntegration';
+// Organism · Heartbeat · Cognition consolidated into one tabbed OrganismHub (§8 living organism).
+import { OrganismHub } from './pages/organism/OrganismHub';
 
 // ── 2. Native AI Fabric ──────────────────────────────────────────────────
 import { NativeAI } from './pages/developers/NativeAI';
@@ -105,7 +104,7 @@ function App() {
 
   const steps = [
     { target: '.neon-text', content: 'Welcome to Workstation IDBO — your living, in-house AI organism.' },
-    { target: 'aside nav', content: 'Navigate the eight vision sections: Home, Native AI, Domains, VSB, Resource Fabric, Transformation, Governance, Developer.' },
+    { target: 'aside nav', content: 'Two ways to work (§3A): ① Work in a Domain — AI-mediated tools across the six domains; ② Build an Enterprise — Concept→Commercialisation into a living VSB. Below sit the Platform, Governance and System areas.' },
     { target: '.gaas-audit-btn', content: 'Every action is governed by the constitutional GaaS engine.' },
   ];
 
@@ -123,9 +122,9 @@ function App() {
           <Route path="/"               element={<Dashboard />} />
           <Route path="/dashboard"      element={<Navigate to="/" replace />} />
           <Route path="/my-work"        element={<MyWork />} />
-          <Route path="/organism"       element={<OrganismDashboard />} />
-          <Route path="/heartbeat"      element={<HeartbeatMonitor />} />
-          <Route path="/cognition"      element={<CognitionIntegration />} />
+          <Route path="/organism"       element={<OrganismHub />} />
+          <Route path="/heartbeat"      element={<Navigate to="/organism?tab=heartbeat" replace />} />
+          <Route path="/cognition"      element={<Navigate to="/organism?tab=cognition" replace />} />
 
           {/* ── 2. Native AI Fabric ─────────────────────────────────── */}
           <Route path="/native-ai"          element={<NativeAI />} />

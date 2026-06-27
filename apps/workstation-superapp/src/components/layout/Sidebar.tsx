@@ -20,8 +20,11 @@ interface NavItem {
   realms?: RealmType[];
 }
 
-// Vision-aligned IA — eight sections, each mapping to wired/functional capability, plus a
-// collapsible "Explore" group for secondary wired pages. Every id maps to a live route in App.tsx.
+// Vision-aligned IA — the §3A TWO-JOURNEY SPINE leads: ① Work in a Domain (Offering 1 — domain-specific
+// AI-mediated tools) and ② Build an Enterprise (Offering 2 — Concept→Commercialisation → a living VSB).
+// Beneath sit the supporting Platform (the native-AI fabric, resource fabric & living organism), then
+// Governance & Trust and System. Overlapping pages are folded into tabbed hubs. Every id maps to a live
+// route in App.tsx.
 const allNavItems: NavItem[] = [
   {
     name: 'Home',
@@ -30,109 +33,95 @@ const allNavItems: NavItem[] = [
     subItems: [
       { name: 'Dashboard',     icon: LayoutDashboard, id: 'dashboard' },
       { name: 'My Work',       icon: FolderOpen,      id: 'my-work' },
-      { name: 'Organism',      icon: Activity,        id: 'organism' },
-      { name: 'Heartbeat',     icon: HeartPulse,      id: 'heartbeat' },
-      { name: 'Cognition',     icon: Network,         id: 'cognition' },
     ]
   },
 
   {
-    name: 'Native AI Fabric',
+    // §3A Offering 1 — domain-specific AI-mediated tools & resources, usable now, no enterprise required.
+    name: 'Work in a Domain',
+    icon: Layers,
+    id: 'work-facet',
+    subItems: [
+      { name: 'Overview',        icon: Layers,        id: 'domains' },
+      { name: 'AI Tools',        icon: Sparkles,      id: 'ai-tools' },
+      { name: 'Religion',        icon: Heart,         id: 'religion' },
+      { name: "Qur'an Platform", icon: Book,          id: 'qep' },
+      { name: 'Science',         icon: Microscope,    id: 'science' },
+      { name: 'Education',       icon: GraduationCap, id: 'education' },
+      { name: 'Law',             icon: Gavel,         id: 'law' },
+      { name: 'Care',            icon: HeartPulse,    id: 'care' },
+      { name: 'Employment',      icon: Briefcase,     id: 'employment' },
+    ]
+  },
+
+  {
+    // §3A Offering 2 — end-to-end Concept→Commercialisation establishing a living VSB IDBO Enterprise.
+    name: 'Build an Enterprise',
+    icon: Rocket,
+    id: 'build-facet',
+    subItems: [
+      { name: 'Genesis Journey',    icon: Rocket,     id: 'genesis' },
+      { name: 'VSB Cockpit',        icon: Crown,      id: 'vsb-cockpit' },
+      { name: 'VSB Spawn Studio',   icon: Building2,  id: 'vsb' },
+      { name: 'Business Plan',      icon: FileText,   id: 'business-plan' },
+      { name: 'Projects',           icon: Folders,    id: 'projects' },
+      { name: 'Deliverables',       icon: FileText,   id: 'deliverables' },
+      { name: 'Management Systems', icon: Shield,     id: 'management' },
+      { name: 'Capital Fund',       icon: DollarSign, id: 'capital' },
+      { name: 'Economy',            icon: Coins,      id: 'economy' },
+    ]
+  },
+
+  {
+    // The supporting fabric both journeys run on: the native AI swarm/models/orchestration (§6), the
+    // reconfigurable resource fabric (§7) and the biomimetic living organism (§8).
+    name: 'Platform',
     icon: Cpu,
-    id: 'ai-facet',
+    // The 10 process-intelligence engines (synthesis · nexus · forge · reactor · incubator · factory ·
+    // intelligence · authorship · design-dev · solutions) launch one-click from the Resource Fabric hub's
+    // "Studios" grid — keeping the nav lean while every engine stays first-class and reachable.
+    id: 'platform-facet',
     subItems: [
       { name: 'Native AI',          icon: Cpu,           id: 'native-ai' },
-      { name: 'AI Tools',           icon: Sparkles,      id: 'ai-tools' },
       { name: 'AI CEO',             icon: MessageSquare, id: 'ceo' },
       { name: 'Board of Directors', icon: Crown,         id: 'board' },
-      { name: 'Visual Composer',    icon: Workflow,      id: 'visual-composer' },
       { name: 'Swarm Intelligence', icon: Network,       id: 'swarm-intelligence' },
+      { name: 'Visual Composer',    icon: Workflow,      id: 'visual-composer' },
+      { name: 'Resource Fabric',    icon: Layers,        id: 'resource-fabric' },
+      { name: 'Reactor Studio',     icon: BarChart3,     id: 'reactor-studio' },
+      { name: 'Build to Order',     icon: Package,       id: 'bto' },
+      { name: 'Digital Twins',      icon: Boxes,         id: 'digital-twins' },
+      { name: 'Transformation',     icon: Target,        id: 'transformation' },
+      { name: 'Organism',           icon: Activity,      id: 'organism' },
+      { name: 'Sovereign Evolution',icon: Dna,           id: 'sovereign-evolution' },
     ]
   },
 
   {
-    name: 'Domains',
-    icon: Layers,
-    id: 'domains-facet',
-    subItems: [
-      { name: 'Overview',   icon: Layers,        id: 'domains' },
-      { name: 'Religion',   icon: Heart,         id: 'religion' },
-      { name: "Qur'an Platform", icon: Book,     id: 'qep' },
-      { name: 'Science',    icon: Microscope,    id: 'science' },
-      { name: 'Education',  icon: GraduationCap, id: 'education' },
-      { name: 'Law',        icon: Gavel,         id: 'law' },
-      { name: 'Care',       icon: HeartPulse,    id: 'care' },
-      { name: 'Employment', icon: Briefcase,     id: 'employment' },
-    ]
-  },
-
-  {
-    name: 'VSB Enterprises',
-    icon: Building2,
-    id: 'vsb-facet',
-    subItems: [
-      { name: 'VSB Spawn Studio',  icon: Building2,  id: 'vsb' },
-      { name: 'VSB Cockpit',       icon: Crown,      id: 'vsb-cockpit' },
-      { name: 'Genesis Journey',   icon: Rocket,     id: 'genesis' },
-      { name: 'Business Plan',     icon: FileText,   id: 'business-plan' },
-      { name: 'Management Systems',icon: Shield,     id: 'management' },
-      { name: 'Change Control',    icon: GitBranch,  id: 'change-control' },
-      { name: 'Digital Twins',     icon: Boxes,      id: 'digital-twins' },
-      { name: 'Capital Fund',      icon: DollarSign, id: 'capital' },
-      { name: 'Projects',          icon: Folders,    id: 'projects' },
-    ]
-  },
-
-  {
-    name: 'Resource Fabric',
-    icon: Layers,
-    id: 'fabric-facet',
-    // The 10 process-intelligence engines (synthesis · nexus · forge · reactor · incubator · factory ·
-    // intelligence · authorship · design-dev · solutions) are launched one-click from the Resource Fabric
-    // hub's "Studios" grid — keeping the nav lean while every engine stays first-class and reachable.
-    subItems: [
-      { name: 'Resource Fabric',  icon: Layers,      id: 'resource-fabric' },
-      { name: 'Reactor Studio',   icon: BarChart3,   id: 'reactor-studio' },
-      { name: 'Build to Order',   icon: Package,     id: 'bto' },
-    ]
-  },
-
-  {
-    name: 'Transformation & Economy',
-    icon: Coins,
-    id: 'econ-facet',
-    subItems: [
-      { name: 'Transformation',   icon: Target,      id: 'transformation' },
-      { name: 'Economic Metabolism', icon: Coins,    id: 'economy' },
-      { name: 'Marketplace',      icon: ShoppingBag, id: 'marketplace' },
-      { name: 'Deliverables',     icon: FileText,    id: 'deliverables' },
-      { name: 'Wallet',           icon: DollarSign,  id: 'wallet' },
-    ]
-  },
-
-  {
-    name: 'Governance & Ops',
+    name: 'Governance & Trust',
     icon: Shield,
     id: 'gov-facet',
     subItems: [
-      { name: 'Governance Hub',     icon: Shield,      id: 'governance-hub' },
-      { name: 'Constitution',       icon: FileText,    id: 'constitution' },
-      { name: 'Compliance',         icon: ShieldCheck, id: 'compliance' },
-      { name: 'Operational Excellence', icon: Gauge,   id: 'operations' },
-      { name: 'Sovereign Evolution',icon: Dna,         id: 'sovereign-evolution' },
-      { name: 'CoE Hub',            icon: Trophy,      id: 'coe' },
+      { name: 'Governance Hub',         icon: Shield,      id: 'governance-hub' },
+      { name: 'Constitution',           icon: FileText,    id: 'constitution' },
+      { name: 'Compliance',             icon: ShieldCheck, id: 'compliance' },
+      { name: 'Change Control',         icon: GitBranch,   id: 'change-control' },
+      { name: 'Operational Excellence', icon: Gauge,       id: 'operations' },
+      { name: 'CoE Hub',                icon: Trophy,      id: 'coe' },
     ]
   },
 
   {
-    name: 'Developer & System',
-    icon: Code2,
-    id: 'dev-facet',
+    name: 'System',
+    icon: Settings,
+    id: 'system-facet',
     subItems: [
-      { name: 'Creator Studio',   icon: Palette,     id: 'creator' },
-      { name: 'Contribute',       icon: Plus,        id: 'contribute' },
-      { name: 'Entity Control',   icon: ShieldCheck, id: 'admin' },
-      { name: 'System Settings',  icon: Settings,    id: 'settings' },
+      { name: 'Marketplace',     icon: ShoppingBag, id: 'marketplace' },
+      { name: 'Wallet',          icon: DollarSign,  id: 'wallet' },
+      { name: 'Creator Studio',  icon: Palette,     id: 'creator' },
+      { name: 'Contribute',      icon: Plus,        id: 'contribute' },
+      { name: 'Entity Control',  icon: ShieldCheck, id: 'admin' },
+      { name: 'Settings',        icon: Settings,    id: 'settings' },
     ]
   }
 ];
