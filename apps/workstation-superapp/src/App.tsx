@@ -19,10 +19,8 @@ import { OrganismHub } from './pages/organism/OrganismHub';
 // ── 2. Native AI Fabric ──────────────────────────────────────────────────
 import { NativeAI } from './pages/developers/NativeAI';
 import { AIToolsCatalogue } from './pages/AIToolsCatalogue';
-import { CEOChat } from './pages/CEOChat';
-import { BoardOfDirectors } from './pages/enterprise/BoardOfDirectors';
-import VisualAgentComposer from './components/organism/VisualAgentComposer';
-import SwarmIntelligence from './components/organism/SwarmIntelligence';
+// AI CEO · Board · Swarm · Visual Composer consolidated into one tabbed LivingOrganisationHub (§5 + §6 swarm).
+import { LivingOrganisationHub } from './pages/LivingOrganisationHub';
 
 // ── 3. Domains ───────────────────────────────────────────────────────────
 import { DomainsHub } from './pages/domains/DomainsHub';
@@ -128,10 +126,10 @@ function App() {
           {/* ── 2. Native AI Fabric ─────────────────────────────────── */}
           <Route path="/native-ai"          element={<NativeAI />} />
           <Route path="/ai-tools"           element={<AIToolsCatalogue />} />
-          <Route path="/ceo"                element={<CEOChat />} />
-          <Route path="/board"              element={<BoardOfDirectors />} />
-          <Route path="/visual-composer"    element={<VisualAgentComposer />} />
-          <Route path="/swarm-intelligence" element={<SwarmIntelligence />} />
+          <Route path="/ceo"                element={<LivingOrganisationHub />} />
+          <Route path="/board"              element={<Navigate to="/ceo?tab=board" replace />} />
+          <Route path="/visual-composer"    element={<Navigate to="/ceo?tab=composer" replace />} />
+          <Route path="/swarm-intelligence" element={<Navigate to="/ceo?tab=swarm" replace />} />
 
           {/* ── 3. Domains ──────────────────────────────────────────── */}
           <Route path="/domains"    element={<DomainsHub />} />

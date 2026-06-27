@@ -82,10 +82,7 @@ const allNavItems: NavItem[] = [
     id: 'platform-facet',
     subItems: [
       { name: 'Native AI',          icon: Cpu,           id: 'native-ai' },
-      { name: 'AI CEO',             icon: MessageSquare, id: 'ceo' },
-      { name: 'Board of Directors', icon: Crown,         id: 'board' },
-      { name: 'Swarm Intelligence', icon: Network,       id: 'swarm-intelligence' },
-      { name: 'Visual Composer',    icon: Workflow,      id: 'visual-composer' },
+      { name: 'Living Organisation',icon: Crown,         id: 'ceo' },
       { name: 'Resource Fabric',    icon: Layers,        id: 'resource-fabric' },
       { name: 'Reactor Studio',     icon: BarChart3,     id: 'reactor-studio' },
       { name: 'Build to Order',     icon: Package,       id: 'bto' },
