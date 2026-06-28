@@ -504,6 +504,10 @@ async def solve_with_cognitive_stack(req: SolveRequest):
     except Exception as e:
         synthesis = f"Synthesis: {e}"
 
+    # honest: reflect the ACTUAL cognitive engines run (the user-selected subset, or all six), + MJM.
+    _wanted = {str(e).lower() for e in (req.engines or [])}
+    _ran = [name for (eid, name, _q) in _COGNITIVE_LENSES if (not _wanted or eid in _wanted)] or \
+           [name for (_e, name, _q) in _COGNITIVE_LENSES]
     return {
         "problem": req.problem,
         "domain": req.domain,
@@ -511,7 +515,7 @@ async def solve_with_cognitive_stack(req: SolveRequest):
         "mjm_assessment": mjm_assessment,
         "synthesis": synthesis,
         "status": "complete",
-        "engines_used": ["Inkashaf", "Samajh", "Soch", "Aqal", "Hoshiyari", "Iman", "MJM", "AIGateway"],
+        "engines_used": [n.split(" (")[0] for n in _ran] + ["MJM", "AIGateway"],
     }
 
 

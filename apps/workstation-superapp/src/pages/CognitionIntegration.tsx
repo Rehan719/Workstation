@@ -12,11 +12,34 @@ export const CognitionIntegration: React.FC = () => {
   const [knowledge, setKnowledge] = useState<any>(null);
   const [align, setAlign] = useState<Align | null>(null);
   const [busy, setBusy] = useState(false);
+  // §7 — run the Cognitive Cascade with a user-selected subset of engines (reconfigurable resource)
+  const [engineCat, setEngineCat] = useState<{ id: string; name: string }[]>([]);
+  const [selEngines, setSelEngines] = useState<Set<string>>(new Set());
+  const [problem, setProblem] = useState('');
+  const [solving, setSolving] = useState(false);
+  const [solveRes, setSolveRes] = useState<any>(null);
 
   useEffect(() => {
     fetch('/api/v1/cognition/wiring').then(r => r.json()).then(setWiring).catch(() => {});
     fetch('/api/v1/cognition/knowledge').then(r => r.json()).then(setKnowledge).catch(() => {});
+    fetch('/api/v1/intelligence/cognitive-engines').then(r => r.json()).then(d => setEngineCat(d.engines || [])).catch(() => {});
   }, []);
+
+  const toggleEngine = (id: string) =>
+    setSelEngines(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const runSolve = async () => {
+    if (!problem.trim()) return;
+    setSolving(true); setSolveRes(null);
+    try {
+      const r = await fetch('/api/v1/intelligence/solve', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problem, domain: 'general', engines: [...selEngines] }),
+      });
+      setSolveRes(await r.json());
+    } catch { /* surfaced by absent result */ }
+    setSolving(false);
+  };
 
   const runAlign = async () => {
     setBusy(true);
@@ -35,6 +58,52 @@ export const CognitionIntegration: React.FC = () => {
           measures vision realisation, routes each gap to the tier that owns it, governed and continuous.
         </p>
       </header>
+
+      {/* §7 — Cognitive Cascade runner: reconfigure WHICH engines run, then run on the native fabric */}
+      <Card className="p-6 border-aura/30 bg-aura/5">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-aura mb-3 flex items-center gap-2"><Brain size={14} /> Cognitive Cascade · reconfigurable engines (§7)</h3>
+        <textarea value={problem} onChange={e => setProblem(e.target.value)} rows={3}
+          placeholder="Describe a problem to analyse through the cognitive engines…"
+          className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-aura/50 resize-none" />
+        {engineCat.length > 0 && (
+          <div className="mt-3">
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2">Engines <span className="normal-case font-bold text-slate-600">(none selected = all run)</span></p>
+            <div className="flex flex-wrap gap-2">
+              {engineCat.map(e => (
+                <button key={e.id} type="button" onClick={() => toggleEngine(e.id)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    selEngines.has(e.id) ? 'bg-aura/20 text-aura border border-aura/40' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:text-white'}`}
+                  title={e.name}>
+                  {e.id}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="mt-4">
+          <Button onClick={runSolve} disabled={solving || !problem.trim()} className="flex items-center gap-2 bg-aura text-sovereign text-xs">
+            {solving ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {solving ? 'Running cascade…' : `Run cascade${selEngines.size ? ` (${selEngines.size} engine${selEngines.size > 1 ? 's' : ''})` : ''}`}
+          </Button>
+        </div>
+        {solveRes && (
+          <div className="mt-4 space-y-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Engines run: <span className="text-aura">{(solveRes.engines_used || []).join(' · ')}</span></p>
+            {solveRes.cognitive_cascade && (
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+                <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1">Cognitive Cascade</p>
+                <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.cognitive_cascade}</p>
+              </div>
+            )}
+            {solveRes.synthesis && (
+              <div className="p-3 rounded-xl bg-slate-950 border border-highlight/20">
+                <p className="text-[9px] font-black uppercase tracking-widest text-highlight mb-1">Synthesis</p>
+                <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.synthesis}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
 
       {/* Four knowledge layers */}
       {knowledge && (
