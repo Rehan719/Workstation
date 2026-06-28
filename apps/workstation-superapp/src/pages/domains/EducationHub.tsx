@@ -44,6 +44,7 @@ export const EducationHub: React.FC = () => {
                <button type="button" onClick={() => setActiveTab('lessons')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'lessons' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Lessons</button>
                <button type="button" onClick={() => setActiveTab('curriculum')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'curriculum' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Curriculum</button>
                <button type="button" onClick={() => setActiveTab('assessment')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'assessment' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Assessment</button>
+               <button type="button" onClick={() => setActiveTab('feedback')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'feedback' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Marking</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
@@ -85,6 +86,22 @@ export const EducationHub: React.FC = () => {
                   { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / KS3 / A-Level', default: 'GCSE' },
                   { name: 'assessment_type', label: 'Type', type: 'select', options: ['quiz', 'rubric', 'exam', 'project_brief', 'formative'], default: 'quiz' },
                   { name: 'learning_objectives', label: 'Learning objectives (one per line)', type: 'list', placeholder: 'explain the light-dependent reactions' },
+                ]}
+              />
+            ) : activeTab === 'feedback' ? (
+              <DomainTool
+                title="Marking & Feedback"
+                description={<>Paste a student's work — Workstation's <span className="text-highlight">own</span> AI marks it against the task and any rubric and returns constructive, actionable feedback with an indicative level, in-house. An aid for your judgement — indicative only, never a final grade.</>}
+                endpoint="/api/v1/education/feedback"
+                resultKey="feedback"
+                submitLabel="Mark & give feedback"
+                fields={[
+                  { name: 'student_work', label: "Student's work", type: 'textarea', placeholder: "paste the student's answer / essay / response here" },
+                  { name: 'task', label: 'Task / question', type: 'textarea', placeholder: 'e.g. Explain the causes of the First World War (12 marks)' },
+                  { name: 'rubric', label: 'Rubric / marking criteria (optional)', type: 'textarea', placeholder: 'paste the mark scheme or success criteria' },
+                  { name: 'subject', label: 'Subject', type: 'text', default: 'general', placeholder: 'e.g. History' },
+                  { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / KS2 / A-Level' },
+                  { name: 'tone', label: 'Feedback tone', type: 'select', options: ['constructive', 'encouraging', 'rigorous'], default: 'constructive' },
                 ]}
               />
             ) : (

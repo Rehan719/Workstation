@@ -4,6 +4,7 @@ Education Domain API — Curriculum design and learning tools.
   POST /api/v1/education/curriculum    — design a full curriculum for a topic
   POST /api/v1/education/lesson-plan   — generate a detailed lesson plan
   POST /api/v1/education/assessment    — create assessments (quiz, rubric, exam)
+  POST /api/v1/education/feedback      — mark student work + give constructive feedback (indicative)
   GET  /api/v1/education/frameworks    — list supported curriculum frameworks
 """
 from __future__ import annotations
@@ -143,6 +144,57 @@ async def generate_lesson_plan(req: LessonPlanRequest):
         "lesson_plan": plan,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+class FeedbackRequest(BaseModel):
+    student_work: str
+    task: str = ""                  # the question / task the work responds to
+    level: str = ""                 # e.g. GCSE, A-Level, KS2
+    rubric: str = ""                # marking criteria / rubric (optional)
+    subject: str = "general"
+    tone: str = "constructive"      # constructive | encouraging | rigorous
+
+
+@router.post("/feedback")
+async def marking_feedback(req: FeedbackRequest):
+    """Mark a piece of student work against the task and any rubric, and give constructive, actionable
+    feedback — strengths, areas to develop, criterion-by-criterion notes, next steps, and an INDICATIVE
+    level/grade. An AID for the teacher's professional judgement — indicative only, never a final or
+    official mark; the teacher remains responsible."""
+    prompt = (
+        "You are an experienced, fair teacher and examiner. Mark the student's work against the task and any "
+        "rubric, and give warm but honest, actionable feedback. Be specific and point to evidence in the work.\n\n"
+        f"Subject: {req.subject}\nLevel: {req.level}\nFeedback tone: {req.tone}\n"
+        + (f"Task / question:\n{req.task}\n\n" if req.task else "")
+        + (f"Rubric / marking criteria:\n{req.rubric}\n\n" if req.rubric else "")
+        + f"STUDENT WORK:\n{req.student_work[:6000]}\n\n"
+        "Produce:\n"
+        "## Overall Impression (2-3 sentences)\n"
+        "## Strengths (specific, with evidence from the work)\n"
+        "## Areas to Develop (specific, prioritised)\n"
+        "## Criterion-by-Criterion (if a rubric was provided, assess the work against each criterion)\n"
+        "## Actionable Next Steps (3-4 concrete things the student can do to improve)\n"
+        "## Indicative Level / Grade (a RANGE with a one-line justification — explicitly indicative, to be "
+        "confirmed by the teacher; never present it as a final or official mark)\n\n"
+        "Be encouraging and developmental. Mark ONLY what is present — never invent content the student did "
+        "not write, and do not penalise for things outside the stated task."
+    )
+
+    feedback, provenance = await ai_text(prompt, "education_feedback")
+
+    return {
+        "feedback_id": uuid.uuid4().hex[:10],
+        "subject": req.subject,
+        "level": req.level,
+        "tone": req.tone,
+        "feedback": feedback,
+        "ai_provenance": provenance,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "disclaimer": (
+            "AI-assisted marking and feedback is an aid for the teacher's professional judgement — indicative "
+            "only, NOT a final or official grade. The teacher remains responsible for the mark awarded."
+        ),
     }
 
 
