@@ -44,6 +44,7 @@ export const CareHub: React.FC = () => {
                <button type="button" onClick={() => setActiveTab('clinical')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'clinical' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Clinical</button>
                <button type="button" onClick={() => setActiveTab('care-plan')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'care-plan' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Care Plan</button>
                <button type="button" onClick={() => setActiveTab('risk')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'risk' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Risk Assess</button>
+               <button type="button" onClick={() => setActiveTab('safeguarding')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'safeguarding' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>Safeguarding</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-vital shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
@@ -83,6 +84,20 @@ export const CareHub: React.FC = () => {
                   { name: 'tool', label: 'Tool', type: 'select', options: ['news2', 'must', 'waterlow', 'falls_risk', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], default: 'news2' },
                   { name: 'patient_data', label: 'Observations / data (key: value per line)', type: 'keyvalue', default: 'resp_rate: \nspo2: \nsystolic_bp: \npulse: \ntemp: \nconsciousness: ' },
                   { name: 'clinical_context', label: 'Clinical context (optional)', type: 'textarea', placeholder: 'e.g. 72yo post-op day 2, query chest infection' },
+                ]}
+              />
+            ) : activeTab === 'safeguarding' ? (
+              <DomainTool
+                title="Safeguarding Triage"
+                description={<>Describe a safeguarding concern — Workstation's <span className="text-vital">own</span> AI structures the right response under the Care Act 2014 (immediate-safety check, category, who to notify, what to record, consent &amp; Making Safeguarding Personal), in-house. Process guidance only — if anyone is in immediate danger, call 999.</>}
+                endpoint="/api/v1/care/safeguarding"
+                resultKey="guidance"
+                submitLabel="Triage concern"
+                fields={[
+                  { name: 'concern', label: 'Safeguarding concern', type: 'textarea', placeholder: 'e.g. an elderly client has unexplained bruising and seems fearful of a relative who manages their finances' },
+                  { name: 'setting', label: 'Setting', type: 'select', options: ['community', 'hospital', 'care_home', 'domiciliary'], default: 'community' },
+                  { name: 'person_context', label: 'Context (optional)', type: 'textarea', placeholder: 'adult at risk, capacity, who is involved…' },
+                  { name: 'jurisdiction', label: 'Framework', type: 'text', default: 'England (Care Act 2014)' },
                 ]}
               />
             ) : (

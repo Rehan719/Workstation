@@ -3,6 +3,7 @@ Care Domain API — Healthcare pathway and support tools.
 
   POST /api/v1/care/care-plan       — generate a personalised care plan
   POST /api/v1/care/risk-assess     — AI-assisted risk assessment (NEWS2 / falls / pressure)
+  POST /api/v1/care/safeguarding    — triage a safeguarding concern (Care Act 2014 process guidance)
   POST /api/v1/care/handover        — generate a clinical handover document (SBAR format)
   GET  /api/v1/care/tools           — list available care assessment tools
 """
@@ -138,6 +139,58 @@ async def risk_assessment(req: RiskAssessRequest):
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": "AI-generated risk assessment aid only. Clinical judgement by a qualified professional is required.",
+    }
+
+
+class SafeguardingRequest(BaseModel):
+    concern: str                          # the safeguarding concern, described
+    setting: str = "community"            # community | hospital | care_home | domiciliary
+    person_context: str = ""              # relevant context (adult at risk, capacity, etc.)
+    jurisdiction: str = "England (Care Act 2014)"
+
+
+@router.post("/safeguarding")
+async def safeguarding_triage(req: SafeguardingRequest):
+    """Structure a safeguarding concern under the relevant statutory framework (Care Act 2014 by default):
+    immediate-safety check, likely category of abuse/neglect, who to notify, what to record, consent & Making
+    Safeguarding Personal, and next steps. This is PROCESS guidance to help a worker act correctly — NOT a
+    determination, legal/clinical advice, or a substitute for local safeguarding procedures and professional
+    judgement. If anyone is in immediate danger, emergency services (999) come first."""
+    prompt = (
+        "You are an experienced adult safeguarding lead. Help a frontline worker TRIAGE and respond to a "
+        "safeguarding concern under the relevant statutory framework. Lead with an immediate-danger check.\n\n"
+        f"Concern: {req.concern}\nSetting: {req.setting.replace('_', ' ')}\nFramework: {req.jurisdiction}\n"
+        + (f"Context: {req.person_context}\n" if req.person_context else "")
+        + "\nProduce:\n"
+        "## Immediate Safety (is anyone in immediate danger? if so, the first action is to contact emergency "
+        "services — 999 — before anything else)\n"
+        "## Likely Category (map to the framework's categories of abuse / neglect)\n"
+        "## Who to Notify (organisation's safeguarding lead, local authority adult safeguarding team, and the "
+        "police if a crime may have occurred) and the urgency of each\n"
+        "## What to Record (factual account in the person's own words, dates/times) — and what NOT to do "
+        "(do not investigate, confront the alleged perpetrator, or promise secrecy)\n"
+        "## Consent & Making Safeguarding Personal (mental capacity, the person's own wishes, and the limited "
+        "circumstances where action proceeds without consent — vital interests, others at risk, a serious crime)\n"
+        "## Immediate Next Steps (a short, ordered checklist)\n"
+        "## Useful Contacts (placeholders: local authority safeguarding, police 101/999, CQC)\n\n"
+        "Be clear and calm. This is process guidance — defer to local procedures and professional judgement, "
+        "and never identify or accuse a specific individual as a conclusion."
+    )
+
+    guidance, provenance = await ai_text(prompt, "care_safeguarding")
+
+    return {
+        "triage_id": uuid.uuid4().hex[:10],
+        "setting": req.setting,
+        "jurisdiction": req.jurisdiction,
+        "guidance": guidance,
+        "ai_provenance": provenance,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "disclaimer": (
+            "General safeguarding PROCESS guidance only — not legal or clinical advice, and not a substitute "
+            "for your organisation's safeguarding policy or professional judgement. If anyone is in immediate "
+            "danger, call 999."
+        ),
     }
 
 
