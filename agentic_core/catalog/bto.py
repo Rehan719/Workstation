@@ -92,6 +92,51 @@ async def list_components():
     }
 
 
+class BTOBuildRequest(BaseModel):
+    entity_name: str = "Unnamed Entity"
+    product_resources: List[str] = []   # catalog product slugs to build-to-order
+    objective: str = ""
+    domain: str = "enterprise"
+
+
+@router.post("/build")
+async def build_to_order(request: BTOBuildRequest):
+    """Build-to-Order: take the configured catalog products and genuinely PRODUCE a deliverable for each via
+    the §13 living-deliverables engine (QMS-gated, §8-metered) — turning a blueprint into REAL build-to-order
+    output on Workstation's OWN engines, not just an 'INTEGRATED' descriptor. Closes the
+    Catalogue → Build-to-Order → delivery path."""
+    slug_index: Dict[str, Dict[str, Any]] = {p["slug"]: p for p in list_products()}
+    selected = [slug_index[s] for s in request.product_resources if s in slug_index]
+    objective = request.objective or f"Build-to-order delivery for {request.entity_name}"
+    built: List[Dict[str, Any]] = []
+    if selected:
+        from agentic_core.api.deliverables import produce, ProduceRequest
+        for p in selected:
+            try:
+                brief = (f"Build-to-order the '{p['name']}' product (category {p.get('category', '')}, "
+                         f"tier {p.get('tier', '')}) for «{request.entity_name}». Objective: {objective}. "
+                         f"Realise these features: {', '.join((p.get('features') or [])[:8]) or 'core capabilities'}.")
+                d = await produce(ProduceRequest(type="report", title=f"{p['name']} — Build-to-Order",
+                                                 brief=brief, domain=request.domain))
+                qms = ((d.get("quality_assurance") or {}).get("quality") or {}).get("qms_gate_passed") if isinstance(d, dict) else None
+                built.append({"slug": p["slug"], "name": p["name"],
+                              "deliverable_id": d.get("id") if isinstance(d, dict) else None,
+                              "qms_gate_passed": qms, "status": "BUILT"})
+            except Exception as e:
+                built.append({"slug": p["slug"], "name": p["name"], "status": "FAILED", "error": str(e)[:160]})
+    try:
+        from agentic_core.organism.biobus import biobus
+        biobus.fire_signal("motor", "bto.build",
+                           f"Build-to-order: {sum(1 for b in built if b['status'] == 'BUILT')} product(s) → {request.entity_name}", 0.7)
+    except Exception:
+        pass
+    return {"entity_name": request.entity_name, "objective": objective, "domain": request.domain,
+            "requested": request.product_resources, "built": built,
+            "delivered_count": sum(1 for b in built if b["status"] == "BUILT"),
+            "posture": "in-house-first",
+            "note": "Real build-to-order via the §13 living-deliverables engine (QMS-gated)."}
+
+
 @router.post("/configure")
 async def configure_bto(request: BTOConfigureRequest):
     # Resolve requested product resources from the catalog
