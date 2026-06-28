@@ -88,6 +88,7 @@ export const ReligionHub: React.FC = () => {
                      <button type="button" onClick={() => setActiveTab('dialogue')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'dialogue' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Dialogue</button>
                      <button type="button" onClick={() => setActiveTab('tafsir')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'tafsir' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Tafsir</button>
                      <button type="button" onClick={() => setActiveTab('halal')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'halal' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Halal Review</button>
+                     <button type="button" onClick={() => setActiveTab('hadith')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'hadith' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Hadith</button>
                      <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
                   </div>
                </div>
@@ -161,6 +162,19 @@ export const ReligionHub: React.FC = () => {
                         { name: 'ingredients', label: 'Ingredients (one per line)', type: 'list', placeholder: 'bovine gelatin\nglucose syrup\ncitric acid' },
                         { name: 'manufacturing_process', label: 'Manufacturing process (optional)', type: 'text', placeholder: 'e.g. boiled, moulded, coated' },
                         { name: 'target_markets', label: 'Target markets (one per line)', type: 'list', placeholder: 'UK\nMalaysia' },
+                      ]}
+                    />
+                  ) : activeTab === 'hadith' ? (
+                    <DomainTool
+                      title="Hadith Study (Ulum al-Hadith)"
+                      description={<>Enter a hadith (text or reference) — Workstation's <span className="text-aura">own</span> AI researches its narration, isnad, grading and sharh, in-house, with scholarly humility. Research only — grading must be verified against authenticated collections and a qualified scholar.</>}
+                      endpoint="/api/v1/religion/hadith-study"
+                      resultKey="study"
+                      submitLabel="Study hadith"
+                      fields={[
+                        { name: 'hadith', label: 'Hadith (text or reference)', type: 'textarea', placeholder: 'e.g. "Actions are but by intentions" — or Bukhari 1' },
+                        { name: 'focus', label: 'Focus', type: 'select', options: ['authentication', 'explanation', 'thematic'], default: 'authentication' },
+                        { name: 'madhab', label: 'Jurisprudential lens (optional)', type: 'select', options: ['', 'hanafi', 'maliki', 'shafi', 'hanbali', 'jafari'], default: '' },
                       ]}
                     />
                   ) : madhabs.length > 0 ? madhabs.map((madhab, i) => (

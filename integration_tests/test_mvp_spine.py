@@ -2536,3 +2536,13 @@ def test_education_feedback_contract(client):
     _assert_str_field(body, "feedback")
     # marking must be flagged as indicative, never a final/official grade
     assert "indicative" in (body.get("disclaimer") or "").lower()
+
+
+def test_religion_hadith_study_contract(client):
+    r = client.post("/api/v1/religion/hadith-study", json={
+        "hadith": "Actions are but by intentions", "focus": "authentication"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    _assert_str_field(body, "study")
+    # high-stakes honesty guard: results must be flagged provisional / to be verified with scholars
+    assert "verif" in (body.get("disclaimer") or "").lower()

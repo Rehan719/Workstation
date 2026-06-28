@@ -2,6 +2,7 @@
 Religion Domain API — Islamic jurisprudence, interfaith dialogue, and scholarly tools.
 
   POST /api/v1/religion/fatwa-research   — research a jurisprudential question
+  POST /api/v1/religion/hadith-study     — hadith sciences research (narration, grading, sharh)
   POST /api/v1/religion/quran-tafsir     — AI-assisted Quran exegesis (tafsir)
   POST /api/v1/religion/halal-review     — halal certification pre-assessment
   POST /api/v1/religion/interfaith       — interfaith dialogue and comparison tool
@@ -93,6 +94,52 @@ async def fatwa_research(req: FatwaResearchRequest):
         "disclaimer": (
             "This is AI-assisted scholarly research only. It is NOT a fatwa and does not constitute "
             "a religious ruling. Please consult a qualified Islamic scholar or mufti for personal guidance."
+        ),
+    }
+
+
+class HadithStudyRequest(BaseModel):
+    hadith: str                       # the hadith text, or a reference
+    focus: str = "authentication"     # authentication | explanation | thematic
+    madhab: str = ""                  # optional jurisprudential lens
+
+
+@router.post("/hadith-study")
+async def hadith_study(req: HadithStudyRequest):
+    """AI-assisted hadith study (ulum al-hadith): identify the narration, discuss its grading/authenticity
+    and isnad considerations, where it appears, and its meaning/application. Scholarly research ONLY — never a
+    ruling; fabricating a grade or attribution is a serious error, so uncertainty is stated honestly and
+    everything must be verified against authenticated collections and qualified scholars."""
+    prompt = (
+        "You are a scholar of hadith sciences (ulum al-hadith). Research the following hadith rigorously.\n\n"
+        f"Hadith (text or reference): {req.hadith}\nFocus: {req.focus}\n"
+        + (f"Jurisprudential lens: {req.madhab}\n" if req.madhab else "")
+        + "\nStructure your research as:\n"
+        "## Identification (the likely narration; the collection(s) and hadith number(s) where it appears, if recognisable)\n"
+        "## Text (Matn) — the Arabic if known, plus an English translation\n"
+        "## Chain (Isnad) Considerations (narrators and any well-known points about the chain)\n"
+        "## Grading (authenticity grade — sahih / hasan / da'if / mawdu' — per recognised scholars, naming who graded it)\n"
+        "## Explanation (Sharh) — the meaning and context\n"
+        "## Application & Rulings Derived (how scholars have understood and applied it)\n"
+        "## Related Narrations\n\n"
+        "Cite collections precisely (e.g. Sahih al-Bukhari with hadith number; Sahih Muslim; the four Sunan). "
+        "Where you are UNSURE of the exact grading or attribution, say so EXPLICITLY rather than guessing — "
+        "fabricating a hadith grade or attribution is a serious error. Recommend verifying against authenticated "
+        "collections and a qualified scholar."
+    )
+
+    research, provenance = await ai_text(prompt, "religion_hadith")
+
+    return {
+        "study_id": uuid.uuid4().hex[:10],
+        "focus": req.focus,
+        "study": research,
+        "ai_provenance": provenance,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "disclaimer": (
+            "AI-assisted scholarly research only — NOT a ruling and NOT a substitute for authenticated hadith "
+            "collections. Hadith grading and attribution must be verified with qualified scholars; treat any "
+            "grade stated here as provisional until confirmed against a recognised source."
         ),
     }
 
