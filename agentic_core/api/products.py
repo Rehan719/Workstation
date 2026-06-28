@@ -391,6 +391,64 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
     )
 
 
+# ── §7 Petri dish — a small CONTAINED culture: grow one specimen in isolation, then assess viability ──
+class PetriRequest(BaseModel):
+    specimen: str                  # the idea / hypothesis / concept to culture
+    domain: str = "general"
+    medium: str = "standard"       # the conditions/environment to culture it in
+    iterations: int = 1            # culture passages (1-3)
+
+
+class PetriResult(BaseModel):
+    culture_id: str
+    specimen: str
+    domain: str
+    medium: str
+    passages: int
+    culture: str
+    viable: bool
+    ai_provenance: dict
+    quality_assurance: dict
+    cultured_at: float
+
+
+@router.post("/api/v1/petri/culture", response_model=PetriResult)
+async def petri_culture(req: PetriRequest) -> PetriResult:
+    """§7 Petri dish — a small, CONTAINED experimentation space: culture one specimen (idea/hypothesis) in
+    isolation under the chosen medium, growing it over a few passages on Workstation's OWN fabric, then
+    assess viability — QMS-gated + recorded in the §8 organism. The smallest contained experiment, distinct
+    from the Reactor's multi-scenario what-ifs and the Incubator's evolutionary tournament."""
+    if not req.specimen.strip():
+        raise HTTPException(status_code=400, detail="Provide a specimen (idea/hypothesis) to culture.")
+    passages = max(1, min(3, int(req.iterations)))
+    cid = uuid.uuid4().hex[:10]
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+
+    def _record(meta: dict) -> None:
+        sb = meta.get("served_by", "native")
+        prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
+        prov["any_external"] = prov["any_external"] or bool(meta.get("is_external"))
+
+    culture = req.specimen
+    for p in range(passages):
+        meta = await gateway.query_meta(
+            f"You are the §7 Petri dish — a contained culture. Culture this specimen in ISOLATION under the "
+            f"medium «{req.medium}» (domain: {req.domain}), passage {p + 1}/{passages}.\n\nSpecimen: {culture[:900]}\n\n"
+            "Grow it — what it develops into under these conditions:\n"
+            "## Growth (how it develops)\n## Nutrients Required (what it needs to thrive)\n"
+            "## Contamination Risks (what could spoil it)\n## Viability (VIABLE or NOT-VIABLE — one line, justified)",
+            agent="petri-culture")
+        culture = (meta.get("output", "") or "").strip() or culture
+        _record(meta)
+
+    tail = culture.lower()[-400:]
+    viable = ("not-viable" not in tail) and ("not viable" not in tail)
+    qa = await assure_delivery(culture, ["Growth", "Nutrients Required", "Contamination Risks", "Viability"], label="petri")
+    return PetriResult(culture_id=cid, specimen=req.specimen, domain=req.domain, medium=req.medium,
+                       passages=passages, culture=culture, viable=viable, ai_provenance=prov,
+                       quality_assurance=qa, cultured_at=time.time())
+
+
 # ── §7 Reactor — Studio (2D/3D visual analytics & insight) ───────────────────
 class StudioPoint(BaseModel):
     label: str

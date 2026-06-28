@@ -109,6 +109,13 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"base_prompt": "str", "variants": "int (2-5)", "temperature": "float 0-1 (diversity)",
         "mutation": "float 0-1 (per-generation change)", "iterations": "int 1-4 (generations)"},
        "/api/v1/incubator/evolve", ["development", "forge", "evolution"]),
+    _R("petri_dish", "Petri Dish", "digital_resource", "petri_dish",
+       "The §7 smallest CONTAINED experiment: culture one specimen (idea/hypothesis) in isolation under a "
+       "chosen medium over a few passages on the native fabric, then assess viability — QMS-gated. Distinct "
+       "from the Reactor (multi-scenario what-ifs) and the Incubator (evolutionary tournament).",
+       ["contained culture", "isolation experiment", "viability assessment", "idea incubation"],
+       {"specimen": "str", "medium": "str (conditions)", "iterations": "int 1-3 (passages)", "domain": "str"},
+       "/api/v1/petri/culture", ["synthesis", "design", "development", "forge", "evolution"]),
     _R("experimentation", "Reactor · Experimentation", "digital_resource", "experimentation",
        "The §7 Reactor's what-if engine: projects + compares the outcomes of user-defined scenarios, "
        "ranked against fitness criteria — on the native fabric (in-house), QMS-gated.",
