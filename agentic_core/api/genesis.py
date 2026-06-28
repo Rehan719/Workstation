@@ -110,9 +110,21 @@ async def genesis_journey(req: JourneyRequest):
         "genesis_concept",
     )
 
+    # ── Stage 3 — Innovate & Research (§4.3): discover the best, latest and most effective approaches and
+    #    innovative options across science · technology · business · operations · law · the domain. ──
+    research = await _q(
+        "You are the IDBO Innovate & Research engine. For the concept below, discover the BEST, LATEST and "
+        "most effective approaches and innovative options — drawing across science, technology, business, "
+        "operations, law/compliance, and the domain.\n\n"
+        f"Concept: {concept[:700]}\nDomain: {req.domain}\n\n"
+        "## Best & Latest Approaches (science · technology · business · operations · law)\n"
+        "## Innovative Options\n## Recommended Direction",
+        "genesis_research",
+    )
+
     # ── Stage 5 — Model · Simulate · Optimise · Rank (§4.5): generate DISTINCT candidate solution
-    #    approaches, MODEL each, score on OWNED evidence criteria (real measured proxies — coverage ·
-    #    specificity · structure; never fabricated), and select the BEST on evidence to carry forward. ──
+    #    approaches (informed by the research), MODEL each, score on OWNED evidence criteria (real measured
+    #    proxies — coverage · specificity · structure; never fabricated), and select the BEST to carry forward. ──
     _cand_sections = ["Approach", "Key Steps", "Effectiveness", "Risks & Mitigations"]
     _cand_specs = [
         ("pragmatic",  "the fastest, lowest-risk, most pragmatic approach"),
@@ -123,7 +135,8 @@ async def genesis_journey(req: JourneyRequest):
     for cid, framing in _cand_specs:
         ctext = await _q(
             f"You are the IDBO Solution Architect. Propose {framing} to realise this concept — be specific "
-            f"and concrete.\n\nConcept: {concept[:700]}\nDomain: {req.domain}\n\n"
+            f"and concrete, drawing on the research.\n\nConcept: {concept[:600]}\nResearch: {research[:600]}\n"
+            f"Domain: {req.domain}\n\n"
             "## Approach\n## Key Steps\n## Effectiveness\n## Risks & Mitigations", f"genesis_candidate_{cid}")
         candidates.append({"id": cid, "framing": framing, "approach": ctext, **_score_candidate(ctext, _cand_sections)})
     candidates.sort(key=lambda c: c["score"], reverse=True)
@@ -176,6 +189,7 @@ async def genesis_journey(req: JourneyRequest):
         "domain": req.domain,
         "realm": req.realm,
         "phase_1_conceptualisation": {"cognitive_cascade": cognitive, "mjm_assessment": mjm, "concept": concept},
+        "stage_3_innovate_research": research,     # §4.3 — best/latest approaches across science·tech·business·ops·law
         "stage_5_model_simulate_rank": stage_5,   # §4.5 — candidate solutions modelled + evidence-ranked → best selected
         "phase_2_design_development": design,
         "phase_3_commercialisation": commercial,

@@ -16,6 +16,7 @@ interface JourneyResult {
   domain: string;
   realm: string;
   phase_1_conceptualisation: { cognitive_cascade: string; mjm_assessment: string; concept: string };
+  stage_3_innovate_research?: string;   // §4.3 — best/latest approaches + innovative options
   // §4.5 — candidate solutions modelled + evidence-ranked → best selected.
   stage_5_model_simulate_rank?: {
     method: string; selected: string; selection_basis: string;
@@ -389,6 +390,18 @@ export const GenesisJourney: React.FC = () => {
               {open === p.key && <div className="px-5 pb-6 border-t border-slate-800/50 pt-4">{p.body}</div>}
             </Card>
           ))}
+
+          {/* §4.3 — Innovate & Research: best/latest approaches across science·tech·business·ops·law */}
+          {result.stage_3_innovate_research && (
+            <Card className="p-5 border-slate-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Eye size={15} className="text-aura" />
+                <h3 className="text-xs font-black uppercase tracking-widest text-aura">Innovate &amp; Research (§4.3)</h3>
+              </div>
+              <p className="text-[10px] text-slate-600 mb-2">Best &amp; latest approaches + innovative options across science · technology · business · operations · law — feeding the candidate solutions below.</p>
+              <PlainText text={result.stage_3_innovate_research} />
+            </Card>
+          )}
 
           {/* §4.5 — Model · Simulate · Optimise · Rank: candidate solutions evidence-ranked, best selected */}
           {result.stage_5_model_simulate_rank && (
