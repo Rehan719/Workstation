@@ -352,8 +352,12 @@ async def _run_intelligence_stream(
     engine_name: str,
     cognitive_context: str = "",
     mjm_context: str = "",
+    rigor: str = "standard",
+    focus: str = "",
 ):
-    """Generic SSE stream for BDP/SPI engines with optional cognitive + MJM context injection."""
+    """Generic SSE stream for BDP/SPI engines with optional cognitive + MJM context injection.
+    §7 user design control: `rigor` (standard|rigorous|exhaustive) and `focus` (lens) genuinely steer the
+    analysis — woven into every stage's directives, honored at run time (not decorative)."""
     context_accumulator = ""
 
     def _ev(stage: str, label: str, content: str, data: dict | None = None) -> str:
@@ -371,7 +375,22 @@ async def _run_intelligence_stream(
         pass
     yield _ev("cognitive_prime", "Cognitive Priming", cognitive_context or "Cognitive engines primed.")
 
-    enrichment = ""
+    # §7 reconfiguration — rigor + focus genuinely steer every stage (woven into the shared directives).
+    _RIGOR = {
+        "standard": "",
+        "rigorous": "Apply RIGOROUS analytical depth: justify each claim with evidence/reasoning and weigh counter-arguments.",
+        "exhaustive": "Apply EXHAUSTIVE depth: be comprehensive — justify every claim with evidence, weigh "
+                      "alternatives and counter-arguments, and surface edge cases and second-order effects.",
+    }
+    directives = ""
+    _rd = _RIGOR.get((rigor or "standard").lower(), "")
+    if _rd:
+        directives += f"\n\nANALYSIS DIRECTIVE ({rigor}): {_rd}"
+    if focus and focus.strip():
+        directives += f"\n\nFOCUS LENS: weight the analysis toward — {focus.strip()}"
+    yield _ev("config", "Reconfiguration", f"rigor={rigor or 'standard'}" + (f" · focus: {focus.strip()}" if focus and focus.strip() else ""))
+
+    enrichment = directives
     if cognitive_context:
         enrichment += f"\n\nCOGNITIVE INTELLIGENCE:\n{cognitive_context[:600]}"
     if mjm_context:
@@ -407,6 +426,9 @@ async def _run_intelligence_stream(
 class IntelligenceRequest(BaseModel):
     challenge: str
     domain: str = "enterprise"
+    # §7 user design control — genuinely reconfigure the engine's behaviour (honored at run time):
+    rigor: str = "standard"   # standard | rigorous | exhaustive — analytical depth/evidence demand
+    focus: str = ""           # optional lens the analysis is weighted toward
 
 
 class SolveRequest(BaseModel):
@@ -422,7 +444,8 @@ async def business_development_process(req: IntelligenceRequest):
     Full structured BD analysis via agent cascade, streamed as SSE.
     """
     return StreamingResponse(
-        _run_intelligence_stream(req.challenge, req.domain, _BDP_STAGES, _BDP_PROMPTS, "BDP"),
+        _run_intelligence_stream(req.challenge, req.domain, _BDP_STAGES, _BDP_PROMPTS, "BDP",
+                                 rigor=req.rigor, focus=req.focus),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -435,7 +458,8 @@ async def scientific_process_intelligence(req: IntelligenceRequest):
     Full structured research pipeline, streamed as SSE.
     """
     return StreamingResponse(
-        _run_intelligence_stream(req.challenge, req.domain, _SPI_STAGES, _SPI_PROMPTS, "SPI"),
+        _run_intelligence_stream(req.challenge, req.domain, _SPI_STAGES, _SPI_PROMPTS, "SPI",
+                                 rigor=req.rigor, focus=req.focus),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

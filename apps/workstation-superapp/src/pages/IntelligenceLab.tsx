@@ -72,6 +72,9 @@ export const IntelligenceLab: React.FC = () => {
   const [mode, setMode] = useState<'bdp' | 'spi'>('bdp');
   const [input, setInput] = useState('');
   const [domain, setDomain] = useState('enterprise');
+  // §7 user design control — reconfigure the engine's behaviour (honored at run time)
+  const [rigor, setRigor] = useState<'standard' | 'rigorous' | 'exhaustive'>('standard');
+  const [focus, setFocus] = useState('');
   const [running, setRunning] = useState(false);
   const [events, setEvents] = useState<IntelEvent[]>([]);
   const [error, setError] = useState('');
@@ -93,7 +96,7 @@ export const IntelligenceLab: React.FC = () => {
     setExpanded(null);
 
     const url = `/api/v1/intelligence/${mode}`;
-    const body = { challenge: input, domain };
+    const body = { challenge: input, domain, rigor, focus };
 
     await streamPost(url, body,
       ev => setEvents(prev => [...prev, ev]),
@@ -228,6 +231,28 @@ export const IntelligenceLab: React.FC = () => {
                 {d}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* §7 user design control — reconfigure the engine before running */}
+        <div className="grid grid-cols-1 @[560px]:grid-cols-2 gap-4">
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2 block">Rigor</label>
+            <div className="flex flex-wrap gap-2">
+              {(['standard', 'rigorous', 'exhaustive'] as const).map(r => (
+                <button key={r} type="button" onClick={() => setRigor(r)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    rigor === r ? 'bg-highlight/20 text-highlight border border-highlight/40' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:text-white'}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2 block">Focus lens <span className="text-slate-600 normal-case font-bold">(optional)</span></label>
+            <input value={focus} onChange={e => setFocus(e.target.value)}
+              placeholder="e.g. unit economics + compliance"
+              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-[11px] text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50" />
           </div>
         </div>
 
