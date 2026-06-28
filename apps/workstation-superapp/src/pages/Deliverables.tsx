@@ -17,6 +17,7 @@ interface Deliverable {
   id: string; type: string; title: string; brief: string; sections: string[];
   content: string; ai_provenance: { posture: string; served_by: string; is_external: boolean };
   quality_assurance?: QualityAssurance;
+  homeostasis?: { posture?: string; organism?: { atp_ratio?: number; circadian?: string } } | null;
   versions: { created_at: string }[];
 }
 
@@ -177,6 +178,12 @@ export const Deliverables: React.FC = () => {
                     <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${selected.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
                       title={`§11 live compliance — ${(selected.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
                       compliance: {selected.quality_assurance.quality.compliance.overall}
+                    </span>
+                  )}
+                  {selected.homeostasis?.posture && (
+                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
+                      title={`§8→§13 — this living deliverable was produced under the organism's homeostatic posture; producing it expended metabolic ATP (ATP ${Math.round((selected.homeostasis.organism?.atp_ratio ?? 0) * 100)}%, ${selected.homeostasis.organism?.circadian}).`}>
+                      §8 homeostasis: {selected.homeostasis.posture}
                     </span>
                   )}
                 </div>

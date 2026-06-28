@@ -160,6 +160,13 @@ async def produce(req: ProduceRequest):
     # Continual operational delivery within the LIVING QMS: every produced deliverable is gated by the
     # OWNED QMS (real, stateful), held to the §10 Solution-Quality Bar, recorded within the §8 organism.
     qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable")
+    # §13→§8: producing a living deliverable is real cognitive work — register it with the homeostatic
+    # controller so it EXPENDS metabolic ATP and carries the organism posture (like the cognition paths).
+    try:
+        from agentic_core.ai.native.homeostasis import homeostasis
+        homeo = homeostasis.assess(demand_nodes=len(gen["sections"]))
+    except Exception:
+        homeo = None
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     deliverable = {
         "id": f"deliv-{uuid.uuid4().hex[:8]}",
@@ -172,6 +179,7 @@ async def produce(req: ProduceRequest):
         "content": gen["content"],
         "ai_provenance": gen["ai_provenance"],
         "quality_assurance": qa,
+        "homeostasis": homeo,
         "versions": [{"brief": req.brief, "content": gen["content"],
                       "ai_provenance": gen["ai_provenance"], "quality_assurance": qa, "created_at": now}],
         "reusable": True, "rerunnable": True, "living": True,
