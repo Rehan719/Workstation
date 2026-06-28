@@ -61,6 +61,7 @@ export const LawHub: React.FC = () => {
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                <button type="button" onClick={() => setActiveTab('compliance')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'compliance' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Compliance</button>
                <button type="button" onClick={() => setActiveTab('draft')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'draft' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Draft</button>
+               <button type="button" onClick={() => setActiveTab('research')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'research' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>Research</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
          </div>
@@ -74,6 +75,20 @@ export const LawHub: React.FC = () => {
                     <QEPImmersiveTools domain="law" />
                  </div>
               </motion.div>
+            ) : activeTab === 'research' ? (
+              <DomainTool
+                title="Legal Research (IRAC)"
+                description={<>Ask a legal question — Workstation's <span className="text-aura">own</span> AI researches it via the IRAC method (Issue · Relevant Law · Application · Conclusion) with practical steps, risks and next actions, in-house. Informational only — not legal advice.</>}
+                endpoint="/api/v1/law/research"
+                resultKey="analysis"
+                submitLabel="Research question"
+                fields={[
+                  { name: 'question', label: 'Legal question', type: 'textarea', placeholder: 'e.g. Can an employer enforce a 12-month non-compete clause against a junior employee?' },
+                  { name: 'area_of_law', label: 'Area of law', type: 'select', options: ['general', 'contract', 'employment', 'intellectual property', 'data protection', 'dispute resolution', 'company', 'property', 'consumer'], default: 'general' },
+                  { name: 'jurisdiction', label: 'Jurisdiction', type: 'text', default: 'England & Wales' },
+                  { name: 'context', label: 'Context / facts (optional)', type: 'textarea', placeholder: 'Any relevant facts or background…' },
+                ]}
+              />
             ) : activeTab === 'draft' ? (
               <DomainTool
                 title="Legal Document Drafter"

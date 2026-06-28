@@ -127,6 +127,53 @@ async def analyse_document(req: AnalyseRequest):
     }
 
 
+class ResearchRequest(BaseModel):
+    question: str
+    jurisdiction: str = "England & Wales"
+    area_of_law: str = "general"   # contract | employment | IP | data protection | dispute | company | ...
+    context: str = ""
+
+
+@router.post("/research")
+async def legal_research(req: ResearchRequest):
+    """Structured legal research / issue analysis using the IRAC method (Issue → Relevant Law → Application →
+    Conclusion) with practical considerations, risks, and next steps. AI-generated informational guidance —
+    NOT legal advice."""
+    prompt = (
+        f"You are a senior {req.jurisdiction} solicitor specialising in {req.area_of_law} law. "
+        f"Research and analyse the following legal question using the IRAC method.\n\n"
+        f"Question: {req.question}\nJurisdiction: {req.jurisdiction}\nArea of law: {req.area_of_law}\n"
+        + (f"Context: {req.context}\n" if req.context else "")
+        + "\nStructure your analysis with these sections:\n"
+        "## Issue (the precise legal question(s) at stake)\n"
+        "## Relevant Law (the statutes, regulations, and established legal principles that apply — name them specifically)\n"
+        "## Application (apply the law to the facts; reason through both sides)\n"
+        "## Conclusion (the most likely position, with a confidence level)\n"
+        "## Practical Considerations (steps to take, evidence needed, any time limits / limitation periods)\n"
+        "## Risks & Caveats\n"
+        "## Recommended Next Steps\n\n"
+        "Name real statutes / legal principles where applicable. Use plain English. Where the law is uncertain "
+        "or fact-dependent, say so honestly rather than overstating certainty."
+    )
+
+    analysis, provenance = await ai_text(prompt, "law_researcher")
+
+    return {
+        "research_id": uuid.uuid4().hex[:10],
+        "question": req.question,
+        "jurisdiction": req.jurisdiction,
+        "area_of_law": req.area_of_law,
+        "analysis": analysis,
+        "method": "IRAC",
+        "ai_provenance": provenance,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "disclaimer": (
+            "This legal research is AI-generated for informational purposes only and does NOT constitute "
+            "legal advice. Laws change and outcomes are fact-specific — consult a qualified solicitor."
+        ),
+    }
+
+
 class GenerateRequest(BaseModel):
     template_id: str
     parties: dict = {}
