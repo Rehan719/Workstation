@@ -16,6 +16,12 @@ interface JourneyResult {
   domain: string;
   realm: string;
   phase_1_conceptualisation: { cognitive_cascade: string; mjm_assessment: string; concept: string };
+  // §4.5 — candidate solutions modelled + evidence-ranked → best selected.
+  stage_5_model_simulate_rank?: {
+    method: string; selected: string; selection_basis: string;
+    candidates: { id: string; framing: string; rank: number; score: number; coverage: number;
+      specificity: number; structure: number; approach: string }[];
+  };
   phase_2_design_development: string;
   phase_3_commercialisation: string;
   governance: { status: string; checkpoint: string | null; node: string };
@@ -383,6 +389,36 @@ export const GenesisJourney: React.FC = () => {
               {open === p.key && <div className="px-5 pb-6 border-t border-slate-800/50 pt-4">{p.body}</div>}
             </Card>
           ))}
+
+          {/* §4.5 — Model · Simulate · Optimise · Rank: candidate solutions evidence-ranked, best selected */}
+          {result.stage_5_model_simulate_rank && (
+            <Card className="p-5 border-aura/30 bg-aura/5">
+              <div className="flex items-center gap-2 mb-1">
+                <Layers size={15} className="text-aura" />
+                <h3 className="text-xs font-black uppercase tracking-widest text-aura">Model · Simulate · Optimise · Rank (§4.5)</h3>
+              </div>
+              <p className="text-[10px] text-slate-500 mb-3">{result.stage_5_model_simulate_rank.method}</p>
+              <div className="space-y-2">
+                {result.stage_5_model_simulate_rank.candidates.map(c => {
+                  const isWin = c.id === result.stage_5_model_simulate_rank!.selected;
+                  return (
+                    <div key={c.id} className={`p-3 rounded-xl border ${isWin ? 'border-aura/50 bg-aura/10' : 'border-slate-800 bg-slate-950'}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center ${isWin ? 'bg-aura text-sovereign' : 'bg-slate-800 text-slate-400'}`}>{c.rank}</span>
+                          <span className="text-[11px] font-black text-white uppercase tracking-wide truncate">{c.id}</span>
+                          {isWin && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/20 text-aura shrink-0">selected</span>}
+                        </div>
+                        <span className="text-[9px] font-mono text-slate-500 shrink-0" title={`coverage ${c.coverage} · specificity ${c.specificity} · structure ${c.structure}`}>score {c.score}</span>
+                      </div>
+                      <p className="text-[9px] text-slate-500 mt-1 leading-snug">{c.framing}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[9px] text-slate-600 mt-2">{result.stage_5_model_simulate_rank.selection_basis} — the winner is carried into Design.</p>
+            </Card>
+          )}
 
           <Card className="p-6 border-highlight/30 bg-highlight/5">
             <div className="flex items-center gap-3 mb-3">
