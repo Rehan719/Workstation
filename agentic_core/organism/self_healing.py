@@ -100,6 +100,21 @@ class SelfHealingSystem:
                 return True
             return False
 
+    def attempt_heal(self) -> dict:
+        """Proactive self-healing: actively probe circuits that have been OPEN past the recovery window
+        (flip them to HALF_OPEN so the next call tests recovery) rather than only waiting passively for the
+        next request to trigger it. Called autonomously on the circadian heartbeat — the immune→self-healing
+        reflex (§3 'defends and heals itself'). Returns which circuits were probed."""
+        probed: list[str] = []
+        with self._lock:
+            now = time.monotonic()
+            for ep, c in self._circuits.items():
+                if c.state == "OPEN" and now - c.last_failure > self._recovery:
+                    c.state = "HALF_OPEN"
+                    self._log_event(ep, "HALF_OPEN", "Proactive heal — organism probing recovery (heartbeat)")
+                    probed.append(ep)
+        return {"probed": probed, "count": len(probed)}
+
     def _log_event(self, endpoint: str, new_state: str, reason: str) -> None:
         self._healing_log.append({
             "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

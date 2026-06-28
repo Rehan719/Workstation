@@ -55,6 +55,8 @@ class OrganismHeartbeat:
         self.last_phase: Optional[str] = None
         self.last_realisation: Optional[float] = None
         self.last_recovery: Optional[str] = None   # last autonomous metabolic self-recovery (ATP before->after)
+        self.last_self_healing: Optional[float] = None   # last self-healing circuit health read on the beat
+        self.last_heal: Optional[str] = None        # last proactive self-heal (circuits probed for recovery)
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
         self.auto_economy = False             # opt-in: autonomous economy cycles
@@ -116,6 +118,24 @@ class OrganismHeartbeat:
         except Exception:
             pass
 
+        # 2c. Self-healing reflex (immune → self-healing on the beat): read the circuit-breaker health and,
+        #     when circuits are OPEN past their recovery window, the organism ACTIVELY probes them for
+        #     recovery (proactive self-healing, not just passive timeout) — §3 "defends and heals itself".
+        try:
+            from agentic_core.organism.self_healing import self_healer
+            sh = self_healer.status()
+            self.last_self_healing = sh.get("overall_health")
+            if sh.get("open_circuits", 0) > 0:
+                heal = self_healer.attempt_heal()
+                if heal.get("count"):
+                    self.last_heal = ",".join(heal["probed"])[:80]
+                    actions.append("self_heal")
+                    from agentic_core.organism.biobus import biobus
+                    biobus.fire_signal("reflex", "organism.heartbeat.self_heal",
+                                       f"probed {heal['count']} circuit(s): {self.last_heal}", 0.8)
+        except Exception:
+            pass
+
         # 3. Transformation tick — vision-realisation introspection (no AI)
         try:
             from agentic_core.api.transformation import _realise
@@ -150,7 +170,8 @@ class OrganismHeartbeat:
         if ueg:
             try:
                 ueg.log({"type": "heartbeat", "beat": self.beats, "phase": phase,
-                         "realisation": self.last_realisation, "health": health, "actions": actions})
+                         "realisation": self.last_realisation, "health": health,
+                         "self_healing": self.last_self_healing, "actions": actions})
             except Exception:
                 pass
 
@@ -207,12 +228,16 @@ class OrganismHeartbeat:
             "phase_intensity": _INTENSITY.get(self.last_phase or circadian_phase(), 0.5),
             "last_beat": self.last_beat,
             "last_realisation": self.last_realisation,
+            "last_self_healing": self.last_self_healing,
+            "last_recovery": self.last_recovery,
+            "last_heal": self.last_heal,
             "interval_seconds": self.interval_seconds,
             "auto_evolve": self.auto_evolve,
             "auto_economy": self.auto_economy,
             "auto_align": self.auto_align,
             "recent": self._log[-10:],
-            "integrations": ["circadian", "central_nervous_system", "UEG_audit", "constitutional_arms_length"],
+            "integrations": ["circadian", "central_nervous_system", "immune", "self_healing",
+                             "metabolic_atp", "UEG_audit", "constitutional_arms_length"],
             "note": "Continuous circadian autonomy — cheap pulse every beat; expensive cognition opt-in + paced.",
         }
 
