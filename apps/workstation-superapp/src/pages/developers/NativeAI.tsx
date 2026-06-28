@@ -8,6 +8,8 @@ interface ModelResource {
 interface Status {
   posture: string; external_allowed: boolean; owned_resources_available: string[];
   selection_order: string[]; guarantee: string; resources: ModelResource[];
+  active_model?: string; active_model_label?: string; is_real_model?: boolean;
+  mode?: string; floor_active?: boolean; floor_note?: string | null;
 }
 interface Capability { name: string; endpoint: string; kind: string; source: string; in_house: boolean; description: string }
 interface SwarmStep { step: number; role: string; served_by: string; output: string }
@@ -278,6 +280,19 @@ export const NativeAI: React.FC = () => {
 
       {status && (
         <>
+          {/* HONEST active-model resolution — is your AI a REAL model right now, or the deterministic floor? */}
+          <Card className={`p-4 ${status.floor_active ? 'border-amber-500/40 bg-amber-500/5' : 'border-emerald-500/40 bg-emerald-500/5'}`}>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded ${status.floor_active ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                {status.floor_active ? 'Deterministic floor active' : `Real model: ${status.active_model_label || status.active_model}`}
+              </span>
+              <span className="text-[9px] font-bold uppercase text-slate-500">serving: {status.active_model} · {status.mode}</span>
+            </div>
+            {status.floor_active && status.floor_note && (
+              <p className="text-[11px] text-slate-400 leading-relaxed mt-2">{status.floor_note}</p>
+            )}
+          </Card>
+
           {/* Posture */}
           <Card className="p-6 border-emerald-500/30 bg-emerald-500/5">
             <div className="flex items-center justify-between mb-3">

@@ -23,11 +23,26 @@ router = APIRouter(prefix="/api/v1/native-ai", tags=["native-ai-fabric"])
 async def native_status():
     resources = registry.available()
     owned = [r for r in resources if not r["is_external"] and r["available"]]
+    order = registry.select()
+    # HONEST active-resolution: the resource that will actually serve the next completion, and whether that
+    # is a REAL model (local Ollama / external accelerant) or the deterministic native FLOOR (is_model=False,
+    # structured reasoning — not an LLM). Surfaced so the Owner can see, at a glance, exactly what is serving.
+    active = order[0] if order else "native"
+    is_real_model = active != "native"
+    active_row = next((r for r in resources if r["name"] == active), None)
     return {
         "posture": "in-house-first",
         "external_allowed": external_allowed(),
         "owned_resources_available": [r["name"] for r in owned],
-        "selection_order": registry.select(),
+        "selection_order": order,
+        "active_model": active,
+        "active_model_label": (active_row or {}).get("model", active),
+        "is_real_model": is_real_model,
+        "mode": "real_model" if is_real_model else "deterministic_floor",
+        "floor_active": not is_real_model,
+        "floor_note": (None if is_real_model else
+                       "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. "
+                       "Run a local Ollama model (or enable an external accelerant) for generative prose."),
         "guarantee": "Workstation always produces a real, structured result from its OWN resources "
                      "with NO external dependency; external providers are optional accelerants "
                      "(flag-gated by AI_ALLOW_EXTERNAL).",
