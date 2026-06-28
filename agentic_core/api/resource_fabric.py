@@ -318,12 +318,64 @@ class RunCompositionRequest(BaseModel):
     timeout: float = 12.0
 
 
+def _csv(v) -> list:
+    return [s.strip() for s in str(v or "").replace(";", ",").replace("\n", ",").split(",") if s.strip()]
+
+
+async def _run_real_resource(rid: str, config: dict, objective: str, domain: str) -> Optional[Dict[str, Any]]:
+    """§7 deep integration — invoke a composed resource's REAL endpoint logic (not a prompt approximation),
+    built from the user's reconfigured params, so a committed composition runs the ACTUAL engines/resources.
+    Returns a compact result dict, or None when the resource has no inline real handler. Best-effort +
+    isolated (one resource's failure never blocks the others or the run)."""
+    cfg = config or {}
+    try:
+        if rid == "petri_dish":
+            from agentic_core.api.products import petri_culture, PetriRequest
+            r = await petri_culture(PetriRequest(specimen=str(cfg.get("specimen") or objective), domain=domain,
+                                                 medium=str(cfg.get("medium") or "standard"),
+                                                 iterations=int(cfg.get("iterations") or 1)))
+            return {"resource": "petri_dish", "ran": "/api/v1/petri/culture", "viable": r.viable,
+                    "passages": r.passages, "output": (r.culture or "")[:600]}
+        if rid == "mjm":
+            from agentic_core.api.intelligence import mjm_assess, MJMRequest
+            r = await mjm_assess(MJMRequest(problem=objective, domain=domain, engines=_csv(cfg.get("engines"))))
+            return {"resource": "mjm", "ran": "/api/v1/intelligence/mjm",
+                    "cognitive_primed": r["cognitive_primed"], "output": (r["assessment"] or "")[:600]}
+        if rid == "cognitive_cascade":
+            from agentic_core.api.intelligence import solve_with_cognitive_stack, SolveRequest
+            r = await solve_with_cognitive_stack(SolveRequest(problem=objective, domain=domain,
+                                                              engines=_csv(cfg.get("engines"))))
+            return {"resource": "cognitive_cascade", "ran": "/api/v1/intelligence/solve",
+                    "engines_used": r.get("engines_used"), "output": (r.get("synthesis") or "")[:600]}
+        if rid == "experimentation":
+            from agentic_core.api.products import reactor_experiment, ExperimentRequest
+            scen = _csv(cfg.get("scenarios")) or [f"Pursue: {objective}", f"Defer: {objective}"]
+            r = await reactor_experiment(ExperimentRequest(
+                subject=str(cfg.get("subject") or objective), domain=domain, scenarios=scen,
+                fitness_criteria=str(cfg.get("fitness_criteria") or "impact, feasibility, risk, opportunity")))
+            return {"resource": "experimentation", "ran": "/api/v1/reactor/experiment",
+                    "scenarios_run": r.scenarios_run, "output": (r.comparison or "")[:600]}
+        if rid == "incubator":
+            from agentic_core.api.products import incubator_evolve, EvolveTournamentRequest
+            r = await incubator_evolve(EvolveTournamentRequest(
+                name=str(cfg.get("name") or objective)[:80], base_prompt=str(cfg.get("base_prompt") or objective),
+                domain=domain, variants=int(cfg.get("variants") or 3), temperature=float(cfg.get("temperature") or 0.7),
+                mutation=float(cfg.get("mutation") or 0.5), iterations=int(cfg.get("iterations") or 1)))
+            return {"resource": "incubator", "ran": "/api/v1/incubator/evolve",
+                    "generations_run": r.generations_run, "winner": r.winner.response[:300] if r.winner else None,
+                    "output": (r.analysis or "")[:400]}
+    except Exception as e:
+        return {"resource": rid, "error": str(e)[:160]}
+    return None
+
+
 @router.post("/compositions/{cid}/run")
 async def run_composition(cid: str, req: RunCompositionRequest):
     """Run a saved configuration end-to-end on Workstation's OWN native swarm (§6): each composed resource
     becomes a pipeline stage (the org-cascade resource is a §5 stage), the user's reconfigured parameters
     feed in, each stage completes in-house-first and feeds the next, and the combined run is QMS-gated +
-    document-controlled (§10/§8). Makes a committed composition fully rerunnable (§7)."""
+    document-controlled (§10/§8). Resources with a real endpoint (Petri/Incubator/Reactor/MJM/Cascade) ALSO
+    execute their genuine logic — so a committed composition runs the ACTUAL engines, fully rerunnable (§7)."""
     comp = next((c for c in _load_compositions() if c["id"] == cid), None)
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
@@ -415,9 +467,22 @@ async def run_composition(cid: str, req: RunCompositionRequest):
         except Exception:
             org_cascade = None
 
+    # §7 deep integration: for each composed resource with a REAL endpoint, ALSO execute its genuine logic
+    # (the actual Petri culture / Incubator evolution / Reactor experiment / MJM judgement / Cognitive solve)
+    # built from the user's reconfigured params — so the composition runs the real engines, not only prompt
+    # stages. Additive + isolated (best-effort per resource; the org-cascade resource is handled above).
+    domain = comp.get("usage_area") or "general"
+    real_runs: list = []
+    for r in comp.get("resources", []):
+        if r["id"] == "vsb_org_swarm":
+            continue
+        rr = await _run_real_resource(r["id"], r.get("config") or {}, objective, domain)
+        if rr is not None:
+            real_runs.append(rr)
+
     return {"composition_id": cid, "name": comp["name"], "usage_area": comp.get("usage_area"),
             "objective": objective, "posture": "in-house-first", "quality_assurance": qa,
-            "org_cascade": org_cascade, **res}
+            "org_cascade": org_cascade, "real_resource_runs": real_runs, **res}
 
 
 # ── Native swarm cascades — first-class reconfigurable resources (user design control) ──
