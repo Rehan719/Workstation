@@ -877,6 +877,16 @@ _APIE_PROMPTS = {
 }
 
 
+def _rigor_directive(rigor: str) -> str:
+    """§7 — turn a rigor level into a run-time analysis directive woven into an engine's prompts (honored)."""
+    table = {
+        "rigorous": "\n\nANALYSIS DIRECTIVE (rigorous): justify each claim with evidence/reasoning and weigh counter-arguments.",
+        "exhaustive": "\n\nANALYSIS DIRECTIVE (exhaustive): be comprehensive — justify every claim with evidence, "
+                      "weigh alternatives and counter-arguments, and surface edge cases and second-order effects.",
+    }
+    return table.get((rigor or "standard").lower(), "")
+
+
 class AuthorshipRequest(BaseModel):
     topic: str
     genre: str = "academic paper"
@@ -884,6 +894,7 @@ class AuthorshipRequest(BaseModel):
     audience: str = "academic peers"
     citation_style: str = "APA"
     word_count: str = "8000"
+    rigor: str = "standard"   # §7 — standard | rigorous | exhaustive (honored at run time)
 
 
 async def _run_authorship_stream(req: AuthorshipRequest):
@@ -896,6 +907,9 @@ async def _run_authorship_stream(req: AuthorshipRequest):
         return f"data: {json.dumps(payload)}\n\n"
 
     yield _ev("init", "APIE Initiated", f"Scholarship & Authorship pipeline: {req.topic[:120]}")
+    directive = _rigor_directive(req.rigor)   # §7 — honored in every stage
+    if directive:
+        yield _ev("config", "Reconfiguration", f"rigor={req.rigor}")
 
     for i, (stage_key, stage_label, stage_desc) in enumerate(_APIE_STAGES):
         yield _ev(f"{stage_key}_start", stage_label, stage_desc)
@@ -911,7 +925,7 @@ async def _run_authorship_stream(req: AuthorshipRequest):
             audience=req.audience,
             citation_style=req.citation_style,
             word_count=req.word_count,
-            context=context_accumulator[-900:] if context_accumulator else "",
+            context=directive + (context_accumulator[-900:] if context_accumulator else ""),
         )
 
         try:
@@ -1121,6 +1135,7 @@ class DesignDevRequest(BaseModel):
     tech_stack: str = "Python / FastAPI / React / PostgreSQL"
     scale: str = "startup"
     deployment_target: str = "cloud"
+    rigor: str = "standard"   # §7 — standard | rigorous | exhaustive (honored at run time)
 
 
 async def _run_design_dev_stream(req: DesignDevRequest):
@@ -1133,6 +1148,9 @@ async def _run_design_dev_stream(req: DesignDevRequest):
         return f"data: {json.dumps(payload)}\n\n"
 
     yield _ev("init", "DDPIE Initiated", f"Design & Development pipeline: {req.system[:120]}")
+    directive = _rigor_directive(req.rigor)   # §7 — honored in every stage
+    if directive:
+        yield _ev("config", "Reconfiguration", f"rigor={req.rigor}")
 
     for i, (stage_key, stage_label, stage_desc) in enumerate(_DDPIE_STAGES):
         yield _ev(f"{stage_key}_start", stage_label, stage_desc)
@@ -1147,7 +1165,7 @@ async def _run_design_dev_stream(req: DesignDevRequest):
             tech_stack=req.tech_stack,
             scale=req.scale,
             deployment_target=req.deployment_target,
-            context=context_accumulator[-900:] if context_accumulator else "",
+            context=directive + (context_accumulator[-900:] if context_accumulator else ""),
         )
 
         try:

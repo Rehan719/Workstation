@@ -81,6 +81,7 @@ export const AuthorshipEngine: React.FC = () => {
   const [audience, setAudience] = useState('academic peers');
   const [citationStyle, setCitationStyle] = useState('APA');
   const [wordCount, setWordCount] = useState('8000');
+  const [rigor, setRigor] = useState<'standard' | 'rigorous' | 'exhaustive'>('standard');   // §7 user design control
   const [running, setRunning] = useState(false);
   const [events, setEvents] = useState<APEvent[]>([]);
   const [error, setError] = useState('');
@@ -100,7 +101,7 @@ export const AuthorshipEngine: React.FC = () => {
 
     await streamPost(
       '/api/v1/intelligence/authorship',
-      { topic, genre, domain, audience, citation_style: citationStyle, word_count: wordCount },
+      { topic, genre, domain, audience, citation_style: citationStyle, word_count: wordCount, rigor },
       ev => setEvents(prev => [...prev, ev]),
       () => setRunning(false),
       e => { setError(e); setRunning(false); },
@@ -236,6 +237,20 @@ export const AuthorshipEngine: React.FC = () => {
                   }`}
                 >
                   {cs}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* §7 user design control — rigor (honored at run time) */}
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2 block">Rigor</label>
+            <div className="flex flex-wrap gap-2">
+              {(['standard', 'rigorous', 'exhaustive'] as const).map(r => (
+                <button key={r} type="button" onClick={() => setRigor(r)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    rigor === r ? 'bg-aura/20 text-aura border border-aura/40' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:text-white'}`}>
+                  {r}
                 </button>
               ))}
             </div>

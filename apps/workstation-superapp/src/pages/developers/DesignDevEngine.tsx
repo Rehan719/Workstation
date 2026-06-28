@@ -88,6 +88,7 @@ export const DesignDevEngine: React.FC = () => {
   const [techStack, setTechStack] = useState('Python / FastAPI / React / PostgreSQL');
   const [scale, setScale] = useState('startup');
   const [deploymentTarget, setDeploymentTarget] = useState('cloud');
+  const [rigor, setRigor] = useState<'standard' | 'rigorous' | 'exhaustive'>('standard');   // §7 user design control
   const [running, setRunning] = useState(false);
   const [events, setEvents] = useState<DDEvent[]>([]);
   const [error, setError] = useState('');
@@ -110,7 +111,7 @@ export const DesignDevEngine: React.FC = () => {
 
     await streamPost(
       '/api/v1/intelligence/design-dev',
-      { system, domain, tech_stack: effectiveStack, scale, deployment_target: deploymentTarget },
+      { system, domain, tech_stack: effectiveStack, scale, deployment_target: deploymentTarget, rigor },
       ev => setEvents(prev => [...prev, ev]),
       () => setRunning(false),
       e => { setError(e); setRunning(false); },
@@ -246,6 +247,19 @@ export const DesignDevEngine: React.FC = () => {
                   }`}
                 >
                   {dt}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* §7 user design control — rigor (honored at run time) */}
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2 block">Rigor</label>
+            <div className="flex flex-wrap gap-2">
+              {(['standard', 'rigorous', 'exhaustive'] as const).map(r => (
+                <button key={r} type="button" onClick={() => setRigor(r)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    rigor === r ? 'bg-highlight/20 text-highlight border border-highlight/40' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:text-white'}`}>
+                  {r}
                 </button>
               ))}
             </div>
