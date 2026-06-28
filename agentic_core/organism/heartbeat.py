@@ -58,6 +58,7 @@ class OrganismHeartbeat:
         self.last_self_healing: Optional[float] = None   # last self-healing circuit health read on the beat
         self.last_heal: Optional[str] = None        # last proactive self-heal (circuits probed for recovery)
         self.last_genome: Optional[Dict[str, Any]] = None   # last genome-population vital sign on the beat
+        self.last_evolution: Optional[Dict[str, Any]] = None   # last autonomous evolution (proposals → governance)
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
         self.auto_economy = False             # opt-in: autonomous economy cycles
@@ -167,14 +168,19 @@ class OrganismHeartbeat:
             except Exception:
                 pass
 
-        # 4. Paced, opt-in self-evolution (EXPENSIVE — arms-length gated)
+        # 4. Paced, opt-in self-evolution (EXPENSIVE — arms-length gated). AUTONOMOUS evolution ALWAYS routes
+        #    its proposals through the Change Control Agency (submit_to_change_control=True): with no human in
+        #    the loop, unsupervised self-improvement must be governed arms-length — never silent self-mutation.
         self._beats_since_evolve += 1
         if (self.auto_evolve and phase in ("MAINTENANCE_FOCUS", "MAINTENANCE_REST")
                 and self._beats_since_evolve >= self._evolve_every):
             self._beats_since_evolve = 0
             try:
                 from agentic_core.api.sovereign_evolution import run_cycle, CycleRequest
-                await run_cycle(CycleRequest(focus="autonomous heartbeat maintenance"))
+                cyc = await run_cycle(CycleRequest(focus="autonomous heartbeat maintenance",
+                                                   submit_to_change_control=True))
+                subs = (cyc or {}).get("change_control_submissions") if isinstance(cyc, dict) else None
+                self.last_evolution = {"submitted_to_governance": len(subs) if subs else 0}
                 actions.append("evolution_cycle")
             except Exception:
                 pass
@@ -246,6 +252,7 @@ class OrganismHeartbeat:
             "last_recovery": self.last_recovery,
             "last_heal": self.last_heal,
             "last_genome": self.last_genome,
+            "last_evolution": self.last_evolution,
             "interval_seconds": self.interval_seconds,
             "auto_evolve": self.auto_evolve,
             "auto_economy": self.auto_economy,
