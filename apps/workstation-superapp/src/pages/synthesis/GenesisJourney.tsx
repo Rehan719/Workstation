@@ -24,6 +24,7 @@ interface JourneyResult {
       specificity: number; structure: number; approach: string }[];
   };
   phase_2_design_development: string;
+  stage_7_operational_intelligence?: string;   // §4.7 — deliverable · compliant · operable
   phase_3_commercialisation: string;
   governance: { status: string; checkpoint: string | null; node: string };
   quality_assurance?: {
@@ -430,6 +431,18 @@ export const GenesisJourney: React.FC = () => {
                 })}
               </div>
               <p className="text-[9px] text-slate-600 mt-2">{result.stage_5_model_simulate_rank.selection_basis} — the winner is carried into Design.</p>
+            </Card>
+          )}
+
+          {/* §4.7 — Enhance via Operational Intelligence: deliverable · compliant · operable */}
+          {result.stage_7_operational_intelligence && (
+            <Card className="p-5 border-slate-800">
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck size={15} className="text-aura" />
+                <h3 className="text-xs font-black uppercase tracking-widest text-aura">Operational Intelligence (§4.7)</h3>
+              </div>
+              <p className="text-[10px] text-slate-600 mb-2">Makes the solution not just innovative but deliverable, compliant (legal · regulatory · EHS · Sharia · ethical) and operable — before commercialisation.</p>
+              <PlainText text={result.stage_7_operational_intelligence} />
             </Card>
           )}
 

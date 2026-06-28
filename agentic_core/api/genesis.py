@@ -160,11 +160,25 @@ async def genesis_journey(req: JourneyRequest):
         "genesis_design",
     )
 
+    # ── Stage 7 — Enhance via Operational Intelligence (§4.7): make the designed solution not just
+    #    innovative but DELIVERABLE, COMPLIANT and OPERABLE — operations delivery + compliance
+    #    (legal · regulatory · EHS · Sharia/halal · ethical) + operational excellence. ──
+    operations = await _q(
+        "You are the IDBO Operational Intelligence engine. Make the designed solution not just innovative but "
+        "DELIVERABLE, COMPLIANT and OPERABLE.\n\n"
+        f"Design: {design[:800]}\nDomain: {req.domain}\n\n"
+        "## Operations Delivery (how it runs day-to-day)\n"
+        "## Compliance (legal · regulatory · EHS · Sharia/halal · ethical)\n"
+        "## Operational Excellence (quality · efficiency · continual improvement)",
+        "genesis_operations",
+    )
+
     # ── Phase 3 — Enterprise Commercialisation (+ the user's VSB blueprint) ──
     commercial = await _q(
         "You are the IDBO Commercialisation engine. Define how to take this to market and the living "
         "VSB (Virtual Sovereign Business) — a specialised IDBO — that will run it.\n\n"
-        f"Concept: {concept[:600]}\nDesign: {design[:600]}\nDomain: {req.domain}\n\n"
+        f"Concept: {concept[:500]}\nDesign: {design[:500]}\nOperational intelligence: {operations[:500]}\n"
+        f"Domain: {req.domain}\n\n"
         "## Go-To-Market Strategy\n## Revenue Model\n"
         "## VSB Blueprint (AI CEO + C-Suite → CoE → BTO; living BMS/QMS/DCS/EMS)\n## First 90 Days",
         "genesis_commercial",
@@ -192,6 +206,7 @@ async def genesis_journey(req: JourneyRequest):
         "stage_3_innovate_research": research,     # §4.3 — best/latest approaches across science·tech·business·ops·law
         "stage_5_model_simulate_rank": stage_5,   # §4.5 — candidate solutions modelled + evidence-ranked → best selected
         "phase_2_design_development": design,
+        "stage_7_operational_intelligence": operations,   # §4.7 — deliverable · compliant · operable
         "phase_3_commercialisation": commercial,
         "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id, "node": gov.node},
         "quality_assurance": quality_assurance,
