@@ -16,6 +16,7 @@ interface Cycle {
   circulation: Record<string, { amount_wst: number; role: string }>;
   giving_back: { grants: { cause: string; amount_wst: number; score: number }[] } | null;
   metabolic_energy: number | null; entity_name: string; capital_preserved: boolean;
+  energy_state?: string; reserve_rate_applied?: number;   // §8→§12 economic survival instinct
   biogeochemical_model: string;
 }
 
@@ -123,6 +124,11 @@ export const VSBEconomy: React.FC = () => {
               <Metric label="Distributable" value={cycle.distributable_profit} tone="good" />
               <Metric label="Metabolic Energy" value={cycle.metabolic_energy != null ? `${Math.round(cycle.metabolic_energy * 100)}%` : '—'} tone="good" />
             </div>
+            {cycle.energy_state && cycle.energy_state !== 'healthy' && (
+              <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 mt-2" title="§8→§12 — the living organism's energy is low, so the economic organism conserves more (raises reserves).">
+                §8→§12 survival instinct: {cycle.energy_state}{cycle.reserve_rate_applied != null ? ` · reserve ${Math.round(cycle.reserve_rate_applied * 100)}%` : ''}
+              </p>
+            )}
             <p className="text-[9px] font-mono text-slate-600 mt-3 flex items-center gap-2"><ShieldCheck size={11} className="text-emerald-400" /> governance: {gov} · {cycle.biogeochemical_model}</p>
           </Card>
 

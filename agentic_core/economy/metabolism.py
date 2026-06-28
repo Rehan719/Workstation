@@ -51,11 +51,20 @@ class EconomicMetabolism:
         revenue = max(0.0, float(revenue))
         costs = max(0.0, float(costs))
 
+        # §8→§12 ECONOMIC SURVIVAL INSTINCT — when the LIVING ORGANISM's metabolic energy is depleted, the
+        # economic organism conserves more (raises reserves), mirroring the §8 homeostatic survival instinct.
+        metabolic_energy = self._atp_ratio()
+        effective_reserve = float(reserve_rate)
+        energy_state = "healthy"
+        if metabolic_energy is not None and metabolic_energy < 0.3:
+            effective_reserve = round(min(0.6, reserve_rate + 0.15), 3)
+            energy_state = "conserving (low organism energy)"
+
         # 1. Intake
         self.ledger.record("revenue", revenue, memo="cycle intake (revenue)")
 
-        # 2. Homeostasis — reserves first (legal/operating + prudential)
-        reserves = round(costs + revenue * reserve_rate, 2)
+        # 2. Homeostasis — reserves first (legal/operating + prudential; energy-adjusted §8→§12)
+        reserves = round(costs + revenue * effective_reserve, 2)
         self.ledger.record("reserves", reserves, memo="homeostasis (reserves + costs)")
 
         # 3. Distributable profit
@@ -72,8 +81,7 @@ class EconomicMetabolism:
         # 5. Giving-back — intelligent charity allocation (nutrient-return loop)
         charity_alloc = self.charity.allocate(splits.get("charity", 0.0)) if splits.get("charity", 0.0) > 0 else None
 
-        # 6. Biomimetic links — metabolic energy + nervous signal
-        metabolic_energy = self._atp_ratio()
+        # 6. Biomimetic links — nervous signal (metabolic energy already read above for the §8→§12 coupling)
         self._fire_signal(revenue, distributable)
 
         report = {
@@ -83,6 +91,8 @@ class EconomicMetabolism:
             "cycle_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "intake_revenue": revenue,
             "homeostasis_reserves": reserves,
+            "reserve_rate_applied": effective_reserve,   # §8→§12: energy-adjusted (conserves more when low)
+            "energy_state": energy_state,
             "distributable_profit": distributable,
             "circulation": {k: {"amount_wst": v, "role": _CYCLE_ROLE.get(k, k)} for k, v in splits.items()},
             "giving_back": charity_alloc,
@@ -118,10 +128,13 @@ class EconomicMetabolism:
     # ── biomimetic integration helpers (guarded) ──────────────────────────────
     @staticmethod
     def _atp_ratio() -> Optional[float]:
+        # LIVE metabolic energy — the SAME shared organism ATP the §8 homeostasis governs (cognition expends
+        # it, the heartbeat restores it), NOT a fresh simulator. This links §12 economy ↔ §8 living organism.
         try:
-            from agentic_core.molecular.atp_simulator import ATPSimulator
-            # ATPSimulator.ratio is the ATP/ADP energy state (0.5–15); normalise to 0–1.
-            return round(float(ATPSimulator().ratio) / 15.0, 3)
+            from agentic_core.organism.biobus import _get_atp
+            atp = _get_atp()
+            # ATP/ADP energy state (0.5–15); normalise to 0–1.
+            return round(max(0.0, min(1.0, float(atp.ratio) / 15.0)), 3) if atp else None
         except Exception:
             return None
 
