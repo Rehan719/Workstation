@@ -2546,3 +2546,38 @@ def test_religion_hadith_study_contract(client):
     _assert_str_field(body, "study")
     # high-stakes honesty guard: results must be flagged provisional / to be verified with scholars
     assert "verif" in (body.get("disclaimer") or "").lower()
+
+
+# ── VSB Economic Model — Owner-adjustable profit waterfall (W215, virtual-only) ───────────────────
+
+def test_economy_waterfall_owner_sovereignty(client):
+    import uuid as _uuid
+    vid = f"test-waterfall-{_uuid.uuid4().hex[:10]}"   # unique per run — no dependence on persisted state
+    # default comes from the entity template, summing to 1.0
+    d = client.get(f"/api/v1/economy/waterfall?vsb_id={vid}&entity_type=waqf_ltd_hybrid").json()
+    assert d["source"] == "entity_template"
+    assert abs(sum(d["waterfall"].values()) - 1.0) < 0.01
+    # the Owner adjusts the proportions (more to charity) — accepted, normalised, persisted
+    r = client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+        "proportions": {"owner": 0.10, "self_investment": 0.25, "capital_fund": 0.20,
+                        "user_projects": 0.15, "charity": 0.30}})
+    assert r.status_code == 200, r.text
+    assert r.json()["source"] == "owner_override"
+    # the override is now the effective waterfall
+    d2 = client.get(f"/api/v1/economy/waterfall?vsb_id={vid}&entity_type=waqf_ltd_hybrid").json()
+    assert d2["source"] == "owner_override"
+    assert d2["waterfall"]["charity"] == 0.30
+
+
+def test_economy_waterfall_template_constraints(client):
+    # a non-distributing form must reject an owner share > 0
+    bad = client.post("/api/v1/economy/waterfall", json={"vsb_id": "np-x", "entity_type": "nonprofit",
+        "proportions": {"owner": 0.5, "self_investment": 0.2, "capital_fund": 0.1,
+                        "user_projects": 0.1, "charity": 0.1}})
+    assert bad.status_code == 400
+    assert bad.json()["detail"]["violations"]
+    # a capital-preserving form must reject a zero capital_fund
+    bad2 = client.post("/api/v1/economy/waterfall", json={"vsb_id": "wq-x", "entity_type": "waqf",
+        "proportions": {"owner": 0.1, "self_investment": 0.3, "capital_fund": 0.0,
+                        "user_projects": 0.2, "charity": 0.4}})
+    assert bad2.status_code == 400

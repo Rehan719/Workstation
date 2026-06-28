@@ -19,12 +19,53 @@ metabolic system and the nervous signal bus. Virtual/simulated throughout.
 """
 from __future__ import annotations
 
+import json
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from agentic_core.config import data_path
 from .entities import get_template
 from .ledger import VirtualLedger
 from .charity import CharityIntelligence
+
+# §4/§8/§10 — the Owner can adjust the profit-distribution proportions per VSB (virtual). Overrides persist
+# here and are loaded over the entity-template default; they are always bounded by the template's binding
+# constraints (a non-distributing form forces owner=0; a capital-preserving form requires capital_fund>0).
+_WATERFALL_STAGES = ["owner", "self_investment", "capital_fund", "user_projects", "charity"]
+_WATERFALL_OVERRIDES = data_path("economy_waterfall_overrides.json")
+
+
+def _load_waterfall_overrides() -> Dict[str, Dict[str, float]]:
+    try:
+        return json.loads(_WATERFALL_OVERRIDES.read_text()) if _WATERFALL_OVERRIDES.exists() else {}
+    except Exception:
+        return {}
+
+
+def _save_waterfall_overrides(d: Dict[str, Dict[str, float]]) -> None:
+    _WATERFALL_OVERRIDES.parent.mkdir(parents=True, exist_ok=True)
+    _WATERFALL_OVERRIDES.write_text(json.dumps(d, indent=2))
+
+
+def validate_waterfall(proportions: Dict[str, Any], template: Dict[str, Any]) -> Tuple[Dict[str, float], List[str]]:
+    """Validate + normalise an Owner-proposed waterfall against the entity template's BINDING constraints.
+    Returns (normalised_waterfall summing to 1.0, violations). Virtual-only — the Owner sets, the form bounds."""
+    violations: List[str] = []
+    w: Dict[str, float] = {}
+    for s in _WATERFALL_STAGES:
+        try:
+            w[s] = max(0.0, min(1.0, float(proportions.get(s, 0.0))))
+        except (TypeError, ValueError):
+            w[s] = 0.0
+    total = sum(w.values())
+    if total <= 0:
+        return dict(template["waterfall"]), ["All proportions are zero — provide a distribution."]
+    w = {k: round(v / total, 4) for k, v in w.items()}
+    if not template.get("distributes_profit", True) and w["owner"] > 0:
+        violations.append("This entity form distributes no owner profit — set the owner share to 0.")
+    if template.get("capital_preserved", False) and w["capital_fund"] <= 0:
+        violations.append("This entity form preserves capital — the capital_fund share must be greater than 0.")
+    return w, violations
 
 _CYCLE_ROLE = {
     "owner": "nourishing the sovereign (host)",
@@ -42,6 +83,14 @@ class EconomicMetabolism:
         self.template = get_template(entity_type)
         self.entity_type = entity_type
         self.waterfall = dict(self.template["waterfall"])
+        # §4/§8/§10 — apply any Owner-set override (re-normalised; bounded by the template) over the default.
+        self.waterfall_source = "entity_template"
+        _ov = _load_waterfall_overrides().get(vsb_id)
+        if _ov:
+            merged = {s: float(_ov.get(s, self.waterfall.get(s, 0.0))) for s in _WATERFALL_STAGES}
+            tot = sum(merged.values()) or 1.0
+            self.waterfall = {k: round(v / tot, 4) for k, v in merged.items()}
+            self.waterfall_source = "owner_override"
         self.ledger = VirtualLedger(vsb_id)
         self.charity = CharityIntelligence()
 

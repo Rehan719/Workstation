@@ -16,11 +16,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from agentic_core.economy.entities import ENTITY_TEMPLATES, DEFAULT_ENTITY
-from agentic_core.economy.metabolism import EconomicMetabolism
+from agentic_core.economy.entities import ENTITY_TEMPLATES, DEFAULT_ENTITY, get_template
+from agentic_core.economy.metabolism import (
+    EconomicMetabolism, validate_waterfall, _load_waterfall_overrides,
+    _save_waterfall_overrides, _WATERFALL_STAGES,
+)
 from agentic_core.economy.charity import CharityIntelligence
 
 router = APIRouter(prefix="/api/v1/economy", tags=["vsb-economy"])
@@ -75,6 +78,61 @@ async def run_cycle(req: CycleRequest):
         governance = {"status": "ungated"}
 
     return {"cycle": report, "governance": governance}
+
+
+@router.get("/waterfall")
+async def get_waterfall(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY):
+    """The current effective profit-distribution waterfall for a VSB (Owner override if set, else the entity
+    template default) + the template's binding constraints the Owner must respect."""
+    m = EconomicMetabolism(vsb_id, entity_type)
+    t = m.template
+    return {
+        "vsb_id": vsb_id, "entity_type": entity_type, "entity_name": t["name"],
+        "waterfall": m.waterfall, "source": m.waterfall_source,
+        "template_default": t["waterfall"], "stages": _WATERFALL_STAGES,
+        "constraints": {"distributes_profit": t["distributes_profit"],
+                        "capital_preserved": t["capital_preserved"]},
+        "note": "Proportions of distributable profit (after reserves), summing to 1.0. Virtual/simulated WST.",
+    }
+
+
+class WaterfallRequest(BaseModel):
+    vsb_id: str = "workstation-idbo"
+    entity_type: str = DEFAULT_ENTITY
+    proportions: Dict[str, float]
+
+
+@router.post("/waterfall")
+async def set_waterfall(req: WaterfallRequest):
+    """§4/§8/§10 Owner sovereignty: adjust the profit-distribution proportions for a VSB (virtual). The
+    proposal is normalised to 1.0 and BOUND by the entity template (a non-distributing form forces owner=0;
+    a capital-preserving form requires capital_fund>0). Persisted, UEG-logged, effective from the next cycle.
+    Virtual/simulated only — no real funds move."""
+    template = get_template(req.entity_type)
+    waterfall, violations = validate_waterfall(req.proportions, template)
+    if violations:
+        raise HTTPException(status_code=400, detail={
+            "violations": violations,
+            "constraints": {"distributes_profit": template["distributes_profit"],
+                            "capital_preserved": template["capital_preserved"]},
+            "stages": _WATERFALL_STAGES})
+    overrides = _load_waterfall_overrides()
+    overrides[req.vsb_id] = waterfall
+    _save_waterfall_overrides(overrides)
+    # Constitutional audit — the Owner adjusting the distribution policy is a material, logged act.
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger("meta/gaas_v5_ueg.json").log({
+            "type": "waterfall_override", "vsb_id": req.vsb_id, "entity_type": req.entity_type,
+            "waterfall": waterfall, "by": "owner"})
+    except Exception:
+        pass
+    return {
+        "vsb_id": req.vsb_id, "entity_type": req.entity_type, "waterfall": waterfall,
+        "source": "owner_override", "applied": True,
+        "note": "Owner-set proportions persisted (virtual). Effective next cycle; logged to the UEG. "
+                "Reset by posting the template defaults.",
+    }
 
 
 @router.get("/ledger/{vsb_id}")
