@@ -2474,3 +2474,65 @@ def test_refine_iterates_in_house(client):
     assert body.get("refined")
     p = body.get("ai_provenance") or {}
     assert p.get("posture") == "in-house-first" and p.get("is_external") is False
+
+
+# ── Phase 2 domain-depth endpoints (W208-212) ─────────────────────────────────
+# Structural/contract tests — NOT @_ai_only, so they run on the native floor in CI and guard routing +
+# the response contract (these would catch a decorator-shadow / 422 regression on a new endpoint).
+
+def _assert_str_field(body: dict, key: str):
+    assert key in body, f"missing '{key}' in {list(body)[:8]}"
+    assert isinstance(body[key], str) and body[key].strip(), f"'{key}' empty"
+
+
+def test_law_research_contract(client):
+    r = client.post("/api/v1/law/research", json={
+        "question": "Can an employer enforce a 12-month non-compete clause?",
+        "jurisdiction": "England & Wales", "area_of_law": "employment"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    _assert_str_field(body, "analysis")
+    assert body.get("method") == "IRAC"
+    assert "legal advice" in (body.get("disclaimer") or "").lower()
+
+
+def test_employment_salary_negotiation_contract(client):
+    r = client.post("/api/v1/employment/salary-negotiation", json={
+        "target_role": "Senior Software Engineer", "seniority": "senior", "offered_salary": "£70,000"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    _assert_str_field(body, "plan")
+    assert body.get("disclaimer")
+    # salary_negotiation must be discoverable in the services list
+    svc = client.get("/api/v1/employment/services").json()
+    assert any(s.get("id") == "salary_negotiation" for s in svc.get("services", []))
+
+
+def test_science_experiment_design_contract(client):
+    r = client.post("/api/v1/science/experiment-design", json={
+        "hypothesis": "A daily mindfulness app reduces self-reported anxiety in undergraduates",
+        "methodology": "rct", "domain": "psychology"})
+    assert r.status_code == 200, r.text
+    _assert_str_field(r.json(), "design")
+
+
+def test_care_safeguarding_contract(client):
+    r = client.post("/api/v1/care/safeguarding", json={
+        "concern": "An elderly client has unexplained bruising and seems fearful of a relative.",
+        "setting": "domiciliary"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    _assert_str_field(body, "guidance")
+    # the safety-critical disclaimer must direct to emergency services
+    assert "999" in (body.get("disclaimer") or "")
+
+
+def test_education_feedback_contract(client):
+    r = client.post("/api/v1/education/feedback", json={
+        "student_work": "The water cycle is when water goes up and comes down as rain.",
+        "task": "Explain the water cycle", "level": "KS2", "subject": "science"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    _assert_str_field(body, "feedback")
+    # marking must be flagged as indicative, never a final/official grade
+    assert "indicative" in (body.get("disclaimer") or "").lower()
