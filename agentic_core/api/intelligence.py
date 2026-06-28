@@ -280,33 +280,35 @@ _SPI_PROMPTS = {
 
 # ── AI-powered cognitive + MJM helpers ───────────────────────────────────────
 
-async def _ai_cognitive_prime(problem: str, domain: str) -> str:
-    """
-    Run all 6 Urdu cognitive engines as real AI analysis.
-    Single gateway call representing Inkashaf→Samajh→Soch→Aqal→Hoshiyari→Iman.
-    """
+# §7 — the cognitive engines as a reconfigurable catalogue: users can select WHICH engines run.
+_COGNITIVE_LENSES = [
+    ("inkashaf",  "INKASHAF (Pattern Discovery & Revelation)",
+     "What hidden patterns, structures, and non-obvious connections does this reveal? What is the deep nature of this challenge?"),
+    ("samajh",    "SAMAJH (Deep Comprehension & Contextual Understanding)",
+     "What is the true meaning, context, and full implication of this problem? What are we really dealing with beneath the surface?"),
+    ("soch",      "SOCH (Reflective Thinking & Hypothesis Generation)",
+     "What hypotheses, alternative framings, and creative interpretations emerge? What are we not yet considering?"),
+    ("aqal",      "AQAL (Logical Reasoning & Strategic Planning)",
+     "What is the optimal logical structure for addressing this? What reasoning path leads to the most rigorous outcome?"),
+    ("hoshiyari", "HOSHIYARI (Anomaly Detection & Risk Intelligence)",
+     "What risks, blind spots, biases, and failure modes must we guard against? What could go wrong that we are not seeing?"),
+    ("iman",      "IMAN (Values Alignment & Ethical Conviction)",
+     "Does this align with ethical principles, mission, and human flourishing? What values must guide the approach?"),
+]
+
+
+async def _ai_cognitive_prime(problem: str, domain: str, engines: list | None = None) -> str:
+    """Run the cognitive engines (Inkashaf→Samajh→Soch→Aqal→Hoshiyari→Iman) as real AI analysis.
+    §7 user design control: `engines` (subset of the lens ids) reconfigures WHICH engines run; the default
+    (None/empty) runs all six (backward-compatible). Single in-house-first gateway call."""
+    wanted = {str(e).lower() for e in (engines or [])}
+    sel = [e for e in _COGNITIVE_LENSES if (not wanted or e[0] in wanted)] or _COGNITIVE_LENSES
+    lenses = "".join(f"## {name}\n{q}\n\n" for _id, name, q in sel)
     prompt = (
-        "You are the Nine-Engine Cognitive Architecture — six specialised intelligence systems "
-        "operating in biological cascade sequence. Analyse the following through all six lenses:\n\n"
+        f"You are the Cognitive Architecture — {len(sel)} specialised intelligence systems operating in "
+        "biological cascade sequence. Analyse the following through each lens:\n\n"
         f"Problem: {problem}\nDomain: {domain}\n\n"
-        "## INKASHAF (Pattern Discovery & Revelation)\n"
-        "What hidden patterns, structures, and non-obvious connections does this reveal? "
-        "What is the deep nature of this challenge?\n\n"
-        "## SAMAJH (Deep Comprehension & Contextual Understanding)\n"
-        "What is the true meaning, context, and full implication of this problem? "
-        "What are we really dealing with beneath the surface?\n\n"
-        "## SOCH (Reflective Thinking & Hypothesis Generation)\n"
-        "What hypotheses, alternative framings, and creative interpretations emerge? "
-        "What are we not yet considering?\n\n"
-        "## AQAL (Logical Reasoning & Strategic Planning)\n"
-        "What is the optimal logical structure for addressing this? "
-        "What reasoning path leads to the most rigorous outcome?\n\n"
-        "## HOSHIYARI (Anomaly Detection & Risk Intelligence)\n"
-        "What risks, blind spots, biases, and failure modes must we guard against? "
-        "What could go wrong that we are not seeing?\n\n"
-        "## IMAN (Values Alignment & Ethical Conviction)\n"
-        "Does this align with ethical principles, mission, and human flourishing? "
-        "What values must guide the approach?\n\n"
+        f"{lenses}"
         "For each engine, provide 3-4 sharp, specific insights. Be concrete and analytical."
     )
     try:
@@ -435,6 +437,14 @@ class SolveRequest(BaseModel):
     problem: str
     domain: str = "general"
     context: str = ""
+    engines: list[str] = []   # §7 — select which cognitive engines run (empty = all six)
+
+
+@router.get("/cognitive-engines")
+async def cognitive_engines_catalogue():
+    """§7 — the reconfigurable cognitive-engine catalogue: the lenses users can select for the cascade."""
+    return {"engines": [{"id": e[0], "name": e[1]} for e in _COGNITIVE_LENSES],
+            "note": "Select any subset for /solve (or the cascade); empty = all run."}
 
 
 @router.post("/bdp")
@@ -471,7 +481,7 @@ async def solve_with_cognitive_stack(req: SolveRequest):
     Full cognitive stack synthesis. Now returns AI-powered Cognitive cascade + MJM +
     final synthesis — all three layers user-visible with structured sections.
     """
-    cognitive_analysis = await _ai_cognitive_prime(req.problem, req.domain)
+    cognitive_analysis = await _ai_cognitive_prime(req.problem, req.domain, req.engines)
     mjm_assessment = await _ai_mjm_lifecycle(req.problem, req.domain, cognitive_analysis)
 
     synthesis_prompt = (
