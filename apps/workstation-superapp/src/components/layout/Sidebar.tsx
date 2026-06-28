@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, MessageSquare, Package, Settings, ShieldCheck, Heart,
@@ -7,10 +7,11 @@ import {
   GitBranch, Target, Fingerprint, BarChart3, Book, Scale, Briefcase,
   GraduationCap, Trophy, Wifi, Beaker, History, Microscope, Gavel, Binary, Code2, Star, Archive, Eye,
   HeartPulse, Workflow, Search, Globe2, Layers, ChevronDown,
-  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Boxes
+  FolderOpen, Folders, Building2, Users, TrendingUp, Copy, Dna, Crown, Coins, Boxes, Pin
 } from 'lucide-react';
 import { useStore, RealmType } from '@workstation/shared';
 import { useT } from '../../lib/i18n';
+import { getPinned, togglePinned } from '../../lib/userPrefs';
 
 interface NavItem {
   name: string;
@@ -163,6 +164,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   const { t } = useT();
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
+  // §9 — user-customisable interface: a personal "Pinned" quick-access section (persisted locally).
+  const [pinned, setPinned] = useState<string[]>(getPinned());
+  useEffect(() => {
+    const refresh = () => setPinned(getPinned());
+    window.addEventListener('ws:user-prefs', refresh);
+    return () => window.removeEventListener('ws:user-prefs', refresh);
+  }, []);
+  const itemById: Record<string, NavItem> = {};
+  allNavItems.forEach(sec => sec.subItems?.forEach(i => { itemById[i.id] = i; }));
+  const pinnedItems = pinned.map(id => itemById[id]).filter(Boolean);
+  const onPin = (e: React.MouseEvent, id: string) => { e.stopPropagation(); togglePinned(id); };
+
   const toggleGroup = (id: string) => {
     setOpenGroups(prev => {
       const next = new Set(prev);
@@ -185,6 +198,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto pr-1 custom-scrollbar">
+        {/* §9 — user-pinned quick access (customise the interface) */}
+        {pinnedItems.length > 0 && (
+          <div className="mb-2 pb-2 border-b border-slate-800/60">
+            <p className="px-4 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-aura/60 flex items-center gap-1.5"><Pin size={10} /> Pinned</p>
+            {pinnedItems.map((p: any) => (
+              <div key={p.id} className="group flex items-center">
+                <button type="button" onClick={() => { setActiveTab(p.id); navigate(`/${p.id}`); }}
+                  className={`flex-1 flex items-center gap-2.5 py-1.5 px-4 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all ${activeTab === p.id ? 'text-aura bg-aura/5' : 'text-slate-500 hover:text-white hover:bg-slate-900/40'}`}>
+                  <p.icon size={12} className="shrink-0 text-aura/70" />
+                  <span className="truncate">{t(`nav.${p.id}`, p.name)}</span>
+                </button>
+                <button type="button" onClick={(e) => onPin(e, p.id)} title="Unpin" className="px-1.5 text-aura/70 hover:text-aura shrink-0"><Pin size={11} /></button>
+              </div>
+            ))}
+          </div>
+        )}
         {filteredNavItems.map((item: any) => {
           const isOpen = openGroups.has(item.id);
           const hasChildren = Boolean(item.subItems?.length);
@@ -213,22 +242,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
               </button>
               {hasChildren && isOpen && (
                 <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-slate-800 pl-3">
-                  {item.subItems.map((sub: any) => (
-                    <button
-                      key={sub.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveTab(sub.id);
-                        navigate(`/${sub.id}`);
-                      }}
-                      className={`w-full flex items-center gap-2.5 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all group ${
-                        activeTab === sub.id ? 'text-aura bg-aura/5' : 'text-slate-600 hover:text-slate-300 hover:bg-slate-900/40'
-                      }`}
-                    >
-                      <sub.icon size={12} className={`shrink-0 transition-opacity ${activeTab === sub.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-80'}`} />
-                      <span className="truncate">{t(`nav.${sub.id}`, sub.name)}</span>
-                    </button>
-                  ))}
+                  {item.subItems.map((sub: any) => {
+                    const isPinned = pinned.includes(sub.id);
+                    return (
+                    <div key={sub.id} className="group flex items-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab(sub.id);
+                          navigate(`/${sub.id}`);
+                        }}
+                        className={`flex-1 min-w-0 flex items-center gap-2.5 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
+                          activeTab === sub.id ? 'text-aura bg-aura/5' : 'text-slate-600 hover:text-slate-300 hover:bg-slate-900/40'
+                        }`}
+                      >
+                        <sub.icon size={12} className={`shrink-0 transition-opacity ${activeTab === sub.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-80'}`} />
+                        <span className="truncate">{t(`nav.${sub.id}`, sub.name)}</span>
+                      </button>
+                      <button type="button" onClick={(e) => onPin(e, sub.id)}
+                        title={isPinned ? 'Unpin from quick access' : 'Pin to quick access'}
+                        className={`px-1.5 shrink-0 transition-opacity ${isPinned ? 'text-aura/80 opacity-100' : 'text-slate-600 opacity-0 group-hover:opacity-100 hover:text-aura'}`}>
+                        <Pin size={11} />
+                      </button>
+                    </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

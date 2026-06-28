@@ -6,6 +6,7 @@ export interface UserPrefs {
   defaultRealm?: string;   // §17.1 realm (enterprise · learning · developing · scholarship)
   defaultDomain?: string;  // §17.1 domain (religion · science · education · law · employment · care)
   language?: string;       // E7 — BCP-47 code; drives voice-dictation language (real, today)
+  pinned?: string[];       // §9 — user-customisable interface: nav item ids the user pinned for quick access
 }
 
 // E7 — supported languages (§9 "accessible to all — all languages"). BCP-47 codes are used by the
@@ -42,4 +43,17 @@ export function setPrefs(next: UserPrefs) {
 
 export function clearPrefs() {
   try { localStorage.removeItem(KEY); window.dispatchEvent(new CustomEvent('ws:user-prefs')); } catch { /* ignore */ }
+}
+
+// §9 — user-customisable interface: pin/unpin nav items for a personal quick-access section.
+export function getPinned(): string[] {
+  const p = getPrefs().pinned;
+  return Array.isArray(p) ? p : [];
+}
+
+export function togglePinned(id: string) {
+  const prefs = getPrefs();
+  const pinned = Array.isArray(prefs.pinned) ? prefs.pinned : [];
+  const next = pinned.includes(id) ? pinned.filter(x => x !== id) : [...pinned, id];
+  setPrefs({ ...prefs, pinned: next });
 }
