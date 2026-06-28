@@ -69,6 +69,12 @@ interface CompositionRun {
     ran?: string; csuite_engaged?: string[]; management_systems?: string[]; appraisals?: string[];
     homeostasis?: { posture?: string }; governance?: string; ueg_hash?: string;
   } | null;
+  // §7 deep integration — resources with a real endpoint also execute their genuine engine logic.
+  real_resource_runs?: {
+    resource: string; ran?: string; output?: string; error?: string;
+    viable?: boolean; passages?: number; cognitive_primed?: boolean; engines_used?: string[];
+    scenarios_run?: number; generations_run?: number; winner?: string;
+  }[];
 }
 
 const CLASS_ICON: Record<string, React.ComponentType<any>> = {
@@ -517,6 +523,37 @@ export const ResourceFabric: React.FC = () => {
                           {runResult.org_cascade.appraisals && (
                             <p className="text-[8px] text-slate-600">arms-length appraisals: {runResult.org_cascade.appraisals.length} tiers</p>
                           )}
+                        </div>
+                      )}
+                      {(runResult.real_resource_runs || []).length > 0 && (
+                        <div className="border border-aura/30 bg-aura/5 rounded-lg p-2.5 space-y-2">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-aura">§7 real engines ran · the composed resources executed their genuine logic</p>
+                          {(runResult.real_resource_runs || []).map((rr, i) => (
+                            <div key={i} className="border-t border-aura/10 first:border-t-0 pt-1.5 first:pt-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-[9px] font-black uppercase text-white">{rr.resource}</span>
+                                {rr.ran && <span className="text-[8px] font-mono text-slate-600">{rr.ran}</span>}
+                                {rr.error
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital">error</span>
+                                  : <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">ran</span>}
+                                {typeof rr.viable === 'boolean' && (
+                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${rr.viable ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{rr.viable ? 'viable' : 'not viable'}{rr.passages ? ` · ${rr.passages}p` : ''}</span>
+                                )}
+                                {typeof rr.cognitive_primed === 'boolean' && (
+                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.cognitive_primed ? 'cognitive-primed' : 'context-fed'}</span>
+                                )}
+                                {typeof rr.scenarios_run === 'number' && (
+                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.scenarios_run} scenarios</span>
+                                )}
+                                {typeof rr.generations_run === 'number' && (
+                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.generations_run} generations</span>
+                                )}
+                              </div>
+                              {(rr.output || rr.error) && (
+                                <p className="text-[10px] text-slate-400 whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto mt-1">{rr.error || rr.output}</p>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
                       {runResult.trace.map(t => (
