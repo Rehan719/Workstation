@@ -75,6 +75,13 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["pattern discovery", "comprehension", "reasoning", "anomaly detection", "values alignment"],
        {"problem": "str", "domain": "str"}, "/api/v1/intelligence/solve",
        ["synthesis", "design", "development", "delivery", "governance"], biomimetic=True),
+    _R("mjm", "MJM Meta-Judgement", "process_intelligence", "engine",
+       "The MJM Orchestrator (Mushahida → Jaiza → Muaina) — the meta-judgement system operating ABOVE the "
+       "cognitive engines: witnessed observation → deep assessment → verified action directives. Reusable "
+       "standalone: judges over supplied context, or auto-primes the cognitive cascade first.",
+       ["meta-judgement", "witnessed observation", "deep assessment", "verified action directives"],
+       {"problem": "str", "domain": "str", "prime": "bool (auto cognitive prime)", "engines": "list (priming engines)"},
+       "/api/v1/intelligence/mjm", ["synthesis", "governance", "delivery", "design", "development"], biomimetic=True),
     _R("nexus", "Synthesis Nexus", "process_intelligence", "orchestrator",
        "4-layer autonomous chain: cognitive cascade → MJM → auto-selected engine → apex synthesis.",
        ["auto engine routing", "cross-engine synthesis", "synergistic chaining"],

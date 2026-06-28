@@ -33,7 +33,7 @@ from __future__ import annotations
 import json
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -431,6 +431,33 @@ class IntelligenceRequest(BaseModel):
     # §7 user design control — genuinely reconfigure the engine's behaviour (honored at run time):
     rigor: str = "standard"   # standard | rigorous | exhaustive — analytical depth/evidence demand
     focus: str = ""           # optional lens the analysis is weighted toward
+
+
+class MJMRequest(BaseModel):
+    problem: str
+    domain: str = "general"
+    cognitive_context: str = ""     # judge over context you supply…
+    prime: bool = True              # …or auto-run a cognitive prime first when none given
+    engines: list[str] = []         # which cognitive engines prime the judgement (empty = all)
+
+
+@router.post("/mjm")
+async def mjm_assess(req: MJMRequest):
+    """§7 MJM Orchestrator (Mushahida → Jaiza → Muaina) — the meta-judgement system that operates ABOVE the
+    cognitive engines: witnessed observation → deep assessment → verified action. Exposed standalone +
+    reusable: judges a problem over context you supply, or (default) over its own cognitive prime — so it can
+    be composed/rerun like the other §7 engines, not only reached inside /solve."""
+    if not req.problem.strip():
+        raise HTTPException(status_code=400, detail="Provide a problem to judge.")
+    ctx = req.cognitive_context.strip()
+    primed = False
+    if not ctx and req.prime:
+        ctx = await _ai_cognitive_prime(req.problem, req.domain, req.engines)
+        primed = True
+    assessment = await _ai_mjm_lifecycle(req.problem, req.domain, ctx)
+    return {"problem": req.problem, "domain": req.domain,
+            "phases": ["Mushahida (witnessed observation)", "Jaiza (deep assessment)", "Muaina (verified action)"],
+            "cognitive_primed": primed, "assessment": assessment, "status": "complete"}
 
 
 class SolveRequest(BaseModel):

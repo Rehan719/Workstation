@@ -95,6 +95,12 @@ export const CognitionIntegration: React.FC = () => {
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.cognitive_cascade}</p>
               </div>
             )}
+            {solveRes.mjm_assessment && (
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400 mb-1">MJM Meta-Judgement · Mushahida → Jaiza → Muaina</p>
+                <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">{solveRes.mjm_assessment}</p>
+              </div>
+            )}
             {solveRes.synthesis && (
               <div className="p-3 rounded-xl bg-slate-950 border border-highlight/20">
                 <p className="text-[9px] font-black uppercase tracking-widest text-highlight mb-1">Synthesis</p>
