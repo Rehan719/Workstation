@@ -38,6 +38,9 @@ export const BTOCatalog: React.FC = () => {
   const [blueprint, setBlueprint]               = useState<any>(null);
   const [expandedKeys, setExpandedKeys]         = useState<Set<string>>(new Set());
   const [errorMsg, setErrorMsg]                 = useState<string | null>(null);
+  // §13 real Build-to-Order: produce genuine deliverables for the blueprint's catalog products
+  const [btoBuilding, setBtoBuilding]           = useState(false);
+  const [btoResult, setBtoResult]               = useState<any>(null);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -78,6 +81,27 @@ export const BTOCatalog: React.FC = () => {
       setErrorMsg('Build failed — check the API server is running.');
     } finally {
       setBuilding(false);
+    }
+  };
+
+  const handleBuildToOrder = async () => {
+    const catalog = blueprint?.components?.products?.catalog;
+    const list = Array.isArray(catalog) ? catalog : (catalog?.products || []);
+    const slugs = list.map((p: any) => p.slug).filter(Boolean).slice(0, 3);   // bounded: build the first few
+    if (slugs.length === 0) return;
+    setBtoBuilding(true);
+    setBtoResult(null);
+    try {
+      const resp = await axios.post('/api/v1/bto/build', {
+        entity_name: blueprint.entity_name || 'Sovereign Entity',
+        product_resources: slugs,
+        objective: `Build-to-order delivery for ${blueprint.entity_name || 'Sovereign Entity'}`,
+      });
+      setBtoResult(resp.data);
+    } catch {
+      setErrorMsg('Build-to-Order failed — check the API server is running.');
+    } finally {
+      setBtoBuilding(false);
     }
   };
 
@@ -210,11 +234,52 @@ export const BTOCatalog: React.FC = () => {
               })}
             </div>
 
+            {/* §13 Build-to-Order — turn the catalog products in this blueprint into REAL deliverables */}
+            {blueprint.components?.products && (
+              <div className="mt-6 border border-aura/30 bg-aura/5 rounded-2xl p-4">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-aura flex items-center gap-1.5"><Package size={12} /> Build-to-Order · real §13 delivery</p>
+                    <p className="text-[10px] text-slate-500 font-bold mt-0.5">Produce genuine, QMS-gated deliverables for this blueprint's catalog products (first 3) on Workstation's own engines.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleBuildToOrder}
+                    disabled={btoBuilding}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shrink-0 ${
+                      btoBuilding ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-aura text-sovereign hover:scale-105 active:scale-95'}`}
+                  >
+                    {btoBuilding ? <Loader2 size={13} className="animate-spin" /> : <Wrench size={13} />}
+                    {btoBuilding ? 'Building…' : 'Build to Order'}
+                  </button>
+                </div>
+                {btoResult && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                      Delivered <span className="text-emerald-400">{btoResult.delivered_count}</span> · {btoResult.posture}
+                    </p>
+                    {(btoResult.built || []).map((b: any, i: number) => (
+                      <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950 border border-slate-900">
+                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.status === 'BUILT' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>{b.status}</span>
+                        <span className="text-xs font-bold text-white truncate flex-1">{b.name}</span>
+                        {typeof b.qms_gate_passed === 'boolean' && (
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>QMS {b.qms_gate_passed ? 'pass' : 'fail'}</span>
+                        )}
+                        {b.deliverable_id && (
+                          <span className="text-[8px] font-mono text-aura shrink-0" title="Produced via the §13 living-deliverables engine">{b.deliverable_id}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Reset */}
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
-                onClick={() => { setBlueprint(null); setSelectedComponents([]); setEntityName(''); setExpandedKeys(new Set()); setErrorMsg(null); }}
+                onClick={() => { setBlueprint(null); setSelectedComponents([]); setEntityName(''); setExpandedKeys(new Set()); setErrorMsg(null); setBtoResult(null); }}
                 className="text-[9px] font-black text-slate-600 hover:text-white uppercase tracking-widest transition-colors"
               >
                 Reset Builder
