@@ -43,6 +43,7 @@ export const ScienceHub: React.FC = () => {
             </h3>
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                <button type="button" onClick={() => setActiveTab('research')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'research' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Research</button>
+               <button type="button" onClick={() => setActiveTab('design')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'design' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Experiment Design</button>
                <button type="button" onClick={() => setActiveTab('literature')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'literature' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Literature</button>
                <button type="button" onClick={() => setActiveTab('qep')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qep' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>QEP Flagship</button>
             </div>
@@ -57,6 +58,21 @@ export const ScienceHub: React.FC = () => {
                     <QEPImmersiveTools domain="science" />
                  </div>
               </motion.div>
+            ) : activeTab === 'design' ? (
+              <DomainTool
+                title="Experiment Designer"
+                description={<>State a hypothesis — Workstation's <span className="text-aura">own</span> AI designs a rigorous study (variables, controls, sampling &amp; power, procedure, analysis plan, validity, ethics), grounded in your chosen methodology, in-house.</>}
+                endpoint="/api/v1/science/experiment-design"
+                resultKey="design"
+                submitLabel="Design the study"
+                fields={[
+                  { name: 'hypothesis', label: 'Hypothesis to test', type: 'textarea', placeholder: 'e.g. A 10-minute daily mindfulness app reduces self-reported anxiety in undergraduates' },
+                  { name: 'methodology', label: 'Methodology', type: 'select', options: ['experimental', 'rct', 'cohort_study', 'case_control', 'mixed_methods', 'computational', 'survey', 'grounded_theory'], default: 'experimental' },
+                  { name: 'domain', label: 'Domain', type: 'text', default: 'psychology', placeholder: 'psychology | biology | materials | …' },
+                  { name: 'constraints', label: 'Constraints (optional)', type: 'textarea', placeholder: 'budget, time, sample availability, ethics' },
+                  { name: 'sample_size_hint', label: 'Effect-size / sample context (optional)', type: 'text', placeholder: 'e.g. expect a small-to-medium effect; ~200 available' },
+                ]}
+              />
             ) : activeTab === 'literature' ? (
               <DomainTool
                 title="Literature Review"

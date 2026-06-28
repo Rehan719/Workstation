@@ -1,10 +1,11 @@
 """
 Science Domain API — Research synthesis and scholarly tools.
 
-  POST /api/v1/science/synthesise     — synthesise a research question into a structured report
-  POST /api/v1/science/hypothesis     — generate and evaluate hypotheses for a research question
-  POST /api/v1/science/literature     — produce a structured literature review outline
-  GET  /api/v1/science/methodologies  — list supported research methodologies
+  POST /api/v1/science/synthesise        — synthesise a research question into a structured report
+  POST /api/v1/science/hypothesis        — generate and evaluate hypotheses for a research question
+  POST /api/v1/science/experiment-design — design a rigorous study/experiment to test a hypothesis
+  POST /api/v1/science/literature        — produce a structured literature review outline
+  GET  /api/v1/science/methodologies     — list supported research methodologies
 """
 from __future__ import annotations
 
@@ -141,6 +142,59 @@ async def generate_hypotheses(req: HypothesisRequest):
         "domain": req.domain,
         "hypotheses_raw": hypotheses if hypotheses else [raw],
         "recommendation": recommendation,
+        "ai_provenance": provenance,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+class ExperimentDesignRequest(BaseModel):
+    hypothesis: str
+    domain: str = "general"
+    methodology: str = "experimental"   # one of the _METHODOLOGIES ids
+    constraints: str = ""               # budget / time / sample availability / ethics constraints
+    sample_size_hint: str = ""          # any known effect size, prior N, or population size
+
+
+@router.post("/experiment-design")
+async def experiment_design(req: ExperimentDesignRequest):
+    """Design a rigorous study/experiment to test a hypothesis — variables, design type, controls, sampling &
+    power, procedure, measures, analysis plan, validity threats, and ethics — grounded in the chosen
+    methodology. The natural step between hypothesis generation and literature review."""
+    extras = "".join([
+        f"Constraints: {req.constraints}\n" if req.constraints else "",
+        f"Sample/effect-size context: {req.sample_size_hint}\n" if req.sample_size_hint else "",
+    ])
+    prompt = (
+        "You are a senior research methodologist. Design a rigorous, feasible study to TEST the hypothesis "
+        "below, grounded in the chosen methodology.\n\n"
+        f"Hypothesis: {req.hypothesis}\n"
+        f"Domain: {req.domain}\n"
+        f"Methodology: {req.methodology.replace('_', ' ')}\n"
+        f"{extras}\n"
+        "Produce:\n"
+        "## Study Design (the design type and why it fits the hypothesis + methodology)\n"
+        "## Variables (independent, dependent, and controlled variables / likely confounders)\n"
+        "## Operational Hypotheses (H0 and H1, stated testably; directional if justified)\n"
+        "## Sampling & Power (target population, sampling method, and sample-size reasoning — be explicit that "
+        "a precise N needs effect-size and alpha/power assumptions; give the assumptions you'd use)\n"
+        "## Procedure (a clear, step-by-step protocol)\n"
+        "## Measures & Instruments (what is measured and how; validated instruments where relevant)\n"
+        "## Analysis Plan (the statistical tests/model matched to the design and data type)\n"
+        "## Validity & Bias (threats to internal/external validity and mitigations — randomisation, blinding, controls)\n"
+        "## Ethics & Governance (consent, risk, data protection, and what approvals are needed)\n"
+        "## Limitations\n\n"
+        "Be rigorous and specific. Never invent results or fabricate precise statistics as if they were data — "
+        "state assumptions explicitly and acknowledge uncertainty."
+    )
+
+    design, provenance = await ai_text(prompt, "science_experiment")
+
+    return {
+        "design_id": uuid.uuid4().hex[:10],
+        "hypothesis": req.hypothesis,
+        "domain": req.domain,
+        "methodology": req.methodology,
+        "design": design,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
