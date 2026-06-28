@@ -39,6 +39,16 @@ const JOURNEYS = [
   },
 ] as const;
 
+// §3 — what Workstation IDBO IS: ONE living organism that is simultaneously these five things at once.
+// Each identity links to where it's realised in the product.
+const IDENTITIES = [
+  { n: '1', what: 'A service', desc: 'End-to-end AI-mediated Concept → Commercialisation for anybody’s challenge.', route: '/genesis' },
+  { n: '2', what: 'A factory of living enterprises', desc: 'Each output is itself a living, self-running VSB IDBO entity.', route: '/projects' },
+  { n: '3', what: 'A living organisation', desc: 'Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order.', route: '/ceo' },
+  { n: '4', what: 'A reconfigurable resource fabric', desc: 'Engines · reactors · labs · factories + its own AI swarm/models/orchestration.', route: '/resource-fabric' },
+  { n: '5', what: 'An economic organism', desc: 'An autonomous, compliant hybrid Waqf/Trust/Multinational entity (virtual WST).', route: '/economy' },
+];
+
 // The platform's capability pillars (the vision map) — each a real, reachable surface.
 const PILLARS = [
   { name: 'Native AI Fabric',       desc: 'Our own swarm · models · orchestration', icon: Cpu,        route: '/native-ai' },
@@ -146,6 +156,22 @@ export const DashboardNew: React.FC = () => {
               </Card>
             </motion.div>
           ))}
+        </section>
+
+        {/* §3 — what Workstation IDBO IS: one living organism, five things at once */}
+        <section>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-1">{t('home.whatItIs', 'What Workstation IDBO is')}</h3>
+          <p className="text-[11px] text-slate-500 mb-4 max-w-2xl">One living, biomimetic organism that is <span className="text-aura">simultaneously</span> all five — generated end-to-end, self-running, in-house.</p>
+          <div className="grid grid-cols-1 @[560px]:grid-cols-2 @[900px]:grid-cols-5 gap-3">
+            {IDENTITIES.map(it => (
+              <button key={it.n} type="button" onClick={() => navigate(it.route)}
+                className="group text-left p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-aura/50 transition-all">
+                <div className="w-7 h-7 rounded-lg bg-aura/10 text-aura flex items-center justify-center font-black text-xs mb-2">{it.n}</div>
+                <p className="font-black text-white text-xs leading-tight">{it.what}</p>
+                <p className="text-[10px] text-slate-500 leading-snug mt-1">{it.desc}</p>
+              </button>
+            ))}
+          </div>
         </section>
 
         {/* E5 — personalised "continue" strip: your recent outputs (from My Work), if any */}
