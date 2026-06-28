@@ -57,7 +57,7 @@ export const EmploymentHub: React.FC = () => {
                <span className="truncate">Employment Engines</span>
             </h3>
             <div className="flex gap-2 @[480px]:gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800 max-w-full overflow-x-auto custom-scrollbar">
-               {([['studio', 'Application Studio'], ['cv', 'CV Tailor'], ['cover', 'Cover Letter'], ['application', 'Application Form'], ['interview', 'Interview Prep'], ['path', 'Career Path'], ['qep', 'QEP Flagship']] as [string, string][]).map(([id, label]) => (
+               {([['studio', 'Application Studio'], ['cv', 'CV Tailor'], ['cover', 'Cover Letter'], ['application', 'Application Form'], ['interview', 'Interview Prep'], ['path', 'Career Path'], ['salary', 'Salary Negotiation'], ['qep', 'QEP Flagship']] as [string, string][]).map(([id, label]) => (
                  <button key={id} type="button" onClick={() => setActiveTab(id)} className={`shrink-0 whitespace-nowrap px-3 @[480px]:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === id ? 'bg-slate-800 text-aura shadow-lg' : 'text-slate-500 hover:text-white'}`}>{label}</button>
                ))}
             </div>
@@ -145,6 +145,23 @@ export const EmploymentHub: React.FC = () => {
                   { name: 'target_role', label: 'Target role', type: 'text', placeholder: 'e.g. SDET' },
                   { name: 'experience_years', label: 'Years of experience', type: 'text', default: '3' },
                   { name: 'constraints', label: 'Constraints (optional)', type: 'text', placeholder: 'e.g. evenings only, 12-month horizon' },
+                ]}
+              />
+            ) : activeTab === 'salary' ? (
+              <DomainTool
+                title="Salary & Offer Negotiation"
+                description={<>Build a compensation strategy — Workstation's <span className="text-aura">own</span> AI gives market positioning, a target range, negotiation scripts, non-salary levers and BATNA, in-house. Reasoned guidance, not live salary data.</>}
+                endpoint="/api/v1/employment/salary-negotiation"
+                resultKey="plan"
+                submitLabel="Build strategy"
+                fields={[
+                  { name: 'target_role', label: 'Target role', type: 'text', placeholder: 'e.g. Senior Software Engineer' },
+                  { name: 'location', label: 'Location (optional)', type: 'text', placeholder: 'e.g. London, UK' },
+                  { name: 'seniority', label: 'Seniority', type: 'select', options: ['entry', 'mid', 'senior', 'lead', 'executive'], default: 'mid' },
+                  { name: 'experience_years', label: 'Years of experience', type: 'text', default: '3' },
+                  { name: 'current_salary', label: 'Current salary (optional)', type: 'text', placeholder: 'e.g. £55,000' },
+                  { name: 'offered_salary', label: 'Offer on the table (optional)', type: 'text', placeholder: 'e.g. £70,000' },
+                  { name: 'leverage', label: 'Leverage (optional)', type: 'textarea', placeholder: 'e.g. competing offer, scarce skills, strong performance' },
                 ]}
               />
             ) : (

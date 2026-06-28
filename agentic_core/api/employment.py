@@ -28,6 +28,7 @@ _SERVICES = [
     {"id": "interview_prep", "name": "Interview Preparation", "description": "Likely questions plus STAR-method answer frameworks for the role."},
     {"id": "career_path", "name": "Career Path & Skills Gap", "description": "A development roadmap and skills-gap analysis from current to target role."},
     {"id": "application", "name": "Application Form & Supporting Statement", "description": "Address a person specification point-by-point and draft answers to application-form questions."},
+    {"id": "salary_negotiation", "name": "Salary & Offer Negotiation", "description": "A compensation strategy: market positioning, a target range, scripts, non-salary levers, BATNA and etiquette."},
 ]
 
 
@@ -169,6 +170,58 @@ async def career_path(req: CareerPathRequest):
         "roadmap": roadmap,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+# ── Salary & offer negotiation ─────────────────────────────────────────────────
+class SalaryNegotiationRequest(BaseModel):
+    target_role: str
+    location: str = ""
+    seniority: str = "mid"               # entry | mid | senior | lead | executive
+    experience_years: int = 3
+    current_salary: str = ""             # free text, e.g. "£45,000" or "not disclosed"
+    offered_salary: str = ""             # the offer on the table, if any
+    leverage: str = ""                   # competing offers, scarce skills, strong performance, etc.
+
+
+@router.post("/salary-negotiation")
+async def salary_negotiation(req: SalaryNegotiationRequest):
+    """Compensation & offer-negotiation strategist: a structured plan — market positioning, a target range
+    with justification, anchoring scripts, non-salary levers, BATNA and etiquette. Reasoned guidance based on
+    typical market structure — NOT live salary data; verify figures against current sources."""
+    details = "".join([
+        f"Location: {req.location}\n" if req.location else "",
+        f"Current salary: {req.current_salary}\n" if req.current_salary else "",
+        f"Offer on the table: {req.offered_salary}\n" if req.offered_salary else "",
+        f"Leverage: {req.leverage}\n" if req.leverage else "",
+    ])
+    prompt = (
+        "You are an experienced compensation and negotiation coach. Build a practical, ethical salary / "
+        "offer negotiation strategy for the candidate.\n\n"
+        f"Target role: {req.target_role}\nSeniority: {req.seniority}\nExperience: {req.experience_years} years\n"
+        f"{details}\n"
+        "Produce:\n"
+        "## Market Positioning (how this role/seniority/location typically sits — be explicit that this is "
+        "reasoned from typical market structure, NOT live data, and that they should verify against current sources)\n"
+        "## Target Range (walk-away, target, and stretch figures, each with brief reasoning)\n"
+        "## Justification Points (the evidence to support the ask — impact, scarcity, market, leverage)\n"
+        "## Negotiation Scripts (concrete wording: opening the conversation, countering an offer, holding firm, closing)\n"
+        "## Non-Salary Levers (benefits, equity, bonus, flexibility, title, start date, early review)\n"
+        "## BATNA & Walk-Away (best alternative; the point at which to decline)\n"
+        "## Etiquette & Risks (how to negotiate firmly without damaging the relationship)\n\n"
+        "Be specific and practical. Never fabricate precise market figures as if they were data — frame ranges "
+        "as reasoned estimates to validate."
+    )
+    plan, provenance = await ai_text(prompt, "employment_salary")
+    return {
+        "negotiation_id": uuid.uuid4().hex[:10],
+        "target_role": req.target_role,
+        "seniority": req.seniority,
+        "plan": plan,
+        "ai_provenance": provenance,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "disclaimer": ("Reasoned negotiation guidance, not live salary data or financial advice — verify "
+                       "figures against current market sources for your role and location."),
     }
 
 
