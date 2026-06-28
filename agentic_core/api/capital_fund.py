@@ -70,9 +70,20 @@ def _save_listings(listings: list[dict]) -> None:
 
 # ── Capital Fund ──────────────────────────────────────────────────────────────
 
+def _organism_posture() -> dict:
+    """Read the living organism's current energy/economic posture (§8) — best-effort, read-only, so the
+    Sovereign Capital Fund reflects (and is governed by) the living system's state, not a detached ledger."""
+    try:
+        ctx = biobus.organism_context()
+        return {"mode": ctx.get("mode"), "composite_health": ctx.get("composite_health"),
+                "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio")}
+    except Exception:
+        return {}
+
+
 @router.get("/fund/status")
 async def fund_status():
-    """Return Sovereign Capital Fund health and overview."""
+    """Return Sovereign Capital Fund health and overview, including the living organism's §8 posture."""
     fund = _load_fund()
     allocation_count = len(fund.get("allocations", []))
     utilisation = round(fund["allocated"] / fund["total_capital"] * 100, 1) if fund["total_capital"] else 0
@@ -85,6 +96,7 @@ async def fund_status():
         "utilisation_pct": utilisation,
         "allocation_count": allocation_count,
         "fund_health": "HEALTHY" if utilisation < 80 else "CONSTRAINED" if utilisation < 95 else "DEPLETED",
+        "organism": _organism_posture(),
     }
 
 
@@ -110,6 +122,17 @@ async def allocate_capital(req: AllocateRequest):
             detail=f"Insufficient capital. Available: {fund['available']} WST, requested: {req.amount} WST."
         )
 
+    # §8 survival instinct — the organism's posture governs capital deployment. ADVISORY only: virtual WST,
+    # and real-money decisions are Owner-gated, so we never auto-block the allocation — we flag restraint when
+    # the organism is energy-depleted and the tranche is a large fraction of remaining capital.
+    posture = _organism_posture()
+    atp = posture.get("atp_ratio")
+    frac = req.amount / fund["available"] if fund["available"] else 1.0  # of capital available BEFORE this draw
+    caution = None
+    if isinstance(atp, (int, float)) and atp < 0.3 and frac > 0.25:
+        caution = (f"§8 survival instinct: the organism is energy-depleted (ATP {atp:.0%}); this tranche is "
+                   f"{frac:.0%} of available capital. Consider a smaller tranche or deferring until recovery.")
+
     allocation_id = f"alloc-{uuid.uuid4().hex[:8]}"
     allocation = {
         "allocation_id": allocation_id,
@@ -120,6 +143,7 @@ async def allocate_capital(req: AllocateRequest):
         "domain": req.domain,
         "realm": req.realm,
         "status": "active",
+        "homeostasis_caution": caution,
         "allocated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -140,6 +164,8 @@ async def allocate_capital(req: AllocateRequest):
         "currency": fund["currency"],
         "remaining_available": fund["available"],
         "status": "allocated",
+        "organism": posture,
+        "homeostasis_caution": caution,
     }
 
 
