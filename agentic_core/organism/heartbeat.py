@@ -57,6 +57,7 @@ class OrganismHeartbeat:
         self.last_recovery: Optional[str] = None   # last autonomous metabolic self-recovery (ATP before->after)
         self.last_self_healing: Optional[float] = None   # last self-healing circuit health read on the beat
         self.last_heal: Optional[str] = None        # last proactive self-heal (circuits probed for recovery)
+        self.last_genome: Optional[Dict[str, Any]] = None   # last genome-population vital sign on the beat
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
         self.auto_economy = False             # opt-in: autonomous economy cycles
@@ -133,6 +134,19 @@ class OrganismHeartbeat:
                     from agentic_core.organism.biobus import biobus
                     biobus.fire_signal("reflex", "organism.heartbeat.self_heal",
                                        f"probed {heal['count']} circuit(s): {self.last_heal}", 0.8)
+        except Exception:
+            pass
+
+        # 2d. Genome vital sign — read the organism's genome-population genetics (count, mean fitness,
+        #     generational depth) as part of its self-monitoring, so the genome subsystem joins the living
+        #     loop rather than sitting in isolated CRUD. Cheap (file summary), no AI.
+        try:
+            from agentic_core.api.organism_status import _genome_state
+            gs = _genome_state()
+            self.last_genome = {"total": gs.get("total_genomes"), "mean_fitness": gs.get("mean_fitness"),
+                                "max_generation": gs.get("max_generation")}
+            if gs.get("total_genomes"):
+                actions.append("genome_scan")
         except Exception:
             pass
 
@@ -231,13 +245,14 @@ class OrganismHeartbeat:
             "last_self_healing": self.last_self_healing,
             "last_recovery": self.last_recovery,
             "last_heal": self.last_heal,
+            "last_genome": self.last_genome,
             "interval_seconds": self.interval_seconds,
             "auto_evolve": self.auto_evolve,
             "auto_economy": self.auto_economy,
             "auto_align": self.auto_align,
             "recent": self._log[-10:],
             "integrations": ["circadian", "central_nervous_system", "immune", "self_healing",
-                             "metabolic_atp", "UEG_audit", "constitutional_arms_length"],
+                             "metabolic_atp", "genome", "UEG_audit", "constitutional_arms_length"],
             "note": "Continuous circadian autonomy — cheap pulse every beat; expensive cognition opt-in + paced.",
         }
 

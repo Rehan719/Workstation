@@ -114,15 +114,43 @@ def _cca_state() -> dict:
 
 
 def _genome_state() -> dict:
-    """Summarise the genome registry."""
+    """Summarise the genome registry as real population genetics: count, mean fitness, generational depth,
+    and the population's dominant trait — the organism's genetic health (computed from the stored genomes,
+    no fabrication)."""
+    import json as _json
     try:
         genome_store = data_path("genomes")
         if not genome_store.exists():
-            return {"total_genomes": 0}
-        genomes = list(genome_store.glob("*.json"))
-        return {"total_genomes": len(genomes)}
+            return {"total_genomes": 0, "mean_fitness": None, "max_generation": 0, "dominant_trait": None}
+        files = list(genome_store.glob("*.json"))
+        if not files:
+            return {"total_genomes": 0, "mean_fitness": None, "max_generation": 0, "dominant_trait": None}
+        fitnesses: list[float] = []
+        max_gen = 0
+        trait_sums: dict[str, float] = {}
+        trait_counts: dict[str, int] = {}
+        for p in files:
+            try:
+                g = _json.loads(p.read_text())
+            except Exception:
+                continue
+            f = g.get("fitness_score")
+            if isinstance(f, (int, float)):
+                fitnesses.append(float(f))
+            max_gen = max(max_gen, int(g.get("generation", 0) or 0))
+            for axis, val in (g.get("traits") or {}).items():
+                if isinstance(val, (int, float)):
+                    trait_sums[axis] = trait_sums.get(axis, 0.0) + float(val)
+                    trait_counts[axis] = trait_counts.get(axis, 0) + 1
+        mean_fitness = round(sum(fitnesses) / len(fitnesses), 3) if fitnesses else None
+        dominant = None
+        if trait_sums:
+            means = {a: trait_sums[a] / trait_counts[a] for a in trait_sums}
+            dominant = max(means, key=means.get)
+        return {"total_genomes": len(files), "mean_fitness": mean_fitness,
+                "max_generation": max_gen, "dominant_trait": dominant}
     except Exception:
-        return {"total_genomes": 0}
+        return {"total_genomes": 0, "mean_fitness": None, "max_generation": 0, "dominant_trait": None}
 
 
 # ── Main status endpoint ──────────────────────────────────────────────────────
