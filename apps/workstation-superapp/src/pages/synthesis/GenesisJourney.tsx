@@ -298,14 +298,17 @@ export const GenesisJourney: React.FC = () => {
         );
       })()}
 
-      {/* Phase rail */}
+      {/* Stage rail — the §4 fine-resolution Concept → Commercialisation lifecycle the journey runs */}
       <Card className="p-6">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-5">3-Phase Concept → Commercialisation Cascade</h3>
-        <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-5">Concept → Commercialisation · fine-resolution lifecycle (§4)</h3>
+        <div className="grid grid-cols-1 @[560px]:grid-cols-3 @[900px]:grid-cols-6 gap-3">
           {[
-            { icon: Lightbulb, label: 'Conceptualisation', desc: 'Cognitive cascade + MJM → optimal concept' },
-            { icon: Layers, label: 'Design & Development', desc: 'Architecture, components, MVP scope' },
-            { icon: Rocket, label: 'Commercialisation', desc: 'GTM + revenue + living VSB blueprint' },
+            { icon: Lightbulb,  label: 'Conceptualise',          desc: 'Cognitive cascade + MJM → optimal concept' },
+            { icon: Eye,        label: 'Innovate & Research',     desc: 'Best/latest approaches: science·tech·business·law' },
+            { icon: Brain,      label: 'Model · Simulate · Rank', desc: 'Candidate solutions scored on evidence → best' },
+            { icon: Layers,     label: 'Design & Development',    desc: 'Architecture, components, MVP scope' },
+            { icon: ShieldCheck,label: 'Operational Intelligence',desc: 'Deliverable · compliant · operable' },
+            { icon: Rocket,     label: 'Commercialise',           desc: 'GTM + revenue + living VSB blueprint' },
           ].map(({ icon: Icon, label, desc }, i) => {
             const done = !!result;
             return (
@@ -314,7 +317,7 @@ export const GenesisJourney: React.FC = () => {
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${done ? 'bg-highlight/20' : 'bg-slate-800'}`}>
                     <Icon size={12} className={done ? 'text-highlight' : 'text-slate-500'} />
                   </div>
-                  <span className={`text-[9px] font-black uppercase tracking-widest ${done ? 'text-highlight' : 'text-slate-600'}`}>Phase {i + 1}</span>
+                  <span className={`text-[9px] font-black uppercase tracking-widest ${done ? 'text-highlight' : 'text-slate-600'}`}>Stage {i + 1}</span>
                 </div>
                 <p className={`text-[11px] font-black mb-1 ${done ? 'text-white' : 'text-slate-400'}`}>{label}</p>
                 <p className="text-[9px] text-slate-600 leading-relaxed">{desc}</p>
