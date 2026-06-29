@@ -2569,6 +2569,22 @@ def test_economy_waterfall_owner_sovereignty(client):
     assert d2["waterfall"]["charity"] == 0.30
 
 
+def test_fabric_native_ai_resources_run_real(client):
+    # §6↔§7 — the OWNED native AI resources (orchestrator + swarm) run their REAL logic when composed,
+    # reporting which owned resource actually served (provenance), not a generic prompt stage.
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "Native AI Pipeline", "usage_area": "synthesis",
+        "resource_ids": ["native_orchestrator", "native_swarm"],
+        "config": {"native_orchestrator": {"prompt": "outline a zero-waste meal plan"},
+                   "native_swarm": {"stages": "research the need\ndesign the plan\ndeliver the output"}}}).json()
+    cid = comp["id"]
+    run = client.post(f"/api/v1/resources/compositions/{cid}/run", json={"objective": "zero-waste community meals"}).json()
+    rr = {x["resource"]: x for x in (run.get("real_resource_runs") or [])}
+    assert "native_orchestrator" in rr and "native_swarm" in rr
+    assert rr["native_orchestrator"].get("served_by")            # honest provenance (native floor / ollama / external)
+    assert rr["native_swarm"].get("stages_run") == 3 and rr["native_swarm"].get("output")
+
+
 def test_economy_owner_payments_virtual(client):
     import uuid as _uuid
     vid = f"test-owner-pay-{_uuid.uuid4().hex[:10]}"   # unique per run — no dependence on persisted state

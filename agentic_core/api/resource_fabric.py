@@ -364,6 +364,30 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             return {"resource": "incubator", "ran": "/api/v1/incubator/evolve",
                     "generations_run": r.generations_run, "winner": r.winner.response[:300] if r.winner else None,
                     "output": (r.analysis or "")[:400]}
+        # §6↔§7 — the OWNED native AI resources run their REAL logic when composed, reporting which owned
+        #   resource actually served (ollama local model / native deterministic floor / opt-in external).
+        if rid == "native_orchestrator":
+            from agentic_core.ai.native import orchestrator
+            res = await orchestrator.complete(str(cfg.get("prompt") or objective),
+                                              agent=str(cfg.get("agent") or "fabric-composition"),
+                                              prefer_external=bool(cfg.get("prefer_external", False)))
+            return {"resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
+                    "served_by": res.get("served_by"), "is_external": res.get("is_external"),
+                    "output": (res.get("output") or "")[:600]}
+        if rid == "native_swarm":
+            from agentic_core.ai.native import orchestrator
+            raw = cfg.get("stages")
+            if isinstance(raw, str) and raw.strip():
+                stages = [{"role": "stage", "instruction": s.strip()} for s in raw.splitlines() if s.strip()]
+            elif isinstance(raw, list) and raw:
+                stages = [s if isinstance(s, dict) else {"role": "stage", "instruction": str(s)} for s in raw]
+            else:
+                stages = [{"role": "synthesist", "instruction": f"Advance the objective: {objective}"}]
+            res = await orchestrator.swarm(str(cfg.get("agent") or "fabric-swarm"), stages,
+                                           context=str(cfg.get("context") or objective))
+            served = res["trace"][0]["served_by"] if res.get("trace") else "native"
+            return {"resource": "native_swarm", "ran": "/api/v1/resources/swarm/run",
+                    "stages_run": len(stages), "served_by": served, "output": (res.get("final") or "")[:600]}
     except Exception as e:
         return {"resource": rid, "error": str(e)[:160]}
     return None
