@@ -199,6 +199,24 @@ export const NativeAI: React.FC = () => {
     loadCascades();
   }, []);
 
+  // §6/§7 — native completion with user-selected model tier (auto · native floor · local Ollama)
+  const [cPrompt, setCPrompt] = useState('Outline a halal, zero-waste weekly meal plan for an elderly resident');
+  const [cModel, setCModel] = useState<'auto' | 'native' | 'local'>('auto');
+  const [cRes, setCRes] = useState<{ output: string; served_by: string; is_external: boolean; resources_tried?: string[] } | null>(null);
+  const [completing, setCompleting] = useState(false);
+  const runComplete = async () => {
+    if (!cPrompt.trim()) return;
+    setCompleting(true); setCRes(null);
+    try {
+      const r = await fetch('/api/v1/native-ai/complete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: cPrompt, agent: 'console', model: cModel }),
+      });
+      setCRes(await r.json());
+    } catch (e: any) { setError(e?.message ?? String(e)); }
+    setCompleting(false);
+  };
+
   const runSwarm = async () => {
     setRunning(true); setRun(null);
     try {
@@ -381,6 +399,38 @@ export const NativeAI: React.FC = () => {
               })}
             </div>
           </div>
+
+          {/* §6/§7 — native completion with a user-selected model tier */}
+          <Card className="p-6 border-aura/30">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-aura mb-1 flex items-center gap-2"><Cpu size={14} /> Native completion · choose the owned model tier</h3>
+            <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">Run a completion on Workstation's OWN AI and pick which owned tier serves — the result reports the resource that actually served (honest provenance).</p>
+            <textarea value={cPrompt} onChange={e => setCPrompt(e.target.value)} rows={2}
+              className="w-full text-xs bg-slate-950 border border-slate-900 rounded-xl p-3 text-slate-300 mb-3"
+              placeholder="Prompt for the native AI…" />
+            <div className="flex items-center gap-3 flex-wrap mb-3">
+              <div className="flex gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800">
+                {(['auto', 'native', 'local'] as const).map(m => (
+                  <button key={m} type="button" onClick={() => setCModel(m)}
+                    title={m === 'auto' ? 'in-house-first: local model → native floor → opt-in external' : m === 'native' ? 'force the deterministic native floor (fast · free · reproducible)' : 'require the local Ollama model (floor fallback)'}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${cModel === m ? 'bg-aura text-sovereign' : 'text-slate-500 hover:text-white'}`}>{m}</button>
+                ))}
+              </div>
+              <Button onClick={runComplete} disabled={completing || !cPrompt.trim()} className="flex items-center gap-2 bg-aura text-sovereign text-xs">
+                {completing ? <Loader2 size={13} className="animate-spin" /> : <Cpu size={13} />} Run completion
+              </Button>
+            </div>
+            {cRes && (
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${cRes.is_external ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
+                    {cRes.is_external ? `via ${cRes.served_by}` : `in-house · ${cRes.served_by}`}
+                  </span>
+                  {cRes.resources_tried && <span className="text-[8px] font-mono text-slate-600">tried: {cRes.resources_tried.join(' → ')}</span>}
+                </div>
+                <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">{cRes.output}</p>
+              </div>
+            )}
+          </Card>
 
           {/* Quick swarm runner */}
           <Card className="p-6">
