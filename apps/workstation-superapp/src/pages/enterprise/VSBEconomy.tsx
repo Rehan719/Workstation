@@ -20,6 +20,11 @@ interface Cycle {
   biogeochemical_model: string;
 }
 
+interface WaterfallState {
+  waterfall: Record<string, number>; source: string; template_default: Record<string, number>;
+  stages: string[]; constraints: { distributes_profit: boolean; capital_preserved: boolean };
+}
+
 const STAGE_ICON: Record<string, React.ComponentType<any>> = {
   owner: Coins, self_investment: Sprout, capital_fund: PiggyBank,
   user_projects: Activity, charity: Recycle,
@@ -40,10 +45,45 @@ export const VSBEconomy: React.FC = () => {
   const [error, setError] = useState('');
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [gov, setGov] = useState<string>('');
+  // §4/§8/§10 — Owner-adjustable profit waterfall (virtual, template-bounded)
+  const [wf, setWf] = useState<WaterfallState | null>(null);
+  const [wfDraft, setWfDraft] = useState<Record<string, number>>({});   // percentages (0-100) the Owner edits
+  const [wfSaving, setWfSaving] = useState(false);
+  const [wfMsg, setWfMsg] = useState('');
+  const [wfErr, setWfErr] = useState<string[]>([]);
 
   useEffect(() => {
     fetch('/api/v1/economy/entity-types').then(r => r.json()).then(d => setTypes(d.types ?? [])).catch(() => {});
   }, []);
+
+  // Load the effective waterfall whenever the entity form changes (per VSB = workstation-idbo).
+  useEffect(() => {
+    setWfMsg(''); setWfErr([]);
+    fetch(`/api/v1/economy/waterfall?vsb_id=workstation-idbo&entity_type=${entity}`)
+      .then(r => r.json()).then((d: WaterfallState) => {
+        setWf(d);
+        setWfDraft(Object.fromEntries((d.stages || []).map(s => [s, Math.round((d.waterfall[s] ?? 0) * 100)])));
+      }).catch(() => {});
+  }, [entity]);
+
+  const wfDraftSum = Object.values(wfDraft).reduce((a, b) => a + (Number(b) || 0), 0);
+
+  const saveWaterfall = async () => {
+    setWfSaving(true); setWfMsg(''); setWfErr([]);
+    try {
+      const proportions = Object.fromEntries(Object.entries(wfDraft).map(([k, v]) => [k, (Number(v) || 0) / 100]));
+      const r = await fetch('/api/v1/economy/waterfall', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vsb_id: 'workstation-idbo', entity_type: entity, proportions }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setWfErr((d?.detail?.violations) || [`HTTP ${r.status}`]); setWfSaving(false); return; }
+      setWf(prev => prev ? { ...prev, waterfall: d.waterfall, source: d.source } : prev);
+      setWfDraft(Object.fromEntries(Object.entries(d.waterfall as Record<string, number>).map(([k, v]) => [k, Math.round(v * 100)])));
+      setWfMsg('Saved — effective from the next cycle (virtual; logged to the UEG).');
+    } catch (e: any) { setWfErr([e?.message ?? String(e)]); }
+    setWfSaving(false);
+  };
 
   const selected = types.find(t => t.id === entity);
 
@@ -90,6 +130,55 @@ export const VSBEconomy: React.FC = () => {
           ))}
         </div>
       </Card>
+
+      {/* §4/§8/§10 — Owner-adjustable profit-distribution waterfall (virtual, template-bounded) */}
+      {wf && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><PiggyBank size={14} /> Profit-Distribution Waterfall · Owner-adjustable</h3>
+            <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${wf.source === 'owner_override' ? 'bg-highlight/15 text-highlight' : 'bg-slate-800 text-slate-400'}`}>
+              {wf.source === 'owner_override' ? 'owner-set' : 'template default'}
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-500 font-bold mb-4">
+            Proportions of distributable profit (after reserves). Adjust and save — the next cycle uses your split.
+            {wf.constraints.capital_preserved && <span className="text-aura"> · this form preserves capital (capital fund must be &gt; 0)</span>}
+            {!wf.constraints.distributes_profit && <span className="text-amber-400"> · this form distributes no owner profit (owner must be 0)</span>}
+          </p>
+          <div className="grid grid-cols-2 @[560px]:grid-cols-5 gap-3">
+            {(wf.stages || []).map(s => {
+              const Icon = STAGE_ICON[s] ?? Coins;
+              return (
+                <div key={s} className="p-3 rounded-2xl bg-slate-900 border border-slate-800">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5 mb-2"><Icon size={11} className="text-highlight" /> {STAGE_LABEL[s] ?? s}</p>
+                  <div className="flex items-center gap-1">
+                    <input type="number" min={0} max={100} value={wfDraft[s] ?? 0}
+                      onChange={e => setWfDraft({ ...wfDraft, [s]: Number(e.target.value) })}
+                      aria-label={`${STAGE_LABEL[s] ?? s} percent`}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-white font-black focus:outline-none focus:border-highlight/50" />
+                    <span className="text-[10px] font-black text-slate-600">%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between gap-3 flex-wrap mt-4">
+            <span className={`text-[10px] font-black uppercase tracking-widest ${Math.abs(wfDraftSum - 100) < 0.5 ? 'text-emerald-400' : 'text-slate-500'}`}>
+              sum {wfDraftSum}% {Math.abs(wfDraftSum - 100) >= 0.5 && <span className="text-slate-600 normal-case">(will be normalised to 100%)</span>}
+            </span>
+            <Button onClick={saveWaterfall} disabled={wfSaving} className="flex items-center gap-2 bg-highlight text-sovereign text-xs">
+              {wfSaving ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+              {wfSaving ? 'Saving…' : 'Save proportions'}
+            </Button>
+          </div>
+          {wfMsg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {wfMsg}</p>}
+          {wfErr.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {wfErr.map((v, i) => <p key={i} className="text-vital text-[10px] font-bold flex items-center gap-1.5"><AlertCircle size={12} /> {v}</p>)}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Cycle controls */}
       <Card className="p-8 space-y-6">
