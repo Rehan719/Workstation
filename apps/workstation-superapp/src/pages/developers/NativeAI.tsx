@@ -220,6 +220,22 @@ export const NativeAI: React.FC = () => {
     setCompleting(false);
   };
 
+  // §6 — run the prompt across ALL owned models in parallel, then synthesise a consensus
+  const [ensRes, setEnsRes] = useState<{ members: { model: string; served_by?: string; output?: string; error?: string }[]; synthesis?: { output: string; served_by?: string } | null } | null>(null);
+  const [ensembling, setEnsembling] = useState(false);
+  const runEnsemble = async () => {
+    if (!cPrompt.trim()) return;
+    setEnsembling(true); setEnsRes(null);
+    try {
+      const r = await fetch('/api/v1/native-ai/ensemble', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: cPrompt, agent: 'console' }),
+      });
+      setEnsRes(await r.json());
+    } catch (e: any) { setError(e?.message ?? String(e)); }
+    setEnsembling(false);
+  };
+
   const runSwarm = async () => {
     setRunning(true); setRun(null);
     try {
@@ -421,7 +437,30 @@ export const NativeAI: React.FC = () => {
               <Button onClick={runComplete} disabled={completing || !cPrompt.trim()} className="flex items-center gap-2 bg-aura text-sovereign text-xs">
                 {completing ? <Loader2 size={13} className="animate-spin" /> : <Cpu size={13} />} Run completion
               </Button>
+              <button type="button" onClick={runEnsemble} disabled={ensembling || !cPrompt.trim()}
+                title="Run across ALL owned models in parallel, then synthesise a consensus"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-aura/40 text-aura text-[10px] font-black uppercase tracking-widest hover:bg-aura/10 disabled:opacity-50">
+                {ensembling ? <Loader2 size={12} className="animate-spin" /> : <Network size={12} />} Ensemble (all owned models)
+              </button>
             </div>
+            {ensRes && (
+              <div className="p-3 rounded-xl bg-slate-950 border border-aura/20 mb-3">
+                <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-2">Ensemble · {ensRes.members.length} owned models in parallel → consensus</p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {ensRes.members.map((m, i) => (
+                    <span key={i} className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${m.error ? 'bg-vital/15 text-vital' : 'bg-slate-900 text-slate-400'}`} title={m.output ? m.output.slice(0, 200) : m.error}>
+                      {m.model} {m.served_by ? `· ${m.served_by}` : ''}{m.error ? ' · failed' : ''}
+                    </span>
+                  ))}
+                </div>
+                {ensRes.synthesis?.output && (
+                  <div className="border-t border-aura/10 pt-2">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-aura mb-1">Consensus <span className="text-slate-600 normal-case">· synthesised by {ensRes.synthesis.served_by}</span></p>
+                    <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">{ensRes.synthesis.output}</p>
+                  </div>
+                )}
+              </div>
+            )}
             {cRes && (
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
