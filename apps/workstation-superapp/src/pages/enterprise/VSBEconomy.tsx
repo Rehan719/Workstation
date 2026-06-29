@@ -69,11 +69,16 @@ export const VSBEconomy: React.FC = () => {
     fetch(`/api/v1/economy/board-pack?vsb_id=workstation-idbo&entity_type=${entity}`)
       .then(r => r.json()).then(setBp).catch(() => {}).finally(() => setBpLoading(false));
   };
+  // §4 — the established living VSB enterprises the organism autonomously tends
+  const [living, setLiving] = useState<any>(null);
+  const loadLiving = () =>
+    fetch('/api/v1/economy/living-vsbs').then(r => r.json()).then(setLiving).catch(() => {});
 
   useEffect(() => {
     fetch('/api/v1/economy/entity-types').then(r => r.json()).then(d => setTypes(d.types ?? [])).catch(() => {});
     loadOwnerPay();
     loadBoardPack();
+    loadLiving();
   }, []);
 
   // Load the effective waterfall whenever the entity form changes (per VSB = workstation-idbo).
@@ -382,6 +387,32 @@ export const VSBEconomy: React.FC = () => {
           </div>
           <p className="text-[9px] font-mono text-slate-600 mt-3 flex items-center gap-2"><ShieldCheck size={11} className="text-emerald-400" /> {bp.governance}</p>
           <p className="text-[9px] text-amber-400/80 italic mt-1">{bp.disclaimer}</p>
+        </Card>
+      )}
+
+      {/* §4 — living enterprises the organism autonomously tends (continually operated on the heartbeat) */}
+      {living && (living.living_vsbs?.length ?? 0) > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><HeartPulse size={14} className="text-emerald-400" /> Living Enterprises · autonomously tended (§4)</h3>
+            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">{living.total} living</span>
+          </div>
+          <p className="text-[10px] text-slate-500 font-bold mb-4">Established VSB IDBO enterprises the organism operates continually on the circadian heartbeat — each runs paced virtual economy cycles, forever, led by its Chief.</p>
+          <div className="space-y-2">
+            {(living.living_vsbs || []).slice(0, 8).map((v: any) => (
+              <div key={v.vsb_id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-950 border border-slate-900">
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-white truncate">{v.name}</p>
+                  <p className="text-[9px] font-mono text-slate-600">{v.vsb_id} · {v.entity_type} · {v.domain}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-black text-emerald-400">{v.operating_cycles} <span className="text-[9px] text-slate-500">cycles</span></p>
+                  <p className="text-[8px] text-slate-600">{v.last_operated ? `last ${v.last_operated.slice(0, 10)}` : 'awaiting first tick'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[9px] text-amber-400/80 italic mt-3">{living.note}</p>
         </Card>
       )}
     </div>
