@@ -2616,14 +2616,14 @@ def test_native_ai_model_preference(client):
 
 
 def test_fabric_pi_engines_run_real_staged(client):
-    # §7 — the headline PI engines (BDP/SPI) run their REAL multi-stage pipeline when composed, not a prompt
+    # §7 — ALL FOUR headline PI engines (BDP/SPI/APIE/DDPIE) run their REAL multi-stage pipeline when composed
     comp = client.post("/api/v1/resources/compose", json={
-        "name": "PIengines", "usage_area": "synthesis", "resource_ids": ["bdp", "spi"],
-        "config": {"bdp": {"rigor": "rigorous"}, "spi": {}}}).json()
+        "name": "PIengines", "usage_area": "synthesis", "resource_ids": ["bdp", "spi", "apie", "ddpie"],
+        "config": {"bdp": {"rigor": "rigorous"}, "spi": {}, "apie": {"rigor": "rigorous"}, "ddpie": {}}}).json()
     run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run",
                       json={"objective": "launch a halal meal-kit for elders"}).json()
     rr = {x["resource"]: x for x in (run.get("real_resource_runs") or [])}
-    for eng in ("bdp", "spi"):
+    for eng in ("bdp", "spi", "apie", "ddpie"):
         assert eng in rr, f"{eng} did not run as a real engine"
         assert (rr[eng].get("stages") or 0) >= 2   # a multi-stage pipeline ran (not a single prompt)
         assert rr[eng].get("output")

@@ -554,29 +554,39 @@ _ENGINE_MAP = {
 }
 
 
-async def run_intelligence_collected(challenge: str, domain: str, engine_id: str,
-                                     rigor: str = "standard", focus: str = "") -> dict:
-    """Run a streaming PI engine (BDP/SPI) to completion NON-streaming — consume its SSE generator and collect
-    the per-stage outputs into one analysis. Lets the headline PI engines run their REAL staged pipeline inside
-    a fabric composition (not a prompt approximation)."""
-    eng = _ENGINE_MAP.get(engine_id)
-    if not eng:
-        return {"engine": engine_id, "error": "unknown engine", "stages": 0, "analysis": ""}
-    stages, prompts = eng
+async def _collect_stream(gen) -> dict:
+    """Consume a PI-engine SSE generator to completion NON-streaming, collecting the per-stage RESULT events
+    into one analysis — so a streaming engine can run its REAL staged pipeline inside a fabric composition."""
     sections: list[str] = []
     done = 0
-    async for chunk in _run_intelligence_stream(challenge, domain, stages, prompts, engine_id.upper(),
-                                                rigor=rigor, focus=focus):
+    async for chunk in gen:
         try:
             ev = json.loads(chunk.split("data: ", 1)[1].strip())
         except (IndexError, ValueError):
             continue
         sk = ev.get("stage", "")
-        # keep the per-stage RESULT events; skip init / cognitive_prime / config / *_start / complete
-        if sk and not sk.endswith("_start") and sk not in ("init", "cognitive_prime", "config", "complete"):
+        if sk and not sk.endswith("_start") and not sk.endswith("_complete") \
+                and sk not in ("init", "cognitive_prime", "config", "complete", "routing", "engine_selected"):
             sections.append(f"## {ev.get('label', sk)}\n{ev.get('content', '')}")
             done += 1
-    return {"engine": engine_id.upper(), "stages": done, "analysis": "\n\n".join(sections)}
+    return {"stages": done, "analysis": "\n\n".join(sections)}
+
+
+async def run_intelligence_collected(challenge: str, domain: str, engine_id: str,
+                                     rigor: str = "standard", focus: str = "") -> dict:
+    """Run a streaming PI engine to completion NON-streaming (BDP/SPI via the shared stream; APIE/DDPIE via
+    their own stream functions). Lets the headline PI engines run their REAL staged pipeline when composed."""
+    if engine_id in _ENGINE_MAP:
+        stages, prompts = _ENGINE_MAP[engine_id]
+        res = await _collect_stream(_run_intelligence_stream(challenge, domain, stages, prompts,
+                                                             engine_id.upper(), rigor=rigor, focus=focus))
+    elif engine_id == "apie":
+        res = await _collect_stream(_run_authorship_stream(AuthorshipRequest(topic=challenge, domain=domain, rigor=rigor)))
+    elif engine_id == "ddpie":
+        res = await _collect_stream(_run_design_dev_stream(DesignDevRequest(system=challenge, domain=domain, rigor=rigor)))
+    else:
+        return {"engine": engine_id, "error": "unknown engine", "stages": 0, "analysis": ""}
+    return {"engine": engine_id.upper(), **res}
 
 _ACTIVITY_ENGINE = {
     "synthesis":   "bdp",

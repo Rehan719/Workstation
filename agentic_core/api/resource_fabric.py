@@ -375,14 +375,15 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
                     "output": (r.analysis or "")[:400]}
         # §6↔§7 — the OWNED native AI resources run their REAL logic when composed, reporting which owned
         #   resource actually served (ollama local model / native deterministic floor / opt-in external).
-        if rid in ("bdp", "spi"):
-            # the headline PI engines run their REAL staged pipeline (collected from the SSE stream), honouring
-            # the user's reconfigured rigor/focus — not a generic prompt stage.
+        if rid in ("bdp", "spi", "apie", "ddpie"):
+            # all four headline PI engines run their REAL staged pipeline (collected from the SSE stream),
+            # honouring the user's reconfigured rigor/focus — not a generic prompt stage.
             from agentic_core.api.intelligence import run_intelligence_collected
+            _ep = {"apie": "authorship", "ddpie": "design-dev"}.get(rid, rid)
             r = await run_intelligence_collected(str(cfg.get("challenge") or objective), domain, rid,
                                                  rigor=str(cfg.get("rigor") or "standard"),
                                                  focus=str(cfg.get("focus") or ""))
-            return {"resource": rid, "ran": f"/api/v1/intelligence/{rid}",
+            return {"resource": rid, "ran": f"/api/v1/intelligence/{_ep}",
                     "stages": r.get("stages"), "output": (r.get("analysis") or "")[:600]}
         if rid == "genome":
             from agentic_core.organism.genome import encode_genome, EncodeRequest
