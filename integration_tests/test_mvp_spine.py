@@ -2607,6 +2607,18 @@ def test_economy_ventures_investment(client):
     assert "no real funds" in (pf.get("note") or "").lower()
 
 
+def test_genesis_journey_stage_verifications(client):
+    # §5 — each stage of the journey is verified/tested/validated on real measured proxies
+    r = client.post("/api/v1/genesis/journey", json={"problem": "reduce energy waste in social housing",
+                                                     "domain": "enterprise"})
+    assert r.status_code == 200, r.text
+    sv = r.json().get("stage_verifications") or {}
+    for stage in ("concept", "research", "design", "operations", "commercialisation"):
+        assert stage in sv, f"missing stage verification: {stage}"
+        assert "score" in sv[stage] and "verified" in sv[stage] and "sections_present" in sv[stage]
+    assert "/" in (r.json().get("stages_verified") or "")   # e.g. "5/5"
+
+
 def test_genesis_journey_establish_seam(client):
     # §4→§5 — a journey WITHOUT establish yields no VSB
     r0 = client.post("/api/v1/genesis/journey", json={"problem": "reduce food waste in care homes",
