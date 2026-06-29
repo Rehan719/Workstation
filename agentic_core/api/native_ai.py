@@ -173,6 +173,21 @@ class CompleteRequest(BaseModel):
     model: str = "auto"   # §6 model-tier preference: auto | native (force floor) | local (require Ollama)
 
 
+class EnsembleRequest(BaseModel):
+    prompt: str
+    agent: str = "ensemble"
+    models: List[str] = []      # tier ids (e.g. ["ollama:llama3.2","ollama:llama2","native"]); empty = all owned
+    synthesize: bool = True
+
+
+@router.post("/ensemble")
+async def native_ensemble(req: EnsembleRequest):
+    """§6 — run a prompt across MULTIPLE owned models in parallel, then synthesise a consensus. Owned
+    orchestration as a composable resource; every member reports which owned resource served it."""
+    return await orchestrator.ensemble(req.prompt, agent=req.agent,
+                                       models=req.models or None, synthesize=req.synthesize)
+
+
 @router.post("/complete")
 async def native_complete(req: CompleteRequest):
     res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,

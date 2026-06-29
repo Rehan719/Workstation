@@ -2569,6 +2569,24 @@ def test_economy_waterfall_owner_sovereignty(client):
     assert d2["waterfall"]["charity"] == 0.30
 
 
+def test_native_ai_ensemble(client):
+    # §6 — model-ensemble orchestration: run across multiple owned models in parallel, then synthesise
+    r = client.post("/api/v1/native-ai/ensemble", json={
+        "prompt": "one-line halal meal idea", "models": ["ollama:llama3.2", "native"]}).json()
+    assert r.get("models_run") == ["ollama:llama3.2", "native"]
+    members = r.get("members") or []
+    assert len(members) == 2
+    assert all(m.get("output") and m.get("served_by") for m in members)   # each member ran + reports provenance
+    assert (r.get("synthesis") or {}).get("output")                       # consensus synthesis produced
+    # composable in the §7 fabric
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "Ens", "usage_area": "synthesis", "resource_ids": ["native_ensemble"],
+        "config": {"native_ensemble": {"prompt": "plan", "models": "native"}}}).json()
+    run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run", json={"objective": "o"}).json()
+    ne = next((x for x in (run.get("real_resource_runs") or []) if x["resource"] == "native_ensemble"), None)
+    assert ne and ne.get("output")
+
+
 def test_native_ai_model_discovery_and_named_routing(client):
     # §6 — owned models as composable resources: the catalogue + named-model routing
     m = client.get("/api/v1/native-ai/models").json()

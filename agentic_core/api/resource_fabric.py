@@ -204,6 +204,14 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"prompt": "str", "agent": "str", "prefer_external": "bool", "model": "str (auto|native|local)"},
        "/api/v1/native-ai/complete",
        ["synthesis", "design", "development", "delivery", "governance", "forge"]),
+    _R("native_ensemble", "Native AI Model Ensemble", "ai_native", "ensemble",
+       "Run a prompt across MULTIPLE owned models in parallel, then synthesise a consensus — owned "
+       "orchestration as a composable resource. Defaults to all discovered local models + the native floor; "
+       "every member reports which owned resource served it.",
+       ["multi-model ensemble", "parallel", "consensus synthesis", "owned-model provenance"],
+       {"prompt": "str", "models": "list (tier ids; empty = all owned)", "synthesize": "bool"},
+       "/api/v1/native-ai/ensemble",
+       ["synthesis", "design", "development", "delivery", "governance", "forge"]),
     _R("native_swarm", "Native AI Swarm", "ai_native", "swarm",
        "A bespoke, RECONFIGURABLE agent-cascade run on Workstation's OWN resources — define stages "
        "(role + instruction); each stage completes in-house-first and feeds the next. Define once, "
@@ -376,6 +384,20 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             return {"resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
                     "output": (res.get("output") or "")[:600]}
+        if rid == "native_ensemble":
+            from agentic_core.ai.native import orchestrator
+            res = await orchestrator.ensemble(str(cfg.get("prompt") or objective),
+                                              agent="fabric-ensemble", models=_csv(cfg.get("models")) or None,
+                                              synthesize=bool(cfg.get("synthesize", True)))
+            members = res.get("members") or []
+            # synthesis when >1 member produced; else fall back to the single member's output
+            out = (res.get("synthesis") or {}).get("output") or ""
+            if not out:
+                out = next((m.get("output", "") for m in members if m.get("output")), "")
+            return {"resource": "native_ensemble", "ran": "/api/v1/native-ai/ensemble",
+                    "models_run": res.get("models_run"), "members": len(members),
+                    "served_by": ",".join(sorted({str(m.get("served_by")) for m in members if m.get("served_by")})),
+                    "output": out[:600]}
         if rid == "native_swarm":
             from agentic_core.ai.native import orchestrator
             raw = cfg.get("stages")

@@ -102,6 +102,41 @@ class NativeOrchestrator:
         out = native_engine.generate(prompt, agent)
         return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
 
+    async def ensemble(self, prompt: str, agent: str = "ensemble", models: Optional[List[str]] = None,
+                       synthesize: bool = True, timeout: float = 30.0) -> Dict[str, Any]:
+        """§6 — run a prompt across MULTIPLE owned models in parallel, then synthesise a consensus. Owned
+        orchestration as a composable resource. Defaults to the discovered local models (each routed by name)
+        plus the native floor; every member reports which owned resource served it."""
+        if not models:
+            from agentic_core.ai.native.model_resource import local_models
+            lm = local_models()
+            models = ([f"ollama:{m}" for m in lm] + ["native"]) if lm else ["native"]
+        models = [m for m in models if m][:5]
+        _fire("cognitive", f"native.{agent}", f"ensemble across {len(models)} owned models", 0.6)
+        results = await asyncio.gather(
+            *[self.complete(prompt, agent=f"{agent}-{i}", prefer=m, timeout=timeout) for i, m in enumerate(models)],
+            return_exceptions=True)
+        members: List[Dict[str, Any]] = []
+        for m, r in zip(models, results):
+            if isinstance(r, Exception):
+                members.append({"model": m, "error": str(r)[:160]})
+            else:
+                members.append({"model": m, "served_by": r.get("served_by"),
+                                "is_external": r.get("is_external", False), "output": r.get("output", "")})
+        synthesis = None
+        produced = [x for x in members if x.get("output")]
+        if synthesize and len(produced) > 1:
+            combined = "\n\n".join(f"[{x['model']} · served by {x.get('served_by')}]:\n{x['output'][:800]}" for x in produced)
+            syn = await self.complete(
+                "You are an ensemble synthesiser. Given these model outputs for the SAME prompt, produce the "
+                "single best consensus answer — combine strengths, resolve disagreements, and note any genuine "
+                f"divergence.\n\nPrompt: {prompt}\n\nMODEL OUTPUTS:\n{combined}\n\n"
+                "## Consensus Answer\n## Notable Agreement / Disagreement", agent=f"{agent}-synth",
+                prefer="auto", timeout=timeout)
+            synthesis = {"output": syn.get("output", ""), "served_by": syn.get("served_by")}
+        return {"prompt": prompt[:200], "models_run": models, "members": members, "synthesis": synthesis,
+                "method": "parallel ensemble across owned models → consensus synthesis"}
+
     async def _run_model(self, name: str, prompt: str) -> str:
         if name == "ollama" or name.startswith("ollama:"):
             # AI_DISABLE_LOCAL=1 means NO local inference at all (deterministic deployments / the test suite),
