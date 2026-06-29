@@ -2590,6 +2590,23 @@ def test_economy_owner_payments_virtual(client):
     assert over.status_code == 400
 
 
+def test_economy_ventures_investment(client):
+    import uuid as _uuid
+    vid = f"test-ventures-{_uuid.uuid4().hex[:10]}"   # unique per run
+    # candidates are ranked by the venture-scoring method
+    cand = client.get("/api/v1/economy/ventures/candidates").json()
+    assert len(cand["candidates"]) >= 1
+    assert cand["candidates"][0].get("score") is not None
+    # a cycle competitively allocates the user_projects stage and records portfolio positions
+    cyc = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                                     "revenue": 10000, "costs": 0}).json()["cycle"]
+    vi = cyc.get("venture_investment")
+    assert vi and len(vi["positions"]) >= 1
+    pf = client.get(f"/api/v1/economy/ventures/portfolio?vsb_id={vid}").json()
+    assert pf["invested_total"] > 0 and pf["positions_count"] >= 1
+    assert "no real funds" in (pf.get("note") or "").lower()
+
+
 def test_economy_waterfall_template_constraints(client):
     # a non-distributing form must reject an owner share > 0
     bad = client.post("/api/v1/economy/waterfall", json={"vsb_id": "np-x", "entity_type": "nonprofit",

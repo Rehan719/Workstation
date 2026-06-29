@@ -138,6 +138,17 @@ class EconomicMetabolism:
         # 5. Giving-back — intelligent charity allocation (nutrient-return loop)
         charity_alloc = self.charity.allocate(splits.get("charity", 0.0)) if splits.get("charity", 0.0) > 0 else None
 
+        # 5b. §6 — user-project investment: competitively allocate the user_projects stage to top ventures and
+        #     track them as portfolio positions (seeding offspring; returns recycle into the waterfall). Virtual.
+        ventures_alloc = None
+        try:
+            if splits.get("user_projects", 0.0) > 0:
+                from .ventures import VentureIntelligence, record_positions
+                ventures_alloc = VentureIntelligence().allocate(splits["user_projects"])
+                record_positions(self.vsb_id, ventures_alloc)
+        except Exception:
+            ventures_alloc = None
+
         # 6. Biomimetic links — nervous signal (metabolic energy already read above for the §8→§12 coupling)
         self._fire_signal(revenue, distributable)
 
@@ -153,6 +164,7 @@ class EconomicMetabolism:
             "distributable_profit": distributable,
             "circulation": {k: {"amount_wst": v, "role": _CYCLE_ROLE.get(k, k)} for k, v in splits.items()},
             "giving_back": charity_alloc,
+            "venture_investment": ventures_alloc,
             "metabolic_energy": metabolic_energy,
             "capital_preserved": self.template["capital_preserved"],
             "biogeochemical_model": "nutrient cycle: intake → homeostasis → circulation → return → storage → growth",

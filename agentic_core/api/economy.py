@@ -170,3 +170,22 @@ async def charity_candidates(top: int = 8):
     return {"candidates": CharityIntelligence().ranked(top),
             "method": "urgency × gravity × reach × marginal-impact × trust",
             "disclaimer": "Virtual/simulated — sources curated; live feeds pending Owner approval."}
+
+
+@router.get("/ventures/candidates")
+async def venture_candidates(top: int = 8):
+    """§6 — ranked candidate user projects/ventures for investment (outcome × value × benefit × feasibility ×
+    strategic-fit). Demo candidates until real user-project ingestion is wired; virtual/simulated."""
+    from agentic_core.economy.ventures import VentureIntelligence
+    vi = VentureIntelligence()
+    return {"candidates": vi.ranked(top),
+            "method": "outcome × value × benefit × feasibility × strategic-fit",
+            "using_demo_candidates": vi.using_demo,
+            "disclaimer": "Virtual/simulated — candidates are demo samples until real user-project ingestion."}
+
+
+@router.get("/ventures/portfolio")
+async def venture_portfolio(vsb_id: str = "workstation-idbo"):
+    """§6 — the VSB's venture portfolio: positions accrued from each cycle's user_projects allocation (virtual)."""
+    from agentic_core.economy.ventures import portfolio
+    return portfolio(vsb_id)
