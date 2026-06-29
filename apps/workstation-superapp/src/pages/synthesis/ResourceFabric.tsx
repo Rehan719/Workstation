@@ -74,6 +74,7 @@ interface CompositionRun {
     resource: string; ran?: string; output?: string; error?: string;
     viable?: boolean; passages?: number; cognitive_primed?: boolean; engines_used?: string[];
     scenarios_run?: number; generations_run?: number; winner?: string;
+    served_by?: string; is_external?: boolean; stages_run?: number;   // §6 — owned-resource provenance
   }[];
 }
 
@@ -547,6 +548,15 @@ export const ResourceFabric: React.FC = () => {
                                 )}
                                 {typeof rr.generations_run === 'number' && (
                                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.generations_run} generations</span>
+                                )}
+                                {typeof rr.stages_run === 'number' && (
+                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.stages_run} stages</span>
+                                )}
+                                {rr.served_by && (
+                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${rr.is_external ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}
+                                    title="Which OWNED resource served (native floor · local Ollama model · opt-in external)">
+                                    {rr.is_external ? `via ${rr.served_by}` : `in-house · ${rr.served_by}`}
+                                  </span>
                                 )}
                               </div>
                               {(rr.output || rr.error) && (
