@@ -51,9 +51,20 @@ export const VSBEconomy: React.FC = () => {
   const [wfSaving, setWfSaving] = useState(false);
   const [wfMsg, setWfMsg] = useState('');
   const [wfErr, setWfErr] = useState<string[]>([]);
+  // §7 — Owner-payments ledger (virtual; real rails disabled+gated)
+  const [pay, setPay] = useState<any>(null);
+  const [payoutAmt, setPayoutAmt] = useState(0);
+  const [payingOut, setPayingOut] = useState(false);
+  const [payMsg, setPayMsg] = useState('');
+  const [payErr, setPayErr] = useState('');
+
+  const loadOwnerPay = () =>
+    fetch('/api/v1/economy/owner-payments?vsb_id=workstation-idbo')
+      .then(r => r.json()).then(setPay).catch(() => {});
 
   useEffect(() => {
     fetch('/api/v1/economy/entity-types').then(r => r.json()).then(d => setTypes(d.types ?? [])).catch(() => {});
+    loadOwnerPay();
   }, []);
 
   // Load the effective waterfall whenever the entity form changes (per VSB = workstation-idbo).
@@ -97,8 +108,24 @@ export const VSBEconomy: React.FC = () => {
       if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
       const d = await r.json();
       setCycle(d.cycle); setGov(d.governance?.status ?? '');
+      loadOwnerPay();   // the cycle accrued the Owner's §4 share — refresh the ledger
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setRunning(false);
+  };
+
+  const doPayout = async () => {
+    setPayingOut(true); setPayMsg(''); setPayErr('');
+    try {
+      const r = await fetch('/api/v1/economy/owner-payments/payout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vsb_id: 'workstation-idbo', amount: payoutAmt }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setPayErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setPayingOut(false); return; }
+      setPayMsg(`Virtual payout recorded — no real money moved. Remaining ${d.remaining_balance_wst.toLocaleString()} WST.`);
+      setPayoutAmt(0); loadOwnerPay();
+    } catch (e: any) { setPayErr(e?.message ?? String(e)); }
+    setPayingOut(false);
   };
 
   return (
@@ -202,6 +229,48 @@ export const VSBEconomy: React.FC = () => {
           {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
         </div>
       </Card>
+
+      {/* §7 — Owner-Payments ledger (virtual; real rails disabled + gated) */}
+      {pay && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><Coins size={14} /> Owner Payments · your accrued share (§7)</h3>
+            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/15 text-amber-400" title="Real-money payout rails are disabled and gated until you authorise them + a compliance/KYC review passes.">real rails: {pay.real_money_rails}</span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <Metric label="Accrued (total)" value={`${(pay.accrued_total_wst ?? 0).toLocaleString()} WST`} />
+            <Metric label="Paid out (virtual)" value={`${(pay.paid_out_total_wst ?? 0).toLocaleString()} WST`} />
+            <Metric label="Balance" value={`${(pay.balance_wst ?? 0).toLocaleString()} WST`} tone="good" />
+          </div>
+          <div className="flex items-end gap-3 mt-5 flex-wrap">
+            <div className="flex-1 min-w-[160px]">
+              <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2 block">Virtual payout (WST)</label>
+              <input type="number" min={0} value={payoutAmt} onChange={e => setPayoutAmt(Number(e.target.value))}
+                aria-label="Virtual payout amount"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-highlight/50" />
+            </div>
+            <Button onClick={doPayout} disabled={payingOut || payoutAmt <= 0} className="flex items-center gap-2 bg-highlight text-sovereign text-xs">
+              {payingOut ? <Loader2 size={14} className="animate-spin" /> : <Coins size={14} />}
+              {payingOut ? 'Recording…' : 'Record virtual payout'}
+            </Button>
+          </div>
+          <p className="text-[9px] text-amber-400/80 italic mt-2">{pay.note}</p>
+          {payMsg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {payMsg}</p>}
+          {payErr && <p className="text-vital text-[10px] font-bold mt-2 flex items-center gap-1.5"><AlertCircle size={12} /> {payErr}</p>}
+          {pay.entries && pay.entries.length > 0 && (
+            <div className="mt-4 space-y-1.5">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Recent entries</p>
+              {pay.entries.slice(0, 6).map((e: any) => (
+                <div key={e.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-900 text-[10px]">
+                  <span className={`font-black uppercase ${e.type === 'accrual' ? 'text-emerald-400' : 'text-amber-400'}`}>{e.type === 'accrual' ? 'accrual' : 'payout (virtual)'}</span>
+                  <span className="text-slate-400 truncate px-2 flex-1">{e.memo}</span>
+                  <span className="font-mono text-slate-300 shrink-0">{e.amount_wst.toLocaleString()} WST</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Cycle result */}
       {cycle && (
