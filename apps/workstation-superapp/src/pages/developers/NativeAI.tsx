@@ -196,12 +196,15 @@ export const NativeAI: React.FC = () => {
       .finally(() => setLoading(false));
     fetch('/api/v1/native-ai/capabilities').then(r => r.json()).then(d => setCapabilities(d.capabilities || [])).catch(() => {});
     fetch('/api/v1/native-ai/homeostasis').then(r => r.json()).then(setHomeo).catch(() => {});
+    fetch('/api/v1/native-ai/models').then(r => r.json())
+      .then(d => setModelTiers(d.tiers || [])).catch(() => {});
     loadCascades();
   }, []);
 
-  // §6/§7 — native completion with user-selected model tier (auto · native floor · local Ollama)
+  // §6/§7 — native completion with user-selected model tier (auto · native floor · local model(s))
   const [cPrompt, setCPrompt] = useState('Outline a halal, zero-waste weekly meal plan for an elderly resident');
-  const [cModel, setCModel] = useState<'auto' | 'native' | 'local'>('auto');
+  const [cModel, setCModel] = useState<string>('auto');
+  const [modelTiers, setModelTiers] = useState<{ id: string; label: string; kind: string }[]>([]);
   const [cRes, setCRes] = useState<{ output: string; served_by: string; is_external: boolean; resources_tried?: string[] } | null>(null);
   const [completing, setCompleting] = useState(false);
   const runComplete = async () => {
@@ -408,11 +411,11 @@ export const NativeAI: React.FC = () => {
               className="w-full text-xs bg-slate-950 border border-slate-900 rounded-xl p-3 text-slate-300 mb-3"
               placeholder="Prompt for the native AI…" />
             <div className="flex items-center gap-3 flex-wrap mb-3">
-              <div className="flex gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800">
-                {(['auto', 'native', 'local'] as const).map(m => (
-                  <button key={m} type="button" onClick={() => setCModel(m)}
-                    title={m === 'auto' ? 'in-house-first: local model → native floor → opt-in external' : m === 'native' ? 'force the deterministic native floor (fast · free · reproducible)' : 'require the local Ollama model (floor fallback)'}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${cModel === m ? 'bg-aura text-sovereign' : 'text-slate-500 hover:text-white'}`}>{m}</button>
+              <div className="flex gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800 flex-wrap">
+                {(modelTiers.length ? modelTiers : [{ id: 'auto', label: 'Auto', kind: 'policy' }, { id: 'native', label: 'Native floor', kind: 'native' }]).map(t => (
+                  <button key={t.id} type="button" onClick={() => setCModel(t.id)}
+                    title={t.kind === 'local' ? 'an owned local model (Ollama) — floor fallback' : t.id === 'native' ? 'force the deterministic native floor (fast · free · reproducible)' : 'in-house-first: local model → native floor → opt-in external'}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${cModel === t.id ? 'bg-aura text-sovereign' : 'text-slate-500 hover:text-white'}`}>{t.label}</button>
                 ))}
               </div>
               <Button onClick={runComplete} disabled={completing || !cPrompt.trim()} className="flex items-center gap-2 bg-aura text-sovereign text-xs">
