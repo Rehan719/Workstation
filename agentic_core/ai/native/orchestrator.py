@@ -63,8 +63,18 @@ class NativeOrchestrator:
     """In-house-first orchestration over owned + local + (optional) external model resources."""
 
     async def complete(self, prompt: str, agent: str = "assistant",
-                       timeout: float = 30.0, prefer_external: bool = False) -> Dict[str, Any]:
-        order = _reorder_by_health(registry.select(prefer_external=prefer_external))
+                       timeout: float = 30.0, prefer_external: bool = False,
+                       prefer: str = "auto") -> Dict[str, Any]:
+        # §6/§7 user design control over WHICH owned tier serves:
+        #   "auto"   — in-house-first selection (local model → native floor → opt-in external)
+        #   "native" — force the deterministic native FLOOR (fast · free · reproducible)
+        #   "local"  — require the local owned model (Ollama), falling back to the floor if it is unavailable
+        if prefer == "native":
+            order = ["native"]
+        elif prefer == "local":
+            order = ["ollama", "native"]   # require the local model first; floor only as graceful fallback
+        else:
+            order = _reorder_by_health(registry.select(prefer_external=prefer_external))
         tried: List[str] = []
         _fire("cognitive", f"native.{agent}", f"orchestrate: {prompt[:60]}", 0.5)
         for name in order:

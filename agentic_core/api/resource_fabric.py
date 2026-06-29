@@ -200,8 +200,9 @@ _REGISTRY: List[Dict[str, Any]] = [
     _R("native_orchestrator", "Native AI Orchestrator", "ai_native", "orchestrator",
        "In-house-first completion over OWNED resources: native structured-reasoning floor · local "
        "Ollama model when present · external accelerants opt-in only. Every result reports served_by.",
-       ["in-house completion", "graceful degradation", "provenance (served_by)"],
-       {"prompt": "str", "agent": "str", "prefer_external": "bool"}, "/api/v1/native-ai/complete",
+       ["in-house completion", "graceful degradation", "provenance (served_by)", "model preference (auto/native/local)"],
+       {"prompt": "str", "agent": "str", "prefer_external": "bool", "model": "str (auto|native|local)"},
+       "/api/v1/native-ai/complete",
        ["synthesis", "design", "development", "delivery", "governance", "forge"]),
     _R("native_swarm", "Native AI Swarm", "ai_native", "swarm",
        "A bespoke, RECONFIGURABLE agent-cascade run on Workstation's OWN resources — define stages "
@@ -370,7 +371,8 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             from agentic_core.ai.native import orchestrator
             res = await orchestrator.complete(str(cfg.get("prompt") or objective),
                                               agent=str(cfg.get("agent") or "fabric-composition"),
-                                              prefer_external=bool(cfg.get("prefer_external", False)))
+                                              prefer_external=bool(cfg.get("prefer_external", False)),
+                                              prefer=str(cfg.get("model") or "auto"))
             return {"resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
                     "output": (res.get("output") or "")[:600]}

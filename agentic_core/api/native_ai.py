@@ -152,12 +152,13 @@ class CompleteRequest(BaseModel):
     agent: str = "assistant"
     prefer_external: bool = False
     timeout: float = 30.0
+    model: str = "auto"   # §6 model-tier preference: auto | native (force floor) | local (require Ollama)
 
 
 @router.post("/complete")
 async def native_complete(req: CompleteRequest):
-    res = await orchestrator.complete(req.prompt, agent=req.agent,
-                                      timeout=req.timeout, prefer_external=req.prefer_external)
+    res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
+                                      prefer_external=req.prefer_external, prefer=req.model)
     return res
 
 
