@@ -160,6 +160,57 @@ async def owner_payout(req: PayoutRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/board-pack")
+async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY):
+    """§7 Financial Board Pack — the live owner-facing financial statement, assembled on demand: the P&L
+    summary, the effective distribution waterfall, the Owner's accrued payments, the venture portfolio, charity
+    given, and the §8 organism posture. Virtual/simulated WST only — no real funds; assembled fresh (≤5-min
+    staleness invariant)."""
+    import time as _t
+    from agentic_core.economy.owner_payments import status as _owner_status
+    from agentic_core.economy.ventures import portfolio as _venture_portfolio
+
+    m = EconomicMetabolism(vsb_id, entity_type)
+    stmt = m.ledger.statement()
+    bal = stmt["balances"]
+    stages = ("owner", "self_investment", "capital_fund", "user_projects", "charity")
+    revenue = round(bal.get("revenue", 0.0), 2)
+    reserves = round(bal.get("reserves", 0.0), 2)
+    distributed = round(sum(bal.get(s, 0.0) for s in stages), 2)
+    owner = _owner_status(vsb_id, m.owner)
+    ventures = _venture_portfolio(vsb_id)
+
+    try:
+        from agentic_core.organism.biobus import biobus
+        ctx = biobus.organism_context()
+        organism = {"mode": ctx.get("mode"), "composite_health": ctx.get("composite_health"),
+                    "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio")}
+    except Exception:
+        organism = {}
+
+    return {
+        "vsb_id": vsb_id, "entity_type": entity_type, "entity_name": m.template["name"],
+        "currency": "WST (virtual)", "generated_at": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime()),
+        "profit_and_loss": {
+            "total_revenue_wst": revenue, "total_reserves_wst": reserves,
+            "total_distributed_wst": distributed,
+            "distribution_by_stage": {s: round(bal.get(s, 0.0), 2) for s in stages},
+        },
+        "waterfall": {"effective": m.waterfall, "source": m.waterfall_source},
+        "owner_payments": {"accrued_wst": owner["accrued_total_wst"], "paid_out_wst": owner["paid_out_total_wst"],
+                           "balance_wst": owner["balance_wst"], "real_money_rails": owner["real_money_rails"]},
+        "venture_portfolio": {"invested_total_wst": ventures["invested_total"],
+                              "positions": ventures.get("positions_count", 0),
+                              "holdings": ventures.get("holdings", [])[:5]},
+        "charitable_giving": {"total_given_wst": round(bal.get("charity", 0.0), 2)},
+        "organism_posture": organism,
+        "ledger": {"entry_count": stmt["entry_count"], "recent": stmt["recent"]},
+        "governance": "gaas.v5-gated cycles · UEG append-only audit · arms-length distribution policy",
+        "disclaimer": "Virtual/simulated WST only — no real funds. Real-money rails are gated until the Owner "
+                      "authorises them AND a compliance review passes.",
+    }
+
+
 @router.get("/ledger/{vsb_id}")
 async def get_ledger(vsb_id: str):
     return EconomicMetabolism(vsb_id).status()["ledger"]

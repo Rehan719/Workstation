@@ -2607,6 +2607,25 @@ def test_economy_ventures_investment(client):
     assert "no real funds" in (pf.get("note") or "").lower()
 
 
+def test_economy_board_pack(client):
+    import uuid as _uuid
+    vid = f"test-boardpack-{_uuid.uuid4().hex[:10]}"   # unique per run
+    # run a cycle so the pack has real (virtual) figures
+    client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                               "revenue": 10000, "costs": 1000})
+    bp = client.get(f"/api/v1/economy/board-pack?vsb_id={vid}&entity_type=waqf_ltd_hybrid").json()
+    # all capstone sections present
+    for k in ("profit_and_loss", "waterfall", "owner_payments", "venture_portfolio",
+              "charitable_giving", "ledger", "governance"):
+        assert k in bp, f"board pack missing {k}"
+    pl = bp["profit_and_loss"]
+    assert pl["total_revenue_wst"] > 0 and pl["total_distributed_wst"] > 0
+    # internal consistency: the owner-payments balance matches the owner distribution stage of one cycle
+    assert bp["owner_payments"]["balance_wst"] > 0
+    assert bp["owner_payments"]["real_money_rails"] == "DISABLED"
+    assert "no real funds" in bp["disclaimer"].lower()
+
+
 def test_economy_waterfall_template_constraints(client):
     # a non-distributing form must reject an owner share > 0
     bad = client.post("/api/v1/economy/waterfall", json={"vsb_id": "np-x", "entity_type": "nonprofit",
