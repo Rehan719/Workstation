@@ -94,6 +94,7 @@ export const GenesisJourney: React.FC = () => {
   // §2 — the VSB's legal/economic form, selected by the user at generation (wired to the economy templates)
   const [entityTypes, setEntityTypes] = useState<{ id: string; name: string; description: string }[]>([]);
   const [entityType, setEntityType] = useState('waqf_ltd_hybrid');
+  const [establishOnComplete, setEstablishOnComplete] = useState(false);   // §5 — one continuous workflow → living enterprise
 
   useEffect(() => {
     fetch('/api/v1/economy/entity-types').then(r => r.json())
@@ -124,10 +125,16 @@ export const GenesisJourney: React.FC = () => {
       const res = await fetch('/api/v1/genesis/journey', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problem, domain, realm }),
+        // §5 — when "establish on completion" is on, ONE continuous workflow takes the challenge all the way
+        // to a living VSB enterprise (W222 seam); else the journey stops at the blueprint (two-step establish).
+        body: JSON.stringify(establishOnComplete
+          ? { problem, domain, realm, establish: true, entity_type: entityType }
+          : { problem, domain, realm }),
       });
       if (!res.ok) { setError(`HTTP ${res.status}`); setRunning(false); return; }
-      setResult(await res.json());
+      const data = await res.json();
+      setResult(data);
+      if (data?.established_vsb && !data.established_vsb.error) setVsb(data.established_vsb);   // one-call living enterprise
     } catch (e: any) {
       setError(e?.message ?? String(e));
     }
@@ -375,10 +382,28 @@ export const GenesisJourney: React.FC = () => {
             </div>
           </div>
         </div>
+        {/* §5 — one continuous workflow: optionally take the challenge all the way to a living VSB enterprise */}
+        <div className="pt-2 flex flex-col @[560px]:flex-row @[560px]:items-end gap-3 flex-wrap">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" checked={establishOnComplete} onChange={e => setEstablishOnComplete(e.target.checked)}
+              className="accent-highlight w-4 h-4" aria-label="Establish living VSB on completion" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Establish living VSB on completion <span className="text-slate-600 normal-case">(one continuous workflow → living enterprise)</span></span>
+          </label>
+          {establishOnComplete && entityTypes.length > 0 && (
+            <div>
+              <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-1 block">Legal / economic form</label>
+              <select aria-label="Legal / economic form" value={entityType} onChange={e => setEntityType(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded-lg text-[11px] font-black uppercase text-slate-300 px-3 py-2 focus:outline-none focus:border-highlight/50">
+                {entityTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-4 pt-2">
           <Button onClick={run} disabled={running || !problem.trim()} className="flex items-center gap-2 bg-highlight text-sovereign">
             {running ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {running ? 'Running Sovereign Journey…' : 'Launch Genesis Journey'}
+            {running ? (establishOnComplete ? 'Concept → living enterprise…' : 'Running Sovereign Journey…')
+                     : (establishOnComplete ? 'Launch Journey → Establish VSB' : 'Launch Genesis Journey')}
           </Button>
           {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
         </div>
