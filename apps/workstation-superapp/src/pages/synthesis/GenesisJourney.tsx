@@ -27,6 +27,9 @@ interface JourneyResult {
   stage_7_operational_intelligence?: string;   // §4.7 — deliverable · compliant · operable
   phase_3_commercialisation: string;
   governance: { status: string; checkpoint: string | null; node: string };
+  // §5 — each stage verified/tested/validated on real measured proxies
+  stage_verifications?: Record<string, { verified: boolean; score: number; sections_present: string }>;
+  stages_verified?: string;
   quality_assurance?: {
     quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[];
       quality_record_hash?: string; document_controlled?: boolean;
@@ -412,6 +415,23 @@ export const GenesisJourney: React.FC = () => {
       {/* Result */}
       {result && (
         <div className="space-y-4">
+          {/* §5 — each stage verified/tested/validated (real measured proxies) */}
+          {result.stage_verifications && (
+            <Card className="p-4 border-emerald-500/20">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><ShieldCheck size={13} className="text-emerald-400" /> Stage verification — each stage tested &amp; validated (§5)</h3>
+                {result.stages_verified && <span className="text-[9px] font-black uppercase text-emerald-400">{result.stages_verified} verified</span>}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(result.stage_verifications).map(([stage, v]) => (
+                  <span key={stage} title={`score ${v.score} · sections ${v.sections_present}`}
+                    className={`text-[9px] font-black uppercase px-2 py-1 rounded ${v.verified ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                    {v.verified ? '✓' : '⚠'} {stage} · {Math.round(v.score * 100)}%
+                  </span>
+                ))}
+              </div>
+            </Card>
+          )}
           {phases.map(p => (
             <Card key={p.key} className="p-0 overflow-hidden border-slate-800/80">
               <button type="button" onClick={() => setOpen(open === p.key ? '' : p.key)}
