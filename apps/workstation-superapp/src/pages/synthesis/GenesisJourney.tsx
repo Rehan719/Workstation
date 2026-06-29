@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { AttachDocument, appendDocBlock } from '../../components/AttachDocument';
@@ -91,6 +91,15 @@ export const GenesisJourney: React.FC = () => {
   const [open, setOpen] = useState<string>('phase1');
   const [establishing, setEstablishing] = useState(false);
   const [vsb, setVsb] = useState<{ vsb_id: string; name: string; dashboard: string; governance?: any } | null>(null);
+  // §2 — the VSB's legal/economic form, selected by the user at generation (wired to the economy templates)
+  const [entityTypes, setEntityTypes] = useState<{ id: string; name: string; description: string }[]>([]);
+  const [entityType, setEntityType] = useState('waqf_ltd_hybrid');
+
+  useEffect(() => {
+    fetch('/api/v1/economy/entity-types').then(r => r.json())
+      .then(d => { setEntityTypes(d.types ?? []); if (d.default) setEntityType(d.default); })
+      .catch(() => {});
+  }, []);
   // §13 — the VSB IDBO Entity Repository (integrated Website · Web app · Phone app scaffold)
   const [repo, setRepo] = useState<RepoManifest | null>(null);
   const [repoBusy, setRepoBusy] = useState(false);
@@ -133,7 +142,7 @@ export const GenesisJourney: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          problem, domain, realm,
+          problem, domain, realm, entity_type: entityType,
           concept: result.phase_1_conceptualisation.concept,
           design: result.phase_2_design_development,
           commercialisation: result.phase_3_commercialisation,
@@ -492,10 +501,23 @@ export const GenesisJourney: React.FC = () => {
                 Deliver the outcome — generate the living Enterprise IDBO
               </p>
               {!vsb ? (
-                <Button onClick={establish} disabled={establishing} className="flex items-center gap-2 bg-highlight text-sovereign">
-                  {establishing ? <Loader2 size={16} className="animate-spin" /> : <Rocket size={16} />}
-                  {establishing ? 'Establishing VSB…' : 'Establish VSB IDBO Entity'}
-                </Button>
+                <div className="space-y-3">
+                  {/* §2 — select the VSB's legal / economic form at generation */}
+                  {entityTypes.length > 0 && (
+                    <div>
+                      <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-1.5 block">Legal / economic form</label>
+                      <select aria-label="Legal / economic form" value={entityType} onChange={e => setEntityType(e.target.value)}
+                        className="w-full @[480px]:w-auto bg-slate-900 border border-slate-800 rounded-lg text-[11px] font-black uppercase text-slate-300 px-3 py-2 focus:outline-none focus:border-highlight/50">
+                        {entityTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                      <p className="text-[9px] text-slate-600 mt-1">{entityTypes.find(t => t.id === entityType)?.description}</p>
+                    </div>
+                  )}
+                  <Button onClick={establish} disabled={establishing} className="flex items-center gap-2 bg-highlight text-sovereign">
+                    {establishing ? <Loader2 size={16} className="animate-spin" /> : <Rocket size={16} />}
+                    {establishing ? 'Establishing VSB…' : 'Establish VSB IDBO Entity'}
+                  </Button>
+                </div>
               ) : (
                 <div className="p-4 rounded-2xl bg-slate-950 border border-emerald-500/30">
                   <div className="flex items-center gap-2 mb-1">
