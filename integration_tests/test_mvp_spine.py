@@ -2615,6 +2615,19 @@ def test_native_ai_model_preference(client):
     assert rl.get("output")   # always a real in-house result (floor guarantees it)
 
 
+def test_fabric_genome_runs_real(client):
+    # §7 — composing the genome resource runs its REAL encode engine (a trait vector), not a prompt stage
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "GenomePipe", "usage_area": "synthesis", "resource_ids": ["genome"],
+        "config": {"genome": {"entity_name": "ZeroWaste Care"}}}).json()
+    run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run",
+                      json={"objective": "a halal zero-waste meal service"}).json()
+    g = next((x for x in (run.get("real_resource_runs") or []) if x["resource"] == "genome"), None)
+    assert g is not None
+    assert str(g.get("genome_id", "")).startswith("genome-")
+    assert g.get("dominant_trait")   # a real trait vector was produced
+
+
 def test_fabric_native_ai_resources_run_real(client):
     # §6↔§7 — the OWNED native AI resources (orchestrator + swarm) run their REAL logic when composed,
     # reporting which owned resource actually served (provenance), not a generic prompt stage.

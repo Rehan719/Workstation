@@ -375,6 +375,14 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
                     "output": (r.analysis or "")[:400]}
         # §6↔§7 — the OWNED native AI resources run their REAL logic when composed, reporting which owned
         #   resource actually served (ollama local model / native deterministic floor / opt-in external).
+        if rid == "genome":
+            from agentic_core.organism.genome import encode_genome, EncodeRequest
+            g = await encode_genome(EncodeRequest(entity_name=str(cfg.get("entity_name") or objective)[:80],
+                                                  domain=domain, description=str(objective)[:500]))
+            top = max((g.get("traits") or {}).items(), key=lambda kv: kv[1], default=(None, None))[0]
+            return {"resource": "genome", "ran": "/api/v1/organism/genome/encode",
+                    "genome_id": g.get("genome_id"), "fitness": g.get("fitness_score"),
+                    "dominant_trait": top, "output": (str(g.get("expression") or "") or f"genome {g.get('genome_id')}")[:400]}
         if rid == "native_orchestrator":
             from agentic_core.ai.native import orchestrator
             res = await orchestrator.complete(str(cfg.get("prompt") or objective),
