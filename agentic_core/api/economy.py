@@ -135,6 +135,31 @@ async def set_waterfall(req: WaterfallRequest):
     }
 
 
+@router.get("/owner-payments")
+async def owner_payments(vsb_id: str = "workstation-idbo", owner: str = "Rehan"):
+    """§7 — the Owner's accrued share (virtual WST) from each cycle's §4 owner stage, plus history. Real-money
+    payout rails are DISABLED and gated; no real funds move."""
+    from agentic_core.economy.owner_payments import status
+    return status(vsb_id, owner)
+
+
+class PayoutRequest(BaseModel):
+    vsb_id: str = "workstation-idbo"
+    owner: str = "Rehan"
+    amount: float
+
+
+@router.post("/owner-payments/payout")
+async def owner_payout(req: PayoutRequest):
+    """Record a VIRTUAL Owner payout (reduces the accrued balance). NO real funds move — real-money rails are
+    gated until the Owner explicitly authorises them AND a compliance/KYC review passes."""
+    from agentic_core.economy.owner_payments import payout
+    try:
+        return payout(req.vsb_id, req.amount, req.owner)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.get("/ledger/{vsb_id}")
 async def get_ledger(vsb_id: str):
     return EconomicMetabolism(vsb_id).status()["ledger"]

@@ -2569,6 +2569,27 @@ def test_economy_waterfall_owner_sovereignty(client):
     assert d2["waterfall"]["charity"] == 0.30
 
 
+def test_economy_owner_payments_virtual(client):
+    import uuid as _uuid
+    vid = f"test-owner-pay-{_uuid.uuid4().hex[:10]}"   # unique per run — no dependence on persisted state
+    # a metabolic cycle accrues the Owner's §4 share to the owner-payments ledger
+    client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                               "revenue": 10000, "costs": 0})
+    st = client.get(f"/api/v1/economy/owner-payments?vsb_id={vid}").json()
+    assert st["accrued_total_wst"] > 0 and st["balance_wst"] > 0
+    # BINDING safeguard: real-money rails are disabled
+    assert st["real_money_enabled"] is False and st["real_money_rails"] == "DISABLED"
+    # a virtual payout reduces the balance and moves NO real funds
+    bal = st["balance_wst"]
+    r = client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": vid, "amount": round(bal / 2, 2)})
+    assert r.status_code == 200, r.text
+    assert r.json()["real_money_moved"] is False
+    assert r.json()["remaining_balance_wst"] < bal
+    # over-payout beyond the balance is rejected
+    over = client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": vid, "amount": 10_000_000})
+    assert over.status_code == 400
+
+
 def test_economy_waterfall_template_constraints(client):
     # a non-distributing form must reject an owner share > 0
     bad = client.post("/api/v1/economy/waterfall", json={"vsb_id": "np-x", "entity_type": "nonprofit",

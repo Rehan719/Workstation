@@ -127,6 +127,14 @@ class EconomicMetabolism:
             if amount > 0:
                 self.ledger.record(stage, amount, memo=f"circulation → {_CYCLE_ROLE.get(stage, stage)}")
 
+        # 4b. §7 — the Owner's share accrues to the Owner-Payments ledger (virtual WST; real rails gated).
+        try:
+            from .owner_payments import accrue as _accrue_owner
+            if splits.get("owner", 0.0) > 0:
+                _accrue_owner(self.vsb_id, splits["owner"], self.owner, memo="cycle owner share (§4 waterfall)")
+        except Exception:
+            pass
+
         # 5. Giving-back — intelligent charity allocation (nutrient-return loop)
         charity_alloc = self.charity.allocate(splits.get("charity", 0.0)) if splits.get("charity", 0.0) > 0 else None
 
