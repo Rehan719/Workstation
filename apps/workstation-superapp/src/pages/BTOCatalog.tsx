@@ -8,6 +8,7 @@ import {
 import { Card } from '@workstation/ui';
 import { useStore } from '@workstation/shared';
 import { useNavigate } from 'react-router-dom';
+import { FabricLink } from '../components/FabricLink';
 import axios from 'axios';
 
 // ── BTO component registry ────────────────────────────────────────────────────
@@ -129,6 +130,7 @@ export const BTOCatalog: React.FC = () => {
         <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">
           Sovereign Entity Configurator · Select components · Provision your blueprint
         </p>
+        <div className="mt-3"><FabricLink /></div>
       </header>
 
       {/* Blueprint result card */}

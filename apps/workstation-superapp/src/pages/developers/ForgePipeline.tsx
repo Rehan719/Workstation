@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Hammer, Loader2, AlertCircle, Check, ChevronDown, ChevronUp, Rocket, FlaskConical } from 'lucide-react';
+import { FabricLink } from '../../components/FabricLink';
 
 interface Resource { id: string; name: string; role: string; biomimetic: string }
 interface StageOutput { resource: string; name: string; biomimetic: string; output: string }
@@ -40,6 +41,7 @@ export const ForgePipeline: React.FC = () => {
           into a <span className="text-highlight">swarm-orchestrated cascade pipeline</span> (AI CEO frames → resources process → CoE integrates),
           producing integrated multi-type outputs for Concept→Commercialisation.
         </p>
+        <div className="mt-3"><FabricLink /></div>
       </header>
 
       <Card className="p-6">

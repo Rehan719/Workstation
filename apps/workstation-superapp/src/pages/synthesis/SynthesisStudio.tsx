@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, Button } from '@workstation/ui';
+import { FabricLink } from '../../components/FabricLink';
 import {
   Sparkles, FileText, Presentation, Globe, Layers, Download, Play, Loader2,
   CheckCircle2, Upload, BarChart3, BookOpen, Archive, Video, Headphones,
@@ -303,6 +304,7 @@ export const SynthesisStudio: React.FC = () => {
         <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">
           Multi-Modal AI Output Generation · Knowledge Base Synthesis · v2.0
         </p>
+        <div className="mt-3"><FabricLink /></div>
       </header>
 
       {/* Error banner */}
