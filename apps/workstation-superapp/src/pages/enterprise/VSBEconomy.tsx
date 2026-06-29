@@ -61,10 +61,19 @@ export const VSBEconomy: React.FC = () => {
   const loadOwnerPay = () =>
     fetch('/api/v1/economy/owner-payments?vsb_id=workstation-idbo')
       .then(r => r.json()).then(setPay).catch(() => {});
+  // §7 — the live financial Board Pack (capstone statement)
+  const [bp, setBp] = useState<any>(null);
+  const [bpLoading, setBpLoading] = useState(false);
+  const loadBoardPack = () => {
+    setBpLoading(true);
+    fetch(`/api/v1/economy/board-pack?vsb_id=workstation-idbo&entity_type=${entity}`)
+      .then(r => r.json()).then(setBp).catch(() => {}).finally(() => setBpLoading(false));
+  };
 
   useEffect(() => {
     fetch('/api/v1/economy/entity-types').then(r => r.json()).then(d => setTypes(d.types ?? [])).catch(() => {});
     loadOwnerPay();
+    loadBoardPack();
   }, []);
 
   // Load the effective waterfall whenever the entity form changes (per VSB = workstation-idbo).
@@ -109,6 +118,7 @@ export const VSBEconomy: React.FC = () => {
       const d = await r.json();
       setCycle(d.cycle); setGov(d.governance?.status ?? '');
       loadOwnerPay();   // the cycle accrued the Owner's §4 share — refresh the ledger
+      loadBoardPack();  // refresh the live financial Board Pack
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setRunning(false);
   };
@@ -334,6 +344,45 @@ export const VSBEconomy: React.FC = () => {
             </Card>
           )}
         </div>
+      )}
+
+      {/* §7 — Financial Board Pack (the capstone live statement) */}
+      {bp && (
+        <Card className="p-6 border-highlight/20">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><Building2 size={14} /> Financial Board Pack (§7) · {bp.entity_name}</h3>
+            <button type="button" onClick={loadBoardPack} disabled={bpLoading} className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white flex items-center gap-1.5">
+              {bpLoading ? <Loader2 size={11} className="animate-spin" /> : <Recycle size={11} />} refresh
+            </button>
+          </div>
+          <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
+            <Metric label="Revenue (cumulative)" value={`${(bp.profit_and_loss?.total_revenue_wst ?? 0).toLocaleString()} WST`} />
+            <Metric label="Reserves" value={`${(bp.profit_and_loss?.total_reserves_wst ?? 0).toLocaleString()} WST`} />
+            <Metric label="Distributed" value={`${(bp.profit_and_loss?.total_distributed_wst ?? 0).toLocaleString()} WST`} tone="good" />
+            <Metric label="Owner balance" value={`${(bp.owner_payments?.balance_wst ?? 0).toLocaleString()} WST`} tone="good" />
+          </div>
+          <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3 mt-3">
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+              <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Venture portfolio (§6)</p>
+              <p className="text-sm font-black text-white">{(bp.venture_portfolio?.invested_total_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">· {bp.venture_portfolio?.positions ?? 0} positions</span></p>
+              {(bp.venture_portfolio?.holdings ?? []).slice(0, 3).map((h: any) => (
+                <p key={h.id} className="text-[9px] text-slate-500 truncate mt-0.5">{h.name} · {h.invested_wst.toLocaleString()} WST</p>
+              ))}
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+              <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Charitable giving (§5)</p>
+              <p className="text-sm font-black text-aura">{(bp.charitable_giving?.total_given_wst ?? 0).toLocaleString()} WST</p>
+              <p className="text-[9px] text-slate-600 mt-0.5">nutrient-return loop</p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+              <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">§8 organism posture</p>
+              <p className="text-sm font-black text-white capitalize">{bp.organism_posture?.mode ?? '—'}</p>
+              <p className="text-[9px] text-slate-500 mt-0.5">ATP {bp.organism_posture?.atp_ratio != null ? `${Math.round(bp.organism_posture.atp_ratio * 100)}%` : '—'} · health {bp.organism_posture?.composite_health != null ? `${Math.round(bp.organism_posture.composite_health * 100)}%` : '—'}</p>
+            </div>
+          </div>
+          <p className="text-[9px] font-mono text-slate-600 mt-3 flex items-center gap-2"><ShieldCheck size={11} className="text-emerald-400" /> {bp.governance}</p>
+          <p className="text-[9px] text-amber-400/80 italic mt-1">{bp.disclaimer}</p>
+        </Card>
       )}
     </div>
   );
