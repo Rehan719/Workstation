@@ -553,6 +553,31 @@ _ENGINE_MAP = {
     "spi":     (_SPI_STAGES, _SPI_PROMPTS),
 }
 
+
+async def run_intelligence_collected(challenge: str, domain: str, engine_id: str,
+                                     rigor: str = "standard", focus: str = "") -> dict:
+    """Run a streaming PI engine (BDP/SPI) to completion NON-streaming — consume its SSE generator and collect
+    the per-stage outputs into one analysis. Lets the headline PI engines run their REAL staged pipeline inside
+    a fabric composition (not a prompt approximation)."""
+    eng = _ENGINE_MAP.get(engine_id)
+    if not eng:
+        return {"engine": engine_id, "error": "unknown engine", "stages": 0, "analysis": ""}
+    stages, prompts = eng
+    sections: list[str] = []
+    done = 0
+    async for chunk in _run_intelligence_stream(challenge, domain, stages, prompts, engine_id.upper(),
+                                                rigor=rigor, focus=focus):
+        try:
+            ev = json.loads(chunk.split("data: ", 1)[1].strip())
+        except (IndexError, ValueError):
+            continue
+        sk = ev.get("stage", "")
+        # keep the per-stage RESULT events; skip init / cognitive_prime / config / *_start / complete
+        if sk and not sk.endswith("_start") and sk not in ("init", "cognitive_prime", "config", "complete"):
+            sections.append(f"## {ev.get('label', sk)}\n{ev.get('content', '')}")
+            done += 1
+    return {"engine": engine_id.upper(), "stages": done, "analysis": "\n\n".join(sections)}
+
 _ACTIVITY_ENGINE = {
     "synthesis":   "bdp",
     "research":    "spi",
