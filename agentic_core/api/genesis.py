@@ -48,6 +48,9 @@ class JourneyRequest(BaseModel):
     problem: str
     domain: str = "enterprise"
     realm: str = "enterprise"   # enterprise | learning | developing | scholarship
+    establish: bool = False     # §4→§5 — culminate the journey by ESTABLISHING the living VSB IDBO enterprise
+    name: str = ""              # optional name for the established VSB
+    entity_type: str = "waqf_ltd_hybrid"   # legal/economic form when establishing
 
 
 async def _q(prompt: str, agent: str) -> str:
@@ -198,6 +201,19 @@ async def genesis_journey(req: JourneyRequest):
          "Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"],
         label="genesis")
 
+    # ── §4→§5 SEAM — optionally culminate the journey by ESTABLISHING the living VSB IDBO enterprise, so a
+    #    plainly-described challenge flows in ONE continuous workflow all the way to a living enterprise that
+    #    then operates/improves/evolves autonomously (led by the Chief). Additive + best-effort.
+    established_vsb = None
+    if req.establish:
+        try:
+            established_vsb = await genesis_establish(EstablishRequest(
+                problem=req.problem, domain=req.domain, realm=req.realm, name=req.name,
+                concept=concept, design=design, commercialisation=commercial,
+                entity_type=req.entity_type))
+        except Exception as e:
+            established_vsb = {"error": f"establishment deferred: {e}"}
+
     return {
         "problem": req.problem,
         "domain": req.domain,
@@ -215,7 +231,9 @@ async def genesis_journey(req: JourneyRequest):
             "Inkashaf", "Samajh", "Soch", "Aqal", "Hoshiyari", "Iman",
             "MJM", "DDPIE", "BDP", "gaas.v5",
         ],
-        "deliverable": "The user's own VSB IDBO — Concept → Commercialisation",
+        "established_vsb": established_vsb,   # §4→§5 — the living VSB enterprise, when establish=True
+        "deliverable": "The user's own VSB IDBO — Concept → Commercialisation"
+                       + (" → established living enterprise" if established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")) else ""),
         "status": "complete",
     }
 

@@ -2607,6 +2607,23 @@ def test_economy_ventures_investment(client):
     assert "no real funds" in (pf.get("note") or "").lower()
 
 
+def test_genesis_journey_establish_seam(client):
+    # §4→§5 — a journey WITHOUT establish yields no VSB
+    r0 = client.post("/api/v1/genesis/journey", json={"problem": "reduce food waste in care homes",
+                                                      "domain": "care"})
+    assert r0.status_code == 200, r0.text
+    assert r0.json().get("established_vsb") is None
+    # WITH establish, the journey culminates in a living, operational VSB enterprise (one continuous flow)
+    r = client.post("/api/v1/genesis/journey", json={"problem": "reduce food waste in care homes",
+                    "domain": "care", "establish": True, "name": "ZeroWaste Care",
+                    "entity_type": "waqf_ltd_hybrid"})
+    assert r.status_code == 200, r.text
+    ev = r.json().get("established_vsb") or {}
+    assert ev.get("vsb_id", "").startswith("vsb-")
+    assert ev.get("status") == "operational"
+    assert "established living enterprise" in r.json().get("deliverable", "")
+
+
 def test_economy_board_pack(client):
     import uuid as _uuid
     vid = f"test-boardpack-{_uuid.uuid4().hex[:10]}"   # unique per run
