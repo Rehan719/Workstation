@@ -55,17 +55,44 @@ def ollama_up() -> bool:
     return up
 
 
+_MODELS_CACHE = {"at": 0.0, "models": []}
+
+
+def local_models() -> List[str]:
+    """Discover the local models actually pulled into the Ollama server (cached). Each is an OWNED, composable
+    model resource the user can route to by name. Empty under AI_DISABLE_LOCAL or when Ollama is unreachable."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return []
+    now = time.monotonic()
+    if now - _MODELS_CACHE["at"] < _OLLAMA_TTL:
+        return list(_MODELS_CACHE["models"])
+    models: List[str] = []
+    try:
+        import httpx
+        r = httpx.get(f"{_ollama_base()}/api/tags", timeout=1.0)
+        if r.status_code == 200:
+            models = [m.get("name", "").split(":")[0] if ":latest" in m.get("name", "") else m.get("name", "")
+                      for m in (r.json().get("models") or [])]
+            models = sorted({m for m in models if m})
+    except Exception:
+        models = []
+    _MODELS_CACHE.update(at=now, models=models)
+    return models
+
+
 class ModelResourceRegistry:
     """Catalogue + in-house-first selection of model resources."""
 
     def available(self) -> List[Dict]:
         ext = external_allowed()
+        discovered = local_models()
         rows = [
             {"name": "native", "kind": "native", "available": True, "is_external": False,
              "note": "Workstation's own structured engine — always available, owned."},
             {"name": "ollama", "kind": "local", "available": ollama_up(), "is_external": False,
-             "model": os.getenv("OLLAMA_MODEL", "llama3.2"),
-             "note": "Self-hosted local model — owned capability when running."},
+             "model": os.getenv("OLLAMA_MODEL", "llama3.2"), "local_models": discovered,
+             "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one "
+                     "with model='ollama:<name>'."},
             {"name": "anthropic", "kind": "external", "available": bool(os.getenv("ANTHROPIC_API_KEY")) and ext,
              "is_external": True, "model": os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
              "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."},

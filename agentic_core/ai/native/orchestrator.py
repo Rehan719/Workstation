@@ -73,6 +73,9 @@ class NativeOrchestrator:
             order = ["native"]
         elif prefer == "local":
             order = ["ollama", "native"]   # require the local model first; floor only as graceful fallback
+        elif prefer.startswith("ollama:") or prefer.startswith("local:"):
+            # route to a SPECIFIC owned local model by name (floor fallback if it cannot serve)
+            order = [f"ollama:{prefer.split(':', 1)[1]}", "native"]
         else:
             order = _reorder_by_health(registry.select(prefer_external=prefer_external))
         tried: List[str] = []
@@ -100,13 +103,18 @@ class NativeOrchestrator:
         return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
 
     async def _run_model(self, name: str, prompt: str) -> str:
-        if name == "ollama":
+        if name == "ollama" or name.startswith("ollama:"):
+            # AI_DISABLE_LOCAL=1 means NO local inference at all (deterministic deployments / the test suite),
+            # even for a directly-named model route — fall through to the native floor.
+            if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+                return ""
             import httpx
+            # "ollama" → the default model; "ollama:<name>" → that specific owned local model.
+            model = name.split(":", 1)[1] if ":" in name else os.getenv("OLLAMA_MODEL", "llama3.2")
             url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
             to = httpx.Timeout(connect=3.0, read=25.0, write=3.0, pool=3.0)
             async with httpx.AsyncClient(timeout=to) as client:
-                r = await client.post(url, json={"model": os.getenv("OLLAMA_MODEL", "llama3.2"),
-                                                 "prompt": prompt, "stream": False})
+                r = await client.post(url, json={"model": model, "prompt": prompt, "stream": False})
                 return r.json().get("response", "")
         if name == "anthropic":
             import anthropic

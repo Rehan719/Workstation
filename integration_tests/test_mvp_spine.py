@@ -2569,6 +2569,22 @@ def test_economy_waterfall_owner_sovereignty(client):
     assert d2["waterfall"]["charity"] == 0.30
 
 
+def test_native_ai_model_discovery_and_named_routing(client):
+    # §6 — owned models as composable resources: the catalogue + named-model routing
+    m = client.get("/api/v1/native-ai/models").json()
+    assert isinstance(m.get("local_models"), list)        # discovered local models (empty under AI_DISABLE_LOCAL)
+    tier_ids = [t["id"] for t in m.get("tiers", [])]
+    assert "auto" in tier_ids and "native" in tier_ids    # the always-present tiers
+    # routing to a SPECIFIC named model is honored (tried first), with the floor as graceful fallback
+    r = client.post("/api/v1/native-ai/complete", json={"prompt": "x", "model": "ollama:llama3.2"}).json()
+    assert (r.get("resources_tried") or [])[0] == "ollama:llama3.2"
+    assert r.get("output")   # always a real in-house result (floor guarantees it)
+    # the ollama resource row advertises its discovered local models
+    res = client.get("/api/v1/native-ai/resources").json()
+    ollama = next((x for x in res["resources"] if x["name"] == "ollama"), {})
+    assert "local_models" in ollama
+
+
 def test_native_ai_model_preference(client):
     # §6/§7 — model-tier preference (user design control over which OWNED tier serves)
     # model=native forces the deterministic floor (tries only "native")

@@ -8,6 +8,7 @@ Everything is honest about which resource served and whether any external provid
 """
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List
 
 from fastapi import APIRouter
@@ -62,6 +63,23 @@ async def native_homeostasis():
 @router.get("/resources")
 async def native_resources():
     return {"resources": registry.available(), "selection_order": registry.select()}
+
+
+@router.get("/models")
+async def native_models():
+    """The OWNED model resources, with the local models actually discovered on the Ollama server — each
+    selectable by name (model='ollama:<name>'). The native deterministic floor is always available."""
+    from agentic_core.ai.native.model_resource import local_models
+    discovered = local_models()
+    tiers = [{"id": "auto", "label": "Auto (in-house-first)", "kind": "policy"},
+             {"id": "native", "label": "Native floor (deterministic)", "kind": "native"}]
+    if discovered:
+        tiers.append({"id": "local", "label": "Local model (default)", "kind": "local"})
+        tiers += [{"id": f"ollama:{m}", "label": m, "kind": "local"} for m in discovered]
+    return {"local_models": discovered, "default_local": os.getenv("OLLAMA_MODEL", "llama3.2") if discovered else None,
+            "tiers": tiers,
+            "note": "Owned models. Route a completion to any with model=<id>. External providers are opt-in "
+                    "accelerants (AI_ALLOW_EXTERNAL); the native floor is always available."}
 
 
 # Catalogue of Workstation's OWN AI capabilities — each backed by a REAL, integrated agentic_core module
