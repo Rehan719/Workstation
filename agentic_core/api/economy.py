@@ -160,6 +160,14 @@ async def owner_payout(req: PayoutRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/living-vsbs")
+async def living_vsbs():
+    """§4 — the established VSB enterprises the organism autonomously tends (each continually operated via
+    paced virtual economy cycles on the circadian heartbeat). Virtual/simulated."""
+    from agentic_core.economy.living_vsbs import list_living
+    return list_living()
+
+
 @router.get("/board-pack")
 async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY):
     """§7 Financial Board Pack — the live owner-facing financial statement, assembled on demand: the P&L

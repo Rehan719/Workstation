@@ -378,6 +378,15 @@ async def genesis_establish(req: EstablishRequest):
         }
     except Exception:
         pass
+    # §4 — register the established VSB as a LIVING entity the organism autonomously tends (the heartbeat
+    # will continually run its virtual economy cycles), so it "operates, improves and evolves forever".
+    try:
+        from agentic_core.economy.living_vsbs import register as _register_living
+        _register_living(vsb_id, name, req.entity_type, req.domain, req.owner_id)
+        entity["living"] = {"autonomous_operation": "registered — the organism tends this VSB on the circadian "
+                            "heartbeat (paced virtual economy cycles)", "virtual": True}
+    except Exception:
+        pass
     # Seed the VSB's living business plan (Chief/Board own it), with objectives
     # mapped to its Concept→Design→Commercialisation lifecycle — wires Genesis to
     # the Business-Plan resource so every generated entity starts with a plan.

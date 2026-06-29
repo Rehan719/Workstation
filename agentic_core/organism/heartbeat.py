@@ -59,6 +59,7 @@ class OrganismHeartbeat:
         self.last_heal: Optional[str] = None        # last proactive self-heal (circuits probed for recovery)
         self.last_genome: Optional[Dict[str, Any]] = None   # last genome-population vital sign on the beat
         self.last_evolution: Optional[Dict[str, Any]] = None   # last autonomous evolution (proposals → governance)
+        self.last_vsb_operated: Optional[str] = None   # §4 — last living VSB autonomously operated on the beat
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
         self.auto_economy = False             # opt-in: autonomous economy cycles
@@ -148,6 +149,18 @@ class OrganismHeartbeat:
                                 "max_generation": gs.get("max_generation")}
             if gs.get("total_genomes"):
                 actions.append("genome_scan")
+        except Exception:
+            pass
+
+        # 2e. §4 — autonomously OPERATE one living VSB enterprise (round-robin, paced): run one virtual economy
+        #     cycle for the least-recently-operated established VSB, so each "continually, autonomously operates"
+        #     forever. Cheap + deterministic + virtual; the registry is only populated once VSBs are established.
+        try:
+            from agentic_core.economy.living_vsbs import operate_one
+            op = operate_one()
+            if op and not op.get("error"):
+                self.last_vsb_operated = op.get("vsb_id")
+                actions.append("operate_vsb")
         except Exception:
             pass
 
@@ -253,6 +266,7 @@ class OrganismHeartbeat:
             "last_heal": self.last_heal,
             "last_genome": self.last_genome,
             "last_evolution": self.last_evolution,
+            "last_vsb_operated": self.last_vsb_operated,
             "interval_seconds": self.interval_seconds,
             "auto_evolve": self.auto_evolve,
             "auto_economy": self.auto_economy,

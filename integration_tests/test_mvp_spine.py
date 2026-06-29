@@ -2607,6 +2607,22 @@ def test_economy_ventures_investment(client):
     assert "no real funds" in (pf.get("note") or "").lower()
 
 
+def test_genesis_established_vsb_is_living(client):
+    # §4 — an established VSB is registered as a LIVING entity the organism autonomously tends
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "autonomous living-entity test", "domain": "enterprise",
+        "entity_type": "waqf_ltd_hybrid", "name": "LivingTestCo",
+        "concept": "c", "design": "d", "commercialisation": "m"}).json()
+    vid = est.get("vsb_id", "")
+    assert vid.startswith("vsb-")
+    ll = client.get("/api/v1/economy/living-vsbs").json()
+    assert ll["total"] >= 1
+    row = next((v for v in ll["living_vsbs"] if v["vsb_id"] == vid), None)
+    assert row is not None, "established VSB not registered as living"
+    assert "operating_cycles" in row and row["status"] == "living"
+    assert "no real funds" in (ll.get("note") or "").lower()
+
+
 def test_genesis_journey_stage_verifications(client):
     # §5 — each stage of the journey is verified/tested/validated on real measured proxies
     r = client.post("/api/v1/genesis/journey", json={"problem": "reduce energy waste in social housing",
