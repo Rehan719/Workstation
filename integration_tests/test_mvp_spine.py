@@ -2701,8 +2701,26 @@ def test_fabric_musculoskeletal_facilities_run_real(client):
     # Reactor + Factory + Simulator are now driven by the native swarm (in-house provenance)
     assert rr["reactor"].get("served_by") and rr["factory"].get("served_by")
     assert rr["digital_twin"].get("served_by")
-    assert rr["reactor"].get("ran") == "/api/v1/reactor/run"
+    assert rr["reactor"].get("ran") == "/api/v1/reactor/composite"   # the composite Reactor (vision definition)
     assert rr["factory"].get("ran") == "/api/v1/factory/produce"
+
+
+def test_fabric_reactor_is_composite(client):
+    # §7 vision — "A Reactor = Incubator + Experimentation + Studio". Composing the Reactor runs all
+    # THREE real sub-engines as one orchestrated run on the native swarm (not a single domain sim).
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "CompositeReactor", "usage_area": "science", "resource_ids": ["reactor"],
+        "config": {"reactor": {"subject": "a drought-resistant irrigation schedule", "variants": 2,
+                               "iterations": 1, "scenarios": "Pursue now\nDefer one season"}}}).json()
+    run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run",
+                      json={"objective": "optimise a desert farm"}).json()
+    r = next((x for x in (run.get("real_resource_runs") or []) if x["resource"] == "reactor"), None)
+    assert r is not None and not r.get("error")
+    assert r.get("ran") == "/api/v1/reactor/composite"
+    assert r.get("sub_facilities") == ["incubator", "experimentation", "studio"]   # the three sub-engines
+    assert (r.get("generations_run") or 0) >= 1      # Incubator evolution ran
+    assert (r.get("scenarios_run") or 0) >= 2        # Experimentation what-ifs ran
+    assert r.get("output")
 
 
 def test_generator_facility_live(client):

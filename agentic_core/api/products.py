@@ -730,3 +730,77 @@ async def intelligence_forecasts() -> dict:
     }
     cache_path.write_text(json.dumps(result, indent=2))
     return result
+
+
+# ── Reactor (composite) ─────────────────────────────────────────────────────────
+# The §7 Reactor as the vision defines it: a Reactor = Incubator (parameterised Temperature/Mutation/
+# Iteration evolution) + Experimentation (what-if scenarios) + Studio (2D/3D analytics & insight). This
+# orchestrates the three REAL sub-engines into one run on the OWNED native swarm; the Studio visualises
+# the genuine per-variant fitness scores produced by the Incubator (never fabricated numbers).
+
+class ReactorCompositeRequest(BaseModel):
+    subject: str
+    domain: str = "general"
+    # Incubator — generation/evolution loop
+    variants: int = 3
+    temperature: float = 0.7
+    mutation: float = 0.5
+    iterations: int = 1
+    # Experimentation — what-if scenarios
+    scenarios: list[str] = []
+    fitness_criteria: str = "impact, feasibility, risk, opportunity"
+
+
+async def run_reactor_composite(subject: str, domain: str = "general", variants: int = 3,
+                                temperature: float = 0.7, mutation: float = 0.5, iterations: int = 1,
+                                scenarios: Optional[list] = None,
+                                fitness_criteria: str = "impact, feasibility, risk, opportunity") -> dict:
+    """Run the composite Reactor (Incubator + Experimentation + Studio) as one orchestrated run on the
+    native swarm. Shared by the live endpoint and the §7 fabric composition dispatch."""
+    subject = (subject or "").strip() or "the subject"
+    # 1 — Incubator: evolve variants over Temperature / Mutation / Iteration
+    evo = await incubator_evolve(EvolveTournamentRequest(
+        name=subject[:80], base_prompt=subject, domain=domain, variants=variants,
+        temperature=temperature, mutation=mutation, iterations=iterations))
+    # 2 — Experimentation: project + compare what-if scenarios
+    scen = [s for s in (scenarios or []) if s and str(s).strip()] or [
+        f"Pursue: {subject}", f"Defer: {subject}", f"Pivot: {subject}"]
+    exp = await reactor_experiment(ExperimentRequest(
+        subject=subject, domain=domain, scenarios=scen, fitness_criteria=fitness_criteria))
+    # 3 — Studio: 2D analytics + insight over the REAL evolution fitness leaderboard (genuine data)
+    pts = [StudioPoint(label=(v.variant_id or f"rank{v.rank}")[:24], value=round(float(v.fitness_score), 4))
+           for v in (evo.leaderboard or [])]
+    studio = None
+    if pts:
+        studio = await reactor_studio(StudioRequest(
+            title=f"{subject[:60]} — variant fitness", domain=domain, chart_type="bar", series=pts, insight=True))
+    served: set = set()
+    for prov in (getattr(exp, "ai_provenance", None),
+                 getattr(studio, "ai_provenance", None) if studio else None):
+        if isinstance(prov, dict):
+            served.update((prov.get("served_by") or {}).keys())
+    return {
+        "reactor": "composite",
+        "subject": subject,
+        "served_by": ",".join(sorted(s for s in served if s)) or "native",
+        "sub_facilities": ["incubator", "experimentation", "studio"],
+        "evolution": {"generations_run": evo.generations_run, "variants_evaluated": evo.variants_evaluated,
+                      "winner": (evo.winner.response[:300] if evo.winner else None),
+                      "winner_fitness": (evo.winner.fitness_score if evo.winner else None),
+                      "analysis": (evo.analysis or "")[:300]},
+        "experimentation": {"scenarios_run": exp.scenarios_run, "comparison": (exp.comparison or "")[:300]},
+        "studio": ({"dimensions": studio.dimensions, "analytics": studio.analytics,
+                    "insight": (studio.insight or "")[:300]} if studio else None),
+        "run_id": uuid.uuid4().hex[:12],
+    }
+
+
+@router.post("/api/v1/reactor/composite")
+async def reactor_composite(req: ReactorCompositeRequest):
+    """The §7 Reactor = Incubator (Temperature/Mutation/Iteration evolution) + Experimentation (what-if
+    scenarios) + Studio (2D analytics & insight over the real evolution fitness) — one orchestrated run
+    on Workstation's OWN native swarm. Reconfigurable · rerunnable · reusable."""
+    return await run_reactor_composite(
+        req.subject, domain=req.domain, variants=req.variants, temperature=req.temperature,
+        mutation=req.mutation, iterations=req.iterations, scenarios=req.scenarios,
+        fitness_criteria=req.fitness_criteria)

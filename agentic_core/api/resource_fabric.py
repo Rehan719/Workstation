@@ -99,10 +99,14 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["multi-format content generation", "9-stage BTO cascade", "vsb spawn"],
        {"brief": "str", "output_types": "list", "domain": "str"}, "/api/v1/studio/synthesise",
        ["synthesis", "design", "development", "forge"]),
-    _R("reactor", "Domain Reactor", "digital_resource", "reactor",
-       "Streams a domain AI processing simulation (ingestion → analysis → synthesis → validation).",
-       ["domain simulation", "data flow modelling", "artefact output"],
-       {"domain": "str"}, "/api/v1/reactor/run", ["development", "forge", "synthesis"]),
+    _R("reactor", "Reactor · Incubate + Experiment + Studio", "digital_resource", "reactor",
+       "The §7 composite Reactor (vision definition): Incubator (parameterised Temperature/Mutation/"
+       "Iteration evolution) + Experimentation (what-if scenarios) + Studio (2D analytics & insight over "
+       "the REAL evolution fitness) — orchestrated into one run on the native swarm.",
+       ["evolution (temperature/mutation/iteration)", "what-if scenarios", "visual analytics & insight"],
+       {"subject": "str", "variants": "int 2-5", "temperature": "float 0-1 (diversity)",
+        "mutation": "float 0-1", "iterations": "int 1-4", "scenarios": "list (one what-if per line)"},
+       "/api/v1/reactor/composite", ["synthesis", "design", "development", "forge", "evolution"]),
     _R("factory", "Production Factory", "digital_resource", "factory",
        "Generates production-grade artefacts (business model, spec, marketing plan, pitch, report).",
        ["artefact production", "production-grade output"],
@@ -440,12 +444,21 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
         #   cascade; their shared native-driven runners are reused here so a composition runs the genuine
         #   engine with in-house provenance.
         if rid == "reactor":
-            from agentic_core.api.products import run_reactor_sim
-            sim = await run_reactor_sim(domain=domain, params=(cfg.get("params") or {}),
-                                        label=str(cfg.get("label") or objective)[:80],
-                                        prefer=str(cfg.get("model") or "auto"))
-            return {"resource": "reactor", "ran": "/api/v1/reactor/run", "served_by": sim["served_by"],
-                    "is_external": sim["is_external"], "output": (sim["output"] or "")[:600]}
+            # the §7 composite Reactor = Incubator (evolution) + Experimentation (what-if) + Studio
+            #   (analytics over the real fitness) — the vision's definition, run as one on the swarm.
+            from agentic_core.api.products import run_reactor_composite
+            r = await run_reactor_composite(
+                subject=str(cfg.get("subject") or objective), domain=domain,
+                variants=_cfg_num(cfg.get("variants"), 3, int),
+                temperature=_cfg_num(cfg.get("temperature"), 0.7, float),
+                mutation=_cfg_num(cfg.get("mutation"), 0.5, float),
+                iterations=_cfg_num(cfg.get("iterations"), 1, int),
+                scenarios=_csv(cfg.get("scenarios")) or None)
+            return {"resource": "reactor", "ran": "/api/v1/reactor/composite", "served_by": r["served_by"],
+                    "sub_facilities": r["sub_facilities"], "generations_run": r["evolution"]["generations_run"],
+                    "scenarios_run": r["experimentation"]["scenarios_run"],
+                    "studio_dimensions": (r["studio"] or {}).get("dimensions"),
+                    "output": (r["evolution"]["winner"] or r["experimentation"]["comparison"] or "")[:600]}
         if rid == "factory":
             from agentic_core.api.products import run_factory_produce
             prod = await run_factory_produce(name=str(cfg.get("name") or objective)[:80],
