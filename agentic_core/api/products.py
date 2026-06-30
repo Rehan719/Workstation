@@ -212,6 +212,57 @@ async def factory_produce(req: ProductionRequest) -> StreamingResponse:
     )
 
 
+# ── Generator ─────────────────────────────────────────────────────────────────
+# The §7 Generator facility: produce ONE concrete, targeted artefact in a chosen format on the OWNED
+# native swarm (§6). Distinct from the Factory (multi-section document production) and the Laboratory
+# (concept→commercialisation cascade) — a single artefact (code · schema · config · content · model
+# spec), reconfigurable + rerunnable + reusable.
+
+_GENERATOR_TEMPLATES: dict[str, str] = {
+    "code":       "Generate a single, complete, runnable {format} code module. Include only the code "
+                  "(with brief inline comments). No prose before or after.",
+    "schema":     "Generate a single, complete {format} data schema (well-formed, validating). Output "
+                  "only the schema.",
+    "config":     "Generate a single, complete {format} configuration artefact with sensible, documented "
+                  "values. Output only the config.",
+    "content":    "Generate a single, complete {format} content artefact — well-structured and ready to "
+                  "use. Output only the artefact.",
+    "model_spec": "Generate a single, complete {format} model/architecture specification (inputs, "
+                  "structure, parameters, evaluation). Output only the specification.",
+}
+
+
+class GeneratorRequest(BaseModel):
+    artefact_type: str = "content"   # code | schema | config | content | model_spec
+    spec: str
+    domain: str = "general"
+    format: str = "markdown"         # e.g. python | json | yaml | markdown | typescript
+    model: str = "auto"              # §6 user design control: auto | native | local | ollama:<name>
+
+
+async def run_generator(artefact_type: str, spec: str, domain: str = "general",
+                        fmt: str = "markdown", prefer: str = "auto") -> dict:
+    """Generate one targeted artefact on the OWNED native swarm (§6), returning it with provenance.
+    Shared by the live endpoint and the §7 fabric composition dispatch, so a composed Generator runs
+    the genuine generation engine — never a generic prompt stage."""
+    from agentic_core.ai.native import orchestrator
+    tmpl = _GENERATOR_TEMPLATES.get(artefact_type.lower().strip(), _GENERATOR_TEMPLATES["content"])
+    prompt = (f"You are an artefact generator. {tmpl.format(format=fmt)}\n\n"
+              f"Artefact type: {artefact_type} | Target format: {fmt} | Domain: {domain}\n"
+              f"Specification:\n{spec}")
+    res = await orchestrator.complete(prompt, agent="generator", prefer=prefer)
+    return {"artefact_type": artefact_type, "format": fmt, "output": res.get("output", "") or "",
+            "served_by": res.get("served_by", "native"), "is_external": bool(res.get("is_external")),
+            "run_id": uuid.uuid4().hex[:12]}
+
+
+@router.post("/api/v1/generator/produce")
+async def generator_produce(req: GeneratorRequest):
+    """Generate one targeted artefact (code/schema/config/content/model_spec) in a chosen format on
+    Workstation's OWN native swarm (§6). Reconfigurable + rerunnable; reports owned-resource provenance."""
+    return await run_generator(req.artefact_type, req.spec, req.domain, req.format, prefer=req.model)
+
+
 # ── Incubator / Evolution Engine ──────────────────────────────────────────────
 
 class EvolveTournamentRequest(BaseModel):

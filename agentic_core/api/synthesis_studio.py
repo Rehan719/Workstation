@@ -227,6 +227,28 @@ _STAGE_PROMPTS: dict[str, str] = {
 }
 
 
+async def run_lab_cascade(challenge: str, realm: str = "enterprise", domain: str = "general",
+                          solution_name: str = "", max_stages: int = 3) -> dict:
+    """Run the §7 Laboratory's concept→commercialisation cascade NON-streaming and WITHOUT spawning a
+    VSB/project (compose-mode), on the OWNED native swarm (§6). Shared by the §7 fabric composition
+    dispatch so a composed Laboratory runs its genuine multi-stage engine — rerunnable + reusable
+    without proliferating entities. `max_stages` bounds how many of the 9 cascade stages run (the live
+    /synthesise endpoint runs the full cascade + spawns; this runs a configurable prefix)."""
+    solution_name = solution_name or f"{domain.title()} Solution"
+    stages = _CASCADE_STAGES if not max_stages else _CASCADE_STAGES[:max(1, min(max_stages, len(_CASCADE_STAGES)))]
+    results: dict[str, str] = {}
+    served: dict[str, int] = {}
+    for stage_key, _stage_label, _stage_desc in stages:
+        prompt = _STAGE_PROMPTS[stage_key].format(
+            challenge=challenge, domain=domain, realm=realm, solution_name=solution_name,
+            solution=results.get("solution_concept", "")[:200])
+        meta = await gateway.query_meta(prompt, agent=f"studio_{stage_key}")
+        results[stage_key] = meta.get("output", "") or ""
+        sb = meta.get("served_by", "native")
+        served[sb] = served.get(sb, 0) + 1
+    return {"stages": results, "stages_run": len(stages), "served_by": served}
+
+
 class SynthesiseRequest(BaseModel):
     challenge: str
     realm: str = "enterprise"

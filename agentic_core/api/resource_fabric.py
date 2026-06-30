@@ -136,9 +136,18 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["2d charts", "scatter / z-magnitude", "computed analytics", "insight narrative"],
        {"title": "str", "series": "list of {label,value[,z]}", "chart_type": "bar|line|scatter"},
        "/api/v1/reactor/studio", ["synthesis", "design", "development", "forge", "evolution", "delivery"]),
+    _R("generator", "Artefact Generator", "digital_resource", "generator",
+       "Generates ONE concrete, targeted artefact (code · schema · config · content · model spec) in a "
+       "chosen format on the native swarm — distinct from the Factory (multi-section document production) "
+       "and the Laboratory (concept→commercialisation cascade). Reconfigurable / rerunnable / reusable.",
+       ["code generation", "schema generation", "config/content generation", "format control"],
+       {"artefact_type": "str (code|schema|config|content|model_spec)", "spec": "str",
+        "format": "str (python|json|yaml|markdown|…)"},
+       "/api/v1/generator/produce", ["development", "forge", "delivery", "build_to_order"]),
     _R("digital_twin", "Digital Twin & Simulator", "digital_resource", "simulator",
-       "Generates AI models and runs scenario simulations / optimisation (generators + simulators).",
-       ["model generation", "scenario simulation", "optimisation"],
+       "Forward-simulates a system under a scenario on the native swarm (state trajectory · emergent "
+       "behaviour · stress points · setpoints) — the §7 Simulator facility.",
+       ["scenario simulation", "forward modelling", "stress/failure analysis", "setpoint optimisation"],
        {"system": "str", "scenario": "str"}, "/api/v1/twin", ["design", "development", "delivery", "forge"]),
 
     # Organism biomimetic systems
@@ -331,6 +340,15 @@ def _csv(v) -> list:
     return [s.strip() for s in str(v or "").replace(";", ",").replace("\n", ",").split(",") if s.strip()]
 
 
+def _cfg_num(v, default, cast=int):
+    """Coerce a composed-config value to a number, tolerating the registry placeholder strings that
+    compose() merges in for un-overridden params (e.g. 'int 1-3 (passages)') → fall back to default."""
+    try:
+        return cast(v)
+    except (TypeError, ValueError):
+        return default
+
+
 async def _run_real_resource(rid: str, config: dict, objective: str, domain: str) -> Optional[Dict[str, Any]]:
     """§7 deep integration — invoke a composed resource's REAL endpoint logic (not a prompt approximation),
     built from the user's reconfigured params, so a committed composition runs the ACTUAL engines/resources.
@@ -342,7 +360,7 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             from agentic_core.api.products import petri_culture, PetriRequest
             r = await petri_culture(PetriRequest(specimen=str(cfg.get("specimen") or objective), domain=domain,
                                                  medium=str(cfg.get("medium") or "standard"),
-                                                 iterations=int(cfg.get("iterations") or 1)))
+                                                 iterations=_cfg_num(cfg.get("iterations"), 1, int)))
             return {"resource": "petri_dish", "ran": "/api/v1/petri/culture", "viable": r.viable,
                     "passages": r.passages, "output": (r.culture or "")[:600]}
         if rid == "mjm":
@@ -368,8 +386,9 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             from agentic_core.api.products import incubator_evolve, EvolveTournamentRequest
             r = await incubator_evolve(EvolveTournamentRequest(
                 name=str(cfg.get("name") or objective)[:80], base_prompt=str(cfg.get("base_prompt") or objective),
-                domain=domain, variants=int(cfg.get("variants") or 3), temperature=float(cfg.get("temperature") or 0.7),
-                mutation=float(cfg.get("mutation") or 0.5), iterations=int(cfg.get("iterations") or 1)))
+                domain=domain, variants=_cfg_num(cfg.get("variants"), 3, int),
+                temperature=_cfg_num(cfg.get("temperature"), 0.7, float),
+                mutation=_cfg_num(cfg.get("mutation"), 0.5, float), iterations=_cfg_num(cfg.get("iterations"), 1, int)))
             return {"resource": "incubator", "ran": "/api/v1/incubator/evolve",
                     "generations_run": r.generations_run, "winner": r.winner.response[:300] if r.winner else None,
                     "output": (r.analysis or "")[:400]}
@@ -460,6 +479,47 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             return {"resource": "digital_twin", "ran": "/api/v1/twin/simulate", "served_by": res.get("served_by"),
                     "is_external": bool(res.get("is_external")), "scenario": scenario,
                     "output": (res.get("output") or "")[:600]}
+        if rid == "generator":
+            # the §7 Generator: produce ONE targeted artefact in a chosen format on the native swarm.
+            from agentic_core.api.products import run_generator
+            g = await run_generator(artefact_type=str(cfg.get("artefact_type") or "content"),
+                                    spec=str(cfg.get("spec") or objective), domain=domain,
+                                    fmt=str(cfg.get("format") or "markdown"),
+                                    prefer=str(cfg.get("model") or "auto"))
+            return {"resource": "generator", "ran": "/api/v1/generator/produce",
+                    "artefact_type": g["artefact_type"], "format": g["format"],
+                    "served_by": g["served_by"], "is_external": g["is_external"],
+                    "output": (g["output"] or "")[:600]}
+        if rid == "synthesis_studio":
+            # the §7 Laboratory: run the genuine concept→commercialisation cascade (compose-mode — no VSB
+            #   spawn), on the native swarm. max_stages bounds how many of the 9 stages run.
+            from agentic_core.api.synthesis_studio import run_lab_cascade
+            r = await run_lab_cascade(challenge=str(cfg.get("brief") or objective),
+                                      realm=str(cfg.get("realm") or "enterprise"), domain=domain,
+                                      solution_name=str(cfg.get("solution_name") or ""),
+                                      max_stages=_cfg_num(cfg.get("max_stages"), 3, int))
+            sb = ",".join(sorted(r["served_by"].keys())) or "native"
+            out = r["stages"].get("solution_concept") or next(iter(r["stages"].values()), "")
+            return {"resource": "synthesis_studio", "ran": "/api/v1/studio/synthesise",
+                    "stages_run": r["stages_run"], "served_by": sb, "output": (out or "")[:600]}
+        if rid == "studio":
+            # the §7 Studio: deterministic 2D/3D analytics + insight over a REAL configured data series.
+            #   Honestly skips (returns None → generic stage) when no numeric series is configured.
+            series = cfg.get("series")
+            if not isinstance(series, list) or not series:
+                return None
+            from agentic_core.api.products import reactor_studio, StudioRequest, StudioPoint
+            pts = []
+            for p in series:
+                if isinstance(p, dict) and p.get("label") is not None and p.get("value") is not None:
+                    pts.append(StudioPoint(label=str(p["label"]), value=float(p["value"]),
+                                           z=(float(p["z"]) if p.get("z") is not None else None)))
+            if not pts:
+                return None
+            r = await reactor_studio(StudioRequest(title=str(cfg.get("title") or objective)[:120], domain=domain,
+                                                   chart_type=str(cfg.get("chart_type") or "bar"), series=pts))
+            return {"resource": "studio", "ran": "/api/v1/reactor/studio", "dimensions": r.dimensions,
+                    "analytics": r.analytics, "output": (r.insight or json.dumps(r.analytics))[:600]}
         if rid == "native_swarm":
             from agentic_core.ai.native import orchestrator
             raw = cfg.get("stages")

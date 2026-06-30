@@ -2705,6 +2705,44 @@ def test_fabric_musculoskeletal_facilities_run_real(client):
     assert rr["factory"].get("ran") == "/api/v1/factory/produce"
 
 
+def test_generator_facility_live(client):
+    # §7 — the Generator facility is first-class + live: produce ONE targeted artefact in a chosen
+    # format on the OWNED native swarm, with provenance. Reconfigurable + rerunnable.
+    r = client.post("/api/v1/generator/produce", json={
+        "artefact_type": "schema", "spec": "a user account record", "format": "json", "domain": "technology"}).json()
+    assert r["artefact_type"] == "schema" and r["format"] == "json"
+    assert r["served_by"] and r["output"]
+
+
+def test_fabric_all_eight_facilities_run_real(client):
+    # §7 — ALL EIGHT musculoskeletal digital-resource facilities the vision names run their REAL engine
+    # when composed (Engines · Reactors · Petri dishes · Incubators · Laboratories · Factories ·
+    # Generators · Simulators) — each reconfigurable, rerunnable, reusable, driven by the native swarm.
+    facilities = {
+        "bdp": {"rigor": "standard"},                                  # Engines
+        "reactor": {"domain": "science"},                              # Reactors
+        "petri_dish": {"specimen": "drought-resistant seed"},          # Petri dishes
+        "incubator": {"base_prompt": "irrigation scheduling", "variants": 2},  # Incubators
+        "synthesis_studio": {"brief": "a halal desert-farm co-op", "max_stages": 2},  # Laboratories
+        "factory": {"product_type": "operational_plan", "name": "Farm Ops"},   # Factories
+        "generator": {"artefact_type": "config", "spec": "irrigation controller", "format": "yaml"},  # Generators
+        "digital_twin": {"system": "drip grid", "scenario": "heatwave"},       # Simulators
+    }
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "All8 Facilities", "usage_area": "science",
+        "resource_ids": list(facilities.keys()), "config": facilities}).json()
+    run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run",
+                      json={"objective": "stand up a halal desert-farm co-op"}).json()
+    rr = {x["resource"]: x for x in (run.get("real_resource_runs") or [])}
+    for fac in facilities:
+        assert fac in rr, f"{fac} did not run as a real engine when composed"
+        assert not rr[fac].get("error"), f"{fac}: {rr[fac].get('error')}"
+        assert rr[fac].get("output"), f"{fac} produced no output"
+    # the Engine ran a multi-stage pipeline; the Laboratory ran its genuine cascade
+    assert (rr["bdp"].get("stages") or 0) >= 2
+    assert (rr["synthesis_studio"].get("stages_run") or 0) >= 1
+
+
 def test_economy_owner_payments_virtual(client):
     import uuid as _uuid
     vid = f"test-owner-pay-{_uuid.uuid4().hex[:10]}"   # unique per run — no dependence on persisted state
