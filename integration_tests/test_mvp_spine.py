@@ -2784,6 +2784,28 @@ def test_fabric_organism_systems_run_real(client):
     assert rr["nervous_system"].get("signal_fired") is True
 
 
+def test_fabric_enterprise_layer_runs_real(client):
+    # §5/§12↔§7 — the enterprise/org layer runs its REAL engine/reading when composed (bounded, no state
+    # proliferation): live treasury · the genuine tiered-governance verdict · the real Products Catalogue
+    # (relevance-matched) · a real Build-to-Order blueprint.
+    res_ids = ["capital_fund", "change_control", "products_catalogue", "build_to_order"]
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "Enterprise", "usage_area": "commercialisation", "resource_ids": res_ids,
+        "config": {"build_to_order": {"entity_name": "MealKitCo", "components": "vsb,csuite"}}}).json()
+    run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run",
+                      json={"objective": "launch a halal meal-kit subscription for elders"}).json()
+    rr = {x["resource"]: x for x in (run.get("real_resource_runs") or [])}
+    for rid in res_ids:
+        assert rid in rr, f"{rid} did not run as a real enterprise engine"
+        assert not rr[rid].get("error"), f"{rid}: {rr[rid].get('error')}"
+        assert rr[rid].get("output"), f"{rid} produced no reading"
+    # real readings/verdicts (not fabricated)
+    assert rr["capital_fund"].get("available") is not None          # live virtual treasury
+    assert rr["change_control"].get("impact_tier") in ("LOW", "MEDIUM", "HIGH", "CRITICAL")  # real tier
+    assert (rr["products_catalogue"].get("total_products") or 0) >= 1   # the real catalogue
+    assert rr["build_to_order"].get("blueprint_id")                 # a real blueprint assembled
+
+
 def test_economy_owner_payments_virtual(client):
     import uuid as _uuid
     vid = f"test-owner-pay-{_uuid.uuid4().hex[:10]}"   # unique per run — no dependence on persisted state

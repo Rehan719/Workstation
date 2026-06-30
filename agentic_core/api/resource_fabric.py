@@ -221,9 +221,21 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"title": "str", "change_type": "str", "description": "str"}, "/api/v1/cca/submit",
        ["governance", "evolution", "delivery"]),
     _R("capital_fund", "Sovereign Capital Fund", "enterprise_org", "treasury",
-       "Virtual capital allocation + marketplace for the VSB ecosystem.",
+       "Virtual capital allocation + marketplace for the VSB ecosystem (virtual WST only — real-money "
+       "rails gated). When composed, reads the live treasury (available/allocated/utilisation/health).",
        ["capital allocation", "portfolio", "marketplace"], {"amount": "float", "recipient": "str"},
        "/api/v1/fund/allocate", ["delivery", "commercialisation"]),
+    _R("products_catalogue", "Products Catalogue", "enterprise_org", "catalogue",
+       "The real product catalogue (the owned SDK/product set). When composed, returns the genuine "
+       "catalogue ranked by relevance to the objective (deterministic token match — never fabricated).",
+       ["product catalogue", "relevance match", "tiers"], {}, "/api/v1/catalog/products",
+       ["commercialisation", "delivery", "build_to_order"], methods=("GET",)),
+    _R("build_to_order", "Build-to-Order", "enterprise_org", "bto",
+       "Bespoke Build-to-Order: assemble a real blueprint integrating chosen catalogue products + "
+       "platform components (entity/organism/VSB/C-Suite). When composed, builds the genuine blueprint.",
+       ["bespoke assembly", "product integration", "blueprint"],
+       {"entity_name": "str", "product_resources": "list (catalog slugs)", "components": "list (vsb,csuite,…)"},
+       "/api/v1/bto/configure", ["build_to_order", "delivery", "commercialisation"]),
     _R("compliance", "Unified Compliance Engine", "process_intelligence", "engine",
        "Sharia/Halal · UK Legal (London) · Regulatory · EHS · Ethical · Constitutional — one federated check.",
        ["halal/sharia", "uk legal", "regulatory", "ehs", "ethical", "constitutional"],
@@ -495,6 +507,64 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             return {"resource": "sovereign_evolution", "ran": "/api/v1/sovereign-evolution/status",
                     "last_cycle": st.get("last_cycle") if isinstance(st, dict) else None,
                     "output": (json.dumps(st, default=str)[:500] if isinstance(st, dict) else str(st)[:500])}
+        # Enterprise/org layer — when composed, each runs its REAL engine/reading (bounded, no state
+        #   proliferation): live treasury · the genuine tiered-governance verdict for the objective · the
+        #   real Products Catalogue (matched to the objective) · a real Build-to-Order blueprint.
+        if rid == "capital_fund":
+            from agentic_core.api.capital_fund import fund_status, fund_portfolio
+            s = await fund_status(); p = await fund_portfolio()
+            return {"resource": "capital_fund", "ran": "/api/v1/fund/status",
+                    "total_capital": s.get("total_capital"), "available": s.get("available"),
+                    "allocated": s.get("allocated"), "utilisation_pct": s.get("utilisation_pct"),
+                    "fund_health": s.get("fund_health"), "allocation_count": p.get("allocation_count"),
+                    "output": json.dumps({"available": s.get("available"), "allocated": s.get("allocated"),
+                                          "utilisation_pct": s.get("utilisation_pct"), "by_domain": p.get("by_domain")},
+                                         default=str)[:400]}
+        if rid == "change_control":
+            # the REAL tiered-governance verdict for the objective (classification + the live organism gate),
+            #   WITHOUT persisting a change record (no proliferation on every composition run).
+            from agentic_core.api.change_control import _determine_tier
+            from agentic_core.organism.immune import immune
+            from agentic_core.organism.biobus import biobus
+            tier = _determine_tier(str(cfg.get("change_type") or "feature"), str(objective))
+            health = (biobus.organism_context(0.3) or {}).get("composite_health", 1.0)
+            threat = immune.status().get("threat_level", "NOMINAL")
+            verdict = ("blocked (human escalation)" if tier == "CRITICAL"
+                       else "auto-approved" if (tier == "LOW" and health >= 0.6 and threat in ("NOMINAL", "ELEVATED"))
+                       else "queued for AI review")
+            return {"resource": "change_control", "ran": "/api/v1/cca/submit (assess · not persisted)",
+                    "impact_tier": tier, "verdict": verdict, "organism_health": round(float(health), 3),
+                    "immune_threat": threat,
+                    "output": f"Governance: tier {tier} → {verdict} (organism health {round(float(health), 3)}, immune {threat})."}
+        if rid == "products_catalogue":
+            from agentic_core.catalog.api import list_products
+            ps = list_products()
+            obj_tokens = {w for w in str(objective).lower().replace(",", " ").split() if len(w) > 3}
+            def _score(p):
+                hay = (str(p.get("name", "")) + " " + str(p.get("category", "")) + " "
+                       + " ".join(p.get("features", []) or [])).lower()
+                return sum(1 for t in obj_tokens if t in hay)
+            ranked = sorted(ps, key=_score, reverse=True)
+            top = [{"slug": p["slug"], "name": p["name"], "tier": p.get("tier"), "match": _score(p)}
+                   for p in ranked[:5]]
+            return {"resource": "products_catalogue", "ran": "/api/v1/catalog/products",
+                    "total_products": len(ps), "top_matches": top,
+                    "output": json.dumps(top, default=str)[:400]}
+        if rid == "build_to_order":
+            from agentic_core.catalog.bto import configure_bto, BTOConfigureRequest
+            from agentic_core.catalog.api import list_products
+            slugs = _csv(cfg.get("product_resources")) or [p["slug"] for p in list_products()[:2]]
+            comps = _csv(cfg.get("components")) or ["vsb", "csuite"]
+            bp = await configure_bto(BTOConfigureRequest(
+                entity_name=str(cfg.get("entity_name") or objective)[:80],
+                product_resources=slugs, components=comps))
+            return {"resource": "build_to_order", "ran": "/api/v1/bto/configure",
+                    "blueprint_id": bp.get("blueprint_id"), "resource_count": bp.get("resource_count"),
+                    "component_count": bp.get("component_count"),
+                    "output": json.dumps({"resource_count": bp.get("resource_count"),
+                                          "component_count": bp.get("component_count"),
+                                          "components": list((bp.get("components") or {}).keys())},
+                                         default=str)[:400]}
         if rid == "native_orchestrator":
             from agentic_core.ai.native import orchestrator
             res = await orchestrator.complete(str(cfg.get("prompt") or objective),
