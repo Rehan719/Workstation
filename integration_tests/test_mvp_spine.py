@@ -2761,6 +2761,29 @@ def test_fabric_all_eight_facilities_run_real(client):
     assert (rr["synthesis_studio"].get("stages_run") or 0) >= 1
 
 
+def test_fabric_organism_systems_run_real(client):
+    # §8↔§7 — the biomimetic organism systems run their REAL engine/reading when composed (the living
+    # substrate the composition runs ON), not generic prompt stages: constitutional gate · live immune /
+    # self-healing health · ATP metabolism · circadian phase · a real nervous signal · evolution-office.
+    systems = ["gaas_v5", "nervous_system", "immune", "self_healing", "metabolic", "circadian", "genome"]
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "Organism", "usage_area": "governance", "resource_ids": systems,
+        "config": {"genome": {"entity_name": "OrganismCo"}}}).json()
+    run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run",
+                      json={"objective": "govern a halal venture under homeostasis"}).json()
+    rr = {x["resource"]: x for x in (run.get("real_resource_runs") or [])}
+    for sysid in systems:
+        assert sysid in rr, f"{sysid} did not run as a real organism engine"
+        assert not rr[sysid].get("error"), f"{sysid}: {rr[sysid].get('error')}"
+        assert rr[sysid].get("output"), f"{sysid} produced no reading"
+    # real organism readings (not fabricated): immune health, self-healing health, gaas governance verdict
+    assert rr["immune"].get("health") is not None
+    assert rr["self_healing"].get("overall_health") is not None
+    assert rr["gaas_v5"].get("ran") == "/api/v1/gaas/intercept"
+    assert rr["metabolic"].get("mode")        # FULL_POWER / NOMINAL / DEGRADED / EMERGENCY
+    assert rr["nervous_system"].get("signal_fired") is True
+
+
 def test_economy_owner_payments_virtual(client):
     import uuid as _uuid
     vid = f"test-owner-pay-{_uuid.uuid4().hex[:10]}"   # unique per run — no dependence on persisted state

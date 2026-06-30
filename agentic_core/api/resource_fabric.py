@@ -166,9 +166,30 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"focus": "str", "submit_to_change_control": "bool"}, "/api/v1/sovereign-evolution/cycle",
        ["evolution", "governance"], biomimetic=True),
     _R("nervous_system", "Nervous System", "organism_system", "biomimetic",
-       "Signal routing, reflex arcs, arousal state — the organism's live event field.",
+       "Signal routing, reflex arcs, arousal state — the organism's live event field. When composed, "
+       "fires a real cognitive signal for the objective + reads the live arousal.",
        ["signal routing", "reflex arcs", "arousal state"], {},
-       "/api/v1/organism/nervous/status", ["governance", "evolution"], biomimetic=True, methods=("GET",)),
+       "/api/v1/organism/nervous/status", ["governance", "evolution"], biomimetic=True),
+    _R("immune", "Immune System", "organism_system", "biomimetic",
+       "Error-rate ring buffer → live health score + threat level — the organism's defence. When "
+       "composed, contributes the genuine current immune reading.",
+       ["health score", "threat level", "anomaly detection"], {},
+       "/api/v1/organism/immune/status", ["governance", "evolution", "delivery"], biomimetic=True, methods=("GET",)),
+    _R("self_healing", "Self-Healing Reflex", "organism_system", "biomimetic",
+       "Per-provider circuit breakers (CLOSED/OPEN/HALF_OPEN) + healing log — automatic recovery. When "
+       "composed, contributes the live breaker/health reading.",
+       ["circuit breakers", "auto-recovery", "healing log"], {},
+       "/api/v1/organism/self-healing/status", ["governance", "evolution", "delivery"], biomimetic=True, methods=("GET",)),
+    _R("metabolic", "Metabolic / ATP", "organism_system", "biomimetic",
+       "The ATP energy model + composite-health mode (FULL_POWER/NOMINAL/DEGRADED/EMERGENCY) — the "
+       "organism's metabolism. When composed, reads the live ATP + operating mode.",
+       ["atp energy model", "composite health", "operating mode"],
+       {"metabolic_load": "float 0-1"}, "/api/v1/organism/status", ["governance", "evolution"], biomimetic=True, methods=("GET",)),
+    _R("circadian", "Circadian Heartbeat", "organism_system", "biomimetic",
+       "Time-of-day cycle (ACTIVE_FOCUS/ACTIVE_REST/REST/MAINTENANCE) modulating cognition + metabolism. "
+       "When composed, reads the live circadian phase.",
+       ["circadian cycle", "peak-focus window", "rhythm modulation"], {},
+       "/api/v1/organism/status", ["governance", "evolution"], biomimetic=True, methods=("GET",)),
     _R("genome", "Genome Registry", "organism_system", "biomimetic",
        "3-layer epigenetic memory encoding VSB DNA and acquired traits.",
        ["DNA encoding", "epigenetic memory", "trait inheritance"], {"trait": "str"},
@@ -416,6 +437,64 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             return {"resource": "genome", "ran": "/api/v1/organism/genome/encode",
                     "genome_id": g.get("genome_id"), "fitness": g.get("fitness_score"),
                     "dominant_trait": top, "output": (str(g.get("expression") or "") or f"genome {g.get('genome_id')}")[:400]}
+        # §8 organism systems — when composed, each runs its REAL engine/reading (the living biomimetic
+        #   substrate the composition runs ON), not a prompt approximation: constitutional gate · live
+        #   immune/self-healing health · ATP metabolism · circadian phase · a real nervous signal · the
+        #   Sovereign-Evolution office state. Readings are bounded + side-effect-free (gaas logs to the UEG,
+        #   which is the genuine, appropriate behaviour of a governance gate).
+        if rid == "gaas_v5":
+            from agentic_core.api.constitutional_gaas import gaas_intercept, InterceptRequest
+            res = await gaas_intercept(InterceptRequest(
+                action_type=str(cfg.get("action_type") or "fabric.composition"),
+                payload={"objective": objective, "domain": domain}, proposed_output=objective[:500]))
+            keep = {k: res.get(k) for k in ("status", "allowed", "decision", "verdict", "ueg_hash", "escalated")
+                    if isinstance(res, dict) and k in res}
+            return {"resource": "gaas_v5", "ran": "/api/v1/gaas/intercept", **keep,
+                    "output": (json.dumps(res, default=str)[:500] if isinstance(res, dict) else str(res)[:500])}
+        if rid == "nervous_system":
+            from agentic_core.organism.nervous import nervous
+            from agentic_core.organism.biobus import biobus
+            nervous.fire("cognitive", "fabric.composition", str(objective)[:120], 0.6)   # a REAL signal fires
+            ctx = biobus.organism_context(0.3)
+            ner = ctx.get("nervous") or {}
+            return {"resource": "nervous_system", "ran": "/api/v1/organism/nervous/stimulate",
+                    "signal_fired": True, "arousal": ner.get("arousal") or ner.get("state"),
+                    "output": json.dumps(ner, default=str)[:400] or "nervous signal fired"}
+        if rid == "immune":
+            from agentic_core.organism.immune import immune
+            st = immune.status()
+            return {"resource": "immune", "ran": "/api/v1/organism/immune/status",
+                    "health": st.get("health"), "threat_level": st.get("threat_level"),
+                    "output": json.dumps({k: st.get(k) for k in ("health", "threat_level", "errors_in_window", "hot_endpoint")}, default=str)[:400]}
+        if rid == "self_healing":
+            from agentic_core.organism.self_healing import self_healer
+            st = self_healer.status()
+            return {"resource": "self_healing", "ran": "/api/v1/organism/self-healing/status",
+                    "overall_health": st.get("overall_health"), "open_circuits": st.get("open_circuits"),
+                    "output": json.dumps({k: st.get(k) for k in ("overall_health", "open_circuits", "thresholds")}, default=str)[:400]}
+        if rid == "metabolic":
+            from agentic_core.organism.biobus import biobus
+            ctx = biobus.organism_context(_cfg_num(cfg.get("metabolic_load"), 0.3, float))
+            return {"resource": "metabolic", "ran": "/api/v1/organism/status",
+                    "composite_health": ctx.get("composite_health"), "mode": ctx.get("mode"),
+                    "metabolic": ctx.get("metabolic"),
+                    "output": json.dumps({"metabolic": ctx.get("metabolic"), "mode": ctx.get("mode"),
+                                          "composite_health": ctx.get("composite_health")}, default=str)[:400]}
+        if rid == "circadian":
+            from agentic_core.organism.biobus import biobus
+            ctx = biobus.organism_context(0.3)
+            circ = ctx.get("circadian") or {}
+            return {"resource": "circadian", "ran": "/api/v1/organism/status",
+                    "cycle": circ.get("cycle"), "is_peak_focus": circ.get("is_peak_focus"),
+                    "output": json.dumps(circ, default=str)[:400] or "circadian phase read"}
+        if rid == "sovereign_evolution":
+            # the REAL Sovereign-Evolution Office state (last cycle / roadmap) — a bounded reading, NOT a
+            #   full self-improvement cycle (which would proliferate proposals on every composition run).
+            from agentic_core.api.sovereign_evolution import office_status
+            st = await office_status()
+            return {"resource": "sovereign_evolution", "ran": "/api/v1/sovereign-evolution/status",
+                    "last_cycle": st.get("last_cycle") if isinstance(st, dict) else None,
+                    "output": (json.dumps(st, default=str)[:500] if isinstance(st, dict) else str(st)[:500])}
         if rid == "native_orchestrator":
             from agentic_core.ai.native import orchestrator
             res = await orchestrator.complete(str(cfg.get("prompt") or objective),
