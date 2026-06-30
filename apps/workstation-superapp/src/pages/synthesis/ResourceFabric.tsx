@@ -4,7 +4,7 @@ import { Card, Button } from '@workstation/ui';
 import {
   Boxes, Cpu, FlaskConical, Factory, Dna, ShieldCheck, Layers,
   Check, Loader2, Sparkles, Recycle, Play, X,
-  Hammer, Zap, BarChart3, Brain, BookOpen, Code2, Rocket, Package, ArrowRight,
+  Hammer, Zap, BarChart3, Brain, BookOpen, Code2, Rocket, Package, ArrowRight, Wand2,
 } from 'lucide-react';
 import { DomainTool } from '../../components/DomainTool';
 
@@ -20,6 +20,7 @@ const STUDIOS: { name: string; desc: string; route: string; icon: React.Componen
   { name: 'Incubator',         desc: 'Evolve fitness over generations',     route: '/incubator',     icon: FlaskConical },
   { name: 'Reactor Studio',    desc: '2D/3D visual analytics',              route: '/reactor-studio',icon: BarChart3 },
   { name: 'Factory',           desc: 'Produce deliverables at scale',       route: '/factory',       icon: Factory },
+  { name: 'Generator',         desc: 'Generate one artefact (code/schema/…)', route: '/generator',    icon: Wand2 },
   { name: 'Intelligence Lab',  desc: '8-stage BDP / SPI methodology',       route: '/intelligence',  icon: Brain },
   { name: 'Authorship Engine', desc: '9-stage scholarship & authorship',    route: '/authorship',    icon: BookOpen },
   { name: 'Design & Dev',      desc: '9-stage design & development',        route: '/design-dev',    icon: Code2 },

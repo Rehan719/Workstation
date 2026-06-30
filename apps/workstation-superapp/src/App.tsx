@@ -54,6 +54,7 @@ import { DigitalReactor } from './pages/developers/DigitalReactor';
 import { Incubator } from './pages/developers/Incubator';
 import { ReactorStudio } from './pages/synthesis/ReactorStudio';
 import { Factory } from './pages/developers/Factory';
+import { Generator } from './pages/developers/Generator';
 import { IntelligenceLab } from './pages/IntelligenceLab';
 import { AuthorshipEngine } from './pages/synthesis/AuthorshipEngine';
 import { DesignDevEngine } from './pages/developers/DesignDevEngine';
@@ -164,6 +165,7 @@ function App() {
           <Route path="/incubator"       element={<Incubator />} />
           <Route path="/reactor-studio"  element={<ReactorStudio />} />
           <Route path="/factory"         element={<Factory />} />
+          <Route path="/generator"       element={<Generator />} />
           <Route path="/intelligence"    element={<IntelligenceLab />} />
           <Route path="/authorship"      element={<AuthorshipEngine />} />
           <Route path="/design-dev"      element={<DesignDevEngine />} />
