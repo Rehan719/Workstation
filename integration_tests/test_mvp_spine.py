@@ -2650,6 +2650,22 @@ def test_fabric_pi_engines_run_real_staged(client):
         assert rr[eng].get("output")
 
 
+def test_fabric_nexus_and_genesis_run_real(client):
+    # §7 — the last two PI cognition orchestrators the vision names run their REAL engine when composed:
+    # Synthesis Nexus (4-layer chain) + Genesis (Concept→Commercialisation journey, bounded establish=False).
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "NexusGenesis", "usage_area": "synthesis", "resource_ids": ["nexus", "genesis"],
+        "config": {"nexus": {"activity": "auto"}, "genesis": {"realm": "enterprise"}}}).json()
+    run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run",
+                      json={"objective": "a halal meal-kit subscription for elders"}).json()
+    rr = {x["resource"]: x for x in (run.get("real_resource_runs") or [])}
+    assert "nexus" in rr and "genesis" in rr
+    assert (rr["nexus"].get("stages") or 0) >= 2 and rr["nexus"].get("output")        # the 4-layer chain ran
+    assert rr["nexus"].get("ran") == "/api/v1/intelligence/nexus"
+    assert rr["genesis"].get("status") == "complete" and rr["genesis"].get("output")  # the journey ran
+    assert rr["genesis"].get("ran") == "/api/v1/genesis/journey"
+
+
 def test_fabric_genome_runs_real(client):
     # §7 — composing the genome resource runs its REAL encode engine (a trait vector), not a prompt stage
     comp = client.post("/api/v1/resources/compose", json={

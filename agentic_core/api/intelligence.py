@@ -584,6 +584,11 @@ async def run_intelligence_collected(challenge: str, domain: str, engine_id: str
         res = await _collect_stream(_run_authorship_stream(AuthorshipRequest(topic=challenge, domain=domain, rigor=rigor)))
     elif engine_id == "ddpie":
         res = await _collect_stream(_run_design_dev_stream(DesignDevRequest(system=challenge, domain=domain, rigor=rigor)))
+    elif engine_id == "nexus":
+        # the Synthesis Nexus 4-layer chain (cognitive cascade → MJM → auto-selected engine → apex
+        # synthesis) collected to completion — the autonomous orchestrator runs real, not a prompt.
+        res = await _collect_stream(_run_nexus_stream(NexusRequest(challenge=challenge, domain=domain,
+                                                                   activity=(focus or "auto"))))
     else:
         return {"engine": engine_id, "error": "unknown engine", "stages": 0, "analysis": ""}
     return {"engine": engine_id.upper(), **res}

@@ -441,6 +441,28 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
                                                  focus=str(cfg.get("focus") or ""))
             return {"resource": rid, "ran": f"/api/v1/intelligence/{_ep}",
                     "stages": r.get("stages"), "output": (r.get("analysis") or "")[:600]}
+        if rid == "nexus":
+            # the §7 Synthesis Nexus orchestrator runs its REAL 4-layer chain (cognitive cascade → MJM →
+            #   auto-selected primary engine → apex synthesis), collected to completion — not a prompt.
+            from agentic_core.api.intelligence import run_intelligence_collected
+            r = await run_intelligence_collected(str(cfg.get("challenge") or objective), domain, "nexus",
+                                                 focus=str(cfg.get("activity") or "auto"))
+            return {"resource": "nexus", "ran": "/api/v1/intelligence/nexus",
+                    "stages": r.get("stages"), "output": (r.get("analysis") or "")[:600]}
+        if rid == "genesis":
+            # the §4 Genesis Concept→Commercialisation journey runs its REAL cascade (cognitive · MJM ·
+            #   research · model/rank · design · operations · commercialisation · gaas gate), bounded:
+            #   establish=False so it produces the blueprint WITHOUT spawning a living VSB per run.
+            from agentic_core.api.genesis import genesis_journey, JourneyRequest
+            j = await genesis_journey(JourneyRequest(problem=str(cfg.get("problem") or objective), domain=domain,
+                                                     realm=str(cfg.get("realm") or "enterprise"), establish=False))
+            prov = j.get("ai_provenance") or {}
+            sb = ",".join(sorted((prov.get("served_by") or {}).keys())) or "native"
+            comm = j.get("phase_3_commercialisation")
+            out = comm if isinstance(comm, str) else (j.get("phase_2_design_development") if isinstance(j.get("phase_2_design_development"), str) else "")
+            return {"resource": "genesis", "ran": "/api/v1/genesis/journey", "served_by": sb,
+                    "stages_verified": j.get("stages_verified"), "engines_used": j.get("engines_used"),
+                    "status": j.get("status"), "output": (str(out) or "Concept→Commercialisation journey complete")[:600]}
         if rid == "genome":
             from agentic_core.organism.genome import encode_genome, EncodeRequest
             g = await encode_genome(EncodeRequest(entity_name=str(cfg.get("entity_name") or objective)[:80],
