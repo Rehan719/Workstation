@@ -69,7 +69,7 @@ async def run_cycle(req: CycleRequest):
     # Governance: route the distribution through the constitutional gate (arms-length, audited).
     try:
         from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
-        gov = UnifiedConstitutionalInterceptorV16Omega("economy-node", UEGLogger("meta/gaas_v5_ueg.json"))
+        gov = UnifiedConstitutionalInterceptorV16Omega("economy-node", UEGLogger())
         result = await gov.intercept({"intent": "economy_distribution", "vsb_id": req.vsb_id}, _action)
         report = result.output if getattr(result, "output", None) else metab.run_cycle(req.revenue, req.costs, req.reserve_rate)
         governance = {"status": result.status, "checkpoint": result.checkpoint_id}
@@ -122,7 +122,7 @@ async def set_waterfall(req: WaterfallRequest):
     # Constitutional audit — the Owner adjusting the distribution policy is a material, logged act.
     try:
         from agentic_core.gaas.v5 import UEGLogger
-        UEGLogger("meta/gaas_v5_ueg.json").log({
+        UEGLogger().log({
             "type": "waterfall_override", "vsb_id": req.vsb_id, "entity_type": req.entity_type,
             "waterfall": waterfall, "by": "owner"})
     except Exception:

@@ -49,27 +49,39 @@ _FACTORY_PRODUCT_PROMPTS: dict[str, str] = {
 }
 
 
+# ── native-swarm streaming helper (§6) ────────────────────────────────────────
+
+def _chunk_for_stream(text: str, size: int = 96) -> list[str]:
+    """Split a completed native-swarm output into word-boundary chunks so a caller keeps an SSE
+    streaming shape. The owned native floor / local models return a full completion (not token-by-
+    token), so chunking here is honest — the work is genuinely served in-house, just framed as a
+    stream for the UI. Never splits mid-word."""
+    words = (text or "").split(" ")
+    chunks, cur = [], ""
+    for w in words:
+        if cur and len(cur) + len(w) + 1 > size:
+            chunks.append(cur + " ")
+            cur = w
+        else:
+            cur = (cur + " " + w) if cur else w
+    if cur:
+        chunks.append(cur)
+    return chunks
+
+
 # ── Reactor ───────────────────────────────────────────────────────────────────
 
 class ReactorRunRequest(BaseModel):
     domain: str = "general"
     params: dict = {}
     label: str = "Simulation Run"
+    model: str = "auto"   # §6 user design control: auto | native | local | ollama:<name>
 
 
-@router.post("/api/v1/reactor/run")
-async def reactor_run(req: ReactorRunRequest) -> StreamingResponse:
-    """
-    Stream a real AI simulation of a domain reactor.
-    SSE events:
-      {"step": "init|process|validate|output|complete", "token": "..."}
-      {"done": true, "run_id": "...", "duration_ms": N}
-      {"error": "..."}
-    """
-    system = _REACTOR_DOMAIN_PROMPTS.get(req.domain.lower(), _REACTOR_DOMAIN_PROMPTS["general"])
-    prompt = (
-        f"Domain: {req.domain.upper()} | Label: {req.label}\n"
-        f"Active parameters: {json.dumps(req.params) if req.params else 'default configuration'}\n\n"
+def _reactor_prompt(domain: str, params: dict, label: str) -> str:
+    return (
+        f"Domain: {domain.upper()} | Label: {label}\n"
+        f"Active parameters: {json.dumps(params) if params else 'default configuration'}\n\n"
         "Run the reactor simulation now. Output a detailed step-by-step simulation trace with:\n"
         "1. INIT — describe what data/requests enter the reactor\n"
         "2. PROCESS — describe each processing node (what it does, what it produces)\n"
@@ -78,18 +90,41 @@ async def reactor_run(req: ReactorRunRequest) -> StreamingResponse:
         "5. METRICS — summarise: processing time, data volume, quality score\n\n"
         "Format each section with [INIT], [PROCESS], [VALIDATE], [OUTPUT], [METRICS] headers. Be specific and technical."
     )
-    run_id = uuid.uuid4().hex[:12]
+
+
+async def run_reactor_sim(domain: str = "general", params: Optional[dict] = None,
+                          label: str = "Simulation Run", prefer: str = "auto") -> dict:
+    """Run a domain-reactor simulation on Workstation's OWN native swarm (§6) and return the genuine
+    output with provenance. Shared by the SSE endpoint and the §7 resource-fabric composition
+    dispatch, so a composed Reactor runs the ACTUAL engine — driven by the native swarm, not the
+    legacy external-first cascade."""
+    from agentic_core.ai.native import orchestrator
+    prompt = _reactor_prompt(domain, params or {}, label)
+    res = await orchestrator.complete(prompt, agent="reactor", prefer=prefer)
+    return {"output": res.get("output", "") or "", "served_by": res.get("served_by", "native"),
+            "is_external": bool(res.get("is_external")), "run_id": uuid.uuid4().hex[:12]}
+
+
+@router.post("/api/v1/reactor/run")
+async def reactor_run(req: ReactorRunRequest) -> StreamingResponse:
+    """
+    Stream a real AI simulation of a domain reactor — driven by the OWNED native swarm (§6).
+    SSE events:
+      {"token": "..."}
+      {"done": true, "run_id": "...", "duration_ms": N, "served_by": "...", "is_external": bool}
+      {"error": "..."}
+    """
     start = time.time()
 
     async def stream() -> AsyncIterator[str]:
-        completed = False
         try:
-            async for token in gateway.stream(prompt, agent="reactor"):
-                safe = token.replace("\n", "\\n")
+            sim = await run_reactor_sim(req.domain, req.params, req.label, prefer=req.model)
+            for chunk in _chunk_for_stream(sim["output"]):
+                safe = chunk.replace("\n", "\\n")
                 yield f'data: {{"token": {json.dumps(safe)}}}\n\n'
             duration_ms = int((time.time() - start) * 1000)
-            completed = True
-            yield f'data: {{"done": true, "run_id": "{run_id}", "duration_ms": {duration_ms}}}\n\n'
+            yield (f'data: {{"done": true, "run_id": "{sim["run_id"]}", "duration_ms": {duration_ms}, '
+                   f'"served_by": {json.dumps(sim["served_by"])}, "is_external": {json.dumps(sim["is_external"])}}}\n\n')
         except Exception as exc:
             yield f'data: {{"error": {json.dumps(str(exc))}}}\n\n'
 
@@ -108,36 +143,48 @@ class ProductionRequest(BaseModel):
     domain: str = "general"
     description: str = ""
     project_id: Optional[str] = None
+    model: str = "auto"   # §6 user design control: auto | native | local | ollama:<name>
+
+
+def _factory_prompt(name: str, product_type: str, domain: str, description: str) -> str:
+    stage_prompt = _FACTORY_PRODUCT_PROMPTS.get(
+        product_type.lower().replace(" ", "_"), _FACTORY_PRODUCT_PROMPTS["business_model"])
+    return (
+        f"{stage_prompt}\n\n"
+        f"Production Line: {name}\n"
+        f"Domain: {domain}\n"
+        + (f"Description: {description}\n" if description else "")
+        + "\nProduce the complete document now."
+    )
+
+
+async def run_factory_produce(name: str, product_type: str = "business_model", domain: str = "general",
+                              description: str = "", prefer: str = "auto") -> dict:
+    """Produce a real artefact on Workstation's OWN native swarm (§6) and return it with provenance.
+    Shared by the SSE endpoint and the §7 fabric composition dispatch, so a composed Factory runs the
+    ACTUAL production engine — driven by the native swarm, not the legacy external-first cascade."""
+    from agentic_core.ai.native import orchestrator
+    prompt = _factory_prompt(name, product_type, domain, description)
+    res = await orchestrator.complete(prompt, agent="factory", prefer=prefer)
+    return {"output": res.get("output", "") or "", "served_by": res.get("served_by", "native"),
+            "is_external": bool(res.get("is_external")), "run_id": uuid.uuid4().hex[:12]}
 
 
 @router.post("/api/v1/factory/produce")
 async def factory_produce(req: ProductionRequest) -> StreamingResponse:
     """
-    Stream production of a real AI-generated artefact.
-    SSE format same as reactor/run.
+    Stream production of a real AI-generated artefact — driven by the OWNED native swarm (§6).
+    SSE format same as reactor/run (done event carries served_by / is_external provenance).
     """
-    stage_prompt = _FACTORY_PRODUCT_PROMPTS.get(
-        req.product_type.lower().replace(" ", "_"),
-        _FACTORY_PRODUCT_PROMPTS["business_model"],
-    )
-    prompt = (
-        f"{stage_prompt}\n\n"
-        f"Production Line: {req.name}\n"
-        f"Domain: {req.domain}\n"
-        + (f"Description: {req.description}\n" if req.description else "")
-        + "\nProduce the complete document now."
-    )
-    run_id = uuid.uuid4().hex[:12]
     start = time.time()
 
-    accumulated = ""
-
     async def stream() -> AsyncIterator[str]:
-        nonlocal accumulated
         try:
-            async for token in gateway.stream(prompt, agent="factory"):
-                accumulated += token
-                safe = token.replace("\n", "\\n")
+            prod = await run_factory_produce(req.name, req.product_type, req.domain, req.description,
+                                             prefer=req.model)
+            accumulated = prod["output"]
+            for chunk in _chunk_for_stream(accumulated):
+                safe = chunk.replace("\n", "\\n")
                 yield f'data: {{"token": {json.dumps(safe)}}}\n\n'
 
             # Optionally store as project deliverable
@@ -152,7 +199,9 @@ async def factory_produce(req: ProductionRequest) -> StreamingResponse:
 
             duration_ms = int((time.time() - start) * 1000)
             output_id = uuid.uuid4().hex
-            yield f'data: {{"done": true, "run_id": "{run_id}", "output_id": "{output_id}", "duration_ms": {duration_ms}}}\n\n'
+            yield (f'data: {{"done": true, "run_id": "{prod["run_id"]}", "output_id": "{output_id}", '
+                   f'"duration_ms": {duration_ms}, "served_by": {json.dumps(prod["served_by"])}, '
+                   f'"is_external": {json.dumps(prod["is_external"])}}}\n\n')
         except Exception as exc:
             yield f'data: {{"error": {json.dumps(str(exc))}}}\n\n'
 

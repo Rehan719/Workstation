@@ -20,7 +20,12 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("gaas.v5.ueg")
 
-_DEFAULT_PATH = os.path.join("meta", "gaas_v5_ueg.json")
+# WORKSTATION_UEG_PATH overrides the audit-ledger location. A tamper-evident chain must never be
+# shared between the live platform and ephemeral test/CI runs (concurrent appenders from separate
+# processes each hold only an in-process lock, so they corrupt each other's chain) — point tests and
+# isolated deployments at their own ledger. Defaults to meta/gaas_v5_ueg.json so existing setups are
+# unchanged.
+_DEFAULT_PATH = os.environ.get("WORKSTATION_UEG_PATH") or os.path.join("meta", "gaas_v5_ueg.json")
 
 
 class UEGLogger:

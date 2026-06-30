@@ -185,7 +185,7 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
     governance = "ungated"
     try:
         from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
-        gov = UnifiedConstitutionalInterceptorV16Omega("forge-node", UEGLogger("meta/gaas_v5_ueg.json"))
+        gov = UnifiedConstitutionalInterceptorV16Omega("forge-node", UEGLogger())
 
         async def _attest():
             return f"Forge pipeline {run_id} synthesised under constitutional supervision."

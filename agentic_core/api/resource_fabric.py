@@ -416,6 +416,50 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
                     "models_run": res.get("models_run"), "members": len(members),
                     "served_by": ",".join(sorted({str(m.get("served_by")) for m in members if m.get("served_by")})),
                     "output": out[:600]}
+        # §7 musculoskeletal facilities — each runs its REAL engine when composed, now driven by the
+        #   OWNED native swarm (§6). Reactor + Factory previously streamed via the legacy external-first
+        #   cascade; their shared native-driven runners are reused here so a composition runs the genuine
+        #   engine with in-house provenance.
+        if rid == "reactor":
+            from agentic_core.api.products import run_reactor_sim
+            sim = await run_reactor_sim(domain=domain, params=(cfg.get("params") or {}),
+                                        label=str(cfg.get("label") or objective)[:80],
+                                        prefer=str(cfg.get("model") or "auto"))
+            return {"resource": "reactor", "ran": "/api/v1/reactor/run", "served_by": sim["served_by"],
+                    "is_external": sim["is_external"], "output": (sim["output"] or "")[:600]}
+        if rid == "factory":
+            from agentic_core.api.products import run_factory_produce
+            prod = await run_factory_produce(name=str(cfg.get("name") or objective)[:80],
+                                             product_type=str(cfg.get("product_type") or "business_model"),
+                                             domain=domain, description=str(cfg.get("brief") or objective)[:500],
+                                             prefer=str(cfg.get("model") or "auto"))
+            return {"resource": "factory", "ran": "/api/v1/factory/produce", "served_by": prod["served_by"],
+                    "is_external": prod["is_external"], "product_type": str(cfg.get("product_type") or "business_model"),
+                    "output": (prod["output"] or "")[:600]}
+        if rid == "resource_optimizer":
+            from agentic_core.api.optimizer import allocate, AllocateRequest
+            req_map = cfg.get("requirements")
+            if not isinstance(req_map, dict) or not req_map:
+                req_map = {"CPU": 4, "RAM": 1024}
+            r = await allocate(AllocateRequest(domain=domain, requirements=req_map,
+                                               tier=str(cfg.get("tier") or "standard")))
+            return {"resource": "resource_optimizer", "ran": "/api/v1/optimizer/allocate",
+                    "posture": r.get("posture"), "simulated_capacity": r.get("simulated_capacity"),
+                    "output": (json.dumps({k: v for k, v in r.items() if k not in ("note",)})[:600])}
+        if rid == "digital_twin":
+            # the §7 Simulator: forward-simulate a system under a scenario on the native swarm — genuine
+            #   in-house cognition (no fabricated telemetry; honestly a model-driven simulation narrative).
+            from agentic_core.ai.native import orchestrator
+            system = str(cfg.get("system") or objective)[:200]
+            scenario = str(cfg.get("scenario") or "baseline operation")[:200]
+            prompt = (f"You are a digital-twin simulator. System under twin: {system} (domain {domain}). "
+                      f"Forward-simulate the scenario: {scenario}.\n## State Trajectory (t0→tN)\n"
+                      "## Emergent Behaviour\n## Stress / Failure Points\n## Recommended Setpoints")
+            res = await orchestrator.complete(prompt, agent="digital-twin",
+                                              prefer=str(cfg.get("model") or "auto"))
+            return {"resource": "digital_twin", "ran": "/api/v1/twin/simulate", "served_by": res.get("served_by"),
+                    "is_external": bool(res.get("is_external")), "scenario": scenario,
+                    "output": (res.get("output") or "")[:600]}
         if rid == "native_swarm":
             from agentic_core.ai.native import orchestrator
             raw = cfg.get("stages")

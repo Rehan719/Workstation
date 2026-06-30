@@ -4,8 +4,9 @@ from pathlib import Path
 # Base directory (repository root)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# Data directories
-DATA_DIR = BASE_DIR / "data"
+# Data directories — WORKSTATION_DATA_DIR overrides the data root (test isolation / deployments that
+# keep mutable state off the repo volume). Defaults to <root>/data so existing setups are unchanged.
+DATA_DIR = Path(os.environ["WORKSTATION_DATA_DIR"]).expanduser() if os.environ.get("WORKSTATION_DATA_DIR") else BASE_DIR / "data"
 LOG_DIR = BASE_DIR / "logs"
 GENOME_DIR = BASE_DIR / "genome"
 MODELS_DIR = BASE_DIR / "models"

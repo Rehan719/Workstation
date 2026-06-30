@@ -41,7 +41,7 @@ from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLo
 
 router = APIRouter(prefix="/api/v1/transformation", tags=["transformation-orchestration"])
 
-_UEG = UEGLogger("meta/gaas_v5_ueg.json")
+_UEG = UEGLogger()
 _GOV = UnifiedConstitutionalInterceptorV16Omega("transformation-orchestration-node", _UEG)
 _RUNS = data_path("transformation_runs")
 

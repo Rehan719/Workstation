@@ -74,7 +74,7 @@ class OrganismHeartbeat:
         if self._ueg is None:
             try:
                 from agentic_core.gaas.v5 import UEGLogger
-                self._ueg = UEGLogger("meta/gaas_v5_ueg.json")
+                self._ueg = UEGLogger()
             except Exception:
                 self._ueg = False
         return self._ueg or None

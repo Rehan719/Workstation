@@ -155,7 +155,7 @@ async def align(req: AlignRequest):
     # Constitutional audit
     try:
         from agentic_core.gaas.v5 import UEGLogger
-        UEGLogger("meta/gaas_v5_ueg.json").log({"type": "cognition_align",
+        UEGLogger().log({"type": "cognition_align",
                                                 "gaps": len(routed), "executed": len(executed),
                                                 "overall_realisation": r["overall_realisation"]})
     except Exception:

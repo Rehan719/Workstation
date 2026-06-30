@@ -2162,6 +2162,27 @@ def test_data_dir_configurable(client):
     assert out.endswith("custom_data_root/vsb_entities"), out
 
 
+def test_memory_store_corruption_tolerant(tmp_path):
+    # §6 robustness — the native AI memory store the gateway writes after EVERY completion must
+    # tolerate a corrupt/interleaved file (e.g. concurrent appenders from separate processes) rather
+    # than raising and breaking every downstream AI call. On corruption it recovers the valid JSON
+    # prefix, self-heals the file, and keeps writing atomically.
+    import json as _json
+    from agentic_core.ai.memory import VectorMemory
+    f = tmp_path / "memory.json"
+    # a complete valid list followed by interleaved trailing garbage (the real "Extra data" shape)
+    good = _json.dumps([{"text": "alpha", "metadata": {}}, {"text": "beta", "metadata": {}}])
+    f.write_text(good + '][{"text": "garbage', encoding="utf-8")
+    m = VectorMemory.__new__(VectorMemory)
+    m.storage_path = str(f)
+    recovered = m._load()                      # recovers the valid prefix, drops the garbage
+    assert [e["text"] for e in recovered] == ["alpha", "beta"]
+    m.add_memory("gamma")                      # append survives + heals the file
+    healed = _json.loads(f.read_text(encoding="utf-8"))    # file is valid JSON again
+    assert [e["text"] for e in healed] == ["alpha", "beta", "gamma"]
+    assert m.query_memory("beta") == ["beta"]
+
+
 def test_spa_serving_when_built(client):
     # Single-service SPA serving: when the frontend is built (dist present), the backend serves the app
     # at / and falls back to the SPA shell for client routes, while /api still 404s as JSON and /health
@@ -2656,6 +2677,32 @@ def test_fabric_native_ai_resources_run_real(client):
     assert "native_orchestrator" in rr and "native_swarm" in rr
     assert rr["native_orchestrator"].get("served_by")            # honest provenance (native floor / ollama / external)
     assert rr["native_swarm"].get("stages_run") == 3 and rr["native_swarm"].get("output")
+
+
+def test_fabric_musculoskeletal_facilities_run_real(client):
+    # §7↔§6 — the musculoskeletal facilities run their REAL engine when composed, now driven by the
+    # OWNED native swarm: Reactor + Factory (previously the legacy external-first stream) report
+    # served_by; the Optimizer runs the deterministic allocator; the Simulator (digital twin) runs a
+    # native-driven forward simulation. Each is a genuine engine run, not a generic prompt stage.
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "Facilities", "usage_area": "science",
+        "resource_ids": ["reactor", "factory", "resource_optimizer", "digital_twin"],
+        "config": {"reactor": {"domain": "science"},
+                   "factory": {"product_type": "technical_spec", "name": "DesertFarm Spec"},
+                   "resource_optimizer": {"requirements": {"CPU": 8, "RAM": 2048}, "tier": "pro"},
+                   "digital_twin": {"system": "drip-irrigation grid", "scenario": "drought stress"}}}).json()
+    run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run",
+                      json={"objective": "optimise a desert farm"}).json()
+    rr = {x["resource"]: x for x in (run.get("real_resource_runs") or [])}
+    for fac in ("reactor", "factory", "resource_optimizer", "digital_twin"):
+        assert fac in rr, f"{fac} did not run as a real engine"
+        assert not rr[fac].get("error"), rr[fac].get("error")
+        assert rr[fac].get("output")
+    # Reactor + Factory + Simulator are now driven by the native swarm (in-house provenance)
+    assert rr["reactor"].get("served_by") and rr["factory"].get("served_by")
+    assert rr["digital_twin"].get("served_by")
+    assert rr["reactor"].get("ran") == "/api/v1/reactor/run"
+    assert rr["factory"].get("ran") == "/api/v1/factory/produce"
 
 
 def test_economy_owner_payments_virtual(client):

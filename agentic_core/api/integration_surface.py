@@ -100,7 +100,7 @@ async def v154_security_status():
     imm = _immune()
     try:
         from agentic_core.gaas.v5 import UEGLogger
-        ueg = UEGLogger("meta/gaas_v5_ueg.json").summary()
+        ueg = UEGLogger().summary()
     except Exception:
         ueg = {}
     return {"posture": "hardened", "immune_health": imm.get("health"),
@@ -138,7 +138,7 @@ async def v154_constitution_articles():
 async def evidence_graph():
     try:
         from agentic_core.gaas.v5 import UEGLogger
-        ueg = UEGLogger("meta/gaas_v5_ueg.json")
+        ueg = UEGLogger()
         nodes = ueg.recent(40)
     except Exception:
         nodes = []

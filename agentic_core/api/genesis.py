@@ -51,7 +51,7 @@ def _verify_stage(text: str, sections: List[str]) -> Dict[str, Any]:
 
 # Shares the same UEG audit log as the constitutional engine, so journeys are
 # recorded in the one tamper-evident governance trail.
-_UEG = UEGLogger("meta/gaas_v5_ueg.json")
+_UEG = UEGLogger()
 _GOV = UnifiedConstitutionalInterceptorV16Omega("genesis-node", _UEG)
 
 

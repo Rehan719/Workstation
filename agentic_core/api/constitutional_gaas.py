@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/v1/gaas", tags=["constitutional-gaas"])
 
 # A single sovereign-node interceptor backs the HTTP surface. The UEG persists to
 # meta/ so the audit trail survives restarts.
-_UEG = UEGLogger("meta/gaas_v5_ueg.json")
+_UEG = UEGLogger()
 _INTERCEPTOR = UnifiedConstitutionalInterceptorV16Omega("sovereign-node", _UEG)
 
 
