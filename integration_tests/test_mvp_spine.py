@@ -2249,6 +2249,34 @@ def test_streaming_surfaces_in_house_first(client, monkeypatch):
     assert "Error:" not in r3.text[:200]
 
 
+def test_v191_evolution_approvals_route_through_change_control(client):
+    # The v191 evolution fragment previously self-approved self-modification proposals OUTSIDE all
+    # governance. Approving now files a REAL Change Control request (arms-length): LOW auto-approves
+    # through the CCA when the organism is healthy; higher impact HOLDS under_change_control until
+    # the CCA decides; the proposal mirrors the governed outcome; re-approval never duplicates.
+    from agentic_core.api.v191 import evolution as ev
+    import uuid as _uuid
+    lo, hi = f"w261-lo-{_uuid.uuid4().hex[:6]}", f"w261-hi-{_uuid.uuid4().hex[:6]}"
+    props = ev._load()
+    props += [
+        {"id": lo, "title": "Tune cache TTL", "description": "raise TTL", "impact": "Low",
+         "rationale": "r", "status": "pending"},
+        {"id": hi, "title": "Swap orchestrator core", "description": "replace engine", "impact": "High",
+         "rationale": "r", "status": "pending"},
+    ]
+    ev._save(props)
+    a1 = client.post(f"/api/v191/evolution/proposals/{lo}/approve").json()
+    assert a1.get("cca_id")                                     # a real CCA record exists even for LOW
+    a2 = client.post(f"/api/v191/evolution/proposals/{hi}/approve").json()
+    assert a2["status"] == "under_change_control" and a2.get("cca_id")   # held for the governed decision
+    client.post(f"/api/v1/cca/{a2['cca_id']}/review",
+                json={"override_decision": "approved", "reviewer_notes": "owner"})
+    st = {p["id"]: p["status"] for p in client.get("/api/v191/evolution/proposals?status=all").json()}
+    assert st[hi] == "approved"                                  # mirrors the CCA's governed outcome
+    again = client.post(f"/api/v191/evolution/proposals/{lo}/approve").json()
+    assert "no duplicate" in (again.get("note") or "").lower()   # idempotent — no duplicate CCA
+
+
 def test_cca_twin_prevalidation_gates_major_changes(client):
     # §17.5 absolute invariant — digital-twin pre-validation before MAJOR change. An approved
     # HIGH-tier change is twin-simulated at approval; /implement REFUSES (409) a major change with

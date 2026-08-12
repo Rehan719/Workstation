@@ -39,13 +39,40 @@ def _load() -> list[dict]:
 
 
 def _save(proposals: list[dict]) -> None:
-    _STORE.write_text(json.dumps(proposals, indent=2))
+    from agentic_core.config import atomic_write_json
+    atomic_write_json(_STORE, proposals)
+
+
+def _mirror_cca_outcomes(proposals: list[dict]) -> list[dict]:
+    """Arms-length reconciliation: a proposal routed to Change Control mirrors ITS CCA's outcome
+    (approved/implemented → approved; rejected → rejected) — the fragment can no longer diverge from
+    the governed decision."""
+    changed = False
+    for p in proposals:
+        if p.get("status") == "under_change_control" and p.get("cca_id"):
+            try:
+                from agentic_core.api.change_control import _load_change
+                c = _load_change(p["cca_id"]) or {}
+                if c.get("status") in ("approved", "implemented"):
+                    p["status"] = "approved"
+                    p["resolved_at"] = c.get("implemented_at") or c.get("reviewed_at")
+                    changed = True
+                elif c.get("status") == "rejected":
+                    p["status"] = "rejected"
+                    p["resolved_at"] = c.get("reviewed_at")
+                    changed = True
+            except Exception:
+                pass
+    if changed:
+        _save(proposals)
+    return proposals
 
 
 @router.get("/proposals")
 async def get_proposals(status: str = "pending"):
-    """Return proposals filtered by status (pending | approved | rejected | all)."""
-    proposals = _load()
+    """Return proposals filtered by status (pending | under_change_control | approved | rejected | all).
+    Proposals routed to Change Control mirror their CCA's governed outcome."""
+    proposals = _mirror_cca_outcomes(_load())
     if status != "all":
         proposals = [p for p in proposals if p.get("status") == status]
     return proposals
@@ -156,13 +183,38 @@ async def generate_proposals(req: GenerateRequest):
 
 @router.post("/proposals/{proposal_id}/approve")
 async def approve_proposal(proposal_id: str):
+    """Approving a self-modification proposal now files a REAL Change Control request and holds the
+    proposal `under_change_control` — the arms-length chain (LOW auto-approve when healthy;
+    MEDIUM/HIGH AI review; CRITICAL blocked; HIGH/CRITICAL twin pre-validation) decides, not this
+    fragment. Previously this endpoint self-approved outside all governance."""
     proposals = _load()
     for p in proposals:
         if p["id"] == proposal_id:
-            p["status"] = "approved"
-            p["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            if p.get("status") == "under_change_control" and p.get("cca_id"):
+                return {"status": "under_change_control", "proposal_id": proposal_id,
+                        "cca_id": p["cca_id"], "note": "Already with the Change Control Agency."}
+            if p.get("status") in ("approved", "rejected"):
+                return {"status": p["status"], "proposal_id": proposal_id, "cca_id": p.get("cca_id"),
+                        "note": "Already resolved — no duplicate Change Control request filed."}
+            from agentic_core.api.change_control import submit_change, SubmitChangeRequest
+            impact = str(p.get("impact", "Medium")).lower()
+            change_type = {"high": "platform_upgrade", "medium": "capability_add",
+                           "low": "config_minor"}.get(impact, "capability_add")
+            cca = await submit_change(SubmitChangeRequest(
+                title=f"[evolution] {p.get('title', proposal_id)}"[:120],
+                change_type=change_type,
+                description=str(p.get("description", ""))[:800],
+                rationale=str(p.get("rationale", "Evolution-engine proposal (v191 fragment)"))[:400],
+                affected_systems=["evolution"], submitted_by="evolution:v191",
+                rollback_plan="Proposal only — no action taken until governed implementation."))
+            p["status"] = "approved" if cca.get("status") == "approved" else "under_change_control"
+            p["cca_id"] = cca.get("cca_id")
+            p["resolved_at"] = (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                                if p["status"] == "approved" else None)
             _save(proposals)
-            return {"status": "approved", "proposal_id": proposal_id, "title": p["title"]}
+            return {"status": p["status"], "proposal_id": proposal_id, "title": p.get("title"),
+                    "cca_id": p["cca_id"], "impact_tier": cca.get("impact_tier"),
+                    "governance": "arms-length via the Change Control Agency"}
     raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found.")
 
 
