@@ -12,7 +12,7 @@ from __future__ import annotations
 import asyncio
 import os
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from agentic_core.ai.native.engine import native_engine
 from agentic_core.ai.native.model_resource import registry
@@ -174,6 +174,41 @@ class NativeOrchestrator:
         except Exception:
             return "NOMINAL"
 
+    # §6↔§7 "the fabric is the bus": the swarm can autonomously SELECT fabric resources for
+    # decomposed goals — restricted to LIGHT, BOUNDED, side-effect-free handlers (readings, checks,
+    # single completions). Cognition-heavy engines (the staged PI pipelines, cascades) stay
+    # human-composed — the tree must not silently multiply its own cost.
+    _TREE_FABRIC_ALLOWED = (
+        "compliance", "products_catalogue", "capital_fund", "resource_optimizer",
+        "federation_mesh", "omnimedia", "immune", "self_healing", "metabolic",
+        "circadian", "genome", "digital_twin",
+    )
+
+    def _match_fabric_resource(self, text: str) -> Optional[tuple]:
+        """Deterministic capability match: score each ALLOWED fabric resource by how many of its
+        registry capability/name words (≥5 chars) appear in the node's task text. ≥2 hits → a match
+        (returns (resource_id, hits)); below → None. No AI, no guessing — the match reason is the
+        word overlap itself."""
+        import re as _re
+        try:
+            from agentic_core.api.resource_fabric import _BY_ID
+        except Exception:
+            return None
+        low = f" {(text or '').lower()} "
+        best_hits, best_rid = 0, None
+        for rid in self._TREE_FABRIC_ALLOWED:
+            r = _BY_ID.get(rid)
+            if not r:
+                continue
+            words = set()
+            for cap in (r.get("capabilities") or []):
+                words.update(_re.findall(r"[a-z]{5,}", str(cap).lower()))
+            words.update(_re.findall(r"[a-z]{5,}", str(r.get("name", "")).lower()))
+            hits = sum(1 for w in words if w in low)
+            if hits > best_hits:
+                best_hits, best_rid = hits, rid
+        return (best_rid, best_hits) if best_rid and best_hits >= 2 else None
+
     def _plan_tree(self, goal: str) -> List[Dict[str, Any]]:
         """Autonomously decompose a goal into a workflow TREE (DAG): a framing node, several
         investigation branches that run in PARALLEL (adapted to the goal's content), a synthesis that
@@ -219,6 +254,8 @@ class NativeOrchestrator:
         _fire("cognitive", "native.tree", f"plan {len(nodes)} nodes ({homeo['posture']}): {goal[:48]}", 0.6)
 
         results: Dict[str, Dict[str, Any]] = {}
+        fabric_drawn: set = set()   # each fabric resource is drawn ONCE per run (downstream nodes
+                                    # inherit its genuine result through the dependency context)
 
         async def run_node(nid: str) -> tuple:
             n = by_id[nid]
@@ -232,6 +269,24 @@ class NativeOrchestrator:
                 f"Your task: {n['task']}\n\n## {nid} output"
             )
             res = await self.complete(prompt, agent=f"tree:{nid}", timeout=timeout, prefer_external=prefer_external)
+            # §6↔§7 — when a fabric resource genuinely matches this node's task, ALSO run its REAL
+            # handler and fold the genuine result into the node (honest provenance: resource id +
+            # endpoint + the word-overlap score). Fail-soft: a fabric error never breaks the node.
+            match = self._match_fabric_resource(f"{n['task']} {goal}")
+            if match and match[0] not in fabric_drawn:
+                rid, hits = match
+                fabric_drawn.add(rid)
+                try:
+                    from agentic_core.api.resource_fabric import _run_real_resource
+                    fr = await _run_real_resource(rid, {}, goal, "general")
+                    if fr and not fr.get("error"):
+                        res["fabric"] = {"resource": rid, "ran": fr.get("ran"), "match_hits": hits}
+                        res["output"] = (res.get("output", "") +
+                                         f"\n\n[fabric:{rid} · ran {fr.get('ran')}] " +
+                                         str(fr.get("output", ""))[:400])
+                        _fire("motor", "native.tree", f"node {nid} drew fabric resource {rid}", 0.5)
+                except Exception:
+                    pass
             return nid, res
 
         levels: List[List[str]] = []
@@ -399,8 +454,12 @@ class NativeOrchestrator:
             "signal_response": signal_response,
             "ueg_hash": ueg_hash,
             "ueg_ledger": "hash-chained SHA3-512 Merkle-DAG (owned, verifiable)" if ueg_hash else None,
+            "fabric_resources_drawn": sorted({(results[nid].get("fabric") or {}).get("resource")
+                                              for nid in order if nid in results and results[nid].get("fabric")}
+                                             - {None}),
             "nodes": [{"id": nid, "role": by_id[nid]["role"], "depends_on": by_id[nid]["depends_on"],
                        "served_by": results[nid]["served_by"], "is_external": results[nid]["is_external"],
+                       "fabric": results[nid].get("fabric"),
                        "output": results[nid]["output"]} for nid in order if nid in results],
             "final": final,
             "any_external": any_external,

@@ -2249,6 +2249,24 @@ def test_streaming_surfaces_in_house_first(client, monkeypatch):
     assert "Error:" not in r3.text[:200]
 
 
+def test_tree_autonomously_draws_fabric_resources(client):
+    # §6↔§7 "the fabric is the bus" — the native swarm's workflow tree autonomously SELECTS matching
+    # fabric resources (deterministic capability-word overlap; LIGHT bounded handlers only) and runs
+    # their REAL engine, folding the genuine result into the node with honest provenance. Each
+    # resource is drawn ONCE per run; a goal with no capability match draws nothing.
+    t = client.post("/api/v1/native-ai/tree",
+                    json={"goal": "Check halal compliance and regulatory assurance for a meal service"}).json()
+    assert "compliance" in (t.get("fabric_resources_drawn") or [])
+    drew = [n for n in t.get("nodes", []) if n.get("fabric")]
+    assert len(drew) == 1                                          # once per run, not per node
+    assert drew[0]["fabric"]["ran"] == "/api/v1/compliance/check"  # the REAL engine ran
+    assert drew[0]["fabric"]["match_hits"] >= 2                    # honest deterministic match score
+    assert "[fabric:compliance" in drew[0]["output"]               # the genuine result folded in
+    t2 = client.post("/api/v1/native-ai/tree",
+                     json={"goal": "Write a short story about a lighthouse keeper"}).json()
+    assert (t2.get("fabric_resources_drawn") or []) == []          # no match → no forced draws
+
+
 def test_v191_evolution_approvals_route_through_change_control(client):
     # The v191 evolution fragment previously self-approved self-modification proposals OUTSIDE all
     # governance. Approving now files a REAL Change Control request (arms-length): LOW auto-approves
