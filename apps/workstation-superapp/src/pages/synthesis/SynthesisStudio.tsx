@@ -22,7 +22,9 @@ const OUTPUT_TYPES = [
   { id: 'dossier',        label: 'Dossier',         icon: Archive,       group: 'Document' },
   { id: 'presentation',   label: 'Presentation',    icon: Presentation,  group: 'Media' },
   { id: 'website',        label: 'Website',         icon: Globe,         group: 'Media' },
-  { id: 'video',          label: 'Video',           icon: Video,         group: 'Media' },
+  // honest label: the synthesis "video" output is a script & storyboard (slide deck + narration);
+  // a real self-playing render exists via deliverables /export?format=video-html — mp4 stays not-yet.
+  { id: 'video',          label: 'Video (script & storyboard)', icon: Video, group: 'Media' },
   { id: 'audiobook',      label: 'Audiobook',       icon: Headphones,    group: 'Media' },
   { id: 'app',            label: 'App',             icon: Smartphone,    group: 'Build' },
   { id: 'agent',          label: 'AI Agent',        icon: Bot,           group: 'Build' },

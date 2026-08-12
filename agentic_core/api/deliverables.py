@@ -125,6 +125,7 @@ async def output_formats():
         {"id": "slides", "label": "HTML presentation (slide deck)", "kind": "presentation"},
         {"id": "txt", "label": "Plain text", "kind": "document"},
         {"id": "json", "label": "Structured JSON", "kind": "data"},
+        {"id": "video-html", "label": "Self-playing video (animated HTML — auto-advancing scenes)", "kind": "video"},
     ]
     if _PDF_OK:   # produced in-house by fpdf2 when available
         live.append({"id": "pdf", "label": "PDF document", "kind": "document"})
@@ -352,6 +353,59 @@ def _slides_doc(d: Dict[str, Any]) -> str:
     )
 
 
+def _video_html_doc(d: Dict[str, Any]) -> str:
+    """A SELF-PLAYING video-style artifact — a real deterministic render (§4.9 'Video'): the
+    deliverable's own sections become full-screen scenes that auto-advance with animated transitions
+    and a progress bar (click to pause/resume, ←/→ to scrub, loops at the end). Self-contained HTML —
+    no dependencies, honest content (nothing generated here beyond the deliverable itself). mp4/mp3
+    remain in the not-yet catalogue until real media encoding exists."""
+    content = d.get("content", "")
+    scenes: List[tuple] = []
+    cur_title, cur_lines = d.get("title", "Deliverable"), []
+    for line in content.split("\n"):
+        h = re.match(r"^##\s+(.*)", line)
+        if h:
+            scenes.append((cur_title, "\n".join(cur_lines))); cur_title, cur_lines = h.group(1), []
+        else:
+            cur_lines.append(line)
+    scenes.append((cur_title, "\n".join(cur_lines)))
+    body = [f"<section class=\"scene\"><h1>{_htmlmod.escape(d.get('title', 'Deliverable'))}</h1>"
+            f"<p class=\"sub\">{_htmlmod.escape(_doc_subtitle(d))}</p></section>"]
+    for stitle, sbody in scenes:
+        if not (stitle or sbody.strip()):
+            continue
+        body.append(f"<section class=\"scene\"><h2>{_htmlmod.escape(stitle)}</h2>{_md_to_html_body(sbody)}</section>")
+    css = (
+        "html,body{margin:0;height:100%;background:#0b1220;color:#e6edf7;font-family:Segoe UI,system-ui,sans-serif}"
+        ".scene{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;"
+        "padding:6vh 8vw;box-sizing:border-box;opacity:0;transform:translateY(24px);"
+        "transition:opacity .8s ease,transform .8s ease;pointer-events:none;overflow:auto}"
+        ".scene.active{opacity:1;transform:none;pointer-events:auto}"
+        ".scene h1{font-size:3rem;margin:0 0 .5rem}.scene h2{font-size:2.2rem;margin:0 0 1rem;color:#8ab4ff}"
+        ".scene .sub{color:#93a4c3}.scene p,.scene li{font-size:1.05rem;line-height:1.6;max-width:70ch}"
+        "#bar{position:fixed;left:0;top:0;height:4px;background:#8ab4ff;width:0;transition:width .3s linear;z-index:9}"
+        "#hint{position:fixed;right:1rem;bottom:.8rem;font-size:.7rem;color:#5b6b8c}"
+    )
+    js = (
+        "const s=[...document.querySelectorAll('.scene')];let i=0,paused=false;const DUR=8000;"
+        "const bar=document.getElementById('bar');"
+        "function show(n){s.forEach((x,k)=>x.classList.toggle('active',k===n));"
+        "bar.style.width=(100*(n+1)/s.length)+'%';}"
+        "show(0);let t=setInterval(step,DUR);"
+        "function step(){if(paused)return;i=(i+1)%s.length;show(i);}"
+        "document.body.addEventListener('click',()=>{paused=!paused;});"
+        "document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){i=(i+1)%s.length;show(i);}"
+        "if(e.key==='ArrowLeft'){i=(i-1+s.length)%s.length;show(i);}});"
+    )
+    return (
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+        f"<title>{_htmlmod.escape(d.get('title', 'Deliverable'))} — video</title><style>{css}</style></head>"
+        f"<body><div id=\"bar\"></div>{''.join(body)}"
+        "<div id=\"hint\">auto-playing · click to pause · ←/→ to scrub</div>"
+        f"<script>{js}</script></body></html>"
+    )
+
+
 def _strip_md(md: str) -> str:
     t = re.sub(r"^#{1,6}\s*", "", md, flags=re.M)
     t = re.sub(r"\*\*(.+?)\*\*", r"\1", t)
@@ -566,6 +620,7 @@ _LIVE_FORMATS = {
     "slides": ("text/html; charset=utf-8", "slides.html"),
     "txt":    ("text/plain; charset=utf-8", "txt"),
     "json":   ("application/json; charset=utf-8", "json"),
+    "video-html": ("text/html; charset=utf-8", "video.html"),   # self-playing video-style render (W264)
 }
 if _PDF_OK:
     _LIVE_FORMATS["pdf"] = ("application/pdf", "pdf")
@@ -590,6 +645,8 @@ def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
         return _html_doc(d)
     if fmt == "slides":
         return _slides_doc(d)
+    if fmt == "video-html":
+        return _video_html_doc(d)
     return _to_markdown(d)
 
 

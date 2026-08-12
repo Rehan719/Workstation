@@ -1820,7 +1820,7 @@ def test_deliverables_living_lifecycle(client):
     assert client.get(f"/api/v1/deliverables/{did}/export", params={"format": "mp4"}).status_code == 400  # never faked
     of = client.get("/api/v1/deliverables/output-formats").json()
     from agentic_core.api.deliverables import _PDF_OK, _DOCX_OK, _PPTX_OK, _XLSX_OK   # live iff lib installed
-    expected = {"md", "html", "slides", "txt", "json"}
+    expected = {"md", "html", "slides", "txt", "json", "video-html"}   # video-html live since W264
     expected |= {"pdf"} if _PDF_OK else set()
     expected |= {"docx"} if _DOCX_OK else set()
     expected |= {"pptx"} if _PPTX_OK else set()
@@ -2247,6 +2247,27 @@ def test_streaming_surfaces_in_house_first(client, monkeypatch):
         "instructions": "summarise a halal meal-kit plan", "content_ids": [], "output_type": "report"})
     assert r3.status_code == 200 and len(r3.text) > 200
     assert "Error:" not in r3.text[:200]
+
+
+def test_video_html_render_live_and_honest(client):
+    # §4.9 'Video' — a REAL deterministic render now exists: /export?format=video-html produces a
+    # self-contained, SELF-PLAYING animated HTML artifact of the deliverable's own sections
+    # (auto-advance + progress bar; no dependencies; nothing fabricated). mp4/mp3 remain HONESTLY in
+    # the not-yet catalogue until real media encoding exists.
+    d = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "title": "W264 Video Render", "brief": "halal meal-kit strategy",
+        "domain": "enterprise"}).json()
+    did = d.get("id") or (d.get("deliverable") or {}).get("id")
+    r = client.get(f"/api/v1/deliverables/{did}/export?format=video-html")
+    assert r.status_code == 200
+    assert "setInterval" in r.text and 'class="scene"' in r.text      # genuinely self-playing scenes
+    assert "W264 Video Render" in r.text                               # the deliverable's own content
+    f = client.get("/api/v1/deliverables/output-formats").json()
+    assert "video-html" in f["live_ids"]                               # live — a real render
+    assert "mp4" in f["catalogue_not_yet_produced"]                    # media encoding stays honest
+    # the fabricated legacy economics module is out of the live tree
+    import importlib.util as _ilu
+    assert _ilu.find_spec("agentic_core.governance.economy") is None
 
 
 def test_tree_autonomously_draws_fabric_resources(client):
