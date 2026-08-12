@@ -905,12 +905,77 @@ async def get_vsb_genome(vsb_id: str):
     }
 
 
+def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str = "",
+                      domain: str = "enterprise", entity_type: str = "waqf_ltd_hybrid") -> dict:
+    """§3.3 invariant (Living Plan) — EVERY generated VSB carries its own Board + a Chief that is the
+    digital twin of its owner, a living economic metabolism in its selected legal/economic form,
+    registration as a living entity the organism autonomously tends (heartbeat-paced virtual economy),
+    and a seeded living business plan. Shared by ALL generation paths (Genesis /establish keeps its
+    richer inline seeding; the SSE /vsb/spawn cascade and the Studio spawn call this) so no path can
+    produce a governance-orphaned entity. Each enrichment is best-effort — never blocks generation."""
+    vsb_id = entity.get("vsb_id") or entity.get("entity_id") or f"vsb-{uuid.uuid4().hex[:10]}"
+    name = entity.get("name") or entity.get("solution_name") or f"VSB {vsb_id}"
+    problem = str(problem or entity.get("challenge") or name)
+    # Board of Directors chaired by the Chief — the digital twin of THIS VSB's owner
+    try:
+        from agentic_core.api import board as board_mod
+        entity["board"] = board_mod.board_for_owner(owner_id, f"Commercialise: {problem[:120]}")
+    except Exception:
+        pass
+    # Living economic metabolism in the selected legal/economic form (virtual WST only)
+    try:
+        from agentic_core.economy.metabolism import EconomicMetabolism
+        _metab = EconomicMetabolism(vsb_id, entity_type, owner_id)
+        entity["economy"] = {
+            "entity_type": entity_type,
+            "entity_name": _metab.template["name"],
+            "waterfall": _metab.waterfall,
+            "capital_preserved": _metab.template["capital_preserved"],
+            "currency": "WST (virtual)",
+        }
+    except Exception:
+        pass
+    # Registered as a LIVING entity the organism autonomously tends
+    try:
+        from agentic_core.economy.living_vsbs import register as _register_living
+        _register_living(vsb_id, name, entity_type, domain, owner_id)
+        entity["living"] = {"autonomous_operation": "registered — the organism tends this VSB on the "
+                            "circadian heartbeat (paced virtual economy cycles)", "virtual": True}
+    except Exception:
+        pass
+    # Seeded living business plan (Chief/Board own it) — only if none exists for this VSB yet
+    try:
+        from agentic_core.api import business_plan as bp_mod
+        plan = bp_mod._load(vsb_id)
+        if not plan.get("executive_summary"):
+            plan["owner"] = owner_id
+            plan["executive_summary"] = f"{name} is a living VSB IDBO established to solve: {problem[:200]}."[:1200]
+            plan["vision"] = f"A self-running {entity_type} VSB IDBO that commercialises this solution beneficently."
+            plan["mission"] = f"Deliver: {problem[:160]}"
+            plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
+                                "(Chief = owner's digital twin) → AI CEO → C-Suite → CoE → BTO.")
+            plan.setdefault("objectives", [])
+            if not plan["objectives"]:
+                for _title in ("Validate the concept", "Deliver the design", "Launch to market"):
+                    plan["objectives"].append({
+                        "id": f"obj-{uuid.uuid4().hex[:8]}", "title": _title, "kpi": "", "timeline": "",
+                        "owner_role": "AI CEO", "progress_pct": 0, "status": "planned", "reviews": [],
+                        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    })
+            bp_mod._save(plan)
+        entity["business_plan_scope"] = vsb_id
+    except Exception:
+        pass
+    return entity
+
+
 class SpawnRequest(BaseModel):
     challenge: str
     domain: str = "enterprise"
     realm: str = "enterprise"
     scope: str = "build"     # concept | build | commercialise
     owner_id: str = "default"
+    entity_type: str = "waqf_ltd_hybrid"   # legal/economic form (see GET /api/v1/economy/entity-types)
 
 
 @router.post("/spawn")
@@ -1065,6 +1130,15 @@ async def spawn_vsb(req: SpawnRequest):
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "elapsed_seconds": round(time.time() - started, 2),
         }
+        # §3.3 invariant — every generated VSB carries its own Board + Chief (owner's digital twin),
+        # a living economy in its selected legal form, living-entity registration, and a seeded plan.
+        enrich_vsb_entity(vsb_entity, owner_id=req.owner_id, problem=req.challenge,
+                          domain=req.domain, entity_type=req.entity_type)
+        yield _event("governance", "Board + Living Economy Attached",
+                     f"Board chaired by the owner's Chief twin; {req.entity_type} economy initialised; "
+                     "registered as a living entity; business plan seeded.",
+                     {"has_board": "board" in vsb_entity, "entity_type": req.entity_type,
+                      "living": "living" in vsb_entity})
         _save_vsb(vsb_entity)
         biobus.record_operation("vsb_spawn", "vsb.spawn", success=True, payload=f"{vsb_id} [{req.domain}]")
         biobus.fire_signal("motor", "vsb.launch", f"VSB launched: {vsb_id} — {req.challenge[:60]}", 0.9)

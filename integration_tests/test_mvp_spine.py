@@ -444,6 +444,32 @@ def test_studio_vsb_list(client):
     assert isinstance(body["entities"], list)
 
 
+def test_every_generated_vsb_carries_board_and_economy(client):
+    # §3.3 invariant (Living Plan, bold): "Every generated VSB carries its own Board + a Chief that is
+    # the digital twin of its owner" — plus a living economy in its legal form, living-entity
+    # registration, and a seeded business plan. Previously only Genesis /establish delivered this; the
+    # SSE /vsb/spawn and Studio spawn paths produced governance-orphaned entities. Assert ALL paths.
+    import re as _re
+    # 1) Studio spawn (non-streaming)
+    s = client.post("/api/v1/studio/vsb/spawn", json={
+        "solution_name": "InvariantCo", "challenge": "invariant check", "realm": "enterprise",
+        "domain": "enterprise", "project_id": "inv-1"}).json()
+    assert s.get("has_board") is True
+    assert (s.get("economy") or {}).get("entity_type")     # living economy attached
+    assert s.get("living")                                  # registered as a living entity
+    # 2) SSE /vsb/spawn cascade — the stream emits a governance event and the persisted entity is enriched
+    r = client.post("/api/v1/vsb/spawn", json={
+        "challenge": "invariant check spawn", "domain": "enterprise", "entity_type": "waqf_ltd_hybrid"})
+    assert r.status_code == 200 and '"governance"' in r.text
+    m = _re.search(r'"vsb_id": "(vsb-[a-f0-9]+)"', r.text)
+    assert m, "spawn stream did not announce a vsb_id"
+    ent = client.get(f"/api/v1/vsb/{m.group(1)}").json()
+    ent = ent.get("entity", ent)
+    assert ent.get("board"), "spawned VSB has no Board (invariant broken)"
+    assert (ent.get("economy") or {}).get("entity_type") == "waqf_ltd_hybrid"
+    assert ent.get("living") and ent.get("business_plan_scope")
+
+
 @_ai_only
 def test_swarm_delegate(client):
     """Swarm must engage agents and return CEO synthesis."""

@@ -304,6 +304,12 @@ async def synthesise(req: SynthesiseRequest) -> StreamingResponse:
             "stages": results,
             "duration_seconds": round(time.time() - start, 1),
         }
+        # §3.3 invariant — the cascade-born VSB also carries Board + Chief + living economy + plan.
+        try:
+            from agentic_core.api.vsb import enrich_vsb_entity
+            enrich_vsb_entity(entity, problem=req.challenge, domain=req.domain)
+        except Exception:
+            pass
         _save_vsb(entity)
         biobus.record_operation("bto_cascade", "studio.synthesise", success=True, payload=f"{entity_id} [{req.domain}]")
         biobus.fire_signal("motor", "studio.vsb_launch", f"VSB entity created: {entity_id} — {solution_name}", 0.9)
@@ -384,9 +390,15 @@ async def spawn_vsb_entity(req: SpawnRequest):
         "structure": structure,
         "type": "spawned",
     }
+    # §3.3 invariant — every generated VSB carries Board + Chief + living economy + plan (no path
+    # may produce a governance-orphaned entity).
+    from agentic_core.api.vsb import enrich_vsb_entity
+    enrich_vsb_entity(entity, problem=req.challenge or req.solution_name, domain=req.domain)
     _save_vsb(entity)
 
-    return {"entity_id": entity_id, "solution_name": req.solution_name, "structure": structure, "status": "spawned"}
+    return {"entity_id": entity_id, "solution_name": req.solution_name, "structure": structure,
+            "status": "spawned", "has_board": "board" in entity,
+            "economy": entity.get("economy"), "living": entity.get("living")}
 
 
 @router.get("/vsb")
