@@ -2848,6 +2848,28 @@ def test_fabric_enterprise_layer_runs_real(client):
     assert rr["build_to_order"].get("blueprint_id")                 # a real blueprint assembled
 
 
+def test_fabric_remaining_resources_run_real(client):
+    # §7 — the LAST previously-prompt-only registry resources run their real engine/reading when
+    # composed: compliance (federated verdict), truth_consensus (real consensus over configured
+    # claims), mega_project (bounded native synthesis), omnimedia (live output-formats reading),
+    # federation_mesh (live mesh status — simulated peers honestly flagged).
+    res_ids = ["compliance", "truth_consensus", "mega_project", "omnimedia", "federation_mesh"]
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "Remaining", "usage_area": "governance", "resource_ids": res_ids,
+        "config": {"truth_consensus": {"claims": "halal certification is required\nthe product is compliant"}}}).json()
+    run = client.post(f"/api/v1/resources/compositions/{comp['id']}/run",
+                      json={"objective": "launch a halal meal-kit"}).json()
+    rr = {x["resource"]: x for x in (run.get("real_resource_runs") or [])}
+    for rid in res_ids:
+        assert rid in rr, f"{rid} did not run as a real engine"
+        assert not rr[rid].get("error"), f"{rid}: {rr[rid].get('error')}"
+        assert rr[rid].get("output"), f"{rid} produced no output"
+    assert rr["compliance"].get("overall") in ("pass", "review", "fail")   # a genuine federated verdict
+    assert rr["truth_consensus"].get("claims") == 2                        # real consensus over MY claims
+    assert rr["omnimedia"].get("live_formats")                             # the real producible formats
+    assert rr["federation_mesh"].get("operational") is True
+
+
 def test_economy_cycles_governed_and_ueg_logged(client):
     # VSB_ECONOMIC_LEGAL_MODEL §3/§4 (binding): every distribution passes the gaas.v5 gate, EVERY
     # cycle's split is UEG-logged with per-stage amounts, and MATERIAL distributions are held for

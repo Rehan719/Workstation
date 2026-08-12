@@ -587,6 +587,61 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
                                           "component_count": bp.get("component_count"),
                                           "components": list((bp.get("components") or {}).keys())},
                                          default=str)[:400]}
+        # The last prompt-only registry resources — each now runs its REAL engine/reading when composed
+        #   (bounded, side-effect-free), completing the "every composed resource runs its genuine logic"
+        #   claim across the whole catalogue.
+        if rid == "compliance":
+            from agentic_core.api.compliance import check as compliance_check, ComplianceCheck
+            r = await compliance_check(ComplianceCheck(
+                subject=str(cfg.get("subject") or objective), domain=domain,
+                jurisdiction=str(cfg.get("jurisdiction") or "UK / London")))
+            verdicts = r.get("verdicts") or []
+            return {"resource": "compliance", "ran": "/api/v1/compliance/check",
+                    "overall": r.get("overall") or r.get("status"),
+                    "frameworks_checked": len(verdicts),
+                    "output": json.dumps({"overall": r.get("overall") or r.get("status"),
+                                          "verdicts": [{v.get("framework", "?"): v.get("status")} for v in verdicts]},
+                                         default=str)[:500]}
+        if rid == "truth_consensus":
+            # real reputation-weighted consensus over the USER-CONFIGURED claims — honestly skips
+            #   (→ generic stage) when no claims are configured, like the studio's no-series skip.
+            raw = cfg.get("claims")
+            claim_texts = _csv(raw) if not isinstance(raw, list) else [str(x) for x in raw if str(x).strip()]
+            if not claim_texts:
+                return None
+            from agentic_core.api.collective import consensus as consensus_ep, ConsensusRequest, Claim
+            r = await consensus_ep(ConsensusRequest(
+                claims=[Claim(claim=t, confidence=0.8, reputation=0.8) for t in claim_texts[:8]],
+                threshold=_cfg_num(cfg.get("threshold"), 0.85, float)))
+            return {"resource": "truth_consensus", "ran": "/api/v1/collective/consensus",
+                    "claims": r.get("claims"), "accepted": r.get("accepted"), "method": r.get("method"),
+                    "output": json.dumps({"accepted": r.get("accepted"), "of": r.get("claims"),
+                                          "threshold": r.get("threshold")}, default=str)[:400]}
+        if rid == "mega_project":
+            from agentic_core.api.mega_project import synthesise as mega_synthesise, SynthesiseRequest as MegaReq
+            r = await mega_synthesise(MegaReq(concept=str(cfg.get("concept") or objective), domain=domain))
+            out = r.get("synthesis") or r.get("deliverables") or {k: v for k, v in r.items() if k != "posture"}
+            return {"resource": "mega_project", "ran": "/api/v1/mega-project/synthesise",
+                    "synthesis_id": r.get("synthesis_id"),
+                    "output": (out if isinstance(out, str) else json.dumps(out, default=str))[:600]}
+        if rid == "omnimedia":
+            # live output-formats reading — the REAL producible formats vs the honest not-yet catalogue.
+            from agentic_core.api.deliverables import output_formats
+            r = await output_formats()
+            live = r.get("live") or r.get("formats") or []
+            catalogue = r.get("catalogue_not_yet_produced") or []
+            return {"resource": "omnimedia", "ran": "/api/v1/deliverables/output-formats",
+                    "live_formats": live, "catalogue_not_yet_produced": catalogue,
+                    "output": json.dumps({"live": live, "not_yet_produced": catalogue}, default=str)[:500]}
+        if rid == "federation_mesh":
+            # live mesh status — real consensus/health classes; peers honestly flagged simulated
+            #   in a single-node deployment.
+            from agentic_core.api.mesh import mesh_status
+            r = await mesh_status()
+            return {"resource": "federation_mesh", "ran": "/api/v1/mesh/status",
+                    "operational": r.get("operational"), "node_id": r.get("node_id"),
+                    "output": json.dumps({k: r.get(k) for k in ("operational", "consensus", "health", "posture")},
+                                         default=str)[:500]}
         if rid == "native_orchestrator":
             from agentic_core.ai.native import orchestrator
             res = await orchestrator.complete(str(cfg.get("prompt") or objective),
