@@ -2182,6 +2182,43 @@ def test_ai_calls_recorded_to_learning_loop(client):
     assert agent_rows and all(0.0 <= r["success_rate"] <= 1.0 for r in agent_rows)
 
 
+def test_cca_twin_prevalidation_gates_major_changes(client):
+    # §17.5 absolute invariant — digital-twin pre-validation before MAJOR change. An approved
+    # HIGH-tier change is twin-simulated at approval; /implement REFUSES (409) a major change with
+    # no recorded pre-validation; an explicit POST /{id}/twin-prevalidate unblocks it. The verdict
+    # source is honest: a real model marker, or the organism health gate (never an echoed marker).
+    from agentic_core.api import change_control as cca
+    sub = client.post("/api/v1/cca/submit", json={
+        "title": "W253 rotate signing keys", "change_type": "security_change",
+        "description": "rotate the platform signing keys", "rationale": "invariant test"}).json()
+    cid = sub["cca_id"]
+    assert sub["impact_tier"] == "HIGH"
+    ap = client.post(f"/api/v1/cca/{cid}/review",
+                     json={"override_decision": "approved", "reviewer_notes": "owner"}).json()
+    assert ap["decision"] == "approved"
+    rec = client.get(f"/api/v1/cca/{cid}").json()
+    tp = rec.get("twin_prevalidation") or {}
+    assert tp.get("verdict") in ("pass", "fail")                      # ran at approval
+    assert tp.get("source") in ("twin_marker", "health_gate_default")  # honest provenance
+    assert any(a["event"].startswith("twin_prevalidation_") for a in rec["audit_trail"])
+    if tp["verdict"] == "pass":
+        assert client.post(f"/api/v1/cca/{cid}/implement").status_code == 200
+    # a major change approved WITHOUT a recorded pre-validation is refused (409)
+    sub2 = client.post("/api/v1/cca/submit", json={
+        "title": "W253 policy amendment", "change_type": "policy_amendment",
+        "description": "amend the distribution policy", "rationale": "t"}).json()
+    cid2 = sub2["cca_id"]
+    r2 = cca._load_change(cid2)
+    r2["status"] = "approved"
+    r2.pop("twin_prevalidation", None)
+    cca._save_change(r2)
+    assert client.post(f"/api/v1/cca/{cid2}/implement").status_code == 409
+    pv = client.post(f"/api/v1/cca/{cid2}/twin-prevalidate").json()
+    assert (pv.get("twin_prevalidation") or {}).get("verdict") in ("pass", "fail")
+    if pv["twin_prevalidation"]["verdict"] == "pass":
+        assert client.post(f"/api/v1/cca/{cid2}/implement").status_code == 200
+
+
 def test_cca_immune_reconfigurator(client):
     # The arms-length Change Control Agency is wired to the Immune system + the Reconfiguration engine:
     # under threat the immune system proposes a SAFE, reversible defensive reconfiguration which the CCA

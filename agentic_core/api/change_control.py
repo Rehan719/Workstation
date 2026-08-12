@@ -325,6 +325,74 @@ async def get_change(cca_id: str):
     return c
 
 
+async def _twin_prevalidate(change: dict) -> dict:
+    """§17.5 absolute invariant — digital-twin pre-validation before MAJOR change (HIGH/CRITICAL).
+    Forward-simulates the proposed change against a twin model built from the LIVE organism state
+    (the same simulation pattern as api/digital_twin.py, no persisted model required), extracting an
+    explicit [TWIN: PASS]/[TWIN: FAIL] verdict. When the serving model returns no marker (e.g. the
+    deterministic native floor), the verdict falls back to the ORGANISM HEALTH GATE — pass only when
+    the organism is healthy and not under immune threat — with the source honestly recorded."""
+    ctx = biobus.organism_context()
+    prompt = (
+        f"You are the digital-twin simulator pre-validating a change BEFORE implementation.\n\n"
+        f"Twin model — the live organism state:\n"
+        f"  Composite health: {ctx['composite_health']:.0%} | mode: {ctx['mode']}\n"
+        f"  Immune threat: {ctx['immune']['threat_level']} | circadian: {ctx['circadian']['cycle']}\n\n"
+        f"Proposed change ({change['impact_tier']}): {change['title']}\n"
+        f"Type: {change['change_type']}\nDescription: {change['description']}\n"
+        f"Affected systems: {', '.join(change.get('affected_systems') or []) or 'not specified'}\n"
+        f"Rollback plan: {change.get('rollback_plan') or 'not provided'}\n\n"
+        "Forward-simulate applying this change to the twin:\n"
+        "## State Trajectory (immediately after → 24h → steady state)\n"
+        "## Failure Modes Triggered (if any)\n"
+        "## Rollback Viability\n"
+        "## Verdict — end with exactly one of: [TWIN: PASS] or [TWIN: FAIL]"
+    )
+    try:
+        sim = await gateway.query(prompt, agent="cca_twin_prevalidation", timeout=25)
+    except Exception as e:
+        sim = f"[twin simulation unavailable: {e}]"
+    up = (sim or "").upper()
+    has_pass, has_fail = "[TWIN: PASS]" in up, "[TWIN: FAIL]" in up
+    if has_pass and not has_fail:
+        verdict, source = "pass", "twin_marker"
+    elif has_fail and not has_pass:
+        verdict, source = "fail", "twin_marker"
+    else:
+        # no marker — or BOTH markers (a floor/echo artifact, not a real verdict): fall back to the
+        # honest organism health gate rather than trusting an echoed marker.
+        healthy = ctx["composite_health"] >= 0.6 and ctx["immune"]["threat_level"] in ("NOMINAL", "ELEVATED")
+        verdict, source = ("pass" if healthy else "fail"), "health_gate_default"
+    return {
+        "verdict": verdict,
+        "source": source,
+        "composite_health_at_sim": ctx["composite_health"],
+        "immune_threat_at_sim": ctx["immune"]["threat_level"],
+        "summary": (sim or "")[:600],
+        "simulated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "method": "digital-twin forward simulation over the live organism state",
+    }
+
+
+@router.post("/{cca_id}/twin-prevalidate")
+async def twin_prevalidate(cca_id: str):
+    """Run (or refresh) the §17.5 digital-twin pre-validation for a change. Required before
+    /implement on HIGH/CRITICAL tiers."""
+    c = _load_change(cca_id)
+    if not c:
+        raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
+    if c["status"] in ("implemented", "withdrawn"):
+        raise HTTPException(status_code=400, detail=f"Change is {c['status']} — pre-validation is moot.")
+    tp = await _twin_prevalidate(c)
+    c["twin_prevalidation"] = tp
+    c.setdefault("audit_trail", []).append(
+        {"event": f"twin_prevalidation_{tp['verdict']}", "ts": tp["simulated_at"], "source": tp["source"]})
+    _save_change(c)
+    biobus.fire_signal("cognitive", "cca.twin_prevalidate",
+                       f"Twin pre-validation {tp['verdict'].upper()}: {c['title']}", 0.6)
+    return {"cca_id": cca_id, "twin_prevalidation": tp}
+
+
 @router.post("/{cca_id}/review")
 async def review_change(cca_id: str, req: ReviewDecision):
     """
@@ -389,6 +457,14 @@ async def review_change(cca_id: str, req: ReviewDecision):
     c["reviewed_at"] = now
     c["review_result"] = review_text
     c["audit_trail"].append({"event": decision, "ts": now, "by": "cca_ai"})
+
+    # §17.5 — an APPROVED major change (HIGH/CRITICAL) is twin pre-validated at approval time so
+    # /implement can enforce "pre-validation before major change" without a second round-trip.
+    if decision == "approved" and c["impact_tier"] in ("HIGH", "CRITICAL"):
+        tp = await _twin_prevalidate(c)
+        c["twin_prevalidation"] = tp
+        c["audit_trail"].append(
+            {"event": f"twin_prevalidation_{tp['verdict']}", "ts": tp["simulated_at"], "source": tp["source"]})
     _save_change(c)
 
     signal = "motor" if decision == "approved" else "reflex"
@@ -403,8 +479,11 @@ async def review_change(cca_id: str, req: ReviewDecision):
 
 
 @router.post("/{cca_id}/implement")
-async def implement_change(cca_id: str):
-    """Mark an approved change as implemented."""
+async def implement_change(cca_id: str, force: bool = False):
+    """Mark an approved change as implemented. §17.5 invariant: HIGH/CRITICAL changes REQUIRE a
+    recorded digital-twin pre-validation PASS (run at review-approval, or via
+    POST /{cca_id}/twin-prevalidate); a FAIL blocks implementation unless the Owner overrides with
+    ?force=true (the override is audit-trailed, never silent)."""
     c = _load_change(cca_id)
     if not c:
         raise HTTPException(status_code=404, detail=f"Change {cca_id} not found.")
@@ -412,13 +491,30 @@ async def implement_change(cca_id: str):
         raise HTTPException(status_code=400, detail=f"Change must be approved before implementation. Status: {c['status']}")
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    if c["impact_tier"] in ("HIGH", "CRITICAL"):
+        tp = c.get("twin_prevalidation")
+        if not tp:
+            raise HTTPException(status_code=409, detail=(
+                "§17.5 invariant: this MAJOR change has no recorded digital-twin pre-validation. "
+                f"Run POST /api/v1/cca/{cca_id}/twin-prevalidate first."))
+        if tp.get("verdict") != "pass" and not force:
+            c["audit_trail"].append({"event": "implement_blocked_twin_fail", "ts": now,
+                                     "twin_source": tp.get("source")})
+            _save_change(c)
+            raise HTTPException(status_code=409, detail=(
+                "§17.5 invariant: the digital-twin pre-validation FAILED "
+                f"({tp.get('source')}). Implementation blocked; the Owner may override with ?force=true."))
+        if tp.get("verdict") != "pass" and force:
+            c["audit_trail"].append({"event": "twin_fail_overridden_by_owner", "ts": now})
+
     c["status"] = "implemented"
     c["implemented_at"] = now
     c["audit_trail"].append({"event": "implemented", "ts": now})
     _save_change(c)
 
     biobus.fire_signal("motor", "cca.implement", f"Implemented: {c['title']}", 0.7)
-    return {"cca_id": cca_id, "status": "implemented", "implemented_at": now}
+    return {"cca_id": cca_id, "status": "implemented", "implemented_at": now,
+            "twin_prevalidation": (c.get("twin_prevalidation") or {}).get("verdict")}
 
 
 @router.get("/impact/{cca_id}")
