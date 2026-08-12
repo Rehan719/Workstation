@@ -249,6 +249,67 @@ async def charity_candidates(top: int = 8):
             "disclaimer": "Virtual/simulated — sources curated; live feeds pending Owner approval."}
 
 
+@router.get("/charity/directives")
+async def get_charity_directives():
+    """§5 — the Owner's charity directives (priorities · exclusions · 100%-donation rule), honoured
+    by every allocation."""
+    from agentic_core.economy.charity import get_directives
+    return get_directives()
+
+
+class CharityDirectivesRequest(BaseModel):
+    priorities: list[str] = []
+    exclusions: list[str] = []
+    require_100pct: bool = True
+
+
+@router.post("/charity/directives")
+async def set_charity_directives(req: CharityDirectivesRequest):
+    """§5 — the Owner SETS the charity directives at runtime; persisted + UEG-logged + honoured by
+    the metabolic cycle's allocations from the next cycle on."""
+    from agentic_core.economy.charity import set_directives
+    result = set_directives(req.priorities or None, req.exclusions, req.require_100pct)
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "economy.charity_directives_set", **{k: result[k] for k in
+                        ("priorities", "exclusions", "require_100pct")}})
+    except Exception:
+        pass
+    return result
+
+
+class CharitySignalsRequest(BaseModel):
+    signals: list[dict] = []   # each mirrors a candidate: {id, cause, region, urgency, gravity, reach, trust, donation_100pct}
+
+
+@router.post("/charity/signals")
+async def ingest_charity_signals(req: CharitySignalsRequest):
+    """§5 — the REAL live-signal ingestion seam (humanitarian/disaster/needs feeds). OWNER-GATED:
+    disabled unless CHARITY_LIVE_SIGNALS_ENABLED=true (no fabricated feeds; sources must be
+    Owner-approved). Accepted signals persist and join the candidate pool."""
+    import os as _os
+    if _os.getenv("CHARITY_LIVE_SIGNALS_ENABLED", "false").lower() != "true":
+        raise HTTPException(status_code=403, detail=(
+            "Live charity-signal ingestion is Owner-gated (set CHARITY_LIVE_SIGNALS_ENABLED=true "
+            "after approving the sources). No fabricated feeds are ever used."))
+    from agentic_core.config import atomic_write_json
+    from agentic_core.economy.charity import _SIGNALS_STORE, approved_signals
+    valid = [s for s in req.signals
+             if isinstance(s, dict) and s.get("id") and s.get("cause")
+             and all(0.0 <= float(s.get(k, 0.5)) <= 1.0 for k in ("urgency", "gravity", "reach", "trust"))]
+    existing = {s["id"]: s for s in approved_signals()}
+    for s in valid:
+        existing[s["id"]] = s
+    atomic_write_json(_SIGNALS_STORE, list(existing.values()))
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "economy.charity_signals_ingested", "count": len(valid)})
+    except Exception:
+        pass
+    return {"ingested": len(valid), "total_signals": len(existing),
+            "note": "Signals join the candidate pool (still subject to the 100%-donation rule + compliance screening)."}
+
+
 @router.get("/ventures/candidates")
 async def venture_candidates(top: int = 8, vsb_id: str = "workstation-idbo"):
     """§6 — ranked candidate ventures for investment, harvested from the platform's REAL projects and

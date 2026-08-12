@@ -3179,6 +3179,34 @@ def test_economy_ventures_investment(client):
     assert "no real funds" in (pf.get("note") or "").lower()
 
 
+def test_charity_owner_directives_and_grant_screening(client, monkeypatch):
+    # §5 — the Owner SETS charity directives at runtime (priorities · exclusions · 100%-donation
+    # rule) and every subsequent allocation honours them; EVERY grant is compliance-screened before
+    # allocation; the live-signals ingestion seam is Owner-gated (403 until enabled — no fabricated
+    # feeds).
+    import uuid as _uuid
+    d = client.post("/api/v1/economy/charity/directives", json={
+        "priorities": ["famine_food", "clean_water"], "exclusions": ["dawah"],
+        "require_100pct": True}).json()
+    assert d["source"] == "owner_set" and "dawah" in d["exclusions"]
+    vid = f"w260-char-{_uuid.uuid4().hex[:8]}"
+    r = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                                   "revenue": 10000, "costs": 0}).json()
+    gb = r["cycle"]["giving_back"]
+    ids = [g["id"] for g in gb["grants"]]
+    assert "dawah" not in ids                                  # the Owner's exclusion is honoured
+    assert "famine_food" in ids                                # the Owner's priority is in the grants
+    assert all(g.get("compliance") in ("pass", "review") for g in gb["grants"])   # screened, not just flagged
+    assert "excluded_by_compliance" in gb                      # honest exclusions surface
+    monkeypatch.delenv("CHARITY_LIVE_SIGNALS_ENABLED", raising=False)
+    assert client.post("/api/v1/economy/charity/signals",
+                       json={"signals": [{"id": "x", "cause": "y"}]}).status_code == 403
+    # restore the 2026-06-21 defaults so later tests see the standard directive set
+    client.post("/api/v1/economy/charity/directives", json={
+        "priorities": ["clean_water", "orphan_sponsorship", "conflict_relief", "dawah"],
+        "exclusions": [], "require_100pct": True})
+
+
 def test_ventures_real_candidates_and_returns_recycle(client):
     # §6 — venture investment selects from the platform's REAL projects/VSBs (deterministic metrics
     # from live state, honestly labelled), and RETURNS RECYCLE: a recorded return queues as a pending
