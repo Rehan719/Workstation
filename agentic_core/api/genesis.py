@@ -275,6 +275,59 @@ class EstablishRequest(BaseModel):
     entity_type: str = "waqf_ltd_hybrid"   # legal/economic form: sole|ltd|plc|trust|waqf|multinational|nonprofit|charity|waqf_ltd_hybrid
 
 
+def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
+                           domain: str, concept: str = "") -> None:
+    """Give the VSB its OWN bespoke, reconfigurable native swarm cascade — its in-house delivery org
+    (Chief → AI CEO → C-Suite → CoE → BTO) as a runnable, owned Resource-Fabric resource. Shared by
+    the blocking /establish and the SSE /establish/stream. Best-effort (never blocks establishment)."""
+    try:
+        from agentic_core.api import resource_fabric as rf
+        org_tiers = ["Chief (owner twin)", "AI CEO", "C-Suite", "Centre of Excellence", "Build-to-Order"]
+        cascade = rf.register_swarm(
+            name=f"{name} — delivery swarm",
+            context=(f"VSB: {name}\nMission: {problem}\nDomain: {domain}\n"
+                     f"Concept: {(concept or problem)[:600]}"),
+            usage_area="delivery", vsb_id=vsb_id, org=org_tiers,
+            stages=[
+                {"role": "ai-ceo", "instruction": "Frame the objective and set the directive for the C-Suite."},
+                {"role": "c-suite", "instruction": "Break the directive into specialist workstreams (finance, technical, market, legal/compliance)."},
+                {"role": "centre-of-excellence", "instruction": "Produce the specialist deliverable for the highest-priority workstream."},
+                {"role": "build-to-order", "instruction": "Integrate the workstreams into a Build-to-Order delivery plan."},
+            ],
+        )
+        entity["native_swarm"] = {
+            "cascade_id": cascade["id"], "name": cascade["name"], "org": org_tiers,
+            "stages": [s["role"] for s in cascade["stages"]],
+            "run": "/api/v1/resources/swarm/run", "posture": "in-house-first",
+        }
+    except Exception:
+        pass
+
+
+async def _derive_name(problem: str, domain: str, requested: str = "") -> str:
+    """The VSB's name: the user's when given, else AI-derived — with the native engine's provenance
+    marker / markdown headings / scaffold lines filtered so an auto-named VSB never inherits them.
+    Shared by the blocking /establish and the SSE /establish/stream."""
+    name = (requested or "").strip()
+    if name:
+        return name
+    derived = await _q(
+        "Propose ONE concise, brandable business name (2-4 words, no quotes, no preamble, no "
+        f"markdown) for a venture that solves: {problem}\nDomain: {domain}\nReturn ONLY the name.",
+        "genesis_vsb_name",
+    )
+    cand = ""
+    for line in (derived or "").splitlines():
+        s = line.strip().strip('"').strip("*").strip()
+        low = s.lower()
+        if (not s or s.startswith(("_[", "#", "-", ">")) or ":" in s
+                or "native structured engine" in low or len(s.split()) > 6):
+            continue
+        cand = s[:60]
+        break
+    return cand or f"VSB — {problem[:40]}"
+
+
 @router.post("/establish")
 async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(get_current_user)):
     """
@@ -291,26 +344,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     from agentic_core.api import vsb as vsb_mod
 
     vsb_id = f"vsb-{_uuid.uuid4().hex[:10]}"
-
-    name = req.name.strip()
-    if not name:
-        derived = await _q(
-            "Propose ONE concise, brandable business name (2-4 words, no quotes, no preamble, no "
-            f"markdown) for a venture that solves: {req.problem}\nDomain: {req.domain}\nReturn ONLY the name.",
-            "genesis_vsb_name",
-        )
-        # Take the first clean, short, name-like line — reject the native engine's provenance
-        # marker / markdown headings / scaffold lines so an auto-named VSB never inherits them.
-        cand = ""
-        for line in (derived or "").splitlines():
-            s = line.strip().strip('"').strip("*").strip()
-            low = s.lower()
-            if (not s or s.startswith(("_[", "#", "-", ">")) or ":" in s
-                    or "native structured engine" in low or len(s.split()) > 6):
-                continue
-            cand = s[:60]
-            break
-        name = cand or f"VSB — {req.problem[:40]}"
+    name = await _derive_name(req.problem, req.domain, req.name)
 
     async def _attest() -> str:
         return "VSB establishment attested under v16-Omega constitutional supervision."
@@ -422,30 +456,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         entity["business_plan_scope"] = vsb_id
     except Exception:
         pass
-    # Give this VSB its OWN bespoke, reconfigurable native swarm cascade — its in-house delivery
-    # org (Chief → AI CEO → C-Suite → CoE → BTO) as a runnable, owned Resource-Fabric resource.
-    try:
-        from agentic_core.api import resource_fabric as rf
-        org_tiers = ["Chief (owner twin)", "AI CEO", "C-Suite", "Centre of Excellence", "Build-to-Order"]
-        cascade = rf.register_swarm(
-            name=f"{name} — delivery swarm",
-            context=(f"VSB: {name}\nMission: {req.problem}\nDomain: {req.domain}\n"
-                     f"Concept: {(req.concept or req.problem)[:600]}"),
-            usage_area="delivery", vsb_id=vsb_id, org=org_tiers,
-            stages=[
-                {"role": "ai-ceo", "instruction": "Frame the objective and set the directive for the C-Suite."},
-                {"role": "c-suite", "instruction": "Break the directive into specialist workstreams (finance, technical, market, legal/compliance)."},
-                {"role": "centre-of-excellence", "instruction": "Produce the specialist deliverable for the highest-priority workstream."},
-                {"role": "build-to-order", "instruction": "Integrate the workstreams into a Build-to-Order delivery plan."},
-            ],
-        )
-        entity["native_swarm"] = {
-            "cascade_id": cascade["id"], "name": cascade["name"], "org": org_tiers,
-            "stages": [s["role"] for s in cascade["stages"]],
-            "run": "/api/v1/resources/swarm/run", "posture": "in-house-first",
-        }
-    except Exception:
-        pass
+    _attach_delivery_swarm(entity, vsb_id, name, req.problem, req.domain, req.concept)
     vsb_mod._save_vsb(entity)
 
     try:
@@ -462,3 +473,105 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "governance": entity["governance"],
         "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
     }
+
+
+@router.post("/establish/stream")
+async def genesis_establish_stream(req: EstablishRequest, user: dict | None = Depends(get_current_user)):
+    """SSE-streamed establishment — users WATCH the VSB being born: naming → constitutional
+    attestation → genome encoding → Board + Chief → living economy → living-entity registration →
+    business plan → delivery swarm → operational. Every event reflects a REAL completed step (the
+    same machinery as the blocking /establish; nothing is narrated that did not happen)."""
+    from fastapi.responses import StreamingResponse
+    import json as _json
+    import uuid as _uuid
+    import time as _time
+
+    req.owner_id = request_owner_id(user, req.owner_id)   # §17.5 — server-side owner stamp
+
+    def _event(stage: str, label: str, content: str, data: dict | None = None) -> str:
+        payload: Dict[str, Any] = {"stage": stage, "label": label, "content": content}
+        if data:
+            payload["data"] = data
+        return f"data: {_json.dumps(payload)}\n\n"
+
+    async def _stream():
+        from agentic_core.api import vsb as vsb_mod
+        vsb_id = f"vsb-{_uuid.uuid4().hex[:10]}"
+        yield _event("init", "Establishment Initiated",
+                     f"Generating a living Enterprise IDBO for: {req.problem[:120]}", {"vsb_id": vsb_id})
+
+        # 1 — naming (AI-derived when blank; scaffold lines filtered)
+        name = await _derive_name(req.problem, req.domain, req.name)
+        yield _event("named", "Named", f"The enterprise is named: {name}", {"name": name})
+
+        # 2 — constitutional attestation (gaas.v5)
+        async def _attest() -> str:
+            return "VSB establishment attested under v16-Omega constitutional supervision."
+        gov = await _GOV.intercept({"intent": "genesis_establish", "domain": req.domain}, _attest)
+        yield _event("governance", "Constitutionally Attested",
+                     f"gaas.v5 gate: {gov.status}", {"status": gov.status, "checkpoint": gov.checkpoint_id})
+
+        # 3 — genome encoding (epigenetic registry)
+        genome_spec = {
+            "vsb_id": vsb_id, "origin": "genesis_journey", "problem": req.problem,
+            "domain": req.domain, "realm": req.realm, "concept": req.concept[:1000],
+            "design": req.design[:1000], "commercialisation": req.commercialisation[:1000],
+            "constitutional_alignment": gov.status == "allowed",
+        }
+        try:
+            vsb_mod._genome_registry.store_epigenetic_pattern(pattern_id=vsb_id, data=genome_spec, layer=1)
+            yield _event("genome", "Genome Encoded", "DNA stored in the epigenetic registry (layer 1).")
+        except Exception as e:
+            yield _event("genome", "Genome Encoding Skipped", f"registry unavailable: {str(e)[:80]}")
+
+        # 4 — the entity, then the §3.3 living-organisation facets (each event reflects what attached)
+        entity = {
+            "vsb_id": vsb_id, "name": name, "challenge": req.problem, "domain": req.domain,
+            "realm": req.realm, "scope": "commercialise", "owner_id": req.owner_id,
+            "status": "operational", "stage": "commercialise", "genome_spec": genome_spec,
+            "epigenetic_traits": {"domain": req.domain, "origin": "genesis"}, "generation": 0,
+            "ceo_specification": (req.commercialisation or req.concept)[:2000],
+            "genesis_blueprint": {"concept": req.concept, "design": req.design,
+                                  "commercialisation": req.commercialisation},
+            "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
+            "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+        }
+        vsb_mod.enrich_vsb_entity(entity, owner_id=req.owner_id, problem=req.problem,
+                                  domain=req.domain, entity_type=req.entity_type)
+        if entity.get("board"):
+            yield _event("board", "Board + Chief Seated",
+                         "Board of Directors chaired by the owner's digital-twin Chief (arms-length).",
+                         {"directors": len((entity["board"] or {}).get("directors", []) or [])})
+        if entity.get("economy"):
+            yield _event("economy", "Living Economy Initialised",
+                         f"{entity['economy'].get('entity_name')} — virtual WST only (real rails gated).",
+                         {"entity_type": entity["economy"].get("entity_type")})
+        if entity.get("living"):
+            yield _event("living", "Registered as a Living Entity",
+                         "The organism tends this VSB on the circadian heartbeat (governed economy cycles).")
+        if entity.get("business_plan_scope"):
+            yield _event("plan", "Business Plan Seeded",
+                         "A living business plan (Chief/Board-owned) opens with the founder's idea.")
+
+        # 5 — the bespoke in-house delivery swarm
+        _attach_delivery_swarm(entity, vsb_id, name, req.problem, req.domain, req.concept)
+        if entity.get("native_swarm"):
+            yield _event("swarm", "Delivery Swarm Registered",
+                         "Chief → AI CEO → C-Suite → CoE → Build-to-Order, runnable on the owned fabric.",
+                         {"cascade_id": entity["native_swarm"].get("cascade_id")})
+
+        # 6 — persist + operational
+        vsb_mod._save_vsb(entity)
+        try:
+            from agentic_core.organism.biobus import biobus
+            biobus.fire_signal("motor", "genesis.establish", f"VSB established: {vsb_id} — {name}", 0.9)
+        except Exception:
+            pass
+        yield _event("complete", "Operational", f"{name} is alive.", {
+            "vsb_id": vsb_id, "name": name, "status": "operational",
+            "dashboard": f"/api/v1/vsb/{vsb_id}",
+            "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
+        })
+
+    return StreamingResponse(_stream(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

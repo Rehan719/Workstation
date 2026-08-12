@@ -93,6 +93,8 @@ export const GenesisJourney: React.FC = () => {
   const [result, setResult] = useState<JourneyResult | null>(null);
   const [open, setOpen] = useState<string>('phase1');
   const [establishing, setEstablishing] = useState(false);
+  // §5 — the live birth log: each entry is a REAL completed establishment step from the SSE stream
+  const [birthStages, setBirthStages] = useState<{ stage: string; label: string; content: string }[]>([]);
   const [vsb, setVsb] = useState<{ vsb_id: string; name: string; dashboard: string; governance?: any } | null>(null);
   // §2 — the VSB's legal/economic form, selected by the user at generation (wired to the economy templates)
   const [entityTypes, setEntityTypes] = useState<{ id: string; name: string; description: string }[]>([]);
@@ -147,19 +149,49 @@ export const GenesisJourney: React.FC = () => {
   const establish = async () => {
     if (!result) return;
     setEstablishing(true);
+    setBirthStages([]);
+    const body = JSON.stringify({
+      problem, domain, realm, entity_type: entityType,
+      concept: result.phase_1_conceptualisation.concept,
+      design: result.phase_2_design_development,
+      commercialisation: result.phase_3_commercialisation,
+    });
     try {
-      const res = await fetch('/api/v1/genesis/establish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          problem, domain, realm, entity_type: entityType,
-          concept: result.phase_1_conceptualisation.concept,
-          design: result.phase_2_design_development,
-          commercialisation: result.phase_3_commercialisation,
-        }),
+      // §5 — watch the VSB being born: each SSE event reflects a REAL completed establishment step
+      const res = await fetch('/api/v1/genesis/establish/stream', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
       });
-      setVsb(await res.json());
-    } catch { /* surfaced by absence of vsb */ }
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      let complete: any = null;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const raw of lines) {
+          if (!raw.startsWith('data: ')) continue;
+          try {
+            const ev = JSON.parse(raw.slice(6));
+            setBirthStages(s => [...s, { stage: ev.stage, label: ev.label, content: ev.content }]);
+            if (ev.stage === 'complete' && ev.data) complete = ev.data;
+          } catch { /* skip malformed frame */ }
+        }
+      }
+      if (!complete) throw new Error('stream ended without completion');
+      setVsb(complete);
+    } catch {
+      // fallback — the blocking establish (same machinery, no live stages)
+      try {
+        const res = await fetch('/api/v1/genesis/establish', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
+        });
+        setVsb(await res.json());
+      } catch { /* surfaced by absence of vsb */ }
+    }
     setEstablishing(false);
   };
 
@@ -562,6 +594,20 @@ export const GenesisJourney: React.FC = () => {
                     {establishing ? <Loader2 size={16} className="animate-spin" /> : <Rocket size={16} />}
                     {establishing ? 'Establishing VSB…' : 'Establish VSB IDBO Entity'}
                   </Button>
+                  {birthStages.length > 0 && (
+                    <div className="mt-3 p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+                      <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500">The VSB being born — live</p>
+                      {birthStages.map((s, i) => (
+                        <div key={`${s.stage}-${i}`} className="flex items-start gap-2">
+                          <span className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${s.stage === 'complete' ? 'bg-emerald-400' : 'bg-highlight'}`} />
+                          <p className="text-[10px] text-slate-300 leading-snug">
+                            <span className="font-black uppercase tracking-widest text-slate-400">{s.label}</span>
+                            <span className="text-slate-500"> — {s.content}</span>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="p-4 rounded-2xl bg-slate-950 border border-emerald-500/30">
@@ -588,6 +634,20 @@ export const GenesisJourney: React.FC = () => {
                   <p className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                     Its plan already opens with an Executive Summary · Concept · Vision, seeded from this journey.
                   </p>
+                  {birthStages.length > 0 && (
+                    <div className="mt-3 p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+                      <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500">Birth record — every step really happened</p>
+                      {birthStages.map((s, i) => (
+                        <div key={`br-${s.stage}-${i}`} className="flex items-start gap-2">
+                          <span className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${s.stage === 'complete' ? 'bg-emerald-400' : 'bg-highlight'}`} />
+                          <p className="text-[10px] text-slate-300 leading-snug">
+                            <span className="font-black uppercase tracking-widest text-slate-400">{s.label}</span>
+                            <span className="text-slate-500"> — {s.content}</span>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* §13 — generate the bespoke VSB IDBO Entity Repository (Website · Web app · Phone app scaffold) */}
                   <div className="mt-3 pt-3 border-t border-slate-800">

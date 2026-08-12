@@ -2182,6 +2182,28 @@ def test_ai_calls_recorded_to_learning_loop(client):
     assert agent_rows and all(0.0 <= r["success_rate"] <= 1.0 for r in agent_rows)
 
 
+def test_genesis_establish_stream_births_a_real_vsb(client):
+    # §5 — users WATCH the VSB being born: the SSE /establish/stream emits one event per REAL
+    # completed step (naming → attestation → genome → board → economy → living → plan → swarm →
+    # operational) and the persisted entity carries everything the events claimed.
+    import json as _json
+    import re as _re
+    r = client.post("/api/v1/genesis/establish/stream", json={
+        "problem": "stream-birth contract test", "domain": "enterprise", "name": "StreamBirthCo",
+        "concept": "c", "design": "d", "commercialisation": "m"})
+    assert r.status_code == 200
+    events = [_json.loads(l[6:]) for l in r.text.splitlines() if l.startswith("data: ")]
+    stages = [e["stage"] for e in events]
+    for required in ("init", "named", "governance", "board", "economy", "living", "plan", "complete"):
+        assert required in stages, f"birth stream missing the {required} stage"
+    assert stages[-1] == "complete"
+    vid = _re.search(r'"vsb_id": "(vsb-[a-f0-9]+)"', r.text).group(1)
+    ent = client.get(f"/api/v1/vsb/{vid}").json()
+    # every event reflected a real attachment — the persisted entity proves it
+    assert ent.get("board") and ent.get("economy") and ent.get("living") and ent.get("business_plan_scope")
+    assert ent.get("name") == "StreamBirthCo" and ent.get("status") == "operational"
+
+
 def test_streaming_surfaces_in_house_first(client, monkeypatch):
     # §6 mandate — the last three user-reachable streaming surfaces ran the legacy EXTERNAL-FIRST
     # gateway.stream cascade. gateway.stream is now in-house-first (owned local model → opt-in
