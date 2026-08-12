@@ -486,6 +486,24 @@ def test_user_isolation_when_auth_enabled(client, monkeypatch):
     assert "workstation2026" not in _inspect.getsource(auth_core)
 
 
+def test_chief_instruction_becomes_living_plan_objectives(client):
+    # §5 apex closure (W265) — the Owner's most important input no longer evaporates into prose:
+    # POST /board/chief/instruct parses the CEO action plan's TITLE|KPI|TIMELINE|OWNER_ROLE lines
+    # into REAL objectives on the scoped living business plan (tagged with the directive), falling
+    # back to the instruction itself as one objective when the model yields no machine lines — the
+    # delegation ALWAYS lands on the roadmap.
+    import uuid as _uuid
+    scope = f"vsb:w265-{_uuid.uuid4().hex[:8]}"
+    r = client.post("/api/v1/board/chief/instruct", json={
+        "instruction": "Launch the halal meal-kit pilot in London by winter", "scope": scope}).json()
+    assert r["objectives_added"] >= 1 and r["business_plan_scope"] == scope
+    p = client.get("/api/v1/business-plan", params={"scope": scope}).json()
+    objs = (p.get("plan") or p).get("objectives", [])
+    tagged = [o for o in objs if o.get("directive_id") == r["directive_id"]]
+    assert tagged, "no plan objective carries the Chief's directive"
+    assert tagged[0]["status"] == "planned" and tagged[0]["id"].startswith("obj-")
+
+
 def test_every_generated_vsb_carries_board_and_economy(client):
     # §3.3 invariant (Living Plan, bold): "Every generated VSB carries its own Board + a Chief that is
     # the digital twin of its owner" — plus a living economy in its legal form, living-entity

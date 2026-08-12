@@ -147,6 +147,7 @@ class ChiefInstruction(BaseModel):
     instruction: str
     owner: str = "Rehan"
     cascade_to_ceo: bool = True
+    scope: str = "workstation"   # which living business plan receives the objectives (e.g. a vsb_id)
 
 
 @router.post("/chief/instruct")
@@ -180,12 +181,32 @@ async def chief_instruct(req: ChiefInstruction):
             "executable, timelined, resourced action plan integrated with the VSB living systems and "
             "agent swarm.\n\n"
             f"Board directive:\n{directive[:1200]}\n\n"
-            "## Strategic Objectives (from the directive)\n"
+            "## Strategic Objectives (one per line, EXACTLY formatted: TITLE | KPI | TIMELINE | OWNER_ROLE)\n"
             "## Action Plan (numbered tasks, each with owner-role, resource, and timeline)\n"
             "## Delegation (C-Suite → CoE → BTO assignments)\n"
             "## KPIs & Review Cadence"
         )
         action_plan = await _q(ceo_prompt, "board_ceo_delegate")
+
+    # §5 apex closure (W265) — the delegation LANDS: parsed objectives (TITLE|KPI|TIMELINE|OWNER_ROLE)
+    # are appended to the scoped LIVING business plan, tagged with this directive. When the serving
+    # model yields no machine-readable lines (e.g. the deterministic native floor), the Owner's
+    # instruction itself becomes ONE objective — the apex direction never again evaporates into prose.
+    objectives_added = 0
+    if req.cascade_to_ceo:
+        try:
+            from agentic_core.api import business_plan as bp_mod
+            new_objs = bp_mod.parse_objective_lines(action_plan, extra={"directive_id": directive_id})
+            if not new_objs:
+                new_objs = bp_mod.parse_objective_lines(
+                    f"{req.instruction[:110]} | (KPI to be set by the Board) | next review | AI CEO",
+                    extra={"directive_id": directive_id, "source": "chief_instruct_fallback"})
+            plan = bp_mod._load(req.scope)
+            plan.setdefault("objectives", []).extend(new_objs)
+            bp_mod._save(plan)
+            objectives_added = len(new_objs)
+        except Exception:
+            objectives_added = 0   # board direction must never fail on plan I/O
 
     record = {
         "directive_id": directive_id,
@@ -193,6 +214,8 @@ async def chief_instruct(req: ChiefInstruction):
         "instruction": req.instruction,
         "chief_directive": directive,
         "ceo_action_plan": action_plan,
+        "business_plan_scope": req.scope,
+        "objectives_added": objectives_added,
         "delegation_chain": ["Chief", "Board", "AI CEO", "C-Suite", "CoE", "BTO"],
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

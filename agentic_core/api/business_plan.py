@@ -56,6 +56,29 @@ def _load(scope: str) -> Dict[str, Any]:
             "mission": "", "strategy": "", "aims": [], "objectives": [], "updated_at": None}
 
 
+def parse_objective_lines(text: str, extra: Dict[str, Any] | None = None) -> List[Dict[str, Any]]:
+    """Parse 'TITLE | KPI | TIMELINE | OWNER_ROLE' pipe-lines into living-plan objective dicts.
+    Shared by the Chief's plan generation AND the Board's chief_instruct delegation (§5 apex
+    closure): the same machine-readable objective format lands on the roadmap from either path.
+    `extra` fields (e.g. directive_id) are stamped onto every parsed objective."""
+    out: List[Dict[str, Any]] = []
+    for line in (text or "").splitlines():
+        if line.count("|") >= 3 and not line.strip().lower().startswith(("## ", "title")):
+            parts = [p.strip() for p in line.split("|")]
+            title = parts[0].lstrip("-•0123456789. ").strip()
+            if not title:
+                continue
+            out.append({
+                "id": f"obj-{uuid.uuid4().hex[:8]}", "title": title[:120],
+                "kpi": parts[1][:120], "timeline": parts[2][:60],
+                "owner_role": parts[3][:40] if len(parts) > 3 else "AI CEO",
+                "progress_pct": 0, "status": "planned", "reviews": [],
+                "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                **(extra or {}),
+            })
+    return out
+
+
 def _save(plan: Dict[str, Any]) -> None:
     plan["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     atomic_write_json(_path(plan["scope"]), plan)
@@ -325,22 +348,11 @@ async def generate_plan(req: GenerateRequest):
         if _text and not plan.get(_field):
             plan[_field] = _text[:1200]
 
-    # Parse objectives from the draft (TITLE | KPI | TIMELINE | OWNER_ROLE lines).
-    added = 0
-    for line in draft.splitlines():
-        if line.count("|") >= 3 and not line.strip().lower().startswith(("## ", "title")):
-            parts = [p.strip() for p in line.split("|")]
-            title = parts[0].lstrip("-•0123456789. ").strip()
-            if not title:
-                continue
-            plan["objectives"].append({
-                "id": f"obj-{uuid.uuid4().hex[:8]}", "title": title[:120],
-                "kpi": parts[1][:120], "timeline": parts[2][:60],
-                "owner_role": parts[3][:40] if len(parts) > 3 else "AI CEO",
-                "progress_pct": 0, "status": "planned", "reviews": [],
-                "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            })
-            added += 1
+    # Parse objectives from the draft (TITLE | KPI | TIMELINE | OWNER_ROLE lines) — shared helper
+    # so the Board's chief_instruct delegation lands objectives the same way (§5 apex closure, W265).
+    new_objs = parse_objective_lines(draft)
+    plan["objectives"].extend(new_objs)
+    added = len(new_objs)
     plan["chief_draft"] = draft
     if not plan.get("vision"):
         plan["vision"] = "AI-mediated working that generates living VSB IDBO entities for every user."
