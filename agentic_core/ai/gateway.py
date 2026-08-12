@@ -208,80 +208,118 @@ class ModelGateway:
 
     # ── streaming ────────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _stream_chunks(text: str, size: int = 96) -> list[str]:
+        """Word-boundary chunks so a completed in-house response keeps the token-stream shape
+        (the honest W241 pattern: the work is genuinely served in-house, framed as a stream)."""
+        words = (text or "").split(" ")
+        chunks: list[str] = []
+        cur = ""
+        for w in words:
+            if cur and len(cur) + len(w) + 1 > size:
+                chunks.append(cur + " ")
+                cur = w
+            else:
+                cur = (cur + " " + w) if cur else w
+        if cur:
+            chunks.append(cur)
+        return chunks
+
     async def stream(self, prompt: str, agent: str = "assistant") -> AsyncIterator[str]:
-        """Yield response tokens as they arrive. Falls back to chunked non-streaming."""
+        """Yield response tokens — IN-HOUSE FIRST (§6), mirroring query_meta's contract:
+        1. the OWNED local model (Ollama), genuine token-by-token streaming, when present
+           (skipped under AI_DISABLE_LOCAL, e.g. the deterministic test/CI runtime);
+        2. external accelerant streaming ONLY when explicitly opted in (AI_ALLOW_EXTERNAL=true);
+        3. the native structured-reasoning floor, chunked — the GUARANTEED terminal: this stream
+           never depends on an external provider and never ends in a bare error line."""
         await self._rate_limiter.acquire()
         augmented = self._augment(prompt)
 
-        # 1 — Anthropic streaming
-        if self.anthropic_key:
+        def _log(text: str) -> None:
             try:
-                import anthropic
-                client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
-                full = ""
-                async with client.messages.stream(
-                    model=self.claude_model,
-                    max_tokens=self.max_tokens,
-                    messages=[{"role": "user", "content": augmented}],
-                ) as s:
-                    async for chunk in s.text_stream:
-                        full += chunk
-                        yield chunk
-                interaction_logger.log_interaction(agent, prompt, full)
-                memory.add_memory(f"User: {prompt} | AI: {full}")
-                return
+                interaction_logger.log_interaction(agent, prompt, text)
+                memory.add_memory(f"User: {prompt} | AI: {text}")
             except Exception:
                 pass
 
-        # 2 — OpenAI streaming
-        if self.openai_key:
+        # 1 — the OWNED local model: genuine token-by-token streaming
+        if os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes"):
             try:
-                from openai import AsyncOpenAI
-                client = AsyncOpenAI(api_key=self.openai_key)
+                import json as _json
+                timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
                 full = ""
-                async for chunk in await client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[{"role": "user", "content": augmented}],
-                    stream=True,
-                    max_tokens=self.max_tokens,
-                ):
-                    delta = chunk.choices[0].delta.content or ""
-                    full += delta
-                    if delta:
-                        yield delta
-                interaction_logger.log_interaction(agent, prompt, full)
-                memory.add_memory(f"User: {prompt} | AI: {full}")
-                return
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    async with client.stream("POST", self.ollama_url, json={
+                        "model": self.ollama_model,
+                        "prompt": augmented,
+                        "stream": True,
+                    }) as r:
+                        async for line in r.aiter_lines():
+                            if line:
+                                try:
+                                    obj = _json.loads(line)
+                                    token = obj.get("response", "")
+                                    full += token
+                                    if token:
+                                        yield token
+                                    if obj.get("done"):
+                                        break
+                                except Exception:
+                                    continue
+                if full.strip():
+                    _log(full)
+                    return
             except Exception:
                 pass
 
-        # 3 — Ollama streaming
+        # 2 — external accelerants: OPT-IN ONLY (never a dependency)
+        if os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true":
+            if self.anthropic_key:
+                try:
+                    import anthropic
+                    client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
+                    full = ""
+                    async with client.messages.stream(
+                        model=self.claude_model,
+                        max_tokens=self.max_tokens,
+                        messages=[{"role": "user", "content": augmented}],
+                    ) as s:
+                        async for chunk in s.text_stream:
+                            full += chunk
+                            yield chunk
+                    _log(full)
+                    return
+                except Exception:
+                    pass
+            if self.openai_key:
+                try:
+                    from openai import AsyncOpenAI
+                    client = AsyncOpenAI(api_key=self.openai_key)
+                    full = ""
+                    async for chunk in await client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[{"role": "user", "content": augmented}],
+                        stream=True,
+                        max_tokens=self.max_tokens,
+                    ):
+                        delta = chunk.choices[0].delta.content or ""
+                        full += delta
+                        if delta:
+                            yield delta
+                    _log(full)
+                    return
+                except Exception:
+                    pass
+
+        # 3 — the native structured floor: guaranteed, honest, in-house (chunked stream shape)
         try:
-            import json as _json
-            timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
-            full = ""
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                async with client.stream("POST", self.ollama_url, json={
-                    "model": self.ollama_model,
-                    "prompt": augmented,
-                    "stream": True,
-                }) as r:
-                    async for line in r.aiter_lines():
-                        if line:
-                            try:
-                                obj = _json.loads(line)
-                                token = obj.get("response", "")
-                                full += token
-                                if token:
-                                    yield token
-                                if obj.get("done"):
-                                    break
-                            except Exception:
-                                continue
-            interaction_logger.log_interaction(agent, prompt, full)
-            memory.add_memory(f"User: {prompt} | AI: {full}")
+            from agentic_core.ai.native import native_engine
+            out = native_engine.generate(augmented, agent)
         except Exception as e:
-            yield f"Error: {e}"
+            out = f"[native engine unavailable: {e}]"
+        for chunk in self._stream_chunks(out):
+            yield chunk
+        _log(out)
 
 
 gateway = ModelGateway()

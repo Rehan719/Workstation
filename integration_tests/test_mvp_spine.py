@@ -2182,6 +2182,33 @@ def test_ai_calls_recorded_to_learning_loop(client):
     assert agent_rows and all(0.0 <= r["success_rate"] <= 1.0 for r in agent_rows)
 
 
+def test_streaming_surfaces_in_house_first(client, monkeypatch):
+    # §6 mandate — the last three user-reachable streaming surfaces ran the legacy EXTERNAL-FIRST
+    # gateway.stream cascade. gateway.stream is now in-house-first (owned local model → opt-in
+    # external → the guaranteed native floor), so ALL streams complete with NO external key and
+    # never end in a bare error line.
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("AI_ALLOW_EXTERNAL", raising=False)
+    # 1) Business-Plan Wizard stream
+    r1 = client.post("/api/v310/entrepreneur/generate-plan/stream", json={
+        "creation_id": "w254-test", "target_market": "UK elders", "funding_goal": 50000,
+        "description": "halal meal kits"})
+    assert r1.status_code == 200 and len(r1.text) > 200
+    assert "Error:" not in r1.text[:200]
+    # 2) Projects concept→commercialise stream
+    p = client.post("/api/v1/projects/", json={"title": "W254 stream", "description": "stream test",
+                                               "realm": "enterprise", "domain": "general"}).json()
+    r2 = client.post(f"/api/v1/projects/{p['id']}/run")
+    assert r2.status_code == 200 and len(r2.text) > 200
+    assert "Error:" not in r2.text[:200]
+    # 3) Synthesis Studio stream
+    r3 = client.post("/api/v1/synthesis/stream", json={
+        "instructions": "summarise a halal meal-kit plan", "content_ids": [], "output_type": "report"})
+    assert r3.status_code == 200 and len(r3.text) > 200
+    assert "Error:" not in r3.text[:200]
+
+
 def test_cca_twin_prevalidation_gates_major_changes(client):
     # §17.5 absolute invariant — digital-twin pre-validation before MAJOR change. An approved
     # HIGH-tier change is twin-simulated at approval; /implement REFUSES (409) a major change with
