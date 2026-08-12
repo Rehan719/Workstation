@@ -913,8 +913,35 @@ def _load_swarms() -> List[Dict[str, Any]]:
 
 
 def _save_swarms(rows: List[Dict[str, Any]]) -> None:
-    _SWARM_STORE.parent.mkdir(parents=True, exist_ok=True)
-    _SWARM_STORE.write_text(json.dumps(rows[-200:], indent=2), encoding="utf-8")
+    from agentic_core.config import atomic_write_json
+    atomic_write_json(_SWARM_STORE, rows[-200:])
+
+
+def _living_vsb_grounding(vsb_id: str) -> str:
+    """The LIVING VSB's CURRENT state — name/domain/stage/status, mission, the Chief, and the plan's
+    open objectives — so a per-VSB cascade always runs against TODAY, never the frozen establish-time
+    snapshot (§7×§5 fine resolution, W267)."""
+    try:
+        from agentic_core.api.vsb import _load_vsb
+        v = _load_vsb(vsb_id)
+        if not v:
+            return ""
+        chief = ((v.get("board") or {}).get("chief") or {}).get("title", "")
+        objs: List[str] = []
+        try:
+            from agentic_core.api.business_plan import _load as _bp_load
+            scope = v.get("business_plan_scope") or vsb_id
+            objs = [str(o.get("title")) for o in (_bp_load(scope).get("objectives") or [])
+                    if o.get("status") in ("planned", "in_progress")][:4]
+        except Exception:
+            pass
+        return ("LIVE VSB state (today, not the establish-time snapshot): "
+                f"{v.get('name')} — domain {v.get('domain')}, stage {v.get('stage')}, status {v.get('status')}. "
+                f"Mission: {str(v.get('challenge', ''))[:160]}."
+                + (f" Chief: {chief}." if chief else "")
+                + (f" Open objectives: {', '.join(o for o in objs if o)}." if objs else ""))
+    except Exception:
+        return ""
 
 
 def register_swarm(name: str, stages: List[Dict[str, str]], context: str = "",
@@ -961,6 +988,15 @@ class DefineSwarmRequest(BaseModel):
     stages: List[SwarmStageSpec]
     context: str = ""
     usage_area: str = "synthesis"
+    vsb_id: Optional[str] = None          # bind the cascade to a VSB (its own delivery org)
+    org: Optional[List[str]] = None       # the org tiers this cascade embodies (§5 design control)
+
+
+class UpdateSwarmRequest(BaseModel):
+    name: Optional[str] = None
+    stages: Optional[List[SwarmStageSpec]] = None
+    context: Optional[str] = None
+    org: Optional[List[str]] = None
 
 
 class RunSwarmRequest(BaseModel):
@@ -974,9 +1010,57 @@ class RunSwarmRequest(BaseModel):
 
 @router.post("/swarm/define")
 async def define_swarm(req: DefineSwarmRequest):
-    """Define + save a bespoke, reusable, re-runnable native swarm cascade (user design control)."""
+    """Define + save a bespoke, reusable, re-runnable native swarm cascade (user design control) —
+    optionally bound to a VSB as its own delivery org (vsb_id + org tiers)."""
     return register_swarm(req.name, [s.model_dump() for s in req.stages],
-                          context=req.context, usage_area=req.usage_area)
+                          context=req.context, usage_area=req.usage_area,
+                          vsb_id=req.vsb_id, org=req.org)
+
+
+@router.put("/swarm/{sid}")
+async def update_swarm(sid: str, req: UpdateSwarmRequest):
+    """§7 user design control (W267) — RECONFIGURE a saved swarm cascade, including a VSB's own
+    delivery org: edit the name/stages/context/org tiers. `id`, `vsb_id` and `created_at` are
+    preserved; POST /swarm/run re-reads the saved stages, so re-runs pick the edits up automatically.
+    UEG-logged; the owning VSB entity's native_swarm summary stays in sync."""
+    rows = _load_swarms()
+    for c in rows:
+        if c["id"] == sid:
+            if req.stages is not None and not req.stages:
+                raise HTTPException(status_code=400, detail="A cascade needs at least one stage.")
+            if req.name is not None:
+                c["name"] = req.name
+            if req.stages is not None:
+                c["stages"] = [{"role": s.role, "instruction": s.instruction} for s in req.stages]
+            if req.context is not None:
+                c["context"] = req.context
+            if req.org is not None:
+                c["org"] = req.org
+            c["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            _save_swarms(rows)
+            # keep the owning VSB entity's native_swarm summary honest with the edited cascade
+            if c.get("vsb_id"):
+                try:
+                    from agentic_core.api.vsb import _load_vsb, _save_vsb
+                    ent = _load_vsb(c["vsb_id"])
+                    if ent and (ent.get("native_swarm") or {}).get("cascade_id") == sid:
+                        ent["native_swarm"].update({
+                            "name": c["name"], "org": c.get("org", ent["native_swarm"].get("org")),
+                            "stages": [s["role"] for s in c["stages"]],
+                            "reconfigured_at": c["updated_at"],
+                        })
+                        _save_vsb(ent)
+                except Exception:
+                    pass
+            try:
+                from agentic_core.gaas.v5 import UEGLogger
+                UEGLogger().log({"type": "resource_fabric.swarm.reconfigured", "swarm_id": sid,
+                                 "vsb_id": c.get("vsb_id"), "stages": len(c["stages"]),
+                                 "org": c.get("org")})
+            except Exception:
+                pass
+            return c
+    raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
 
 
 @router.get("/swarm")
@@ -1002,6 +1086,8 @@ async def run_swarm(req: RunSwarmRequest):
     stages = [s.model_dump() for s in req.stages]
     context = req.context
     name = "ad-hoc"
+    run_vsb_id = None
+    grounded_live = False
     if req.swarm_id:
         saved = next((c for c in _load_swarms() if c["id"] == req.swarm_id), None)
         if not saved:
@@ -1009,23 +1095,32 @@ async def run_swarm(req: RunSwarmRequest):
         stages = saved["stages"]
         context = req.context or saved.get("context", "")
         name = saved["name"]
+        run_vsb_id = saved.get("vsb_id")
+        # §7×§5 (W267) — a VSB-bound cascade runs against the LIVING VSB: its CURRENT stage/mission/
+        # Chief/open objectives are prepended, so re-runs reflect today, not the establish snapshot.
+        if run_vsb_id:
+            live = _living_vsb_grounding(run_vsb_id)
+            if live:
+                context = f"{live}\n\n{context}".strip()
+                grounded_live = True
     if not stages:
         raise HTTPException(status_code=400, detail="Provide stages or a saved swarm_id to run.")
     from agentic_core.ai.native import orchestrator
     _t0 = time.time()
     res = await orchestrator.swarm(req.agent, stages, context=context,
                                    prefer_external=req.prefer_external, timeout=req.timeout)
-    # operational-excellence learning loop: record the real outcome of this run
+    # operational-excellence learning loop: record the real outcome of this run (VSB-attributed)
     try:
         from agentic_core.api.operational_excellence import record_outcome
         served = res["trace"][0]["served_by"] if res.get("trace") else "native"
         record_outcome("swarm_run", f"swarm:{name}", served_by=served,
                        is_external=bool(res.get("any_external")),
                        duration_ms=int((time.time() - _t0) * 1000),
-                       success=bool(res.get("trace")), ref=req.swarm_id)
+                       success=bool(res.get("trace")), ref=req.swarm_id, vsb_id=run_vsb_id)
     except Exception:
         pass
-    return {"name": name, "swarm_id": req.swarm_id, "posture": "in-house-first", **res}
+    return {"name": name, "swarm_id": req.swarm_id, "vsb_id": run_vsb_id,
+            "grounded_in_live_vsb": grounded_live, "posture": "in-house-first", **res}
 
 
 @router.get("/{resource_id}")

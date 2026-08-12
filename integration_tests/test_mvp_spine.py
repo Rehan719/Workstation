@@ -486,6 +486,35 @@ def test_user_isolation_when_auth_enabled(client, monkeypatch):
     assert "workstation2026" not in _inspect.getsource(auth_core)
 
 
+def test_pervsb_swarm_reconfigurable_and_live_grounded(client):
+    # §7 user design control × §5 (W267) — the VSB's OWN delivery org is genuinely reconfigurable:
+    # PUT /resources/swarm/{sid} edits stages/org (id + vsb_id preserved; the entity's native_swarm
+    # summary syncs; UEG-logged), and a VSB-bound run grounds in the LIVING VSB's CURRENT state —
+    # never the frozen establish-time snapshot.
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w267 swarm design-control test", "domain": "enterprise", "name": "SwarmDesignCo",
+        "concept": "c", "design": "d", "commercialisation": "m"}).json()
+    vid = est["vsb_id"]
+    sw = client.get(f"/api/v1/resources/swarm?vsb_id={vid}").json()["cascades"]
+    assert sw, "the established VSB has no delivery cascade"
+    sid = sw[0]["id"]
+    upd = client.put(f"/api/v1/resources/swarm/{sid}", json={
+        "stages": [{"role": "ai-ceo", "instruction": "Frame the objective."},
+                   {"role": "halal-compliance-officer", "instruction": "Verify halal compliance."},
+                   {"role": "build-to-order", "instruction": "Assemble the delivery plan."}],
+        "org": ["Chief (owner twin)", "AI CEO", "Halal Compliance", "Build-to-Order"]}).json()
+    assert [s["role"] for s in upd["stages"]] == ["ai-ceo", "halal-compliance-officer", "build-to-order"]
+    assert upd["id"] == sid and upd.get("vsb_id") == vid          # identity preserved
+    ent = client.get(f"/api/v1/vsb/{vid}").json()
+    assert ent["native_swarm"]["stages"] == ["ai-ceo", "halal-compliance-officer", "build-to-order"]
+    assert ent["native_swarm"].get("reconfigured_at")             # the entity summary synced
+    run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": sid}).json()
+    assert run["grounded_in_live_vsb"] is True and run["vsb_id"] == vid
+    assert len(run.get("trace", [])) == 3                          # the EDITED stages ran
+    assert client.put("/api/v1/resources/swarm/nope", json={"name": "x"}).status_code == 404
+    assert client.put(f"/api/v1/resources/swarm/{sid}", json={"stages": []}).status_code == 400
+
+
 def test_delivery_moves_the_living_plan(client):
     # §5 loop closure (W266) — the roadmap "updates as the plan progresses": (A) a genuinely
     # QMS-governed orchestration advances the objective planned→in_progress (never auto-'done');
