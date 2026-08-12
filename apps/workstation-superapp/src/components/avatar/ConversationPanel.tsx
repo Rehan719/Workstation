@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { ArrowUp, ImagePlus, Loader2, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowUp, Compass, ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import type { UseAvatarSessionReturn } from '../../hooks/useAvatarSession';
 
 interface ConversationPanelProps {
@@ -45,6 +46,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
     sendMessage, clearConversation, pendingImage, setPendingImage, handleImageFile,
   } = avatar;
 
+  const navigate = useNavigate();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +93,22 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                 <span className={`text-[8px] font-black uppercase tracking-widest px-1 ${m.isExternal ? 'text-amber-500/70' : 'text-emerald-500/70'}`}>
                   {m.isExternal ? `via ${m.servedBy} (external)` : `in-house · ${m.servedBy}`}
                 </span>
+              )}
+              {m.role === 'assistant' && (m.suggestedAreas?.length ?? 0) > 0 && (
+                // §5/§9 guided navigation — whitelisted platform areas only, honest match reason on hover
+                <div className="flex flex-wrap gap-1.5 px-1 pt-0.5">
+                  {m.suggestedAreas!.map((a, ai) => (
+                    <button
+                      key={`${a.route}-${ai}`}
+                      type="button"
+                      title={a.because}
+                      onClick={() => navigate(a.route)}
+                      className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-highlight border border-highlight/40 px-2 py-1 rounded-lg hover:bg-highlight/10 transition-colors"
+                    >
+                      <Compass size={9} /> {a.label} →
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           ))

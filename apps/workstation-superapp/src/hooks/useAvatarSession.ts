@@ -2,12 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 
+export interface AvatarSuggestedArea {
+  route: string;    // WHITELISTED backend catalogue — only real platform routes
+  label: string;
+  because: string;  // honest match reason
+}
+
 export interface AvatarMessage {
   role: 'user' | 'assistant';
   content: string;
   imageDataUrl?: string;
   servedBy?: string;     // which OWNED resource answered (in-house provenance)
   isExternal?: boolean;
+  suggestedAreas?: AvatarSuggestedArea[];  // §5/§9 guided navigation — "Take me there"
 }
 
 export type AvatarFaceState = 'idle' | 'thinking' | 'speaking';
@@ -182,6 +189,7 @@ export function useAvatarSession() {
       setMessages(prev => [...prev, {
         role: 'assistant', content: replyText,
         servedBy: resp.data.served_by, isExternal: resp.data.is_external,
+        suggestedAreas: resp.data.suggested_areas || [],
       }]);
       if (speakReplies) speakText(replyText);
       setAiStatus('online');

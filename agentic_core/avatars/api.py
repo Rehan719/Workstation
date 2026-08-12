@@ -80,6 +80,63 @@ class ChatResponse(BaseModel):
     is_external: bool = False
     grounded_in: Optional[str] = None  # the vsb_id the answer was grounded in, if any
     language: Optional[str] = None     # the language the answer was requested in (echoed back)
+    suggested_areas: List[Dict[str, str]] = []   # §5/§9 guided navigation — WHITELISTED platform areas only
+
+
+# ── §5/§9 guided navigation — the avatar can take the user to any platform area ──
+# A WHITELISTED catalogue of REAL routes (mirrors App.tsx). Selection is a deterministic keyword
+# match on the user's message — the avatar can only ever point at areas that exist; it can never
+# invent a route, and the match reason is surfaced honestly.
+_PLATFORM_AREAS: List[Dict[str, Any]] = [
+    {"route": "/genesis", "label": "Genesis — Concept → Commercialisation",
+     "keywords": ["genesis", "journey", "concept", "commercialis", "start a business", "my idea",
+                  "establish", "new venture", "found a", "startup"]},
+    {"route": "/domains", "label": "Work in a Domain",
+     "keywords": ["domain tool", "law", "legal", "science", "care plan", "education", "religion",
+                  "quran", "employment", "cv", "lesson"]},
+    {"route": "/resource-fabric", "label": "Resource Fabric Composer",
+     "keywords": ["fabric", "compose", "composition", "combine resources", "reconfigure", "reactor",
+                  "incubator", "petri", "simulator"]},
+    {"route": "/native-ai", "label": "Native AI Fabric",
+     "keywords": ["native ai", "own model", "swarm", "orchestrat", "ollama", "ensemble", "local model"]},
+    {"route": "/organism", "label": "Living Organism",
+     "keywords": ["organism", "heartbeat", "immune", "vitals", "nervous", "biomimetic", "health of the"]},
+    {"route": "/economy", "label": "Economic Organism (virtual WST)",
+     "keywords": ["economy", "waterfall", "charity", "wst", "ledger", "profit", "distribution",
+                  "owner payment", "finance", "balance sheet", "period close"]},
+    {"route": "/vsb-cockpit", "label": "VSB Cockpit",
+     "keywords": ["my vsb", "cockpit", "my enterprise", "living enterprise", "my business"]},
+    {"route": "/business-plan", "label": "Living Business Plan",
+     "keywords": ["business plan", "objectives", "strategy", "kpi", "mission", "milestones"]},
+    {"route": "/deliverables", "label": "Living Deliverables",
+     "keywords": ["deliverable", "export", "download report", "my outputs", "documents"]},
+    {"route": "/governance-hub", "label": "Governance & Trust",
+     "keywords": ["governance", "constitution", "compliance", "audit", "change control", "halal check", "gaas"]},
+    {"route": "/generator", "label": "The Generator",
+     "keywords": ["generate code", "schema", "artefact", "generator", "config file"]},
+    {"route": "/marketplace", "label": "Marketplace",
+     "keywords": ["marketplace", "catalogue", "products", "buy", "listing"]},
+    {"route": "/my-work", "label": "My Work",
+     "keywords": ["my work", "history", "past results", "saved outputs", "previous"]},
+    {"route": "/ceo", "label": "Living Organisation (AI CEO · Board)",
+     "keywords": ["ceo", "c-suite", "board", "chief", "org chart", "organisation"]},
+]
+
+ALLOWED_NAVIGATION_ROUTES = {a["route"] for a in _PLATFORM_AREAS}
+
+
+def _suggest_areas(message: str, limit: int = 3) -> List[Dict[str, str]]:
+    """Deterministic keyword match over the whitelisted catalogue. Returns at most `limit` REAL
+    platform areas with an honest match reason; empty when nothing matches (no forced suggestions)."""
+    low = f" {(message or '').lower()} "
+    scored = []
+    for area in _PLATFORM_AREAS:
+        hits = [k for k in area["keywords"] if k in low]
+        if hits:
+            scored.append((len(hits), {"route": area["route"], "label": area["label"],
+                                       "because": "matched: " + ", ".join(hits[:3])}))
+    scored.sort(key=lambda x: -x[0])
+    return [a for _, a in scored[:limit]]
 
 
 def _vsb_grounding(vsb_id: str) -> str:
@@ -256,6 +313,7 @@ async def chat(request: ChatRequest):
         is_external=bool(meta.get("is_external")),
         grounded_in=request.vsb_id,
         language=lang or None,
+        suggested_areas=_suggest_areas(request.message),
     )
 
 

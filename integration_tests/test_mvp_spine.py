@@ -2182,6 +2182,24 @@ def test_ai_calls_recorded_to_learning_loop(client):
     assert agent_rows and all(0.0 <= r["success_rate"] <= 1.0 for r in agent_rows)
 
 
+def test_avatar_guided_navigation_whitelisted(client):
+    # §5/§9 — the avatar guides/navigates users to platform areas: a deterministic keyword match
+    # over a WHITELISTED catalogue of REAL routes (it can never invent a destination), each
+    # suggestion carrying an honest match reason; no keywords → no forced suggestions.
+    from agentic_core.avatars.api import ALLOWED_NAVIGATION_ROUTES
+    r = client.post("/api/v1/avatar/chat", json={
+        "message": "How do I adjust my economy waterfall and see the charity distribution?",
+        "context": "general"}).json()
+    areas = r.get("suggested_areas") or []
+    assert areas and any(a["route"] == "/economy" for a in areas)
+    for a in areas:
+        assert a["route"] in ALLOWED_NAVIGATION_ROUTES      # whitelist-only — never a fabricated route
+        assert a["because"].startswith("matched: ")          # honest match provenance
+    r2 = client.post("/api/v1/avatar/chat", json={"message": "thank you, that was helpful",
+                                                  "context": "general"}).json()
+    assert (r2.get("suggested_areas") or []) == []            # nothing matched → nothing suggested
+
+
 def test_genesis_establish_stream_births_a_real_vsb(client):
     # §5 — users WATCH the VSB being born: the SSE /establish/stream emits one event per REAL
     # completed step (naming → attestation → genome → board → economy → living → plan → swarm →
