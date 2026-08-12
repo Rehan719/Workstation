@@ -270,6 +270,16 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest):
     decision = (tree.get("decision") or {}).get("recommendation")
     consensus = (tree.get("consensus") or {}).get("choice")
     propagated = bool((tree.get("signal_response") or {}).get("propagated"))
+
+    # §5 loop closure (W266) — delivery MOVES the living plan: a GENUINELY governed successful run
+    # (the real QMS gate passed) advances a 'planned' objective to 'in_progress'. Never auto-'done'
+    # (completion stays an Owner decision); a failed/ungoverned run leaves the status untouched.
+    qms_passed = bool((tree.get("governance") or {}).get("qms_passed"))
+    status_advanced = False
+    if qms_passed and obj.get("status") == "planned":
+        obj["status"] = "in_progress"
+        status_advanced = True
+
     review = {
         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "progress_pct": obj.get("progress_pct", 0), "status": obj.get("status", "in_progress"),
@@ -293,6 +303,7 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest):
         pass
 
     return {"objective_id": oid, "goal": goal, "grounded_in": req.scope,
+            "status": obj.get("status"), "status_advanced": status_advanced,
             "tree": {"node_count": tree.get("node_count"), "decision": tree.get("decision"),
                      "consensus": tree.get("consensus"), "governance": tree.get("governance"),
                      "validation": tree.get("validation"), "signal_response": tree.get("signal_response"),

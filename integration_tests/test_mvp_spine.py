@@ -486,6 +486,38 @@ def test_user_isolation_when_auth_enabled(client, monkeypatch):
     assert "workstation2026" not in _inspect.getsource(auth_core)
 
 
+def test_delivery_moves_the_living_plan(client):
+    # §5 loop closure (W266) — the roadmap "updates as the plan progresses": (A) a genuinely
+    # QMS-governed orchestration advances the objective planned→in_progress (never auto-'done');
+    # (B) a VALIDATED transformation whose mandate came FROM the plan writes an auditable review
+    # back onto the driving objective. Previously the ONLY progress mutator was the manual review UI.
+    import uuid as _uuid
+    scope = f"vsb:w266-{_uuid.uuid4().hex[:8]}"
+    client.post("/api/v1/board/chief/instruct", json={
+        "instruction": "Deliver the winter pilot menu", "scope": scope})
+    p = client.get("/api/v1/business-plan", params={"scope": scope}).json()
+    obj = ((p.get("plan") or p)["objectives"])[0]
+    assert obj["status"] == "planned"
+    # (A) governed orchestration advances the status honestly
+    o = client.post(f"/api/v1/business-plan/objective/{obj['id']}/orchestrate",
+                    json={"scope": scope}).json()
+    if (o["tree"]["governance"] or {}).get("qms_passed"):
+        assert o["status"] == "in_progress" and o["status_advanced"] is True
+    else:   # an ungoverned run must leave the plan untouched
+        assert o["status"] == "planned" and o["status_advanced"] is False
+    # (B) a plan-driven validated transformation writes back onto the driving objective
+    scope2 = f"vsb:w266t-{_uuid.uuid4().hex[:8]}"
+    client.post("/api/v1/board/chief/instruct", json={
+        "instruction": "Scale the delivery kitchen", "scope": scope2})
+    t = client.post("/api/v1/transformation/orchestrate", json={"scope": scope2}).json()
+    if (t.get("validation") or {}).get("validated"):
+        assert t.get("plan_objective_advanced")
+        p2 = client.get("/api/v1/business-plan", params={"scope": scope2}).json()
+        obj2 = ((p2.get("plan") or p2)["objectives"])[0]
+        assert obj2["status"] == "in_progress"
+        assert any("transformation" in r for r in obj2.get("reviews", []))
+
+
 def test_chief_instruction_becomes_living_plan_objectives(client):
     # §5 apex closure (W265) — the Owner's most important input no longer evaporates into prose:
     # POST /board/chief/instruct parses the CEO action plan's TITLE|KPI|TIMELINE|OWNER_ROLE lines

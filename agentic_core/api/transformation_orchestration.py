@@ -314,6 +314,40 @@ async def orchestrate(req: OrchestrateRequest):
         _save_run(run)
     except Exception:
         pass
+    # §5 loop closure (W266) — a VALIDATED transformation whose mandate CAME FROM the living plan
+    # writes its delivery back onto the driving objective (an auditable review + planned→in_progress).
+    # An ad-hoc req.objective must NOT touch the plan; never auto-'done' (completion stays the
+    # Owner's decision). Best-effort — the transformation never fails on plan I/O.
+    try:
+        if validation.get("validated") and objectives:
+            driving = None
+            if not req.objective:
+                driving = objectives[0]                      # the mandate was taken from the plan
+            else:
+                driving = next((o for o in objectives if o.get("title") == req.objective), None)
+            if driving is not None:
+                from agentic_core.api.business_plan import _load as _bp_load, _save as _bp_save
+                fresh = _bp_load(req.scope)
+                tgt = next((o for o in fresh.get("objectives", []) if o.get("id") == driving.get("id")), None)
+                if tgt is not None:
+                    tgt.setdefault("reviews", []).append({
+                        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "progress_pct": tgt.get("progress_pct", 0),
+                        "status": "in_progress" if tgt.get("status") == "planned" else tgt.get("status"),
+                        "note": (f"Transformation delivery {run['transformation_id']} — "
+                                 f"{verified_stages}/{len(cascade)} stages verified, "
+                                 f"governance {governance.get('status')}"),
+                        "transformation": {"transformation_id": run["transformation_id"],
+                                           "validated": True,
+                                           "twin_model_id": (twin or {}).get("model_id"),
+                                           "governance": governance.get("status")},
+                    })
+                    if tgt.get("status") == "planned":
+                        tgt["status"] = "in_progress"
+                    _bp_save(fresh)
+                    run["plan_objective_advanced"] = tgt.get("id")
+    except Exception:
+        pass
     try:
         from agentic_core.api.operational_excellence import record_outcome
         nc = native_cognition or {}
