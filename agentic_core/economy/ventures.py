@@ -36,6 +36,64 @@ _DEMO_VENTURES: List[Dict[str, Any]] = [
 
 _METRICS = ("outcome", "value", "benefit", "feasibility", "strategic_fit")
 
+# Deterministic stage → progression score (how far the venture has REALLY progressed).
+_STAGE_SCORE = {"concept": 0.45, "prototype": 0.62, "build": 0.70, "development": 0.70,
+                "commercialise": 0.85, "operational": 0.85}
+# Beneficence-weighted domains (the Owner's §2 values: care for people first) — a documented POLICY
+# weight over the real domain field, not an estimate.
+_BENEFIT_DOMAINS = ("care", "education", "religion", "law", "charity", "health")
+
+
+def real_candidates(exclude_vsb: str = "", cap: int = 40) -> List[Dict[str, Any]]:
+    """Harvest REAL investment candidates from the platform's own stores — the user's projects and
+    the living VSB offspring — with metrics derived DETERMINISTICALLY from observable state (stage,
+    operational status, governance completeness, beneficence-weighted domain). No metric is invented:
+    each is a documented policy function of live fields; `metrics_source` says so on every candidate."""
+    out: List[Dict[str, Any]] = []
+    src = "derived deterministically from live stage/status/governance (documented policy weights, not estimates)"
+    try:
+        from agentic_core.projects.api import _all_projects
+        for p in _all_projects()[:cap]:
+            stage = str(getattr(p, "stage", "") or "").lower()
+            s = _STAGE_SCORE.get(stage, 0.5)
+            domain = str(getattr(p, "domain", "") or getattr(p, "realm", "") or "").lower()
+            has_outputs = bool(getattr(p, "outputs", None))
+            out.append({
+                "id": f"proj:{p.id}", "name": p.title, "domain": domain, "kind": "user_project",
+                "outcome": s,
+                "value": round(min(1.0, s + (0.10 if has_outputs else 0.0)), 2),
+                "benefit": 0.70 if domain in _BENEFIT_DOMAINS else 0.55,
+                "feasibility": round(min(1.0, s + (0.10 if has_outputs else 0.0)), 2),
+                "strategic_fit": 0.55,
+                "metrics_source": src,
+            })
+    except Exception:
+        pass
+    try:
+        from agentic_core.economy.living_vsbs import _load as _living
+        from agentic_core.api.vsb import _load_vsb
+        for vid, rec in list(_living().items())[:cap]:
+            if vid == exclude_vsb:
+                continue
+            ent = _load_vsb(vid) or {}
+            governed = bool(ent.get("board")) and bool(ent.get("economy"))
+            cycles = int(rec.get("operating_cycles", 0) or 0)
+            domain = str(rec.get("domain", "") or "").lower()
+            base = 0.70 if cycles > 0 else 0.60   # genuinely operating vs newly living
+            out.append({
+                "id": f"vsb:{vid}", "name": rec.get("name") or vid, "domain": domain,
+                "kind": "living_vsb_offspring",
+                "outcome": base,
+                "value": round(min(1.0, base + min(0.15, cycles * 0.01)), 2),
+                "benefit": 0.70 if domain in _BENEFIT_DOMAINS else 0.55,
+                "feasibility": round(min(1.0, base + (0.10 if governed else 0.0)), 2),
+                "strategic_fit": round(0.65 + (0.10 if governed else 0.0), 2),
+                "metrics_source": src,
+            })
+    except Exception:
+        pass
+    return out
+
 
 class VentureIntelligence:
     """Scores, ranks, and allocates the user-project investment budget for maximal outcome/value/benefit."""
@@ -90,8 +148,52 @@ def _load_portfolio() -> Dict[str, Any]:
 
 
 def _save_portfolio(d: Dict[str, Any]) -> None:
-    _PORTFOLIO_STORE.parent.mkdir(parents=True, exist_ok=True)
-    _PORTFOLIO_STORE.write_text(json.dumps(d, indent=2))
+    from agentic_core.config import atomic_write_json
+    atomic_write_json(_PORTFOLIO_STORE, d)
+
+
+def record_return(vsb_id: str, holding_id: str, amount: float, memo: str = "") -> Dict[str, Any]:
+    """§6 'returns recycle into the waterfall': record a virtual RETURN on a real holding. The amount
+    is tracked on the holding + queued as a PENDING return that the next metabolic cycle consumes as
+    intake revenue — so returns genuinely re-enter the waterfall. Virtual WST only."""
+    amount = round(max(0.0, float(amount)), 2)
+    if amount <= 0:
+        raise ValueError("Return amount must be positive.")
+    d = _load_portfolio()
+    pf = d.get(vsb_id)
+    if not pf or holding_id not in (pf.get("holdings") or {}):
+        raise KeyError(f"No holding '{holding_id}' in {vsb_id}'s venture portfolio.")
+    at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    h = pf["holdings"][holding_id]
+    h["returned_wst"] = round(h.get("returned_wst", 0.0) + amount, 2)
+    h["last_return_at"] = at
+    pf["returns_total"] = round(pf.get("returns_total", 0.0) + amount, 2)
+    pf["pending_returns_wst"] = round(pf.get("pending_returns_wst", 0.0) + amount, 2)
+    pf["updated_at"] = at
+    d[vsb_id] = pf
+    _save_portfolio(d)
+    return {"vsb_id": vsb_id, "holding_id": holding_id, "returned_wst": amount,
+            "holding_returned_total_wst": h["returned_wst"],
+            "pending_returns_wst": pf["pending_returns_wst"],
+            "recycles": "consumed as intake revenue by the next metabolic cycle (virtual WST)",
+            "memo": memo}
+
+
+def consume_pending_returns(vsb_id: str) -> float:
+    """Drain the queued venture returns for a VSB — called by the metabolic cycle at intake so the
+    returns enter THIS cycle's waterfall. Returns the consumed amount (0.0 when none pending)."""
+    d = _load_portfolio()
+    pf = d.get(vsb_id)
+    if not pf:
+        return 0.0
+    pending = round(pf.get("pending_returns_wst", 0.0), 2)
+    if pending <= 0:
+        return 0.0
+    pf["pending_returns_wst"] = 0.0
+    pf["recycled_total_wst"] = round(pf.get("recycled_total_wst", 0.0) + pending, 2)
+    d[vsb_id] = pf
+    _save_portfolio(d)
+    return pending
 
 
 def record_positions(vsb_id: str, allocation: Dict[str, Any]) -> None:

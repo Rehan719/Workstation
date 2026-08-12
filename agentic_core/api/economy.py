@@ -250,15 +250,46 @@ async def charity_candidates(top: int = 8):
 
 
 @router.get("/ventures/candidates")
-async def venture_candidates(top: int = 8):
-    """§6 — ranked candidate user projects/ventures for investment (outcome × value × benefit × feasibility ×
-    strategic-fit). Demo candidates until real user-project ingestion is wired; virtual/simulated."""
-    from agentic_core.economy.ventures import VentureIntelligence
-    vi = VentureIntelligence()
+async def venture_candidates(top: int = 8, vsb_id: str = "workstation-idbo"):
+    """§6 — ranked candidate ventures for investment, harvested from the platform's REAL projects and
+    living VSB offspring (metrics derived deterministically from live stage/status/governance); the
+    curated demo set only when the platform is empty (honestly flagged). Virtual/simulated."""
+    from agentic_core.economy.ventures import VentureIntelligence, real_candidates
+    vi = VentureIntelligence(real_candidates(exclude_vsb=vsb_id) or None)
     return {"candidates": vi.ranked(top),
             "method": "outcome × value × benefit × feasibility × strategic-fit",
             "using_demo_candidates": vi.using_demo,
-            "disclaimer": "Virtual/simulated — candidates are demo samples until real user-project ingestion."}
+            "disclaimer": ("Virtual/simulated WST. Candidates are the platform's REAL projects/VSBs with "
+                           "deterministically-derived metrics — the demo set only when the platform is empty.")}
+
+
+class VentureReturnRequest(BaseModel):
+    vsb_id: str = "workstation-idbo"
+    holding_id: str
+    amount: float
+    memo: str = ""
+
+
+@router.post("/ventures/return")
+async def venture_return(req: VentureReturnRequest):
+    """§6 — record a virtual RETURN on a portfolio holding; it queues as a pending return that the
+    NEXT metabolic cycle consumes as intake revenue, so returns genuinely recycle into the waterfall.
+    UEG-logged. Virtual WST only — no real funds."""
+    from agentic_core.economy.ventures import record_return
+    try:
+        result = record_return(req.vsb_id, req.holding_id, req.amount, req.memo)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "economy.venture_return", "vsb_id": req.vsb_id,
+                         "holding_id": req.holding_id, "amount_wst": result["returned_wst"],
+                         "disclaimer": "Virtual/simulated WST — no real funds moved."})
+    except Exception:
+        pass
+    return result
 
 
 @router.get("/ventures/portfolio")

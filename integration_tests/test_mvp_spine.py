@@ -3179,6 +3179,35 @@ def test_economy_ventures_investment(client):
     assert "no real funds" in (pf.get("note") or "").lower()
 
 
+def test_ventures_real_candidates_and_returns_recycle(client):
+    # §6 — venture investment selects from the platform's REAL projects/VSBs (deterministic metrics
+    # from live state, honestly labelled), and RETURNS RECYCLE: a recorded return queues as a pending
+    # amount the next metabolic cycle consumes as intake revenue — the compounding ecosystem is real.
+    import uuid as _uuid
+    vid = f"w259-vent-{_uuid.uuid4().hex[:8]}"
+    client.post("/api/v1/projects/", json={"title": "Halal tutoring for children",
+                                           "description": "w259", "realm": "education", "domain": "education"})
+    cand = client.get(f"/api/v1/economy/ventures/candidates?vsb_id={vid}").json()
+    assert cand["using_demo_candidates"] is False              # the platform's REAL candidates
+    assert any(c["id"].startswith(("proj:", "vsb:")) for c in cand["candidates"])
+    assert cand["candidates"][0].get("metrics_source")         # honest metric provenance
+    r = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                                   "revenue": 10000, "costs": 0}).json()
+    vi = r["cycle"]["venture_investment"]
+    assert vi["using_demo_candidates"] is False and vi["positions"]
+    pf = client.get(f"/api/v1/economy/ventures/portfolio?vsb_id={vid}").json()
+    hid = pf["holdings"][0]["id"]
+    ret = client.post("/api/v1/economy/ventures/return",
+                      json={"vsb_id": vid, "holding_id": hid, "amount": 500, "memo": "exit gain"}).json()
+    assert ret["returned_wst"] == 500.0 and ret["pending_returns_wst"] >= 500.0
+    nxt = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                                     "revenue": 1000, "costs": 0}).json()["cycle"]
+    assert nxt["venture_returns_recycled_wst"] == 500.0        # the return entered THIS waterfall
+    assert nxt["intake_revenue"] == 1500.0
+    assert client.post("/api/v1/economy/ventures/return",
+                       json={"vsb_id": vid, "holding_id": "nope", "amount": 5}).status_code == 404
+
+
 def test_genesis_established_vsb_is_living(client):
     # §4 — an established VSB is registered as a LIVING entity the organism autonomously tends
     est = client.post("/api/v1/genesis/establish", json={

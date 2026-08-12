@@ -100,6 +100,17 @@ class EconomicMetabolism:
         revenue = max(0.0, float(revenue))
         costs = max(0.0, float(costs))
 
+        # §6 — venture RETURNS RECYCLE into the waterfall: queued returns on this VSB's portfolio
+        # are consumed here as intake revenue, so they genuinely enter this cycle's distribution.
+        returns_recycled = 0.0
+        try:
+            from .ventures import consume_pending_returns
+            returns_recycled = consume_pending_returns(self.vsb_id)
+            if returns_recycled > 0:
+                revenue = round(revenue + returns_recycled, 2)
+        except Exception:
+            returns_recycled = 0.0
+
         # §8→§12 ECONOMIC SURVIVAL INSTINCT — when the LIVING ORGANISM's metabolic energy is depleted, the
         # economic organism conserves more (raises reserves), mirroring the §8 homeostatic survival instinct.
         metabolic_energy = self._atp_ratio()
@@ -143,8 +154,12 @@ class EconomicMetabolism:
         ventures_alloc = None
         try:
             if splits.get("user_projects", 0.0) > 0:
-                from .ventures import VentureIntelligence, record_positions
-                ventures_alloc = VentureIntelligence().allocate(splits["user_projects"])
+                from .ventures import VentureIntelligence, record_positions, real_candidates
+                # §6 — competitively select from the platform's REAL projects + living VSB offspring
+                # (deterministic metrics from live state); the curated demo set only when the
+                # platform is empty (honestly flagged via using_demo_candidates).
+                cands = real_candidates(exclude_vsb=self.vsb_id)
+                ventures_alloc = VentureIntelligence(cands or None).allocate(splits["user_projects"])
                 record_positions(self.vsb_id, ventures_alloc)
         except Exception:
             ventures_alloc = None
@@ -158,6 +173,7 @@ class EconomicMetabolism:
             "entity_name": self.template["name"],
             "cycle_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "intake_revenue": revenue,
+            "venture_returns_recycled_wst": returns_recycled,   # §6 — returns that re-entered this waterfall
             "homeostasis_reserves": reserves,
             "reserve_rate_applied": effective_reserve,   # §8→§12: energy-adjusted (conserves more when low)
             "energy_state": energy_state,
