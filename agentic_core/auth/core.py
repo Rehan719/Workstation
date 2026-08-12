@@ -73,7 +73,14 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-_AUTH_ENABLED = os.getenv("AUTH_ENABLED", "false").lower() == "true"
+def auth_enabled() -> bool:
+    """Read AUTH_ENABLED dynamically (not import-time) so tests and runtime reconfiguration see the
+    live value. Default remains single-user mode (false)."""
+    return os.getenv("AUTH_ENABLED", "false").lower() == "true"
+
+
+# retained for backwards compatibility with any external reader; prefer auth_enabled()
+_AUTH_ENABLED = auth_enabled()
 
 _SECRET_FILE = data_path("jwt_secret.key")
 
@@ -123,17 +130,23 @@ def _get_user(username: str) -> dict | None:
 
 
 def _create_default_admin() -> None:
-    """Ensure an admin user exists; creates one if the store is empty."""
+    """Ensure an admin user exists; creates one if the store is empty.
+
+    SECURITY: there is NO hardcoded default password. If ADMIN_PASSWORD is unset the admin is
+    created with a RANDOM password (flagged `password_source: "random-unset"`); admin login then
+    self-heals from the ADMIN_PASSWORD env var once the operator sets it (see login())."""
     if not _AUTH_DEPS_OK:
         return  # cannot hash without passlib; admin is created once deps are present
     users = _load_users()
     if users:
         return
-    admin_password = os.getenv("ADMIN_PASSWORD", "workstation2026")
+    env_password = os.getenv("ADMIN_PASSWORD", "")
+    admin_password = env_password or secrets.token_urlsafe(24)
     users["admin"] = {
         "user_id": str(uuid.uuid4()),
         "username": "admin",
         "hashed_password": _pwd_ctx.hash(admin_password),
+        "password_source": "env" if env_password else "random-unset",
         "role": "admin",
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "api_keys": [],
@@ -170,7 +183,7 @@ async def get_current_user(token: Optional[str] = Depends(_oauth2_scheme)) -> di
     Returns the current user dict, or None if auth is disabled.
     Raises 401 if auth is enabled and the token is missing or invalid.
     """
-    if not _AUTH_ENABLED:
+    if not auth_enabled():
         return None
 
     if not token:
@@ -195,11 +208,34 @@ async def get_current_user(token: Optional[str] = Depends(_oauth2_scheme)) -> di
 
 
 async def require_admin(user: dict | None = Depends(get_current_user)) -> dict:
-    if not _AUTH_ENABLED:
+    if not auth_enabled():
         return {"username": "admin", "role": "admin"}
     if not user or user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required.")
     return user
+
+
+# ── Owner scoping (the §17.5 user-isolation invariant) ───────────────────────
+
+def request_owner_id(user: dict | None, requested: str = "default") -> str:
+    """The owner id to STAMP onto records a request creates. Single-user mode → the caller-supplied
+    id (back-compat). With auth enabled → ALWAYS the authenticated username (server-side; a client
+    cannot claim another owner)."""
+    if auth_enabled() and user:
+        return user.get("username") or "default"
+    return requested or "default"
+
+
+def user_can_access(user: dict | None, owner_id: str | None) -> bool:
+    """Owner-scoping read/mutate check. Single-user mode → always allowed (back-compat). With auth
+    enabled: admins see everything; otherwise the record's owner must be the authenticated user —
+    legacy/unowned records (no owner_id) are admin-only, never leaked to other tenants."""
+    if not auth_enabled() or user is None:
+        return True
+    if user.get("role") == "admin":
+        return True
+    return bool(owner_id) and owner_id == user.get("username")
+
 
 # ── API models ────────────────────────────────────────────────────────────────
 
@@ -225,6 +261,16 @@ class RefreshRequest(BaseModel):
 async def login(form: OAuth2PasswordRequestForm = Depends()):
     _require_auth_deps()
     user = _get_user(form.username)
+    # Self-heal: an admin created with a random password (ADMIN_PASSWORD was unset at bootstrap)
+    # adopts the env password once the operator sets it — no hardcoded default ever exists.
+    if (user and user.get("username") == "admin" and user.get("password_source") == "random-unset"):
+        env_pw = os.getenv("ADMIN_PASSWORD", "")
+        if env_pw:
+            users = _load_users()
+            users["admin"]["hashed_password"] = _pwd_ctx.hash(env_pw)
+            users["admin"]["password_source"] = "env"
+            _save_users(users)
+            user = users["admin"]
     if not user or not _pwd_ctx.verify(form.password, user["hashed_password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -271,7 +317,7 @@ async def register(req: RegisterRequest, _admin: dict = Depends(require_admin)):
 
 @router.get("/me")
 async def me(current_user: dict | None = Depends(get_current_user)):
-    if not _AUTH_ENABLED:
+    if not auth_enabled():
         return {"auth_enabled": False, "message": "Single-user mode — no auth required."}
     return {
         "user_id": current_user["user_id"],
@@ -285,7 +331,7 @@ async def me(current_user: dict | None = Depends(get_current_user)):
 @router.post("/api-key")
 async def generate_api_key(current_user: dict | None = Depends(get_current_user)):
     """Generate a long-lived API key for the current user. Stored as a hash."""
-    if not _AUTH_ENABLED:
+    if not auth_enabled():
         return {"message": "Auth disabled — API keys not required in single-user mode."}
 
     raw_key = f"wstn_{secrets.token_hex(24)}"
@@ -334,8 +380,8 @@ async def auth_status():
     """Auth system status — safe to call without credentials."""
     users = _load_users()
     return {
-        "auth_enabled": _AUTH_ENABLED,
-        "mode": "multi-user" if _AUTH_ENABLED else "single-user",
+        "auth_enabled": auth_enabled(),
+        "mode": "multi-user" if auth_enabled() else "single-user",
         "algorithm": _ALGORITHM,
         "access_token_ttl_minutes": _ACCESS_TTL,
         "user_count": len(users),

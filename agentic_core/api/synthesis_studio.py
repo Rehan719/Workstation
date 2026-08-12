@@ -31,8 +31,10 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import AsyncIterator
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
+
+from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -355,7 +357,7 @@ class SpawnRequest(BaseModel):
 
 
 @router.post("/vsb/spawn")
-async def spawn_vsb_entity(req: SpawnRequest):
+async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_current_user)):
     """
     Spawn a VSB entity from an existing project.
     Generates a compact VSB structure without the full cascade.
@@ -391,9 +393,12 @@ async def spawn_vsb_entity(req: SpawnRequest):
         "type": "spawned",
     }
     # §3.3 invariant — every generated VSB carries Board + Chief + living economy + plan (no path
-    # may produce a governance-orphaned entity).
+    # may produce a governance-orphaned entity). §17.5 — owner stamped server-side when auth enabled.
     from agentic_core.api.vsb import enrich_vsb_entity
-    enrich_vsb_entity(entity, problem=req.challenge or req.solution_name, domain=req.domain)
+    from agentic_core.auth.core import request_owner_id
+    owner = request_owner_id(user, "default")
+    entity["owner_id"] = owner
+    enrich_vsb_entity(entity, owner_id=owner, problem=req.challenge or req.solution_name, domain=req.domain)
     _save_vsb(entity)
 
     return {"entity_id": entity_id, "solution_name": req.solution_name, "structure": structure,

@@ -444,6 +444,48 @@ def test_studio_vsb_list(client):
     assert isinstance(body["entities"], list)
 
 
+def test_user_isolation_when_auth_enabled(client, monkeypatch):
+    # §17.5 absolute invariant — user isolation. Single-user mode (default) stays open; with
+    # AUTH_ENABLED=true every generated VSB is owner-stamped SERVER-SIDE (a client cannot claim
+    # another owner) and scoped: another user cannot list or read it (404, never a confirming 403),
+    # unauthenticated calls get 401. The admin bootstrap has NO hardcoded default password.
+    from agentic_core.auth import core as auth_core
+    if not auth_core._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    users = auth_core._load_users()
+    for uname, pw in (("alice-iso", "pw-alice"), ("bob-iso", "pw-bob")):
+        users[uname] = {"user_id": uname, "username": uname,
+                        "hashed_password": auth_core._pwd_ctx.hash(pw), "role": "user",
+                        "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    assert client.get("/api/v1/vsb").status_code == 401       # fail-closed without a token
+
+    def _hdr(u, p):
+        r = client.post("/api/v1/auth/token", data={"username": u, "password": p})
+        assert r.status_code == 200, r.text
+        return {"Authorization": f"Bearer {r.json()['access_token']}"}
+    alice, bob = _hdr("alice-iso", "pw-alice"), _hdr("bob-iso", "pw-bob")
+
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "isolation invariant test", "domain": "enterprise", "name": "IsoInvariantCo",
+        "concept": "c", "design": "d", "commercialisation": "m",
+        "owner_id": "someone-else"}, headers=alice).json()    # the client-claimed owner must be IGNORED
+    vid = est.get("vsb_id")
+    assert vid
+    mine = client.get(f"/api/v1/vsb/{vid}", headers=alice)
+    assert mine.status_code == 200
+    assert mine.json().get("owner_id") == "alice-iso"          # server-side stamp won
+    assert client.get(f"/api/v1/vsb/{vid}", headers=bob).status_code == 404   # scoped out, not 403
+    ids_a = {e.get("vsb_id") for e in client.get("/api/v1/vsb", headers=alice).json()["entities"]}
+    ids_b = {e.get("vsb_id") for e in client.get("/api/v1/vsb", headers=bob).json()["entities"]}
+    assert vid in ids_a and vid not in ids_b
+    # no hardcoded admin default: the known constant must be gone from the bootstrap code
+    import inspect as _inspect
+    assert "workstation2026" not in _inspect.getsource(auth_core)
+
+
 def test_every_generated_vsb_carries_board_and_economy(client):
     # §3.3 invariant (Living Plan, bold): "Every generated VSB carries its own Board + a Chief that is
     # the digital twin of its owner" — plus a living economy in its legal form, living-entity
@@ -636,17 +678,32 @@ def test_auth_me_single_user(client):
     assert "auth_enabled" in body or "username" in body
 
 
-def test_auth_login(client):
-    """Default admin credentials must yield tokens."""
-    r = client.post("/api/v1/auth/token", data={
-        "username": "admin",
-        "password": "workstation2026",
-    })
-    assert r.status_code == 200
+def test_auth_login(client, monkeypatch):
+    """W252 secure bootstrap: there is NO hardcoded admin default — an admin created with a random
+    password (ADMIN_PASSWORD unset) is claimed by setting the env var (self-heal at login)."""
+    import secrets as _secrets
+    from agentic_core.auth import core as auth_core
+    if not auth_core._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    # force the bootstrap state: admin with a random password, flagged random-unset
+    users = auth_core._load_users()
+    users["admin"] = {"user_id": "admin", "username": "admin",
+                      "hashed_password": auth_core._pwd_ctx.hash(_secrets.token_urlsafe(24)),
+                      "password_source": "random-unset", "role": "admin",
+                      "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    # the operator sets ADMIN_PASSWORD → login self-heals and issues tokens
+    monkeypatch.setenv("ADMIN_PASSWORD", "test-admin-pw-252")
+    r = client.post("/api/v1/auth/token", data={"username": "admin", "password": "test-admin-pw-252"})
+    assert r.status_code == 200, r.text
     body = r.json()
-    assert "access_token" in body
-    assert "refresh_token" in body
+    assert "access_token" in body and "refresh_token" in body
     assert body["token_type"] == "bearer"
+    assert auth_core._get_user("admin").get("password_source") == "env"   # claimed
+    # and a second login with the same env password still works (no re-heal needed)
+    assert client.post("/api/v1/auth/token",
+                       data={"username": "admin", "password": "test-admin-pw-252"}).status_code == 200
 
 
 def test_auth_login_bad_password(client):
@@ -658,9 +715,19 @@ def test_auth_login_bad_password(client):
 
 
 def test_auth_refresh(client):
+    from agentic_core.auth import core as auth_core
+    if not auth_core._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    users = auth_core._load_users()
+    users["refresh-tester"] = {"user_id": "refresh-tester", "username": "refresh-tester",
+                               "hashed_password": auth_core._pwd_ctx.hash("pw-refresh"), "role": "user",
+                               "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
     login = client.post("/api/v1/auth/token", data={
-        "username": "admin", "password": "workstation2026"
+        "username": "refresh-tester", "password": "pw-refresh"
     })
+    assert login.status_code == 200, login.text
     refresh_token = login.json()["refresh_token"]
     r = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
     assert r.status_code == 200

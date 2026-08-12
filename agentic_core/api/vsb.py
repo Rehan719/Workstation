@@ -28,11 +28,12 @@ import uuid
 from pathlib import Path
 from agentic_core.config import data_path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.auth.core import get_current_user
 from agentic_core.organism.biobus import biobus
 from agentic_core.cognitive.cascade_v16 import UltimateCognitiveCascade
 from agentic_core.mjm.mjm import MJMOrchestratorV4
@@ -866,6 +867,7 @@ def _list_vsbs() -> list[dict]:
                 "domain": v.get("domain", ""),
                 "status": v.get("status", ""),
                 "stage": v.get("stage", ""),
+                "owner_id": v.get("owner_id"),   # §17.5 — owner scoping key
                 "created_at": v.get("created_at", ""),
                 # org flags — surface which VSBs are fully-established living organisations
                 "has_board": bool(v.get("board")),
@@ -879,15 +881,20 @@ def _list_vsbs() -> list[dict]:
 
 
 @router.get("")
-async def list_vsbs():
-    entities = _list_vsbs()
+async def list_vsbs(user: dict | None = Depends(get_current_user)):
+    # §17.5 user isolation — with auth enabled, a user sees only their own VSBs (admins see all;
+    # legacy unowned entities are admin-only). Single-user mode is unchanged.
+    from agentic_core.auth.core import user_can_access
+    entities = [e for e in _list_vsbs() if user_can_access(user, e.get("owner_id"))]
     return {"entities": entities, "total": len(entities)}
 
 
 @router.get("/{vsb_id}")
-async def get_vsb(vsb_id: str):
+async def get_vsb(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    from agentic_core.auth.core import user_can_access
     vsb = _load_vsb(vsb_id)
-    if not vsb:
+    # 404 (not 403) when scoped out — never confirm another tenant's VSB exists
+    if not vsb or not user_can_access(user, vsb.get("owner_id")):
         raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
     return vsb
 
@@ -979,12 +986,17 @@ class SpawnRequest(BaseModel):
 
 
 @router.post("/spawn")
-async def spawn_vsb(req: SpawnRequest):
+async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_user)):
     """
     Full VSB spawn as SSE stream. Each stage emits a progress event.
     The cognitive cascade, MJM, GaaS gate, and genome encoding happen
     before the AI synthesis cascade begins.
     """
+    # §17.5 user isolation — with auth enabled the owner is ALWAYS the authenticated user
+    # (server-side stamp; a client cannot claim another owner). Single-user mode unchanged.
+    from agentic_core.auth.core import request_owner_id
+    req.owner_id = request_owner_id(user, req.owner_id)
+
     async def _stream():
         vsb_id = f"vsb-{uuid.uuid4().hex[:10]}"
         started = time.time()

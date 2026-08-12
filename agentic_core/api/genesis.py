@@ -16,10 +16,11 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.auth.core import get_current_user, request_owner_id
 from agentic_core.api.intelligence import _ai_cognitive_prime, _ai_mjm_lifecycle
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
 from agentic_core.vbs.quality import assure_delivery
@@ -275,13 +276,16 @@ class EstablishRequest(BaseModel):
 
 
 @router.post("/establish")
-async def genesis_establish(req: EstablishRequest):
+async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(get_current_user)):
     """
     Instantiate a living VSB IDBO entity from a Genesis journey blueprint — the
     headline deliverable: Workstation *generates* the user's own Enterprise IDBO.
     The entity is persisted into the shared VSB store, so it appears in /api/v1/vsb
     and its dashboard, with its DNA encoded into the epigenetic genome registry.
     """
+    # §17.5 user isolation — with auth enabled, the established VSB's owner is ALWAYS the
+    # authenticated user (server-side stamp). Single-user mode unchanged.
+    req.owner_id = request_owner_id(user, req.owner_id)
     import uuid as _uuid
     import time as _time
     from agentic_core.api import vsb as vsb_mod

@@ -24,7 +24,9 @@ class Settings:
     # Auth
     auth_enabled: bool = field(default_factory=lambda: os.getenv("AUTH_ENABLED", "false").lower() == "true")
     jwt_secret: str = field(default_factory=lambda: os.getenv("JWT_SECRET", ""))
-    admin_password: str = field(default_factory=lambda: os.getenv("ADMIN_PASSWORD", "workstation2026"))
+    # SECURITY: no hardcoded default — empty means "unset"; the auth bootstrap generates a random
+    # admin password and self-heals from this env var once set (agentic_core/auth/core.py).
+    admin_password: str = field(default_factory=lambda: os.getenv("ADMIN_PASSWORD", ""))
 
     # CORS — comma-separated allowed origins; "*" allows all (dev only)
     cors_origins: list[str] = field(default_factory=lambda: [
@@ -59,8 +61,9 @@ class Settings:
             issues.append("CORS is set to '*' in production. Set CORS_ORIGINS to specific frontend domains.")
         if self.is_production and not self.auth_enabled:
             issues.append("AUTH_ENABLED is false in production. Consider enabling JWT auth.")
-        if self.is_production and self.admin_password == "workstation2026":
-            issues.append("Default ADMIN_PASSWORD in production. Set a strong password via env var.")
+        if self.is_production and self.auth_enabled and not self.admin_password:
+            issues.append("ADMIN_PASSWORD is unset with auth enabled in production — the bootstrap "
+                          "admin has a random password; set ADMIN_PASSWORD to claim it.")
         return issues
 
 
