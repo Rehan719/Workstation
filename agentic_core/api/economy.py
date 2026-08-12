@@ -157,6 +157,33 @@ async def living_vsbs():
     return list_living()
 
 
+class ClosePeriodRequest(BaseModel):
+    vsb_id: str = "workstation-idbo"
+    entity_type: str = DEFAULT_ENTITY
+    owner: str = "Rehan"
+
+
+@router.post("/close-period")
+async def close_period(req: ClosePeriodRequest):
+    """§9.1 PERIOD CLOSE — the CFO closes the books: P&L · balance sheet · cash flow computed from the
+    REAL double-entry postings, then closing entries roll income/expenses into retained earnings so the
+    next period starts clean. UEG-logged (tamper-evident). Virtual WST only."""
+    m = EconomicMetabolism(req.vsb_id, req.entity_type, req.owner)
+    result = m.ledger.close_period()
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({
+            "type": "economy.period_close", "vsb_id": req.vsb_id,
+            "net_profit_wst": result["close"]["net_profit_wst"],
+            "retained_earnings_wst": result["retained_earnings_wst"],
+            "prepared_by": "CFO agent (AI C-Suite)",
+            "disclaimer": "Virtual/simulated WST — no real funds moved.",
+        })
+    except Exception:
+        pass
+    return {"vsb_id": req.vsb_id, "entity_type": req.entity_type, **result}
+
+
 @router.get("/board-pack")
 async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY):
     """§7 Financial Board Pack — the live owner-facing financial statement, assembled on demand: the P&L
@@ -201,6 +228,8 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
                               "holdings": ventures.get("holdings", [])[:5]},
         "charitable_giving": {"total_given_wst": round(bal.get("charity", 0.0), 2)},
         "organism_posture": organism,
+        # §9.1 — the CFO's three statements (current period, from the REAL double-entry postings)
+        "statements": m.ledger.statements(),
         "ledger": {"entry_count": stmt["entry_count"], "recent": stmt["recent"]},
         "governance": "gaas.v5-gated cycles · UEG append-only audit · arms-length distribution policy",
         "disclaimer": "Virtual/simulated WST only — no real funds. Real-money rails are gated until the Owner "

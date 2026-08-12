@@ -3068,6 +3068,34 @@ def test_economy_cycles_governed_and_ueg_logged(client):
     assert seen.get("governance") == "passed" and not seen.get("error")
 
 
+def test_economy_double_entry_and_period_close(client):
+    # §9.1 — the virtual ledger is genuinely DOUBLE-ENTRY: every movement is a balanced posting, the
+    # trial balance holds, the balance sheet balances (assets = liabilities + equity), and the CFO
+    # period close rolls income/expenses into retained earnings so the next period starts clean.
+    import uuid as _uuid
+    vid = f"w256-books-{_uuid.uuid4().hex[:8]}"
+    for rev in (10000, 5000):
+        r = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                                       "revenue": rev, "costs": 0}).json()
+        assert r.get("cycle")
+    st = client.get(f"/api/v1/economy/board-pack?vsb_id={vid}").json()["statements"]
+    pnl, bs, cf, tb = (st["profit_and_loss"], st["balance_sheet"], st["cash_flow"], st["trial_balance"])
+    assert pnl["total_income_wst"] == 15000.0                      # the real cycle intake
+    assert pnl["net_profit_wst"] == round(pnl["total_income_wst"] - pnl["total_expenses_wst"], 2)
+    assert bs["balanced"] is True and tb["balanced"] is True       # the books genuinely balance
+    assert bs["assets_total_wst"] == bs["liabilities_and_equity_total_wst"]
+    assert cf["operating_receipts_wst"] == 15000.0                 # cash flow from real postings
+    assert "CFO" in st["prepared_by"]
+    # period close: net rolls into retained earnings; a second close covers ONLY the new period
+    c1 = client.post("/api/v1/economy/close-period", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid"}).json()
+    assert c1["retained_earnings_wst"] == c1["close"]["net_profit_wst"] > 0
+    client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                               "revenue": 2000, "costs": 0})
+    c2 = client.post("/api/v1/economy/close-period", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid"}).json()
+    assert 0 < c2["close"]["net_profit_wst"] < c1["close"]["net_profit_wst"]   # new period only
+    assert c2["statements"]["balance_sheet"]["balanced"] is True
+
+
 def test_economy_owner_payments_virtual(client):
     import uuid as _uuid
     vid = f"test-owner-pay-{_uuid.uuid4().hex[:10]}"   # unique per run — no dependence on persisted state
