@@ -60,24 +60,13 @@ class CycleRequest(BaseModel):
 
 @router.post("/cycle")
 async def run_cycle(req: CycleRequest):
-    """Run one living metabolic cycle, governed by gaas.v5 and logged to the UEG."""
-    metab = EconomicMetabolism(req.vsb_id, req.entity_type, req.owner)
-
-    async def _action():
-        return metab.run_cycle(req.revenue, req.costs, req.reserve_rate)
-
-    # Governance: route the distribution through the constitutional gate (arms-length, audited).
-    try:
-        from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
-        gov = UnifiedConstitutionalInterceptorV16Omega("economy-node", UEGLogger())
-        result = await gov.intercept({"intent": "economy_distribution", "vsb_id": req.vsb_id}, _action)
-        report = result.output if getattr(result, "output", None) else metab.run_cycle(req.revenue, req.costs, req.reserve_rate)
-        governance = {"status": result.status, "checkpoint": result.checkpoint_id}
-    except Exception:
-        report = metab.run_cycle(req.revenue, req.costs, req.reserve_rate)
-        governance = {"status": "ungated"}
-
-    return {"cycle": report, "governance": governance}
+    """Run one living metabolic cycle under the FULL §3 governance chain (economy/governance.py):
+    materiality → Change Control hold when the estimated distributable meets the threshold; the
+    gaas.v5 gate (a failed gate is a LOUD UEG bypass event, never silent); and an explicit UEG
+    event logging every cycle's per-stage split amounts. Virtual WST only."""
+    from agentic_core.economy.governance import governed_cycle
+    return await governed_cycle(req.vsb_id, req.entity_type, req.owner,
+                                req.revenue, req.costs, req.reserve_rate, source="api")
 
 
 @router.get("/waterfall")

@@ -2848,6 +2848,51 @@ def test_fabric_enterprise_layer_runs_real(client):
     assert rr["build_to_order"].get("blueprint_id")                 # a real blueprint assembled
 
 
+def test_economy_cycles_governed_and_ueg_logged(client):
+    # VSB_ECONOMIC_LEGAL_MODEL §3/§4 (binding): every distribution passes the gaas.v5 gate, EVERY
+    # cycle's split is UEG-logged with per-stage amounts, and MATERIAL distributions are held for
+    # Change Control approval (consumed on use). Previously the heartbeat path ran ungated+unlogged
+    # and the API path's failure fallback was silent.
+    import uuid as _uuid
+    vid = f"w249-gov-{_uuid.uuid4().hex[:8]}"
+    # 1) sub-materiality cycle: gated + an explicit economy.cycle_split UEG event with amounts
+    r = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
+                                                   "revenue": 10000, "costs": 0}).json()
+    assert (r.get("governance") or {}).get("status") in ("allowed", "passed")
+    assert r.get("cycle") and r["cycle"]["distributable_profit"] > 0
+    ev = client.get("/api/v1/gaas/ueg/events?limit=25").json()
+    evs = ev if isinstance(ev, list) else ev.get("events", [])
+    splits = [(e.get("data") or e) for e in evs if (e.get("data") or e).get("type") == "economy.cycle_split"]
+    assert splits, "no economy.cycle_split UEG event was logged"
+    assert any(s.get("splits_wst") for s in splits)     # per-stage amounts present, not a bare checkpoint
+    # 2) MATERIAL cycle: held for Change Control; owner approval unblocks exactly one cycle
+    vid2 = f"w249-mat-{_uuid.uuid4().hex[:8]}"
+    held = client.post("/api/v1/economy/cycle", json={"vsb_id": vid2, "entity_type": "waqf_ltd_hybrid",
+                                                      "revenue": 400000, "costs": 0}).json()
+    g = held.get("governance") or {}
+    assert g.get("status") == "held_for_change_control" and g.get("cca_id")
+    assert held.get("cycle") is None                    # the distribution did NOT run while held
+    ap = client.post(f"/api/v1/cca/{g['cca_id']}/review",
+                     json={"override_decision": "approved", "reviewer_notes": "owner approves"}).json()
+    assert (ap.get("status") or ap.get("decision")) in ("approved", "auto_approved")
+    ok = client.post("/api/v1/economy/cycle", json={"vsb_id": vid2, "entity_type": "waqf_ltd_hybrid",
+                                                    "revenue": 400000, "costs": 0}).json()
+    assert ok.get("cycle") and ok["cycle"]["distributable_profit"] >= 250000
+    # 3) the always-on heartbeat path is governed too
+    from agentic_core.economy.living_vsbs import register, operate_one
+    vid3 = f"w249-hb-{_uuid.uuid4().hex[:8]}"
+    register(vid3, "HB governed", "waqf_ltd_hybrid", "enterprise", "Rehan")
+    # operate the round-robin until our VSB gets its tick (bounded loop; store may hold other VSBs)
+    seen = None
+    for _ in range(25):
+        op = operate_one() or {}
+        if op.get("vsb_id") == vid3:
+            seen = op
+            break
+    assert seen is not None, "heartbeat round-robin never reached the registered VSB"
+    assert seen.get("governance") == "passed" and not seen.get("error")
+
+
 def test_economy_owner_payments_virtual(client):
     import uuid as _uuid
     vid = f"test-owner-pay-{_uuid.uuid4().hex[:10]}"   # unique per run — no dependence on persisted state

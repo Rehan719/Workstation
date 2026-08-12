@@ -68,15 +68,23 @@ def operate_one() -> Optional[Dict[str, Any]]:
     target = sorted(d.values(), key=lambda v: (v.get("last_operated") or ""))[0]
     vsb_id = target["vsb_id"]
     try:
-        from agentic_core.economy.metabolism import EconomicMetabolism
-        metab = EconomicMetabolism(vsb_id, target.get("entity_type", "waqf_ltd_hybrid"), target.get("owner", "Rehan"))
-        report = metab.run_cycle(_TICK_REVENUE, _TICK_COSTS)
+        # §3 — the ALWAYS-ON path is governed too: constitutional pre-gate + materiality hold +
+        # per-cycle UEG split logging (previously this path ran completely ungated + unlogged).
+        from agentic_core.economy.governance import governed_cycle_sync
+        res = governed_cycle_sync(vsb_id, target.get("entity_type", "waqf_ltd_hybrid"),
+                                  target.get("owner", "Rehan"), _TICK_REVENUE, _TICK_COSTS,
+                                  source="heartbeat")
+        report = res.get("cycle")
+        if report is None:   # held/blocked by governance — record honestly, no cycle ran
+            return {"vsb_id": vsb_id, "name": target.get("name"),
+                    "governance": res.get("governance"), "cycle_ran": False}
         target["operating_cycles"] = int(target.get("operating_cycles", 0)) + 1
         target["last_operated"] = _now()
         target["last_distributable"] = report.get("distributable_profit")
         d[vsb_id] = target
         _save(d)
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle": target["operating_cycles"],
-                "distributable_wst": report.get("distributable_profit")}
+                "distributable_wst": report.get("distributable_profit"),
+                "governance": (res.get("governance") or {}).get("status")}
     except Exception as e:
         return {"vsb_id": vsb_id, "error": str(e)[:160]}
