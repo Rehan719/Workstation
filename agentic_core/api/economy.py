@@ -157,6 +157,59 @@ async def living_vsbs():
     return list_living()
 
 
+class TransferRequest(BaseModel):
+    from_vsb: str
+    to_vsb: str
+    amount: float
+    memo: str = ""
+
+
+@router.post("/transfer")
+async def inter_vsb_transfer(req: TransferRequest):
+    """Federation seed — generated Enterprise IDBOs TRANSACT: the sender pays from its reserve fund
+    (balanced double-entry posting, refused on insufficient virtual funds) and the receiver's next
+    metabolic cycle consumes the amount as intake revenue (enters its §4 waterfall). gaas.v5-gated;
+    MATERIAL transfers are held for Change Control like material distributions; UEG-logged.
+    Virtual WST only — no real funds."""
+    from agentic_core.economy.governance import _materiality_gate, _ueg_log
+    from agentic_core.economy.transfers import record_transfer, validate_transfer
+
+    # side-effect-free validation FIRST → clean HTTP codes, nothing posted on refusal
+    try:
+        validate_transfer(req.from_vsb, req.to_vsb, req.amount)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e).strip("'\""))
+
+    held = _materiality_gate(req.from_vsb, round(float(req.amount), 2), source="transfer")
+    if held is not None:
+        return {"transfer": None, "governance": held}
+
+    async def _action():
+        return record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo)
+
+    try:
+        from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
+        gov = UnifiedConstitutionalInterceptorV16Omega("economy-node", UEGLogger())
+        result = await gov.intercept({"intent": "inter_vsb_transfer", "from": req.from_vsb,
+                                      "to": req.to_vsb, "amount_wst": req.amount}, _action)
+        transfer = result.output
+        governance = {"status": result.status, "checkpoint": result.checkpoint_id}
+        if not isinstance(transfer, dict):   # the gate blocked the action — never fabricate a transfer
+            return {"transfer": None, "governance": governance}
+    except Exception as e:
+        transfer = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo)
+        _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
+                  "error": str(e)[:200], "note": "gaas.v5 gate unavailable — transfer ran ungated (logged loudly)."})
+        governance = {"status": "ungated_bypass_logged", "error": str(e)[:160]}
+
+    _ueg_log({"type": "economy.inter_vsb_transfer", **{k: transfer[k] for k in
+              ("transfer_id", "from_vsb", "to_vsb", "amount_wst")},
+              "disclaimer": "Virtual/simulated WST — no real funds moved."})
+    return {"transfer": transfer, "governance": governance}
+
+
 class ClosePeriodRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
     entity_type: str = DEFAULT_ENTITY

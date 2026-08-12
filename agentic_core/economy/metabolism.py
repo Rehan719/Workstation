@@ -111,6 +111,16 @@ class EconomicMetabolism:
         except Exception:
             returns_recycled = 0.0
 
+        # federation — inter-VSB RECEIPTS enter this cycle's waterfall the same way (W262).
+        transfers_received = 0.0
+        try:
+            from .transfers import consume_pending_transfers
+            transfers_received = consume_pending_transfers(self.vsb_id)
+            if transfers_received > 0:
+                revenue = round(revenue + transfers_received, 2)
+        except Exception:
+            transfers_received = 0.0
+
         # §8→§12 ECONOMIC SURVIVAL INSTINCT — when the LIVING ORGANISM's metabolic energy is depleted, the
         # economic organism conserves more (raises reserves), mirroring the §8 homeostatic survival instinct.
         metabolic_energy = self._atp_ratio()
@@ -174,6 +184,7 @@ class EconomicMetabolism:
             "cycle_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "intake_revenue": revenue,
             "venture_returns_recycled_wst": returns_recycled,   # §6 — returns that re-entered this waterfall
+            "inter_vsb_received_wst": transfers_received,       # federation — receipts from other VSBs (W262)
             "homeostasis_reserves": reserves,
             "reserve_rate_applied": effective_reserve,   # §8→§12: energy-adjusted (conserves more when low)
             "energy_state": energy_state,

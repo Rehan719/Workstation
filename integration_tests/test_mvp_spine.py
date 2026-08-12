@@ -3207,6 +3207,37 @@ def test_economy_ventures_investment(client):
     assert "no real funds" in (pf.get("note") or "").lower()
 
 
+def test_inter_vsb_transfer_federation_seed(client):
+    # Federation seed — living VSBs TRANSACT: the sender pays from its reserve fund (double-entry
+    # posted, refused on insufficient funds — virtual WST is conserved), the receiver's next cycle
+    # consumes the amount as intake revenue (enters its waterfall). gaas-gated + UEG-logged.
+    import uuid as _uuid
+    from agentic_core.economy.living_vsbs import register
+    a, b = f"w262-a-{_uuid.uuid4().hex[:6]}", f"w262-b-{_uuid.uuid4().hex[:6]}"
+    register(a, "Sender Co", "waqf_ltd_hybrid", "enterprise", "Rehan")
+    register(b, "Receiver Co", "waqf_ltd_hybrid", "enterprise", "Rehan")
+    client.post("/api/v1/economy/cycle", json={"vsb_id": a, "entity_type": "waqf_ltd_hybrid",
+                                               "revenue": 10000, "costs": 0})     # funds the reserve (2000)
+    t = client.post("/api/v1/economy/transfer",
+                    json={"from_vsb": a, "to_vsb": b, "amount": 500, "memo": "services"}).json()
+    tr = t["transfer"]
+    assert tr["transfer_id"].startswith("xfer-") and tr["sender_reserve_fund_after_wst"] == 1500.0
+    assert (t["governance"] or {}).get("status") in ("allowed", "passed")
+    st = client.get(f"/api/v1/economy/board-pack?vsb_id={a}").json()["statements"]
+    assert st["profit_and_loss"]["expenses"].get("transfer_out") == 500.0          # posted in the books
+    assert st["balance_sheet"]["balanced"] is True                                 # and they still balance
+    nxt = client.post("/api/v1/economy/cycle", json={"vsb_id": b, "entity_type": "waqf_ltd_hybrid",
+                                                     "revenue": 1000, "costs": 0}).json()["cycle"]
+    assert nxt["inter_vsb_received_wst"] == 500.0 and nxt["intake_revenue"] == 1500.0
+    # conservation guards: insufficient 400 · unknown receiver 404 · self-transfer 400
+    assert client.post("/api/v1/economy/transfer",
+                       json={"from_vsb": a, "to_vsb": b, "amount": 999999}).status_code == 400
+    assert client.post("/api/v1/economy/transfer",
+                       json={"from_vsb": a, "to_vsb": "ghost-vsb", "amount": 5}).status_code == 404
+    assert client.post("/api/v1/economy/transfer",
+                       json={"from_vsb": a, "to_vsb": a, "amount": 5}).status_code == 400
+
+
 def test_charity_owner_directives_and_grant_screening(client, monkeypatch):
     # §5 — the Owner SETS charity directives at runtime (priorities · exclusions · 100%-donation
     # rule) and every subsequent allocation honours them; EVERY grant is compliance-screened before

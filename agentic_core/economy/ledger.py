@@ -29,6 +29,7 @@ CHART: Dict[str, str] = {
     "distribution_capital_fund":     "expense",
     "distribution_user_projects":    "expense",
     "distribution_charity":          "expense",
+    "transfer_out":                  "expense",   # inter-VSB transfers (federation seed, W262)
     "retained_earnings":             "equity",
 }
 _DEBIT_NORMAL = ("asset", "expense")
