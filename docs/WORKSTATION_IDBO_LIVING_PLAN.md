@@ -8,7 +8,7 @@
 
 # Workstation IDBO — Living Design & Development Action Plan
 
-**Status:** LIVING · **Last reconciled:** 2026-06-24 · **Grounded baseline:** in-house-first native AI fabric (12 real owned capabilities + autonomous workflow tree), integration suite 170✓/0✗, frontend tsc 0 errors, Spine CI green
+**Status:** LIVING · **Last reconciled:** 2026-08-12 (W251) · **Grounded baseline:** in-house-first native AI fabric (owned models/orchestration/swarm/ensemble + autonomous workflow tree), integration suite 219✓/0✗ (15 skip), frontend tsc 0 errors, both CI green on `main`
 **Canonical companion data:** `GET /api/v1/plan/state` (auto-introspected current state) · `GET /api/v1/plan` (phases + progress)
 
 ---
@@ -66,9 +66,9 @@ Across **Synthesis Lab, Build-to-Order, and the Forge**, users **access, select,
 
 ## 4. Current State (GROUNDED — what exists today)
 
-> Auto-verifiable: `GET /api/v1/plan/state`. Hand-reconciled 2026-06-24.
+> Auto-verifiable: `GET /api/v1/plan/state`. Hand-reconciled 2026-08-12 (W251); the full W77–W250 delivery record is in `docs/AUTONOMOUS_PROGRESS.md`.
 
-**Platform:** FastAPI backend (`agentic_core/app_mvp.py`), Vite+React+TS frontend (`apps/workstation-superapp`, **tsc 0 errors**). Tests: `integration_tests/test_mvp_spine.py` → **170 pass / 15 skip / 0 fail** (run on the native floor via `AI_DISABLE_LOCAL=1`); Spine CI green on `main`. **AI is now IN-HOUSE-FIRST** via the native fabric (`ai/native/` + `ai/gateway.query_meta`), NOT external API calls — external providers are optional accelerants only. **In-house integration sweep complete (W1–W76):** an autonomous workflow-TREE orchestrator + **12 real owned `agentic_core` capabilities** (minimax · difflib validation · scipy rigor · consensus · biomimetic Hill signal · quorum · NLI · entropy · topology · VBS living systems · UEG ledger · degradation), catalogued at `/api/v1/native-ai/capabilities` + self-checked at `/native-ai/selfcheck`. The Chief delivers business-plan objectives via the tree. See `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` (real-vs-mock) + `docs/AUTONOMOUS_PROGRESS.md` (W1–W76).
+**Platform:** FastAPI backend (`agentic_core/app_mvp.py`, 433 routes), Vite+React+TS frontend (`apps/workstation-superapp`, **tsc 0 errors**). Tests: `integration_tests/test_mvp_spine.py` → **219 pass / 15 skip / 0 fail** (run on the native floor via `AI_DISABLE_LOCAL=1`); Spine + Doc-Sync CI green on `main`. **AI is IN-HOUSE-FIRST** via the native fabric (`ai/native/` + `ai/gateway.query_meta`) — owned model discovery/routing/tiers, parallel multi-model **ensemble**, health-reordering orchestrator, hardened memory store (corruption-tolerant + atomic writes); external providers are optional accelerants only. **In-house integration sweep complete (W1–W76)** — autonomous workflow-TREE orchestrator + 12 real owned capabilities at `/api/v1/native-ai/capabilities`. **W194–W250:** ALL EIGHT PI cognition engines (BDP·SPI·APIE·DDPIE·Cascade·MJM·Nexus·Genesis), ALL EIGHT digital-resource facilities (Engines·Reactors·Petri·Incubators·Laboratories·Factories·Generators·Simulators — Reactor = the vision-exact Incubator+Experimentation+Studio composite), all 8 biomimetic organism systems, the full enterprise/org layer (cascade·Capital Fund·Change Control·Products Catalogue·Build-to-Order) AND the last registry resources (compliance·truth_consensus·mega_project·omnimedia·federation_mesh) **run their REAL engine when composed in the Resource Fabric** — nothing in the catalogue is a prompt approximation. **W248:** every generated VSB (Genesis /establish, SSE /vsb/spawn, Studio) carries its own Board + Chief (owner's digital twin) + living economy + living-entity registration + seeded plan. **W249:** every economy cycle is gaas-gated + UEG split-logged; material distributions are held for Change Control approval. See `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` (real-vs-mock) + `docs/AUTONOMOUS_PROGRESS.md` (W1–W250, the authoritative cycle log).
 
 **Process-Intelligence engines (live):**
 | Engine | Endpoint | Stages |
@@ -89,7 +89,7 @@ Across **Synthesis Lab, Build-to-Order, and the Forge**, users **access, select,
 
 **Self-evolution (live):** **Sovereign Evolution Office** `/api/v1/sovereign-evolution/cycle` — introspect → AI CEO triage → C-Suite verdicts → CoE/BTO roadmap → routes P1/correction items to the **Change Control Agency** (`/api/v1/cca`). Verified: real `cca_id` filed autonomously.
 
-**Resource Fabric (live):** `/api/v1/resources` — 21 federated resources (7 process-intelligence, 5 digital, 4 organism, 5 enterprise/org), filter + `compose` into reusable/rerunnable combinations.
+**Resource Fabric (live):** `/api/v1/resources` — 45+ federated resources across process-intelligence · digital-resource facilities · native-AI · organism · enterprise/org classes; filter + reconfigure params + `compose` (model/simulate before commit) + **`/compositions/{id}/run` executes every composed resource's REAL engine** on the owned native swarm with provenance.
 
 **VSB Economy (live, virtual/simulated):** `agentic_core/economy/` + `/api/v1/economy/*` — the **living biomimetic economic metabolism**: 9 selectable legal forms (Sole/PLC/Ltd/Trust/Waqf/Multinational/Non-profit/Charity/**Waqf-Ltd Hybrid** default); profit-distribution waterfall modelled as a **biogeochemical nutrient cycle** (intake→homeostasis→circulation→giving-back→storage→growth); intelligent charitable giving (urgency×gravity×impact); virtual WST double-entry ledger; gaas-gated + UEG-logged. Wired to the ATP metabolic system, nervous signals, and the Sovereign Evolution Office (`tune()` self-improvement); selectable at Genesis `/establish`. UI `/economy`. *Real-money rails remain gated.* (Design+record: `VSB_ECONOMIC_LEGAL_MODEL.md`.)
 
@@ -97,7 +97,7 @@ Across **Synthesis Lab, Build-to-Order, and the Forge**, users **access, select,
 
 **Biomimetic systems (live):** BiomimeticBus, Immune, Nervous, Self-Healing, Metabolic/ATP, Circadian, Genome, Genomic Registry, Reconfiguration — composite health formula in `app_mvp.py`.
 
-**Known honest gaps:** legacy `products/signature-product-suite` flat files run only via path-shims (superseded by `core-*`); some Phase-4 hardware/external UI (BCI calibrate, Discord, SETI) is intentionally backendless; the older `v190/v230/v240` evolution fragments are not yet unified under the Sovereign Evolution Office.
+**Known honest gaps (reconciled W251):** user-isolation invariant unenforced on business routers (auth module exists, no endpoint takes the dependency; single-tenant in practice); digital-twin pre-validation not wired into the Change Control implement path; three streaming surfaces (synthesis upload · projects stream · business-plan wizard) still use the legacy external-first `gateway.stream`; Genesis `/establish` is a blocking POST (no SSE birth stream); `v191` evolution fragment still mounted as a parallel ungoverned surface; Video/mp4/mp3 output formats remain an honest not-yet-produced catalogue; ledger is single-entry (no period close/statements); persistence hardening (atomic writes) applied only to the AI memory store; avatar converses but cannot yet navigate/guide; i18n covers ~3 surfaces; cross-VSB federation/marketplace not started.
 
 ---
 
@@ -134,20 +134,22 @@ Status key: `✅ done` · `▶ in progress` · `◻ planned` · owner in **bold*
 - ✅ **Genesis** unified journey + **`/establish`** generating living VSB entities. — *vision: the core deliverable*
 - ✅ **Sovereign Evolution Office** (VSB-curated self-improvement → Change Control). — *vision: self-running organism*
 - ✅ **Resource Fabric** (federated, reconfigurable, combinable). — *vision: resource selection across Synthesis/BTO/Forge*
-- ▶ **Living Plan + Plan API** (this document + `/api/v1/plan`). **Owner + Claude** — *vision: collaboration & adherence tracking*
+- ✅ **Living Plan + Plan API** (this document + `/api/v1/plan`). **Owner + Claude** — *vision: collaboration & adherence tracking*
 
-### 6.2 Short term (next)
-- ◻ **Make compositions executable** — `/api/v1/resources/compositions/{id}/run` fans a composition out as a real workflow pipeline (the cascade tree running). **CoE/BTO**
-- ◻ **Stream `/establish`** through the full `vsb/spawn` cascade (SSE) so users watch the VSB being born. **CTO**
-- ◻ **Unify evolution fragments** (`v190/v230/v240/v210`) under the Sovereign Evolution Office — one evolution surface. **BTO**
-- ◻ **Synthesis Lab multi-output** — explicit selectable output types (report/deck/video/site/app/model) in one run. **CoE**
-- ◻ **Scheduled autonomy** — periodic Sovereign Evolution cycles (the self-running heartbeat). **AI CEO**
+### 6.2 Short term (delivered; reconciled W251)
+- ✅ **Compositions executable** — `/compositions/{id}/run` executes every composed resource's REAL engine on the native swarm (W199–W250: PI engines · all 8 facilities · organism systems · enterprise layer · the full catalogue). **CoE/BTO**
+- ◻ **Stream `/establish`** through the full `vsb/spawn` cascade (SSE) so users watch the VSB being born. **CTO** *(the SSE machinery exists in `/vsb/spawn`; Genesis still returns a blocking POST)*
+- ◻ **Unify evolution fragments** — `v191` still mounted as a parallel ungoverned surface (frontend already unified on the Office). **BTO**
+- ✅ **Synthesis Lab multi-output** — 15 selectable output types in one run (`agentic_core/synthesis/api.py`; Video is honestly a slide+narration deck until real rendering exists). **CoE**
+- ✅ **Scheduled autonomy** — the circadian Heartbeat auto-starts at app startup and runs paced Sovereign-Evolution cycles + living-VSB economy ticks (now gaas-gated + UEG-logged, W249). **AI CEO**
 
 ### 6.3 Long term (horizon)
-- ◻ **VSB lifecycle management** — living business plan → strategy → timeline tracking per spawned VSB, with C-Suite appraisal/development loops. **AI CEO + C-Suite**
-- ◻ **Forge ⇄ Build-to-Order ⇄ Catalogue** fully wired to the Resource Fabric so a composition becomes a production run and a catalogue product. **BTO**
-- ◻ **Cross-VSB federation & marketplace** — generated Enterprise IDBOs interoperate and transact. **CoE**
-- ◻ **Persistence hardening** (SQLite/Postgres when concurrent writes are real), Docker/CI, GaaS YAML genome activation. **CTO**
+- ✅ **VSB lifecycle management** — every generated VSB carries Board+Chief, a living business plan, economy metabolism, and living-entity registration (W248); C-Suite appraisals run in the swarm cascade. **AI CEO + C-Suite**
+- ✅ **Forge ⇄ Build-to-Order ⇄ Catalogue** — BTO configures real blueprints from the 20-product catalogue; the fabric composes/runs them (W246). **BTO**
+- ◻ **Cross-VSB federation & marketplace** — generated Enterprise IDBOs interoperate and transact (mesh status live; inter-VSB transactions not started). **CoE**
+- ◻ **Persistence hardening** (shared atomic-write JsonStore for the hot heartbeat-touched stores; then SQLite/Postgres), GaaS YAML genome activation. Docker/CI ✅. **CTO**
+- ◻ **User isolation** (the §17.5 absolute invariant) — wire the auth dependency + owner scoping onto the business routers. **CTO**
+- ◻ **Digital-twin pre-validation** in the Change Control implement path (HIGH/CRITICAL tiers). **BTO**
 
 > The grand-aspirational `docs/DEVELOPMENT_PLAN_v7.0_SINGULARITY.md` (Layers 13–14, interstellar) is retained as **horizon lore**, explicitly *not* current state.
 
@@ -163,13 +165,13 @@ Honest self-assessment of how well delivered work realises each vision pillar. `
 | 2 | Generate a living Enterprise IDBO (VSB) for the user | ● | `/establish` persists a real operational VSB; appears in `/api/v1/vsb` |
 | 3 | VSB org (AI CEO→C-Suite→CoE→BTO) curates work | ● | Sovereign Evolution cycle + swarm cascade both live |
 | 4 | Reconfigurable, combinable resource fabric | ● | 21 resources, compose → reusable compositions |
-| 5 | One self-running, self-healing, self-improving organism | ● | self-evolution + self-healing live; **continuous circadian Heartbeat now auto-runs the organism** (`/api/v1/heartbeat`); executable resource pipelines still pending |
-| 6 | Synthesis Lab — any/all content output types | ◐ | studio cascade live; explicit multi-output selection pending |
-| 7 | Constitutional governance throughout | ● | gaas.v5 gate + UEG audit threaded through Genesis/Evolution |
-| 8 | Biomimetic mediation (biology/biogeo-physical) | ◐ | rich biomimetic systems live; deeper workflow mediation evolving |
-| 9 | Foundational values (integrity, halal, stewardship) | ● | inherited from mission_vision_values; gate enforces; no fabrication |
+| 5 | One self-running, self-healing, self-improving organism | ● | self-evolution + self-healing live; continuous circadian Heartbeat auto-runs the organism; **compositions execute their real engines** (W250: the whole catalogue) |
+| 6 | Synthesis Lab — any/all content output types | ◐ | 15 selectable output types in one run; Video/mp4/mp3 remain an honest not-yet catalogue |
+| 7 | Constitutional governance throughout | ● | gaas.v5 gate + UEG audit threaded through Genesis/Evolution; **economy cycles gated + split-logged, material distributions held for Change Control** (W249); twin pre-validation + user isolation still pending |
+| 8 | Biomimetic mediation (biology/biogeo-physical) | ● | all 8 organism systems run their real engine/reading when composed (W245); §6↔§8 homeostatic loop closed; §8→§12 economic survival instinct live |
+| 9 | Foundational values (integrity, halal, stewardship) | ● | inherited from mission_vision_values; gate enforces; no fabrication; charity 100%-donation screen; virtual-only finance with real rails gated |
 
-**Overall:** core spine of the vision is **operational and grounded**; remaining work is depth (autonomy cadence, executable resource pipelines, multi-output synthesis, VSB lifecycle).
+**Overall (reconciled W251):** the vision spine and its depth are **operational and grounded** — end-to-end lifecycle, real-engine fabric, governed economy, living VSBs with Board+Chief. Remaining honest work: user isolation, twin pre-validation, SSE establish, the three legacy streams, double-entry accounting, federation, media formats.
 
 ---
 
@@ -182,6 +184,7 @@ Honest self-assessment of how well delivered work realises each vision pillar. `
 - **2026-06-20 (later)** — Built the **Cognition & Alignment** integration capstone (`agentic_core/api/cognition.py` + `/api/v1/cognition`, UI `/cognition`): serves the 4 knowledge layers as live data, maps + verifies the **wiring into all 13 living tiers (100% coherence)**, and `/align` routes each vision gap to the owning tier (Board/Evolution/Change Control), evidence-based + gaas/UEG-governed. The **Heartbeat now runs alignment each beat** (`auto_align`) → the organism continuously self-aligns. 285 routes; tsc 0 errors.
 - **2026-06-21 (overnight, autonomous)** — Generated `docs/ACTION_PLAN.md` (timed task breakdown). Built **living Business-Plan management** (`/api/v1/business-plan`, router #63): Chief/Board own a living plan for Workstation + per-VSB (mission/strategy/objectives/KPIs/timelines/reviews/progress + Chief-mediated AI generation) — verified end-to-end (298 routes). Added frontend pages for **Business Plan** (`/business-plan`), **Forge** (`/forge-pipeline`), **Compliance** (`/compliance`); tsc 0 errors. Ran an **end-to-end dogfood pilot** establishing a real VSB ("NourishLondon"). Heartbeat continues self-running (auto_align toggle in `/heartbeat`). See `docs/OVERNIGHT_SESSION_LOG.md`.
 - **2026-06-21** — Built the **Forge** (`/api/v1/forge`): 7 digital resources (Petri/Incubator/Laboratory/Factory/Generator/Simulator/Reactor) as a reconfigurable/rerunnable/reusable **swarm-orchestrated cascade pipeline** (AI CEO frame → stages → CoE integrate), gaas/UEG-governed, multi-type outputs for Concept→Commercialisation → **closed the last vision gap; computed realisation now 100%.** Built the **Unified Compliance** engine (`/api/v1/compliance`) federating Sharia/Halal · UK-Legal(London) · Regulatory · EHS · Ethical · Constitutional (existing Jules engines), added to the Resource Fabric. **Owner resolved all open questions** (UNDERSTANDING §9): waterfall approved; virtual-WST-now/Stripe-later; UK/London; entity auto+editable; **charity = WATER/Orphan/Conflict/Dawah, 100%-donation-only** (done in economy/charity.py). Created `DEVELOPMENT_TIMELINE.md` from 999-commit git history.
+- **2026-08-12 (W251 reconciliation)** — Hand-reconciled this plan to reality after W77–W250 (the interim record lives in `docs/AUTONOMOUS_PROGRESS.md`, the authoritative cycle log). Highlights folded into §4/§6/§7: native-AI mandate delivered in depth (owned model discovery/routing/tiers/ensemble; hardened memory store); the Resource Fabric executes every composed resource's REAL engine across the whole catalogue (8 PI engines · 8 facilities incl. the vision-exact composite Reactor + the previously-missing Generator · 8 organism systems · the full enterprise/org layer · compliance/consensus/mega/omnimedia/mesh); the VSB Economic Model BUILT (9 legal forms, adjustable waterfall, owner-payments, ventures, living VSBs on the heartbeat — W249: gaas-gated + UEG split-logged + Change-Control materiality holds); W248 healed the §3.3 invariant (every generated VSB carries Board+Chief+economy on ALL spawn paths); frontend converged to the vision IA with honest surfaces. §6.2/§6.3 statuses flipped to match; honest-gaps list refreshed; scorecard re-scored.
 
 ---
 
@@ -191,7 +194,7 @@ Honest self-assessment of how well delivered work realises each vision pillar. `
 - **Org charters:** `docs/charters/` (C-Suite `csuite/`, CoE `coes/`, BTO `transformation_team.md`)
 - **Design system:** `docs/design/DESIGN.md`
 - **Architecture:** `docs/architecture/overview.md` + `docs/architecture/`
-- **Development timeline:** `docs/DEVELOPMENT_TIMELINE.md` (from git history 2026-02-20 → present: Jules foundation → convergence → MVP consolidation → sovereign living organism)
+- **Development timeline:** `_archive/docs/DEVELOPMENT_TIMELINE.md` (archived in the W153+ docs consolidation; from git history 2026-02-20 → 2026-06: Jules foundation → convergence → MVP consolidation → sovereign living organism; the ongoing record is `docs/AUTONOMOUS_PROGRESS.md`)
 - **Roadmap lore:** `docs/DEVELOPMENT_PLAN_v7.0_SINGULARITY.md` (horizon, not current state)
 - **Constitution:** `agentic_core/constitution/CONSTITUTION_canonical.md`
 - **Cowork-agent canon (external, synthesised):** `…/local-agent-mode-sessions/38f3915a-…/…/outputs/` → `CLAUDE_CODE_AGENT_PROMPT_v4.md` (master briefing: 7 biomimetic layers, Living Business System, 10 invariants, digital-twin modes), `workstation_concept_design.md` (grounded concept design + phased plan), `IDBO_ARCHITECTURE_MASTER_v4.docx`, `WORKSTATION_ADVANCED_ROADMAP_v3.docx`. Note: the referenced `KNOWLEDGE_COMMONS.md` / `WORKSTATION_TRANSFORMATION_PLAN.md` / `CLAUDE_MEMORY.md` were never copied into the repo — *this living plan + agent memory now serve that role.*

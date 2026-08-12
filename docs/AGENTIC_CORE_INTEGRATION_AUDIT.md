@@ -167,3 +167,31 @@ top-level dirs: ~180 → **69**. **Verified:** boot OK, full suite **174 pass / 
 self-check all_live (13/13), no missing modules. One dir (`agentic_core/network`) was dynamically
 imported by reachable code → restored/kept live. See `_archive/README.md` (incl. how to restore). A
 later Stage 2 can surgically archive unreachable modules WITHIN partially-wired dirs.
+
+---
+
+## W251 Reconciliation (2026-08-12) — this ledger brought back in sync with the tree
+
+The programme this ledger tracked continued far past its last entry (W78); the running record moved to
+`docs/AUTONOMOUS_PROGRESS.md` (W79–W250), which is the authoritative cycle log. Reconciling the claims here:
+
+- **Tier-B surfaced: FIVE, not two** — `omnimedia`, `federation_mesh`, `mega_project`, `resource_optimizer`,
+  `truth_consensus` each carry a fabric `_R()` entry, a live endpoint, and a spine contract test. As of W250
+  each also RUNS ITS REAL ENGINE when composed (`_run_real_resource` dispatch) — as does every other resource
+  in the catalogue (8 PI engines · 8 digital-resource facilities · 8 organism systems · the enterprise/org
+  layer). The "fabric is the bus" mechanism is delivered end-to-end for composition.
+- **The remaining Tier-B queue no longer describes the tree.** Three honest buckets:
+  - *Surfaced (done):* the five above.
+  - *Already wired transitively (never orphans):* `consultation` (cognitive engines + MJM), `commercial`
+    (marketplace · csuite · partnerships), `optimization` (v138 CEO), `network` (dynamic import).
+  - *Archived in W78 (restorable from `_archive/agentic_core/`):* ai_ceo, teams, competencies, incubation,
+    triad, sensory, perception, psychology, pulse, collaboration, analytics, builder, pc_agent, strategy,
+    federation — plus the W63/W65/W69 "integrable later" items (ethics/constitutional_enforcer, p53
+    oscillator, complexity/engagement scorers). Their pillars are served by live systems today (gaas.v5
+    constitutional gate · `api/compliance.py` · operational_excellence + Sovereign Evolution).
+- **Known residual (tracked in the gap backlog):** the native swarm executes composed resources but does not
+  yet autonomously SELECT fabric resources for decomposed tree goals (orchestrate_tree's checks are
+  hard-wired); empty placeholder dirs `agentic_core/{homeostasis,genetics,immunity}` survived the W78 purge.
+
+Post-W78 integration increments are logged in `docs/AUTONOMOUS_PROGRESS.md`; this ledger remains the
+real-vs-mock map for the W1–W78 sweep.

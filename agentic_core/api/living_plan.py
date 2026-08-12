@@ -23,16 +23,17 @@ _DOC = "docs/WORKSTATION_IDBO_LIVING_PLAN.md"
 
 # Vision pillars + adherence (mirrors §7 of the living plan; the doc is source-of-truth,
 # this exposes it queryably). status: strong | partial | not_yet
+# Reconciled 2026-08-12 (W251) — keep in lockstep with the doc's §7 scorecard.
 _PILLARS: List[Dict[str, str]] = [
     {"pillar": "AI-mediated end-to-end Concept→Design→Delivery", "status": "strong"},
     {"pillar": "Generate a living Enterprise IDBO (VSB) for the user", "status": "strong"},
     {"pillar": "VSB org (Board→AI CEO→C-Suite→CoE→BTO) curates work", "status": "strong"},
     {"pillar": "Chief = Owner's digital twin (apex, arms-length)", "status": "strong"},
-    {"pillar": "Reconfigurable, combinable resource fabric", "status": "strong"},
-    {"pillar": "One self-running, self-healing, self-improving organism", "status": "partial"},
+    {"pillar": "Reconfigurable, combinable resource fabric — compositions run their REAL engines", "status": "strong"},
+    {"pillar": "One self-running, self-healing, self-improving organism", "status": "strong"},
     {"pillar": "Synthesis Lab — any/all content output types", "status": "partial"},
-    {"pillar": "Constitutional governance throughout (gaas.v5 + UEG)", "status": "strong"},
-    {"pillar": "Biomimetic mediation (biology/biogeo-physical)", "status": "partial"},
+    {"pillar": "Constitutional governance throughout (gaas.v5 + UEG; governed economy)", "status": "strong"},
+    {"pillar": "Biomimetic mediation (biology/biogeo-physical)", "status": "strong"},
     {"pillar": "Foundational values (integrity, halal, stewardship)", "status": "strong"},
 ]
 
@@ -46,17 +47,19 @@ _PHASES: Dict[str, List[str]] = {
         "Living Plan + Plan API (done)",
     ],
     "short": [
-        "Make resource compositions executable (run as a workflow pipeline)",
+        "Resource compositions executable — every composed resource runs its REAL engine (done, W199–W250)",
+        "Synthesis Lab explicit multi-output selection — 15 output types (done)",
+        "Scheduled autonomy — circadian heartbeat runs evolution + living-VSB economy (done; governed W249)",
         "Stream /establish through the full vsb/spawn cascade (SSE)",
-        "Unify legacy evolution fragments (v190/v230/v240/v210) under the Sovereign Evolution Office",
-        "Synthesis Lab explicit multi-output selection",
-        "Scheduled autonomy for Sovereign Evolution cycles",
+        "Absorb the v191 evolution fragment under the Sovereign Evolution Office",
     ],
     "long": [
-        "Per-VSB living business-plan lifecycle (Board → AI CEO appraisal loops)",
-        "Forge ⇄ Build-to-Order ⇄ Catalogue wired to the Resource Fabric",
+        "Per-VSB living lifecycle — Board+Chief+economy+plan on every generated VSB (done, W248)",
+        "Forge ⇄ Build-to-Order ⇄ Catalogue wired to the Resource Fabric (done, W246)",
         "Cross-VSB federation & marketplace",
-        "Persistence hardening (DB), Docker/CI, GaaS YAML genome activation",
+        "User isolation (the §17.5 invariant) on business routers",
+        "Digital-twin pre-validation in Change Control (HIGH/CRITICAL)",
+        "Persistence hardening (atomic JsonStore → DB), GaaS YAML genome activation",
     ],
 }
 

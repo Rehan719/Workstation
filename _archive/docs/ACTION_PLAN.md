@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-08-12, W251):** this plan is ARCHIVED and ~170 cycles stale. The living, reconciled plan is `docs/WORKSTATION_IDBO_LIVING_PLAN.md`; the authoritative delivery record is `docs/AUTONOMOUS_PROGRESS.md` (W1-W250). Do not plan against this file.
+
 <!--
   DETAILED ACTION PLAN — Workstation IDBO
   Objective → Strategy → Gap → timed task breakdown. Living artifact; updated as work proceeds.

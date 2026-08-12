@@ -3,7 +3,7 @@
   Purpose: put the Owner (Rehan) and any AI agent on the SAME PAGE about the vision and current state.
   This is my (Claude's) honest, evidenced articulation of what I understand you want, so you can
   correct, confirm, and direct. Maintained as a living artifact — see KNOWLEDGE_OPERATING_PROCESS.md.
-  Status: FOR OWNER REVIEW · current-state refreshed 2026-06-24 (in-house-first native AI fabric; integration sweep W1–W76 complete; suite 170✓)
+  Status: FOR OWNER REVIEW · current-state refreshed 2026-08-12, W251 (real-engine Resource Fabric across the whole catalogue; governed virtual economy; every generated VSB carries Board+Chief; suite 219✓)
 -->
 
 # Workstation IDBO — Shared Understanding & Knowledge Base
@@ -53,17 +53,18 @@ You have sharpened and expanded the vision across this session. As I understand 
 ## 5. The Current State (grounded — what is real today)
 
 Verified by direct build and test (full detail in `WORKSTATION_IDBO_LIVING_PLAN.md` §4, auto-checkable via `GET /api/v1/plan/state`):
-- Frontend **tsc 0 errors**; integration tests **170 pass / 0 fail**; Spine CI green on `main`.
-- **AI is IN-HOUSE-FIRST** (native fabric, not external API calls): an autonomous **workflow-TREE** orchestrator + **12 real owned `agentic_core` capabilities** (minimax · validation · statistical rigor · consensus · biomimetic signal · quorum · NLI · entropy · topology · VBS · UEG · degradation), catalogued + self-checked + surfaced on `/native-ai`. The in-house integration sweep (W1–W76) is **complete**; real-vs-mock record in `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`.
-- **Live process-intelligence engines:** BDP, SPI, APIE, DDPIE, Cognitive Cascade+MJM, Synthesis Nexus, **Genesis** (Concept→Commercialise).
-- **The deliverable works:** `Genesis /establish` instantiates a real, persisted, governed, operational **VSB IDBO entity** (now with its own Board + Chief-of-its-owner).
-- **Governance:** `gaas.v5` constitutional engine (interceptor + breaker + SHA3-512 UEG audit). **Apex governance:** Board of Directors (Chief = your digital twin) above the AI CEO.
-- **Self-evolution:** Sovereign Evolution Office (introspect → org-curate → Change Control).
-- **Resource Fabric:** 21 federated, reconfigurable, combinable resources.
+- Frontend **tsc 0 errors**; integration tests **219 pass / 0 fail** (15 skip need a live external key); Spine + Doc-Sync CI green on `main`.
+- **AI is IN-HOUSE-FIRST** (native fabric, not external API calls): owned model discovery/routing/tiers + parallel multi-model **ensemble** + the autonomous **workflow-TREE** orchestrator + 12 real owned capabilities, catalogued + self-checked + surfaced on `/native-ai`; the memory store is corruption-tolerant with atomic writes. Real-vs-mock record in `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`.
+- **Live process-intelligence engines:** BDP, SPI, APIE, DDPIE, Cognitive Cascade+MJM, Synthesis Nexus, **Genesis** — and ALL EIGHT run their **real staged pipeline when composed** in the Resource Fabric.
+- **The deliverable works:** `Genesis /establish` instantiates a real, persisted, governed, operational **VSB IDBO entity** — and (W248) **every** generation path (establish · SSE spawn · Studio) attaches its own Board + Chief-of-its-owner, a living economy in its selected legal form, living-entity registration (heartbeat-tended), and a seeded business plan.
+- **Governance:** `gaas.v5` constitutional engine (interceptor + breaker + SHA3-512 UEG audit). **Apex governance:** Board of Directors (Chief = your digital twin) above the AI CEO. **Economic governance (W249):** every cycle gaas-gated + UEG split-logged; material distributions held for Change Control approval.
+- **Self-evolution:** Sovereign Evolution Office (introspect → org-curate → Change Control) on the circadian heartbeat.
+- **Resource Fabric:** 45+ federated, reconfigurable, combinable resources — **every composed resource runs its REAL engine** (8 PI engines · 8 digital-resource facilities incl. the vision-exact composite Reactor and the Generator · 8 organism systems · the enterprise/org layer · compliance/consensus/mega/omnimedia/mesh).
+- **VSB Economy (BUILT; virtual/simulated WST only):** 9 selectable legal-entity forms, the §4 profit waterfall (Owner-adjustable, template-bounded), 100%-donation charity screen, owner-payments ledger, venture investment, living VSBs operated by the heartbeat. Real-money rails remain hard-gated.
 - **Living Plan API:** `/api/v1/plan` + `/api/v1/plan/state` (self-introspecting).
-- 6 domains, VSB pipeline, swarm org cascade, Synthesis Studio, Products (Reactor/Factory/Incubator), Catalog+BTO, Capital Fund, Digital Twin, Management Systems (QMS/BMS/DCS/EMS), full biomimetic systems.
+- 6 domains (18+ honesty-guarded domain tools), VSB pipeline, swarm org cascade, Synthesis Studio (15 output types), Products (Reactor/Factory/Incubator/Generator), Catalog+BTO, Capital Fund, Digital Twin, Management Systems (QMS/BMS/DCS/EMS), full biomimetic systems.
 
-**Honest gaps:** legacy product-suite runs via shims; some Phase-4 hardware/external UI is intentionally backendless; older evolution fragments not yet unified; persistence is file-based JSON (DB migration is a known later phase); **the VSB economic/legal model and entity-type selection are designed but NOT yet built** (awaiting your approval).
+**Honest gaps (reconciled W251):** user-isolation invariant unenforced on business routers; digital-twin pre-validation not wired into Change Control; three streaming surfaces still external-first; Genesis `/establish` not SSE-streamed; `v191` evolution fragment unabsorbed; Video/mp4/mp3 an honest not-yet catalogue; single-entry ledger (no period close/statements); atomic-write hardening only on the AI memory store; avatar cannot yet navigate/guide; i18n partial; cross-VSB federation not started. (The VSB economic model IS built — the previous "awaiting approval" note was stale.)
 
 ## 6. The Evidence Base (what this understanding is built from)
 
