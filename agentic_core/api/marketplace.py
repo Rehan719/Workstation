@@ -19,7 +19,7 @@ import os
 import time
 import uuid
 from pathlib import Path
-from agentic_core.config import data_path
+from agentic_core.config import atomic_write_json, data_path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -76,7 +76,7 @@ def _load(listing_id: str) -> Listing:
 
 def _save(listing: Listing) -> Listing:
     listing.updated_at = time.time()
-    _listing_path(listing.id).write_text(listing.model_dump_json(indent=2))
+    atomic_write_json(_listing_path(listing.id), listing.model_dump())
     return listing
 
 def _all_listings() -> list[Listing]:
@@ -109,7 +109,7 @@ def _seed_platform_listings():
             status="active",
             **s,
         )
-        _listing_path(lid).write_text(listing.model_dump_json(indent=2))
+        atomic_write_json(_listing_path(lid), listing.model_dump())
 
 _seed_platform_listings()
 
@@ -224,7 +224,7 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest) -> dict:
     # Persist receipt
     receipts_dir = data_path("marketplace/receipts")
     receipts_dir.mkdir(parents=True, exist_ok=True)
-    (receipts_dir / f"{receipt['receipt_id']}.json").write_text(json.dumps(receipt, indent=2))
+    atomic_write_json(receipts_dir / f"{receipt['receipt_id']}.json", receipt)
 
     return receipt
 

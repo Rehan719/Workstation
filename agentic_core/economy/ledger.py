@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from agentic_core.config import data_path
+from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List
 
 _STORE = data_path("economy")
@@ -65,7 +65,7 @@ class VirtualLedger:
                 "postings": [], "accounts": {}, "closes": []}
 
     def _save(self) -> None:
-        self.path.write_text(json.dumps(self._data, indent=2), encoding="utf-8")
+        atomic_write_json(self.path, self._data)
 
     # ── double-entry core ─────────────────────────────────────────────────────
     def post(self, debit: str, credit: str, amount: float, memo: str = "",

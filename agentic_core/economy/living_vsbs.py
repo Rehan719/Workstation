@@ -13,7 +13,7 @@ import json
 import time
 from typing import Any, Dict, List, Optional
 
-from agentic_core.config import data_path
+from agentic_core.config import atomic_write_json, data_path
 
 _STORE = data_path("living_vsbs.json")
 
@@ -35,7 +35,7 @@ def _load() -> Dict[str, Any]:
 
 def _save(d: Dict[str, Any]) -> None:
     _STORE.parent.mkdir(parents=True, exist_ok=True)
-    _STORE.write_text(json.dumps(d, indent=2))
+    atomic_write_json(_STORE, d)
 
 
 def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",

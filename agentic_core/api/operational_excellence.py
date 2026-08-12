@@ -21,7 +21,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from agentic_core.config import data_path
+from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter
@@ -44,7 +44,7 @@ def _load() -> List[Dict[str, Any]]:
 
 def _save(rows: List[Dict[str, Any]]) -> None:
     _STORE.parent.mkdir(parents=True, exist_ok=True)
-    _STORE.write_text(json.dumps(rows[-_CAP:], indent=2), encoding="utf-8")
+    atomic_write_json(_STORE, rows[-_CAP:])
 
 
 def record_outcome(kind: str, resource: str, *, served_by: str = "native",

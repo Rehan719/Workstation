@@ -70,6 +70,53 @@ class Settings:
 settings = Settings()
 
 
+def atomic_write_json(path, data, indent: int = 2) -> None:
+    """Atomic JSON write (the W241 pattern from ai/memory.py, shared): write to a temp file in the
+    SAME directory, then os.replace() it in — atomic on Windows and POSIX — so a reader never
+    observes a half-written file and a crash cannot truncate the live store. The heartbeat writes
+    stores in the background while API handlers write the same files; bare write_text() interleaves
+    and corrupts under that concurrency (the documented memory.json/UEG incident)."""
+    import json as _json
+    import os as _os
+    import tempfile as _tempfile
+    from pathlib import Path as _Path
+    p = _Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = _tempfile.mkstemp(dir=str(p.parent), prefix=f".{p.name}.", suffix=".tmp")
+    try:
+        with _os.fdopen(fd, "w", encoding="utf-8") as f:
+            _json.dump(data, f, indent=indent)
+        _os.replace(tmp, str(p))
+    except Exception:
+        try:
+            _os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def load_json_tolerant(path, default):
+    """Corruption-tolerant JSON load: a partial/interleaved/truncated store returns the recoverable
+    JSON prefix when one exists, else the caller's default — never raises into the caller (a corrupt
+    cache must never take a live subsystem down; see ai/memory.py W241)."""
+    import json as _json
+    from pathlib import Path as _Path
+    p = _Path(path)
+    if not p.exists():
+        return default
+    try:
+        return _json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError):
+        return default
+    except _json.JSONDecodeError:
+        try:
+            raw = p.read_text(encoding="utf-8", errors="replace")
+            val, _ = _json.JSONDecoder().raw_decode(raw.lstrip())
+            return val
+        except Exception:
+            return default
+
+
 def data_path(*parts: str):
     """Resolve a path under the configured DATA_DIR (default 'data').
 

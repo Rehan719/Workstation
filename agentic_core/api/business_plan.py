@@ -21,7 +21,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from agentic_core.config import data_path
+from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException
@@ -58,7 +58,7 @@ def _load(scope: str) -> Dict[str, Any]:
 
 def _save(plan: Dict[str, Any]) -> None:
     plan["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    _path(plan["scope"]).write_text(json.dumps(plan, indent=2), encoding="utf-8")
+    atomic_write_json(_path(plan["scope"]), plan)
 
 
 async def _q(prompt: str, agent: str) -> str:

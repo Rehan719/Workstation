@@ -2341,6 +2341,33 @@ def test_data_dir_configurable(client):
     assert out.endswith("custom_data_root/vsb_entities"), out
 
 
+def test_hot_stores_atomic_and_corruption_tolerant(tmp_path):
+    # W257 — the W241 hardening pattern is SHARED (config.atomic_write_json / load_json_tolerant)
+    # and adopted by the heartbeat-touched stores (living_vsbs · ledger · vsb entities · deliverables ·
+    # forge · operational_excellence · capital_fund · marketplace · business_plan): a reader never
+    # sees a half-written file; a corrupt file loads as its recoverable prefix or the default.
+    import json as _json
+    import inspect as _inspect
+    from agentic_core.config import atomic_write_json, load_json_tolerant
+    p = tmp_path / "store.json"
+    atomic_write_json(p, {"a": 1})
+    assert _json.loads(p.read_text(encoding="utf-8")) == {"a": 1}
+    # corrupt trailing garbage → the recoverable prefix, not an exception
+    p.write_text('{"a": 1}][{"garbage', encoding="utf-8")
+    assert load_json_tolerant(p, {}) == {"a": 1}
+    p.write_text("total trash", encoding="utf-8")
+    assert load_json_tolerant(p, {"d": True}) == {"d": True}
+    assert not [f for f in tmp_path.iterdir() if f.suffix == ".tmp"]   # no stray temp files
+    # regression guard: the hot stores actually route through the shared atomic writer
+    import agentic_core.economy.living_vsbs as lv
+    import agentic_core.economy.ledger as lg
+    import agentic_core.api.vsb as vb
+    import agentic_core.api.deliverables as dl
+    import agentic_core.api.capital_fund as cf
+    for mod in (lv, lg, vb, dl, cf):
+        assert "atomic_write_json" in _inspect.getsource(mod), f"{mod.__name__} not atomic"
+
+
 def test_memory_store_corruption_tolerant(tmp_path):
     # §6 robustness — the native AI memory store the gateway writes after EVERY completion must
     # tolerate a corrupt/interleaved file (e.g. concurrent appenders from separate processes) rather

@@ -28,7 +28,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from agentic_core.config import data_path
+from agentic_core.config import atomic_write_json, data_path
 from typing import AsyncIterator
 
 from fastapi import APIRouter, Depends
@@ -63,7 +63,7 @@ def _load_vsb(entity_id: str) -> dict | None:
 
 
 def _save_vsb(entity: dict) -> None:
-    _vsb_path(entity["entity_id"]).write_text(json.dumps(entity, indent=2))
+    atomic_write_json(_vsb_path(entity["entity_id"]), entity)
 
 
 def _list_vsb() -> list[dict]:

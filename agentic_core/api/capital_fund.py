@@ -19,7 +19,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from agentic_core.config import data_path
+from agentic_core.config import atomic_write_json, data_path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -51,7 +51,7 @@ def _load_fund() -> dict:
 
 def _save_fund(fund: dict) -> None:
     _FUND_STORE.parent.mkdir(parents=True, exist_ok=True)
-    _FUND_STORE.write_text(json.dumps(fund, indent=2))
+    atomic_write_json(_FUND_STORE, fund)
 
 
 def _load_listings() -> list[dict]:
@@ -65,7 +65,7 @@ def _load_listings() -> list[dict]:
 
 def _save_listings(listings: list[dict]) -> None:
     _MARKET_STORE.parent.mkdir(parents=True, exist_ok=True)
-    _MARKET_STORE.write_text(json.dumps(listings, indent=2))
+    atomic_write_json(_MARKET_STORE, listings)
 
 
 # ── Capital Fund ──────────────────────────────────────────────────────────────

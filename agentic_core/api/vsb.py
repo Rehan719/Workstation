@@ -26,7 +26,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from agentic_core.config import data_path
+from agentic_core.config import atomic_write_json, data_path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
@@ -81,7 +81,7 @@ def _load_vsb(vsb_id: str) -> dict | None:
 
 
 def _save_vsb(vsb: dict) -> None:
-    _vsb_path(vsb["vsb_id"]).write_text(json.dumps(vsb, indent=2))
+    atomic_write_json(_vsb_path(vsb["vsb_id"]), vsb)
 
 
 # ── §13 — VSB IDBO Entity Repository generator (increment 1) ──────────────────

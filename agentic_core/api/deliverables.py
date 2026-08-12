@@ -20,7 +20,7 @@ import re
 import time
 import uuid
 from pathlib import Path
-from agentic_core.config import data_path
+from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -56,7 +56,7 @@ def _load() -> List[Dict[str, Any]]:
 
 def _save(rows: List[Dict[str, Any]]) -> None:
     _STORE.parent.mkdir(parents=True, exist_ok=True)
-    _STORE.write_text(json.dumps(rows[-300:], indent=2), encoding="utf-8")
+    atomic_write_json(_STORE, rows[-300:])
 
 
 def _grounding(vsb_id: Optional[str]) -> str:
