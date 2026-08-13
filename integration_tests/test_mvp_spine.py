@@ -486,6 +486,24 @@ def test_user_isolation_when_auth_enabled(client, monkeypatch):
     assert "workstation2026" not in _inspect.getsource(auth_core)
 
 
+def test_cascade_appraisals_measured_and_persisted(client):
+    # §5 (W268) — the appraise/develop pass is grounded in MEASURED outcomes (the real QMS gate runs
+    # BEFORE the appraisals; tier calls accrue real operational-excellence rows) and cascade runs
+    # PERSIST (appraisals + Development Actions survive the response, queryable at /cascade/runs).
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w268 measured appraisal contract", "domain": "enterprise"}).json()
+    assert set(r["appraisals"].keys()) >= {"chief_appraises_board", "board_appraises_ceo",
+                                           "ceo_appraises_csuite", "bto_appraises_build"}
+    assert r["quality"].get("qms_gate_passed") is not None      # the gate ran (before the appraisals)
+    runs = client.get("/api/v1/swarm/cascade/runs").json()
+    top = runs["runs"][0]
+    assert top["run_id"] == r["run_id"]                          # this run persisted
+    assert top["appraisals"] and top["quality"].get("delivery_coverage") is not None
+    ops = client.get("/api/v1/operations/rankings").json()["rankings"]
+    tier_rows = [x for x in ops if str(x["resource"]).startswith(("agent:cascade_", "agent:appraise_"))]
+    assert tier_rows, "cascade tier calls accrued no operational-excellence rows"
+
+
 def test_pervsb_swarm_reconfigurable_and_live_grounded(client):
     # §7 user design control × §5 (W267) — the VSB's OWN delivery org is genuinely reconfigurable:
     # PUT /resources/swarm/{sid} edits stages/org (id + vsb_id preserved; the entity's native_swarm

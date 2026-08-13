@@ -181,6 +181,16 @@ class CascadeRequest(BaseModel):
     csuite_roles: list[str] = []
 
 
+@router.get("/cascade/runs")
+async def cascade_runs(limit: int = 10):
+    """§5 (W268) — the persisted org-cascade run history (appraisals · Development Actions · measured
+    quality · governance · provenance), newest first. The appraisal/development record survives the
+    response, so the next cycle can be judged against it."""
+    from agentic_core.config import data_path, load_json_tolerant
+    rows = load_json_tolerant(data_path("org_cascade_runs.json"), []) or []
+    return {"runs": list(reversed(rows[-max(1, min(limit, 50)):])), "total": len(rows)}
+
+
 @router.post("/cascade")
 async def cascade_orchestration(req: CascadeRequest):
     """
@@ -209,10 +219,21 @@ async def cascade_orchestration(req: CascadeRequest):
     provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
 
     async def _q(prompt: str, agent: str) -> str:
+        _qt0 = time.time()
         res = await gateway.query_meta(prompt, agent=agent)
         sb = res.get("served_by", "native")
         provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
         provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
+        # §5 (W268) — every tier call accrues a REAL operational-excellence row, so appraisals (and
+        # the learning loop) judge against measured outcomes, not just same-run prose. Best-effort.
+        try:
+            from agentic_core.api.operational_excellence import record_outcome
+            record_outcome("ai_call", f"agent:{agent}", served_by=sb,
+                           is_external=bool(res.get("is_external")),
+                           duration_ms=int((time.time() - _qt0) * 1000),
+                           success=bool((res.get("output") or "").strip()), ref=run_id)
+        except Exception:
+            pass
         return res.get("output", "")
 
     # Tier 0a: Chief of the Board of Directors (the Owner's digital twin) — the founding mandate
@@ -345,9 +366,41 @@ async def cascade_orchestration(req: CascadeRequest):
     )
     products_services_catalogue = await _q(catalogue_prompt, "cascade_catalogue")
 
+    # ── §10 Solution-Quality Bar + the living QMS gate — run BEFORE the appraisal pass (W268) so the
+    # appraising tiers judge against this run's REAL measured outcomes, not just same-run prose.
+    _qa = await assure_delivery(
+        f"{build_to_order}\n{products_services_catalogue}",
+        ["Operational Delivery Resources", "Work Breakdown", "Quality Gates", "Go-Live"],
+        label="cascade")
+    quality: dict = _qa["quality"]
+    biomimetic: dict = _qa["biomimetic"]
+
+    # §5 (W268) — the MEASURED outcomes block every appraisal is grounded in: the real QMS gate,
+    # coverage, the stateful non-conformance rate, provenance, and the tiers' accrued operational
+    # stats. Nothing here is generated — every figure is read from the systems that measured it.
+    try:
+        from agentic_core.api.operational_excellence import _load as _ops_load
+        _ops_rows = [r for r in _ops_load() if str(r.get("resource", "")).startswith("agent:cascade_")][-50:]
+        _ops_ok = sum(1 for r in _ops_rows if r.get("success"))
+        _ops_stats = {"recent_tier_calls": len(_ops_rows),
+                      "success_rate": round(_ops_ok / len(_ops_rows), 3) if _ops_rows else None}
+    except Exception:
+        _ops_stats = {}
+    measured_block = (
+        "Measured outcomes for THIS run (judge against these — do not merely restate the text):\n"
+        f"- QMS gate passed: {quality.get('qms_gate_passed')}\n"
+        f"- Delivery coverage: {quality.get('delivery_coverage')}\n"
+        f"- QMS non-conformance rate (stateful, all-time): {quality.get('qms_non_conformance_rate')}\n"
+        f"- Stub/placeholder content detected: {quality.get('stub_found')}\n"
+        f"- Served in-house: {not provenance['any_external']} (by: {provenance['served_by']})\n"
+        + (f"- Recent cascade-tier call success rate: {_ops_stats.get('success_rate')} "
+           f"over {_ops_stats.get('recent_tier_calls')} calls\n" if _ops_stats.get("recent_tier_calls") else "")
+    )
+
     # ── §5: each tier MANAGES, APPRAISES and DEVELOPS the tier below (arms-length). After the top-down
     # delegation, a bounded upward appraisal pass — each managing tier appraises the tier below's output
-    # and sets a development action (continual improvement), without lower tiers instructing higher ones.
+    # GROUNDED IN THE MEASURED OUTCOMES ABOVE and sets a development action (continual improvement),
+    # without lower tiers instructing higher ones.
     appraisals: dict = {}
     for key, manager, below_label, below_text in (
         ("chief_appraises_board", "Chief of the Board", "the Board's action plan", board_resolution),
@@ -358,8 +411,8 @@ async def cascade_orchestration(req: CascadeRequest):
     ):
         appraisals[key] = await _q(
             f"You are the {manager}. Arms-length, you MANAGE, APPRAISE and DEVELOP the tier directly below "
-            f"you. Appraise {below_label}:\n\n{str(below_text)[:600]}\n\n"
-            "## Appraisal (strengths · gaps · risks)\n"
+            f"you.\n\n{measured_block}\nAppraise {below_label}:\n\n{str(below_text)[:600]}\n\n"
+            "## Appraisal (strengths · gaps · risks — cite the measured outcomes where relevant)\n"
             "## Development Action (how you will develop and improve that tier next cycle)\n"
             "Be specific and constructive.", f"appraise_{key}")
 
@@ -381,17 +434,6 @@ async def cascade_orchestration(req: CascadeRequest):
             management_systems["document_control"][aid] = await dcms.commit_artifact(f"{run_id}:{aid}", content, "AI CEO")
     except Exception as exc:
         management_systems["error"] = str(exc)
-
-    # ── §10 Solution-Quality Bar + continual operational delivery within the LIVING QMS + §8 organism,
-    # via the ONE shared living-QMS capability the whole platform delivers through. The operational
-    # delivery (Build-to-Order + the customer catalogue) is gated on its required sections being present
-    # and free of stubs — real, stateful (defects accumulate, a non-conformance rate is tracked).
-    _qa = await assure_delivery(
-        f"{build_to_order}\n{products_services_catalogue}",
-        ["Operational Delivery Resources", "Work Breakdown", "Quality Gates", "Go-Live"],
-        label="cascade")
-    quality: dict = _qa["quality"]
-    biomimetic: dict = _qa["biomimetic"]
 
     # ── §5: Change Control — arms-length constitutional governance over the WHOLE delivery (gaas.v5).
     governance: dict = {"status": "ungoverned", "arms_length": True}
@@ -425,6 +467,27 @@ async def cascade_orchestration(req: CascadeRequest):
 
     duration_ms = int((time.time() - start) * 1000)
     biobus.record_operation("swarm_cascade", "swarm.cascade", success=True, payload=f"Chief+Board+CEO+{len(csuite_responses)} CSuite+{len(coe_responses)} CoE+BTO+BuildToOrder, {duration_ms}ms")
+
+    # §5 (W268) — PERSIST the cascade run (previously only /delegate persisted; cascade runs — with
+    # their appraisals and Development Actions — evaporated at response time). Compact + capped + atomic;
+    # a non-colliding store (swarm_cascades.json holds fabric cascade DEFINITIONS, not runs).
+    try:
+        from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+        _runs_store = data_path("org_cascade_runs.json")
+        _runs = load_json_tolerant(_runs_store, []) or []
+        _runs.append({
+            "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
+            "csuite_engaged": selected, "appraisals": appraisals,
+            "quality": {k: quality.get(k) for k in ("qms_gate_passed", "delivery_coverage",
+                                                    "qms_non_conformance_rate", "stub_found")},
+            "governance": governance.get("status"), "ueg_hash": ueg_hash,
+            "served_by": provenance["served_by"], "any_external": provenance["any_external"],
+            "duration_ms": duration_ms,
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        })
+        atomic_write_json(_runs_store, _runs[-100:])
+    except Exception:
+        pass
 
     return {
         "run_id": run_id,
