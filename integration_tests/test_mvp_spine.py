@@ -600,6 +600,48 @@ def test_chief_instruction_becomes_living_plan_objectives(client):
     assert tagged[0]["status"] == "planned" and tagged[0]["id"].startswith("obj-")
 
 
+def test_apex_board_runs_on_native_fabric(client):
+    # §5×§6×§11 apex closure (W270) — the Board (the organism's HIGHEST direction) now runs on the
+    # same governed native fabric as every lower tier: provenance recorded (which OWNED resource
+    # served the apex, in-house-first), the chief directive passes the gaas.v5 gate (or bypass is
+    # LOUDLY logged — never silent), the direction is sealed into the tamper-evident UEG ledger,
+    # and /board/directive persists (previously write-only prose).
+    r = client.post("/api/v1/board/chief/instruct", json={
+        "instruction": "w270 apex fabric contract — expand the scholarship engine"}).json()
+    prov = r["ai_provenance"]
+    assert prov["served_by"] and prov["posture"] == "in-house-first"
+    assert r["governance"]["status"] in ("allowed", "passed", "ungated_bypass_logged")
+    ev = client.get("/api/v1/gaas/ueg/events?limit=200").json()
+    payloads = [e.get("data") or {} for e in ev.get("events", [])]   # hash-chain nodes nest the event
+    sealed = [p for p in payloads if p.get("type") == "board.chief_instruct"
+              and p.get("directive_id") == r["directive_id"]]
+    assert sealed and sealed[0]["served_by"], "apex direction not sealed into the UEG ledger"
+    d = client.post("/api/v1/board/directive", json={
+        "topic": "w270 directive persistence", "domain": "enterprise"}).json()
+    assert d["kind"] == "board_directive" and d["ai_provenance"]["served_by"]
+    recent = client.get("/api/v1/board/status").json().get("recent_directives", [])
+    assert any(x.get("kind") == "board_directive" and
+               x.get("topic") == "w270 directive persistence" for x in recent)
+
+
+def test_all_four_management_systems_compute(client):
+    # §5 living management systems (W271) — ALL FOUR now COMPUTE over the run's own telemetry:
+    # DCMS commits real versioned artifacts, QMS runs the real stateful gate, and BMS unit
+    # economics + EMS carbon are computed from the run's measured artifact count and a
+    # duration-derived energy estimate (simulated constants HONESTLY caveated) — previously
+    # BMS/EMS were catalogue-attested but never engaged.
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w271 four living systems contract", "domain": "enterprise"}).json()
+    ms = r["management_systems"]
+    assert ms["document_control"] and r["quality"].get("qms_gate_passed") is not None
+    bms = ms["bms"]
+    assert isinstance(bms["cost_per_insight_usd"], (int, float)) and bms["insights_count"] >= 4
+    assert bms["status"] in ("EFFICIENT", "REVISE") and "estimate" in bms["caveat"]
+    ems = ms["ems"]
+    assert isinstance(ems["total_co2_kg"], (int, float)) and ems["total_co2_kg"] > 0
+    assert ems["efficiency_gain"] > 0 and "simulated" in ems["caveat"]
+
+
 def test_every_generated_vsb_carries_board_and_economy(client):
     # §3.3 invariant (Living Plan, bold): "Every generated VSB carries its own Board + a Chief that is
     # the digital twin of its owner" — plus a living economy in its legal form, living-entity

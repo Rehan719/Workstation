@@ -84,15 +84,59 @@ def _load() -> List[Dict[str, Any]]:
 
 
 def _save(rows: List[Dict[str, Any]]) -> None:
-    _STORE.parent.mkdir(parents=True, exist_ok=True)
-    _STORE.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    from agentic_core.config import atomic_write_json
+    atomic_write_json(_STORE, rows)
 
 
-async def _q(prompt: str, agent: str) -> str:
+async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None) -> str:
+    """§6 (W270) — the APEX tier runs on the same in-house-first fabric as every lower tier:
+    query_meta with owned-resource provenance recorded per call (the Board was previously the only
+    AI-driven governance tier without served_by/any_external)."""
     try:
-        return await gateway.query(prompt, agent=agent)
+        res = await gateway.query_meta(prompt, agent=agent)
+        if provenance is not None:
+            sb = res.get("served_by", "native")
+            provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
+            provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
+        return res.get("output", "")
     except Exception as e:
         return f"[{agent} unavailable: {e}]"
+
+
+def _live_intelligence(scope: str) -> str:
+    """LIVE intelligence for the Chief's directive (W270): the scoped plan's real progress, the
+    recent operational success rate, and the prior directives — so the apex instructs from today's
+    measured state, not just the static charter. Every figure read from the system that measured it."""
+    lines: List[str] = []
+    try:
+        from agentic_core.api.business_plan import _load as _bp_load
+        objs = (_bp_load(scope) or {}).get("objectives", [])
+        if objs:
+            by = {}
+            for o in objs:
+                by[o.get("status", "?")] = by.get(o.get("status", "?"), 0) + 1
+            lines.append(f"- Living plan ({scope}): {len(objs)} objectives — " +
+                         ", ".join(f"{k}: {v}" for k, v in sorted(by.items())))
+    except Exception:
+        pass
+    try:
+        from agentic_core.api.operational_excellence import _load as _ops_load
+        rows = _ops_load()[-50:]
+        if rows:
+            ok = sum(1 for r in rows if r.get("success"))
+            lines.append(f"- Recent operations: {len(rows)} runs, success rate {round(ok / len(rows), 2)}")
+    except Exception:
+        pass
+    try:
+        prior = _load()[-2:]
+        for p in prior:
+            lines.append(f"- Prior directive {p.get('directive_id', p.get('topic', '?'))}: "
+                         f"{str(p.get('instruction') or p.get('topic') or '')[:100]}")
+    except Exception:
+        pass
+    if not lines:
+        return ""
+    return "\n\nLIVE INTELLIGENCE (today's measured state — ground your directive in it):\n" + "\n".join(lines)
 
 
 def board_for_owner(owner_name: str, vision_summary: str = "") -> Dict[str, Any]:
@@ -158,12 +202,15 @@ async def chief_instruct(req: ChiefInstruction):
     timelined/resourced action plan to the AI CEO.
     """
     directive_id = f"dir-{uuid.uuid4().hex[:8]}"
+    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
 
-    # 1. The Chief (Owner's digital twin) interprets and represents the Owner faithfully.
+    # 1. The Chief (Owner's digital twin) interprets and represents the Owner faithfully — grounded
+    #    in LIVE intelligence (plan progress · operations · prior directives), not just the charter.
     chief_prompt = (
         f"You are the Chief of the Board — the digital twin of {req.owner}, the Owner/Founder of the "
         f"Workstation IDBO. {_OWNER['fidelity_charter']}\n\n"
-        f"The Owner's vision: {_OWNER['vision_summary']}\n\n"
+        f"The Owner's vision: {_OWNER['vision_summary']}"
+        f"{_live_intelligence(req.scope)}\n\n"
         f"The Owner's instruction:\n\"{req.instruction}\"\n\n"
         "Acting AS the Owner, produce a board-level directive that precisely realises their intent:\n"
         "## Owner Intent (restated faithfully, what they truly want)\n"
@@ -171,7 +218,28 @@ async def chief_instruct(req: ChiefInstruction):
         "## Director Assignments (which Director owns which part)\n"
         "## Success Criteria (how we know the Owner's wish is fulfilled)"
     )
-    directive = await _q(chief_prompt, "board_chief")
+
+    # §11 (W270) — the APEX direction runs under the same gaas.v5 constitutional gate as every lower
+    # tier (a gate failure logs a LOUD UEG bypass event, never silent — the W249/W261 pattern).
+    async def _directive_action() -> str:
+        return await _q(chief_prompt, "board_chief", provenance)
+    try:
+        from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
+        _gov = UnifiedConstitutionalInterceptorV16Omega("board-node", UEGLogger())
+        _res = await _gov.intercept({"intent": "board_chief_instruct", "owner": req.owner,
+                                     "scope": req.scope}, _directive_action)
+        directive = _res.output if isinstance(_res.output, str) else await _directive_action()
+        governance = {"status": _res.status, "checkpoint": _res.checkpoint_id}
+    except Exception as _e:
+        directive = await _directive_action()
+        try:
+            from agentic_core.gaas.v5 import UEGLogger
+            UEGLogger().log({"type": "board.governance_bypass", "directive_id": directive_id,
+                             "error": str(_e)[:200],
+                             "note": "gaas.v5 gate unavailable — apex directive ran ungated (logged loudly)."})
+        except Exception:
+            pass
+        governance = {"status": "ungated_bypass_logged", "error": str(_e)[:160]}
 
     # 2. Delegate to the AI CEO as a timelined, resourced, scheduled action plan.
     action_plan = ""
@@ -186,7 +254,7 @@ async def chief_instruct(req: ChiefInstruction):
             "## Delegation (C-Suite → CoE → BTO assignments)\n"
             "## KPIs & Review Cadence"
         )
-        action_plan = await _q(ceo_prompt, "board_ceo_delegate")
+        action_plan = await _q(ceo_prompt, "board_ceo_delegate", provenance)
 
     # §5 apex closure (W265) — the delegation LANDS: parsed objectives (TITLE|KPI|TIMELINE|OWNER_ROLE)
     # are appended to the scoped LIVING business plan, tagged with this directive. When the serving
@@ -216,12 +284,26 @@ async def chief_instruct(req: ChiefInstruction):
         "ceo_action_plan": action_plan,
         "business_plan_scope": req.scope,
         "objectives_added": objectives_added,
+        "ai_provenance": provenance,     # §6 — which OWNED resource served the apex (W270)
+        "governance": governance,        # §11 — the gaas.v5 gate verdict over the apex direction
         "delegation_chain": ["Chief", "Board", "AI CEO", "C-Suite", "CoE", "BTO"],
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     rows = _load()
     rows.append(record)
     _save(rows)
+
+    # §6 (W270) — seal the apex direction into the tamper-evident UEG ledger.
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "board.chief_instruct", "directive_id": directive_id,
+                         "owner": req.owner, "scope": req.scope,
+                         "objectives_added": objectives_added,
+                         "served_by": provenance["served_by"],
+                         "any_external": provenance["any_external"],
+                         "governance": governance.get("status")})
+    except Exception:
+        pass
 
     try:
         from agentic_core.organism.biobus import biobus
@@ -252,11 +334,20 @@ async def board_directive(req: BoardDirective):
         "## Directive to the AI CEO (what to execute)\n"
         "## Guardrails (governance / arms-length constraints)"
     )
-    resolution = await _q(prompt, "board_directive")
-    return {
+    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    resolution = await _q(prompt, "board_directive", provenance)
+    record = {
+        "kind": "board_directive",
         "topic": req.topic,
         "domain": req.domain,
         "resolution": resolution,
+        "ai_provenance": provenance,     # §6 — apex provenance (W270)
         "chaired_by": "Chief (Owner's Digital Twin)",
         "status": "resolved",
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+    # W270 — board deliberations PERSIST (previously the resolution evaporated at response time).
+    rows = _load()
+    rows.append(record)
+    _save(rows)
+    return record

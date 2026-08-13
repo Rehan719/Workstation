@@ -455,10 +455,11 @@ async def cascade_orchestration(req: CascadeRequest):
     except Exception:
         pass
 
-    # ── §5: the AI CEO INTEGRATES the living management systems (BMS·QMS·DCS·EMS) — for real, not prose.
-    # The org's key decisions are document-controlled through the OWNED DCMS (real SHA3-512 versioned
-    # artifacts with an audit trail). We do NOT fabricate BMS/EMS telemetry numbers — those need real
-    # runtime metrics — so we attest the systems are integrated and prove it with the DCMS commits.
+    # ── §5: the AI CEO INTEGRATES the living management systems — ALL FOUR now COMPUTE over this
+    # run (W270): DCMS commits real SHA3-512 versioned artifacts; QMS ran the real stateful gate
+    # (above, before the appraisals); BMS computes unit economics and EMS carbon over the run's OWN
+    # measured telemetry (tier artifacts produced × a duration-derived energy ESTIMATE — the $/Wh and
+    # kgCO2/Wh rates are the registry catalogue's declared simulated constants, honestly labelled).
     management_systems: dict = {"integrated": [], "document_control": {}, "catalogue": []}
     try:
         from agentic_core.vbs.registry import dcms, CATALOGUE as _VBS_CAT
@@ -473,6 +474,25 @@ async def cascade_orchestration(req: CascadeRequest):
             management_systems["document_control"][aid] = await dcms.commit_artifact(f"{run_id}:{aid}", content, "AI CEO")
     except Exception as exc:
         management_systems["error"] = str(exc)
+    try:
+        from agentic_core.vbs.registry import bms, ems
+        _insights = len(management_systems.get("document_control", {})) + len(appraisals)
+        _energy_wh = round(max(0.1, (time.time() - start) / 60.0), 3)   # duration-derived ESTIMATE
+        _unit = await bms.calculate_unit_economics(_insights, _energy_wh)
+        management_systems["bms"] = {
+            "cost_per_insight_usd": round(float(_unit.get("cost_per_insight", 0.0)), 6),
+            "roi": round(float(_unit.get("roi", 0.0)), 3), "status": _unit.get("status"),
+            "insights_count": _insights, "energy_wh_estimate": _energy_wh,
+            "caveat": "energy is a duration-derived estimate; $/Wh is the catalogue's simulated constant",
+        }
+        _eff = await ems.monitor_efficiency(_energy_wh)
+        management_systems["ems"] = {
+            "efficiency_gain": float(_eff), "total_co2_kg": round(float(ems.total_co2_kg), 6),
+            "energy_wh_estimate": _energy_wh,
+            "caveat": "kgCO2/Wh + efficiency are the catalogue's simulated constants over measured duration",
+        }
+    except Exception:
+        pass
 
     # ── §5: Change Control — arms-length constitutional governance over the WHOLE delivery (gaas.v5).
     governance: dict = {"status": "ungoverned", "arms_length": True}
