@@ -218,6 +218,24 @@ async def cascade_orchestration(req: CascadeRequest):
     # resource served each tier (proves the org cascade runs on Workstation's own fabric).
     provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
 
+    # §5 DEVELOP (W269) — the PREVIOUS cycle's Development Actions are APPLIED this cycle: each tier's
+    # prompt carries the development action its managing tier set last run (persisted by the appraisal
+    # pass below), closing the "each tier manages, appraises and DEVELOPS the tier below" loop
+    # cycle-over-cycle. Development Actions previously had zero consumers.
+    from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+    _DEV_STORE = data_path("tier_development.json")
+    _prior_dev: dict = load_json_tolerant(_DEV_STORE, {}) or {}
+    development_applied: dict = {}
+
+    def _dev_for(appraisal_key: str, manager_label: str) -> str:
+        rec = _prior_dev.get(appraisal_key) or {}
+        action = str(rec.get("action") or "").strip()
+        if not action:
+            return ""
+        development_applied[appraisal_key] = rec.get("run_id")
+        return (f"\n\nDEVELOPMENT ACTION from your managing tier ({manager_label}), set after the "
+                f"previous cycle's appraisal — apply it in this response:\n{action[:500]}")
+
     async def _q(prompt: str, agent: str) -> str:
         _qt0 = time.time()
         res = await gateway.query_meta(prompt, agent=agent)
@@ -267,7 +285,7 @@ async def cascade_orchestration(req: CascadeRequest):
         "## Authority Delegated to the AI CEO (scope + accountabilities)\n"
         "## Board-level Success Criteria"
     )
-    board_resolution = await _q(board_prompt, "cascade_board")
+    board_resolution = await _q(board_prompt + _dev_for("chief_appraises_board", "Chief of the Board"), "cascade_board")
 
     # Tier 1: AI CEO — executes under the Board's resolution
     ceo_prompt = (
@@ -282,7 +300,7 @@ async def cascade_orchestration(req: CascadeRequest):
         "## Timeline\n"
         "Be decisive and inspiring. This directive will cascade to your entire executive team."
     )
-    ceo_directive = await _q(ceo_prompt, "cascade_ceo")
+    ceo_directive = await _q(ceo_prompt + _dev_for("board_appraises_ceo", "Board of Directors"), "cascade_ceo")
 
     # Level 2: the specialist C-Suite (§5) — user-reconfigurable (req.csuite_roles); each officer leads
     # AND develops its own Centre of Excellence (the §5 "each drives their CoE" linkage). Empty selection
@@ -306,7 +324,7 @@ async def cascade_orchestration(req: CascadeRequest):
             "## Metrics You Own\n"
             "## Your Centre of Excellence (the specialist team/capability you stand up and develop)"
         )
-        csuite_responses[role] = await _q(prompt, f"cascade_{role.lower()}")
+        csuite_responses[role] = await _q(prompt + _dev_for("ceo_appraises_csuite", "AI CEO"), f"cascade_{role.lower()}")
         # That officer DRIVES its CoE — specialist functional + operational delivery for its workstream.
         coe_prompt = (
             f"You are the Head of the Centre of Excellence reporting to the {agent_info['role']} "
@@ -316,7 +334,7 @@ async def cascade_orchestration(req: CascadeRequest):
             "## Specialist Capability Applied\n## Operational Delivery (what your team produces)\n"
             "## Standards & Best Practice Enforced"
         )
-        coe_responses[f"{role} CoE"] = await _q(coe_prompt, f"cascade_coe_{role.lower()}")
+        coe_responses[f"{role} CoE"] = await _q(coe_prompt + _dev_for("csuite_appraises_coe", "your C-Suite officer"), f"cascade_coe_{role.lower()}")
     # Optional additional domain CoEs the user explicitly requested (beyond the per-officer CoEs).
     for specialism in (req.coe_specialisms or [])[:3]:
         prompt = (
@@ -339,7 +357,7 @@ async def cascade_orchestration(req: CascadeRequest):
         "## Dependencies & Risks\n"
         "## Handover to Build-to-Order (what the delivery engine must produce)"
     )
-    bto_programme = await _q(bto_prompt, "cascade_bto")
+    bto_programme = await _q(bto_prompt + _dev_for("ceo_appraises_bto", "AI CEO"), "cascade_bto")
 
     # Tier 5: Build-to-Order — operational delivery: assemble delivery resources + a work breakdown
     build_prompt = (
@@ -353,7 +371,7 @@ async def cascade_orchestration(req: CascadeRequest):
         "## Quality Gates & Acceptance Criteria\n"
         "## Go-Live & Operations (how it runs once delivered)"
     )
-    build_to_order = await _q(build_prompt, "cascade_build_to_order")
+    build_to_order = await _q(build_prompt + _dev_for("bto_appraises_build", "Business Transformation Office"), "cascade_build_to_order")
 
     # Products / Services catalogue — what Build-to-Order will actually deliver to customers
     catalogue_prompt = (
@@ -407,6 +425,12 @@ async def cascade_orchestration(req: CascadeRequest):
         ("board_appraises_ceo", "Board of Directors", "the AI CEO's directive", ceo_directive),
         ("ceo_appraises_csuite", "AI CEO", "the C-Suite's functional plans",
          "\n".join(f"- {r}: {t[:160]}" for r, t in csuite_responses.items())),
+        # W269 — the two previously-missing edges: every produced tier now has an appraising manager
+        ("csuite_appraises_coe", "specialist C-Suite (each officer, for the CoE it drives)",
+         "the Centres of Excellence's contributions",
+         "\n".join(f"- {r}: {t[:160]}" for r, t in coe_responses.items())),
+        ("ceo_appraises_bto", "AI CEO", "the Business Transformation Office's transformation programme",
+         bto_programme),
         ("bto_appraises_build", "Business Transformation Office", "Build-to-Order's delivery plan", build_to_order),
     ):
         appraisals[key] = await _q(
@@ -415,6 +439,21 @@ async def cascade_orchestration(req: CascadeRequest):
             "## Appraisal (strengths · gaps · risks — cite the measured outcomes where relevant)\n"
             "## Development Action (how you will develop and improve that tier next cycle)\n"
             "Be specific and constructive.", f"appraise_{key}")
+
+    # §5 DEVELOP (W269) — persist each appraisal's Development Action so the NEXT cycle applies it
+    # (the injection at the top of this function). Extraction is honest: the '## Development Action'
+    # section when present, else the full appraisal text (bounded) — never fabricated.
+    try:
+        import re as _re
+        for _k, _text in appraisals.items():
+            _parts = _re.split(r"##\s*Development Action[^\n]*\n?", str(_text), maxsplit=1, flags=_re.I)
+            _action = (_parts[1] if len(_parts) > 1 else str(_text)).strip()[:600]
+            if _action:
+                _prior_dev[_k] = {"action": _action, "run_id": run_id,
+                                  "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        atomic_write_json(_DEV_STORE, _prior_dev)
+    except Exception:
+        pass
 
     # ── §5: the AI CEO INTEGRATES the living management systems (BMS·QMS·DCS·EMS) — for real, not prose.
     # The org's key decisions are document-controlled through the OWNED DCMS (real SHA3-512 versioned
@@ -507,6 +546,9 @@ async def cascade_orchestration(req: CascadeRequest):
         "csuite_roster": {"engaged": selected, "available": _CSUITE_POOL, "each_drives_coe": True},
         # §5 — each tier manages, APPRAISES and DEVELOPS the tier below (arms-length upward appraisal).
         "appraisals": appraisals,
+        # §5 DEVELOP (W269) — which tiers received + applied the PREVIOUS cycle's Development Action
+        # (key → the run_id that set it); empty on a first run.
+        "development_applied": development_applied,
         # §10 Solution-Quality Bar + the living-QMS quality gate over the operational delivery.
         "quality": quality,
         # §8 — the biomimetic living-organism substrate the cascade runs within (live immune + circadian).

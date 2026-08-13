@@ -486,6 +486,23 @@ def test_user_isolation_when_auth_enabled(client, monkeypatch):
     assert "workstation2026" not in _inspect.getsource(auth_core)
 
 
+def test_develop_actions_apply_cycle_over_cycle(client):
+    # §5 DEVELOP (W269) — "each tier manages, appraises and DEVELOPS the tier below": the appraisal
+    # chain now covers ALL SIX edges (chief→board, board→ceo, ceo→csuite, csuite→coe, ceo→bto,
+    # bto→build), each Development Action persists, and the NEXT cycle's tier prompts APPLY them —
+    # previously Development Actions had zero consumers and two edges were missing.
+    r1 = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w269 develop loop contract", "domain": "enterprise"}).json()
+    assert set(r1["appraisals"].keys()) == {
+        "chief_appraises_board", "board_appraises_ceo", "ceo_appraises_csuite",
+        "csuite_appraises_coe", "ceo_appraises_bto", "bto_appraises_build"}   # all six edges
+    r2 = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w269 develop loop contract round 2", "domain": "enterprise"}).json()
+    da = r2["development_applied"]
+    assert set(da.keys()) == set(r1["appraisals"].keys())     # every tier received a development action
+    assert all(v == r1["run_id"] for v in da.values())        # each traceable to the run that set it
+
+
 def test_cascade_appraisals_measured_and_persisted(client):
     # §5 (W268) — the appraise/develop pass is grounded in MEASURED outcomes (the real QMS gate runs
     # BEFORE the appraisals; tier calls accrue real operational-excellence rows) and cascade runs
