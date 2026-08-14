@@ -1,0 +1,81 @@
+"""
+Revenue recognition (§12×§5×§7, W293) — the economic organism is fed by the enterprise's REAL work.
+
+Before this module, the autonomous economy ran on a fabricated flat 1000-WST-per-tick constant:
+the delivery org's actual work never funded anything, and marketplace WST sales never reached any
+VSB's books. Now every economic event is RECORDED when the real activity happens and CONSUMED
+(exactly once) by the entity's next autonomous cycle:
+
+  - marketplace_sale   — a buyer's WST spend on a VSB-attributed listing (the same amount the
+                         TokenLedger deducted from the buyer is recognised as the seller's revenue —
+                         two ledgers, one flow, counted once per side).
+  - cascade_delivery   — a QMS-PASSED, VSB-scoped org-cascade delivery earns the DECLARED simulated
+                         tariff (virtual WST — an honest simulation constant, never real money);
+                         its cost side is the W271 BMS estimate for the run.
+
+With NO recorded events, the next cycle is an honest ZERO-revenue maintenance cycle — the organism
+still tends the entity (governed), but distributes only what real activity brought. Never fabricated.
+Virtual/simulated WST only; real-money rails remain Owner-gated.
+"""
+from __future__ import annotations
+
+import time
+import uuid
+from typing import Any, Dict
+
+from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+
+_STORE = data_path("revenue_events.json")
+
+# DECLARED simulation constants (virtual WST) — labelled at every use, never presented as real.
+SIM_DELIVERY_TARIFF_WST = 250.0     # earned per QMS-passed, VSB-scoped cascade delivery
+
+
+def _load() -> list:
+    return load_json_tolerant(_STORE, []) or []
+
+
+def record_event(vsb_id: str, kind: str, amount_wst: float, source: str, ref: str = "",
+                 note: str = "") -> Dict[str, Any]:
+    """Append one economic event (kind: revenue | cost). Best-effort callers should try/except —
+    recording is non-critical to the activity that earned it."""
+    ev = {"id": f"rev-{uuid.uuid4().hex[:10]}", "vsb_id": vsb_id, "kind": kind,
+          "amount_wst": round(float(amount_wst), 6), "source": source, "ref": ref,
+          "note": note, "consumed": False,
+          "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    rows = _load()
+    rows.append(ev)
+    atomic_write_json(_STORE, rows[-2000:])
+    return ev
+
+
+def consume_pending(vsb_id: str) -> Dict[str, Any]:
+    """Consume (exactly once) all pending events for a VSB → the next cycle's REAL intake.
+    Returns {"revenue": X, "costs": Y, "events": n, "sources": {...}}."""
+    rows = _load()
+    revenue = costs = 0.0
+    sources: Dict[str, int] = {}
+    n = 0
+    for ev in rows:
+        if ev.get("vsb_id") == vsb_id and not ev.get("consumed"):
+            if ev.get("kind") == "revenue":
+                revenue += float(ev.get("amount_wst") or 0.0)
+            else:
+                costs += float(ev.get("amount_wst") or 0.0)
+            sources[ev.get("source", "?")] = sources.get(ev.get("source", "?"), 0) + 1
+            ev["consumed"] = True
+            ev["consumed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            n += 1
+    if n:
+        atomic_write_json(_STORE, rows[-2000:])
+    return {"revenue": round(revenue, 6), "costs": round(costs, 6), "events": n, "sources": sources}
+
+
+def pending_summary(vsb_id: str | None = None) -> Dict[str, Any]:
+    """Read-only view of unconsumed events (all VSBs, or one)."""
+    rows = [e for e in _load() if not e.get("consumed")
+            and (vsb_id is None or e.get("vsb_id") == vsb_id)]
+    return {"pending_events": len(rows),
+            "pending_revenue_wst": round(sum(e["amount_wst"] for e in rows if e["kind"] == "revenue"), 6),
+            "pending_cost_wst": round(sum(e["amount_wst"] for e in rows if e["kind"] == "cost"), 6),
+            "events": rows[-50:]}

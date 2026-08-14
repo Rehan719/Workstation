@@ -54,6 +54,30 @@ def _save_fund(fund: dict) -> None:
     atomic_write_json(_FUND_STORE, fund)
 
 
+def contribute_from_cycle(vsb_id: str, amount_wst: float) -> dict:
+    """§12 (W294) — an entity's waterfall `capital_fund` stage COMPOUNDS into the Sovereign Capital
+    Fund (the 'energy storage' stage genuinely stores): the shared pool grows by the contribution,
+    attributed + UEG-logged. Previously the stage only wrote a ledger row — three disconnected WST
+    pools with no compounding endowment. Virtual WST only."""
+    fund = _load_fund()
+    amt = round(float(amount_wst), 2)
+    fund["total_capital"] = round(float(fund.get("total_capital", 0)) + amt, 2)
+    fund["available"] = round(float(fund.get("available", 0)) + amt, 2)
+    entry = {"vsb_id": vsb_id, "amount_wst": amt,
+             "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    fund["cycle_contributions"] = (fund.get("cycle_contributions") or [])[-199:] + [entry]
+    fund["cycle_contributions_total_wst"] = round(
+        float(fund.get("cycle_contributions_total_wst", 0)) + amt, 2)
+    _save_fund(fund)
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "economy.capital_fund.contribution",
+                         "vsb_id": vsb_id, "amount_wst": amt})
+    except Exception:
+        pass
+    return entry
+
+
 def _load_listings() -> list[dict]:
     if _MARKET_STORE.exists():
         try:

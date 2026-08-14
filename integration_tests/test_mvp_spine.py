@@ -699,6 +699,129 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_pervsb_management_surfaces_tenant_isolated(client, monkeypatch):
+    # §14×§17.5 (W295) — tenant isolation now covers the per-VSB MANAGEMENT surfaces (repo ·
+    # website · board-pack · review-gates · genome · ship · evolve · shipped-repo read), which
+    # previously had NO scoping: any user could manage any entity. Another tenant gets 404 —
+    # never a confirming 403 — on every surface; the owner is fully served; and the economy
+    # cycle attributes to the LIVING entity's registration, not the request's "Rehan" default.
+    from agentic_core.auth import core as auth_core
+    if not auth_core._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    users = auth_core._load_users()
+    for uname, pw in (("alice-295", "pw-alice"), ("bob-295", "pw-bob")):
+        users[uname] = {"user_id": uname, "username": uname,
+                        "hashed_password": auth_core._pwd_ctx.hash(pw), "role": "user",
+                        "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+
+    def _hdr(u, p):
+        r = client.post("/api/v1/auth/token", data={"username": u, "password": p})
+        assert r.status_code == 200, r.text
+        return {"Authorization": f"Bearer {r.json()['access_token']}"}
+    alice, bob = _hdr("alice-295", "pw-alice"), _hdr("bob-295", "pw-bob")
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w295 halal venture", "domain": "care", "name": "W295IsoCo",
+        "concept": "c", "design": "d", "commercialisation": "m"}, headers=alice).json()
+    vid = est["vsb_id"]
+    assert client.post(f"/api/v1/vsb/{vid}/repo", headers=alice).status_code == 200
+    checks = [("POST", f"/api/v1/vsb/{vid}/repo"), ("GET", f"/api/v1/vsb/{vid}/repo"),
+              ("POST", f"/api/v1/vsb/{vid}/website"), ("POST", f"/api/v1/vsb/{vid}/board-pack"),
+              ("GET", f"/api/v1/vsb/{vid}/review-gates"), ("GET", f"/api/v1/vsb/{vid}/genome"),
+              ("POST", f"/api/v1/vsb/{vid}/repo/ship"), ("POST", f"/api/v1/vsb/{vid}/evolve"),
+              ("GET", f"/api/v1/vsb/{vid}/repo/ship")]
+    for m, u in checks:
+        resp = client.request(m, u, headers=bob, json={} if m == "POST" else None)
+        assert resp.status_code == 404, f"{m} {u} leaked: {resp.status_code}"
+    ship = client.post(f"/api/v1/vsb/{vid}/repo/ship", headers=alice).json()
+    assert ship.get("coherent_whole") is True                 # the owner is fully served
+    cyc = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "revenue": 500}).json()
+    att = cyc.get("attribution") or {}
+    assert att.get("basis", "").startswith("living_registration")   # honest attribution
+    assert att.get("owner") == "alice-295"                    # the ENTITY's owner, not "Rehan"
+
+
+def test_capital_compounds_and_proposals_commercialise(client):
+    # §12 (W294) — two loops closed: the waterfall's capital_fund stage COMPOUNDS into the shared
+    # Sovereign Capital Fund (previously only a ledger row — three disconnected WST pools), and a
+    # cascade-PROPOSED offering CURATES into the live marketplace by a deliberate act (§11-screened
+    # with TEETH: haram content blocks with the verdicts; the cascade proposes, never publishes).
+    import uuid as _uuid
+    from agentic_core.economy.living_vsbs import register, operate_one
+    from agentic_core.economy.revenue import record_event
+    vid = f"vsb-w294-{_uuid.uuid4().hex[:6]}"
+    register(vid, name="W294 Halal Ventures", domain="care")
+    record_event(vid, "revenue", 1000.0, "marketplace_sale", ref="seed")
+    before = client.get("/api/v1/fund/status").json()
+    tb = before.get("total_capital") or (before.get("fund") or {}).get("total_capital") or 0
+    for _ in range(40):
+        op = operate_one() or {}
+        if op.get("vsb_id") == vid:
+            break
+    assert op.get("revenue_recognised_wst") == 1000.0
+    after = client.get("/api/v1/fund/status").json()
+    ta = after.get("total_capital") or (after.get("fund") or {}).get("total_capital") or 0
+    assert ta > tb                                            # the endowment genuinely compounded
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w294 catalogue proposals", "domain": "enterprise"}).json()
+    cur = client.post(f"/api/v1/swarm/catalogue/proposed/{r['run_id']}/curate", json={
+        "item": "Halal Meal Planning Service",
+        "description": "transparent community nutrition benefit",
+        "price_wst": 25, "vsb_id": vid}).json()
+    assert cur["listing"].get("id") and cur["listing"].get("vsb_id") == vid   # sales feed the VSB
+    bad = client.post(f"/api/v1/swarm/catalogue/proposed/{r['run_id']}/curate",
+                      json={"item": "Alcohol subscription box", "price_wst": 10})
+    assert bad.status_code == 409                             # §11 has TEETH on publication
+    assert client.post("/api/v1/swarm/catalogue/proposed/nope/curate",
+                       json={"item": "x"}).status_code == 404
+    pc = client.get("/api/v1/swarm/catalogue/proposed").json()["proposed"]
+    mine = next(p for p in pc if p["run_id"] == r["run_id"])
+    assert mine["status"] == "curated" and len(mine.get("curated", [])) == 1
+
+
+def test_economy_fed_by_real_work(client):
+    # §12×§5 (W293) — the economic organism is FED by the enterprise's REAL work: the fabricated
+    # flat 1000-WST tick is GONE. An idle entity runs an honest ZERO-revenue maintenance cycle; a
+    # marketplace sale attributed to the VSB and a QMS-passed VSB-scoped cascade delivery (declared
+    # simulated tariff + BMS cost estimate) are recorded as events; the next autonomous cycle
+    # consumes exactly that intake, exactly once. Virtual WST only.
+    import uuid as _uuid
+    from agentic_core.economy.living_vsbs import register, operate_one
+    from agentic_core.economy.revenue import pending_summary
+    vid = f"vsb-w293-{_uuid.uuid4().hex[:6]}"
+    register(vid, name="W293 Halal Ventures", domain="care")
+
+    def _tick():
+        for _ in range(40):
+            op = operate_one() or {}
+            if op.get("vsb_id") == vid:
+                return op
+        raise AssertionError("round-robin never reached the test VSB")
+    op0 = _tick()
+    assert op0["revenue_basis"] == "no_activity_maintenance_cycle"   # honest zero, not fabricated
+    assert op0["revenue_recognised_wst"] == 0.0
+    lst = client.post("/api/v1/marketplace/listings", json={
+        "name": "W293 Halal Meal Plan", "price_wst": 40, "vsb_id": vid}).json()
+    lid = lst.get("id") or (lst.get("listing") or {}).get("id")
+    from agentic_core.commercial.token_ledger import TokenLedger, UserTier
+    TokenLedger().initialize_user("w293buyer", UserTier.PRO)
+    rec = client.post(f"/api/v1/marketplace/listings/{lid}/purchase",
+                      json={"user_id": "w293buyer", "quantity": 2}).json()
+    assert rec.get("revenue_recognised_for") == vid                  # the sale reached the books
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w293 deliver for the entity", "domain": "enterprise", "scope": vid}).json()
+    if r["quality"].get("qms_gate_passed"):
+        assert (r.get("economic_event") or {}).get("revenue_wst") == 250.0   # the declared tariff
+    expected = pending_summary(vid)["pending_revenue_wst"]
+    assert expected >= 80.0                                          # at least the sale landed
+    op1 = _tick()
+    assert op1["revenue_basis"] == "recognised_events"
+    assert op1["revenue_recognised_wst"] == expected                 # exactly the real intake
+    assert pending_summary(vid)["pending_events"] == 0               # consumed exactly once
+
+
 def test_vsb_repo_cascades_rerunnable(client):
     # §13 (W291) — the repo's AI-swarm cascades are RE-RUNNABLE: POST /repo/cascade executes the
     # REAL §5 org cascade SCOPED to this VSB (Chief/CEO ground in ITS living plan — W280), binds

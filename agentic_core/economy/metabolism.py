@@ -156,6 +156,17 @@ class EconomicMetabolism:
         except Exception:
             pass
 
+        # 4c. §12 (W294) — the capital_fund stage COMPOUNDS into the shared Sovereign Capital Fund
+        #     (energy storage genuinely STORES — previously only a ledger row; the endowment loop
+        #     was three disconnected WST pools). Attributed + UEG-logged; best-effort.
+        capital_contribution = None
+        try:
+            if splits.get("capital_fund", 0.0) > 0:
+                from agentic_core.api.capital_fund import contribute_from_cycle
+                capital_contribution = contribute_from_cycle(self.vsb_id, splits["capital_fund"])
+        except Exception:
+            capital_contribution = None
+
         # 5. Giving-back — intelligent charity allocation (nutrient-return loop)
         charity_alloc = self.charity.allocate(splits.get("charity", 0.0)) if splits.get("charity", 0.0) > 0 else None
 
@@ -190,6 +201,7 @@ class EconomicMetabolism:
             "energy_state": energy_state,
             "distributable_profit": distributable,
             "circulation": {k: {"amount_wst": v, "role": _CYCLE_ROLE.get(k, k)} for k, v in splits.items()},
+            "capital_fund_contribution": capital_contribution,   # §12 (W294) — compounded into the pool
             "giving_back": charity_alloc,
             "venture_investment": ventures_alloc,
             "metabolic_energy": metabolic_energy,

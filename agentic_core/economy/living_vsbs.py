@@ -17,10 +17,6 @@ from agentic_core.config import atomic_write_json, data_path
 
 _STORE = data_path("living_vsbs.json")
 
-# Modest virtual baseline income per autonomous operating tick (simulated — labelled, never real money).
-_TICK_REVENUE = 1000.0
-_TICK_COSTS = 200.0
-
 
 def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -71,8 +67,14 @@ def operate_one() -> Optional[Dict[str, Any]]:
         # §3 — the ALWAYS-ON path is governed too: constitutional pre-gate + materiality hold +
         # per-cycle UEG split logging (previously this path ran completely ungated + unlogged).
         from agentic_core.economy.governance import governed_cycle_sync
+        # §12 (W293) — the cycle's intake is the entity's REAL recorded activity (marketplace sales
+        # attributed to it + QMS-passed delivery tariffs, consumed exactly once), NOT the old
+        # fabricated flat 1000-WST constant. With no events: an honest ZERO-revenue maintenance
+        # cycle — the organism still tends the entity, but distributes only what real work brought.
+        from agentic_core.economy.revenue import consume_pending
+        pend = consume_pending(vsb_id)
         res = governed_cycle_sync(vsb_id, target.get("entity_type", "waqf_ltd_hybrid"),
-                                  target.get("owner", "Rehan"), _TICK_REVENUE, _TICK_COSTS,
+                                  target.get("owner", "Rehan"), pend["revenue"], pend["costs"],
                                   source="heartbeat")
         report = res.get("cycle")
         if report is None:   # held/blocked by governance — record honestly, no cycle ran
@@ -85,6 +87,10 @@ def operate_one() -> Optional[Dict[str, Any]]:
         _save(d)
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle": target["operating_cycles"],
                 "distributable_wst": report.get("distributable_profit"),
+                "revenue_events_consumed": pend["events"],
+                "revenue_recognised_wst": pend["revenue"],
+                "revenue_basis": ("recognised_events" if pend["events"]
+                                  else "no_activity_maintenance_cycle"),
                 "governance": (res.get("governance") or {}).get("status")}
     except Exception as e:
         return {"vsb_id": vsb_id, "error": str(e)[:160]}

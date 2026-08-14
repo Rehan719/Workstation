@@ -64,9 +64,29 @@ async def run_cycle(req: CycleRequest):
     materiality → Change Control hold when the estimated distributable meets the threshold; the
     gaas.v5 gate (a failed gate is a LOUD UEG bypass event, never silent); and an explicit UEG
     event logging every cycle's per-stage split amounts. Virtual WST only."""
+    # §14 (W295) — HONEST attribution: when vsb_id names a LIVING entity, its REGISTERED identity
+    # (owner + entity type) is authoritative — the request's defaults ("Rehan" + the default
+    # template) previously mis-attributed every user's VSB cycles. Request values remain the
+    # fallback for ad-hoc/simulation ids; an override mismatch is reported, never silent.
+    owner, entity_type, attribution = req.owner, req.entity_type, "request_values"
+    try:
+        from agentic_core.economy.living_vsbs import list_living
+        reg = next((v for v in (list_living() or {}).get("living_vsbs", [])
+                    if v.get("vsb_id") == req.vsb_id), None)
+        if reg:
+            owner = reg.get("owner") or owner
+            entity_type = reg.get("entity_type") or entity_type
+            attribution = "living_registration"
+            if req.owner != "Rehan" and req.owner != owner:
+                attribution = f"living_registration (request owner '{req.owner}' overridden)"
+    except Exception:
+        pass
     from agentic_core.economy.governance import governed_cycle
-    return await governed_cycle(req.vsb_id, req.entity_type, req.owner,
-                                req.revenue, req.costs, req.reserve_rate, source="api")
+    result = await governed_cycle(req.vsb_id, entity_type, owner,
+                                  req.revenue, req.costs, req.reserve_rate, source="api")
+    if isinstance(result, dict):
+        result["attribution"] = {"owner": owner, "entity_type": entity_type, "basis": attribution}
+    return result
 
 
 @router.get("/waterfall")

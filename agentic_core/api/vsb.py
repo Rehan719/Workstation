@@ -155,6 +155,22 @@ def _build_repo_files(vsb: dict) -> dict:
     return f
 
 
+def _require_vsb_access(vsb_id: str, user: dict | None) -> dict:
+    """§17.5×§14 (W295) — owner-scoping guard for the per-VSB MANAGEMENT surfaces (repo · website ·
+    webapp · mobile · board-pack · review-gates · evolve · ship · repo-cascade), which previously
+    had NO tenant isolation: any user could manage any entity. 404 (never 403) when scoped out —
+    another tenant's entity is never confirmed to exist. Single-user mode (auth off) unchanged.
+    Defensive: a non-dict `user` (an internal call that leaked the FastAPI Depends sentinel) is
+    treated as None — the OUTER handler already enforced the guard for internal cross-calls."""
+    if user is not None and not isinstance(user, dict):
+        user = None
+    from agentic_core.auth.core import user_can_access
+    vsb = _load_vsb(vsb_id)
+    if not vsb or not user_can_access(user, vsb.get("owner_id")):
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    return vsb
+
+
 def _version_control_commit(root, vsb_id: str, surface: str, qa: Dict[str, Any] | None) -> Dict[str, Any]:
     """§13 (W289) — the entity repository is a genuinely VERSION-CONTROLLED whole: git-init on the
     first generation (safe: the store lives under gitignored data/, so the nested .git is invisible
@@ -218,13 +234,11 @@ def _manifest_history(vsb_id: str, kind: str = "manifest") -> list:
 
 
 @router.post("/{vsb_id}/repo")
-async def generate_vsb_repo(vsb_id: str):
+async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """Generate the bespoke VSB IDBO Entity Repository (§13) for an established VSB — real scaffold files on
     the native fabric, QMS-gated + compliance-screened + document-controlled. The Website/Web-app/Phone-app
     directories are honest scaffolds (later increments), never claimed as built/running apps."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     files = _build_repo_files(vsb)
     from agentic_core.vbs.quality import assure_delivery
     combined = "\n".join(v for k, v in files.items() if k.endswith(".md"))
@@ -285,7 +299,8 @@ async def generate_vsb_repo(vsb_id: str):
 
 
 @router.get("/{vsb_id}/repo")
-async def get_vsb_repo(vsb_id: str):
+async def get_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Retrieve the generated repo manifest (tree + per-file bytes + quality record) for a VSB."""
     p = _REPO_STORE / f"{vsb_id}.manifest.json"
     if not p.exists():
@@ -355,14 +370,12 @@ def _build_website_files(vsb: dict, copy: dict) -> dict:
 
 
 @router.post("/{vsb_id}/website")
-async def generate_vsb_website(vsb_id: str):
+async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """§13 (D1 increment 2) — generate the VSB's integrated WEBSITE: a real, multi-page static HTML/CSS
     site built from the entity's data + in-house copy, written into the repo's `web/` dir, QMS-gated +
     compliance-screened + document-controlled. HONEST: a static info/marketing site (real HTML/CSS) — NOT
     a running web app (increment 3) and not deployed/hosted."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     name, challenge, domain = vsb.get("name"), vsb.get("challenge", ""), vsb.get("domain", "enterprise")
     bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
     concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
@@ -423,7 +436,8 @@ async def generate_vsb_website(vsb_id: str):
 
 
 @router.get("/{vsb_id}/website")
-async def get_vsb_website(vsb_id: str):
+async def get_vsb_website(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Retrieve the generated website manifest (pages · nav · quality record · preview link)."""
     p = _REPO_STORE / f"{vsb_id}.website.json"
     if not p.exists():
@@ -432,7 +446,8 @@ async def get_vsb_website(vsb_id: str):
 
 
 @router.get("/{vsb_id}/website/page/{name}", response_class=HTMLResponse)
-async def get_vsb_website_page(vsb_id: str, name: str):
+async def get_vsb_website_page(vsb_id: str, name: str, user: dict | None = Depends(get_current_user)):
+    _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Serve a generated website page (real HTML) for preview. Known pages only (no path traversal)."""
     if name not in {"index", "about", "solution", "styles"}:
         raise HTTPException(status_code=404, detail="Unknown page.")
@@ -535,14 +550,12 @@ _WEBAPP_SERVE = {"index": ("index.html", "text/html"), "app.js": ("app.js", "tex
 
 
 @router.post("/{vsb_id}/webapp")
-async def generate_vsb_webapp(vsb_id: str):
+async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """§13 (D1 increment 3) — generate the VSB's interactive WEB APP: a real client-side app (HTML + CSS +
     vanilla JS + data.json) data-driven from the entity, written into the repo's `webapp/` dir, QMS-gated +
     compliance-screened + document-controlled. HONEST: a client-side interactive app that runs directly in
     a browser (no build) — NOT a server/backend app, not deployed/hosted."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     files = _build_webapp_files(vsb)
     from agentic_core.vbs.quality import assure_delivery
     # Gate the app's CONTENT (entity data + section structure), not the raw JS source — the JS legitimately
@@ -583,7 +596,8 @@ async def generate_vsb_webapp(vsb_id: str):
 
 
 @router.get("/{vsb_id}/webapp")
-async def get_vsb_webapp(vsb_id: str):
+async def get_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Retrieve the generated web-app manifest (files · features · quality record · preview link)."""
     p = _REPO_STORE / f"{vsb_id}.webapp.json"
     if not p.exists():
@@ -592,7 +606,8 @@ async def get_vsb_webapp(vsb_id: str):
 
 
 @router.get("/{vsb_id}/webapp/page/{name}", response_class=HTMLResponse)
-async def get_vsb_webapp_file(vsb_id: str, name: str):
+async def get_vsb_webapp_file(vsb_id: str, name: str, user: dict | None = Depends(get_current_user)):
+    _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Serve a generated web-app file (index/app.js/styles.css/data.json) so it runs in-browser. Known
     files only (no path traversal)."""
     if name not in _WEBAPP_SERVE:
@@ -670,14 +685,12 @@ _MOBILE_SERVE = {
 
 
 @router.post("/{vsb_id}/mobile")
-async def generate_vsb_mobile(vsb_id: str):
+async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """§13 (D1 increment 4) — generate the VSB's PHONE APP: a real installable PWA (mobile-first HTML/CSS +
     vanilla JS + data.json + web manifest + service worker + icon) data-driven from the entity, written
     into the repo's `mobile/` dir, QMS-gated + compliance-screened + document-controlled. HONEST: a PWA
     (installable + offline-capable when hosted) — NOT a compiled native iOS/Android app, not deployed."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     files = _build_mobile_files(vsb)
     from agentic_core.vbs.quality import assure_delivery
     # gate the CONTENT (entity data + sections), not the raw JS — avoid the `placeholder`-attribute false-fail
@@ -718,7 +731,8 @@ async def generate_vsb_mobile(vsb_id: str):
 
 
 @router.get("/{vsb_id}/mobile")
-async def get_vsb_mobile(vsb_id: str):
+async def get_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Retrieve the generated phone-app (PWA) manifest (files · features · quality record · preview link)."""
     p = _REPO_STORE / f"{vsb_id}.mobile.json"
     if not p.exists():
@@ -727,7 +741,8 @@ async def get_vsb_mobile(vsb_id: str):
 
 
 @router.get("/{vsb_id}/mobile/page/{name}", response_class=HTMLResponse)
-async def get_vsb_mobile_file(vsb_id: str, name: str):
+async def get_vsb_mobile_file(vsb_id: str, name: str, user: dict | None = Depends(get_current_user)):
+    _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Serve a generated PWA file (index/app.js/styles.css/data.json/manifest.webmanifest/sw.js/icon.svg)
     with correct content-types so the PWA runs in-browser. Known files only (no path traversal)."""
     if name not in _MOBILE_SERVE:
@@ -747,13 +762,11 @@ _BOARDPACK_STORE = data_path("vsb_board_packs")
 
 
 @router.post("/{vsb_id}/board-pack")
-async def generate_vsb_board_pack(vsb_id: str):
+async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """Assemble a fresh Board Pack for the VSB from its live data (Constitutional · Strategic · Action ·
     Operational), with an in-house AI-CEO narrative — QMS-gated + compliance-screened + DCS-registered
     (document-controlled via the QMS-owned DCMS). The on-demand layer of the §17.3 Living Business System."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     name, challenge = vsb.get("name"), vsb.get("challenge", "")
     bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
     concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
@@ -871,11 +884,9 @@ class GateDecisionRequest(BaseModel):
 
 
 @router.get("/{vsb_id}/review-gates")
-async def get_review_gates(vsb_id: str):
+async def get_review_gates(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """The VSB's Mode-3 human review-gate configuration (which lifecycle stages require human review)."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     rg = vsb.get("review_gates") or {"stages": [], "decisions": {}}
     return {"vsb_id": vsb_id, "mode": "Mode 3 — optional human review gates (set in the VSB genome)",
             "stages": rg.get("stages", []), "lifecycle": _lifecycle_meta(),
@@ -884,12 +895,10 @@ async def get_review_gates(vsb_id: str):
 
 
 @router.post("/{vsb_id}/review-gates")
-async def set_review_gates(vsb_id: str, req: ReviewGatesRequest):
+async def set_review_gates(vsb_id: str, req: ReviewGatesRequest, user: dict | None = Depends(get_current_user)):
     """Set which Concept→Commercialisation stages require human review (genome config). Append-only
     DCS-audited (§17.5). Decisions for stages no longer gated are cleared."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     unknown = [s for s in req.stages if s not in _LIFECYCLE_STAGE_IDS]
     if unknown:
         raise HTTPException(status_code=400,
@@ -912,11 +921,9 @@ async def set_review_gates(vsb_id: str, req: ReviewGatesRequest):
 
 
 @router.get("/{vsb_id}/review-gates/{stage}")
-async def get_review_gate_status(vsb_id: str, stage: str):
+async def get_review_gate_status(vsb_id: str, stage: str, user: dict | None = Depends(get_current_user)):
     """Whether a given stage gates for this VSB + its current status (used by the lifecycle to honour Mode 3)."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     if stage not in _LIFECYCLE_STAGE_IDS:
         raise HTTPException(status_code=404, detail=f"Unknown lifecycle stage '{stage}'.")
     rg = vsb.get("review_gates") or {"stages": [], "decisions": {}}
@@ -924,11 +931,9 @@ async def get_review_gate_status(vsb_id: str, stage: str):
 
 
 @router.post("/{vsb_id}/review-gates/{stage}/decision")
-async def decide_review_gate(vsb_id: str, stage: str, req: GateDecisionRequest):
+async def decide_review_gate(vsb_id: str, stage: str, req: GateDecisionRequest, user: dict | None = Depends(get_current_user)):
     """Record a human review decision (approve|reject) for a gated stage. Append-only DCS-audited (§17.5)."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     if stage not in _LIFECYCLE_STAGE_IDS:
         raise HTTPException(status_code=404, detail=f"Unknown lifecycle stage '{stage}'.")
     if req.decision not in ("approve", "reject"):
@@ -990,10 +995,8 @@ async def get_vsb(vsb_id: str, user: dict | None = Depends(get_current_user)):
 
 
 @router.get("/{vsb_id}/genome")
-async def get_vsb_genome(vsb_id: str):
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+async def get_vsb_genome(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    vsb = _require_vsb_access(vsb_id, user)
     return {
         "vsb_id": vsb_id,
         "genome_spec": vsb.get("genome_spec", {}),
@@ -1268,21 +1271,19 @@ class EvolveRequest(BaseModel):
 
 
 @router.post("/{vsb_id}/repo/ship")
-async def ship_vsb_repo(vsb_id: str):
+async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """§13 (W290) — ship the entity repository as ONE COHERENT WHOLE: regenerate the repo body +
     website + web-app + mobile surfaces + board pack from the entity's CURRENT living data (the
     existing generators — no duplicated build logic), under a single unified manifest with one
     repo-level compliance verdict and one version-control commit. This is the §13 canonical output
     produced in one deliberate act, not four disconnected calls."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     surfaces: Dict[str, Any] = {}
     for name, gen in (("repo", generate_vsb_repo), ("website", generate_vsb_website),
                       ("webapp", generate_vsb_webapp), ("mobile", generate_vsb_mobile),
                       ("board_pack", generate_vsb_board_pack)):
         try:
-            m = await gen(vsb_id)
+            m = await gen(vsb_id, user=user)   # W295 - authorised context flows through
             q = ((m.get("quality_assurance") or {}).get("quality") or {})
             surfaces[name] = {"qms_gate_passed": q.get("qms_gate_passed"),
                               "compliance_overall": (q.get("compliance") or {}).get("overall"),
@@ -1321,15 +1322,13 @@ class RepoCascadeRequest(BaseModel):
 
 
 @router.post("/{vsb_id}/repo/cascade")
-async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest):
+async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | None = Depends(get_current_user)):
     """§13 (W291) — the repo's AI-swarm cascades are RE-RUNNABLE: execute the entity's stored
     cascade configuration through the REAL §5 org cascade, SCOPED to this VSB (the Chief/CEO tiers
     ground in ITS living plan — W280), and bind the run's summary back INTO the repo
     (resources/runs/<run_id>.json + a version-control commit) — the repo stops being a snapshot
     and becomes an operating surface. Honest 404 when no repo exists."""
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
     root = _REPO_STORE / vsb_id
     casc_path = root / "resources" / "cascades.json"
     if not casc_path.exists():
@@ -1363,7 +1362,8 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest):
 
 
 @router.get("/{vsb_id}/repo/ship")
-async def get_shipped_repo(vsb_id: str):
+async def get_shipped_repo(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """The unified ship manifest (per-surface QA · staleness · version control)."""
     p = _REPO_STORE / f"{vsb_id}.ship.json"
     if not p.exists():
@@ -1372,14 +1372,12 @@ async def get_shipped_repo(vsb_id: str):
 
 
 @router.post("/{vsb_id}/evolve")
-async def evolve_vsb(vsb_id: str, req: EvolveRequest):
+async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depends(get_current_user)):
     """
     Trigger an evolution cycle for a VSB — runs MJM analysis on current state
     and generates genome mutations to improve performance.
     """
-    vsb = _load_vsb(vsb_id)
-    if not vsb:
-        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    vsb = _require_vsb_access(vsb_id, user)
 
     prompt = (
         f"You are performing an evolution cycle for VSB: {vsb['name']}\n"
@@ -1418,7 +1416,7 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest):
     if _ship_p.exists():
         if req.refresh_repo:
             try:
-                _re = await ship_vsb_repo(vsb_id)
+                _re = await ship_vsb_repo(vsb_id, user=user)
                 repo_refresh = {"action": "re_shipped",
                                 "commit": (_re.get("version_control") or {}).get("commit"),
                                 "coherent_whole": _re.get("coherent_whole")}

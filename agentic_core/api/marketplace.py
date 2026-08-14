@@ -47,6 +47,8 @@ class Listing(BaseModel):
     created_at: float = 0.0
     updated_at: float = 0.0
     creator_id: str = "community"
+    # W293 — optional VSB attribution: sales of this listing are recognised as that VSB's revenue
+    vsb_id: str = ""
 
 class CreateListingRequest(BaseModel):
     name: str
@@ -57,6 +59,7 @@ class CreateListingRequest(BaseModel):
     tier: str = "Standard"
     tags: list[str] = []
     creator_id: str = "community"
+    vsb_id: str = ""
 
 class PurchaseRequest(BaseModel):
     user_id: str = "demo_user"
@@ -146,6 +149,7 @@ async def create_listing(req: CreateListingRequest) -> dict:
         tier=req.tier,
         tags=req.tags,
         creator_id=req.creator_id,
+        vsb_id=req.vsb_id,
         certified=False,
         status="active",
         created_at=time.time(),
@@ -225,6 +229,20 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest) -> dict:
     receipts_dir = data_path("marketplace/receipts")
     receipts_dir.mkdir(parents=True, exist_ok=True)
     atomic_write_json(receipts_dir / f"{receipt['receipt_id']}.json", receipt)
+
+    # W293 (§12×§5) — a sale of a VSB-attributed listing is RECOGNISED as that VSB's revenue: the
+    # same WST the buyer's TokenLedger deducted feeds the seller's next autonomous economy cycle
+    # (two ledgers, one flow, counted once per side). Best-effort — recognition failure never
+    # breaks the purchase.
+    if total_cost > 0 and getattr(listing, "vsb_id", ""):
+        try:
+            from agentic_core.economy.revenue import record_event
+            record_event(listing.vsb_id, "revenue", total_cost, "marketplace_sale",
+                         ref=receipt["receipt_id"],
+                         note=f"sale of '{listing.name}' ×{req.quantity} (virtual WST)")
+            receipt["revenue_recognised_for"] = listing.vsb_id
+        except Exception:
+            pass
 
     return receipt
 

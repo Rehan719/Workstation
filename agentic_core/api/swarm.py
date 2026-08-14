@@ -18,7 +18,7 @@ import uuid
 from pathlib import Path
 from agentic_core.config import data_path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -226,6 +226,56 @@ class CascadeRequest(BaseModel):
     # auto-done — W266 semantics).
     scope: str = "workstation"
     objective_id: str | None = None
+
+
+class CurateProposalRequest(BaseModel):
+    item: str                       # the proposed item name to commercialise
+    description: str = ""
+    price_wst: float = 0.0
+    vsb_id: str = ""                # attribute sales to this entity's economy (W293)
+    curator: str = "owner"
+
+
+@router.post("/catalogue/proposed/{run_id}/curate")
+async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
+    """§12×§13 (W294) — a cascade-PROPOSED offering is CURATED into the live marketplace by a
+    deliberate human act (the cascade proposes, the Owner/user curates — never automatic): the
+    listing text is §11-screened first (a FAIL blocks publication with the verdicts — user-authored
+    commercial content is exactly where the screen must have teeth), then a real marketplace
+    listing is created, VSB-attributed so sales feed the entity's economy (W293). Closes the
+    §5→§13→§12 loop: delivery org proposes → curation publishes → sales fund the organism."""
+    from agentic_core.config import data_path as _dp, load_json_tolerant as _ljt, atomic_write_json as _awj
+    store = _dp("proposed_catalogue.json")
+    rows = _ljt(store, []) or []
+    prop = next((p for p in rows if p.get("run_id") == run_id), None)
+    if not prop:
+        raise HTTPException(status_code=404, detail=f"No proposed catalogue for run {run_id}.")
+    from agentic_core.api.compliance import screen_compliance
+    screen = screen_compliance(f"{req.item}. {req.description}")
+    if screen["overall"] == "fail":
+        raise HTTPException(status_code=409, detail={
+            "error": "curation_blocked_by_compliance",
+            "verdicts": screen["verdicts"]})
+    from agentic_core.api.marketplace import CreateListingRequest, create_listing
+    listing = await create_listing(CreateListingRequest(
+        name=req.item[:80], description=req.description or f"Curated from cascade {run_id}",
+        author=req.curator, category="Product", price_wst=max(0.0, float(req.price_wst)),
+        creator_id=req.curator, vsb_id=req.vsb_id))
+    prop.setdefault("curated", []).append({
+        "item": req.item, "listing_id": listing.get("id"),
+        "compliance_overall": screen["overall"],
+        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+    prop["status"] = "curated"
+    _awj(store, rows)
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "catalogue.curated", "run_id": run_id, "item": req.item[:80],
+                         "listing_id": listing.get("id"), "vsb_id": req.vsb_id,
+                         "compliance": screen["overall"]})
+    except Exception:
+        pass
+    return {"run_id": run_id, "listing": listing, "compliance": screen["overall"],
+            "note": "Curated by a deliberate act — the cascade proposes, never auto-publishes."}
 
 
 @router.get("/catalogue/proposed")
@@ -787,6 +837,27 @@ async def cascade_orchestration(req: CascadeRequest):
         except Exception as exc:
             plan_binding["result"] = f"error: {exc}"[:120]
 
+    # §12×§5 (W293) — a QMS-PASSED, VSB-scoped delivery EARNS: the declared simulated tariff is
+    # recorded as the entity's revenue (consumed by its next autonomous cycle), and the W271 BMS
+    # estimate is recorded as the run's cost side — the delivery org's real work now funds the
+    # economic organism (virtual WST; honest simulation constants, never real money). Best-effort.
+    economic_event = None
+    if req.scope != "workstation" and quality.get("qms_gate_passed"):
+        try:
+            from agentic_core.economy.revenue import SIM_DELIVERY_TARIFF_WST, record_event
+            _rev = record_event(req.scope, "revenue", SIM_DELIVERY_TARIFF_WST, "cascade_delivery",
+                                ref=run_id, note="QMS-passed org-cascade delivery (simulated tariff)")
+            _bms = (management_systems.get("bms") or {})
+            _cost = round(float(_bms.get("cost_per_insight_usd") or 0.0)
+                          * int(_bms.get("insights_count") or 0), 6)
+            if _cost > 0:
+                record_event(req.scope, "cost", _cost, "cascade_delivery_cost", ref=run_id,
+                             note="BMS unit-economics estimate for this run (simulated constants)")
+            economic_event = {"revenue_wst": _rev["amount_wst"], "cost_wst": _cost,
+                              "basis": "simulated tariff + BMS estimate — virtual WST only"}
+        except Exception:
+            pass
+
     # §5 (W268) — PERSIST the cascade run (previously only /delegate persisted; cascade runs — with
     # their appraisals and Development Actions — evaporated at response time). Compact + capped + atomic;
     # a non-colliding store (swarm_cascades.json holds fabric cascade DEFINITIONS, not runs).
@@ -819,6 +890,9 @@ async def cascade_orchestration(req: CascadeRequest):
         # §5 (W280) — which living plan grounded the apex tiers + the objective this run delivered.
         "business_plan_scope": req.scope,
         "plan_binding": plan_binding,
+        # §12 (W293) — what this delivery EARNED for the entity's economy (simulated tariff; null
+        # for workstation-scoped or gate-failed runs — a failed gate earns nothing).
+        "economic_event": economic_event,
         # Full org hierarchy, apex → operational delivery, every tier run in-house (see ai_provenance).
         "org_hierarchy": [
             "Chief of the Board of Directors", "Board of Directors", "AI CEO", "C-Suite",
