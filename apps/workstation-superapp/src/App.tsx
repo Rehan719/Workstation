@@ -96,6 +96,11 @@ import { LandingPage } from './pages/landing/LandingPage';
 // ── Extended (wired, reachable by URL — not in primary nav) ───────────────
 // ScholarRealm archived to _archive/frontend-pages — grandiose research hub with fabricated "50+ federated nodes".
 import { Introspection as CognitiveIntrospection } from './pages/cognitive/Introspection';
+import { Login } from './pages/Login';
+import { installAuth } from './lib/auth';
+
+// W296 - the bearer token rides on every /api call app-wide (honest no-op when auth is off)
+installAuth();
 
 function App() {
   const [runTutorial] = useState(false);
@@ -201,6 +206,7 @@ function App() {
           <Route path="/admin"      element={<AdminPanel />} />
           <Route path="/landing"    element={<LandingPage />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/login"    element={<Login />} />
 
           {/* ── Extended (wired, reachable by URL) ───────────────────── */}
           <Route path="/cognitive-introspection" element={<CognitiveIntrospection />} />
