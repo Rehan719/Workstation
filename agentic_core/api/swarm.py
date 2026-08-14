@@ -104,6 +104,34 @@ async def delegate_task(req: DelegateRequest):
 
     biobus.fire_signal("cognitive", "swarm.delegate", f"CEO delegation: {req.task[:80]}", 0.7)
 
+    # §5×§6 (W282) — /delegate joins the W268+ standard the cascade set: every call records
+    # provenance + a real operational-excellence row, the synthesis is QMS-gated, and the run
+    # registers its honest cognitive demand with the homeostatic controller.
+    provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+
+    async def _dq(prompt: str, agent: str) -> str:
+        _t0 = time.time()
+        res = await gateway.query_meta(prompt, agent=agent)
+        sb = res.get("served_by", "native")
+        provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
+        provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
+        try:
+            from agentic_core.api.operational_excellence import record_outcome
+            record_outcome("ai_call", f"agent:{agent}", served_by=sb,
+                           is_external=bool(res.get("is_external")),
+                           duration_ms=int((time.time() - _t0) * 1000),
+                           success=bool((res.get("output") or "").strip()), ref=run_id)
+        except Exception:
+            pass
+        return res.get("output", "")
+
+    try:
+        from agentic_core.ai.native.homeostasis import homeostasis
+        homeo = homeostasis.assess(demand_nodes=2 + min(4, len(req.agent_ids or []) or 3),
+                                   requested_parallel=1)
+    except Exception:
+        homeo = None
+
     # Step 1: CEO decides which agents to engage (if not specified)
     agent_ids = req.agent_ids
     if not agent_ids:
@@ -114,7 +142,7 @@ async def delegate_task(req: DelegateRequest):
             "Decide which 2-4 agents are best suited to address this task. "
             "Output ONLY a comma-separated list of agent IDs from the available list. No other text."
         )
-        routing = await gateway.query(routing_prompt, agent="ceo_router")
+        routing = await _dq(routing_prompt, "ceo_router")
         agent_ids = [a.strip().lower() for a in routing.split(",") if a.strip().lower() in _AGENTS]
         if not agent_ids:
             agent_ids = ["CFO", "CTO"]  # safe fallback
@@ -132,7 +160,7 @@ async def delegate_task(req: DelegateRequest):
             + "\nProvide your expert analysis and recommendations from your functional perspective. "
             "Be specific, actionable, and concise (aim for 200-400 words)."
         )
-        response = await gateway.query(agent_prompt, agent=f"swarm_{aid.lower()}")
+        response = await _dq(agent_prompt, f"swarm_{aid.lower()}")
         agent_responses[aid] = response
 
     # Step 3: CEO synthesises all responses
@@ -152,7 +180,16 @@ async def delegate_task(req: DelegateRequest):
         "## Risks and Mitigations\n\n"
         "Be decisive. Resolve any conflicting advice between agents."
     )
-    synthesis = await gateway.query(synthesis_prompt, agent="ceo_synthesis")
+    synthesis = await _dq(synthesis_prompt, "ceo_synthesis")
+
+    # §10 (W282) — the delegate synthesis is held to the same real QMS gate as the cascade.
+    try:
+        _qa = await assure_delivery(synthesis, ["Executive Decision", "Recommended Course of Action",
+                                                "Next Steps"], label="delegate")
+        _quality = {k: _qa["quality"].get(k) for k in ("qms_gate_passed", "delivery_coverage",
+                                                       "qms_non_conformance_rate", "stub_found")}
+    except Exception:
+        _quality = {}
 
     run = {
         "run_id": run_id,
@@ -162,6 +199,10 @@ async def delegate_task(req: DelegateRequest):
         "agents_engaged": agent_ids,
         "agent_responses": agent_responses,
         "ceo_synthesis": synthesis,
+        # §5×§6 (W282) — delegate now proves it runs on the owned fabric like the cascade.
+        "ai_provenance": provenance,
+        "quality": _quality,
+        "homeostasis": homeo,
         "duration_ms": int((time.time() - start) * 1000),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
@@ -185,6 +226,15 @@ class CascadeRequest(BaseModel):
     # auto-done — W266 semantics).
     scope: str = "workstation"
     objective_id: str | None = None
+
+
+@router.get("/catalogue/proposed")
+async def proposed_catalogue(limit: int = 10):
+    """§5 (W282) — the offerings the org cascade has PROPOSED (parsed + persisted per run; the
+    cascade proposes, the Owner curates into the real shipped-product catalog)."""
+    from agentic_core.config import data_path as _dp, load_json_tolerant as _ljt
+    rows = _ljt(_dp("proposed_catalogue.json"), []) or []
+    return {"proposed": list(reversed(rows[-max(1, min(int(limit), 50)):]))}
 
 
 @router.get("/cascade/runs")
@@ -244,14 +294,30 @@ async def cascade_orchestration(req: CascadeRequest):
     _prior_dev: dict = load_json_tolerant(_DEV_STORE, {}) or {}
     development_applied: dict = {}
 
+    # §5 (W281) — persistent tier IDENTITY: each tier accumulates a record across cascades (runs
+    # served + its manager's last appraisal), so officers/CoEs/BTO are no longer re-prompted from
+    # scratch — "lead and develop their specialised resources" holds OVER TIME. Deterministic
+    # accumulation of real run data; no extra AI calls.
+    _IDENT_STORE = data_path("tier_identity.json")
+    _tier_ident: dict = load_json_tolerant(_IDENT_STORE, {}) or {}
+    tier_identity_applied: dict = {}
+
     def _dev_for(appraisal_key: str, manager_label: str) -> str:
         rec = _prior_dev.get(appraisal_key) or {}
         action = str(rec.get("action") or "").strip()
-        if not action:
-            return ""
-        development_applied[appraisal_key] = rec.get("run_id")
-        return (f"\n\nDEVELOPMENT ACTION from your managing tier ({manager_label}), set after the "
-                f"previous cycle's appraisal — apply it in this response:\n{action[:500]}")
+        dev_txt = ""
+        if action:
+            development_applied[appraisal_key] = rec.get("run_id")
+            dev_txt = (f"\n\nDEVELOPMENT ACTION from your managing tier ({manager_label}), set after the "
+                       f"previous cycle's appraisal — apply it in this response:\n{action[:500]}")
+        ident = _tier_ident.get(appraisal_key) or {}
+        id_txt = ""
+        if ident.get("runs"):
+            tier_identity_applied[appraisal_key] = ident["runs"]
+            id_txt = (f"\n\nYOUR TIER IDENTITY (persistent — you have served {ident['runs']} cascade "
+                      f"runs; your managing tier's last appraisal of your work): "
+                      f"{str(ident.get('last_appraisal', ''))[:220]}")
+        return dev_txt + id_txt
 
     async def _q(prompt: str, agent: str) -> str:
         _qt0 = time.time()
@@ -296,10 +362,16 @@ async def cascade_orchestration(req: CascadeRequest):
     except Exception:
         _plan_ctx = ""
 
+    # §5 (W281) — the cascade's Chief reasons AS the founder's lived record, not a generic twin.
+    try:
+        from agentic_core.api.board import founder_profile as _founder_profile
+        _founder_ctx = _founder_profile()
+    except Exception:
+        _founder_ctx = ""
     chief_prompt = (
         f"You are the Chief of the Board of Directors — the founder's own digital twin and the apex of "
         f"this VSB's governance. A mission has been raised:\n\"{req.mission}\"\n"
-        f"Domain: {req.domain}\nRealm: {req.realm}\n{_plan_ctx}\n"
+        f"Domain: {req.domain}\nRealm: {req.realm}\n{_founder_ctx}{_plan_ctx}\n"
         "You own the living Business Plan and deliver it via Strategy and a living Roadmap. Set the "
         "Founding Mandate the Board and whole organisation must serve:\n"
         "## Intent & Values (why this matters; the non-negotiable principles — ethical, beneficent)\n"
@@ -486,6 +558,30 @@ async def cascade_orchestration(req: CascadeRequest):
     )
     products_services_catalogue = await _q(catalogue_prompt, "cascade_catalogue")
 
+    # §5 (W282) — the Products/Services catalogue LANDS instead of terminating in prose: item names
+    # are parsed deterministically and persisted as PROPOSED offerings (`proposed_catalogue.json`,
+    # queryable at GET /swarm/catalogue/proposed). The cascade PROPOSES — publishing into the real
+    # shipped-product catalog stays a deliberate curation decision, never automatic. Honest:
+    # unparseable output persists as raw text with zero items.
+    catalogue_items: list = []
+    try:
+        import re as _re4
+        for _m in _re4.finditer(r"(?:^|\n)\s*(?:[-*•]|\d+[.)])\s*(?:\*\*)?\s*(?:Name:?\s*)?"
+                                r"([A-Z][^\n|*:]{2,70})", products_services_catalogue):
+            _nm = _m.group(1).strip().rstrip(":").strip()
+            if _nm and not _nm.lower().startswith(("one-line", "type (", "primary", "be specific", "list ")):
+                catalogue_items.append(_nm)
+        catalogue_items = list(dict.fromkeys(catalogue_items))[:8]
+        _cat_store = data_path("proposed_catalogue.json")
+        _cat = load_json_tolerant(_cat_store, []) or []
+        _cat.append({"run_id": run_id, "mission": req.mission[:160], "domain": req.domain,
+                     "status": "proposed", "items": catalogue_items,
+                     "raw": products_services_catalogue[:2000],
+                     "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        atomic_write_json(_cat_store, _cat[-50:])
+    except Exception:
+        pass
+
     # ── §10 Solution-Quality Bar + the living QMS gate — run BEFORE the appraisal pass (W268) so the
     # appraising tiers judge against this run's REAL measured outcomes, not just same-run prose.
     _qa = await assure_delivery(
@@ -576,7 +672,14 @@ async def cascade_orchestration(req: CascadeRequest):
             if _action:
                 _prior_dev[_k] = {"action": _action, "run_id": run_id,
                                   "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            # §5 (W281) — accumulate the tier's persistent identity from this run's REAL appraisal
+            _prev_id = _tier_ident.get(_k) or {}
+            _tier_ident[_k] = {"runs": int(_prev_id.get("runs", 0)) + 1,
+                               "last_appraisal": str(_text)[:300],
+                               "last_run_id": run_id,
+                               "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
         atomic_write_json(_DEV_STORE, _prior_dev)
+        atomic_write_json(_IDENT_STORE, _tier_ident)
     except Exception:
         pass
 
@@ -731,6 +834,9 @@ async def cascade_orchestration(req: CascadeRequest):
         # §5 DEVELOP (W269) — which tiers received + applied the PREVIOUS cycle's Development Action
         # (key → the run_id that set it); empty on a first run.
         "development_applied": development_applied,
+        # §5 (W281) — persistent tier identity: which tiers carried their accumulated record into
+        # this run (edge → runs served so far); empty on a first run.
+        "tier_identity_applied": tier_identity_applied,
         # §10 Solution-Quality Bar + the living-QMS quality gate over the operational delivery.
         "quality": quality,
         # §8 — the biomimetic living-organism substrate the cascade runs within (live immune + circadian).
@@ -746,6 +852,8 @@ async def cascade_orchestration(req: CascadeRequest):
         "fabric_requisitions": fabric_requisitions,
         "level_5_build_to_order": build_to_order,
         "products_services_catalogue": products_services_catalogue,
+        # §5 (W282) — the parsed, persisted PROPOSED offerings (empty when honestly unparseable).
+        "catalogue_items_proposed": catalogue_items,
         # §5: the living management systems the AI CEO integrates (with real DCMS document-control proof).
         "management_systems": management_systems,
         # §5: arms-length Change-Control / constitutional governance over the whole delivery.

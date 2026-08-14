@@ -699,6 +699,91 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_tree_planner_swarm_planned_with_honest_floor(client):
+    # §6 (W283) — the workflow-tree decomposition is PLANNED BY the swarm's own intelligence only
+    # when a REAL owned model genuinely served: under the deterministic floor the planner label is
+    # honest ("deterministic_template" — zero wasted planning calls), a valid model-produced DAG
+    # yields "swarm_planned", and a structurally invalid plan (two roots) falls back.
+    import asyncio as _aio
+    from agentic_core.ai.native.orchestrator import orchestrator
+    import agentic_core.ai.native.model_resource as mr
+    loop = _aio.get_event_loop()
+    r = loop.run_until_complete(orchestrator.orchestrate_tree("w283 planner honesty contract"))
+    assert r["planner"] == "deterministic_template"       # AI_DISABLE_LOCAL → the honest floor
+    assert len(r["nodes"]) >= 4 and r["final"]            # the template tree still genuinely ran
+    orig_complete, orig_up = orchestrator.complete, mr.ollama_up
+    try:
+        mr.ollama_up = lambda: True
+
+        async def _good(prompt, **kw):
+            return {"served_by": "ollama:x", "is_external": False, "output":
+                    "frame | framing analyst | Frame the goal | -\n"
+                    "research | researcher | Gather facts | frame\n"
+                    "synth | synthesiser | Combine | frame,research"}
+        orchestrator.complete = _good
+        nodes, planner = loop.run_until_complete(orchestrator._plan_tree_adaptive("g", 10.0))
+        assert planner == "swarm_planned" and [n["id"] for n in nodes] == ["frame", "research", "synth"]
+
+        async def _bad(prompt, **kw):
+            return {"served_by": "ollama:x", "output": "a | r | t | -\nb | r | t | -"}
+        orchestrator.complete = _bad
+        _, planner2 = loop.run_until_complete(orchestrator._plan_tree_adaptive("g", 10.0))
+        assert planner2 == "deterministic_template"       # invalid DAG → deterministic fallback
+    finally:
+        orchestrator.complete, mr.ollama_up = orig_complete, orig_up
+
+
+def test_delegate_standard_catalogue_landing_and_stage_models(client):
+    # §5×§6 (W282) — three seams closed: /swarm/delegate joins the W268+ standard (provenance +
+    # per-call ops rows + QMS-gated synthesis + honest homeostasis demand); the cascade's
+    # Products/Services catalogue LANDS as persisted PROPOSED offerings (the cascade proposes,
+    # the Owner curates — never auto-published; unparseable floor output honestly persists raw
+    # with zero items); and bespoke swarm stages route to a NAMED owned model.
+    d = client.post("/api/v1/swarm/delegate", json={
+        "task": "w282 delegate standard contract", "domain": "enterprise"}).json()
+    assert d["ai_provenance"]["served_by"] and "qms_gate_passed" in d["quality"]
+    assert d["homeostasis"] is not None
+    from agentic_core.api.operational_excellence import _load as _ops
+    assert len([x for x in _ops() if x.get("ref") == d["run_id"]]) >= 3   # each call accrued a row
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w282 catalogue landing contract", "domain": "enterprise"}).json()
+    assert isinstance(r["catalogue_items_proposed"], list)
+    pc = client.get("/api/v1/swarm/catalogue/proposed").json()["proposed"]
+    assert pc[0]["run_id"] == r["run_id"] and pc[0]["status"] == "proposed"
+    assert pc[0]["raw"]                                       # raw preserved even when items parse 0
+    import asyncio as _aio
+    from agentic_core.ai.native.orchestrator import orchestrator
+    s = _aio.get_event_loop().run_until_complete(orchestrator.swarm("w282", [
+        {"role": "a", "instruction": "say hi", "model": "native"},
+        {"role": "b", "instruction": "say more"}]))
+    assert s["trace"][0]["requested_model"] == "native"       # the named stage routing recorded
+    assert "requested_model" not in s["trace"][1]             # auto stays unlabelled (honest)
+
+
+def test_tier_identity_and_founder_modelled_chief(client):
+    # §5 (W281) — tiers have PERSISTENT identity (each carries its accumulated record — runs
+    # served + its manager's last appraisal — into the next cascade; no more re-prompted-from-
+    # scratch officers), and the Chief twin reasons from the FOUNDER'S LIVED RECORD (standing
+    # canon values + the Owner's actual remembered instructions), iterating with every directive.
+    client.post("/api/v1/board/chief/instruct", json={
+        "instruction": "w281 founder memory: prioritise the halal certification pilot"})
+    from agentic_core.api.board import founder_profile
+    fp = founder_profile()
+    assert "halal ethics" in fp and "never fabricate" in fp        # the Owner's standing values
+    assert "certification pilot" in fp                             # the twin REMEMBERS instructions
+    r1 = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w281 identity contract run 1", "domain": "enterprise"}).json()
+    r2 = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w281 identity contract run 2", "domain": "enterprise"}).json()
+    ia = r2["tier_identity_applied"]
+    assert set(ia.keys()) == set(r1["appraisals"].keys())          # every tier carried its identity
+    assert all(v >= 1 for v in ia.values())                        # accumulated from run 1 onward
+    from agentic_core.config import data_path, load_json_tolerant
+    store = load_json_tolerant(data_path("tier_identity.json"), {})
+    assert store["bto_appraises_build"]["runs"] >= 2               # the record persists + accumulates
+    assert store["bto_appraises_build"]["last_appraisal"]          # grounded in the real appraisal
+
+
 def test_cascade_sees_and_moves_the_living_plan(client):
     # §5 (W280) — the cascade's Chief genuinely OWNS the living Business Plan: `scope` selects the
     # plan that grounds the apex tiers (its real objectives injected into the Chief/CEO prompts),

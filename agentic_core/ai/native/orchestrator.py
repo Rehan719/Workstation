@@ -311,13 +311,57 @@ class NativeOrchestrator:
                       "task": "Critically review the synthesis: gaps, risks, and a clear go/no-go with next actions."})
         return nodes
 
+    async def _plan_tree_adaptive(self, goal: str, timeout: float) -> tuple:
+        """§6 (W283) — the swarm's OWN intelligence plans the decomposition when a REAL owned model
+        is available; the deterministic keyword template remains the honest floor. Returns
+        (nodes, planner) with planner ∈ {"swarm_planned", "deterministic_template"} — never a
+        fabricated 'AI-planned' label when the floor served, and any structural defect in the
+        model's plan (multiple roots, unknown/forward deps, <3 nodes) falls back deterministically."""
+        import os as _os
+        from agentic_core.ai.native.model_resource import ollama_up, external_allowed
+        can_plan = ollama_up() or (external_allowed() and
+                                   (_os.getenv("ANTHROPIC_API_KEY") or _os.getenv("OPENAI_API_KEY")))
+        if not can_plan:
+            return self._plan_tree(goal), "deterministic_template"
+        try:
+            res = await self.complete(
+                "Decompose this goal into a workflow tree of 4-7 nodes. Reply ONLY with lines in "
+                "this exact format:\nid | role | task | comma-separated-dependency-ids (or '-' for none)\n"
+                "Rules: ids are single lowercase words; exactly ONE root node with no dependencies; "
+                "every other node depends only on EARLIER ids; the LAST node synthesises the branches.\n"
+                f"Goal: {goal}", agent="tree-planner", timeout=timeout)
+            if res.get("served_by") == "native":
+                return self._plan_tree(goal), "deterministic_template"   # the floor cannot genuinely plan
+            nodes: List[Dict[str, Any]] = []
+            ids: set = set()
+            for ln in (res.get("output") or "").splitlines():
+                parts = [p.strip() for p in ln.split("|")]
+                if len(parts) != 4 or not parts[0] or " " in parts[0]:
+                    continue
+                nid = parts[0][:24].lower()
+                deps = ([] if parts[3] in ("-", "") else
+                        [d.strip().lower() for d in parts[3].split(",") if d.strip()])
+                if nid in ids or any(d not in ids for d in deps):
+                    continue                       # duplicate/forward/unknown dep → drop the line
+                nodes.append({"id": nid, "role": parts[1][:60], "task": parts[2][:300],
+                              "depends_on": deps})
+                ids.add(nid)
+                if len(nodes) >= 8:
+                    break
+            roots = [n for n in nodes if not n["depends_on"]]
+            if len(nodes) >= 3 and len(roots) == 1 and nodes[-1]["depends_on"]:
+                return nodes, "swarm_planned"      # a valid, genuinely model-planned DAG
+        except Exception:
+            pass
+        return self._plan_tree(goal), "deterministic_template"
+
     async def orchestrate_tree(self, goal: str, context: str = "", max_parallel: int = 4,
                                prefer_external: bool = False, timeout: float = 30.0) -> Dict[str, Any]:
         """Plan + run an autonomous workflow TREE for a goal — the living-organism cascade: the goal is
         decomposed into a dependency tree, executed IN-HOUSE-FIRST per node with PARALLEL branches,
         biomimetically mediated (immune-throttled parallelism + biobus nervous signals + the learning
         loop via complete()). Every node reports which OWNED resource served it; never fabricated."""
-        nodes = self._plan_tree(goal)
+        nodes, planner = await self._plan_tree_adaptive(goal, timeout)
         by_id = {n["id"]: n for n in nodes}
         threat = self._immune_threat()
         # BIOMIMETIC HOMEOSTASIS (§8 → §6): admit cognitive work as a function of the WHOLE living-organism
@@ -531,6 +575,9 @@ class NativeOrchestrator:
             "fabric_resources_drawn": sorted({(results[nid].get("fabric") or {}).get("resource")
                                               for nid in order if nid in results and results[nid].get("fabric")}
                                              - {None}),
+            # §6 (W283) — WHO planned the decomposition: "swarm_planned" only when a real owned
+            # model produced a valid DAG; otherwise the honest deterministic template.
+            "planner": planner,
             "nodes": [{"id": nid, "role": by_id[nid]["role"], "depends_on": by_id[nid]["depends_on"],
                        "served_by": results[nid]["served_by"], "is_external": results[nid]["is_external"],
                        "fabric": results[nid].get("fabric"),
@@ -555,13 +602,20 @@ class NativeOrchestrator:
         for i, stage in enumerate(stages):
             role = stage.get("role", f"agent_{i+1}")
             instruction = stage.get("instruction", "")
+            # §6×§7 (W282) — per-STAGE owned-model routing: a bespoke cascade stage may name the
+            # owned resource that serves it ("native" | "local" | "ollama:<name>"); unset → auto
+            # in-house-first. The trace records what was requested vs what genuinely served.
+            requested = str(stage.get("model") or "auto")
             prompt = (f"You are the '{role}' agent in Workstation's native swarm.\n"
                       f"{('Prior context:\\n' + carry[:1200] + '\\n\\n') if carry else ''}"
                       f"Task: {instruction}\n\n## {role} output")
-            res = await self.complete(prompt, agent=f"{agent}:{role}", timeout=timeout, prefer_external=prefer_external)
+            res = await self.complete(prompt, agent=f"{agent}:{role}", timeout=timeout,
+                                      prefer_external=prefer_external, prefer=requested)
             external_used = external_used or res.get("is_external", False)
             carry = res["output"]
-            trace.append({"step": i + 1, "role": role, "served_by": res["served_by"], "output": res["output"]})
+            trace.append({"step": i + 1, "role": role, "served_by": res["served_by"],
+                          **({"requested_model": requested} if requested != "auto" else {}),
+                          "output": res["output"]})
         return {"agent": agent, "stages": len(stages), "trace": trace,
                 "final": carry, "any_external": external_used, "homeostasis": homeo}
 

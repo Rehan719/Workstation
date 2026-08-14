@@ -120,6 +120,25 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None) 
         return f"[{agent} unavailable: {e}]"
 
 
+def founder_profile() -> str:
+    """§5 (W281) — the Chief twin is modelled on the FOUNDER'S LIVED RECORD, not just a static
+    charter: the Owner's standing values (from their documented canon) + their actual recent
+    instructions read from the board store — the twin REMEMBERS what the Owner has asked and
+    stays consistent with it, iterating with every directive. Honest: no history reads as none."""
+    values = ("Standing values from the Owner's documented canon: faith-rooted halal ethics and "
+              "beneficence · honesty over polish (never fabricate, never pad) · decide-and-build · "
+              "real user enablement · virtual/simulated finance only (real rails stay Owner-gated).")
+    hist = ""
+    try:
+        prior = [r for r in _load() if r.get("instruction")][-5:]
+        hist = "\n".join(f"- ({str(r.get('created_at', '?'))[:10]}) {str(r.get('instruction'))[:140]}"
+                         for r in prior)
+    except Exception:
+        hist = ""
+    return (f"\nFOUNDER MODEL (the Owner's lived record — reason AS this person):\n{values}\n"
+            + (f"The Owner's recent instructions (remember them; stay consistent):\n{hist}\n" if hist else ""))
+
+
 def _live_intelligence(scope: str) -> str:
     """LIVE intelligence for the Chief's directive (W270): the scoped plan's real progress, the
     recent operational success rate, and the prior directives — so the apex instructs from today's
@@ -227,6 +246,7 @@ async def chief_instruct(req: ChiefInstruction):
         f"You are the Chief of the Board — the digital twin of {req.owner}, the Owner/Founder of the "
         f"Workstation IDBO. {_OWNER['fidelity_charter']}\n\n"
         f"The Owner's vision: {_OWNER['vision_summary']}"
+        f"{founder_profile()}"
         f"{_live_intelligence(req.scope)}\n\n"
         f"The Owner's instruction:\n\"{req.instruction}\"\n\n"
         "Acting AS the Owner, produce a board-level directive that precisely realises their intent:\n"
