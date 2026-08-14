@@ -39,24 +39,61 @@ def _record_model(name: str, success: bool, t0: float) -> None:
         pass
 
 
+_PROBATION_AFTER_S = 600   # a deprioritised model earns ONE fresh try after this long untried
+
+
 def _reorder_by_health(order: List[str]) -> List[str]:
-    """Adapt selection to real recorded performance: move any non-native model with a clearly-poor
-    recent track record AFTER the native floor (effectively skipping it, so we stop wasting time on
-    a model that keeps failing/timing out). Native is NEVER deprioritised; with no recorded data the
-    order is unchanged. This is the learning loop turned into adaptation — honest, real-data only."""
+    """Adapt selection to real recorded performance — the §6 learning loop CLOSED (W275):
+    - POSITIVE selection: candidates ahead of the native floor are ordered by their measured
+      RECENCY-WINDOWED score (success rate, then speed) once they have ≥3 windowed runs — the
+      best-performing owned model is genuinely preferred, not merely the not-yet-failed one.
+      Unmeasured models keep their registry position (exploration beats permanent ignorance).
+    - Demotion is windowed, not all-time: a model is moved AFTER the native floor only on a
+      clearly-poor RECENT record — one bad hour doesn't condemn it forever.
+    - PROBATION RETURN: a demoted model untried for _PROBATION_AFTER_S earns one fresh attempt
+      (kept in its slot), so exile is never permanent — recovery is measurable.
+    Native is NEVER deprioritised; with no recorded data the order is unchanged. Honest: every
+    signal is a real recorded row (attempts + measured QMS quality), nothing invented."""
     try:
         from agentic_core.api.operational_excellence import model_health
         health = model_health()
     except Exception:
         return order
 
+    def _age_s(name: str) -> float:
+        import calendar
+        h = health.get(name) or {}
+        try:
+            # rows are stamped in UTC — parse as UTC (timegm), NOT local (mktime), or every fresh
+            # row looks a timezone-offset old and probation triggers immediately
+            return max(0.0, time.time() - calendar.timegm(time.strptime(h.get("last_at", ""),
+                                                                        "%Y-%m-%dT%H:%M:%SZ")))
+        except (ValueError, OverflowError):
+            return float("inf")
+
     def poor(name: str) -> bool:
         h = health.get(name)
-        return bool(h and h["runs"] >= 5 and h["success_rate"] < 0.6)
+        if not (h and h.get("window_runs", 0) >= 5 and h["success_rate"] < 0.6):
+            return False
+        return _age_s(name) < _PROBATION_AFTER_S      # long-untried → probation try, not exile
 
     good = [n for n in order if n == "native" or not poor(n)]
     bad = [n for n in order if n != "native" and poor(n)]
-    return good + bad
+
+    # positive selection among the measured candidates AHEAD of the native floor
+    if "native" in good:
+        _floor = good.index("native")
+        head, tail = good[:_floor], good[_floor:]
+    else:
+        head, tail = good, []
+
+    def _score(name: str):
+        h = health.get(name) or {}
+        if h.get("window_runs", 0) >= 3:
+            return (0, -h["success_rate"], h.get("avg_ms", 0))   # measured: best rate, then fastest
+        return (1, 0, 0)                                          # unmeasured: keep registry order
+    head.sort(key=_score)
+    return head + tail + bad
 
 
 class NativeOrchestrator:

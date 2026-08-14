@@ -699,6 +699,37 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_native_learning_loop_closed(client):
+    # §6 (W275) — the learning loop is CLOSED, not one-way exile: model scores are RECENCY-WINDOWED
+    # (recovery inside the window is possible), the router POSITIVELY selects the measured-best
+    # owned model (not merely avoiding failures), a long-untried demoted model earns a probation
+    # retry (exile is never permanent), the run's REAL QMS verdict feeds routing as a
+    # model_quality row, and the apex Board accrues operational rows like every other tier.
+    from agentic_core.api.operational_excellence import record_outcome, model_health, _load as _ops
+    from agentic_core.ai.native.orchestrator import _reorder_by_health
+    import uuid as _uuid
+    a, b = f"ollama:w275a-{_uuid.uuid4().hex[:4]}", f"ollama:w275b-{_uuid.uuid4().hex[:4]}"
+    for i in range(6):
+        record_outcome("model_attempt", "model:t", served_by=a, success=True, duration_ms=900)
+        record_outcome("model_attempt", "model:t", served_by=b, success=(i == 0), duration_ms=400)
+    order = _reorder_by_health([b, a, "native"])
+    assert order[0] == a and order[-1] == b            # positive selection + windowed demotion
+    for _ in range(40):                                # b recovers INSIDE the window
+        record_outcome("model_attempt", "model:t", served_by=b, success=True, duration_ms=400)
+    assert _reorder_by_health([b, a, "native"])[0] == b   # recovery is possible — no permanent exile
+    h = model_health()
+    assert h[b]["window_runs"] <= 40 and h[b]["success_rate"] >= 0.9 and h[b]["last_at"]
+    # the cascade's REAL QMS verdict feeds routing…
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w275 quality loop contract", "domain": "enterprise"}).json()
+    mq = [x for x in _ops() if x["kind"] == "model_quality" and x.get("ref") == r["run_id"]]
+    assert mq and mq[0]["success"] == bool(r["quality"].get("qms_gate_passed"))
+    # …and the apex Board accrues operational rows like every other tier
+    client.post("/api/v1/board/chief/instruct", json={"instruction": "w275 board rows contract"})
+    assert any(x["kind"] == "ai_call" and str(x["resource"]).startswith("agent:board")
+               for x in _ops())
+
+
 def test_composition_runs_persist_feed_selection_and_move_the_plan(client):
     # §7×§5×§6 (W274) — a composition run is a first-class event: it PERSISTS (queryable history),
     # every real facility run accrues its own operational-excellence row (fabric:<resource> — measured

@@ -92,14 +92,31 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None) 
     """§6 (W270) — the APEX tier runs on the same in-house-first fabric as every lower tier:
     query_meta with owned-resource provenance recorded per call (the Board was previously the only
     AI-driven governance tier without served_by/any_external)."""
+    _t0 = time.time()
     try:
         res = await gateway.query_meta(prompt, agent=agent)
         if provenance is not None:
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
             provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
+        # §5×§6 (W275) — the APEX accrues real operational rows like every lower tier (it was the
+        # only AI-driven tier invisible to the learning loop and the measured-outcomes blocks).
+        try:
+            from agentic_core.api.operational_excellence import record_outcome
+            record_outcome("ai_call", f"agent:{agent}", served_by=res.get("served_by", "native"),
+                           is_external=bool(res.get("is_external")),
+                           duration_ms=int((time.time() - _t0) * 1000),
+                           success=bool((res.get("output") or "").strip()))
+        except Exception:
+            pass
         return res.get("output", "")
     except Exception as e:
+        try:
+            from agentic_core.api.operational_excellence import record_outcome
+            record_outcome("ai_call", f"agent:{agent}", served_by="none", is_external=False,
+                           duration_ms=int((time.time() - _t0) * 1000), success=False)
+        except Exception:
+            pass
         return f"[{agent} unavailable: {e}]"
 
 

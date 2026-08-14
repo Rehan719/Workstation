@@ -452,6 +452,18 @@ async def cascade_orchestration(req: CascadeRequest):
         _fabric_catalogue_n = len(_FB)
     except Exception:
         _fabric_catalogue_n = 0
+    # §5×§6 (W275) — measured QUALITY feeds the learning loop: the run's REAL QMS verdict is
+    # recorded against the model that predominantly served this cascade, so routing positively
+    # selects models whose work passes the gate — not merely models that return non-empty text.
+    try:
+        from agentic_core.api.operational_excellence import record_outcome as _rq
+        if provenance.get("served_by"):
+            _top_model = max(provenance["served_by"].items(), key=lambda kv: kv[1])[0]
+            _rq("model_quality", "cascade_qms_verdict", served_by=_top_model,
+                is_external=bool(provenance.get("any_external")),
+                success=bool(quality.get("qms_gate_passed")), ref=run_id)
+    except Exception:
+        pass
     measured_block = (
         "Measured outcomes for THIS run (judge against these — do not merely restate the text):\n"
         f"- QMS gate passed: {quality.get('qms_gate_passed')}\n"

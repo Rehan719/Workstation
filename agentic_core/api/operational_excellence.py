@@ -99,23 +99,31 @@ def _rankings(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
-def model_health() -> Dict[str, Dict[str, Any]]:
-    """Per-model-resource health from recorded model attempts (kind="model_attempt"), keyed by the
-    model name (served_by). The native orchestrator uses this to ADAPT selection — deprioritise a
-    model resource with a clearly-poor recent track record. Honest: only real recorded attempts."""
-    agg: Dict[str, Dict[str, Any]] = {}
+def model_health(window: int = 40) -> Dict[str, Dict[str, Any]]:
+    """Per-model-resource health from recorded attempts, keyed by the model name (served_by).
+    The native orchestrator uses this to ADAPT selection. Honest: only real recorded rows.
+    W275 — the score is RECENCY-WINDOWED (the last `window` attempts per model, so one bad hour
+    doesn't condemn a model forever and old glory doesn't mask decay), carries `last_at` (enabling
+    probation retries), and folds in measured QUALITY rows (kind="model_quality" — e.g. the QMS
+    verdict of a cascade the model served) alongside raw attempt success."""
+    rows_by_model: Dict[str, list] = {}
     for r in _load():
-        if r.get("kind") != "model_attempt":
+        if r.get("kind") not in ("model_attempt", "model_quality"):
             continue
-        name = r.get("served_by", "")
-        a = agg.setdefault(name, {"runs": 0, "successes": 0, "total_ms": 0})
-        a["runs"] += 1
-        a["successes"] += 1 if r.get("success") else 0
-        a["total_ms"] += int(r.get("duration_ms", 0))
-    return {name: {"runs": a["runs"],
-                   "success_rate": round(a["successes"] / a["runs"], 3) if a["runs"] else 0.0,
-                   "avg_ms": round(a["total_ms"] / a["runs"]) if a["runs"] else 0}
-            for name, a in agg.items()}
+        rows_by_model.setdefault(r.get("served_by", ""), []).append(r)
+    out: Dict[str, Dict[str, Any]] = {}
+    for name, rows in rows_by_model.items():
+        recent = rows[-max(1, int(window)):]
+        succ = sum(1 for r in recent if r.get("success"))
+        total_ms = sum(int(r.get("duration_ms", 0)) for r in recent)
+        out[name] = {
+            "runs": len(rows),                                    # all-time volume (context)
+            "window_runs": len(recent),
+            "success_rate": round(succ / len(recent), 3),         # WINDOWED — the score that routes
+            "avg_ms": round(total_ms / len(recent)) if recent else 0,
+            "last_at": max((r.get("created_at") or "" for r in recent), default=""),
+        }
+    return out
 
 
 class RecordRequest(BaseModel):
