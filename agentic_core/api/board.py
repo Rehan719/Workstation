@@ -337,27 +337,111 @@ class BoardDirective(BaseModel):
     domain: str = "enterprise"
 
 
+def _director_grounding(did: str) -> str:
+    """§5 (W279) — LIVE readings of the systems each director OWNS, so a director's input is
+    grounded in the real state of their mandate, not invented. Best-effort per system; a system
+    that cannot be read is reported 'unavailable' — never fabricated."""
+    try:
+        if did == "dir_strategy":
+            from agentic_core.api.business_plan import _load as _bp
+            objs = (_bp("workstation") or {}).get("objectives", [])
+            by = {}
+            for o in objs:
+                by[o.get("status", "?")] = by.get(o.get("status", "?"), 0) + 1
+            return f"living plan objectives by status: {by or 'none yet'}"
+        if did == "dir_technology":
+            from agentic_core.api.resource_fabric import _BY_ID
+            from agentic_core.api.operational_excellence import model_health
+            return (f"fabric catalogue: {len(_BY_ID)} resources; "
+                    f"measured model resources: {len(model_health())}")
+        if did == "dir_governance":
+            from agentic_core.gaas.v5 import UEGLogger
+            g = UEGLogger()._read()
+            return f"UEG audit chain: {len(g.get('nodes', []))} sealed events, root {str(g.get('root_hash'))[:12]}…"
+        if did == "dir_biomimetic":
+            from agentic_core.organism.biobus import biobus
+            ctx = biobus.organism_context()
+            return (f"immune threat {(ctx.get('immune') or {}).get('threat_level')}; "
+                    f"circadian {(ctx.get('circadian') or {}).get('cycle')}; "
+                    f"ATP {(ctx.get('metabolic') or {}).get('atp_ratio')}")
+        if did == "dir_operations":
+            from agentic_core.config import data_path, load_json_tolerant
+            runs = load_json_tolerant(data_path("org_cascade_runs.json"), []) or []
+            last = runs[-1] if runs else {}
+            return (f"org cascade runs: {len(runs)}; last quality: "
+                    f"qms={((last.get('quality') or {}).get('qms_gate_passed'))} "
+                    f"coverage={((last.get('quality') or {}).get('delivery_coverage'))}")
+        if did == "dir_finance":
+            from agentic_core.api.operational_excellence import _load as _ops
+            rows = [r for r in _ops()][-100:]
+            ok = sum(1 for r in rows if r.get("success"))
+            return f"recent operational rows: {len(rows)}, success rate {round(ok / len(rows), 2) if rows else 'n/a'} (virtual WST economy; real-money rails DISABLED)"
+        if did == "dir_evolution":
+            from agentic_core.config import data_path, load_json_tolerant
+            dev = load_json_tolerant(data_path("tier_development.json"), {}) or {}
+            return f"active Development Actions: {len(dev)} tier edges under continual improvement"
+    except Exception as exc:
+        return f"live reading unavailable ({str(exc)[:60]})"
+    return "no live reading defined"
+
+
+def _relevant_directors(topic: str, domain: str, k: int = 3) -> List[Dict[str, str]]:
+    """Deterministic selection: score each director's mandate-word overlap with the topic+domain
+    (the match reason IS the overlap — no AI guessing which specialists 'sound' relevant)."""
+    import re as _re
+    low = f" {topic.lower()} {domain.lower()} "
+    scored = []
+    for d in _BOARD:
+        if d["id"] == "chief":
+            continue
+        words = set(_re.findall(r"[a-z]{5,}", (d["mandate"] + " " + d["title"]).lower()))
+        hits = sum(1 for w in words if w in low)
+        if hits:
+            scored.append((hits, d["id"], d))
+    scored.sort(key=lambda x: (-x[0], x[1]))
+    chosen = [d for _, _, d in scored[:k]]
+    if not chosen:   # no overlap → the strategy + operations directors hold the default mandate
+        chosen = [d for d in _BOARD if d["id"] in ("dir_strategy", "dir_operations")]
+    return chosen
+
+
 @router.post("/directive")
 async def board_directive(req: BoardDirective):
-    """The board deliberates a topic — relevant Directors contribute direction — and resolves a directive."""
-    roster = ", ".join(d["title"] for d in _BOARD if d["id"] != "chief")
-    prompt = (
-        "You are the Workstation IDBO Board of Directors, chaired by the Chief (the Owner's digital twin). "
-        f"Directors: {roster}.\n\n"
-        f"Topic: {req.topic}\nDomain: {req.domain}\n\n"
-        "Deliberate and resolve:\n"
-        "## Board Position (the resolved direction)\n"
-        "## Key Director Inputs (2-4 directors, each one line)\n"
-        "## Directive to the AI CEO (what to execute)\n"
-        "## Guardrails (governance / arms-length constraints)"
-    )
+    """§5 (W279) — the board deliberates as SPECIALISTS: the relevant directors are selected
+    deterministically, EACH contributes through its own AI call GROUNDED in live readings of the
+    systems it owns, and the Chief chairs a synthesis over the directors' ACTUAL inputs — no more
+    single-call invented 'Director Inputs'."""
     provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
-    resolution = await _q(prompt, "board_directive", provenance)
+    directors = _relevant_directors(req.topic, req.domain)
+    director_inputs: Dict[str, Dict[str, str]] = {}
+    for d in directors:
+        grounding = _director_grounding(d["id"])
+        text = await _q(
+            f"You are the {d['title']} on the Workstation IDBO Board.\n"
+            f"Your mandate: {d['mandate']}\n"
+            f"LIVE readings of the systems you own: {grounding}\n\n"
+            f"Topic before the board: {req.topic}\nDomain: {req.domain}\n\n"
+            "Give your specialist direction (under 80 words), grounded in the readings above — "
+            "cite them where relevant.", f"board_{d['id']}", provenance)
+        director_inputs[d["id"]] = {"title": d["title"], "live_grounding": grounding, "input": text}
+    inputs_block = "\n\n".join(f"[{v['title']}] (live: {v['live_grounding']})\n{v['input'][:400]}"
+                               for v in director_inputs.values())
+    resolution = await _q(
+        "You are the Chief (the Owner's digital twin), chairing the Workstation IDBO Board. "
+        f"Topic: {req.topic}\nDomain: {req.domain}\n\n"
+        f"The directors have ACTUALLY deliberated — their real inputs:\n{inputs_block}\n\n"
+        "Synthesise and resolve (do not invent inputs beyond those above):\n"
+        "## Board Position (the resolved direction)\n"
+        "## Directive to the AI CEO (what to execute)\n"
+        "## Guardrails (governance / arms-length constraints)", "board_directive", provenance)
     record = {
         "kind": "board_directive",
         "topic": req.topic,
         "domain": req.domain,
         "resolution": resolution,
+        # §5 (W279) — the directors' REAL specialist inputs + the live groundings they drew on.
+        "director_inputs": director_inputs,
+        "directors_engaged": [d["id"] for d in directors],
         "ai_provenance": provenance,     # §6 — apex provenance (W270)
         "chaired_by": "Chief (Owner's Digital Twin)",
         "status": "resolved",

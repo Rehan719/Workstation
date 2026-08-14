@@ -699,6 +699,58 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_cascade_sees_and_moves_the_living_plan(client):
+    # §5 (W280) — the cascade's Chief genuinely OWNS the living Business Plan: `scope` selects the
+    # plan that grounds the apex tiers (its real objectives injected into the Chief/CEO prompts),
+    # and an `objective_id`-bound run writes a review back (with the run id + the BTO's fabric
+    # requisitions) and advances planned→in_progress ONLY on a QMS-passed run — never auto-done.
+    import uuid as _uuid
+    scope = f"w280-{_uuid.uuid4().hex[:8]}"
+    from agentic_core.api.business_plan import parse_objective_lines, _load as _bpl, _save as _bps
+    plan = _bpl(scope)
+    plan.setdefault("objectives", []).extend(
+        parse_objective_lines("Deliver the W280 org pilot | pilot live | next review | AI CEO"))
+    _bps(plan)
+    oid = _bpl(scope)["objectives"][-1]["id"]
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w280 plan-grounded cascade contract", "domain": "enterprise",
+        "scope": scope, "objective_id": oid}).json()
+    assert r["business_plan_scope"] == scope
+    pb = r["plan_binding"]
+    obj = next(o for o in _bpl(scope)["objectives"] if o["id"] == oid)
+    if pb["result"] == "review_written":                   # the QMS gate passed this run
+        assert pb["advanced"] is True and obj["status"] == "in_progress"
+        assert obj["reviews"][-1]["org_cascade_run"]["run_id"] == r["run_id"]
+    else:                                                  # honest: a failed gate never advances
+        assert pb["result"] == "qms_failed_no_advance" and obj["status"] == "planned"
+    top = client.get("/api/v1/swarm/cascade/runs").json()["runs"][0]
+    assert top["run_id"] == r["run_id"]
+    assert (top.get("plan_binding") or {}).get("objective_id") == oid   # binding persisted
+
+
+def test_board_deliberates_as_specialists(client):
+    # §5 (W279) — the Board's directive is a REAL specialist deliberation: relevant directors are
+    # selected deterministically (mandate-word overlap — the reason IS the overlap), EACH
+    # contributes through its own AI call grounded in LIVE readings of the systems it owns, and
+    # the Chief synthesises over the directors' ACTUAL inputs — no single-call invented
+    # 'Director Inputs'.
+    r = client.post("/api/v1/board/directive", json={
+        "topic": "strengthen the delivery operations and build quality of the resource facilities",
+        "domain": "enterprise"}).json()
+    engaged = r["directors_engaged"]
+    assert engaged and set(engaged) & {"dir_operations", "dir_technology"}   # relevant specialists
+    di = r["director_inputs"]
+    assert set(di.keys()) == set(engaged)
+    for v in di.values():
+        assert v["live_grounding"] and v["input"]           # every input grounded in a live reading
+    assert sum(r["ai_provenance"]["served_by"].values()) == len(engaged) + 1   # directors + chair
+    # an off-mandate topic still deliberates via the default strategy/operations mandate holders
+    r2 = client.post("/api/v1/board/directive", json={"topic": "zzz qqq", "domain": "x"}).json()
+    assert set(r2["directors_engaged"]) == {"dir_strategy", "dir_operations"}
+    recent = client.get("/api/v1/board/status").json().get("recent_directives", [])
+    assert any(x.get("director_inputs") for x in recent)     # the deliberation persisted
+
+
 def test_organism_governs_native_path_and_cascade_tempo(client):
     # §6×§8 (W278) — the native path re-joined the living organism: repeated model failures open
     # the self-healing circuit breaker (the router then skips honestly) and raise immune threat;

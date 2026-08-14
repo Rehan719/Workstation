@@ -179,6 +179,12 @@ class CascadeRequest(BaseModel):
     # User design control of the org structure (§5): which specialist C-Suite officers to engage — each
     # drives its own CoE. Empty = a balanced default set. Choose from the _AGENTS C-Suite keys.
     csuite_roles: list[str] = []
+    # §5 (W280) — the cascade SEES the living Business Plan: `scope` selects which plan (a vsb_id or
+    # 'workstation') grounds the Chief/CEO tiers; an optional `objective_id` binds the run to one
+    # objective — a QMS-PASSED run writes a review back and advances planned→in_progress (never
+    # auto-done — W266 semantics).
+    scope: str = "workstation"
+    objective_id: str | None = None
 
 
 @router.get("/cascade/runs")
@@ -266,10 +272,34 @@ async def cascade_orchestration(req: CascadeRequest):
         return res.get("output", "")
 
     # Tier 0a: Chief of the Board of Directors (the Owner's digital twin) — the founding mandate
+    # §5 (W280) — the Chief OWNS the living Business Plan and now actually SEES it: the scoped
+    # plan's REAL objectives (and the bound objective, when given) ground the apex tiers. Honest:
+    # read from the plan store; an unreadable plan yields no context, never an invented one.
+    _plan_ctx = ""
+    try:
+        from agentic_core.api.business_plan import _load as _bp_load
+        _objs = (_bp_load(req.scope) or {}).get("objectives", [])
+        if _objs:
+            _by: dict = {}
+            for _o in _objs:
+                _by[_o.get("status", "?")] = _by.get(_o.get("status", "?"), 0) + 1
+            _open = [o for o in _objs if o.get("status") in ("planned", "in_progress")][:5]
+            _lines = "\n".join(f"- [{o.get('status')}] {o.get('title')} (KPI: {o.get('kpi', '—')})"
+                               for o in _open)
+            _bound = (next((o for o in _objs if o.get("id") == req.objective_id), None)
+                      if req.objective_id else None)
+            _plan_ctx = (f"\nTHE LIVING BUSINESS PLAN you own (scope '{req.scope}', objectives by "
+                         f"status {_by}) — its open objectives:\n{_lines}\n"
+                         + (f"THIS RUN DELIVERS objective {_bound.get('id')}: {_bound.get('title')} "
+                            f"(KPI: {_bound.get('kpi', '—')})\n" if _bound else "")
+                         + "Direct the organisation to ADVANCE this plan — cite objectives where relevant.\n")
+    except Exception:
+        _plan_ctx = ""
+
     chief_prompt = (
         f"You are the Chief of the Board of Directors — the founder's own digital twin and the apex of "
         f"this VSB's governance. A mission has been raised:\n\"{req.mission}\"\n"
-        f"Domain: {req.domain}\nRealm: {req.realm}\n\n"
+        f"Domain: {req.domain}\nRealm: {req.realm}\n{_plan_ctx}\n"
         "You own the living Business Plan and deliver it via Strategy and a living Roadmap. Set the "
         "Founding Mandate the Board and whole organisation must serve:\n"
         "## Intent & Values (why this matters; the non-negotiable principles — ethical, beneficent)\n"
@@ -302,7 +332,7 @@ async def cascade_orchestration(req: CascadeRequest):
     ceo_prompt = (
         f"You are the AI CEO of a VSB, accountable to the Board. The Board has resolved:\n\n"
         f"{board_resolution[:600]}\n\n"
-        f"Mission:\n\"{req.mission}\"\nDomain: {req.domain}\nRealm: {req.realm}\n\n"
+        f"Mission:\n\"{req.mission}\"\nDomain: {req.domain}\nRealm: {req.realm}\n{_plan_ctx}\n"
         "Issue a CEO Mission Directive that honours the Board's guardrails:\n"
         "## Mission Statement (what we are achieving and why)\n"
         "## Strategic Priorities (top 3)\n"
@@ -623,6 +653,36 @@ async def cascade_orchestration(req: CascadeRequest):
     duration_ms = int((time.time() - start) * 1000)
     biobus.record_operation("swarm_cascade", "swarm.cascade", success=True, payload=f"Chief+Board+CEO+{len(csuite_responses)} CSuite+{len(coe_responses)} CoE+BTO+BuildToOrder, {duration_ms}ms")
 
+    # §5 (W280) — a cascade bound to a plan objective DELIVERS it: on a QMS-passed run a review
+    # writes back onto the objective (with the run id + what the BTO requisitioned) and
+    # planned→in_progress advances; a failed gate NEVER advances (W266 semantics — never auto-done).
+    plan_binding = None
+    if req.objective_id:
+        plan_binding = {"objective_id": req.objective_id, "scope": req.scope, "advanced": False}
+        try:
+            from agentic_core.api.business_plan import _load as _bp_load2, _save as _bp_save2
+            _fresh = _bp_load2(req.scope)
+            _tgt = next((o for o in _fresh.get("objectives", []) if o.get("id") == req.objective_id), None)
+            if _tgt is None:
+                plan_binding["result"] = "objective_not_found"
+            elif not quality.get("qms_gate_passed"):
+                plan_binding["result"] = "qms_failed_no_advance"
+            else:
+                _tgt.setdefault("reviews", []).append({
+                    "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "status": "in_progress" if _tgt.get("status") == "planned" else _tgt.get("status"),
+                    "note": f"§5 org cascade {run_id} delivered against this objective — QMS gate passed.",
+                    "org_cascade_run": {"run_id": run_id,
+                                        "fabric_requisitions": [f["resource"] for f in fabric_requisitions]},
+                })
+                if _tgt.get("status") == "planned":
+                    _tgt["status"] = "in_progress"
+                _bp_save2(_fresh)
+                plan_binding.update({"advanced": True, "result": "review_written",
+                                     "status": _tgt.get("status")})
+        except Exception as exc:
+            plan_binding["result"] = f"error: {exc}"[:120]
+
     # §5 (W268) — PERSIST the cascade run (previously only /delegate persisted; cascade runs — with
     # their appraisals and Development Actions — evaporated at response time). Compact + capped + atomic;
     # a non-colliding store (swarm_cascades.json holds fabric cascade DEFINITIONS, not runs).
@@ -639,6 +699,7 @@ async def cascade_orchestration(req: CascadeRequest):
             "served_by": provenance["served_by"], "any_external": provenance["any_external"],
             "fabric_requisitions": [{"resource": f["resource"], "ran": f["ran"],
                                      "match_hits": f["match_hits"]} for f in fabric_requisitions],
+            "plan_binding": plan_binding, "business_plan_scope": req.scope,
             "duration_ms": duration_ms,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
@@ -649,6 +710,9 @@ async def cascade_orchestration(req: CascadeRequest):
     return {
         "run_id": run_id,
         "mission": req.mission,
+        # §5 (W280) — which living plan grounded the apex tiers + the objective this run delivered.
+        "business_plan_scope": req.scope,
+        "plan_binding": plan_binding,
         # Full org hierarchy, apex → operational delivery, every tier run in-house (see ai_provenance).
         "org_hierarchy": [
             "Chief of the Board of Directors", "Board of Directors", "AI CEO", "C-Suite",
