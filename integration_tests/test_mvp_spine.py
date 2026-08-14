@@ -699,6 +699,132 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_continuous_compliance_beat(client):
+    # §11 (W288) — "continuously live": the heartbeat's opt-in auto_compliance beat re-screens the
+    # least-recently-screened LIVING VSB over its CURRENT text (an entity screened at establishment
+    # is re-evaluated as it evolves), persists per-VSB history, and honours honesty at the edges
+    # (no living VSBs → None, never a fabricated reading). Also: the previously-DEAD auto_economy
+    # flag is genuinely consulted now (it was settable and reported but never checked in beat()).
+    import asyncio as _aio, uuid as _uuid
+    from agentic_core.organism.heartbeat import heartbeat
+    from agentic_core.economy.living_vsbs import register
+    loop = _aio.get_event_loop()
+    vid = f"vsb-w288-{_uuid.uuid4().hex[:6]}"
+    try:
+        heartbeat.configure(auto_compliance=True, auto_economy=False)
+        register(vid, name="Halal community nutrition venture", domain="care")
+        loop.run_until_complete(heartbeat.beat())
+        assert heartbeat.last_compliance and heartbeat.last_compliance["overall"] in ("pass", "review", "fail")
+        from agentic_core.config import data_path, load_json_tolerant
+        hist = load_json_tolerant(data_path("vsb_compliance_history.json"), {})
+        assert vid in hist and hist[vid]["history"]           # per-VSB history persisted
+        r_off = loop.run_until_complete(heartbeat.beat())     # auto_economy off → no operate action
+        assert "operate_vsb" not in r_off.get("actions", [])
+        heartbeat.configure(auto_economy=True)
+        r_on = loop.run_until_complete(heartbeat.beat())      # on → the flag genuinely gates
+        assert "operate_vsb" in r_on.get("actions", [])
+    finally:
+        heartbeat.configure(auto_compliance=False, auto_economy=False)
+    r = client.post("/api/v1/heartbeat/configure", json={"auto_compliance": True}).json()
+    assert client.get("/api/v1/heartbeat/status").json()["auto_compliance"] is True
+    client.post("/api/v1/heartbeat/configure", json={"auto_compliance": False})
+
+
+def test_compliance_sealed_ueg_immune_and_routed(client):
+    # §11×§6 (W287) — verdicts are CONSEQUENTIAL now: the screen runs BEFORE the QMS seal (the
+    # sealed quality record carries the §11 verdicts — previously computed after, so every sealed
+    # record omitted them), every screen seals a compliance.screen UEG event, a FAIL registers
+    # with the immune system, and a FAIL on a MATERIAL label routes to Change Control at MEDIUM
+    # tier (never auto-approved — a genuine human decision). Flag-not-block preserved throughout.
+    import asyncio as _aio
+    from agentic_core.vbs.quality import assure_delivery
+    loop = _aio.get_event_loop()
+    r = loop.run_until_complete(assure_delivery(
+        "a cascade delivery promoting alcohol sales and gambling revenue " + "x" * 200,
+        ["Section"], label="cascade"))
+    q = r["quality"]
+    assert q["compliance"]["overall"] == "fail"
+    assert q.get("compliance_routed_to_cca") is True          # material fail → arms-length review
+    assert q.get("quality_record_hash")                       # still sealed (flag, not block)
+    ev = client.get("/api/v1/gaas/ueg/events?limit=100").json()["events"]
+    comp = [e["data"] for e in ev if e.get("data", {}).get("type") == "compliance.screen"]
+    assert comp and comp[-1]["verdicts"].get("sharia_halal") == "fail"   # sealed to the UEG
+    cca = client.get("/api/v1/cca/queue").json()
+    items = cca.get("queue", cca.get("changes", []))
+    routed = [x for x in items if "Compliance FAIL" in str(x.get("title", ""))]
+    assert routed and routed[0]["impact_tier"] == "MEDIUM"    # above LOW auto-approve
+    assert routed[0]["status"] != "approved"                  # held for a genuine decision
+    r2 = loop.run_until_complete(assure_delivery(
+        "a halal community nutrition programme with transparent pricing " + "y" * 150,
+        ["Section"], label="cascade"))
+    assert "compliance_routed_to_cca" not in r2["quality"]    # a pass routes nothing
+    # the cascade's persisted run record + UEG seal carry the compliance verdict (swarm.py side)
+    rc = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w287 compliance-sealed cascade", "domain": "enterprise"}).json()
+    top = client.get("/api/v1/swarm/cascade/runs").json()["runs"][0]
+    assert top["run_id"] == rc["run_id"]
+    assert "compliance_overall" in top["quality"]
+
+
+def test_ethical_engine_real_per_dimension(client):
+    # §11 (W286) — the Ethical framework EVALUATES now (the old screen hardcoded 'pass — no
+    # violations detected' without checking anything): four explainable dimensions (human ·
+    # environment · quality · value), ambiguity → review, un-assessable dimensions say
+    # 'not_assessed' honestly (never a fabricated pass), and the caller's PRECOMPUTED QMS
+    # metrics thread into the quality dimension without any circular call.
+    from agentic_core.compliance.ethical_engine import evaluate_ethics
+    r = evaluate_ethics("a scheme to exploit vulnerable users with hidden fees")
+    assert r["overall"] == "fail"                          # extractive value framing
+    assert any(d["dimension"] == "human" and d["status"] == "review" for d in r["dimensions"])
+    r2 = evaluate_ethics("dumping contaminated waste to cut costs while helping the community")
+    assert any(d["dimension"] == "environment" and d["status"] == "review" for d in r2["dimensions"])
+    r3 = evaluate_ethics("WATER")                          # a short charity-cause subject
+    assert any(d["status"] == "not_assessed" for d in r3["dimensions"])   # honest, not a fake pass
+    r4 = evaluate_ethics("a comprehensive technical migration of the database layer executed "
+                         "thoroughly with zero stated societal framing whatsoever")
+    assert r4["overall"] == "review"                       # no stated benefit → review, not pass
+    r5 = evaluate_ethics("x" * 300, {"delivery_coverage": 0.9, "stub_found": False})
+    assert any(d["dimension"] == "quality" and d["status"] == "pass" for d in r5["dimensions"])
+    from agentic_core.api.compliance import screen_compliance
+    e = next(v for v in screen_compliance("a plan to exploit users")["verdicts"]
+             if v["framework"] == "ethical")
+    assert e["status"] in ("review", "fail") and "human: review" in e["reason"]
+    assert "(engine-backed)" in e["reason"]                # the registry claim is now true
+
+
+def test_compliance_engines_genuinely_invoked(client):
+    # §11 (W285) — the '(engine-backed)' label is TRUE now: the Halal and UK-Legal ENGINES are
+    # actually INVOKED (the old screen imported them and appended the label without a single
+    # call), with worst-of merging (an engine pass never downgrades a rule fail), the UK engine's
+    # SHA3-512 audit hash in the reason, an HONEST '(built-in rules)' label when an engine cannot
+    # run, and the phantom 'RegulatoryComplianceMonitor' purged from the framework registry.
+    from agentic_core.api.compliance import screen_compliance
+    import agentic_core.api.compliance as C
+    r = screen_compliance("a venture selling alcohol at events")
+    h = next(v for v in r["verdicts"] if v["framework"] == "sharia_halal")
+    assert h["status"] == "fail" and "HARAM_ELEMENT_ALCOHOL" in h["reason"]   # the ENGINE's code
+    assert "(engine-backed)" in h["reason"]
+    r2 = screen_compliance("the plan involves unfair dismissal of staff")
+    l2 = next(v for v in r2["verdicts"] if v["framework"] == "uk_legal")
+    assert l2["status"] == "fail" and "STATUTORY_BREACH: ERA1996" in l2["reason"]
+    assert "audit " in l2["reason"]                       # the engine's SHA3-512 audit hash
+    r3 = screen_compliance("a halal-certified community meal service with transparent pricing")
+    h3 = next(v for v in r3["verdicts"] if v["framework"] == "sharia_halal")
+    assert h3["status"] == "pass" and "(engine-backed)" in h3["reason"]   # pass keeps the suffix
+    orig = C._halal_engine
+    try:
+        C._halal_engine = lambda: (_ for _ in ()).throw(RuntimeError("down"))
+        r4 = screen_compliance("gambling ring")
+        h4 = next(v for v in r4["verdicts"] if v["framework"] == "sharia_halal")
+        assert h4["status"] == "fail"                     # the built-in rule verdict stands
+        assert "(built-in rules)" in h4["reason"] and "engine-backed" not in h4["reason"]
+    finally:
+        C._halal_engine = orig
+    fw = client.get("/api/v1/compliance/frameworks").json()["frameworks"]
+    assert all("RegulatoryComplianceMonitor" not in f["engine"] for f in fw)   # phantom purged
+    assert any("invoked" in f["engine"] for f in fw)      # the registry says what genuinely runs
+
+
 def test_tree_planner_swarm_planned_with_honest_floor(client):
     # §6 (W283) — the workflow-tree decomposition is PLANNED BY the swarm's own intelligence only
     # when a REAL owned model genuinely served: under the deterministic floor the planner label is

@@ -64,6 +64,8 @@ class OrganismHeartbeat:
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
         self.auto_economy = False             # opt-in: autonomous economy cycles
         self.auto_align = False               # opt-in: route vision gaps to tiers each beat (cheap, plan-only)
+        self.auto_compliance = False          # opt-in (§11, W288): re-screen living VSBs on the beat
+        self.last_compliance: Optional[Dict[str, Any]] = None   # last continuous-compliance reading
         self._evolve_every = 30               # beats between evolution attempts (when enabled)
         self._beats_since_evolve = 0
         self._log: List[Dict[str, Any]] = []
@@ -155,14 +157,30 @@ class OrganismHeartbeat:
         # 2e. §4 — autonomously OPERATE one living VSB enterprise (round-robin, paced): run one virtual economy
         #     cycle for the least-recently-operated established VSB, so each "continually, autonomously operates"
         #     forever. Cheap + deterministic + virtual; the registry is only populated once VSBs are established.
-        try:
-            from agentic_core.economy.living_vsbs import operate_one
-            op = operate_one()
-            if op and not op.get("error"):
-                self.last_vsb_operated = op.get("vsb_id")
-                actions.append("operate_vsb")
-        except Exception:
-            pass
+        #     W288 HONESTY FIX: this now actually honours the auto_economy flag — it was settable and
+        #     reported in status() but never consulted, so cycles ran regardless of the Owner's setting.
+        if self.auto_economy:
+            try:
+                from agentic_core.economy.living_vsbs import operate_one
+                op = operate_one()
+                if op and not op.get("error"):
+                    self.last_vsb_operated = op.get("vsb_id")
+                    actions.append("operate_vsb")
+            except Exception:
+                pass
+
+        # 2f. §11 (W288) — CONTINUOUS compliance: re-screen ONE living VSB per beat (round-robin,
+        #     least-recently-screened), so an entity screened at establishment is re-evaluated as its
+        #     plan and record evolve — "continuously monitored and evaluated live", not event-only.
+        #     A REGRESSION (previously pass/review → now fail) registers with the immune system and
+        #     fires a reflex signal (§12 survival tie-in). Cheap + deterministic; per-VSB history kept.
+        if self.auto_compliance:
+            try:
+                self.last_compliance = self._compliance_beat()
+                if self.last_compliance:
+                    actions.append("compliance_rescreen")
+            except Exception:
+                pass
 
         # 3. Transformation tick — vision-realisation introspection (no AI)
         try:
@@ -241,9 +259,54 @@ class OrganismHeartbeat:
     def stop(self) -> None:
         self.running = False
 
+    def _compliance_beat(self) -> Optional[Dict[str, Any]]:
+        """§11 (W288) — re-screen the least-recently-screened LIVING VSB over its current plan +
+        registration text; persist per-VSB history (capped); a REGRESSION (prior non-fail → fail)
+        registers with the immune system. Returns a compact reading or None with no living VSBs."""
+        from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+        from agentic_core.economy.living_vsbs import list_living
+        living = (list_living() or {}).get("living_vsbs") or []
+        if not living:
+            return None
+        store_path = data_path("vsb_compliance_history.json")
+        hist: Dict[str, Any] = load_json_tolerant(store_path, {}) or {}
+        target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]
+        vsb_id = target.get("vsb_id")
+        # the CURRENT living text: registration identity + the scoped plan's objectives
+        parts = [str(target.get("name") or ""), str(target.get("mission") or ""),
+                 str(target.get("domain") or "")]
+        try:
+            from agentic_core.api.business_plan import _load as _bp_load
+            for o in (_bp_load(vsb_id) or {}).get("objectives", [])[:10]:
+                parts.append(f"{o.get('title')} {o.get('kpi')}")
+        except Exception:
+            pass
+        from agentic_core.api.compliance import screen_compliance
+        screen = screen_compliance(" ".join(p for p in parts if p))
+        rec = hist.get(vsb_id) or {}
+        prior = rec.get("overall")
+        regression = bool(prior and prior != "fail" and screen["overall"] == "fail")
+        entries = (rec.get("history") or [])[-19:]
+        entries.append({"overall": screen["overall"],
+                        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        hist[vsb_id] = {"overall": screen["overall"], "last_at": entries[-1]["at"],
+                        "regression": regression, "history": entries}
+        atomic_write_json(store_path, hist)
+        if regression:
+            try:
+                from agentic_core.organism.immune import immune
+                immune.record(f"compliance:vsb:{vsb_id}", "compliance_regression")
+                from agentic_core.organism.biobus import biobus
+                biobus.fire_signal("reflex", "organism.compliance.regression",
+                                   f"{vsb_id} regressed to FAIL", 0.9)
+            except Exception:
+                pass
+        return {"vsb_id": vsb_id, "overall": screen["overall"], "regression": regression}
+
     def configure(self, interval_seconds: Optional[int] = None,
                   auto_evolve: Optional[bool] = None, auto_economy: Optional[bool] = None,
-                  auto_align: Optional[bool] = None) -> None:
+                  auto_align: Optional[bool] = None,
+                  auto_compliance: Optional[bool] = None) -> None:
         if interval_seconds is not None:
             self.interval_seconds = max(5, int(interval_seconds))
         if auto_evolve is not None:
@@ -252,6 +315,8 @@ class OrganismHeartbeat:
             self.auto_economy = bool(auto_economy)
         if auto_align is not None:
             self.auto_align = bool(auto_align)
+        if auto_compliance is not None:
+            self.auto_compliance = bool(auto_compliance)
 
     def status(self) -> Dict[str, Any]:
         return {
@@ -271,6 +336,8 @@ class OrganismHeartbeat:
             "auto_evolve": self.auto_evolve,
             "auto_economy": self.auto_economy,
             "auto_align": self.auto_align,
+            "auto_compliance": self.auto_compliance,          # §11 (W288) — continuous re-screening
+            "last_compliance": self.last_compliance,
             "recent": self._log[-10:],
             "integrations": ["circadian", "central_nervous_system", "immune", "self_healing",
                              "metabolic_atp", "genome", "UEG_audit", "constitutional_arms_length"],

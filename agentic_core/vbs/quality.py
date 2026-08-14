@@ -57,6 +57,21 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         "delivery_coverage": coverage,
         "stub_found": stub,
     }
+
+    # §11 (W287) — the compliance screen runs BEFORE the QMS seal (it used to run after, so the
+    # tamper-evident quality record — and every board pack's DCS registration — omitted §11
+    # verdicts entirely). Deterministic + explainable; flags, never silently blocks. W286 threads
+    # the PRECOMPUTED QMS figures into the Ethical engine (no circular call back into this gate).
+    try:
+        from agentic_core.api.compliance import screen_compliance
+        screen = screen_compliance(content or "", delivery_metrics={
+            "delivery_coverage": coverage, "stub_found": stub})
+        quality["compliance"] = {"overall": screen["overall"], "compliant": screen["compliant"],
+                                 "verdicts": screen["verdicts"]}
+    except Exception as exc:
+        quality["compliance_error"] = str(exc)
+    _comp = quality.get("compliance") or {}
+
     try:
         from agentic_core.vbs.registry import qms
         # Real, stateful gate: failures append to qms.defects and raise the non-conformance rate.
@@ -64,26 +79,54 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         quality["qms_min_coverage"] = qms.min_coverage
         quality["qms_non_conformance_rate"] = qms.get_non_conformance_rate()
         # The QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5):
-        # the gate verdict becomes a versioned, SHA3-512-sealed controlled document.
+        # the gate verdict becomes a versioned, SHA3-512-sealed controlled document — W287: the §11
+        # verdicts are IN the sealed payload now (the §13 repo's 'compliance + quality record').
         quality["quality_record_hash"] = await qms.control_document(
             f"qms_record:{label}",
             {"label": label, "delivery_coverage": coverage, "stub_found": stub,
-             "qms_gate_passed": quality["qms_gate_passed"], "bar": SOLUTION_QUALITY_BAR},
+             "qms_gate_passed": quality["qms_gate_passed"], "bar": SOLUTION_QUALITY_BAR,
+             "compliance": {"overall": _comp.get("overall"),
+                            "verdicts": _comp.get("verdicts")}},
             actor="QMS")
         quality["document_controlled"] = True
     except Exception as exc:  # never break a delivery on a QMS hiccup
         quality["qms_error"] = str(exc)
 
-    # §11 — live compliance woven into EVERY delivery (not bolted on): screen the content across
-    # Sharia/Halal · UK Legal · Regulatory · EHS · Ethical. Deterministic + explainable; flags (does not
-    # silently block) so compliance is continuously monitored + evaluated on every workflow.
+    # §11×§6 (W287) — every screen SEALS to the tamper-evident UEG ledger (there were ZERO
+    # compliance UEG events repo-wide), and a FAIL registers with the living organism's immune
+    # system — compliance is a sensed condition, not just a response field.
     try:
-        from agentic_core.api.compliance import screen_compliance
-        screen = screen_compliance(content or "")
-        quality["compliance"] = {"overall": screen["overall"], "compliant": screen["compliant"],
-                                 "verdicts": screen["verdicts"]}
-    except Exception as exc:
-        quality["compliance_error"] = str(exc)
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "compliance.screen", "label": label,
+                         "overall": _comp.get("overall"),
+                         "verdicts": {v["framework"]: v["status"] for v in (_comp.get("verdicts") or [])}})
+    except Exception:
+        pass
+    if _comp.get("overall") == "fail":
+        try:
+            from agentic_core.organism.immune import immune
+            immune.record(f"compliance:{label}", "compliance_fail")
+        except Exception:
+            pass
+        # §11 (W287) — a genuine VIOLATION on a MATERIAL delivery routes to the arms-length Change
+        # Control Agency at MEDIUM tier (above LOW auto-approve → a real human decision), instead of
+        # dying as a response field. Calibrated: only FAIL routes (post-W286 'review' is common and
+        # is already surfaced in the response + UEG — routing reviews would proliferate ceremony).
+        _MATERIAL = ("cascade", "vsb_repo", "board_pack")
+        if label in _MATERIAL or label.startswith("economy"):
+            try:
+                from agentic_core.api.change_control import SubmitChangeRequest, submit_change
+                _fails = "; ".join(f"{v['framework']}: {v['reason'][:120]}"
+                                   for v in (_comp.get("verdicts") or []) if v["status"] == "fail")
+                await submit_change(SubmitChangeRequest(
+                    title=f"Compliance FAIL on {label} delivery",
+                    change_type="config_major",   # MEDIUM tier — never auto-approved
+                    description=f"§11 screen failed on a material '{label}' delivery. {_fails}",
+                    rationale="Automatic routing of a compliance violation to arms-length review (W287).",
+                    affected_systems=["compliance", label], submitted_by="compliance_screen"))
+                quality["compliance_routed_to_cca"] = True
+            except Exception:
+                pass
 
     biomimetic: Dict[str, Any] = {"layers": list(BIOMIMETIC_LAYERS),
                                   "self": "self-managing · improving · healing"}

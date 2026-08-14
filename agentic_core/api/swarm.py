@@ -748,6 +748,7 @@ async def cascade_orchestration(req: CascadeRequest):
             "appraisals": list(appraisals.keys()),
             "qms_gate_passed": quality.get("qms_gate_passed"),
             "delivery_coverage": quality.get("delivery_coverage"),
+            "compliance_overall": (quality.get("compliance") or {}).get("overall"),   # §11 (W287)
             "fabric_requisitioned": [f["resource"] for f in fabric_requisitions],
         }, actor="AI CEO")
     except Exception:
@@ -796,8 +797,10 @@ async def cascade_orchestration(req: CascadeRequest):
         _runs.append({
             "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
             "csuite_engaged": selected, "appraisals": appraisals,
-            "quality": {k: quality.get(k) for k in ("qms_gate_passed", "delivery_coverage",
-                                                    "qms_non_conformance_rate", "stub_found")},
+            "quality": {**{k: quality.get(k) for k in ("qms_gate_passed", "delivery_coverage",
+                                                       "qms_non_conformance_rate", "stub_found")},
+                        # §11 (W287) — the persisted run record carries the compliance verdict
+                        "compliance_overall": (quality.get("compliance") or {}).get("overall")},
             "governance": governance.get("status"), "ueg_hash": ueg_hash,
             "served_by": provenance["served_by"], "any_external": provenance["any_external"],
             "fabric_requisitions": [{"resource": f["resource"], "ran": f["ran"],

@@ -1313,3 +1313,38 @@ An Explore sweep (filling the audit's failed user-control reader) found NONE of 
 - **NativeAI.tsx** — **Owned-model lifecycle** panel: serving default (promoted vs env), retired list, per-model evaluate/promote/retire/reinstate actions, recent evaluations (honest "could not serve — no score"), honest empty-state when no local models are discovered.
 - **BusinessPlan.tsx** — objectives show their **directive linkage** (⌘ directive_id — apex traceability) and the **Delivery reviews** history written back by governed runs (§5 cascade / §7 composition / transformation run ids).
 **Verified LIVE:** all five pages fresh-loaded against the current backend — history panels render persisted rows (cr-… run · petri chip · QMS chip), board deliberations show live groundings, lifecycle panel honest-empty under no local models, plan page shows the ⌘ chip + real delivery reviews; 0 render errors. (Known honest gap: binding a cascade to an objective FROM this UI — scope/objective_id inputs — is a follow-up; the binding is fully surfaced read-only.)
+
+
+## ROUND 4 — §11 Compliance × §12 Economy × §13 Living Output/Repo × §14 Democratisation (2026-08-14)
+Owner directive: fourth deepening round. Fresh multi-agent audit (52 agents, 38 adversarially-confirmed findings across 7 dimensions) → 12-item ranked backlog W285–W296 (tasks #35–#46).
+
+### W285 — §11: engine-backed verdicts made REAL — the Halal + UK-Legal ENGINES are genuinely INVOKED ✅
+The screen that gates EVERY delivery imported `HalalComplianceOfficer` and `UKLegalPrecisionEngineImpl` and appended "(engine-backed)" WITHOUT EVER CALLING THEM — regex-only verdicts under an engine label (an honesty defect) — and the registry advertised a `RegulatoryComplianceMonitor` class that does not exist in the repo. Delivered (in `agentic_core/api/compliance.py`):
+- **Halal engine invoked:** `audit_transaction({"description": text})` per screen — engine violation codes (e.g. `HARAM_ELEMENT_ALCOHOL`) merged worst-of (an engine fail OR a rule fail → fail; an engine pass never downgrades a rule fail).
+- **UK-Legal engine invoked:** potential flags derived from the engine's OWN statute vocabularies found in the text, validated across its statutes (EqualityAct2010 · ERA1996 · ACASCode + configs/legal_precision.yaml), the engine's SHA3-512 `audit_hash` carried in the reason.
+- **Honest labels:** "(engine-backed)" ONLY when the engine actually executed; an engine exception leaves the built-in rule verdict standing, labelled "(built-in rules)". Registry fixed: the phantom monitor replaced with "built-in regulatory rules"; entries now say exactly what runs.
+**Verified:** alcohol text → fail + engine code + suffix · "unfair dismissal" → STATUTORY_BREACH: ERA1996 + audit hash · clean text passes WITH genuine suffix · monkeypatched engine failure → honest fallback label · phantom purged from /frameworks. +1 contract test; all compliance adjacents green.
+
+### W286 — §11: the Ethical engine is REAL — per-dimension evaluation replaces the hardcoded always-pass ✅
+`compliance.py` unconditionally emitted "pass — no violations detected" without checking anything — a standing fabrication flowing into every assure_delivery response, VSB repo manifest, charity grant and board pack. Delivered:
+- **`agentic_core/compliance/ethical_engine.py`** — four deterministic, explainable dimensions: human well-being/safety (severity-tiered harm/exploitation/deception lexicons), environmental well-being (impact framing), quality (accepts the caller's PRECOMPUTED QMS coverage/stub metrics — `assure_delivery` threads them in; the engine NEVER calls back into the gate, avoiding the circular import), value/beneficence (stated benefit vs extractive framing). Ambiguity → review; un-assessable dimensions → `not_assessed` with the reason — silence is never a verdict, absence is never a pass.
+- Wired into `screen_compliance` (new optional `delivery_metrics` param); the framework registry entry now names what genuinely runs.
+**Verified:** exploitation+hidden-fees → fail (human review · value fail) · polluting framing → environment review · short charity cause → honest not_assessed · benefit-free technical text → review not pass · QMS metrics → quality pass · wired verdict enumerates dimensions · app boots clean (no circular import). +1 contract test; the tolerant existing §11 assertions unaffected.
+
+
+### W287 — §11×§6: verdicts are CONSEQUENTIAL — sealed · UEG-logged · immune-sensed · CCA-routed ✅
+Verdicts previously died as a response field: the DCMS seal was computed BEFORE the screen ran (every sealed quality record — and every board pack's DCS registration — omitted §11 entirely), ZERO compliance UEG events existed repo-wide, a fail fired no organism signal, and a 'review' routed nowhere. Delivered:
+- **Seal-before-screen FIXED** (`vbs/quality.py`): the screen runs FIRST; the SHA3-512-sealed QMS record now carries the §11 verdicts — the §13 repo's "compliance + quality record" is real.
+- **UEG:** every screen seals a `compliance.screen` event (label · overall · per-framework status map) into the hash-chain ledger.
+- **Immune:** a FAIL registers with the living organism's immune system (`compliance:<label>`) — compliance is a sensed condition, not just data.
+- **Arms-length routing:** a FAIL on a MATERIAL label (cascade · vsb_repo · board_pack · economy*) auto-submits a Change Control item at MEDIUM tier — above LOW auto-approve, so a human decision is genuine. CALIBRATED: only FAIL routes (post-W286 'review' is common and already surfaced in the response + UEG; routing reviews would proliferate ceremony). Flag-not-block preserved: the delivery still completes and seals.
+- **Cascade carry-through** (`swarm.py`): the org_cascade UEG seal + the persisted run record now carry `compliance_overall`.
+**Verified:** failing material delivery → verdicts in the sealed payload · UEG event with the verdict map · immune record · CCA item held at MEDIUM (not auto-approved) · passing delivery routes nothing · cascade run record carries the verdict. +1 contract test; W285+W286-tree full suite 253✓ before this increment.
+
+
+### W288 — §11: compliance is CONTINUOUS — the heartbeat re-screens living VSBs (+ the dead auto_economy flag fixed) ✅
+§11's defining phrase — "continuously monitored and evaluated live" — was unimplemented: every compliance evaluation was event-triggered; an entity screened at establishment was never re-evaluated as it evolved. Also found: `auto_economy` was settable and reported in status() but NEVER consulted in beat() — cycles ran regardless of the Owner's setting. Delivered:
+- **`auto_compliance` beat** (opt-in, `organism/heartbeat.py` + API): each enabled beat re-screens the least-recently-screened LIVING VSB over its CURRENT text (registration identity + the scoped living plan's objectives) through the full W285/W286 engine-backed screen; per-VSB history persists (`vsb_compliance_history.json`, capped 20/VSB, atomic); a REGRESSION (prior non-fail → fail) registers with the immune system + fires a reflex signal (§12 survival tie-in). Honest edges: no living VSBs → None, never a fabricated reading.
+- **`auto_economy` HONESTY FIX:** the beat now genuinely consults the flag before operating a VSB cycle — off means off.
+- `last_compliance` + the flag surfaced in /heartbeat/status; configurable via /heartbeat/configure.
+**Verified:** flag on + living VSB → beat re-screens + history persists · no VSBs → honest None · economy flag off → no operate action, on → runs · API configure/status round-trip. +1 contract test (restores flags in finally).
