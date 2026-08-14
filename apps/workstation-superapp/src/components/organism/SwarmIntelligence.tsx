@@ -66,6 +66,12 @@ const SwarmIntelligence: React.FC = () => {
   const [cascade, setCascade] = useState<any>(null);   // full org-cascade delivery (Chief → Build-to-Order)
   // §5 user design-control: choose which specialist C-Suite officers run (each drives its own CoE).
   const [csuiteSel, setCsuiteSel] = useState<string[]>(['CSO', 'CFO', 'CTO', 'COO', 'CLO']);
+  // W292 — the W280 plan-binding capability reaches the product surface: pick the living plan the
+  // cascade grounds in (workstation | an established VSB) and optionally the objective it delivers.
+  const [scopes, setScopes] = useState<{ vsb_id: string; name?: string }[]>([]);
+  const [scopeSel, setScopeSel] = useState('workstation');
+  const [objectives, setObjectives] = useState<{ id: string; title: string; status: string }[]>([]);
+  const [objectiveSel, setObjectiveSel] = useState('');
   const outputRef = useRef<HTMLDivElement>(null);
 
   // W268/W284 — the persisted org-cascade history (appraisals · quality · fabric requisitions ·
@@ -87,7 +93,23 @@ const SwarmIntelligence: React.FC = () => {
     } catch { /* empty state */ }
   };
 
-  useEffect(() => { loadRuns(); loadCascadeRuns(); }, []);
+  useEffect(() => {
+    loadRuns(); loadCascadeRuns();
+    axios.get('/api/v1/vsb').then(res => {
+      const rows = res.data?.entities ?? res.data?.vsbs ?? [];
+      setScopes(Array.isArray(rows) ? rows.filter((v: any) => v?.vsb_id) : []);
+    }).catch(() => {});
+  }, []);
+
+  // W292 — when a VSB scope is chosen, offer its living plan's OPEN objectives for binding
+  useEffect(() => {
+    setObjectiveSel('');
+    if (scopeSel === 'workstation') { setObjectives([]); return; }
+    axios.get(`/api/v1/business-plan?scope=${encodeURIComponent(scopeSel)}`).then(res => {
+      const objs = (res.data?.plan ?? res.data)?.objectives ?? [];
+      setObjectives(objs.filter((o: any) => o.status !== 'done'));
+    }).catch(() => setObjectives([]));
+  }, [scopeSel]);
 
   useEffect(() => {
     if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
@@ -108,7 +130,11 @@ const SwarmIntelligence: React.FC = () => {
       const response = await fetch('/api/v1/swarm/cascade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mission: task, domain: 'enterprise', realm: 'enterprise', csuite_roles: csuiteSel }),
+        body: JSON.stringify({
+          mission: task, domain: 'enterprise', realm: 'enterprise', csuite_roles: csuiteSel,
+          // W292 — the cascade grounds in the SELECTED living plan and can deliver ONE objective
+          scope: scopeSel, objective_id: objectiveSel || undefined,
+        }),
       });
       if (response.ok) {
         setCascade(await response.json());
@@ -177,6 +203,24 @@ const SwarmIntelligence: React.FC = () => {
               </button>
             );
           })}
+        </div>
+
+        {/* W292 — ground the cascade in a living plan + optionally deliver ONE of its objectives */}
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-[8px] font-black uppercase tracking-widest text-white/40">Living plan:</span>
+          <select value={scopeSel} onChange={e => setScopeSel(e.target.value)} disabled={delegating}
+            className="text-[9px] bg-black/40 border border-white/10 rounded px-1.5 py-1 text-white/70 focus:outline-none">
+            <option value="workstation">workstation</option>
+            {scopes.map(v => <option key={v.vsb_id} value={v.vsb_id}>{v.name || v.vsb_id}</option>)}
+          </select>
+          {scopeSel !== 'workstation' && (
+            <select value={objectiveSel} onChange={e => setObjectiveSel(e.target.value)} disabled={delegating}
+              className="text-[9px] bg-black/40 border border-white/10 rounded px-1.5 py-1 text-white/70 focus:outline-none max-w-[260px]">
+              <option value="">(no objective binding)</option>
+              {objectives.map(o => <option key={o.id} value={o.id}>[{o.status}] {o.title.slice(0, 50)}</option>)}
+            </select>
+          )}
+          <span className="text-[8px] text-white/25">the Chief/CEO tiers ground in this plan; a bound QMS-passed run advances the objective</span>
         </div>
 
         {streaming && !cascade && (

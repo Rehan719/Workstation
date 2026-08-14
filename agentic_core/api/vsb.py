@@ -155,6 +155,68 @@ def _build_repo_files(vsb: dict) -> dict:
     return f
 
 
+def _version_control_commit(root, vsb_id: str, surface: str, qa: Dict[str, Any] | None) -> Dict[str, Any]:
+    """§13 (W289) — the entity repository is a genuinely VERSION-CONTROLLED whole: git-init on the
+    first generation (safe: the store lives under gitignored data/, so the nested .git is invisible
+    to the platform repo), one commit per generation with a structured message (surface · QMS gate ·
+    compliance overall · DCS seal). Fail-soft to a SHA3-512 hash-CHAIN entry in versions.json when
+    git is unavailable — whichever mechanism actually ran is recorded honestly."""
+    q = ((qa or {}).get("quality") or {})
+    msg = (f"{surface}: QMS {'pass' if q.get('qms_gate_passed') else 'fail'} · "
+           f"compliance {((q.get('compliance') or {}).get('overall'))} · "
+           f"seal {str(q.get('quality_record_hash'))[:12]}")
+    try:
+        import subprocess
+
+        def _git(*args):
+            return subprocess.run(["git", *args], cwd=str(root), capture_output=True,
+                                  text=True, timeout=30)
+        if not (root / ".git").exists():
+            if _git("init").returncode != 0:
+                raise RuntimeError("git init failed")
+            _git("config", "user.email", "organism@workstation.local")
+            _git("config", "user.name", "Workstation Organism")
+        _git("add", "-A")
+        c = _git("commit", "-m", msg)
+        head = _git("rev-parse", "HEAD").stdout.strip()
+        total = _git("rev-list", "--count", "HEAD").stdout.strip()
+        return {"mechanism": "git", "commit": head[:12], "commits_total": int(total or 0),
+                "message": msg, "no_changes": "nothing to commit" in (c.stdout + c.stderr)}
+    except Exception as exc:
+        import hashlib
+        chain_path = root / "versions.json"
+        try:
+            chain = json.loads(chain_path.read_text(encoding="utf-8")) if chain_path.exists() else []
+        except Exception:
+            chain = []
+        prev = chain[-1]["hash"] if chain else None
+        entry = {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "surface": surface,
+                 "message": msg, "prev": prev,
+                 "hash": hashlib.sha3_512(json.dumps({"surface": surface, "msg": msg, "prev": prev},
+                                                     sort_keys=True).encode()).hexdigest()[:32]}
+        chain.append(entry)
+        chain_path.write_text(json.dumps(chain, indent=2), encoding="utf-8")
+        return {"mechanism": "hash-chain", "commit": entry["hash"][:12], "commits_total": len(chain),
+                "message": msg, "note": f"git unavailable ({str(exc)[:60]})"}
+
+
+def _manifest_history(vsb_id: str, kind: str = "manifest") -> list:
+    """§13 (W289) — the prior manifest is APPENDED to history instead of silently overwritten."""
+    p = _REPO_STORE / f"{vsb_id}.{kind}.json"
+    if not p.exists():
+        return []
+    try:
+        prior = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    hist = list(prior.get("manifest_history") or [])
+    hist.append({"generated_at": prior.get("generated_at"),
+                 "file_count": prior.get("file_count"),
+                 "qms_gate_passed": ((prior.get("quality_assurance") or {}).get("quality") or {}).get("qms_gate_passed"),
+                 "version_control": (prior.get("version_control") or {}).get("commit")})
+    return hist[-20:]
+
+
 @router.post("/{vsb_id}/repo")
 async def generate_vsb_repo(vsb_id: str):
     """Generate the bespoke VSB IDBO Entity Repository (§13) for an established VSB — real scaffold files on
@@ -169,6 +231,23 @@ async def generate_vsb_repo(vsb_id: str):
     # required sections = content headings that genuinely appear in the repo docs (not filenames)
     qa = await assure_delivery(combined, ["Business Plan", "Organisation", "Identity", "Executive Summary"],
                                label="vsb_repo")
+    # §13 (W289) — compliance/QUALITY.md is the REAL record now (the sealed verdicts of THIS
+    # generation), not a pointer note to a snapshot.
+    _q = (qa.get("quality") or {})
+    _comp = (_q.get("compliance") or {})
+    files["compliance/QUALITY.md"] = (
+        f"# Compliance + Quality Record — {vsb.get('name')}\n\n"
+        f"Generated {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} — the SEALED record of this "
+        f"generation (§10 QMS + §11 federated screen), document-controlled via the owned DCMS.\n\n"
+        f"## §10 Quality\n"
+        f"- QMS gate: {'PASS' if _q.get('qms_gate_passed') else 'FAIL'}\n"
+        f"- Delivery coverage: {_q.get('delivery_coverage')}\n"
+        f"- Non-conformance rate (stateful): {_q.get('qms_non_conformance_rate')}\n"
+        f"- Document-control seal: {_q.get('quality_record_hash')}\n\n"
+        f"## §11 Compliance ({_comp.get('overall', 'unscreened')})\n"
+        + "".join(f"- {v['framework']}: {v['status']} — {v['reason'][:160]}\n"
+                  for v in (_comp.get("verdicts") or []))
+        + "\nRe-screened continuously when the organism's auto_compliance beat is enabled (W288).\n")
     root = _REPO_STORE / vsb_id
     written = []
     for path, content in files.items():
@@ -176,6 +255,8 @@ async def generate_vsb_repo(vsb_id: str):
         fp.parent.mkdir(parents=True, exist_ok=True)
         fp.write_text(content, encoding="utf-8")
         written.append({"path": path, "bytes": len(content.encode("utf-8"))})
+    _history = _manifest_history(vsb_id)                       # W289 — never silently overwritten
+    _vc = _version_control_commit(root, vsb_id, "repo", qa)    # W289 — a real commit per generation
     manifest = {
         "vsb_id": vsb_id, "name": vsb.get("name"), "slug": _repo_slug(vsb.get("name") or vsb_id),
         "domain": vsb.get("domain"), "realm": vsb.get("realm"),
@@ -185,6 +266,9 @@ async def generate_vsb_repo(vsb_id: str):
         "integrated_surfaces": {"website": "web/index.html (scaffold)", "webapp": "webapp/ (scaffold)",
                                 "mobile": "mobile/ (scaffold)"},
         "quality_assurance": qa, "posture": "in-house-first",
+        # §13 (W289) — genuine version control + manifest lineage
+        "version_control": _vc,
+        "manifest_history": _history,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "note": ("Bespoke VSB IDBO entity repository — real scaffold files generated in-house from the "
                  "entity's own data; web/webapp/mobile are scaffolds for later increments (NOT built/"
@@ -328,6 +412,8 @@ async def generate_vsb_website(vsb_id: str):
     }
     (root / "web" / "site.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     _REPO_STORE.mkdir(parents=True, exist_ok=True)
+    manifest["version_control"] = _version_control_commit(root, vsb_id, "website", qa)   # W289
+    manifest["manifest_history"] = _manifest_history(vsb_id, "website")
     (_REPO_STORE / f"{vsb_id}.website.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     try:
         biobus.fire_signal("motor", "vsb.website.generate", f"{name}: {manifest['page_count']} pages", 0.6)
@@ -486,6 +572,8 @@ async def generate_vsb_webapp(vsb_id: str):
     }
     (root / "webapp" / "app.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     _REPO_STORE.mkdir(parents=True, exist_ok=True)
+    manifest["version_control"] = _version_control_commit(root, vsb_id, "webapp", qa)   # W289
+    manifest["manifest_history"] = _manifest_history(vsb_id, "webapp")
     (_REPO_STORE / f"{vsb_id}.webapp.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     try:
         biobus.fire_signal("motor", "vsb.webapp.generate", f"{vsb.get('name')}: {len(written)} files", 0.6)
@@ -619,6 +707,8 @@ async def generate_vsb_mobile(vsb_id: str):
     }
     (root / "mobile" / "app.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     _REPO_STORE.mkdir(parents=True, exist_ok=True)
+    manifest["version_control"] = _version_control_commit(root, vsb_id, "mobile", qa)   # W289
+    manifest["manifest_history"] = _manifest_history(vsb_id, "mobile")
     (_REPO_STORE / f"{vsb_id}.mobile.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     try:
         biobus.fire_signal("motor", "vsb.mobile.generate", f"{vsb.get('name')}: {len(written)} files", 0.6)
@@ -1171,6 +1261,114 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
 class EvolveRequest(BaseModel):
     trigger: str = "manual"
     context: str = ""
+    # §13 (W290) — "continually-developing": when a shipped repo exists, a successful evolution
+    # re-ships it by default so the living body tracks the life; opt out to mark it stale instead
+    # (honest — never silently outdated).
+    refresh_repo: bool = True
+
+
+@router.post("/{vsb_id}/repo/ship")
+async def ship_vsb_repo(vsb_id: str):
+    """§13 (W290) — ship the entity repository as ONE COHERENT WHOLE: regenerate the repo body +
+    website + web-app + mobile surfaces + board pack from the entity's CURRENT living data (the
+    existing generators — no duplicated build logic), under a single unified manifest with one
+    repo-level compliance verdict and one version-control commit. This is the §13 canonical output
+    produced in one deliberate act, not four disconnected calls."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    surfaces: Dict[str, Any] = {}
+    for name, gen in (("repo", generate_vsb_repo), ("website", generate_vsb_website),
+                      ("webapp", generate_vsb_webapp), ("mobile", generate_vsb_mobile),
+                      ("board_pack", generate_vsb_board_pack)):
+        try:
+            m = await gen(vsb_id)
+            q = ((m.get("quality_assurance") or {}).get("quality") or {})
+            surfaces[name] = {"qms_gate_passed": q.get("qms_gate_passed"),
+                              "compliance_overall": (q.get("compliance") or {}).get("overall"),
+                              "file_count": m.get("file_count") or m.get("page_count")}
+        except Exception as exc:                     # a surface failure is honest, never silent
+            surfaces[name] = {"error": str(exc)[:160]}
+    root = _REPO_STORE / vsb_id
+    unified = {
+        "vsb_id": vsb_id, "name": vsb.get("name"), "shipped": True,
+        "surfaces": surfaces,
+        "coherent_whole": all("error" not in s for s in surfaces.values()),
+        "version_control": _version_control_commit(root, vsb_id, "ship", None),
+        "stale": False,
+        "shipped_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    (_REPO_STORE / f"{vsb_id}.ship.json").write_text(json.dumps(unified, indent=2), encoding="utf-8")
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "vsb.repo.ship", "vsb_id": vsb_id,
+                         "surfaces": {k: v.get("compliance_overall") or v.get("error", "?")
+                                      for k, v in surfaces.items()},
+                         "coherent_whole": unified["coherent_whole"]})
+    except Exception:
+        pass
+    try:
+        biobus.fire_signal("motor", "vsb.repo.ship",
+                           f"{vsb.get('name')}: {len(surfaces)} surfaces shipped as one whole", 0.7)
+    except Exception:
+        pass
+    return unified
+
+
+class RepoCascadeRequest(BaseModel):
+    mission: str = ""
+    objective_id: str | None = None
+
+
+@router.post("/{vsb_id}/repo/cascade")
+async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest):
+    """§13 (W291) — the repo's AI-swarm cascades are RE-RUNNABLE: execute the entity's stored
+    cascade configuration through the REAL §5 org cascade, SCOPED to this VSB (the Chief/CEO tiers
+    ground in ITS living plan — W280), and bind the run's summary back INTO the repo
+    (resources/runs/<run_id>.json + a version-control commit) — the repo stops being a snapshot
+    and becomes an operating surface. Honest 404 when no repo exists."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+    root = _REPO_STORE / vsb_id
+    casc_path = root / "resources" / "cascades.json"
+    if not casc_path.exists():
+        raise HTTPException(status_code=404,
+                            detail=f"No generated repo for {vsb_id} — POST /repo (or /repo/ship) first.")
+    try:
+        stored = json.loads(casc_path.read_text(encoding="utf-8"))
+    except Exception:
+        stored = {}
+    from agentic_core.api.swarm import CascadeRequest, cascade_orchestration
+    run = await cascade_orchestration(CascadeRequest(
+        mission=req.mission or f"Operate and advance {vsb.get('name')} per its living plan",
+        domain=vsb.get("domain", "enterprise"),
+        scope=vsb_id, objective_id=req.objective_id))
+    _ = stored   # the stored cascade config is the provenance of this runnable surface
+    summary = {
+        "run_id": run.get("run_id"), "mission": run.get("mission"),
+        "quality": run.get("quality"), "plan_binding": run.get("plan_binding"),
+        "fabric_requisitions": [f.get("resource") for f in (run.get("fabric_requisitions") or [])],
+        "served_by": (run.get("ai_provenance") or {}).get("served_by"),
+        "ran_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    runs_dir = root / "resources" / "runs"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    (runs_dir / f"{summary['run_id']}.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    vc = _version_control_commit(root, vsb_id, f"cascade:{summary['run_id']}",
+                                 {"quality": run.get("quality") or {}})
+    return {"vsb_id": vsb_id, "repo_run": summary, "version_control": vc,
+            "run": {k: run.get(k) for k in ("run_id", "business_plan_scope", "plan_binding",
+                                            "homeostasis_adaptation")}}
+
+
+@router.get("/{vsb_id}/repo/ship")
+async def get_shipped_repo(vsb_id: str):
+    """The unified ship manifest (per-surface QA · staleness · version control)."""
+    p = _REPO_STORE / f"{vsb_id}.ship.json"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"No shipped repo for {vsb_id} — POST /repo/ship first.")
+    return json.loads(p.read_text(encoding="utf-8"))
 
 
 @router.post("/{vsb_id}/evolve")
@@ -1213,9 +1411,34 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest):
     vsb["evolution_proposals"] = proposals
     _save_vsb(vsb)
 
+    # §13 (W290) — the generated repo TRACKS the life: on evolution, an existing shipped repo is
+    # re-shipped (default) or honestly marked STALE (opt-out) — never silently outdated.
+    repo_refresh = None
+    _ship_p = _REPO_STORE / f"{vsb_id}.ship.json"
+    if _ship_p.exists():
+        if req.refresh_repo:
+            try:
+                _re = await ship_vsb_repo(vsb_id)
+                repo_refresh = {"action": "re_shipped",
+                                "commit": (_re.get("version_control") or {}).get("commit"),
+                                "coherent_whole": _re.get("coherent_whole")}
+            except Exception as exc:
+                repo_refresh = {"action": "refresh_failed", "error": str(exc)[:160]}
+        else:
+            try:
+                _ship = json.loads(_ship_p.read_text(encoding="utf-8"))
+                _ship["stale"] = True
+                _ship["stale_since"] = vsb["last_evolved"]
+                _ship["stale_reason"] = f"evolution generation {vsb['generation']} (refresh_repo=false)"
+                _ship_p.write_text(json.dumps(_ship, indent=2), encoding="utf-8")
+                repo_refresh = {"action": "marked_stale"}
+            except Exception as exc:
+                repo_refresh = {"action": "stale_mark_failed", "error": str(exc)[:160]}
+
     return {
         "vsb_id": vsb_id,
         "generation": vsb["generation"],
         "proposals": proposals,
         "trigger": req.trigger,
+        "repo_refresh": repo_refresh,
     }

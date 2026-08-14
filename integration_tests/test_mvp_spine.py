@@ -699,6 +699,83 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_vsb_repo_cascades_rerunnable(client):
+    # §13 (W291) — the repo's AI-swarm cascades are RE-RUNNABLE: POST /repo/cascade executes the
+    # REAL §5 org cascade SCOPED to this VSB (Chief/CEO ground in ITS living plan — W280), binds
+    # the run summary back INTO the repo (resources/runs/<id>.json + a commit), and a missing repo
+    # is an honest 404 — the repo is an operating surface, not a snapshot.
+    import pathlib
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w291 halal venture", "domain": "care", "name": "W291CascCo",
+        "concept": "c", "design": "d", "commercialisation": "m"}).json()
+    vid = est["vsb_id"]
+    assert client.post(f"/api/v1/vsb/{vid}/repo/cascade", json={}).status_code == 404
+    m = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    from agentic_core.api.business_plan import parse_objective_lines, _load as _bpl, _save as _bps
+    plan = _bpl(vid)
+    plan.setdefault("objectives", []).extend(
+        parse_objective_lines("Grow the W291 pilot | pilot live | next review | AI CEO"))
+    _bps(plan)
+    oid = _bpl(vid)["objectives"][-1]["id"]
+    r = client.post(f"/api/v1/vsb/{vid}/repo/cascade",
+                    json={"mission": "w291 operate the entity", "objective_id": oid}).json()
+    assert r["run"]["business_plan_scope"] == vid             # scoped to THIS entity's plan
+    rr = r["repo_run"]
+    assert (rr.get("plan_binding") or {}).get("result") in ("review_written", "qms_failed_no_advance")
+    runfile = pathlib.Path(m["repo_root"]) / "resources" / "runs" / f"{rr['run_id']}.json"
+    assert runfile.exists()                                   # the run is bound INTO the repo
+    assert "cascade:" in r["version_control"]["message"]      # and committed
+
+
+def test_vsb_repo_ships_as_one_whole_and_tracks_evolution(client):
+    # §13 (W290) — the canonical output ships as ONE COHERENT WHOLE (repo + website + webapp +
+    # mobile + board pack regenerated from CURRENT entity data under a unified manifest, one
+    # repo-level commit, UEG-sealed), and the repo TRACKS the life: evolution re-ships it by
+    # default, or honestly marks it STALE on opt-out — never silently outdated.
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w290 halal community venture", "domain": "care",
+        "name": "W290ShipCo", "concept": "c", "design": "d", "commercialisation": "m"}).json()
+    vid = est["vsb_id"]
+    s = client.post(f"/api/v1/vsb/{vid}/repo/ship").json()
+    assert s["shipped"] and set(s["surfaces"]) == {"repo", "website", "webapp", "mobile", "board_pack"}
+    assert s["coherent_whole"] is True and s["version_control"]["commits_total"] >= 1
+    ev = client.post(f"/api/v1/vsb/{vid}/evolve", json={"trigger": "w290 refresh"}).json()
+    assert (ev.get("repo_refresh") or {}).get("action") == "re_shipped"
+    ev2 = client.post(f"/api/v1/vsb/{vid}/evolve",
+                      json={"trigger": "w290 stale", "refresh_repo": False}).json()
+    assert (ev2.get("repo_refresh") or {}).get("action") == "marked_stale"
+    g = client.get(f"/api/v1/vsb/{vid}/repo/ship").json()
+    assert g["stale"] is True and "generation" in g["stale_reason"]
+    events = client.get("/api/v1/gaas/ueg/events?limit=200").json()["events"]
+    assert any(e.get("data", {}).get("type") == "vsb.repo.ship" for e in events)
+
+
+def test_vsb_repo_genuinely_version_controlled(client):
+    # §13 (W289) — "shipped as a coherent, VERSION-CONTROLLED whole" is true now: the entity repo
+    # is git-init'd on first generation (nested safely under gitignored data/), every generation
+    # commits with a structured message (surface · QMS · compliance · seal), the prior manifest
+    # appends to history instead of being silently overwritten, and compliance/QUALITY.md is the
+    # REAL sealed record (§10 figures + §11 per-framework verdicts), not a pointer stub.
+    import pathlib
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w289 halal community nutrition venture", "domain": "care",
+        "name": "W289RepoCo", "concept": "c", "design": "d", "commercialisation": "m"}).json()
+    vid = est["vsb_id"]
+    m1 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    assert m1["version_control"]["mechanism"] in ("git", "hash-chain")   # honest either way
+    assert m1["version_control"]["commits_total"] >= 1
+    assert m1["manifest_history"] == []                       # first generation — no lineage yet
+    m2 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    assert m2["version_control"]["commits_total"] > m1["version_control"]["commits_total"]
+    assert len(m2["manifest_history"]) == 1                   # the prior manifest is lineage now
+    assert "QMS" in m2["version_control"]["message"] and "compliance" in m2["version_control"]["message"]
+    root = pathlib.Path(m2["repo_root"])
+    q = (root / "compliance" / "QUALITY.md").read_text(encoding="utf-8")
+    assert "Document-control seal" in q and "sharia_halal" in q   # the REAL sealed record
+    w = client.post(f"/api/v1/vsb/{vid}/website").json()
+    assert w["version_control"]["commits_total"] > m2["version_control"]["commits_total"]
+
+
 def test_continuous_compliance_beat(client):
     # §11 (W288) — "continuously live": the heartbeat's opt-in auto_compliance beat re-screens the
     # least-recently-screened LIVING VSB over its CURRENT text (an entity screened at establishment

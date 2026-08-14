@@ -1348,3 +1348,29 @@ Verdicts previously died as a response field: the DCMS seal was computed BEFORE 
 - **`auto_economy` HONESTY FIX:** the beat now genuinely consults the flag before operating a VSB cycle — off means off.
 - `last_compliance` + the flag surfaced in /heartbeat/status; configurable via /heartbeat/configure.
 **Verified:** flag on + living VSB → beat re-screens + history persists · no VSBs → honest None · economy flag off → no operate action, on → runs · API configure/status round-trip. +1 contract test (restores flags in finally).
+
+
+### W289 — §13: the entity repository is genuinely VERSION-CONTROLLED ✅
+`vsb.py` claimed "version-controlled" while `generate_vsb_repo` overwrote files and the manifest in place — no versioning of any kind — and compliance/QUALITY.md was a pointer stub. Delivered:
+- **`_version_control_commit`** (shared by all four surface generators): git-init on first generation (safe — the store lives under gitignored `data/`, so the nested .git is invisible to the platform repo) + one commit per generation with a structured message (surface · QMS verdict · compliance overall · DCS seal). **Fail-soft** to a SHA3-512 hash-CHAIN entry in `versions.json` when git is unavailable — whichever mechanism ran is recorded honestly (`version_control.mechanism`).
+- **Manifest lineage:** the prior manifest appends to `manifest_history` (capped 20) instead of silent overwrite — for the repo AND each surface manifest.
+- **`compliance/QUALITY.md` is the REAL record:** the sealed §10 figures (gate · coverage · non-conformance · DCS seal hash) + the §11 per-framework verdicts of THIS generation (W285–W287 feed it) — not a pointer note.
+**Verified:** two generations → 2 commits + history 1 + structured messages · .git present · QUALITY.md carries seal + sharia_halal verdict · website generation adds commit 3. +1 contract test; repo/website adjacents green.
+
+### W290 — §13: the repo ships as ONE COHERENT WHOLE and TRACKS the life ✅
+The four surfaces were four disconnected one-shot POSTs with independent manifests, and evolve_vsb changed the entity while the generated repo silently went stale. Delivered:
+- **`POST /vsb/{id}/repo/ship`** — one deliberate act regenerating repo + website + webapp + mobile + board pack from the entity's CURRENT living data (the existing generators — zero duplicated build logic) under a **unified manifest** (per-surface QMS+compliance readings · `coherent_whole` flag · one ship-level commit), UEG-sealed (`vsb.repo.ship`) + biobus-signalled. A surface failure is recorded honestly, never silent.
+- **Evolution refresh:** `EvolveRequest.refresh_repo` (default true) — a successful evolution RE-SHIPS an existing shipped repo ("continually-developing"); opt-out marks it **STALE** with the generation + reason — never silently outdated. `GET /repo/ship` surfaces staleness.
+**Verified:** ship → all 5 surfaces + coherent_whole + commit · evolve → re_shipped · opt-out → marked_stale + honest reason · UEG event present. +1 contract test.
+
+### W291 — §13: the repo's cascades are RE-RUNNABLE — the repo is an OPERATING surface ✅
+`resources/cascades.json` was inert data — nothing could run it; the repo was a frozen snapshot. Delivered:
+- **`POST /vsb/{id}/repo/cascade`** — executes the REAL §5 org cascade SCOPED to this VSB (`scope=vsb_id`: the Chief/CEO tiers ground in THIS entity's living plan per W280; optional `objective_id` binds + advances per W266 semantics), then **binds the run back INTO the repo**: `resources/runs/<run_id>.json` (quality incl. compliance · plan binding · fabric requisitions · served_by) + a `cascade:<run_id>` version-control commit. Honest 404 when no repo exists. Pure integration — zero new cascade machinery.
+**Verified:** no-repo 404 · run scoped to the VSB · objective review_written + advanced · run file present in the repo · committed with the cascade message. +1 contract test. **The §13 canonical output now: version-controlled · ships as one whole · refreshes on evolution · and RUNS.**
+
+
+### W292 — §5 UI: the cascade's plan grounding + objective binding reach the product surface ✅
+The Owner-acknowledged round-3 follow-up: the backend cascade sees and moves the living plan (W280) but the UI could send neither `scope` nor `objective_id` — the capability was unreachable from the product surface. Delivered (in `SwarmIntelligence.tsx`):
+- **Living-plan selector** (workstation | every established VSB, from GET /api/v1/vsb — the `entities` key, discovered live) and, for a VSB scope, an **objective dropdown** populated from that entity's living plan (open objectives only, "(no objective binding)" default).
+- Both fields are SENT in the cascade POST; the W284 `plan_binding` chip already renders the returned result — the user now SEES the plan move.
+**Verified LIVE** (:5173 → :8010): selector lists the established VSBs · selecting one populates its 3 open objectives · tsc 0 errors · build ✓ · 0 render errors. No backend changes.
