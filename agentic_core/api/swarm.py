@@ -359,11 +359,54 @@ async def cascade_orchestration(req: CascadeRequest):
     )
     bto_programme = await _q(bto_prompt + _dev_for("ceo_appraises_bto", "AI CEO"), "cascade_bto")
 
+    # ── §5×§7 (W272) — the BTO REQUISITIONS the Resource Fabric for real: the deterministic W263
+    # word-overlap matcher (no AI, no guessing — the match reason IS the overlap) over the mission +
+    # the BTO's own programme selects up to TWO light, bounded, side-effect-free facilities, and their
+    # REAL handlers RUN as part of this cascade. Build-to-Order then assembles from GENUINE facility
+    # outputs, not prose about facilities. Fail-soft: a facility error never breaks the cascade.
+    fabric_requisitions: list = []
+    try:
+        import re as _re2
+        from agentic_core.api.resource_fabric import _BY_ID as _FABRIC_BY_ID, _run_real_resource
+        from agentic_core.ai.native.orchestrator import NativeOrchestrator as _NO
+        _low = f" {req.mission.lower()} {bto_programme.lower()[:2000]} "
+        _scored = []
+        for _rid in _NO._TREE_FABRIC_ALLOWED:
+            _r = _FABRIC_BY_ID.get(_rid)
+            if not _r:
+                continue
+            _words: set = set()
+            for _cap in (_r.get("capabilities") or []):
+                _words.update(_re2.findall(r"[a-z]{5,}", str(_cap).lower()))
+            _words.update(_re2.findall(r"[a-z]{5,}", str(_r.get("name", "")).lower()))
+            _hits = sum(1 for _w in _words if _w in _low)
+            if _hits >= 2:
+                _scored.append((_hits, _rid))
+        for _hits, _rid in sorted(_scored, reverse=True)[:2]:
+            try:
+                _fr = await _run_real_resource(_rid, {}, req.mission, req.domain)
+                if _fr and not _fr.get("error"):
+                    fabric_requisitions.append({
+                        "resource": _rid, "ran": _fr.get("ran"), "match_hits": _hits,
+                        "output": str(_fr.get("output", ""))[:400],
+                    })
+            except Exception:
+                pass
+    except Exception:
+        pass
+    _fabric_ctx = ""
+    if fabric_requisitions:
+        _fabric_ctx = (
+            "\nREAL facility outputs — you requisitioned these Resource-Fabric facilities and they RAN "
+            "for this mission; assemble your plan FROM these genuine results (cite them):\n" +
+            "\n".join(f"- [fabric:{f['resource']} · ran {f['ran']}] {f['output'][:280]}"
+                      for f in fabric_requisitions) + "\n")
+
     # Tier 5: Build-to-Order — operational delivery: assemble delivery resources + a work breakdown
     build_prompt = (
         "You are the Build-to-Order (BTO) operational delivery engine of this VSB. You receive this "
         f"transformation programme:\n\n{bto_programme[:500]}\n\n"
-        f"Mission: {req.mission}\nDomain: {req.domain}\n\n"
+        f"Mission: {req.mission}\nDomain: {req.domain}\n{_fabric_ctx}\n"
         "Produce the Operational Delivery Plan:\n"
         "## Operational Delivery Resources (the engines/reactors/factories/labs/teams + digital "
         "resources to assemble from the Resource Fabric, and how they combine)\n"
@@ -404,6 +447,11 @@ async def cascade_orchestration(req: CascadeRequest):
                       "success_rate": round(_ops_ok / len(_ops_rows), 3) if _ops_rows else None}
     except Exception:
         _ops_stats = {}
+    try:
+        from agentic_core.api.resource_fabric import _BY_ID as _FB
+        _fabric_catalogue_n = len(_FB)
+    except Exception:
+        _fabric_catalogue_n = 0
     measured_block = (
         "Measured outcomes for THIS run (judge against these — do not merely restate the text):\n"
         f"- QMS gate passed: {quality.get('qms_gate_passed')}\n"
@@ -413,6 +461,12 @@ async def cascade_orchestration(req: CascadeRequest):
         f"- Served in-house: {not provenance['any_external']} (by: {provenance['served_by']})\n"
         + (f"- Recent cascade-tier call success rate: {_ops_stats.get('success_rate')} "
            f"over {_ops_stats.get('recent_tier_calls')} calls\n" if _ops_stats.get("recent_tier_calls") else "")
+        # §5×§7 (W272) — the managing tiers see the LIVE fabric, not prose about it: what the BTO
+        # actually requisitioned and ran this run, against the real catalogue size.
+        + (f"- Fabric facilities requisitioned AND run this cascade: "
+           f"{[f['resource'] for f in fabric_requisitions]}\n" if fabric_requisitions else
+           "- Fabric facilities requisitioned this cascade: none matched\n")
+        + (f"- Resource-Fabric catalogue size: {_fabric_catalogue_n}\n" if _fabric_catalogue_n else "")
     )
 
     # ── §5: each tier MANAGES, APPRAISES and DEVELOPS the tier below (arms-length). After the top-down
@@ -520,6 +574,7 @@ async def cascade_orchestration(req: CascadeRequest):
             "appraisals": list(appraisals.keys()),
             "qms_gate_passed": quality.get("qms_gate_passed"),
             "delivery_coverage": quality.get("delivery_coverage"),
+            "fabric_requisitioned": [f["resource"] for f in fabric_requisitions],
         }, actor="AI CEO")
     except Exception:
         pass
@@ -541,6 +596,8 @@ async def cascade_orchestration(req: CascadeRequest):
                                                     "qms_non_conformance_rate", "stub_found")},
             "governance": governance.get("status"), "ueg_hash": ueg_hash,
             "served_by": provenance["served_by"], "any_external": provenance["any_external"],
+            "fabric_requisitions": [{"resource": f["resource"], "ran": f["ran"],
+                                     "match_hits": f["match_hits"]} for f in fabric_requisitions],
             "duration_ms": duration_ms,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
@@ -576,6 +633,9 @@ async def cascade_orchestration(req: CascadeRequest):
         # §8→§6 — the homeostatic posture this heavy cascade ran under (and the ATP it expended).
         "homeostasis": homeo,
         "level_4_business_transformation_office": bto_programme,
+        # §5×§7 (W272) — the fabric facilities the BTO requisitioned AND ran this cascade (real
+        # handler outputs, deterministic word-overlap match — empty when nothing genuinely matched).
+        "fabric_requisitions": fabric_requisitions,
         "level_5_build_to_order": build_to_order,
         "products_services_catalogue": products_services_catalogue,
         # §5: the living management systems the AI CEO integrates (with real DCMS document-control proof).

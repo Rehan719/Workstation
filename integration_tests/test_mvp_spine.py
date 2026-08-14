@@ -642,6 +642,98 @@ def test_all_four_management_systems_compute(client):
     assert ems["efficiency_gain"] > 0 and "simulated" in ems["caveat"]
 
 
+def test_cascade_bto_requisitions_real_fabric(client):
+    # §5×§7 (W272) — the BTO tier REQUISITIONS the Resource Fabric for real: the deterministic
+    # word-overlap matcher selects light facilities from the mission + programme, their REAL handlers
+    # RUN inside the cascade, Build-to-Order assembles from the genuine outputs, and the managing
+    # tiers see live fabric telemetry — previously the BTO only DESCRIBED facilities in prose.
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": "optimise the allocation of compute resources and verify regulatory compliance "
+                   "for the halal delivery platform", "domain": "enterprise"}).json()
+    fr = r["fabric_requisitions"]
+    assert fr, "no fabric facility was requisitioned for a mission that plainly matches two"
+    for f in fr:
+        assert f["ran"].startswith("/api/") and f["match_hits"] >= 2 and f["output"]
+    rids = {f["resource"] for f in fr}
+    assert rids & {"compliance", "resource_optimizer"}   # the deterministic match is stable
+    top = client.get("/api/v1/swarm/cascade/runs").json()["runs"][0]
+    assert top["run_id"] == r["run_id"]
+    assert [x["resource"] for x in top["fabric_requisitions"]] == [f["resource"] for f in fr]
+
+
+def test_composition_lifecycle_params_and_gate(client):
+    # §7 (W273) — a saved composition is a LIVING design with an honest run path: PUT reconfigures
+    # in place (re-simulated, version bumps, identity preserved), DELETE retires it, per-RUN params
+    # reach the REAL engines, registry type-placeholders never leak into real runs as literal
+    # values, and a design whose simulation failed (QMS or usage-area) runs WITH an explicit
+    # warning — never silently, never hard-blocked (the catalogue's declared areas are narrower
+    # than legitimate composition practice, so warn-not-block is the honest calibration).
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "w273 living design", "usage_area": "synthesis",
+        "resource_ids": ["petri_dish"], "config": {}}).json()
+    cid = comp["id"]
+    r = client.post(f"/api/v1/resources/compositions/{cid}/run", json={
+        "objective": "culture a halal-nutrition specimen",
+        "params": {"petri_dish": {"iterations": 2}}}).json()
+    rr = next(x for x in r["real_resource_runs"] if x["resource"] == "petri_dish")
+    assert rr["passages"] == 2                                # the per-RUN override reached the engine
+    assert r["run_params_applied"] == ["petri_dish"]
+    assert "str (" not in rr.get("output", "")                # no placeholder-string leak
+    if not r["commit_ready"]:
+        assert r["quality_warning"]                           # failed simulation warns, never silent
+    upd = client.put(f"/api/v1/resources/compositions/{cid}", json={
+        "config": {"petri_dish": {"medium": "rich"}}}).json()
+    assert upd["version"] == 2 and upd["id"] == cid           # reconfigured in place, identity kept
+    assert upd["resources"][0]["config"]["medium"] == "rich"
+    bad = client.post("/api/v1/resources/compose", json={
+        "name": "w273 unsupported", "usage_area": "science",
+        "resource_ids": ["petri_dish"], "config": {}}).json()
+    assert bad["model"]["usage_area_supported_by_all"] is False
+    warned = client.post(f"/api/v1/resources/compositions/{bad['id']}/run",
+                         json={"objective": "x"}).json()
+    assert warned["usage_area_supported"] is False            # the structural signal is surfaced…
+    assert warned["quality_warning"] and "usage area" in warned["quality_warning"]   # …and explained
+    assert warned.get("real_resource_runs") is not None       # …but the run was NOT blocked
+    assert client.delete(f"/api/v1/resources/compositions/{cid}").json()["deleted"] == cid
+    assert client.get(f"/api/v1/resources/compositions/{cid}").status_code == 404
+    client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
+
+
+def test_composition_runs_persist_feed_selection_and_move_the_plan(client):
+    # §7×§5×§6 (W274) — a composition run is a first-class event: it PERSISTS (queryable history),
+    # every real facility run accrues its own operational-excellence row (fabric:<resource> — measured
+    # facility performance feeds selection), and a run bound to a living-plan objective writes a
+    # review back + advances planned→in_progress ONLY on a QMS-passed run (W266 semantics, never
+    # auto-done, a failed gate never advances).
+    import uuid as _uuid
+    scope = f"w274-{_uuid.uuid4().hex[:8]}"
+    from agentic_core.api.business_plan import parse_objective_lines, _load as _bpl, _save as _bps
+    plan = _bpl(scope)
+    plan.setdefault("objectives", []).extend(
+        parse_objective_lines("Deliver the W274 pilot | pilot live | next review | AI CEO"))
+    _bps(plan)
+    oid = _bpl(scope)["objectives"][-1]["id"]
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "w274 delivery rig", "usage_area": "synthesis",
+        "resource_ids": ["petri_dish"], "config": {}}).json()
+    r = client.post(f"/api/v1/resources/compositions/{comp['id']}/run", json={
+        "objective": "deliver the pilot", "objective_id": oid, "scope": scope}).json()
+    assert r["run_id"].startswith("cr-")
+    pb = r["plan_binding"]
+    obj = next(o for o in _bpl(scope)["objectives"] if o["id"] == oid)
+    if pb["result"] == "review_written":                       # the QMS gate passed this run
+        assert pb["advanced"] is True and obj["status"] == "in_progress"
+        assert obj["reviews"][-1]["composition_run"]["run_id"] == r["run_id"]
+    else:                                                      # honest: a failed gate never advances
+        assert pb["result"] == "qms_failed_no_advance" and obj["status"] == "planned"
+    runs = client.get("/api/v1/resources/compositions/runs").json()["runs"]
+    assert runs[0]["run_id"] == r["run_id"]                    # the run persisted, newest first
+    assert [x["resource"] for x in runs[0]["real_resources"]] == ["petri_dish"]
+    ops = client.get("/api/v1/operations/rankings").json()["rankings"]
+    assert any(str(x["resource"]) == "fabric:petri_dish" for x in ops)   # facility outcomes accrued
+    client.delete(f"/api/v1/resources/compositions/{comp['id']}")
+
+
 def test_every_generated_vsb_carries_board_and_economy(client):
     # §3.3 invariant (Living Plan, bold): "Every generated VSB carries its own Board + a Chief that is
     # the digital twin of its owner" — plus a living economy in its legal form, living-entity

@@ -359,6 +359,16 @@ async def list_compositions():
     return {"compositions": _load_compositions()}
 
 
+@router.get("/compositions/runs")
+async def list_composition_runs(limit: int = 20):
+    """§7 (W274) — composition run HISTORY: every run persists (compact, capped, atomic) so
+    'rerunnable, reusable' includes the evidence of past runs, not just the design. (Declared
+    before /compositions/{cid} so the static path wins over the dynamic id lookup.)"""
+    from agentic_core.config import load_json_tolerant
+    rows = load_json_tolerant(data_path("composition_runs.json"), []) or []
+    return {"runs": list(reversed(rows[-max(1, min(int(limit), 100)):]))}
+
+
 @router.get("/compositions/{cid}")
 async def get_composition(cid: str):
     for c in _load_compositions():
@@ -367,10 +377,83 @@ async def get_composition(cid: str):
     raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
 
 
+class UpdateCompositionRequest(BaseModel):
+    name: Optional[str] = None
+    usage_area: Optional[str] = None
+    resource_ids: Optional[List[str]] = None
+    config: Optional[Dict[str, Dict[str, Any]]] = None
+
+
+@router.put("/compositions/{cid}")
+async def update_composition(cid: str, req: UpdateCompositionRequest):
+    """§7 (W273) — a saved composition is a LIVING design, not frozen at commit: reconfigure its
+    name/usage-area/resources/params in place. The edit is RE-MODELLED + RE-SIMULATED (so
+    commit_ready reflects the CURRENT design), the version bumps, identity (id + created_at) is
+    preserved, and the reconfiguration is UEG-logged."""
+    rows = _load_compositions()
+    comp = next((c for c in rows if c["id"] == cid), None)
+    if not comp:
+        raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
+    rids = req.resource_ids if req.resource_ids is not None else [r["id"] for r in comp.get("resources", [])]
+    unknown = [rid for rid in rids if rid not in _BY_ID]
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
+    if not rids:
+        raise HTTPException(status_code=400, detail="A composition needs at least one resource.")
+    name = req.name or comp["name"]
+    usage_area = req.usage_area or comp.get("usage_area", "general")
+    # carry forward the existing per-resource config; explicit req.config overrides per resource
+    cfg: Dict[str, Dict[str, Any]] = {r["id"]: dict(r.get("config") or {}) for r in comp.get("resources", [])}
+    for k, v in (req.config or {}).items():
+        cfg.setdefault(k, {}).update(v or {})
+    resolved, model, qa, commit_ready = await _simulate_configuration(name, rids, usage_area, cfg)
+    comp.update({
+        "name": name, "usage_area": usage_area, "resources": resolved, "model": model,
+        "quality_assurance": qa, "commit_ready": commit_ready,
+        "version": int(comp.get("version", 1)) + 1,
+        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    })
+    _save_compositions(rows)
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "resource_fabric.composition.reconfigured", "composition_id": cid,
+                         "version": comp["version"], "resources": rids, "commit_ready": commit_ready})
+    except Exception:
+        pass
+    return comp
+
+
+@router.delete("/compositions/{cid}")
+async def delete_composition(cid: str):
+    """§7 (W273) — complete the composition lifecycle: retire a saved design (UEG-logged)."""
+    rows = _load_compositions()
+    keep = [c for c in rows if c["id"] != cid]
+    if len(keep) == len(rows):
+        raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
+    _save_compositions(keep)
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "resource_fabric.composition.deleted", "composition_id": cid})
+    except Exception:
+        pass
+    return {"deleted": cid, "remaining": len(keep)}
+
+
 class RunCompositionRequest(BaseModel):
     objective: str = ""
     prefer_external: bool = False
     timeout: float = 12.0
+    # W273 — per-RUN parameterisation: {resource_id: {param: value}} applied over the saved config
+    # for THIS run only (the saved design is untouched); reaches the REAL engines via the same
+    # placeholder-filtered path as saved params.
+    params: Optional[Dict[str, Dict[str, Any]]] = None
+    # (retained for API stability; runs are warn-not-block since the gate calibration — see the
+    # run handler's honesty block)
+    force: bool = False
+    # W274 — bind this run to a living-plan objective: on a QMS-passed run a review is written back
+    # onto the objective and planned→in_progress advances (never auto-done — W266 semantics).
+    objective_id: Optional[str] = None
+    scope: str = "workstation"
 
 
 def _csv(v) -> list:
@@ -391,7 +474,12 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
     built from the user's reconfigured params, so a committed composition runs the ACTUAL engines/resources.
     Returns a compact result dict, or None when the resource has no inline real handler. Best-effort +
     isolated (one resource's failure never blocks the others or the run)."""
-    cfg = config or {}
+    # W273 — un-overridden params still carry the registry's declared type-placeholder STRINGS
+    # (e.g. "str (standard|rich|minimal)"); numeric coercion tolerated them but string params leaked
+    # them into REAL engine runs as literal values. Drop any value equal to its declared placeholder
+    # here — the one choke point every real run passes through.
+    _declared = (_BY_ID.get(rid) or {}).get("reconfigurable_params") or {}
+    cfg = {k: v for k, v in (config or {}).items() if v != _declared.get(k)}
     try:
         if rid == "petri_dish":
             from agentic_core.api.products import petri_culture, PetriRequest
@@ -788,13 +876,28 @@ async def run_composition(cid: str, req: RunCompositionRequest):
     comp = next((c for c in _load_compositions() if c["id"] == cid), None)
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
+    # W273 — the simulation verdict is HONEST at run time, never silent and never a hard wall:
+    # both signals (the declared-usage-area check and the §10 QMS simulation — each honest but
+    # conservative against real composition practice: the catalogue's declared areas are narrower
+    # than legitimate use, and the QMS verdict is noisy on the native floor) surface as explicit
+    # warnings on the run response (commit_ready · usage_area_supported · quality_warning) with the
+    # PUT reconfigure path to fix the design. A creative run is never blocked on a noisy signal.
+    commit_ready = bool(comp.get("commit_ready", True))
+    _area_ok = bool((comp.get("model") or {}).get("usage_area_supported_by_all", True))
+
+    def _eff_cfg(r: Dict[str, Any]) -> Dict[str, Any]:
+        # W273 — the effective config for THIS run: saved design params + per-run overrides.
+        cfg = dict(r.get("config") or {})
+        if req.params:
+            cfg.update(req.params.get(r["id"]) or {})
+        return cfg
 
     stages: List[Dict[str, str]] = []
     for r in comp.get("resources", []):
         base = _BY_ID.get(r["id"], {})
         caps = ", ".join(base.get("capabilities", [])) or base.get("type", r.get("resource_class", ""))
         # the user-SET params are those whose value differs from the declared type placeholder
-        configured = {k: v for k, v in (r.get("config") or {}).items()
+        configured = {k: v for k, v in _eff_cfg(r).items()
                       if v != base.get("reconfigurable_params", {}).get(k)}
         cfg_txt = "; ".join(f"{k}={v}" for k, v in configured.items())
         if r["id"] == "vsb_org_swarm":
@@ -852,7 +955,7 @@ async def run_composition(cid: str, req: RunCompositionRequest):
     if org_r:
         try:
             from agentic_core.api.swarm import cascade_orchestration, CascadeRequest
-            cfg = org_r.get("config") or {}
+            cfg = _eff_cfg(org_r)
             def _csv(v): return [s.strip() for s in str(v).replace(";", ",").split(",") if s.strip()]
             casc = await cascade_orchestration(CascadeRequest(
                 mission=objective, domain=(comp.get("usage_area") or "general"),
@@ -885,12 +988,93 @@ async def run_composition(cid: str, req: RunCompositionRequest):
     for r in comp.get("resources", []):
         if r["id"] == "vsb_org_swarm":
             continue
-        rr = await _run_real_resource(r["id"], r.get("config") or {}, objective, domain)
+        _r0 = time.time()
+        rr = await _run_real_resource(r["id"], _eff_cfg(r), objective, domain)
         if rr is not None:
+            rr["duration_ms"] = int((time.time() - _r0) * 1000)
             real_runs.append(rr)
 
-    return {"composition_id": cid, "name": comp["name"], "usage_area": comp.get("usage_area"),
+    # §7×§6 (W274) — per-resource outcomes feed the learning/selection loop: every REAL facility
+    # run this composition executed accrues its own operational-excellence row (fabric:<resource>),
+    # so measured facility performance is queryable alongside agents and models.
+    try:
+        from agentic_core.api.operational_excellence import record_outcome as _ro
+        for rr in real_runs:
+            _ro("fabric_resource", f"fabric:{rr['resource']}",
+                served_by=str(rr.get("served_by") or "real-engine"), is_external=False,
+                duration_ms=rr.get("duration_ms", 0), success=True, ref=cid)
+    except Exception:
+        pass
+
+    run_id = f"cr-{uuid.uuid4().hex[:8]}"
+    # §7×§5 (W274) — a composition run can DELIVER a living-plan objective: on a QMS-passed run a
+    # review writes back onto the bound objective and planned→in_progress advances (never auto-done).
+    plan_binding = None
+    if req.objective_id:
+        plan_binding = {"objective_id": req.objective_id, "scope": req.scope, "advanced": False}
+        try:
+            from agentic_core.api.business_plan import _load as _bp_load, _save as _bp_save
+            fresh = _bp_load(req.scope)
+            tgt = next((o for o in fresh.get("objectives", []) if o.get("id") == req.objective_id), None)
+            if tgt is None:
+                plan_binding["result"] = "objective_not_found"
+            elif not qa["quality"].get("qms_gate_passed"):
+                plan_binding["result"] = "qms_failed_no_advance"    # a failed gate never advances the plan
+            else:
+                tgt.setdefault("reviews", []).append({
+                    "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "status": "in_progress" if tgt.get("status") == "planned" else tgt.get("status"),
+                    "note": (f"§7 composition run {run_id} ('{comp['name']}') delivered against this "
+                             f"objective — QMS gate passed."),
+                    "composition_run": {"run_id": run_id, "composition_id": cid,
+                                        "real_resources": [x["resource"] for x in real_runs]},
+                })
+                if tgt.get("status") == "planned":
+                    tgt["status"] = "in_progress"
+                _bp_save(fresh)
+                plan_binding.update({"advanced": True, "result": "review_written",
+                                     "status": tgt.get("status")})
+        except Exception as exc:
+            plan_binding["result"] = f"error: {exc}"[:120]
+
+    # §7 (W274) — the run itself PERSISTS (compact + capped + atomic): design id/version, what ran,
+    # provenance, the QMS verdict, and any plan binding — queryable at GET /compositions/runs.
+    try:
+        from agentic_core.config import atomic_write_json, load_json_tolerant
+        _served: Dict[str, int] = {}
+        for t in (res.get("trace") or []):
+            _served[t.get("served_by", "native")] = _served.get(t.get("served_by", "native"), 0) + 1
+        _cr_store = data_path("composition_runs.json")
+        _cr = load_json_tolerant(_cr_store, []) or []
+        _cr.append({
+            "run_id": run_id, "composition_id": cid, "name": comp["name"],
+            "version": comp.get("version", 1), "objective": objective[:200],
+            "commit_ready": commit_ready, "usage_area_supported": _area_ok,
+            "run_params_applied": sorted((req.params or {}).keys()),
+            "real_resources": [{"resource": x["resource"], "ran": x.get("ran"),
+                                "duration_ms": x.get("duration_ms")} for x in real_runs],
+            "org_cascade_run_id": (org_cascade or {}).get("run_id"),
+            "served_by": _served, "any_external": bool(res.get("any_external")),
+            "qms_gate_passed": qa["quality"].get("qms_gate_passed"),
+            "plan_binding": plan_binding,
+            "duration_ms": int((time.time() - _t0) * 1000),
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        })
+        atomic_write_json(_cr_store, _cr[-100:])
+    except Exception:
+        pass
+
+    return {"run_id": run_id, "plan_binding": plan_binding,
+            "composition_id": cid, "name": comp["name"], "usage_area": comp.get("usage_area"),
             "objective": objective, "posture": "in-house-first", "quality_assurance": qa,
+            # W273 — run-time honesty: the design's simulation verdicts (explicit warning when
+            # either failed — never silent, never a hard wall) + which resources got per-run overrides.
+            "commit_ready": commit_ready, "usage_area_supported": _area_ok,
+            "quality_warning": (None if commit_ready else
+                                "This design's pre-run simulation did not pass the §10 quality bar"
+                                + ("" if _area_ok else " (usage area not declared by every composed resource)")
+                                + " — review quality_assurance and consider reconfiguring (PUT /compositions/{cid})."),
+            "run_params_applied": sorted((req.params or {}).keys()),
             "org_cascade": org_cascade, "real_resource_runs": real_runs, **res}
 
 
