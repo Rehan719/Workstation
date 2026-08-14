@@ -90,8 +90,14 @@ class ModelGateway:
         return self._reconfig_cache.get("gateway", {}).get("preferred_provider", "auto")
 
     def _augment(self, prompt: str) -> str:
+        # W277 — recall is real now (scored token-overlap retrieval) and HONESTLY labelled: the
+        # model is told exactly what these lines are and to ignore them when irrelevant.
         ctx = memory.query_memory(prompt)
-        return f"Context: {ctx}\n\nUser: {prompt}" if ctx else prompt
+        if not ctx:
+            return prompt
+        recall = "\n".join(f"- {c[:280]}" for c in ctx)
+        return ("[native memory recall — prior Workstation interactions matched by token overlap; "
+                f"use only if relevant]\n{recall}\n\nUser: {prompt}")
 
     # ── non-streaming ───────────────────────────────────────────────────────
 

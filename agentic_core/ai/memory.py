@@ -61,15 +61,38 @@ class VectorMemory:
                 pass
             raise
 
+    MAX_MEMORIES = 500          # W277 — the store is CAPPED (most recent kept), not unbounded
+
+    _STOP = {"the", "and", "for", "with", "that", "this", "from", "your", "have", "will",
+             "what", "when", "where", "which", "their", "there", "then", "than", "them",
+             "into", "about", "over", "under", "only", "also", "been", "being", "does",
+             "each", "must", "should", "would", "could", "user", "output", "provide"}
+
+    @classmethod
+    def _tokens(cls, text: str) -> set:
+        import re
+        return {w for w in re.findall(r"[a-z]{4,}", (text or "").lower()) if w not in cls._STOP}
+
     def add_memory(self, text: str, metadata: Dict[str, Any] = {}):
         memories = self._load()
         memories.append({"text": text, "metadata": metadata})
-        self._write(memories)
+        self._write(memories[-self.MAX_MEMORIES:])
 
-    def query_memory(self, query: str) -> List[str]:
-        """Simple keyword matching for POC RAG."""
-        memories = self._load()
-        results = [m["text"] for m in memories if query.lower() in m.get("text", "").lower()]
-        return results[:5]
+    def query_memory(self, query: str, k: int = 3) -> List[str]:
+        """W277 — SCORED retrieval that genuinely fires: rank memories by meaningful-token overlap
+        with the query (≥2 shared tokens to count), best-then-most-recent first, top k. The old
+        whole-prompt substring match never matched a real prompt, so recall was ceremonial.
+        Deterministic + honest: no embedding claim, the score IS the overlap."""
+        q = self._tokens(query)
+        if not q:
+            return []
+        need = min(2, len(q))    # a 1-token query can genuinely match with 1 — 2 would be unreachable
+        scored = []
+        for i, m in enumerate(self._load()):
+            overlap = len(q & self._tokens(m.get("text", "")))
+            if overlap >= need:
+                scored.append((overlap, i, m["text"]))
+        scored.sort(key=lambda x: (-x[0], -x[1]))
+        return [t for _, _, t in scored[:max(1, int(k))]]
 
 memory = VectorMemory()

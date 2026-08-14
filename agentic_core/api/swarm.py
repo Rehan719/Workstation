@@ -205,14 +205,25 @@ async def cascade_orchestration(req: CascadeRequest):
 
     biobus.fire_signal("cognitive", "swarm.cascade", f"CEO cascade: {req.mission[:80]}", 0.8)
 
-    # §8→§6: the full Chief→Build-to-Order cascade is heavy multi-tier cognition — register it with the
-    # homeostatic controller so it EXPENDS metabolic ATP (the §5 org-cascade now participates in the loop
-    # like the native swarm/tree). Runs sequentially on the gateway, so no concurrency cap; best-effort.
+    # §8→§6 (W278): the cascade's cognitive demand is reported HONESTLY (3 apex tiers + officer+CoE
+    # per selected role + optional CoEs + BTO/build/catalogue + 6 appraisals ≈ 22 calls, not 8), and
+    # the homeostatic posture is BEHAVIORAL, not advisory: under granted headroom the C-Suite
+    # officer+CoE pairs run CONCURRENTLY (bounded by the granted parallelism); under a protective
+    # posture (granted 1) the run stays fully sequential — the organism's state genuinely shapes
+    # how the organisation works. Best-effort/fail-open.
+    _DEFAULT_CSUITE = ["CSO", "CFO", "CTO", "COO", "CLO"]
+    _sel_probe = [r for r in (req.csuite_roles or _DEFAULT_CSUITE) if r in _AGENTS and r != "CEO"] or _DEFAULT_CSUITE
+    _honest_demand = 3 + 2 * len(_sel_probe[:9]) + len((req.coe_specialisms or [])[:3]) + 3 + 6
     try:
         from agentic_core.ai.native.homeostasis import homeostasis
-        homeo = homeostasis.assess(demand_nodes=8, requested_parallel=1)
+        homeo = homeostasis.assess(demand_nodes=_honest_demand,
+                                   requested_parallel=min(4, len(_sel_probe[:9])))
     except Exception:
         homeo = None
+    _granted = max(1, int((homeo or {}).get("max_parallel", 1)))
+    homeostasis_adaptation = {"demand_nodes_reported": _honest_demand,
+                              "granted_parallel": _granted,
+                              "csuite_concurrent": _granted > 1}
 
     # In-house-first AI with provenance — the whole CEO→C-Suite→CoE cascade records which OWNED
     # resource served each tier (proves the org cascade runs on Workstation's own fabric).
@@ -305,13 +316,12 @@ async def cascade_orchestration(req: CascadeRequest):
     # Level 2: the specialist C-Suite (§5) — user-reconfigurable (req.csuite_roles); each officer leads
     # AND develops its own Centre of Excellence (the §5 "each drives their CoE" linkage). Empty selection
     # → a balanced default set; only known C-Suite roles are engaged (CEO is the apex, not in the set).
-    _DEFAULT_CSUITE = ["CSO", "CFO", "CTO", "COO", "CLO"]
     _CSUITE_POOL = ["CSO", "CFO", "CTO", "CPO", "COO", "CIO", "CLO", "Forecasting", "Policy"]
-    selected = [r for r in (req.csuite_roles or _DEFAULT_CSUITE) if r in _AGENTS and r != "CEO"] or _DEFAULT_CSUITE
-    selected = selected[:9]
+    selected = _sel_probe[:9]
     csuite_responses: dict[str, str] = {}
     coe_responses: dict[str, str] = {}
-    for role in selected:
+
+    async def _run_officer(role: str) -> tuple:
         agent_info = _AGENTS[role]
         prompt = (
             f"You are the {agent_info['role']}. Your CEO has issued the following directive:\n\n"
@@ -324,17 +334,36 @@ async def cascade_orchestration(req: CascadeRequest):
             "## Metrics You Own\n"
             "## Your Centre of Excellence (the specialist team/capability you stand up and develop)"
         )
-        csuite_responses[role] = await _q(prompt + _dev_for("ceo_appraises_csuite", "AI CEO"), f"cascade_{role.lower()}")
+        cs = await _q(prompt + _dev_for("ceo_appraises_csuite", "AI CEO"), f"cascade_{role.lower()}")
         # That officer DRIVES its CoE — specialist functional + operational delivery for its workstream.
         coe_prompt = (
             f"You are the Head of the Centre of Excellence reporting to the {agent_info['role']} "
-            f"({agent_info['expertise']}). Your officer's plan:\n{csuite_responses[role][:400]}\n\n"
+            f"({agent_info['expertise']}). Your officer's plan:\n{cs[:400]}\n\n"
             f"Mission: {req.mission}\nDomain: {req.domain}\n\n"
             "Deliver your CoE contribution (100-150 words):\n"
             "## Specialist Capability Applied\n## Operational Delivery (what your team produces)\n"
             "## Standards & Best Practice Enforced"
         )
-        coe_responses[f"{role} CoE"] = await _q(coe_prompt + _dev_for("csuite_appraises_coe", "your C-Suite officer"), f"cascade_coe_{role.lower()}")
+        coe = await _q(coe_prompt + _dev_for("csuite_appraises_coe", "your C-Suite officer"), f"cascade_coe_{role.lower()}")
+        return role, cs, coe
+
+    if _granted > 1:
+        # §8 headroom granted → the officer+CoE pairs run CONCURRENTLY, bounded by the grant.
+        import asyncio as _aio
+        _sem = _aio.Semaphore(_granted)
+
+        async def _bounded(role: str) -> tuple:
+            async with _sem:
+                return await _run_officer(role)
+        for role, cs, coe in await _aio.gather(*[_bounded(r) for r in selected]):
+            csuite_responses[role] = cs
+            coe_responses[f"{role} CoE"] = coe
+    else:
+        # protective posture → fully sequential (the organism's state shapes the org's tempo)
+        for role in selected:
+            _r, cs, coe = await _run_officer(role)
+            csuite_responses[role] = cs
+            coe_responses[f"{role} CoE"] = coe
     # Optional additional domain CoEs the user explicitly requested (beyond the per-officer CoEs).
     for specialism in (req.coe_specialisms or [])[:3]:
         prompt = (
@@ -644,6 +673,9 @@ async def cascade_orchestration(req: CascadeRequest):
         "biomimetic": biomimetic,
         # §8→§6 — the homeostatic posture this heavy cascade ran under (and the ATP it expended).
         "homeostasis": homeo,
+        # §8 (W278) — how the posture BEHAVIORALLY shaped this run: honest demand reported,
+        # granted parallelism, and whether the C-Suite actually ran concurrently.
+        "homeostasis_adaptation": homeostasis_adaptation,
         "level_4_business_transformation_office": bto_programme,
         # §5×§7 (W272) — the fabric facilities the BTO requisitioned AND ran this cascade (real
         # handler outputs, deterministic word-overlap match — empty when nothing genuinely matched).

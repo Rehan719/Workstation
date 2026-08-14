@@ -39,6 +39,33 @@ def _record_model(name: str, success: bool, t0: float) -> None:
         pass
 
 
+def _breaker_open(name: str) -> bool:
+    """§6×§8 (W278) — consult the organism's self-healing circuit breaker before spending a
+    timeout on a model that keeps failing. Fail-open: no organism → no skip."""
+    try:
+        from agentic_core.organism.self_healing import self_healer
+        return bool(self_healer.is_open(f"model:{name}"))
+    except Exception:
+        return False
+
+
+def _organism_report(name: str, success: bool) -> None:
+    """§6×§8 (W278) — the native path re-joins the living organism: a model failure raises immune
+    threat AND trips the self-healing circuit breaker (the legacy cascade had this; the native path
+    had silently dropped it); a success heals the breaker. Best-effort, never raises."""
+    try:
+        from agentic_core.organism.self_healing import self_healer
+        (self_healer.record_success if success else self_healer.record_failure)(f"model:{name}")
+    except Exception:
+        pass
+    if not success:
+        try:
+            from agentic_core.organism.immune import immune
+            immune.record(f"model:{name}", "ai_failure")
+        except Exception:
+            pass
+
+
 _PROBATION_AFTER_S = 600   # a deprioritised model earns ONE fresh try after this long untried
 
 
@@ -118,6 +145,9 @@ class NativeOrchestrator:
         tried: List[str] = []
         _fire("cognitive", f"native.{agent}", f"orchestrate: {prompt[:60]}", 0.5)
         for name in order:
+            if name != "native" and _breaker_open(name):
+                tried.append(f"{name} (circuit-open, skipped)")   # §6×§8 (W278) — honest skip
+                continue
             tried.append(name)
             if name == "native":
                 out = native_engine.generate(prompt, agent)
@@ -128,12 +158,15 @@ class NativeOrchestrator:
                 out = await asyncio.wait_for(self._run_model(name, prompt), timeout)
                 if out and out.strip():
                     _record_model(name, True, _t)        # learned: this model performed
+                    _organism_report(name, True)         # §6×§8 (W278) — breaker heals on success
                     _fire("motor", f"native.{agent}", f"served by {name}", 0.5)
                     return {"output": out, "served_by": name,
                             "is_external": name in ("anthropic", "openai"), "resources_tried": tried}
                 _record_model(name, False, _t)           # empty output = failure
+                _organism_report(name, False)            # §6×§8 (W278) — raises immune + breaker
             except Exception:
                 _record_model(name, False, _t)           # error/timeout = failure
+                _organism_report(name, False)
                 continue
         # the native floor guarantees we never reach here, but be safe:
         out = native_engine.generate(prompt, agent)

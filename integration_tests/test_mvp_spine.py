@@ -699,6 +699,56 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_organism_governs_native_path_and_cascade_tempo(client):
+    # §6×§8 (W278) — the native path re-joined the living organism: repeated model failures open
+    # the self-healing circuit breaker (the router then skips honestly) and raise immune threat;
+    # and the cascade's homeostatic posture is BEHAVIORAL — honest demand (~22 calls, not 8) is
+    # reported, and the granted parallelism decides whether the C-Suite runs concurrently.
+    from agentic_core.ai.native.orchestrator import _organism_report, _breaker_open
+    import uuid as _uuid
+    m = f"w278-{_uuid.uuid4().hex[:6]}"
+    assert _breaker_open(m) is False
+    for _ in range(6):
+        _organism_report(m, False)
+    assert _breaker_open(m) is True                       # failures opened the breaker
+    r = client.post("/api/v1/swarm/cascade", json={
+        "mission": "w278 organism tempo contract", "domain": "enterprise"}).json()
+    ha = r["homeostasis_adaptation"]
+    assert ha["demand_nodes_reported"] >= 20              # honest demand, not the old 8
+    assert ha["csuite_concurrent"] == (ha["granted_parallel"] > 1)   # posture IS behavior
+    assert len(r["level_2_csuite"]) == 5 and len(r["level_3_coe"]) == 5
+    # under granted headroom the officers genuinely run concurrently (same code path, bounded)
+    from unittest.mock import patch
+    from agentic_core.ai.native.homeostasis import homeostasis
+    real = homeostasis.assess
+    with patch.object(homeostasis, "assess",
+                      side_effect=lambda **kw: {**real(**kw), "max_parallel": 3}):
+        r2 = client.post("/api/v1/swarm/cascade", json={
+            "mission": "w278 concurrent contract", "domain": "enterprise"}).json()
+    assert r2["homeostasis_adaptation"]["csuite_concurrent"] is True
+    assert len(r2["level_2_csuite"]) == 5 and len(r2["appraisals"]) == 6
+
+
+def test_native_memory_genuinely_used(client):
+    # §6 (W277) — the native memory is USED, not ceremonial: retrieval is scored token-overlap
+    # (the old whole-prompt substring match never matched a real prompt), irrelevant memories are
+    # excluded, the store is capped (most recent kept), and the gateway injects recall with an
+    # HONEST label telling the model exactly what the lines are.
+    from agentic_core.ai.memory import memory
+    memory.add_memory("User: plan a halal meal-kit delivery venture in London | "
+                      "AI: certification and cold-chain logistics first")
+    memory.add_memory("User: what is the capital of France | AI: Paris")
+    r = memory.query_memory("design the halal meal delivery launch with certification steps")
+    assert r and "halal" in r[0].lower()                      # scored recall genuinely fires
+    assert all("France" not in x for x in r)                  # irrelevant excluded
+    assert memory.query_memory("unrelated quantum zebra blockchain") == []   # no false recall
+    assert len(memory._load()) <= memory.MAX_MEMORIES         # the store is capped
+    from agentic_core.ai.gateway import ModelGateway
+    aug = ModelGateway()._augment("halal meal delivery certification plan")
+    assert aug.startswith("[native memory recall")            # honest provenance label
+    assert "use only if relevant" in aug
+
+
 def test_owned_model_lifecycle(client):
     # §6 (W276) — the owned-model registry is a managed ESTATE, not a static enumeration:
     # EVALUATE runs honest probes (under AI_DISABLE_LOCAL the target cannot serve → can_serve
