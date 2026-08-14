@@ -68,6 +68,10 @@ const SwarmIntelligence: React.FC = () => {
   const [csuiteSel, setCsuiteSel] = useState<string[]>(['CSO', 'CFO', 'CTO', 'COO', 'CLO']);
   const outputRef = useRef<HTMLDivElement>(null);
 
+  // W268/W284 — the persisted org-cascade history (appraisals · quality · fabric requisitions ·
+  // plan bindings survive the response and are reviewable here)
+  const [cascadeRuns, setCascadeRuns] = useState<any[]>([]);
+
   const loadRuns = async () => {
     try {
       const res = await axios.get('/api/v1/swarm/runs');
@@ -76,7 +80,14 @@ const SwarmIntelligence: React.FC = () => {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadRuns(); }, []);
+  const loadCascadeRuns = async () => {
+    try {
+      const res = await axios.get('/api/v1/swarm/cascade/runs');
+      setCascadeRuns(res.data.runs ?? []);
+    } catch { /* empty state */ }
+  };
+
+  useEffect(() => { loadRuns(); loadCascadeRuns(); }, []);
 
   useEffect(() => {
     if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
@@ -107,6 +118,7 @@ const SwarmIntelligence: React.FC = () => {
       }
       setStreaming(false);
       await loadRuns();
+      await loadCascadeRuns();
       setTask('');
     } catch (e: any) {
       setStreamOutput(`Error: ${e?.response?.data?.detail ?? e.message}`);
@@ -206,6 +218,30 @@ const SwarmIntelligence: React.FC = () => {
                 </span>
               )}
               {cascade.ueg_hash && <span className="text-[8px] font-mono text-white/30" title={cascade.ueg_hash}>UEG {String(cascade.ueg_hash).slice(0, 12)}…</span>}
+              {/* W278/W284 — the organism's posture BEHAVIORALLY shaped this run */}
+              {cascade.homeostasis_adaptation && (
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
+                  title={`honest cognitive demand reported: ${cascade.homeostasis_adaptation.demand_nodes_reported} calls`}>
+                  §8 tempo: {cascade.homeostasis_adaptation.csuite_concurrent ? `concurrent ×${cascade.homeostasis_adaptation.granted_parallel}` : 'sequential'} · demand {cascade.homeostasis_adaptation.demand_nodes_reported}
+                </span>
+              )}
+              {/* W280/W284 — the objective this run delivered on the living plan */}
+              {cascade.plan_binding && (
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.plan_binding.advanced ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
+                  plan: {cascade.plan_binding.result}
+                </span>
+              )}
+              {/* W271/W284 — BMS/EMS COMPUTE over this run's own telemetry (simulated constants, honestly labelled) */}
+              {cascade.management_systems?.bms && (
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300" title={cascade.management_systems.bms.caveat}>
+                  BMS {cascade.management_systems.bms.status} · ${cascade.management_systems.bms.cost_per_insight_usd}/insight
+                </span>
+              )}
+              {cascade.management_systems?.ems && (
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400" title={cascade.management_systems.ems.caveat}>
+                  EMS +{Math.round((cascade.management_systems.ems.efficiency_gain ?? 0) * 100)}% · {cascade.management_systems.ems.total_co2_kg}kg CO₂ (sim)
+                </span>
+              )}
             </div>
             {([
               ['Chief of the Board (founder digital twin)', cascade.level_0_chief_of_board],
@@ -255,6 +291,22 @@ const SwarmIntelligence: React.FC = () => {
                 </div>
               </details>
             )}
+            {/* W272/W284 — the fabric facilities the BTO requisitioned AND ran inside this cascade */}
+            {Array.isArray(cascade.fabric_requisitions) && cascade.fabric_requisitions.length > 0 && (
+              <details className="bg-black/40 rounded-lg border border-white/5">
+                <summary className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">
+                  §7 fabric facilities requisitioned &amp; RAN ({cascade.fabric_requisitions.length})
+                </summary>
+                <div className="px-3 pb-3 space-y-2">
+                  {cascade.fabric_requisitions.map((f: any) => (
+                    <div key={f.resource} className="border-t border-white/5 pt-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-aura">{f.resource} <span className="font-mono normal-case text-white/40">{f.ran}</span> · match ×{f.match_hits}</p>
+                      {f.output && <pre className="text-[9px] text-white/45 font-mono whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto">{String(f.output).slice(0, 400)}</pre>}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
             {cascade.management_systems?.document_control && Object.keys(cascade.management_systems.document_control).length > 0 && (
               <p className="text-[8px] text-white/30 leading-relaxed">Document-controlled (DCMS, SHA3-512): {Object.entries(cascade.management_systems.document_control).map(([k, v]: any) => `${k} ${String(v).slice(0, 8)}…`).join('  ·  ')}</p>
             )}
@@ -281,6 +333,37 @@ const SwarmIntelligence: React.FC = () => {
           )}
         </div>
 
+        {/* W268/W284 — the persisted org-cascade history: the appraise/develop record SURVIVES */}
+        <div className="bg-[#0a0a0a] p-4 rounded-xl border border-[#111]">
+          <h3 className="text-xs text-[#666] mb-4 uppercase tracking-widest flex items-center gap-1.5">
+            <Zap size={10} /> Org Cascade History (persisted)
+          </h3>
+          {cascadeRuns.length === 0 ? (
+            <p className="text-[10px] text-[#444]">No persisted cascade runs yet.</p>
+          ) : (
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {cascadeRuns.slice(0, 8).map((cr: any) => (
+                <div key={cr.run_id} className="border-t border-white/5 first:border-t-0 pt-1.5 first:pt-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[8px] font-mono text-white/30">{cr.run_id}</span>
+                    <span className="text-[10px] text-white/70 font-bold truncate max-w-[180px]" title={cr.mission}>{cr.mission}</span>
+                    {typeof cr.quality?.qms_gate_passed === 'boolean' && (
+                      <span className={`text-[8px] font-black uppercase px-1 py-0.5 rounded ${cr.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>QMS {cr.quality.qms_gate_passed ? 'pass' : 'fail'}</span>
+                    )}
+                    {cr.appraisals && <span className="text-[8px] text-amber-300/60">{Object.keys(cr.appraisals).length} appraisals</span>}
+                    {(cr.fabric_requisitions ?? []).map((f: any) => (
+                      <span key={f.resource} className="text-[8px] font-black uppercase px-1 py-0.5 rounded bg-aura/10 text-aura">{f.resource}</span>
+                    ))}
+                    {cr.plan_binding?.result && <span className="text-[8px] text-emerald-400/70">plan: {cr.plan_binding.result}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-5">
         {/* Pareto Frontier */}
         <div className="bg-[#0a0a0a] p-4 rounded-xl border border-[#111]">
           <h3 className="text-xs text-[#666] mb-4 uppercase tracking-widest">Pareto: Accuracy vs Latency</h3>

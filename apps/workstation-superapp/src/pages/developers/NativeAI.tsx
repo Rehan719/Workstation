@@ -190,6 +190,27 @@ export const NativeAI: React.FC = () => {
   const loadCascades = () =>
     fetch('/api/v1/resources/swarm').then(r => r.json()).then(d => setCascades(d.cascades || [])).catch(() => {});
 
+  // W276/W284 — the owned-model estate's LIFECYCLE (evaluate · promote · retire · reinstate)
+  const [lifecycle, setLifecycle] = useState<{
+    promoted_default?: string | null; effective_default?: string; retired?: string[];
+    discovered?: string[]; active_estate?: string[];
+    evaluations?: { model: string; can_serve: boolean; score: number | null; at: string }[];
+  } | null>(null);
+  const [lcBusy, setLcBusy] = useState('');
+  const loadLifecycle = () =>
+    fetch('/api/v1/native-ai/lifecycle').then(r => r.json()).then(setLifecycle).catch(() => {});
+  const lifecycleAction = async (action: 'evaluate' | 'promote' | 'retire' | 'reinstate', model: string) => {
+    setLcBusy(`${action}:${model}`);
+    try {
+      await fetch(`/api/v1/native-ai/lifecycle/${action}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model }),
+      });
+      loadLifecycle();
+    } catch { /* surfaced via reload */ }
+    setLcBusy('');
+  };
+
   useEffect(() => {
     fetch('/api/v1/native-ai/status').then(r => r.json()).then(setStatus)
       .catch(() => setError('Failed to load fabric status'))
@@ -199,6 +220,7 @@ export const NativeAI: React.FC = () => {
     fetch('/api/v1/native-ai/models').then(r => r.json())
       .then(d => setModelTiers(d.tiers || [])).catch(() => {});
     loadCascades();
+    loadLifecycle();
   }, []);
 
   // §6/§7 — native completion with user-selected model tier (auto · native floor · local model(s))
@@ -473,6 +495,52 @@ export const NativeAI: React.FC = () => {
               </div>
             )}
           </Card>
+
+          {/* W276/W284 — the owned-model estate is MANAGED: evaluate · promote · retire · reinstate */}
+          {lifecycle && (
+            <Card className="p-6 border-sky-500/30">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-sky-300 mb-1">Owned-model lifecycle (§6 — the estate is managed, not enumerated)</h3>
+              <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+                Serving default: <span className="text-white font-black">{lifecycle.effective_default ?? '—'}</span>
+                {lifecycle.promoted_default ? <span className="text-sky-300"> (promoted)</span> : <span> (env default)</span>}
+                {(lifecycle.retired ?? []).length > 0 && <span> · retired: {lifecycle.retired!.join(', ')}</span>}
+              </p>
+              {(lifecycle.discovered ?? []).length === 0 && (
+                <p className="text-[10px] text-slate-600 italic mb-2">No local models discovered right now — evaluation reports honestly (can_serve: false) rather than inventing scores; pull a model into the local server to manage the estate.</p>
+              )}
+              <div className="space-y-1.5">
+                {(lifecycle.discovered ?? []).map(m => (
+                  <div key={m} className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-black text-white">{m}</span>
+                    {lifecycle.effective_default === m && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">serving</span>}
+                    {(lifecycle.retired ?? []).includes(m) && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-500">retired</span>}
+                    {(['evaluate', 'promote'] as const).map(a => (
+                      <button key={a} type="button" onClick={() => lifecycleAction(a, m)} disabled={!!lcBusy}
+                        className="text-[8px] font-black uppercase text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded hover:text-sky-300 hover:border-sky-500/40 transition-colors">
+                        {lcBusy === `${a}:${m}` ? '…' : a}
+                      </button>
+                    ))}
+                    <button type="button"
+                      onClick={() => lifecycleAction((lifecycle.retired ?? []).includes(m) ? 'reinstate' : 'retire', m)}
+                      disabled={!!lcBusy}
+                      className="text-[8px] font-black uppercase text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded hover:text-amber-400 hover:border-amber-500/40 transition-colors">
+                      {(lifecycle.retired ?? []).includes(m) ? 'reinstate' : 'retire'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {(lifecycle.evaluations ?? []).length > 0 && (
+                <div className="mt-3 space-y-1">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Recent evaluations (honest — no score when the target could not serve)</p>
+                  {lifecycle.evaluations!.slice(-3).reverse().map((ev, i) => (
+                    <p key={i} className="text-[9px] text-slate-400">
+                      {ev.model} · {ev.can_serve ? `score ${ev.score}` : 'could not serve — no score'} · {ev.at}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* Quick swarm runner */}
           <Card className="p-6">

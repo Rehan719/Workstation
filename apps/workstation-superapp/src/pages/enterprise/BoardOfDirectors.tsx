@@ -16,6 +16,17 @@ interface Status {
 interface ChiefResult {
   directive_id: string; owner: string; instruction: string;
   chief_directive: string; ceo_action_plan: string; delegation_chain: string[]; created_at: string;
+  // W270/W284 — the apex runs on the §6 fabric: provenance + gaas verdict + the plan objectives landed
+  ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean };
+  governance?: { status?: string };
+  objectives_added?: number;
+  business_plan_scope?: string;
+}
+// W279/W284 — a persisted board deliberation (directors' REAL grounded inputs)
+interface RecentDirective {
+  kind?: string; topic?: string; instruction?: string; created_at?: string;
+  directors_engaged?: string[];
+  director_inputs?: Record<string, { title: string; live_grounding: string; input: string }>;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -109,6 +120,22 @@ export const BoardOfDirectors: React.FC = () => {
           <div className="flex items-center gap-2 text-[9px] font-mono text-slate-500">
             <ShieldCheck size={12} className="text-emerald-400" /> {result.directive_id} · chain: {result.delegation_chain.join(' → ')}
           </div>
+          {/* W270/W284 — apex honesty chips: which OWNED resource served, the gaas verdict, what landed on the plan */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {result.ai_provenance?.served_by && (
+              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.ai_provenance.any_external ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
+                served by {Object.entries(result.ai_provenance.served_by).map(([k, v]) => `${k}×${v}`).join(' · ')}{result.ai_provenance.any_external ? '' : ' · in-house'}
+              </span>
+            )}
+            {result.governance?.status && (
+              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">gaas: {result.governance.status}</span>
+            )}
+            {typeof result.objectives_added === 'number' && (
+              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.objectives_added > 0 ? 'bg-highlight/15 text-highlight' : 'bg-slate-800 text-slate-500'}`}>
+                {result.objectives_added} objective{result.objectives_added === 1 ? '' : 's'} → living plan{result.business_plan_scope ? ` (${result.business_plan_scope})` : ''}
+              </span>
+            )}
+          </div>
           <Card className="p-0 overflow-hidden border-slate-800/80">
             <button type="button" onClick={() => setOpen('directive')} className={`w-full flex items-center justify-between p-5 text-left ${open === 'directive' ? 'bg-slate-800/30' : ''}`}>
               <div className="flex items-center gap-3"><Crown size={14} className="text-highlight" /><p className="font-black text-white text-sm">Chief's Board Directive</p></div>
@@ -125,6 +152,32 @@ export const BoardOfDirectors: React.FC = () => {
               {open === 'plan' && <div className="px-5 pb-6 border-t border-slate-800/50 pt-4"><p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{result.ceo_action_plan}</p></div>}
             </Card>
           )}
+        </div>
+      )}
+
+      {/* W279/W284 — recent board deliberations: the directors' REAL grounded inputs, previously
+          typed on Status but never rendered */}
+      {(status?.recent_directives ?? []).filter((d: RecentDirective) => d.director_inputs || d.topic || d.instruction).length > 0 && (
+        <div>
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><GitBranch size={14} /> Recent Board Deliberations</h3>
+          <div className="space-y-3">
+            {(status!.recent_directives as RecentDirective[]).slice(-5).reverse().map((d, i) => (
+              <Card key={i} className="p-5 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-500">{d.kind ?? 'chief_instruction'}</span>
+                  <p className="text-sm font-black text-white">{d.topic ?? d.instruction}</p>
+                  <span className="text-[8px] text-slate-600 ml-auto">{d.created_at}</span>
+                </div>
+                {d.director_inputs && Object.values(d.director_inputs).map(di => (
+                  <div key={di.title} className="border-l-2 border-highlight/30 pl-3 space-y-0.5">
+                    <p className="text-[10px] font-black uppercase text-highlight">{di.title}</p>
+                    <p className="text-[9px] text-slate-500 italic">live grounding: {di.live_grounding}</p>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">{di.input.slice(0, 400)}{di.input.length > 400 ? '…' : ''}</p>
+                  </div>
+                ))}
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 

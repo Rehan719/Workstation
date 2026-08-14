@@ -3,7 +3,16 @@ import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown } from 'lucide-react';
 
-interface Objective { id: string; title: string; kpi: string; timeline: string; owner_role: string; progress_pct: number; status: string }
+interface Objective {
+  id: string; title: string; kpi: string; timeline: string; owner_role: string;
+  progress_pct: number; status: string;
+  // W265/W284 — the Board directive that landed this objective on the plan (apex traceability)
+  directive_id?: string;
+  // W266/W274/W280/W284 — the delivery reviews written back by governed runs
+  reviews?: { at: string; status?: string; note?: string;
+    org_cascade_run?: { run_id: string }; composition_run?: { run_id: string };
+    transformation?: { transformation_id: string } }[];
+}
 interface RoadmapPhase { timeline: string; progress_pct: number; complete: boolean; count: number; objectives: { title: string }[] }
 interface Roadmap { living: boolean; phases: RoadmapPhase[]; overall_progress_pct: number; current_phase: string | null; next_milestone: { phase: string; title: string } | null; note?: string }
 interface Plan { scope: string; owner: string; executive_summary: string; concept: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; roadmap?: Roadmap; updated_at: string | null }
@@ -127,7 +136,10 @@ export const BusinessPlan: React.FC = () => {
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0">
                       <p className="font-black text-white text-sm">{o.title}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{o.kpi && `KPI: ${o.kpi} · `}{o.timeline && `${o.timeline} · `}owner {o.owner_role}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        {o.kpi && `KPI: ${o.kpi} · `}{o.timeline && `${o.timeline} · `}owner {o.owner_role}
+                        {o.directive_id && <span className="text-highlight" title="Landed by a Chief/Board directive (apex traceability)"> · ⌘ {o.directive_id}</span>}
+                      </p>
                     </div>
                     <span className={`text-[10px] font-black uppercase shrink-0 ${STATUS_TONE[o.status] ?? 'text-slate-500'}`}>{o.progress_pct}% · {o.status.replace('_', ' ')}</span>
                   </div>
@@ -139,6 +151,26 @@ export const BusinessPlan: React.FC = () => {
                       {orchestrating === o.id ? <Loader2 size={10} className="animate-spin" /> : <Crown size={10} />} Chief: deliver via tree
                     </button>
                   </div>
+                  {/* W284 — the delivery-review history governed runs wrote back (cascade ·
+                      composition · transformation), previously invisible */}
+                  {(o.reviews ?? []).length > 0 && (
+                    <details className="mt-3 bg-slate-950 rounded-xl border border-slate-800">
+                      <summary className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-3 py-2 cursor-pointer">
+                        Delivery reviews ({o.reviews!.length}) — written back by governed runs
+                      </summary>
+                      <div className="px-3 pb-3 space-y-1.5">
+                        {o.reviews!.slice(-5).reverse().map((rv, i) => (
+                          <div key={i} className="flex flex-wrap items-center gap-1.5 border-t border-slate-900 first:border-t-0 pt-1.5 first:pt-0">
+                            <span className="text-[8px] text-slate-600">{rv.at}</span>
+                            {rv.org_cascade_run && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300">§5 cascade {rv.org_cascade_run.run_id}</span>}
+                            {rv.composition_run && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">§7 composition {rv.composition_run.run_id}</span>}
+                            {rv.transformation && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">transformation {rv.transformation.transformation_id}</span>}
+                            {rv.note && <span className="text-[9px] text-slate-400">{rv.note.slice(0, 120)}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                   {orchResult[o.id] && (
                     <div className="mt-3 p-3 rounded-xl bg-aura/5 border border-aura/20">
                       <div className="flex items-center flex-wrap gap-2 mb-1.5">

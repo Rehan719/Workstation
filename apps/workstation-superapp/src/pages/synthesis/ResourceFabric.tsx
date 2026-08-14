@@ -39,6 +39,17 @@ interface Composition {
   id: string; name: string; usage_area: string;
   resources: { id: string; name: string; resource_class: string }[];
   reusable: boolean; rerunnable: boolean; created_at: string;
+  // W273/W284 — living-design lifecycle + the params still unset (for per-run entry)
+  version?: number;
+  model?: { unset_params?: Record<string, string[]> };
+}
+// W274/W284 — a persisted composition run (GET /resources/compositions/runs)
+interface HistoryRun {
+  run_id: string; composition_id: string; name: string; version?: number; objective: string;
+  qms_gate_passed?: boolean | null; any_external?: boolean;
+  real_resources?: { resource: string; ran?: string; duration_ms?: number }[];
+  plan_binding?: { result?: string; advanced?: boolean; objective_id?: string } | null;
+  created_at: string;
 }
 interface Simulation {
   name: string; usage_area: string; commit_ready: boolean; saved: boolean; note?: string;
@@ -63,6 +74,10 @@ interface CompositionRun {
   composition_id: string; name: string; objective: string; posture: string;
   trace: { step: number; role: string; served_by: string; output: string }[];
   final: string; any_external: boolean;
+  // W273/W274/W284 — run-time honesty + plan binding surfaced to the Owner
+  run_id?: string; commit_ready?: boolean; usage_area_supported?: boolean;
+  quality_warning?: string | null; run_params_applied?: string[];
+  plan_binding?: { result?: string; advanced?: boolean; objective_id?: string; status?: string } | null;
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } } };
   // §7→§5→§6→§8 — when the config includes the org resource, the real Chief→Build-to-Order cascade also runs.
@@ -164,6 +179,12 @@ export const ResourceFabric: React.FC = () => {
   const [runObjective, setRunObjective] = useState('');
   const [runResult, setRunResult] = useState<CompositionRun | null>(null);
   const [runningComp, setRunningComp] = useState(false);
+  // W284 — per-RUN params (previously shown as "Params to set on run" but silently dropped),
+  // living-design lifecycle (save-to-design PUT / DELETE), and the persisted runs history.
+  const [runParams, setRunParams] = useState<Record<string, Record<string, string>>>({});
+  const [savingParams, setSavingParams] = useState(false);
+  const [histOpen, setHistOpen] = useState(false);
+  const [histRuns, setHistRuns] = useState<HistoryRun[]>([]);
 
   const load = () => {
     const qs = new URLSearchParams();
@@ -214,18 +235,57 @@ export const ResourceFabric: React.FC = () => {
     setSimulating(false);
   };
 
-  // §7↔§6↔§5 — run a saved configuration end-to-end on Workstation's OWN native swarm
+  // W284 — only params the user actually typed reach the request (empty strings dropped)
+  const cleanRunParams = () => {
+    const out: Record<string, Record<string, string>> = {};
+    for (const [rid, ps] of Object.entries(runParams)) {
+      const kept = Object.fromEntries(Object.entries(ps).filter(([, v]) => v.trim() !== ''));
+      if (Object.keys(kept).length) out[rid] = kept;
+    }
+    return Object.keys(out).length ? out : undefined;
+  };
+
+  // §7↔§6↔§5 — run a saved configuration end-to-end on Workstation's OWN native swarm.
+  // W284 FIX: the per-run params the UI collects are now genuinely SENT (they were dropped).
   const runComposition = async (cid: string) => {
     setRunningComp(true); setRunResult(null);
     try {
       const r = await fetch(`/api/v1/resources/compositions/${cid}/run`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ objective: runObjective || undefined }),
+        body: JSON.stringify({ objective: runObjective || undefined, params: cleanRunParams() }),
       });
       setRunResult(await r.json());
     } catch { /* ignore */ }
     setRunningComp(false);
   };
+
+  // W273/W284 — the saved design is LIVING: persist the entered params onto it (re-simulated,
+  // version bumps server-side), or retire it entirely.
+  const saveParamsToDesign = async (cid: string) => {
+    const cfg = cleanRunParams();
+    if (!cfg) return;
+    setSavingParams(true);
+    try {
+      await fetch(`/api/v1/resources/compositions/${cid}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: cfg }),
+      });
+      loadCompositions();
+    } catch { /* ignore */ }
+    setSavingParams(false);
+  };
+
+  const deleteComposition = async (cid: string) => {
+    try {
+      await fetch(`/api/v1/resources/compositions/${cid}`, { method: 'DELETE' });
+      if (runCompId === cid) setRunCompId(null);
+      loadCompositions();
+    } catch { /* ignore */ }
+  };
+
+  const loadRunsHistory = () =>
+    fetch('/api/v1/resources/compositions/runs?limit=10').then(r => r.json())
+      .then(d => setHistRuns(d.runs ?? [])).catch(() => {});
 
   const compose = async () => {
     if (!name.trim() || selected.length === 0) return;
@@ -453,19 +513,54 @@ export const ResourceFabric: React.FC = () => {
           <div className="flex items-center gap-3">
             <Recycle size={16} className="text-highlight" />
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reusable Compositions</h3>
+            {/* W274/W284 — 'rerunnable, reusable' includes the EVIDENCE of past runs */}
+            <button type="button"
+              onClick={() => { const o = !histOpen; setHistOpen(o); if (o) loadRunsHistory(); }}
+              className="text-[9px] font-black uppercase text-slate-500 border border-slate-700 px-2 py-0.5 rounded-lg hover:text-highlight hover:border-highlight/40 transition-colors">
+              {histOpen ? 'Hide run history' : 'Run history'}
+            </button>
           </div>
+          {histOpen && (
+            <Card className="p-4 space-y-2">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Persisted composition runs (newest first)</p>
+              {histRuns.length === 0 && <p className="text-[10px] text-slate-600 italic">No persisted runs yet — run a composition below.</p>}
+              {histRuns.map(h => (
+                <div key={h.run_id} className="flex flex-wrap items-center gap-1.5 border-t border-slate-800 first:border-t-0 pt-1.5 first:pt-0">
+                  <span className="text-[9px] font-mono text-slate-500">{h.run_id}</span>
+                  <span className="text-[10px] font-black text-white">{h.name}</span>
+                  {typeof h.qms_gate_passed === 'boolean' && (
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${h.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>QMS {h.qms_gate_passed ? 'pass' : 'fail'}</span>
+                  )}
+                  {(h.real_resources ?? []).map(rr => (
+                    <span key={rr.resource} className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/10 text-aura">{rr.resource}</span>
+                  ))}
+                  {h.plan_binding?.result && (
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${h.plan_binding.advanced ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>plan: {h.plan_binding.result}</span>
+                  )}
+                  <span className="text-[8px] text-slate-600 ml-auto">{h.created_at}</span>
+                </div>
+              ))}
+            </Card>
+          )}
           {compositions.slice().reverse().map(c => (
             <Card key={c.id} className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-black text-white text-sm">{c.name}</p>
-                  <p className="text-[9px] font-black uppercase text-slate-500 mt-0.5">{c.usage_area} · {c.resources.length} resources · {c.id}</p>
+                  <p className="text-[9px] font-black uppercase text-slate-500 mt-0.5">{c.usage_area} · {c.resources.length} resources · {c.id}{c.version ? ` · v${c.version}` : ''}</p>
                 </div>
-                <button type="button"
-                  onClick={() => { setRunCompId(runCompId === c.id ? null : c.id); setRunResult(null); }}
-                  className="flex items-center gap-1.5 text-[9px] font-black uppercase text-highlight border border-highlight/40 px-2.5 py-1 rounded-lg hover:bg-highlight/10 transition-colors">
-                  <Play size={11} /> Run
-                </button>
+                <div className="flex items-center gap-2">
+                  <button type="button"
+                    onClick={() => { setRunCompId(runCompId === c.id ? null : c.id); setRunResult(null); setRunParams({}); }}
+                    className="flex items-center gap-1.5 text-[9px] font-black uppercase text-highlight border border-highlight/40 px-2.5 py-1 rounded-lg hover:bg-highlight/10 transition-colors">
+                    <Play size={11} /> Run
+                  </button>
+                  {/* W273/W284 — retire a design (the lifecycle is complete: compose · reconfigure · run · retire) */}
+                  <button type="button" onClick={() => deleteComposition(c.id)} title="Retire this design"
+                    className="text-[9px] font-black uppercase text-slate-500 border border-slate-700 px-2 py-1 rounded-lg hover:text-vital hover:border-vital/40 transition-colors">
+                    ✕
+                  </button>
+                </div>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {c.resources.map(r => <Tag key={r.id}>{r.name}</Tag>)}
@@ -483,12 +578,46 @@ export const ResourceFabric: React.FC = () => {
                       {runningComp ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Run pipeline
                     </Button>
                   </div>
+                  {/* W284 FIX — the unset params are ENTERABLE and genuinely sent with the run
+                      (previously the UI listed them but the request dropped them) */}
+                  {c.model?.unset_params && Object.keys(c.model.unset_params).length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Per-run parameters (blank = the design's defaults)</p>
+                      {Object.entries(c.model.unset_params).map(([rid, ps]) => (
+                        <div key={rid} className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[9px] font-black uppercase text-slate-400 w-24 shrink-0">{rid}</span>
+                          {ps.map(p => (
+                            <input key={p} value={runParams[rid]?.[p] ?? ''}
+                              onChange={e => setRunParams(rp => ({ ...rp, [rid]: { ...(rp[rid] ?? {}), [p]: e.target.value } }))}
+                              placeholder={p}
+                              className="w-28 text-[10px] bg-slate-900 border border-slate-800 rounded px-2 py-1 text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50" />
+                          ))}
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => saveParamsToDesign(c.id)} disabled={savingParams}
+                        className="text-[8px] font-black uppercase text-aura border border-aura/40 px-2 py-0.5 rounded hover:bg-aura/10 transition-colors">
+                        {savingParams ? 'Saving…' : 'Save params to the design (re-simulates · version bumps)'}
+                      </button>
+                    </div>
+                  )}
                   {runResult && runResult.composition_id === c.id && (
                     <div className="space-y-2">
+                      {/* W273/W284 — run-time honesty surfaced: a failed pre-run simulation warns, never silently */}
+                      {runResult.quality_warning && (
+                        <p className="text-[9px] text-amber-400 border border-amber-500/30 bg-amber-500/5 rounded-lg px-2.5 py-1.5">{runResult.quality_warning}</p>
+                      )}
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${!runResult.any_external ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
                           {!runResult.any_external ? 'in-house' : 'external used'}
                         </span>
+                        {(runResult.run_params_applied ?? []).length > 0 && (
+                          <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">per-run params: {runResult.run_params_applied!.join(' · ')}</span>
+                        )}
+                        {runResult.plan_binding && (
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${runResult.plan_binding.advanced ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
+                            plan: {runResult.plan_binding.result}
+                          </span>
+                        )}
                         {typeof runResult.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
                           <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${runResult.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
                             QMS gate: {runResult.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{runResult.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
