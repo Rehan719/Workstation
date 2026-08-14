@@ -80,17 +80,60 @@ def local_models() -> List[str]:
     return models
 
 
+# ── Owned-model LIFECYCLE (W276) — the registry is a managed estate, not a static enumeration:
+# the Owner can EVALUATE a discovered local model, PROMOTE one to be the serving default (persisted,
+# not env-only), and RETIRE/REINSTATE models. State is a small persisted document; every transition
+# is UEG-logged at the API layer. Honest: promotion requires the model to be genuinely discovered.
+def _lifecycle_path():
+    from agentic_core.config import data_path
+    return data_path("model_lifecycle.json")
+
+
+def lifecycle_state() -> Dict:
+    from agentic_core.config import load_json_tolerant
+    st = load_json_tolerant(_lifecycle_path(), {}) or {}
+    st.setdefault("default_local", None)     # promoted default (None → the OLLAMA_MODEL env default)
+    st.setdefault("retired", [])
+    st.setdefault("evaluations", [])
+    return st
+
+
+def save_lifecycle(st: Dict) -> None:
+    from agentic_core.config import atomic_write_json
+    st["evaluations"] = (st.get("evaluations") or [])[-50:]
+    atomic_write_json(_lifecycle_path(), st)
+
+
+def effective_default_local() -> str:
+    """The local model the 'ollama' resource serves with: the PROMOTED default when set (and not
+    retired), else the OLLAMA_MODEL env default."""
+    st = lifecycle_state()
+    promoted = st.get("default_local")
+    if promoted and promoted not in set(st.get("retired") or []):
+        return promoted
+    return os.getenv("OLLAMA_MODEL", "llama3.2")
+
+
+def active_local_models() -> List[str]:
+    """Discovered local models MINUS retired ones — what default orchestration may draw on.
+    (Explicit ollama:<name> routing remains the user's explicit choice, retired or not.)"""
+    retired = set(lifecycle_state().get("retired") or [])
+    return [m for m in local_models() if m not in retired]
+
+
 class ModelResourceRegistry:
     """Catalogue + in-house-first selection of model resources."""
 
     def available(self) -> List[Dict]:
         ext = external_allowed()
         discovered = local_models()
+        st = lifecycle_state()
         rows = [
             {"name": "native", "kind": "native", "available": True, "is_external": False,
              "note": "Workstation's own structured engine — always available, owned."},
             {"name": "ollama", "kind": "local", "available": ollama_up(), "is_external": False,
-             "model": os.getenv("OLLAMA_MODEL", "llama3.2"), "local_models": discovered,
+             "model": effective_default_local(), "local_models": discovered,
+             "promoted_default": st.get("default_local"), "retired": st.get("retired") or [],
              "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one "
                      "with model='ollama:<name>'."},
             {"name": "anthropic", "kind": "external", "available": bool(os.getenv("ANTHROPIC_API_KEY")) and ext,

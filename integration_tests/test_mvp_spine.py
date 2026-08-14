@@ -699,6 +699,29 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_owned_model_lifecycle(client):
+    # §6 (W276) — the owned-model registry is a managed ESTATE, not a static enumeration:
+    # EVALUATE runs honest probes (under AI_DISABLE_LOCAL the target cannot serve → can_serve
+    # False and score None — never fabricated), PROMOTE requires genuine discovery (409 otherwise),
+    # RETIRE/REINSTATE persist and drive the active estate, and every transition seals to the UEG.
+    lc = client.get("/api/v1/native-ai/lifecycle").json()
+    assert "effective_default" in lc and isinstance(lc["active_estate"], list)
+    ev = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": "llama3.2"}).json()
+    assert ev["can_serve"] is False and ev["score"] is None      # honest under AI_DISABLE_LOCAL
+    assert len(ev["probes"]) == 3 and all(p["served_by"] for p in ev["probes"])
+    assert client.post("/api/v1/native-ai/lifecycle/promote",
+                       json={"model": "llama3.2"}).status_code == 409   # undiscovered → refused
+    rt = client.post("/api/v1/native-ai/lifecycle/retire", json={"model": "llama3.2"}).json()
+    assert "llama3.2" in rt["retired"]
+    ri = client.post("/api/v1/native-ai/lifecycle/reinstate", json={"model": "llama3.2"}).json()
+    assert "llama3.2" not in ri["retired"]
+    lc2 = client.get("/api/v1/native-ai/lifecycle").json()
+    assert lc2["evaluations"], "the evaluation did not persist"
+    events = client.get("/api/v1/gaas/ueg/events?limit=200").json()["events"]
+    kinds = [e.get("data", {}).get("type", "") for e in events]
+    assert sum(1 for k in kinds if k.startswith("native_ai.model.")) >= 3   # transitions sealed
+
+
 def test_native_learning_loop_closed(client):
     # §6 (W275) — the learning loop is CLOSED, not one-way exile: model scores are RECENCY-WINDOWED
     # (recovery inside the window is possible), the router POSITIVELY selects the measured-best

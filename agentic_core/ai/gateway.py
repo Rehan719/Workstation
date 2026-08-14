@@ -57,6 +57,16 @@ class ModelGateway:
         self._reconfig_last_sync = 0.0
         self._reconfig_cache: dict = {}
 
+    @property
+    def _effective_ollama_model(self) -> str:
+        # W276 — the serving local model honours the PROMOTED lifecycle default (persisted),
+        # not just the env captured at init.
+        try:
+            from agentic_core.ai.native.model_resource import effective_default_local
+            return effective_default_local()
+        except Exception:
+            return self.ollama_model
+
     def _sync_reconfig(self) -> None:
         """Read the reconfiguration engine config at most once every 30 seconds."""
         now = time.monotonic()
@@ -181,7 +191,7 @@ class ModelGateway:
                 timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
                 async with httpx.AsyncClient(timeout=timeout) as client:
                     res = await client.post(self.ollama_url, json={
-                        "model": self.ollama_model,
+                        "model": self._effective_ollama_model,
                         "prompt": prompt,
                         "stream": False,
                     })
@@ -250,7 +260,7 @@ class ModelGateway:
                 full = ""
                 async with httpx.AsyncClient(timeout=timeout) as client:
                     async with client.stream("POST", self.ollama_url, json={
-                        "model": self.ollama_model,
+                        "model": self._effective_ollama_model,
                         "prompt": augmented,
                         "stream": True,
                     }) as r:

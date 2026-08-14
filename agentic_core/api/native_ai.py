@@ -76,10 +76,127 @@ async def native_models():
     if discovered:
         tiers.append({"id": "local", "label": "Local model (default)", "kind": "local"})
         tiers += [{"id": f"ollama:{m}", "label": m, "kind": "local"} for m in discovered]
-    return {"local_models": discovered, "default_local": os.getenv("OLLAMA_MODEL", "llama3.2") if discovered else None,
+    from agentic_core.ai.native.model_resource import effective_default_local, lifecycle_state
+    _st = lifecycle_state()
+    return {"local_models": discovered,
+            "default_local": effective_default_local() if discovered else None,
+            "promoted_default": _st.get("default_local"), "retired": _st.get("retired") or [],
             "tiers": tiers,
             "note": "Owned models. Route a completion to any with model=<id>. External providers are opt-in "
                     "accelerants (AI_ALLOW_EXTERNAL); the native floor is always available."}
+
+
+# ── Owned-model LIFECYCLE (W276) — evaluate · promote · retire · reinstate ──────────────────────
+class LifecycleModelRequest(BaseModel):
+    model: str
+
+
+def _ueg_lifecycle(action: str, model: str, extra: Dict[str, Any] | None = None) -> None:
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": f"native_ai.model.{action}", "model": model, **(extra or {})})
+    except Exception:
+        pass
+
+
+@router.get("/lifecycle")
+async def model_lifecycle():
+    """§6 (W276) — the owned-model estate's lifecycle state: the promoted serving default, retired
+    models, the active estate default orchestration draws on, and recent evaluations."""
+    from agentic_core.ai.native.model_resource import (lifecycle_state, effective_default_local,
+                                                       active_local_models, local_models)
+    st = lifecycle_state()
+    return {"promoted_default": st.get("default_local"),
+            "effective_default": effective_default_local(),
+            "retired": st.get("retired") or [],
+            "discovered": local_models(), "active_estate": active_local_models(),
+            "evaluations": (st.get("evaluations") or [])[-10:]}
+
+
+@router.post("/lifecycle/evaluate")
+async def evaluate_model(req: LifecycleModelRequest):
+    """§6 (W276) — run a bounded, HONEST evaluation of a named local model: three small probes
+    routed explicitly to it. Scored only on what genuinely happened (did the target actually
+    serve · non-empty output · requested structure present · latency); when the model cannot
+    serve, that is the result — never a fabricated score. Attempts feed the W275 health window."""
+    import time as _t
+    probes = [
+        ("structure", "Reply with exactly two sections:\n## Summary\n## Risks\nTopic: a halal "
+                      "meal-kit venture.", "## Risks"),
+        ("instruction", "List exactly three bullet points, each under 10 words, on safe data "
+                        "handling.", "-"),
+        ("reasoning", "A VSB earns 100 WST and its costs are 40 WST. State the surplus and ONE "
+                      "prudent use for it.\n## Answer", "60"),
+    ]
+    results = []
+    served_target = 0
+    for pid, prompt, marker in probes:
+        _p0 = _t.time()
+        r = await orchestrator.complete(prompt, agent=f"eval:{req.model}",
+                                        prefer=f"ollama:{req.model}", timeout=20.0)
+        on_target = r.get("served_by") == f"ollama:{req.model}"
+        served_target += 1 if on_target else 0
+        results.append({"probe": pid, "served_by": r.get("served_by"), "on_target": on_target,
+                        "non_empty": bool((r.get("output") or "").strip()),
+                        "structure_hit": marker.lower() in (r.get("output") or "").lower(),
+                        "ms": int((_t.time() - _p0) * 1000)})
+    can_serve = served_target == len(probes)
+    score = (round(sum(1.0 for x in results if x["structure_hit"]) / len(results), 2)
+             if can_serve else None)   # honest: no score when the target never served
+    from agentic_core.ai.native.model_resource import lifecycle_state, save_lifecycle
+    st = lifecycle_state()
+    evaluation = {"model": req.model, "can_serve": can_serve, "score": score,
+                  "probes": results, "at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ",
+                                                                       __import__("time").gmtime())}
+    st["evaluations"].append(evaluation)
+    save_lifecycle(st)
+    _ueg_lifecycle("evaluated", req.model, {"can_serve": can_serve, "score": score})
+    return evaluation
+
+
+@router.post("/lifecycle/promote")
+async def promote_model(req: LifecycleModelRequest):
+    """§6 (W276) — promote a DISCOVERED local model to the persisted serving default (the 'ollama'
+    resource + gateway serve with it; env OLLAMA_MODEL becomes the fallback). Honest: promoting an
+    undiscovered model is refused, not pretended."""
+    from fastapi import HTTPException
+    from agentic_core.ai.native.model_resource import local_models, lifecycle_state, save_lifecycle
+    if req.model not in local_models():
+        raise HTTPException(status_code=409, detail=f"Model '{req.model}' is not discovered on the "
+                            "local server — pull it first; promotion never pretends.")
+    st = lifecycle_state()
+    st["default_local"] = req.model
+    st["retired"] = [m for m in (st.get("retired") or []) if m != req.model]
+    save_lifecycle(st)
+    _ueg_lifecycle("promoted", req.model)
+    return {"promoted": req.model, "effective_default": req.model}
+
+
+@router.post("/lifecycle/retire")
+async def retire_model(req: LifecycleModelRequest):
+    """§6 (W276) — retire a local model from the ACTIVE estate: default orchestration (ensemble,
+    'ollama' default routing) stops drawing on it; explicit ollama:<name> routing remains the
+    user's explicit choice. Reversible via /lifecycle/reinstate."""
+    from agentic_core.ai.native.model_resource import lifecycle_state, save_lifecycle
+    st = lifecycle_state()
+    if req.model not in (st.get("retired") or []):
+        st["retired"].append(req.model)
+    if st.get("default_local") == req.model:
+        st["default_local"] = None            # a retired model cannot stay the promoted default
+    save_lifecycle(st)
+    _ueg_lifecycle("retired", req.model)
+    return {"retired": st["retired"], "promoted_default": st.get("default_local")}
+
+
+@router.post("/lifecycle/reinstate")
+async def reinstate_model(req: LifecycleModelRequest):
+    """§6 (W276) — return a retired model to the active estate."""
+    from agentic_core.ai.native.model_resource import lifecycle_state, save_lifecycle
+    st = lifecycle_state()
+    st["retired"] = [m for m in (st.get("retired") or []) if m != req.model]
+    save_lifecycle(st)
+    _ueg_lifecycle("reinstated", req.model)
+    return {"retired": st["retired"]}
 
 
 # Catalogue of Workstation's OWN AI capabilities — each backed by a REAL, integrated agentic_core module

@@ -145,8 +145,9 @@ class NativeOrchestrator:
         orchestration as a composable resource. Defaults to the discovered local models (each routed by name)
         plus the native floor; every member reports which owned resource served it."""
         if not models:
-            from agentic_core.ai.native.model_resource import local_models
-            lm = local_models()
+            # W276 — default orchestration draws on the ACTIVE estate (discovered minus retired)
+            from agentic_core.ai.native.model_resource import active_local_models
+            lm = active_local_models()
             models = ([f"ollama:{m}" for m in lm] + ["native"]) if lm else ["native"]
         models = [m for m in models if m][:5]
         _fire("cognitive", f"native.{agent}", f"ensemble across {len(models)} owned models", 0.6)
@@ -182,7 +183,10 @@ class NativeOrchestrator:
                 return ""
             import httpx
             # "ollama" → the default model; "ollama:<name>" → that specific owned local model.
-            model = name.split(":", 1)[1] if ":" in name else os.getenv("OLLAMA_MODEL", "llama3.2")
+            # W276 — the default local model honours the PROMOTED lifecycle default (persisted),
+            # falling back to the OLLAMA_MODEL env; explicit ollama:<name> stays the user's choice.
+            from agentic_core.ai.native.model_resource import effective_default_local
+            model = name.split(":", 1)[1] if ":" in name else effective_default_local()
             url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
             to = httpx.Timeout(connect=3.0, read=25.0, write=3.0, pool=3.0)
             async with httpx.AsyncClient(timeout=to) as client:
