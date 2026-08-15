@@ -27,7 +27,7 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -190,15 +190,37 @@ def board_for_owner(owner_name: str, vision_summary: str = "") -> Dict[str, Any]
 
 
 @router.get("/status")
-async def board_status():
+async def board_status(scope: str = "workstation"):
+    """§14 (W300) — the apex-governance READ side is scope-aware: scope='workstation' returns the
+    platform apex board (unchanged); scope=<vsb_id> returns THAT entity's own board (from its
+    entity record — every generated VSB carries one, §3.3) + the directives issued to its scope.
+    Honest 404 when the VSB doesn't exist or carries no board."""
     snapshot: Dict[str, Any] = {}
     try:
         from agentic_core.organism.immune import immune
         snapshot["organism_health"] = immune.status().get("health")
     except Exception:
         pass
+    if scope != "workstation":
+        from agentic_core.api.vsb import _load_vsb
+        vsb = _load_vsb(scope)
+        board = (vsb or {}).get("board")
+        if not vsb or not board:
+            raise HTTPException(status_code=404, detail=f"No board found for VSB {scope}.")
+        return {
+            "board": f"{vsb.get('name', scope)} — Board of Directors",
+            "scope": scope,
+            "represents_owner": vsb.get("owner_id") or board.get("chief", {}).get("represents") or "the founder",
+            "hierarchy": ["Founder", "Chief (Founder Digital Twin)", "Board of Directors",
+                          "AI CEO", "C-Suite", "CoE", "BTO", "Operational Delivery"],
+            "chief": board.get("chief"),
+            "directors": board.get("directors", []),
+            "live": snapshot,
+            "recent_directives": [r for r in _load() if r.get("business_plan_scope") == scope][-5:],
+        }
     return {
         "board": "Workstation IDBO Board of Directors",
+        "scope": "workstation",
         "represents_owner": _OWNER["name"],
         "hierarchy": ["Owner", "Chief (Owner Digital Twin)", "Board of Directors",
                       "AI CEO", "C-Suite", "CoE", "BTO", "Operational Delivery"],
@@ -355,16 +377,19 @@ async def chief_instruct(req: ChiefInstruction):
 class BoardDirective(BaseModel):
     topic: str
     domain: str = "enterprise"
+    # §14 (W300) — deliberate for a specific entity's plan (a vsb_id) instead of the apex
+    scope: str = "workstation"
 
 
-def _director_grounding(did: str) -> str:
+def _director_grounding(did: str, scope: str = "workstation") -> str:
     """§5 (W279) — LIVE readings of the systems each director OWNS, so a director's input is
     grounded in the real state of their mandate, not invented. Best-effort per system; a system
     that cannot be read is reported 'unavailable' — never fabricated."""
     try:
         if did == "dir_strategy":
+            # W300 — grounds in the SCOPED plan (a VSB's own objectives when deliberating for it)
             from agentic_core.api.business_plan import _load as _bp
-            objs = (_bp("workstation") or {}).get("objectives", [])
+            objs = (_bp(scope) or {}).get("objectives", [])
             by = {}
             for o in objs:
                 by[o.get("status", "?")] = by.get(o.get("status", "?"), 0) + 1
@@ -435,7 +460,7 @@ async def board_directive(req: BoardDirective):
     directors = _relevant_directors(req.topic, req.domain)
     director_inputs: Dict[str, Dict[str, str]] = {}
     for d in directors:
-        grounding = _director_grounding(d["id"])
+        grounding = _director_grounding(d["id"], req.scope)
         text = await _q(
             f"You are the {d['title']} on the Workstation IDBO Board.\n"
             f"Your mandate: {d['mandate']}\n"

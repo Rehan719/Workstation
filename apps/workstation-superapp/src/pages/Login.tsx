@@ -17,8 +17,26 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [nu, setNu] = useState({ username: '', password: '', role: 'user' });
   const [nuMsg, setNuMsg] = useState('');
+  // W297 — signup renders ONLY when the backend truthfully reports the Owner enabled it
+  const [cfg, setCfg] = useState<{ self_serve_signup_enabled?: boolean; registration?: string } | null>(null);
+  const [su, setSu] = useState({ username: '', password: '' });
+  const [suMsg, setSuMsg] = useState('');
 
-  useEffect(() => { whoami().then(setWho); }, []);
+  useEffect(() => {
+    whoami().then(setWho);
+    fetch('/api/v1/auth/config').then(r => r.json()).then(setCfg).catch(() => setCfg(null));
+  }, []);
+
+  const signup = async () => {
+    if (!su.username.trim() || !su.password) return;
+    setSuMsg('');
+    const r = await fetch('/api/v1/auth/signup', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(su),
+    });
+    const d = await r.json().catch(() => ({}));
+    setSuMsg(r.ok ? `Account '${su.username}' created — sign in above.` : `Failed: ${d?.detail ?? r.status}`);
+    if (r.ok) { setUsername(su.username); setSu({ username: '', password: '' }); }
+  };
 
   const login = async () => {
     if (!username.trim() || !password) return;
@@ -84,7 +102,26 @@ export const Login: React.FC = () => {
             {error && <p className="text-vital text-xs font-bold">{error}</p>}
           </div>
           <p className="text-[10px] text-slate-500 flex items-center gap-1.5"><KeyRound size={12} />
-            Accounts are Owner-curated — ask the Owner for access. There is no self-serve signup (by design).</p>
+            {cfg?.self_serve_signup_enabled
+              ? 'Self-serve signup is enabled by the Owner — create an account below.'
+              : 'Accounts are Owner-curated — ask the Owner for access. There is no self-serve signup unless the Owner enables it.'}</p>
+        </Card>
+      )}
+
+      {/* W297 — self-serve signup: rendered ONLY when the Owner's flag is genuinely on */}
+      {who?.mode !== 'authenticated' && cfg?.self_serve_signup_enabled && (
+        <Card className="p-6 space-y-3 border-emerald-500/30">
+          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2"><UserPlus size={13} /> Create an account (Owner-enabled self-serve)</p>
+          <div className="grid grid-cols-1 @[480px]:grid-cols-2 gap-2">
+            <input value={su.username} onChange={e => setSu({ ...su, username: e.target.value })} placeholder="Username (≥3 chars)"
+              className="bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-sm text-white" />
+            <input value={su.password} onChange={e => setSu({ ...su, password: e.target.value })} placeholder="Password (≥8 chars)" type="password"
+              className="bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-sm text-white" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Button onClick={signup} className="bg-emerald-500/20 text-emerald-300 text-xs">Create account</Button>
+            {suMsg && <p className="text-[11px] text-slate-400">{suMsg}</p>}
+          </div>
         </Card>
       )}
 

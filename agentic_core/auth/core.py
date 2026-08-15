@@ -315,6 +315,64 @@ async def register(req: RegisterRequest, _admin: dict = Depends(require_admin)):
     return {"status": "created", "username": req.username, "role": users[req.username]["role"]}
 
 
+def self_serve_signup_enabled() -> bool:
+    """§14 (W297) — self-serve signup is an OWNER POLICY, not a default: the mechanism exists,
+    the switch stays with the Owner (SELF_SERVE_SIGNUP_ENABLED=true). Off by default."""
+    return os.getenv("SELF_SERVE_SIGNUP_ENABLED", "false").lower() == "true"
+
+
+@router.get("/config")
+async def auth_config():
+    """The auth surface's honest public configuration — what the front door may truthfully offer.
+    (No secrets: just which modes are on, so the UI never renders signup theatre.)"""
+    return {"auth_enabled": auth_enabled(),
+            "self_serve_signup_enabled": self_serve_signup_enabled(),
+            "registration": ("self-serve (Owner-enabled)" if self_serve_signup_enabled()
+                             else "Owner-curated (admin creates accounts)")}
+
+
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+
+
+@router.post("/signup")
+async def self_serve_signup(req: SignupRequest):
+    """§14 (W297) — PUBLIC self-serve signup, active ONLY when the Owner enables
+    SELF_SERVE_SIGNUP_ENABLED (403 otherwise — never silently open). Always creates role 'user'
+    (self-serve can never mint admins); auth must also be enabled for signup to be meaningful."""
+    if not auth_enabled():
+        raise HTTPException(status_code=409,
+                            detail="Auth is disabled (single-user mode) — signup is meaningless until "
+                                   "the Owner enables AUTH_ENABLED.")
+    if not self_serve_signup_enabled():
+        raise HTTPException(status_code=403,
+                            detail="Self-serve signup is not enabled — accounts are Owner-curated. "
+                                   "Ask the Owner for access.")
+    _require_auth_deps()
+    if len(req.username.strip()) < 3 or len(req.password) < 8:
+        raise HTTPException(status_code=422,
+                            detail="Username must be ≥3 chars and password ≥8 chars.")
+    users = _load_users()
+    if req.username in users:
+        raise HTTPException(status_code=409, detail=f"Username '{req.username}' already exists.")
+    users[req.username] = {
+        "user_id": str(uuid.uuid4()),
+        "username": req.username.strip(),
+        "hashed_password": _pwd_ctx.hash(req.password),
+        "role": "user",                     # NEVER admin via self-serve
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "api_keys": [],
+    }
+    _save_users(users)
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "auth.self_serve_signup", "username": req.username.strip()})
+    except Exception:
+        pass
+    return {"status": "created", "username": req.username.strip(), "role": "user"}
+
+
 @router.get("/me")
 async def me(current_user: dict | None = Depends(get_current_user)):
     if not auth_enabled():

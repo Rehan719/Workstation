@@ -90,6 +90,46 @@ export const VSBCockpit: React.FC = () => {
     loadDeliverables(selected);
   }, [selected]);
 
+  // W299 — the §13 GROWTH machinery reaches the user for THEIR entity (repo ship · repo cascade ·
+  // evolve had zero UI callers); W300 — instruct THEIR Chief (apex delegation scoped to this VSB).
+  const [growthBusy, setGrowthBusy] = useState('');
+  const [growthResult, setGrowthResult] = useState<Dict | null>(null);
+  const [chiefText, setChiefText] = useState('');
+  const [chiefBusy, setChiefBusy] = useState(false);
+  const [chiefResult, setChiefResult] = useState<Dict | null>(null);
+
+  const runGrowth = async (kind: 'ship' | 'cascade' | 'evolve') => {
+    if (!selected) return;
+    setGrowthBusy(kind); setGrowthResult(null);
+    try {
+      const url = kind === 'ship' ? `/api/v1/vsb/${selected}/repo/ship`
+        : kind === 'cascade' ? `/api/v1/vsb/${selected}/repo/cascade`
+        : `/api/v1/vsb/${selected}/evolve`;
+      const body = kind === 'evolve' ? { trigger: 'cockpit' } : {};
+      const r = await axios.post(url, body);
+      setGrowthResult({ kind, ...r.data });
+    } catch (e: any) {
+      setGrowthResult({ kind, error: e?.response?.data?.detail ?? e?.message ?? 'failed' });
+    }
+    setGrowthBusy('');
+  };
+
+  const instructChief = async () => {
+    if (!selected || !chiefText.trim()) return;
+    setChiefBusy(true); setChiefResult(null);
+    try {
+      const r = await axios.post('/api/v1/board/chief/instruct', {
+        instruction: chiefText, owner: detail?.owner_id || 'the founder',
+        scope: selected, cascade_to_ceo: true,
+      });
+      setChiefResult(r.data);
+      setChiefText('');
+    } catch (e: any) {
+      setChiefResult({ error: e?.response?.data?.detail ?? e?.message ?? 'failed' });
+    }
+    setChiefBusy(false);
+  };
+
   const runTransformation = async () => {
     if (!selected) return;
     setTxRunning(true); setTx(null);
@@ -301,6 +341,27 @@ export const VSBCockpit: React.FC = () => {
           {/* Chief & Board */}
           {tab === 'chief' && (
             <div className="space-y-4">
+              {/* W300 — instruct THIS entity's Chief: apex delegation scoped to the VSB's own plan */}
+              <Card className="p-6 space-y-3 border-highlight/30 bg-highlight/5">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight flex items-center gap-2"><Crown size={14} /> Instruct this entity's Chief</h4>
+                <textarea value={chiefText} onChange={e => setChiefText(e.target.value)} rows={2}
+                  placeholder="Give the Chief an instruction — it lands as objectives on THIS entity's living plan and cascades to its AI CEO."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none" />
+                <Button type="button" onClick={instructChief} disabled={chiefBusy || !chiefText.trim()}
+                  className="bg-highlight text-sovereign text-xs flex items-center gap-2">
+                  {chiefBusy ? <Loader2 size={13} className="animate-spin" /> : <Crown size={13} />} Issue instruction
+                </Button>
+                {chiefResult && (
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
+                    {chiefResult.error ? <p className="text-vital">{String(chiefResult.error)}</p> : (
+                      <>
+                        <p className="text-emerald-400 font-bold">{chiefResult.objectives_added ?? 0} objective(s) landed on this entity's plan · gaas: {chiefResult.governance?.status ?? '—'}</p>
+                        <p className="whitespace-pre-wrap line-clamp-6">{chiefResult.chief_directive}</p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </Card>
               <Card className="p-6 space-y-2 border-aura/30">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-aura flex items-center gap-2"><Crown size={14} /> Chief of the Board (Owner's digital twin)</h4>
                 <p className="text-white font-black">{chief.title || chief.name || `Chief — Digital Twin of ${board.owner || detail.owner_id}`}</p>
@@ -538,6 +599,37 @@ export const VSBCockpit: React.FC = () => {
           {/* Transformation */}
           {tab === 'transform' && (
             <div className="space-y-4">
+              {/* W299 — §13 growth machinery, now reachable for THIS entity (previously API-only) */}
+              <Card className="p-6 border-emerald-500/30">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-2">Grow the living enterprise (§13)</h4>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" onClick={() => runGrowth('ship')} disabled={!!growthBusy}
+                    className="bg-emerald-500/15 text-emerald-300 text-[11px] flex items-center gap-1.5">
+                    {growthBusy === 'ship' ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Ship the repo (all surfaces, one whole)
+                  </Button>
+                  <Button type="button" onClick={() => runGrowth('cascade')} disabled={!!growthBusy}
+                    className="bg-emerald-500/15 text-emerald-300 text-[11px] flex items-center gap-1.5">
+                    {growthBusy === 'cascade' ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Run the repo's cascade
+                  </Button>
+                  <Button type="button" onClick={() => runGrowth('evolve')} disabled={!!growthBusy}
+                    className="bg-emerald-500/15 text-emerald-300 text-[11px] flex items-center gap-1.5">
+                    {growthBusy === 'evolve' ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Evolve (re-ships the repo)
+                  </Button>
+                </div>
+                {growthResult && (
+                  <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1">
+                    {growthResult.error ? (
+                      <p className="text-vital">{String(growthResult.error)}</p>
+                    ) : growthResult.kind === 'ship' ? (
+                      <p>Shipped {Object.keys(growthResult.surfaces || {}).length} surfaces · coherent whole: {String(growthResult.coherent_whole)} · commit {growthResult.version_control?.commit}</p>
+                    ) : growthResult.kind === 'cascade' ? (
+                      <p>Cascade run {growthResult.repo_run?.run_id} · plan: {growthResult.repo_run?.plan_binding?.result ?? '—'} · committed {growthResult.version_control?.commit}</p>
+                    ) : (
+                      <p>Generation {growthResult.generation} · {(growthResult.proposals || []).length} proposals · repo: {growthResult.repo_refresh?.action ?? 'no repo yet'}</p>
+                    )}
+                  </div>
+                )}
+              </Card>
               <Card className="p-6">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>

@@ -699,6 +699,62 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_pervsb_apex_governance_scoped(client):
+    # §14 (W300) — apex governance reaches the USER'S OWN entity: /board/status?scope=<vsb_id>
+    # returns THAT entity's board (honest 404 for unknown scopes; the workstation apex unchanged),
+    # a scoped chief instruction lands objectives on the ENTITY's plan and appears in ITS
+    # directive history, and a scoped deliberation grounds the strategy director in the SCOPED
+    # plan (previously hardcoded to the workstation plan).
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w300 halal venture", "domain": "care", "name": "W300ApexCo",
+        "concept": "c", "design": "d", "commercialisation": "m"}).json()
+    vid = est["vsb_id"]
+    s = client.get(f"/api/v1/board/status?scope={vid}").json()
+    assert "W300ApexCo" in s["board"] and s["scope"] == vid and s["chief"]
+    assert client.get("/api/v1/board/status").json()["board"].startswith("Workstation")
+    assert client.get("/api/v1/board/status?scope=vsb-nonexistent").status_code == 404
+    r = client.post("/api/v1/board/chief/instruct", json={
+        "instruction": "w300: launch the halal pilot", "scope": vid}).json()
+    assert r["objectives_added"] >= 1 and r["business_plan_scope"] == vid
+    s2 = client.get(f"/api/v1/board/status?scope={vid}").json()
+    assert any(d.get("business_plan_scope") == vid for d in s2["recent_directives"])
+    d = client.post("/api/v1/board/directive", json={
+        "topic": "strengthen the strategy and mission objectives of the plan",
+        "domain": "care", "scope": vid}).json()
+    strat = d.get("director_inputs", {}).get("dir_strategy", {})
+    assert "objectives by status" in strat.get("live_grounding", "")   # scoped, not apex-hardcoded
+
+
+def test_self_serve_signup_owner_gated(client, monkeypatch):
+    # §14 (W297) — self-serve signup is a MECHANISM whose switch stays with the Owner: 409 while
+    # auth is off (signup is meaningless), 403 while the flag is off (accounts stay Owner-curated),
+    # and when the Owner enables it: validated, duplicate-safe, and NEVER able to mint an admin.
+    # /auth/config reports the truth so the UI never renders signup theatre.
+    from agentic_core.auth import core as auth_core
+    if not auth_core._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    cfg = client.get("/api/v1/auth/config").json()
+    assert cfg["auth_enabled"] is False and cfg["self_serve_signup_enabled"] is False
+    assert client.post("/api/v1/auth/signup",
+                       json={"username": "w297a", "password": "longpass297"}).status_code == 409
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    assert client.post("/api/v1/auth/signup",
+                       json={"username": "w297a", "password": "longpass297"}).status_code == 403
+    monkeypatch.setenv("SELF_SERVE_SIGNUP_ENABLED", "true")
+    assert client.get("/api/v1/auth/config").json()["self_serve_signup_enabled"] is True
+    assert client.post("/api/v1/auth/signup",
+                       json={"username": "w297a", "password": "short"}).status_code == 422
+    import uuid as _uuid
+    uname = f"w297-{_uuid.uuid4().hex[:6]}"
+    r = client.post("/api/v1/auth/signup", json={"username": uname, "password": "longpass297"}).json()
+    assert r["role"] == "user"                                # NEVER admin via self-serve
+    assert client.post("/api/v1/auth/signup",
+                       json={"username": uname, "password": "longpass297"}).status_code == 409
+    tok = client.post("/api/v1/auth/token", data={"username": uname, "password": "longpass297"})
+    assert tok.status_code == 200                             # the new user genuinely signs in
+
+
 def test_pervsb_management_surfaces_tenant_isolated(client, monkeypatch):
     # §14×§17.5 (W295) — tenant isolation now covers the per-VSB MANAGEMENT surfaces (repo ·
     # website · board-pack · review-gates · genome · ship · evolve · shipped-repo read), which

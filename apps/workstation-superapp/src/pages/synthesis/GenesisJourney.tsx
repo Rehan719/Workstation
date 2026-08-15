@@ -626,7 +626,7 @@ export const GenesisJourney: React.FC = () => {
                       className="text-[10px] font-black uppercase tracking-widest text-highlight border border-highlight/40 px-3 py-1.5 rounded-lg hover:bg-highlight/10 transition-colors">
                       Open the VSB’s Business Plan →
                     </button>
-                    <button type="button" onClick={() => navigate('/vsb-cockpit')}
+                    <button type="button" onClick={() => navigate(`/vsb-cockpit?vsb=${encodeURIComponent(vsb.vsb_id)}`)}
                       className="text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
                       VSB Cockpit →
                     </button>

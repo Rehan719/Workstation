@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
   Coins, Recycle, Activity, Sprout, Building2, PiggyBank,
@@ -38,6 +39,10 @@ const STAGE_LABEL: Record<string, string> = {
 
 export const VSBEconomy: React.FC = () => {
   const [types, setTypes] = useState<EntityType[]>([]);
+  // W298 - the economy surface is SCOPE-AWARE: manage the workstation apex OR any of YOUR
+  // established VSBs (the backend was already fully per-VSB; only this UI pinned the apex).
+  const [sp] = useSearchParams();
+  const [vsbId, setVsbId] = useState(sp.get('vsb') ?? 'workstation-idbo');
   const [entity, setEntity] = useState('waqf_ltd_hybrid');
   const [revenue, setRevenue] = useState(10000);
   const [costs, setCosts] = useState(1000);
@@ -59,14 +64,14 @@ export const VSBEconomy: React.FC = () => {
   const [payErr, setPayErr] = useState('');
 
   const loadOwnerPay = () =>
-    fetch('/api/v1/economy/owner-payments?vsb_id=workstation-idbo')
+    fetch(`/api/v1/economy/owner-payments?vsb_id=${encodeURIComponent(vsbId)}`)
       .then(r => r.json()).then(setPay).catch(() => {});
   // §7 — the live financial Board Pack (capstone statement)
   const [bp, setBp] = useState<any>(null);
   const [bpLoading, setBpLoading] = useState(false);
   const loadBoardPack = () => {
     setBpLoading(true);
-    fetch(`/api/v1/economy/board-pack?vsb_id=workstation-idbo&entity_type=${entity}`)
+    fetch(`/api/v1/economy/board-pack?vsb_id=${encodeURIComponent(vsbId)}&entity_type=${entity}`)
       .then(r => r.json()).then(setBp).catch(() => {}).finally(() => setBpLoading(false));
   };
   // §4 — the established living VSB enterprises the organism autonomously tends
@@ -81,15 +86,18 @@ export const VSBEconomy: React.FC = () => {
     loadLiving();
   }, []);
 
+  // W298 - the scoped ledgers follow the selected entity
+  useEffect(() => { loadOwnerPay(); loadBoardPack(); }, [vsbId]);
+
   // Load the effective waterfall whenever the entity form changes (per VSB = workstation-idbo).
   useEffect(() => {
     setWfMsg(''); setWfErr([]);
-    fetch(`/api/v1/economy/waterfall?vsb_id=workstation-idbo&entity_type=${entity}`)
+    fetch(`/api/v1/economy/waterfall?vsb_id=${encodeURIComponent(vsbId)}&entity_type=${entity}`)
       .then(r => r.json()).then((d: WaterfallState) => {
         setWf(d);
         setWfDraft(Object.fromEntries((d.stages || []).map(s => [s, Math.round((d.waterfall[s] ?? 0) * 100)])));
       }).catch(() => {});
-  }, [entity]);
+  }, [entity, vsbId]);
 
   const wfDraftSum = Object.values(wfDraft).reduce((a, b) => a + (Number(b) || 0), 0);
 
@@ -99,7 +107,7 @@ export const VSBEconomy: React.FC = () => {
       const proportions = Object.fromEntries(Object.entries(wfDraft).map(([k, v]) => [k, (Number(v) || 0) / 100]));
       const r = await fetch('/api/v1/economy/waterfall', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vsb_id: 'workstation-idbo', entity_type: entity, proportions }),
+        body: JSON.stringify({ vsb_id: vsbId, entity_type: entity, proportions }),
       });
       const d = await r.json();
       if (!r.ok) { setWfErr((d?.detail?.violations) || [`HTTP ${r.status}`]); setWfSaving(false); return; }
@@ -117,7 +125,7 @@ export const VSBEconomy: React.FC = () => {
     try {
       const r = await fetch('/api/v1/economy/cycle', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vsb_id: 'workstation-idbo', entity_type: entity, revenue, costs }),
+        body: JSON.stringify({ vsb_id: vsbId, entity_type: entity, revenue, costs }),
       });
       if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
       const d = await r.json();
@@ -133,7 +141,7 @@ export const VSBEconomy: React.FC = () => {
     try {
       const r = await fetch('/api/v1/economy/owner-payments/payout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vsb_id: 'workstation-idbo', amount: payoutAmt }),
+        body: JSON.stringify({ vsb_id: vsbId, amount: payoutAmt }),
       });
       const d = await r.json();
       if (!r.ok) { setPayErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setPayingOut(false); return; }
@@ -154,6 +162,21 @@ export const VSBEconomy: React.FC = () => {
           you, reinvests, funds users, and donates intelligently. <span className="text-amber-400">All flows are virtual/simulated WST — no real money moves.</span>
         </p>
       </header>
+
+      {/* W298 — WHICH entity's economy: the workstation apex or any established living VSB */}
+      <Card className="p-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Entity</span>
+          <select value={vsbId} onChange={e => setVsbId(e.target.value)}
+            className="text-xs bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-highlight/50">
+            <option value="workstation-idbo">Workstation IDBO (apex)</option>
+            {((living?.living_vsbs) ?? []).map((v: any) => (
+              <option key={v.vsb_id} value={v.vsb_id}>{v.name || v.vsb_id}</option>
+            ))}
+          </select>
+          <span className="text-[9px] text-slate-500">cycles · waterfall · owner payments · board pack all follow this selection (virtual WST)</span>
+        </div>
+      </Card>
 
       {/* Entity-type selection */}
       <Card className="p-6">

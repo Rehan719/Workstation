@@ -2,30 +2,61 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Backend (FastAPI — uvicorn :8000)",
+      "name": "Backend (FastAPI \u2014 uvicorn :8000)",
       "runtimeExecutable": "venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "agentic_core.app_mvp:app", "--port", "8000"],
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "agentic_core.app_mvp:app",
+        "--port",
+        "8000"
+      ],
       "port": 8000,
       "autoPort": false
     },
     {
-      "name": "Backend Alt (FastAPI — uvicorn :8010, current code)",
+      "name": "Backend Alt (FastAPI \u2014 uvicorn :8010, current code)",
       "runtimeExecutable": "venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "agentic_core.app_mvp:app", "--port", "8010"],
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "agentic_core.app_mvp:app",
+        "--port",
+        "8010"
+      ],
       "port": 8010,
       "autoPort": false
     },
     {
-      "name": "Frontend (Vite — workstation-superapp :5173)",
+      "name": "Frontend (Vite \u2014 workstation-superapp :5173)",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "apps/workstation-superapp", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "apps/workstation-superapp",
+        "run",
+        "dev"
+      ],
       "port": 5173
     },
     {
-      "name": "Mobile (Expo — apps/mobile :8081)",
+      "name": "Mobile (Expo \u2014 apps/mobile :8081)",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "apps/mobile", "run", "start"],
+      "runtimeArgs": [
+        "--prefix",
+        "apps/mobile",
+        "run",
+        "start"
+      ],
       "port": 8081
+    },
+    {
+      "name": "Backend Auth (:8020, AUTH_ENABLED)",
+      "runtimeExecutable": "venv\\Scripts\\python.exe",
+      "runtimeArgs": [
+        "scripts/run_auth_backend.py"
+      ],
+      "port": 8020,
+      "autoPort": false
     }
   ]
 }
