@@ -87,6 +87,8 @@ export const MyWork: React.FC = () => {
                       {copiedId === rec.id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
                     </button>
                     <button type="button" onClick={() => download(rec)} aria-label="Download" className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1"><Download size={11} /></button>
+                    {/* W303 - any saved work can become a venture: the bridge carries the OUTPUT */}
+                    <button type="button" aria-label="Commercialise via Genesis" onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title: rec.title, domain: rec.domain, input: rec.input || rec.title, output: rec.output })); } catch { /* best-effort */ } navigate(`/genesis?seed=${sid}${rec.domain ? `&domain=${encodeURIComponent(rec.domain)}` : ""}`); }} className="text-[8px] font-black uppercase px-2 py-1 rounded bg-highlight/15 text-highlight hover:bg-highlight/25 flex items-center gap-1"><Sparkles size={11} /> Venture</button>
                     <button type="button" onClick={() => { removeOutput(rec.id); refresh(); }} aria-label="Remove" className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-400 hover:text-vital flex items-center gap-1"><Trash2 size={11} /></button>
                   </div>
                 </div>

@@ -63,6 +63,8 @@ class JourneyRequest(BaseModel):
     establish: bool = False     # §4→§5 — culminate the journey by ESTABLISHING the living VSB IDBO enterprise
     name: str = ""              # optional name for the established VSB
     entity_type: str = "waqf_ltd_hybrid"   # legal/economic form when establishing
+    # §4 (W302) — the one continuous workflow ships the newborn's WHOLE living body at birth
+    ship_output: bool = True
 
 
 async def _q(prompt: str, agent: str) -> str:
@@ -90,7 +92,7 @@ async def genesis_status():
 
 
 @router.post("/journey")
-async def genesis_journey(req: JourneyRequest):
+async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_current_user)):
     """Run the full intelligently-autonomous Concept → Commercialisation cascade."""
 
     # In-house-first AI with provenance: the synthesis stages record which OWNED resource
@@ -233,7 +235,8 @@ async def genesis_journey(req: JourneyRequest):
             established_vsb = await genesis_establish(EstablishRequest(
                 problem=req.problem, domain=req.domain, realm=req.realm, name=req.name,
                 concept=concept, design=design, commercialisation=commercial,
-                entity_type=req.entity_type))
+                entity_type=req.entity_type, ship_output=req.ship_output),
+                user=user if isinstance(user, dict) else None)   # W302 - identity flows through
         except Exception as e:
             established_vsb = {"error": f"establishment deferred: {e}"}
 
@@ -273,6 +276,7 @@ class EstablishRequest(BaseModel):
     commercialisation: str = ""
     owner_id: str = "default"
     entity_type: str = "waqf_ltd_hybrid"   # legal/economic form: sole|ltd|plc|trust|waqf|multinational|nonprofit|charity|waqf_ltd_hybrid
+    ship_output: bool = True   # §4 (W302) — auto-ship the §13 living body at birth
 
 
 def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
@@ -465,12 +469,28 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     except Exception:
         pass
 
+    # §4 (W302) — the ONE continuous workflow ships the newborn's WHOLE §13 living body at birth
+    # (repo + website + webapp + mobile + board pack in one act via the existing ship machinery) —
+    # previously the entity was born body-less until five manual clicks. Best-effort: a ship
+    # failure NEVER blocks establishment; the outcome is recorded honestly either way.
+    initial_ship = None
+    if req.ship_output:
+        try:
+            from agentic_core.api.vsb import ship_vsb_repo
+            _s = await ship_vsb_repo(vsb_id, user=user if isinstance(user, dict) else None)
+            initial_ship = {"shipped": True, "coherent_whole": _s.get("coherent_whole"),
+                            "surfaces": sorted((_s.get("surfaces") or {}).keys()),
+                            "commit": (_s.get("version_control") or {}).get("commit")}
+        except Exception as exc:
+            initial_ship = {"shipped": False, "error": str(exc)[:160]}
+
     return {
         "vsb_id": vsb_id,
         "name": name,
         "status": "operational",
         "dashboard": f"/api/v1/vsb/{vsb_id}",
         "governance": entity["governance"],
+        "initial_ship": initial_ship,   # §4 (W302) — the body shipped at birth (or honestly not)
         "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
     }
 
@@ -567,9 +587,27 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             biobus.fire_signal("motor", "genesis.establish", f"VSB established: {vsb_id} — {name}", 0.9)
         except Exception:
             pass
+        # 7 — §4 (W302): the newborn's WHOLE §13 living body ships at birth (watchable, honest)
+        initial_ship = None
+        if req.ship_output:
+            try:
+                from agentic_core.api.vsb import ship_vsb_repo
+                _s = await ship_vsb_repo(vsb_id, user=user if isinstance(user, dict) else None)
+                for _sname, _sinfo in sorted((_s.get("surfaces") or {}).items()):
+                    yield _event("ship", f"Shipped: {_sname}",
+                                 ("surface generated" if "error" not in _sinfo
+                                  else f"surface failed: {_sinfo['error'][:80]}"),
+                                 {"surface": _sname, **{k: v for k, v in _sinfo.items() if k != 'error'}})
+                initial_ship = {"shipped": True, "coherent_whole": _s.get("coherent_whole"),
+                                "commit": (_s.get("version_control") or {}).get("commit")}
+            except Exception as exc:
+                initial_ship = {"shipped": False, "error": str(exc)[:160]}
+                yield _event("ship", "Ship Deferred", f"body not shipped: {str(exc)[:80]}")
+
         yield _event("complete", "Operational", f"{name} is alive.", {
             "vsb_id": vsb_id, "name": name, "status": "operational",
             "dashboard": f"/api/v1/vsb/{vsb_id}",
+            "initial_ship": initial_ship,
             "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
         })
 

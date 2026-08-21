@@ -699,6 +699,78 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_newborn_ships_its_living_body_and_journey_carries_identity(client, monkeypatch):
+    # §4 (W302) — the ONE continuous workflow is real: establishment ships the newborn's WHOLE §13
+    # body at birth (repo+website+webapp+mobile+board-pack, no manual clicks; opt-out honest), and
+    # the journey THREADS USER IDENTITY so establish no longer crashes into 'establishment
+    # deferred' under auth — the entity belongs to the authenticated user.
+    from agentic_core.config import data_path
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w302 halal tutoring venture", "domain": "education", "name": "W302ShipCo",
+        "concept": "c", "design": "d", "commercialisation": "m"}).json()
+    iship = est.get("initial_ship") or {}
+    assert iship.get("shipped") is True and len(iship.get("surfaces", [])) == 5
+    assert (data_path("vsb_repos") / f"{est['vsb_id']}.ship.json").exists()
+    est2 = client.post("/api/v1/genesis/establish", json={
+        "problem": "w302 no-ship", "domain": "care", "name": "W302NoShip",
+        "concept": "c", "design": "d", "commercialisation": "m", "ship_output": False}).json()
+    assert est2.get("initial_ship") is None                   # opt-out ships nothing, honestly
+    assert not (data_path("vsb_repos") / f"{est2['vsb_id']}.ship.json").exists()
+    # the journey path under AUTH: no 'establishment deferred', the user owns the newborn
+    from agentic_core.auth import core as auth_core
+    if not auth_core._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    users = auth_core._load_users()
+    users["w302-iso"] = {"user_id": "w302-iso", "username": "w302-iso",
+                         "hashed_password": auth_core._pwd_ctx.hash("pw-302"), "role": "user",
+                         "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    tok = client.post("/api/v1/auth/token", data={"username": "w302-iso", "password": "pw-302"})
+    H = {"Authorization": f"Bearer {tok.json()['access_token']}"}
+    j = client.post("/api/v1/genesis/journey",
+                    json={"problem": "w302 auth journey", "domain": "care", "establish": True},
+                    headers=H).json()
+    ev = j.get("established_vsb") or {}
+    assert "error" not in ev and ev.get("vsb_id")             # the deferred crash is gone
+    d = client.get(f"/api/v1/vsb/{ev['vsb_id']}", headers=H).json()
+    assert d.get("owner_id") == "w302-iso"                    # the USER owns the newborn
+    assert (ev.get("initial_ship") or {}).get("shipped") is True
+
+
+def test_genesis_blueprint_reaches_the_entity_surfaces(client):
+    # §4×§13 (W301) — the blueprint key-shape mismatch is FIXED: writers store flat
+    # concept/design/commercialisation while every §13 reader expected phase_* keys, so each
+    # established entity silently shipped a GENERIC body (the challenge fallback masked it).
+    # The canonical _blueprint accessor accepts both shapes — the journey's REAL content now
+    # reaches the repo docs and the website.
+    import pathlib
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w301 halal community nutrition", "domain": "care", "name": "W301BlueCo",
+        "concept": "CONCEPT-MARKER-ALPHA halal meal planning for elders",
+        "design": "DESIGN-MARKER-BRAVO modular cold-chain service design",
+        "commercialisation": "COMMERCIAL-MARKER-CHARLIE subscription with zakat-aligned pricing"}).json()
+    vid = est["vsb_id"]
+    m = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    root = pathlib.Path(m["repo_root"])
+    allmd = " ".join(p.read_text(encoding="utf-8", errors="replace") for p in root.rglob("*.md"))
+    assert "CONCEPT-MARKER-ALPHA" in allmd
+    assert "DESIGN-MARKER-BRAVO" in allmd
+    assert "COMMERCIAL-MARKER-CHARLIE" in allmd
+    client.post(f"/api/v1/vsb/{vid}/website")
+    web = " ".join(p.read_text(encoding="utf-8", errors="replace")
+                   for p in (root / "web").rglob("*.html"))
+    assert "CONCEPT-MARKER-ALPHA" in web or "halal meal planning for elders" in web
+    # legacy phase_* shaped blueprints still read correctly (the fallback path)
+    from agentic_core.api.vsb import _blueprint
+    legacy = {"genesis_blueprint": {"phase_1_conceptualisation": {"concept": "LEGACY-C"},
+                                    "phase_2_design_development": "LEGACY-D",
+                                    "phase_3_commercialisation": "LEGACY-M"}}
+    got = _blueprint(legacy)
+    assert (got["concept"], got["design"], got["commercialisation"]) == ("LEGACY-C", "LEGACY-D", "LEGACY-M")
+
+
 def test_pervsb_apex_governance_scoped(client):
     # §14 (W300) — apex governance reaches the USER'S OWN entity: /board/status?scope=<vsb_id>
     # returns THAT entity's board (honest 404 for unknown scopes; the workstation apex unchanged),
@@ -886,7 +958,7 @@ def test_vsb_repo_cascades_rerunnable(client):
     import pathlib
     est = client.post("/api/v1/genesis/establish", json={
         "problem": "w291 halal venture", "domain": "care", "name": "W291CascCo",
-        "concept": "c", "design": "d", "commercialisation": "m"}).json()
+        "concept": "c", "design": "d", "commercialisation": "m", "ship_output": False}).json()
     vid = est["vsb_id"]
     assert client.post(f"/api/v1/vsb/{vid}/repo/cascade", json={}).status_code == 404
     m = client.post(f"/api/v1/vsb/{vid}/repo").json()
@@ -938,7 +1010,7 @@ def test_vsb_repo_genuinely_version_controlled(client):
     import pathlib
     est = client.post("/api/v1/genesis/establish", json={
         "problem": "w289 halal community nutrition venture", "domain": "care",
-        "name": "W289RepoCo", "concept": "c", "design": "d", "commercialisation": "m"}).json()
+        "name": "W289RepoCo", "concept": "c", "design": "d", "commercialisation": "m", "ship_output": False}).json()
     vid = est["vsb_id"]
     m1 = client.post(f"/api/v1/vsb/{vid}/repo").json()
     assert m1["version_control"]["mechanism"] in ("git", "hash-chain")   # honest either way

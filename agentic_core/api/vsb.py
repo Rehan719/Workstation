@@ -102,10 +102,8 @@ def _build_repo_files(vsb: dict) -> dict:
     name = vsb.get("name") or vsb.get("vsb_id")
     domain, realm = vsb.get("domain", "enterprise"), vsb.get("realm", "enterprise")
     challenge = vsb.get("challenge", "")
-    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
-    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
-    design = bp.get("phase_2_design_development", "") if bp else ""
-    commercial = bp.get("phase_3_commercialisation", "") if bp else ""
+    bp = _blueprint(vsb)                     # W301 - canonical accessor (both shapes)
+    concept, design, commercial = bp["concept"], bp["design"], bp["commercialisation"]
     f: dict = {}
     f["README.md"] = (
         f"# {name}\n\n> Living, intelligently autonomous VSB IDBO enterprise — bespoke to: {challenge}\n\n"
@@ -153,6 +151,23 @@ def _build_repo_files(vsb: dict) -> dict:
     f["mobile/manifest.webmanifest"] = json.dumps({"name": name, "short_name": str(name or "VSB")[:12],
                                                     "start_url": "/", "display": "standalone"}, indent=2)
     return f
+
+
+def _blueprint(vsb: dict) -> dict:
+    """§4×§13 (W301) — the CANONICAL genesis-blueprint accessor. Both writers store FLAT keys
+    ({concept, design, commercialisation}) while every §13 reader expected phase_* keys — so each
+    Genesis-established entity silently shipped a GENERIC repo/website/board-pack (the challenge
+    fallback masked the loss). Accepts BOTH shapes (flat preferred — the only shape ever written;
+    phase_* as the legacy fallback), always returns strings."""
+    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
+    p1 = bp.get("phase_1_conceptualisation")
+    return {
+        "concept": str(bp.get("concept")
+                       or ((p1 or {}).get("concept", "") if isinstance(p1, dict) else p1 or "")),
+        "design": str(bp.get("design") or bp.get("phase_2_design_development", "") or ""),
+        "commercialisation": str(bp.get("commercialisation")
+                                 or bp.get("phase_3_commercialisation", "") or ""),
+    }
 
 
 def _require_vsb_access(vsb_id: str, user: dict | None) -> dict:
@@ -331,10 +346,8 @@ def _build_website_files(vsb: dict, copy: dict) -> dict:
     name = vsb.get("name") or vsb.get("vsb_id")
     challenge = vsb.get("challenge", "")
     domain, realm = vsb.get("domain", "enterprise"), vsb.get("realm", "enterprise")
-    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
-    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
-    design = str(bp.get("phase_2_design_development", "")) if bp else ""
-    commercial = str(bp.get("phase_3_commercialisation", "")) if bp else ""
+    bp = _blueprint(vsb)                     # W301 - canonical accessor (both shapes)
+    concept, design, commercial = bp["concept"], bp["design"], bp["commercialisation"]
     hero, about, solution = copy.get("hero", ""), copy.get("about", ""), copy.get("solution", "")
     f: dict = {}
     f["web/styles.css"] = (
@@ -377,8 +390,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     a running web app (increment 3) and not deployed/hosted."""
     vsb = _require_vsb_access(vsb_id, user)
     name, challenge, domain = vsb.get("name"), vsb.get("challenge", ""), vsb.get("domain", "enterprise")
-    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
-    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
+    concept = _blueprint(vsb)["concept"]     # W301 - canonical accessor (both shapes)
     prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
 
     async def _q(prompt: str) -> str:
@@ -498,8 +510,7 @@ def _entity_appdata(vsb: dict) -> dict:
     name = vsb.get("name") or vsb.get("vsb_id")
     domain, realm = vsb.get("domain", "enterprise"), vsb.get("realm", "enterprise")
     challenge = vsb.get("challenge", "")
-    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
-    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
+    concept = _blueprint(vsb)["concept"]     # W301 - canonical accessor (both shapes)
     ns = vsb.get("native_swarm") or {}
     roles = []
     if isinstance(ns, dict):
@@ -768,9 +779,8 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     (document-controlled via the QMS-owned DCMS). The on-demand layer of the §17.3 Living Business System."""
     vsb = _require_vsb_access(vsb_id, user)
     name, challenge = vsb.get("name"), vsb.get("challenge", "")
-    bp = vsb.get("genesis_blueprint") if isinstance(vsb.get("genesis_blueprint"), dict) else {}
-    concept = (bp.get("phase_1_conceptualisation") or {}).get("concept", "") if bp else ""
-    commercial = str(bp.get("phase_3_commercialisation", "")) if bp else ""
+    bp = _blueprint(vsb)                     # W301 - canonical accessor (both shapes)
+    concept, commercial = bp["concept"], bp["commercialisation"]
 
     constitutional = {"mission": f"Deliver: {challenge}"[:280], "vision": challenge,
                       "values": "Integrity · Compassion · Excellence · Halal/Sharia · Beneficence · Stewardship",

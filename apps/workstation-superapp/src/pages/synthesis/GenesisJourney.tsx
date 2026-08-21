@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { saveOutput } from '../../lib/outputHistory';
 import { Card, Button } from '@workstation/ui';
 import { AttachDocument, appendDocBlock } from '../../components/AttachDocument';
 import { DictateButton } from '../../components/DictateButton';
@@ -76,6 +77,20 @@ interface ReviewGates {
   statuses: { stage: string; gated: boolean; status: string; blocks_progress: boolean }[];
 }
 
+// W303 — idempotent seed reader: module-level cache survives React StrictMode's double-mount
+// (a side-effectful useState initializer would consume the seed on the discarded first mount).
+const _seedCache: Record<string, { title?: string; domain?: string; input?: string; output?: string } | null> = {};
+function readGenesisSeed(sid: string) {
+  if (!(sid in _seedCache)) {
+    try {
+      const raw = sessionStorage.getItem(`ws_genesis_${sid}`);
+      _seedCache[sid] = raw ? JSON.parse(raw) : null;
+      sessionStorage.removeItem(`ws_genesis_${sid}`);
+    } catch { _seedCache[sid] = null; }
+  }
+  return _seedCache[sid];
+}
+
 const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
 // §17.1 — the six canonical Domains (matches the Domains section hubs). Realm (who you are) is separate.
 const DOMAINS = ['religion', 'science', 'education', 'law', 'employment', 'care'];
@@ -85,7 +100,22 @@ const DOMAINS = ['religion', 'science', 'education', 'law', 'employment', 'care'
 export const GenesisJourney: React.FC = () => {
   const navigate = useNavigate();
   const [sp] = useSearchParams();   // seedable from a domain tool (offering 1 -> offering 2, §3A)
-  const [problem, setProblem] = useState(() => sp.get('problem') || '');
+  // W303 - the bridge carries the user's actual WORK PRODUCT (not a truncated input slice):
+  // a sessionStorage seed written by DomainTool / My Work is folded into the problem once.
+  const [problem, setProblem] = useState<string>(() => {
+    const sid = sp.get('seed');
+    if (sid) {
+      const seed = readGenesisSeed(sid);
+      if (seed) {
+        const base = String(seed.input || seed.title || '').slice(0, 600);
+        const work = String(seed.output || '').slice(0, 12000);
+        return work
+          ? `${base}\n\nPRIOR DOMAIN WORK (Offering-1 output — build on this):\n${work}`
+          : base;
+      }
+    }
+    return sp.get('problem') || '';
+  });
   const [domain, setDomain] = useState(() => { const d = sp.get('domain') || 'science'; return DOMAINS.includes(d) ? d : 'science'; });
   const [realm, setRealm] = useState(() => { const r = sp.get('realm') || 'enterprise'; return REALMS.includes(r) ? r : 'enterprise'; });
   const [running, setRunning] = useState(false);
@@ -140,6 +170,16 @@ export const GenesisJourney: React.FC = () => {
       const data = await res.json();
       setResult(data);
       if (data?.established_vsb && !data.established_vsb.error) setVsb(data.established_vsb);   // one-call living enterprise
+      // W303 - the My Work claim is TRUE now: every Genesis journey persists automatically.
+      try {
+        const stages = [data?.phase_1_conceptualisation?.concept, data?.stage_3_innovate_research,
+          data?.phase_2_design_development, data?.phase_3_commercialisation]
+          .filter(Boolean).map(String).join('\n\n---\n\n');
+        saveOutput({ kind: 'genesis', title: `Genesis: ${problem.slice(0, 70)}`, domain,
+          output: (stages || JSON.stringify(data).slice(0, 4000)),
+          provenance: data?.ai_provenance ?? null,
+          vsb_id: data?.established_vsb?.vsb_id });
+      } catch { /* history is best-effort */ }
     } catch (e: any) {
       setError(e?.message ?? String(e));
     }

@@ -12,6 +12,7 @@ export interface OutputRecord {
   input?: string;      // a short excerpt of what the user asked
   output: string;      // the result text (capped)
   provenance?: { served_by?: string; is_external?: boolean } | null;
+  vsb_id?: string;    // W303 - links a genesis record to its living entity
   ts: number;
 }
 
@@ -41,6 +42,7 @@ export function saveOutput(rec: Omit<OutputRecord, 'id' | 'ts'> & { id?: string;
     id: rec.id ?? `out-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     ts: rec.ts ?? Date.now(),
     kind: rec.kind,
+    vsb_id: rec.vsb_id,
     title: rec.title,
     domain: rec.domain,
     endpoint: rec.endpoint,

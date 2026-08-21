@@ -250,7 +250,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
                 Want to take this further? Commercialise it end-to-end into your own self-running <span className="text-highlight font-bold">VSB IDBO enterprise</span>.
               </p>
               <Button type="button"
-                onClick={() => navigate(`/genesis?problem=${encodeURIComponent((form[primary] || '').slice(0, 600))}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`)}
+                onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title, domain: domainSeed, input: primary ? form[primary] : '', output: String(result?.[resultKey] ?? result?.deliverable ?? '') })); } catch { /* seed best-effort */ } navigate(`/genesis?seed=${sid}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`); }}
                 className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
                 <Rocket size={14} /> Commercialise via Genesis
               </Button>
