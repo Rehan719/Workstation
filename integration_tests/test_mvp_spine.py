@@ -699,6 +699,79 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_deliverables_accept_verbatim_content(client):
+    # §4.9 (W306) — 'any selectable format' is reachable for work already produced elsewhere:
+    # /produce with content= carries it VERBATIM (no regeneration, honest provenance), still runs
+    # the same §10/§11 assure_delivery gate, and every live export renders it.
+    body = ("# W306 Verbatim Journey\n\n## Concept\nA halal textile venture — MARKER-W306-VERBATIM.\n\n"
+            "## Commercialisation\nDirect-to-community launch.")
+    d = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "title": "W306 verbatim", "brief": "w306 verbatim ingest",
+        "content": body}).json()
+    assert d["content"] == body                                # verbatim — never regenerated
+    prov = d.get("ai_provenance") or {}
+    assert prov.get("served_by") == "verbatim-ingest" and prov.get("is_external") is False
+    assert "Concept" in d.get("sections", [])                  # sections derived from the headings
+    assert d.get("quality_assurance")                          # the §10/§11 gate still ran
+    exp = client.get(f"/api/v1/deliverables/{d['id']}/export", params={"format": "slides"})
+    assert exp.status_code == 200 and "MARKER-W306-VERBATIM" in exp.text
+    # and the generated path is untouched: no content → the fabric generates as before
+    g = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "w306 generated-path regression"}).json()
+    assert g.get("ai_provenance", {}).get("served_by") != "verbatim-ingest" and g.get("content")
+
+
+def test_candidates_selected_on_simulated_evidence(client):
+    # §4.5 (W305) — "modelled, SIMULATED" is true: every stage-5 candidate is forward-simulated
+    # through the owned model-free digital-twin pattern, a simulation-derived score joins the
+    # ranking with DECLARED weights (60/40), and the selection basis names both components —
+    # text proxies no longer carry selection alone.
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": "w305 halal textile venture", "domain": "enterprise"}).json()
+    s5 = j.get("stage_5_model_simulate_rank") or {}
+    cands = s5.get("candidates") or []
+    assert len(cands) == 3
+    for c in cands:
+        assert "simulation_score" in c and "modelled_score" in c and c.get("simulation")
+        assert abs(c["score"] - round(0.6 * c["modelled_score"] + 0.4 * c["simulation_score"], 3)) < 1e-9
+    assert "60%" in s5.get("method", "")                      # the weights are DECLARED
+    basis = s5.get("selection_basis", "")
+    assert "modelled" in basis and "simulated" in basis
+
+
+def test_full_journey_record_survives_establishment(client):
+    # §4 (W304) — the entity keeps ALL SEVEN of the journey's stage outputs (previously 3): the
+    # §4.3 research, §4.5 selected candidate with its real scores, §4.7 operational intelligence,
+    # and the §5 stage verifications survive as entity.genesis_journey (untruncated); the repo
+    # carries OPERATIONS.md + EVIDENCE.md; operational intelligence seeds a REAL plan objective.
+    # Standalone /establish renders honest 'not provided' stubs — never invented content.
+    import pathlib
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": "w304 halal orchard co-op", "domain": "care",
+        "establish": True, "ship_output": False}).json()
+    vid = (j.get("established_vsb") or {}).get("vsb_id")
+    assert vid
+    gj = client.get(f"/api/v1/vsb/{vid}").json().get("genesis_journey") or {}
+    assert len(str(gj.get("research", ""))) > 100
+    assert len(str(gj.get("operations", ""))) > 100
+    assert (gj.get("selected_candidate") or {}).get("id")
+    assert len(gj.get("stage_verifications") or {}) >= 4
+    m = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    root = pathlib.Path(m["repo_root"])
+    assert "Not provided" not in (root / "OPERATIONS.md").read_text(encoding="utf-8")
+    evd = (root / "EVIDENCE.md").read_text(encoding="utf-8")
+    assert "Selected Candidate" in evd and "Stage Verifications" in evd
+    plan = client.get("/api/v1/business-plan", params={"scope": vid}).json()
+    objs = (plan.get("plan") or plan).get("objectives", [])
+    assert any(o.get("source") == "genesis_journey.operations" for o in objs)
+    est2 = client.post("/api/v1/genesis/establish", json={
+        "problem": "w304 standalone", "domain": "care", "name": "W304Solo",
+        "concept": "c", "design": "d", "commercialisation": "m", "ship_output": False}).json()
+    m2 = client.post(f"/api/v1/vsb/{est2['vsb_id']}/repo").json()
+    root2 = pathlib.Path(m2["repo_root"])
+    assert "Not provided at establishment" in (root2 / "OPERATIONS.md").read_text(encoding="utf-8")
+
+
 def test_newborn_ships_its_living_body_and_journey_carries_identity(client, monkeypatch):
     # §4 (W302) — the ONE continuous workflow is real: establishment ships the newborn's WHOLE §13
     # body at birth (repo+website+webapp+mobile+board-pack, no manual clicks; opt-out honest), and

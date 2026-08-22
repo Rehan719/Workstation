@@ -123,6 +123,36 @@ def _build_repo_files(vsb: dict) -> dict:
     f["IDENTITY.md"] = (f"# Identity — {name}\n\nGenome spec:\n\n```json\n"
                         f"{json.dumps(vsb.get('genome_spec') or {}, indent=2)[:4000]}\n```\n\n"
                         f"Epigenetic traits: {vsb.get('epigenetic_traits')}\n")
+    # §4 (W304) — the journey's OPERATIONAL intelligence + selection EVIDENCE live in the repo
+    # (honest stubs when the entity was established without them — never invented content).
+    gj = vsb.get("genesis_journey") if isinstance(vsb.get("genesis_journey"), dict) else {}
+    _ops_txt = str(gj.get("operations") or "").strip()
+    f["OPERATIONS.md"] = (f"# Operational Intelligence — {name}\n\n"
+                          + (_ops_txt[:8000] if _ops_txt else
+                             "_Not provided at establishment — run a Genesis journey with "
+                             "establish=true to carry the §4.7 operational intelligence here._\n"))
+    _cand = gj.get("selected_candidate") if isinstance(gj.get("selected_candidate"), dict) else {}
+    _sv = gj.get("stage_verifications") if isinstance(gj.get("stage_verifications"), dict) else {}
+    _ev_lines = [f"# Selection & Verification Evidence — {name}", ""]
+    if _cand:
+        _ev_lines += ["## Selected Candidate (§4.5 evidence-ranked)",
+                      f"- id: {_cand.get('id')} · rank: {_cand.get('rank')} · score: {_cand.get('score')}",
+                      f"- coverage {_cand.get('coverage')} · specificity {_cand.get('specificity')} · structure {_cand.get('structure')}",
+                      f"- framing: {str(_cand.get('framing') or '')[:160]}"]
+        if _cand.get("simulation_score") is not None:       # §4.5 (W305) — simulated evidence
+            _ev_lines += [f"- simulated evidence: {_cand.get('simulation_score')} "
+                          f"(modelled {_cand.get('modelled_score')}; declared weights 60/40)"]
+            if _cand.get("simulation"):
+                _ev_lines += ["", "### Simulation excerpt", str(_cand.get("simulation"))[:800]]
+        _ev_lines += [""]
+    if _sv:
+        _ev_lines += ["## Stage Verifications (§5 measured)"]
+        _ev_lines += [f"- {k}: verified={v.get('verified')} · score={v.get('score')} · sections {v.get('sections_present')}"
+                      for k, v in _sv.items() if isinstance(v, dict)]
+    if not _cand and not _sv:
+        _ev_lines += ["_Not provided at establishment — the journey's ranked candidates and stage "
+                      "verifications appear here when established via a full Genesis journey._"]
+    f["EVIDENCE.md"] = "\n".join(_ev_lines) + "\n"
     f["genome.json"] = json.dumps({"vsb_id": vsb.get("vsb_id"), "name": name, "domain": domain,
                                    "realm": realm, "generation": vsb.get("generation"),
                                    "genome_spec": vsb.get("genome_spec")}, indent=2)

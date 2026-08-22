@@ -156,16 +156,41 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
             f"Domain: {req.domain}\n\n"
             "## Approach\n## Key Steps\n## Effectiveness\n## Risks & Mitigations", f"genesis_candidate_{cid}")
         candidates.append({"id": cid, "framing": framing, "approach": ctext, **_score_candidate(ctext, _cand_sections)})
+
+    # §4.5 (W305) — "modelled, SIMULATED": each candidate is forward-simulated through the owned
+    # MODEL-FREE digital-twin pattern (system = the concept; scenario = the candidate's approach),
+    # and a simulation-derived score joins the ranking with DECLARED weights (60% modelled-text
+    # evidence · 40% simulated evidence) — text proxies no longer carry selection alone. Honest:
+    # the sim score measures the simulation narrative's substance on the same real proxies
+    # (coverage of the canonical twin sections) — never fabricated telemetry.
+    _twin_sections = ["State Trajectory", "Emergent Behaviour", "Stress / Failure Points",
+                      "Recommended Setpoints"]
+    for c in candidates:
+        sim = await _q(
+            f"You are a digital-twin simulator. System under twin: {concept[:300]} (domain {req.domain}). "
+            f"Forward-simulate this candidate approach as the operating scenario: {c['approach'][:500]}\n"
+            "## State Trajectory (t0→tN)\n## Emergent Behaviour\n## Stress / Failure Points\n"
+            "## Recommended Setpoints", f"genesis_twin_{c['id']}")
+        _sim_m = _score_candidate(sim, _twin_sections)
+        c["simulation"] = sim[:1200]
+        c["simulation_score"] = _sim_m["score"]
+        c["modelled_score"] = c["score"]
+        c["score"] = round(0.6 * c["modelled_score"] + 0.4 * _sim_m["score"], 3)
+
     candidates.sort(key=lambda c: c["score"], reverse=True)
     for i, c in enumerate(candidates, 1):
         c["rank"] = i
     winner = candidates[0]
     stage_5 = {
-        "method": "candidate solutions modelled + ranked on OWNED evidence criteria (coverage · specificity · "
-                  "structure) — real measured proxies, never fabricated; the best is carried into Design.",
+        "method": "candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern, "
+                  "ranked on OWNED evidence (declared weights: 60% modelled text — coverage · "
+                  "specificity · structure — + 40% simulated evidence) — real measured proxies, "
+                  "never fabricated; the best is carried into Design.",
         "candidates": candidates,
         "selected": winner["id"],
-        "selection_basis": f"highest evidence score ({winner['score']}) of {len(candidates)} modelled candidates",
+        "selection_basis": (f"highest combined evidence score ({winner['score']}: modelled "
+                            f"{winner['modelled_score']} · simulated {winner['simulation_score']}) "
+                            f"of {len(candidates)} modelled+simulated candidates"),
     }
 
     # ── Phase 2 — Design & Development (the SELECTED best candidate → buildable solution) ──
@@ -235,8 +260,12 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
             established_vsb = await genesis_establish(EstablishRequest(
                 problem=req.problem, domain=req.domain, realm=req.realm, name=req.name,
                 concept=concept, design=design, commercialisation=commercial,
-                entity_type=req.entity_type, ship_output=req.ship_output),
-                user=user if isinstance(user, dict) else None)   # W302 - identity flows through
+                entity_type=req.entity_type, ship_output=req.ship_output,
+                research=research, operations=operations,
+                selected_candidate=(stage_5 or {}).get("candidates", [{}])[0]
+                    if (stage_5 or {}).get("candidates") else {},
+                stage_verifications=stage_verifications),
+                user=user if isinstance(user, dict) else None)   # W302+W304 - the whole journey flows
         except Exception as e:
             established_vsb = {"error": f"establishment deferred: {e}"}
 
@@ -277,6 +306,12 @@ class EstablishRequest(BaseModel):
     owner_id: str = "default"
     entity_type: str = "waqf_ltd_hybrid"   # legal/economic form: sole|ltd|plc|trust|waqf|multinational|nonprofit|charity|waqf_ltd_hybrid
     ship_output: bool = True   # §4 (W302) — auto-ship the §13 living body at birth
+    # §4 (W304) — the FULL journey record survives establishment (defaults empty for the
+    # standalone /establish path; honest stubs render when absent — never invented content).
+    research: str = ""
+    operations: str = ""
+    selected_candidate: dict = {}
+    stage_verifications: dict = {}
 
 
 def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
@@ -397,6 +432,14 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
             "design": req.design,
             "commercialisation": req.commercialisation,
         },
+        # §4 (W304) — the FULL journey record survives establishment (untruncated; empty for
+        # the standalone path — honest stubs render in the repo, never invented content).
+        "genesis_journey": {
+            "research": req.research,
+            "operations": req.operations,
+            "selected_candidate": req.selected_candidate,
+            "stage_verifications": req.stage_verifications,
+        },
         "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
         "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
     }
@@ -456,6 +499,18 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
                     "owner_role": "AI CEO", "progress_pct": 0, "status": "planned", "reviews": [],
                     "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
                 })
+        # §4 (W304) — the journey's operational intelligence seeds a REAL plan objective (only
+        # when genuinely provided — never an invented one).
+        if req.operations.strip():
+            plan["objectives"].append({
+                "id": f"obj-{_uuid.uuid4().hex[:8]}",
+                "title": "Operationalise per the journey's §4.7 operational intelligence",
+                "kpi": "operational readiness delivered", "timeline": "next review",
+                "owner_role": "Business Transformation Office", "progress_pct": 0,
+                "status": "planned", "reviews": [],
+                "source": "genesis_journey.operations",
+                "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+            })
         bp_mod._save(plan)
         entity["business_plan_scope"] = vsb_id
     except Exception:
@@ -553,6 +608,10 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "ceo_specification": (req.commercialisation or req.concept)[:2000],
             "genesis_blueprint": {"concept": req.concept, "design": req.design,
                                   "commercialisation": req.commercialisation},
+            # §4 (W304) — the full journey record survives on the SSE path too
+            "genesis_journey": {"research": req.research, "operations": req.operations,
+                                "selected_candidate": req.selected_candidate,
+                                "stage_verifications": req.stage_verifications},
             "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
             "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
         }

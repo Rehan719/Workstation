@@ -7,7 +7,7 @@ import { DictateButton } from '../../components/DictateButton';
 import { getPrefs } from '../../lib/userPrefs';
 import {
   Sparkles, Loader2, AlertCircle, ChevronDown, ChevronUp,
-  Lightbulb, Layers, Rocket, ShieldCheck, Brain, Eye,
+  Lightbulb, Layers, Rocket, ShieldCheck, Brain, Eye, FileText, Presentation,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -186,15 +186,53 @@ export const GenesisJourney: React.FC = () => {
     setRunning(false);
   };
 
+  // §4.9 (W306) — the journey's own text becomes a LIVING deliverable (verbatim ingest, QMS-gated)
+  // and every live export format is reachable for it: real renders, never regenerated.
+  const [exporting, setExporting] = useState('');
+  const exportJourney = async (kind: 'report' | 'presentation') => {
+    if (!result) return;
+    setExporting(kind);
+    try {
+      const content = [
+        `# Genesis: ${problem.slice(0, 80)}`,
+        '## Concept', String(result?.phase_1_conceptualisation?.concept ?? ''),
+        '## Innovate & Research', String(result?.stage_3_innovate_research ?? ''),
+        '## Design & Development', String(result?.phase_2_design_development ?? ''),
+        '## Operational Intelligence', String(result?.stage_7_operational_intelligence ?? ''),
+        '## Commercialisation', String(result?.phase_3_commercialisation ?? ''),
+      ].join('\n\n');
+      const res = await fetch('/api/v1/deliverables/produce', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: kind, title: `Genesis: ${problem.slice(0, 60)}`, brief: problem.slice(0, 400),
+          domain, content, vsb_id: vsb?.vsb_id ?? (result as any)?.established_vsb?.vsb_id ?? undefined,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      window.open(`/api/v1/deliverables/${d.id}/export?format=${kind === 'presentation' ? 'slides' : 'html'}`, '_blank');
+    } catch (e: any) {
+      setError(e?.message ?? String(e));
+    }
+    setExporting('');
+  };
+
   const establish = async () => {
     if (!result) return;
     setEstablishing(true);
     setBirthStages([]);
+    const cands = result?.stage_5_model_simulate_rank?.candidates ?? [];
     const body = JSON.stringify({
       problem, domain, realm, entity_type: entityType,
       concept: result.phase_1_conceptualisation.concept,
       design: result.phase_2_design_development,
       commercialisation: result.phase_3_commercialisation,
+      // W304 — the FULL journey record survives establishment (research · winning candidate ·
+      // operational intelligence · stage verifications), not just the three blueprint phases.
+      research: result?.stage_3_innovate_research ?? '',
+      operations: result?.stage_7_operational_intelligence ?? '',
+      selected_candidate: cands[0] ?? {},
+      stage_verifications: result?.stage_verifications ?? {},
     });
     try {
       // §5 — watch the VSB being born: each SSE event reflects a REAL completed establishment step
@@ -487,6 +525,20 @@ export const GenesisJourney: React.FC = () => {
       {/* Result */}
       {result && (
         <div className="space-y-4">
+          {/* §4.9 (W306) — take the journey out in any selectable live format */}
+          <Card className="p-4 border-slate-800 flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Export the journey (§4.9) — becomes a living, QMS-gated deliverable</p>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => exportJourney('report')} disabled={!!exporting}
+                className="flex items-center gap-2 bg-slate-900 text-highlight text-[11px]">
+                {exporting === 'report' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />} Report
+              </Button>
+              <Button onClick={() => exportJourney('presentation')} disabled={!!exporting}
+                className="flex items-center gap-2 bg-slate-900 text-aura text-[11px]">
+                {exporting === 'presentation' ? <Loader2 size={12} className="animate-spin" /> : <Presentation size={12} />} Presentation
+              </Button>
+            </div>
+          </Card>
           {/* §5 — each stage verified/tested/validated (real measured proxies) */}
           {result.stage_verifications && (
             <Card className="p-4 border-emerald-500/20">
@@ -552,7 +604,13 @@ export const GenesisJourney: React.FC = () => {
                           <span className="text-[11px] font-black text-white uppercase tracking-wide truncate">{c.id}</span>
                           {isWin && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/20 text-aura shrink-0">selected</span>}
                         </div>
-                        <span className="text-[9px] font-mono text-slate-500 shrink-0" title={`coverage ${c.coverage} · specificity ${c.specificity} · structure ${c.structure}`}>score {c.score}</span>
+                        <span className="text-[9px] font-mono text-slate-500 shrink-0" title={`coverage ${c.coverage} · specificity ${c.specificity} · structure ${c.structure}`}>
+                          score {c.score}
+                          {/* §4.5 (W305) — the ranking's simulated-evidence component, declared */}
+                          {(c as any).simulation_score !== undefined && (
+                            <span className="text-aura/70 ml-1" title="forward-simulated through the owned digital-twin pattern (declared weights 60/40)">· sim {(c as any).simulation_score}</span>
+                          )}
+                        </span>
                       </div>
                       <p className="text-[9px] text-slate-500 mt-1 leading-snug">{c.framing}</p>
                     </div>

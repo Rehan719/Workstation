@@ -100,6 +100,8 @@ class ProduceRequest(BaseModel):
     domain: str = "enterprise"
     vsb_id: Optional[str] = None
     sections: List[str] = []          # optional override (reconfigure the structure)
+    content: str = ""                 # §4.9 (W306): verbatim ingest — already-produced work
+                                      # becomes a living deliverable WITHOUT regeneration
 
 
 class RegenerateRequest(BaseModel):
@@ -156,7 +158,19 @@ async def produce(req: ProduceRequest):
         raise HTTPException(status_code=400,
                             detail=f"Unknown type '{req.type}'. Known: {list(_TYPES)} (or pass sections).")
     _t0 = time.time()
-    gen = await _generate(req.type, req.title, req.brief, req.domain, req.vsb_id, req.sections)
+    if req.content.strip():
+        # §4.9 (W306) — verbatim ingest: output already produced elsewhere on the platform (a Genesis
+        # journey, a domain-tool run) becomes a LIVING deliverable — carried verbatim (no regeneration,
+        # honest provenance) so every live export format is reachable for it. Still gated below by the
+        # same §10/§11 assure_delivery as generated content.
+        _secs = req.sections or [m.group(1).strip() for m in
+                                 re.finditer(r"^#{1,2}\s+(.+)$", req.content, flags=re.M)][:24] \
+                or _TYPES.get(req.type, [])
+        gen = {"content": req.content, "sections": _secs,
+               "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
+                                 "note": "content supplied verbatim by the caller — not regenerated"}}
+    else:
+        gen = await _generate(req.type, req.title, req.brief, req.domain, req.vsb_id, req.sections)
     _dur = int((time.time() - _t0) * 1000)
     # Continual operational delivery within the LIVING QMS: every produced deliverable is gated by the
     # OWNED QMS (real, stateful), held to the §10 Solution-Quality Bar, recorded within the §8 organism.
