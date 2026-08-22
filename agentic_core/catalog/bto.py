@@ -45,15 +45,20 @@ def _build_component(kind: str) -> Dict[str, Any]:
     if kind == "coe":
         return {"centers": ["Security", "AI Ethics", "Constitutional Compliance", "Quality Assurance"], "route": COMPONENT_ROUTES["coe"]}
     if kind == "domains":
+        # §17.1 (W311) — the CANONICAL taxonomy, not a local variant
+        from agentic_core.taxonomy import DOMAIN_LABELS
         return {
-            "available": ["Religion", "Science", "Law", "Care", "Employment", "Education"],
+            "available": list(DOMAIN_LABELS.values()),
             "routes": {
                 "Religion": "/qep-religion", "Science": "/science", "Law": "/law",
                 "Care": "/care", "Employment": "/employment", "Education": "/education",
             },
         }
     if kind == "realms":
-        return {"available": ["LEARNER", "DEVELOPER", "ENTERPRISE", "SCHOLAR", "GENOME"], "route": COMPONENT_ROUTES["realms"]}
+        # §17.1 (W311) — was a drifted five-item list (LEARNER/DEVELOPER/ENTERPRISE/SCHOLAR/GENOME);
+        # the canon is the Whole Vision's 4 Realms.
+        from agentic_core.taxonomy import REALM_LABELS
+        return {"available": list(REALM_LABELS.values()), "route": COMPONENT_ROUTES["realms"]}
     if kind == "products":
         return {"catalog": list_products(), "route": COMPONENT_ROUTES["products"]}
     if kind == "services":

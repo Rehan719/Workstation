@@ -59,7 +59,7 @@ _GOV = UnifiedConstitutionalInterceptorV16Omega("genesis-node", _UEG)
 class JourneyRequest(BaseModel):
     problem: str
     domain: str = "enterprise"
-    realm: str = "enterprise"   # enterprise | learning | developing | scholarship
+    realm: str = "enterprise"   # canonical: agentic_core.taxonomy.REALMS (§17.1, W311)
     establish: bool = False     # §4→§5 — culminate the journey by ESTABLISHING the living VSB IDBO enterprise
     name: str = ""              # optional name for the established VSB
     entity_type: str = "waqf_ltd_hybrid"   # legal/economic form when establishing
@@ -231,15 +231,6 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         return "Sovereign Journey synthesised under v16-Omega constitutional supervision."
     gov = await _GOV.intercept({"intent": "genesis_journey", "domain": req.domain}, _attest)
 
-    # ── Continual operational delivery within the LIVING QMS: the journey's buildable + go-to-market
-    # delivery is gated by the OWNED QMS, held to the §10 Solution-Quality Bar, recorded within the §8
-    # biomimetic organism — the same capability the cascade + deliverables deliver through.
-    quality_assurance = await assure_delivery(
-        f"{design}\n{commercial}",
-        ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope",
-         "Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"],
-        label="genesis")
-
     # ── §5 — verify/validate EACH stage (real measured proxies: coverage · specificity · structure), so the
     #    whole cascade is verified, tested and validated stage-by-stage, not only at the final QMS gate. ──
     stage_verifications = {
@@ -250,6 +241,27 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "commercialisation": _verify_stage(commercial, ["Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"]),
     }
     stages_verified = sum(1 for v in stage_verifications.values() if v["verified"])
+
+    # ── Continual operational delivery within the LIVING QMS: the journey's buildable + go-to-market
+    # delivery is gated by the OWNED QMS, held to the §10 Solution-Quality Bar, recorded within the §8
+    # biomimetic organism — the same capability the cascade + deliverables deliver through.
+    # §10 (W307) — the journey attests ONLY the bar criteria its own real process earned this run
+    # (each basis names the actual step); the gate records them per-criterion, never as a bare list.
+    _bar_evidence = {
+        "modelled": f"stage 5 modelled {len(candidates)} candidate approaches on real evidence proxies",
+        "simulated": "stage 5 forward-simulated each candidate through the owned digital-twin pattern",
+        "ranked": stage_5["selection_basis"],
+        "optimised": "best-of-candidates selection on combined modelled+simulated evidence",
+        "categorised": f"realm '{req.realm}' × domain '{req.domain}' categorisation",
+    }
+    if stages_verified == len(stage_verifications):
+        _bar_evidence["tested"] = f"all {stages_verified} stages verified on measured proxies"
+        _bar_evidence["validated"] = "every stage validated against its declared section structure"
+    quality_assurance = await assure_delivery(
+        f"{design}\n{commercial}",
+        ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope",
+         "Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"],
+        label="genesis", evidence=_bar_evidence)
 
     # ── §4→§5 SEAM — optionally culminate the journey by ESTABLISHING the living VSB IDBO enterprise, so a
     #    plainly-described challenge flows in ONE continuous workflow all the way to a living enterprise that
@@ -524,6 +536,22 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     except Exception:
         pass
 
+    # §3×§8×§12 (W309) — BIRTH IS ALIVE: the newborn's first §11 screen + first governed economy
+    # cycle run AT establishment (the same paths the heartbeat rotates), so the entity enters the
+    # organism's living loops immediately instead of waiting inert for its first rotation. Runs
+    # BEFORE the birth ship so the shipped body reflects the entity WITH its first vitals.
+    birth_vitals: Dict[str, Any] = {}
+    try:
+        from agentic_core.organism.heartbeat import screen_living_vsb
+        birth_vitals["first_screen"] = screen_living_vsb(vsb_id)
+    except Exception as exc:
+        birth_vitals["first_screen"] = {"error": str(exc)[:160]}
+    try:
+        from agentic_core.economy.living_vsbs import operate_vsb
+        birth_vitals["first_cycle"] = operate_vsb(vsb_id)
+    except Exception as exc:
+        birth_vitals["first_cycle"] = {"error": str(exc)[:160]}
+
     # §4 (W302) — the ONE continuous workflow ships the newborn's WHOLE §13 living body at birth
     # (repo + website + webapp + mobile + board pack in one act via the existing ship machinery) —
     # previously the entity was born body-less until five manual clicks. Best-effort: a ship
@@ -546,6 +574,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "dashboard": f"/api/v1/vsb/{vsb_id}",
         "governance": entity["governance"],
         "initial_ship": initial_ship,   # §4 (W302) — the body shipped at birth (or honestly not)
+        "birth_vitals": birth_vitals,   # §3×§8×§12 (W309) — first screen + first cycle at birth
         "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
     }
 
@@ -646,6 +675,27 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             biobus.fire_signal("motor", "genesis.establish", f"VSB established: {vsb_id} — {name}", 0.9)
         except Exception:
             pass
+        # 6b — §3×§8×§12 (W309): BIRTH IS ALIVE — first §11 screen + first governed economy cycle
+        # at establishment (watchable; runs before the ship so the body reflects the vitals)
+        birth_vitals: Dict[str, Any] = {}
+        try:
+            from agentic_core.organism.heartbeat import screen_living_vsb
+            birth_vitals["first_screen"] = screen_living_vsb(vsb_id)
+            _fs = birth_vitals["first_screen"] or {}
+            yield _event("vitals", "First Compliance Screen",
+                         f"§11 verdict: {_fs.get('overall', '?')}", _fs)
+        except Exception as exc:
+            birth_vitals["first_screen"] = {"error": str(exc)[:160]}
+        try:
+            from agentic_core.economy.living_vsbs import operate_vsb
+            birth_vitals["first_cycle"] = operate_vsb(vsb_id)
+            _fc = birth_vitals["first_cycle"] or {}
+            yield _event("vitals", "First Economy Cycle",
+                         ("cycle ran" if _fc.get("cycle_ran") is not False else
+                          f"held: {_fc.get('held') or _fc.get('governance') or 'governance'}"), _fc)
+        except Exception as exc:
+            birth_vitals["first_cycle"] = {"error": str(exc)[:160]}
+
         # 7 — §4 (W302): the newborn's WHOLE §13 living body ships at birth (watchable, honest)
         initial_ship = None
         if req.ship_output:
@@ -667,6 +717,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "vsb_id": vsb_id, "name": name, "status": "operational",
             "dashboard": f"/api/v1/vsb/{vsb_id}",
             "initial_ship": initial_ship,
+            "birth_vitals": birth_vitals,
             "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
         })
 

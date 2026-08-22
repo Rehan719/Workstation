@@ -22,8 +22,10 @@ from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
+from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
 
 router = APIRouter(tags=["Marketplace"])
 
@@ -136,8 +138,29 @@ async def list_marketplace_listings(
     return [l.model_dump() for l in listings if l.status != "draft"]
 
 
+def _require_vsb_attribution(vsb_id: str, user: dict | None) -> None:
+    """§14×§12 (W311) — a listing may only be revenue-attributed to a VSB the CALLER owns:
+    previously any caller could point vsb_id at another tenant's entity and inject spoofed
+    marketplace revenue into its economy. 404 (never 403) — the entity is never confirmed.
+    Single-user mode (auth off) is unguarded by design: there is no tenant boundary to protect,
+    and registered-only entities (no full record) must stay attributable (back-compat)."""
+    if not vsb_id:
+        return
+    from agentic_core.auth.core import auth_enabled
+    if not auth_enabled():
+        return
+    from agentic_core.api.vsb import _load_vsb
+    vsb = _load_vsb(vsb_id)
+    if not vsb or not user_can_access(user, vsb.get("owner_id")):
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
+
+
 @router.post("/api/v1/marketplace/listings")
-async def create_listing(req: CreateListingRequest) -> dict:
+async def create_listing(req: CreateListingRequest,
+                         user: dict | None = Depends(get_current_user)) -> dict:
+    if user is not None and not isinstance(user, dict):
+        user = None
+    _require_vsb_attribution(req.vsb_id, user)
     lid = uuid.uuid4().hex[:12]
     listing = Listing(
         id=lid,
@@ -148,7 +171,8 @@ async def create_listing(req: CreateListingRequest) -> dict:
         price_wst=req.price_wst,
         tier=req.tier,
         tags=req.tags,
-        creator_id=req.creator_id,
+        # §14 (W311) — attribution is server-stamped under auth; a client cannot claim another creator
+        creator_id=request_owner_id(user, req.creator_id),
         vsb_id=req.vsb_id,
         certified=False,
         status="active",
@@ -165,18 +189,32 @@ async def get_listing(listing_id: str) -> dict:
 
 
 @router.patch("/api/v1/marketplace/listings/{listing_id}")
-async def update_listing(listing_id: str, patch: dict) -> dict:
+async def update_listing(listing_id: str, patch: dict,
+                         user: dict | None = Depends(get_current_user)) -> dict:
+    if user is not None and not isinstance(user, dict):
+        user = None
     listing = _load(listing_id)
+    # §14 (W311) — mutations are OWNER-SCOPED (404, never 403); attribution fields are immutable
+    # by patch; re-pointing vsb_id requires ownership of the TARGET entity.
+    if not user_can_access(user, listing.creator_id):
+        raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
+    if "vsb_id" in patch and patch.get("vsb_id") != listing.vsb_id:
+        _require_vsb_attribution(str(patch.get("vsb_id") or ""), user)
     for k, v in patch.items():
-        if k not in ("id", "created_at", "certified") and hasattr(listing, k):
+        if k not in ("id", "created_at", "certified", "creator_id", "sales_count") and hasattr(listing, k):
             setattr(listing, k, v)
     return _save(listing).model_dump()
 
 
 @router.delete("/api/v1/marketplace/listings/{listing_id}")
-async def delete_listing(listing_id: str) -> dict:
+async def delete_listing(listing_id: str,
+                         user: dict | None = Depends(get_current_user)) -> dict:
+    if user is not None and not isinstance(user, dict):
+        user = None
     p = _listing_path(listing_id)
     if not p.exists():
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if not user_can_access(user, _load(listing_id).creator_id):    # W311 — owner-scoped, 404-never-403
         raise HTTPException(status_code=404, detail="Listing not found")
     p.unlink()
     return {"deleted": listing_id}

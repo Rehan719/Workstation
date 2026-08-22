@@ -62,7 +62,44 @@ def operate_one() -> Optional[Dict[str, Any]]:
         return None
     # pick the least-recently-operated (None sorts first)
     target = sorted(d.values(), key=lambda v: (v.get("last_operated") or ""))[0]
-    vsb_id = target["vsb_id"]
+    return operate_vsb(target["vsb_id"])
+
+
+def _latest_screen(vsb_id: str) -> Optional[str]:
+    """The entity's latest §11 screen verdict from the per-VSB compliance history (W288), or None."""
+    try:
+        from agentic_core.config import data_path, load_json_tolerant
+        hist = load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}
+        return (hist.get(vsb_id) or {}).get("overall")
+    except Exception:
+        return None
+
+
+def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
+    """Operate ONE living VSB (one governed virtual economy cycle). §11×§12 (W309): an entity whose
+    LATEST compliance screen is FAIL has its distributions HELD — the survival instinct has teeth;
+    the hold lifts as soon as a re-screen clears it. Best-effort; honest records either way."""
+    d = _load()
+    target = d.get(vsb_id)
+    if not target:
+        return None
+    # §11 teeth (W309) — last screen FAIL → the economy is held, no cycle runs. The tending is
+    # still RECORDED (last_operated advances) so a held entity never starves the round-robin —
+    # the organism visited it; the visit's outcome was a hold.
+    if _latest_screen(vsb_id) == "fail":
+        target["last_operated"] = _now()
+        target["last_hold"] = "compliance_fail_hold"
+        d[vsb_id] = target
+        _save(d)
+        try:
+            from agentic_core.organism.biobus import biobus
+            biobus.fire_signal("reflex", "economy.compliance_hold",
+                               f"{vsb_id}: distributions held on FAIL screen", 0.8)
+        except Exception:
+            pass
+        return {"vsb_id": vsb_id, "name": target.get("name"), "cycle_ran": False,
+                "held": "compliance_fail_hold",
+                "note": "latest §11 screen is FAIL — distributions held until a re-screen clears it"}
     try:
         # §3 — the ALWAYS-ON path is governed too: constitutional pre-gate + materiality hold +
         # per-cycle UEG split logging (previously this path ran completely ungated + unlogged).
@@ -82,9 +119,17 @@ def operate_one() -> Optional[Dict[str, Any]]:
                     "governance": res.get("governance"), "cycle_ran": False}
         target["operating_cycles"] = int(target.get("operating_cycles", 0)) + 1
         target["last_operated"] = _now()
+        target.pop("last_hold", None)   # a real cycle ran — no standing hold implied
         target["last_distributable"] = report.get("distributable_profit")
         d[vsb_id] = target
         _save(d)
+        # §13 (W309) — autonomous DRIFT is honest: a real operating cycle moved the entity's living
+        # record, so an already-shipped repo is marked stale (never silently outdated).
+        try:
+            from agentic_core.api.vsb import mark_repo_stale
+            mark_repo_stale(vsb_id, f"autonomous operating cycle {target['operating_cycles']}")
+        except Exception:
+            pass
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle": target["operating_cycles"],
                 "distributable_wst": report.get("distributable_profit"),
                 "revenue_events_consumed": pend["events"],

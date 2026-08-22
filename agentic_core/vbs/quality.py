@@ -32,6 +32,54 @@ _STUB_RE = re.compile(r"\b(TODO|TBD|FIXME|lorem ipsum|placeholder|coming soon|as
 _MIN_SUBSTANTIVE = 200  # chars — below this a "delivery" is treated as an empty / stub shell.
 
 
+def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_coverage: float,
+                 compliance: Dict[str, Any], evidence: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """§10 (W307) — the Solution-Quality Bar measured PER-CRITERION, honestly. Each of the 16
+    criteria is either genuinely measured here (a real proxy with a named basis), attested by the
+    CALLER's own real process evidence (e.g. Genesis stage-5 modelling/simulation — the basis is
+    recorded), or explicitly NOT MEASURED. The sealed record no longer implies a 16-criterion
+    measurement when only two proxies ran."""
+    ev = evidence or {}
+    verdicts = {v.get("framework"): v.get("status") for v in (compliance.get("verdicts") or [])}
+    crit: Dict[str, Dict[str, Any]] = {}
+
+    def measured(name: str, met: bool, basis: str) -> None:
+        crit[name] = {"met": bool(met), "basis": basis, "measured": True}
+
+    def unmeasured(name: str) -> None:
+        crit[name] = {"met": None, "basis": "not measured by this gate", "measured": False}
+
+    measured("specifically designed", coverage >= min_coverage and not stub,
+             f"delivery coverage {coverage} against the declared structure (min {min_coverage}), "
+             f"stub_found={stub}")
+    if qms_passed is not None:
+        measured("verified", bool(qms_passed), "QMS gate on real coverage/stub metrics")
+    else:
+        unmeasured("verified")
+    if verdicts:
+        measured("compliant", compliance.get("overall") != "fail", f"§11 screen verdicts: {verdicts}")
+        _safety = [f for f in ("ethical", "ehs", "sharia_halal") if f in verdicts]
+        if _safety:
+            measured("safe", all(verdicts[f] != "fail" for f in _safety),
+                     f"§11 safety-bearing frameworks: {({f: verdicts[f] for f in _safety})}")
+        else:
+            unmeasured("safe")
+    else:
+        unmeasured("compliant")
+        unmeasured("safe")
+    for name in SOLUTION_QUALITY_BAR:
+        if name in crit:
+            continue
+        if ev.get(name):   # the caller attests a criterion its own REAL process earned — basis kept
+            crit[name] = {"met": True, "basis": f"caller evidence: {str(ev[name])[:200]}",
+                          "measured": True}
+        else:
+            unmeasured(name)
+    _m = [c for c in crit.values() if c["measured"]]
+    return {"criteria": crit, "measured": len(_m), "met": sum(1 for c in _m if c["met"]),
+            "not_measured": len(crit) - len(_m)}
+
+
 def _delivery_coverage(content: str, required_sections: Optional[List[str]]) -> float:
     """Fraction of the required sections that actually appear in the delivered content (case-insensitive).
     With no declared structure, coverage is binary on whether there is substantive content."""
@@ -43,7 +91,8 @@ def _delivery_coverage(content: str, required_sections: Optional[List[str]]) -> 
 
 
 async def assure_delivery(content: str, required_sections: Optional[List[str]] = None,
-                          label: str = "delivery") -> Dict[str, Any]:
+                          label: str = "delivery",
+                          evidence: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Subject an operational delivery to the living QMS + §10 bar + §8 organism.
 
     Returns ``{"quality": {...}, "biomimetic": {...}}`` — honest and real (no fabricated numbers).
@@ -74,10 +123,17 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
 
     try:
         from agentic_core.vbs.registry import qms
-        # Real, stateful gate: failures append to qms.defects and raise the non-conformance rate.
-        quality["qms_gate_passed"] = bool(await qms.run_quality_gates({"coverage": coverage, "stubs_found": stub}))
+        # Real, stateful gate: failures open PERSISTENT, traceable defects (W307) and move the real
+        # non-conformance rate (gate failures / gates run — no normalised constants).
+        quality["qms_gate_passed"] = bool(await qms.run_quality_gates(
+            {"coverage": coverage, "stubs_found": stub}, label=label))
         quality["qms_min_coverage"] = qms.min_coverage
         quality["qms_non_conformance_rate"] = qms.get_non_conformance_rate()
+        quality["qms_defects"] = qms.defect_summary()
+        # §10 (W307) — the bar measured PER-CRITERION (measured / caller-attested / honestly
+        # not-measured), replacing the bare 16-name list that implied a measurement that never ran.
+        quality["bar_measured"] = _measure_bar(coverage, stub, quality["qms_gate_passed"],
+                                               qms.min_coverage, _comp, evidence)
         # The QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5):
         # the gate verdict becomes a versioned, SHA3-512-sealed controlled document — W287: the §11
         # verdicts are IN the sealed payload now (the §13 repo's 'compliance + quality record').
@@ -85,6 +141,7 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
             f"qms_record:{label}",
             {"label": label, "delivery_coverage": coverage, "stub_found": stub,
              "qms_gate_passed": quality["qms_gate_passed"], "bar": SOLUTION_QUALITY_BAR,
+             "bar_measured": quality["bar_measured"],
              "compliance": {"overall": _comp.get("overall"),
                             "verdicts": _comp.get("verdicts")}},
             actor="QMS")

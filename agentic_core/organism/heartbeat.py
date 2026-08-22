@@ -29,6 +29,56 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger("organism.heartbeat")
 
 
+def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
+    """§11 — screen ONE living VSB over its current plan + registration text; persist per-VSB
+    history (capped); a REGRESSION (prior non-fail → fail) registers with the immune system and
+    marks the shipped repo stale (§13 drift honesty, W309). Reusable: the heartbeat's rotation
+    (W288) and the ESTABLISHMENT first-screen (W309 — birth is alive) share this one path."""
+    from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+    from agentic_core.economy.living_vsbs import list_living
+    living = (list_living() or {}).get("living_vsbs") or []
+    target = next((v for v in living if v.get("vsb_id") == vsb_id), None)
+    if not target:
+        return None
+    store_path = data_path("vsb_compliance_history.json")
+    hist: Dict[str, Any] = load_json_tolerant(store_path, {}) or {}
+    # the CURRENT living text: registration identity + the scoped plan's objectives
+    parts = [str(target.get("name") or ""), str(target.get("mission") or ""),
+             str(target.get("domain") or "")]
+    try:
+        from agentic_core.api.business_plan import _load as _bp_load
+        for o in (_bp_load(vsb_id) or {}).get("objectives", [])[:10]:
+            parts.append(f"{o.get('title')} {o.get('kpi')}")
+    except Exception:
+        pass
+    from agentic_core.api.compliance import screen_compliance
+    screen = screen_compliance(" ".join(p for p in parts if p))
+    rec = hist.get(vsb_id) or {}
+    prior = rec.get("overall")
+    regression = bool(prior and prior != "fail" and screen["overall"] == "fail")
+    entries = (rec.get("history") or [])[-19:]
+    entries.append({"overall": screen["overall"],
+                    "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+    hist[vsb_id] = {"overall": screen["overall"], "last_at": entries[-1]["at"],
+                    "regression": regression, "history": entries}
+    atomic_write_json(store_path, hist)
+    if regression:
+        try:
+            from agentic_core.organism.immune import immune
+            immune.record(f"compliance:vsb:{vsb_id}", "compliance_regression")
+            from agentic_core.organism.biobus import biobus
+            biobus.fire_signal("reflex", "organism.compliance.regression",
+                               f"{vsb_id} regressed to FAIL", 0.9)
+        except Exception:
+            pass
+        try:   # §13 (W309) — a FAIL regression is drift: the shipped body no longer tells the truth
+            from agentic_core.api.vsb import mark_repo_stale
+            mark_repo_stale(vsb_id, "compliance regression to FAIL")
+        except Exception:
+            pass
+    return {"vsb_id": vsb_id, "overall": screen["overall"], "regression": regression}
+
+
 def circadian_phase(hour: Optional[int] = None) -> str:
     """Time-of-day circadian phase (matches the organism's circadian system)."""
     h = datetime.datetime.now().hour if hour is None else hour
@@ -60,6 +110,7 @@ class OrganismHeartbeat:
         self.last_genome: Optional[Dict[str, Any]] = None   # last genome-population vital sign on the beat
         self.last_evolution: Optional[Dict[str, Any]] = None   # last autonomous evolution (proposals → governance)
         self.last_vsb_operated: Optional[str] = None   # §4 — last living VSB autonomously operated on the beat
+        self.last_vsb_evolved: Optional[Dict[str, Any]] = None   # §8×§3 (W309) — last child VSB evolved on the tick
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
         self.auto_economy = False             # opt-in: autonomous economy cycles
@@ -203,7 +254,23 @@ class OrganismHeartbeat:
         #    its proposals through the Change Control Agency (submit_to_change_control=True): with no human in
         #    the loop, unsupervised self-improvement must be governed arms-length — never silent self-mutation.
         self._beats_since_evolve += 1
-        if (self.auto_evolve and phase in ("MAINTENANCE_FOCUS", "MAINTENANCE_REST")
+        # §8 (W310) — the reconfiguration engine's defensive levers are EXPRESSED, not just stored:
+        # `organism.metabolic_throttle` (an immune/owner-set defence) genuinely suppresses the
+        # expensive evolution work while metabolic ATP is low. Honest: the skip is a recorded action.
+        _throttled = False
+        _cfg_org: Dict[str, Any] = {}
+        try:
+            from agentic_core.organism.reconfiguration import _load_config
+            from agentic_core.organism.biobus import biobus as _bb
+            _cfg_org = (_load_config() or {}).get("organism") or {}
+            if _cfg_org.get("metabolic_throttle"):
+                _ctx = _bb.organism_context()
+                if float(_ctx.get("atp_ratio") or 1.0) < 0.2:
+                    _throttled = True
+                    actions.append("metabolic_throttle")
+        except Exception:
+            pass
+        if (self.auto_evolve and not _throttled and phase in ("MAINTENANCE_FOCUS", "MAINTENANCE_REST")
                 and self._beats_since_evolve >= self._evolve_every):
             self._beats_since_evolve = 0
             try:
@@ -213,6 +280,37 @@ class OrganismHeartbeat:
                 subs = (cyc or {}).get("change_control_submissions") if isinstance(cyc, dict) else None
                 self.last_evolution = {"submitted_to_governance": len(subs) if subs else 0}
                 actions.append("evolution_cycle")
+            except Exception:
+                pass
+            # §8×§3 (W309) — the organism tends its CHILDREN too: on the same paced evolve tick,
+            # evolve the least-recently-evolved living VSB (round-robin; system context — the
+            # entity's own evolution machinery, proposals recorded on its record, repo refreshed).
+            try:
+                from agentic_core.api.vsb import evolve_vsb, EvolveRequest, _load_vsb
+                from agentic_core.economy.living_vsbs import list_living
+                _live = (list_living() or {}).get("living_vsbs") or []
+                if _live:
+                    _t = sorted(_live, key=lambda v: ((_load_vsb(v.get("vsb_id")) or {})
+                                                      .get("last_evolved") or ""))[0]
+                    _ev = await evolve_vsb(_t.get("vsb_id"),
+                                           EvolveRequest(trigger="autonomous heartbeat"), user=None)
+                    self.last_vsb_evolved = {"vsb_id": _t.get("vsb_id"),
+                                             "generation": (_ev or {}).get("generation")
+                                             if isinstance(_ev, dict) else None}
+                    actions.append("evolve_vsb")
+            except Exception:
+                pass
+            # §8 (W310) — the `organism.evolution_auto_apply` lever gets its REAL consumer: when the
+            # Owner enables it, CCA-APPROVED evolution proposals are applied on the beat (mutations
+            # still gated by the CCA decision — this only automates the post-approval application).
+            try:
+                if _cfg_org.get("evolution_auto_apply"):
+                    from agentic_core.api.vsb import apply_approved_evolution
+                    from agentic_core.economy.living_vsbs import list_living as _ll
+                    for _v in ((_ll() or {}).get("living_vsbs") or [])[:10]:
+                        _ap = apply_approved_evolution(_v.get("vsb_id"))
+                        if _ap.get("applied"):
+                            actions.append("evolution_applied")
             except Exception:
                 pass
 
@@ -260,48 +358,16 @@ class OrganismHeartbeat:
         self.running = False
 
     def _compliance_beat(self) -> Optional[Dict[str, Any]]:
-        """§11 (W288) — re-screen the least-recently-screened LIVING VSB over its current plan +
-        registration text; persist per-VSB history (capped); a REGRESSION (prior non-fail → fail)
-        registers with the immune system. Returns a compact reading or None with no living VSBs."""
-        from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+        """§11 (W288) — re-screen the least-recently-screened LIVING VSB (round-robin).
+        Returns a compact reading or None with no living VSBs."""
+        from agentic_core.config import data_path, load_json_tolerant
         from agentic_core.economy.living_vsbs import list_living
         living = (list_living() or {}).get("living_vsbs") or []
         if not living:
             return None
-        store_path = data_path("vsb_compliance_history.json")
-        hist: Dict[str, Any] = load_json_tolerant(store_path, {}) or {}
+        hist: Dict[str, Any] = load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}
         target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]
-        vsb_id = target.get("vsb_id")
-        # the CURRENT living text: registration identity + the scoped plan's objectives
-        parts = [str(target.get("name") or ""), str(target.get("mission") or ""),
-                 str(target.get("domain") or "")]
-        try:
-            from agentic_core.api.business_plan import _load as _bp_load
-            for o in (_bp_load(vsb_id) or {}).get("objectives", [])[:10]:
-                parts.append(f"{o.get('title')} {o.get('kpi')}")
-        except Exception:
-            pass
-        from agentic_core.api.compliance import screen_compliance
-        screen = screen_compliance(" ".join(p for p in parts if p))
-        rec = hist.get(vsb_id) or {}
-        prior = rec.get("overall")
-        regression = bool(prior and prior != "fail" and screen["overall"] == "fail")
-        entries = (rec.get("history") or [])[-19:]
-        entries.append({"overall": screen["overall"],
-                        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
-        hist[vsb_id] = {"overall": screen["overall"], "last_at": entries[-1]["at"],
-                        "regression": regression, "history": entries}
-        atomic_write_json(store_path, hist)
-        if regression:
-            try:
-                from agentic_core.organism.immune import immune
-                immune.record(f"compliance:vsb:{vsb_id}", "compliance_regression")
-                from agentic_core.organism.biobus import biobus
-                biobus.fire_signal("reflex", "organism.compliance.regression",
-                                   f"{vsb_id} regressed to FAIL", 0.9)
-            except Exception:
-                pass
-        return {"vsb_id": vsb_id, "overall": screen["overall"], "regression": regression}
+        return screen_living_vsb(target.get("vsb_id"))
 
     def configure(self, interval_seconds: Optional[int] = None,
                   auto_evolve: Optional[bool] = None, auto_economy: Optional[bool] = None,
@@ -332,6 +398,7 @@ class OrganismHeartbeat:
             "last_genome": self.last_genome,
             "last_evolution": self.last_evolution,
             "last_vsb_operated": self.last_vsb_operated,
+            "last_vsb_evolved": self.last_vsb_evolved,
             "interval_seconds": self.interval_seconds,
             "auto_evolve": self.auto_evolve,
             "auto_economy": self.auto_economy,

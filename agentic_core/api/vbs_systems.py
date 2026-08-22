@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.vbs.registry import bms, qms, ems, dcms, backbone, CATALOGUE
@@ -38,6 +38,42 @@ async def qms_gate(req: QMSGate):
     passed = await qms.run_quality_gates({"coverage": req.coverage, "stubs_found": req.stubs_found})
     return {"passed": passed, "min_coverage": qms.min_coverage,
             "non_conformance_rate": qms.get_non_conformance_rate(), "real": True}
+
+
+# ── §10 (W307) — the defect → correction → re-verify loop (ISO 9001 §8.7 / §10.2) ──
+
+@router.get("/qms/defects")
+async def qms_defects(status: str = ""):
+    """Persistent, traceable QMS defects + the REAL non-conformance posture (failures / gates run)."""
+    rows = qms.defects
+    if status:
+        rows = [d for d in rows if d.get("status") == status]
+    return {"summary": qms.defect_summary(), "defects": rows[-100:][::-1], "real": True}
+
+
+class DefectCorrection(BaseModel):
+    correction: str
+    actor: str = "owner"
+
+
+@router.post("/qms/defects/{defect_id}/correct")
+async def qms_correct_defect(defect_id: str, req: DefectCorrection):
+    """Record the correction taken for an OPEN defect. Closure requires re-verification —
+    a correction alone never closes a defect."""
+    d = qms.correct_defect(defect_id, req.correction, req.actor)
+    if not d:
+        raise HTTPException(status_code=404, detail=f"No OPEN defect '{defect_id}'.")
+    return {"defect": d, "next": "POST /qms/defects/{id}/reverify with the corrected delivery's real metrics"}
+
+
+@router.post("/qms/defects/{defect_id}/reverify")
+async def qms_reverify_defect(defect_id: str, req: QMSGate):
+    """Re-run the SAME gate on the corrected delivery's REAL metrics: closes only on a genuine pass;
+    a failed re-verification REOPENS the defect."""
+    res = qms.reverify_defect(defect_id, {"coverage": req.coverage, "stubs_found": req.stubs_found})
+    if not res:
+        raise HTTPException(status_code=404, detail=f"No CORRECTED defect '{defect_id}' awaiting re-verification.")
+    return {**res, "real": True}
 
 
 class DCMSCommit(BaseModel):

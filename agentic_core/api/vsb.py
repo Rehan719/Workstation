@@ -120,9 +120,16 @@ def _build_repo_files(vsb: dict) -> dict:
         "- `resources/cascades.json` — native AI-swarm cascades (reconfigurable, re-runnable)\n"
         "- `compliance/QUALITY.md` — live compliance + quality record (see `manifest.json`)\n"
         "- `web/`, `webapp/`, `mobile/` — integrated Website / Web app / Phone app (scaffold)\n")
+    # §8 (W310) — the §13 body EXPRESSES the genome: applied (CCA-approved) mutations are part of
+    # the entity's shipped identity, not just a hidden record field.
+    _mut = vsb.get("applied_mutations") or []
+    _mut_md = ("\n## Applied mutations (CCA-approved)\n"
+               + "\n".join(f"- **{m.get('trait')}** — {str(m.get('proposed_change'))[:160]} "
+                           f"_(cca {m.get('cca_id')}, {m.get('applied_at')})_" for m in _mut[-10:])
+               + "\n") if _mut else ""
     f["IDENTITY.md"] = (f"# Identity — {name}\n\nGenome spec:\n\n```json\n"
                         f"{json.dumps(vsb.get('genome_spec') or {}, indent=2)[:4000]}\n```\n\n"
-                        f"Epigenetic traits: {vsb.get('epigenetic_traits')}\n")
+                        f"Epigenetic traits: {vsb.get('epigenetic_traits')}\n" + _mut_md)
     # §4 (W304) — the journey's OPERATIONAL intelligence + selection EVIDENCE live in the repo
     # (honest stubs when the entity was established without them — never invented content).
     gj = vsb.get("genesis_journey") if isinstance(vsb.get("genesis_journey"), dict) else {}
@@ -1356,6 +1363,26 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     return unified
 
 
+def mark_repo_stale(vsb_id: str, reason: str) -> bool:
+    """§13 (W309) — autonomous drift honesty: when the entity's living record moves WITHOUT a
+    re-ship (an operating cycle, a compliance regression), an existing shipped repo is marked
+    STALE with the reason — never silently outdated. No-op when nothing was ever shipped."""
+    p = _REPO_STORE / f"{vsb_id}.ship.json"
+    if not p.exists():
+        return False
+    try:
+        ship = json.loads(p.read_text(encoding="utf-8"))
+        if ship.get("stale"):
+            return True     # already honest
+        ship["stale"] = True
+        ship["stale_since"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        ship["stale_reason"] = str(reason)[:200]
+        p.write_text(json.dumps(ship, indent=2), encoding="utf-8")
+        return True
+    except Exception:
+        return False
+
+
 class RepoCascadeRequest(BaseModel):
     mission: str = ""
     objective_id: str | None = None
@@ -1419,12 +1446,27 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
     """
     vsb = _require_vsb_access(vsb_id, user)
 
+    # §8 (W310) — the genome is EXPRESSED here: the entity's genome spec, epigenetic traits and
+    # previously-APPLIED mutations genuinely shape the next evolution (a real read, not decoration).
+    _gs = vsb.get("genome_spec") or {}
+    _traits = vsb.get("epigenetic_traits") or {}
+    _applied = vsb.get("applied_mutations") or []
+    _genome_lines = ""
+    if _gs or _traits or _applied:
+        _genome_lines = (
+            "Genome expression (evolve WITH the grain of this genome):\n"
+            + (f"  concept: {str(_gs.get('concept'))[:200]}\n" if _gs.get("concept") else "")
+            + (f"  epigenetic traits: {_traits}\n" if _traits else "")
+            + (f"  applied mutations so far: "
+               f"{[m.get('trait') for m in _applied[-5:]]}\n" if _applied else "")
+        )
     prompt = (
         f"You are performing an evolution cycle for VSB: {vsb['name']}\n"
         f"Domain: {vsb['domain']} | Stage: {vsb['stage']}\n"
         f"Current challenge: {vsb['challenge']}\n"
         f"Trigger: {req.trigger}\n"
         + (f"Context: {req.context}\n" if req.context else "")
+        + _genome_lines
         + "\nGenerate 3 specific evolution proposals to improve this VSB's performance, "
         "output quality, or value delivery. For each, format as:\n"
         "EVOLVE | trait | proposed_change | expected_impact\n"
@@ -1444,9 +1486,53 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
                     "expected_impact": parts[3],
                 })
 
+    # §8 (W310) — HONEST fallback when the model output carries no parseable EVOLVE lines (the
+    # owned structured engine, e.g.): propose from the entity's REAL measured state — unverified
+    # journey stages and a non-pass §11 posture — each naming its evidence basis. Never invented;
+    # with no evidence, proposals stay empty and that is recorded truthfully.
+    if not proposals:
+        _gj2 = vsb.get("genesis_journey") if isinstance(vsb.get("genesis_journey"), dict) else {}
+        for _stage, _v in list((_gj2.get("stage_verifications") or {}).items()):
+            if isinstance(_v, dict) and not _v.get("verified") and len(proposals) < 2:
+                proposals.append({
+                    "trait": f"{_stage}_strength",
+                    "proposed_change": (f"strengthen the {_stage} stage to a verified state "
+                                        f"(measured score {_v.get('score')})"),
+                    "expected_impact": "stage verification passes; §10 bar coverage rises",
+                    "basis": "measured stage verification (evidence-based, owned)"})
+        try:
+            from agentic_core.economy.living_vsbs import _latest_screen
+            _scr = _latest_screen(vsb_id)
+            if _scr and _scr != "pass" and len(proposals) < 3:
+                proposals.append({
+                    "trait": "compliance_posture",
+                    "proposed_change": (f"remediate the §11 screen posture (currently '{_scr}') "
+                                        "across the entity's plan and registration text"),
+                    "expected_impact": "the screen returns to pass; distributions are never held",
+                    "basis": "latest §11 compliance screen (evidence-based, owned)"})
+        except Exception:
+            pass
+
     vsb["generation"] = vsb.get("generation", 0) + 1
     vsb["last_evolved"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     vsb["evolution_proposals"] = proposals
+
+    # §8 (W310) — evolution proposals are CONSEQUENTIAL: they route to the arms-length Change
+    # Control Agency (vsb_evolution → MEDIUM tier, never auto-approved — the Owner keeps the gate)
+    # and MUTATE the entity's genome only on approval (POST /{vsb_id}/evolution/apply).
+    if proposals:
+        try:
+            from agentic_core.api.change_control import SubmitChangeRequest, submit_change
+            _sub = await submit_change(SubmitChangeRequest(
+                title=f"Evolution proposals for {vsb['name']} (gen {vsb['generation']})",
+                change_type="vsb_evolution",
+                description="; ".join(f"{p['trait']}: {p['proposed_change'][:120]}" for p in proposals),
+                rationale=f"Evolution cycle trigger: {req.trigger}. Mutations apply ONLY on approval.",
+                affected_systems=["vsb", vsb_id, "genome"],
+                submitted_by=f"vsb_evolution_{vsb_id}", vsb_id=vsb_id))
+            vsb["evolution_pending_cca"] = _sub.get("cca_id")
+        except Exception:
+            vsb["evolution_pending_cca"] = None
     _save_vsb(vsb)
 
     # §13 (W290) — the generated repo TRACKS the life: on evolution, an existing shipped repo is
@@ -1477,6 +1563,77 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
         "vsb_id": vsb_id,
         "generation": vsb["generation"],
         "proposals": proposals,
+        "evolution_pending_cca": vsb.get("evolution_pending_cca"),   # §8 (W310) — awaiting review
         "trigger": req.trigger,
         "repo_refresh": repo_refresh,
     }
+
+
+def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
+    """§8 (W310) — the genome MUTATES on approval, and only on approval: when the entity's pending
+    vsb_evolution change request has been APPROVED by the arms-length CCA, fold the proposals into
+    the entity's epigenetic traits as traceable applied mutations, refresh the genome registry
+    pattern, mark the CCA implemented, and mark the shipped repo stale (drift honesty). Honest
+    no-ops: nothing pending / not yet approved / already applied."""
+    vsb = _load_vsb(vsb_id)
+    if not vsb:
+        return {"applied": False, "reason": "vsb_not_found"}
+    cca_id = vsb.get("evolution_pending_cca")
+    if not cca_id:
+        return {"applied": False, "reason": "no_pending_evolution"}
+    from agentic_core.api.change_control import _load_change, _save_change
+    change = _load_change(cca_id)
+    if not change:
+        return {"applied": False, "reason": "cca_not_found", "cca_id": cca_id}
+    if change.get("status") != "approved":
+        return {"applied": False, "reason": f"cca_status_{change.get('status')}", "cca_id": cca_id}
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    proposals = vsb.get("evolution_proposals") or []
+    applied = []
+    traits = vsb.get("epigenetic_traits") or {}
+    for p in proposals:
+        t = str(p.get("trait") or "").strip()
+        if not t:
+            continue
+        traits[t] = str(p.get("proposed_change") or "")[:300]
+        applied.append({"trait": t, "proposed_change": p.get("proposed_change"),
+                        "expected_impact": p.get("expected_impact"),
+                        "cca_id": cca_id, "applied_at": now})
+    vsb["epigenetic_traits"] = traits
+    vsb["applied_mutations"] = (vsb.get("applied_mutations") or []) + applied
+    vsb["evolution_pending_cca"] = None
+    _save_vsb(vsb)
+    try:   # the genome registry tracks the mutated pattern (layer 2 = applied epigenetics)
+        _genome_registry.store_epigenetic_pattern(
+            pattern_id=vsb_id, data={"applied_mutations": vsb["applied_mutations"][-10:],
+                                     "epigenetic_traits": traits}, layer=2)
+    except Exception:
+        pass
+    change["status"] = "implemented"
+    change["implemented_at"] = now
+    change.setdefault("audit_trail", []).append(
+        {"event": "implemented", "ts": now, "by": "vsb_evolution_apply",
+         "mutations_applied": len(applied)})
+    _save_change(change)
+    mark_repo_stale(vsb_id, f"approved evolution mutations applied (cca {cca_id})")
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "vsb.evolution.applied", "vsb_id": vsb_id, "cca_id": cca_id,
+                         "mutations": [a["trait"] for a in applied]})
+    except Exception:
+        pass
+    try:
+        biobus.fire_signal("motor", "vsb.evolution.apply",
+                           f"{vsb.get('name')}: {len(applied)} approved mutations applied", 0.7)
+    except Exception:
+        pass
+    return {"applied": True, "vsb_id": vsb_id, "cca_id": cca_id,
+            "mutations_applied": len(applied), "applied_mutations": applied}
+
+
+@router.post("/{vsb_id}/evolution/apply")
+async def apply_evolution_endpoint(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    """§8 (W310) — apply the entity's CCA-APPROVED evolution proposals as genome mutations.
+    Refuses honestly while the change request is still awaiting review."""
+    _require_vsb_access(vsb_id, user)
+    return apply_approved_evolution(vsb_id)

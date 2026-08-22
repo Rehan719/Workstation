@@ -209,6 +209,13 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
                   {effectiveProv.is_external ? `via ${effectiveProv.served_by}` : `in-house · ${effectiveProv.served_by ?? 'native'}`}
                 </span>
               )}
+              {/* §10×§11 (W308) — every Offering-1 response carries its real QMS + compliance posture */}
+              {effectiveProv?.quality_assurance && (
+                <span title={`coverage ${effectiveProv.quality_assurance.delivery_coverage} · compliance ${effectiveProv.quality_assurance.compliance_overall ?? 'n/a'}`}
+                  className={`text-[8px] font-black uppercase px-2 py-1 rounded ${effectiveProv.quality_assurance.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                  QMS {effectiveProv.quality_assurance.qms_gate_passed ? 'pass' : 'flagged'}
+                </span>
+              )}
               <button type="button" onClick={copyResult} aria-label="Copy result"
                 className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1">
                 {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />} {copied ? 'Copied' : 'Copy'}

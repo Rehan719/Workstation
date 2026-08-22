@@ -29,4 +29,22 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0) -> Tuple[str, 
                        duration_ms=int((time.monotonic() - t0) * 1000), success=bool(output))
     except Exception:
         pass
-    return output, {"posture": "in-house-first", "served_by": served_by, "is_external": is_external}
+    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": served_by,
+                                  "is_external": is_external}
+    # §10×§11 (W308) — Offering-1 GATED: every domain-tool / refine response passes the SAME living
+    # QMS + compliance gate as the cascade and deliverables (assure_delivery). FLAG, never block:
+    # the user always gets their output; the quality/compliance posture rides on the provenance the
+    # UI already renders. Failures open traceable QMS defects (label = the serving agent).
+    try:
+        from agentic_core.vbs.quality import assure_delivery
+        _qa = (await assure_delivery(output, None, label=f"tool:{agent}"))["quality"]
+        provenance["quality_assurance"] = {
+            "qms_gate_passed": _qa.get("qms_gate_passed"),
+            "delivery_coverage": _qa.get("delivery_coverage"),
+            "stub_found": _qa.get("stub_found"),
+            "compliance_overall": (_qa.get("compliance") or {}).get("overall"),
+            "quality_record_hash": _qa.get("quality_record_hash"),
+        }
+    except Exception as exc:   # the gate itself must never cost the user their output
+        provenance["quality_assurance_error"] = str(exc)
+    return output, provenance

@@ -87,6 +87,33 @@ export const Deliverables: React.FC = () => {
     setBusy(false);
   };
 
+  // §3A (W308) — DEVELOP: refine the deliverable's OWN content in-house, and the refined text
+  // persists as the next version (verbatim, QMS-gated) instead of evaporating in the UI.
+  const [refineInstr, setRefineInstr] = useState('');
+  const [refining, setRefining] = useState(false);
+  const refineToNextVersion = async () => {
+    if (!selected || !refineInstr.trim() || refining) return;
+    setRefining(true); setError('');
+    try {
+      const rr = await fetch('/api/v1/refine', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ previous: selected.content, instruction: refineInstr, context: selected.title }),
+      });
+      if (!rr.ok) throw new Error(`refine HTTP ${rr.status}`);
+      const refined = String((await rr.json())?.refined ?? '');
+      if (!refined.trim()) throw new Error('refine returned empty content');
+      const vr = await fetch(`/api/v1/deliverables/${selected.id}/regenerate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: refined }),
+      });
+      if (!vr.ok) throw new Error(`version HTTP ${vr.status}`);
+      setSelected(await vr.json());
+      setRefineInstr('');
+      await loadList();
+    } catch (e: any) { setError(e?.message ?? String(e)); }
+    setRefining(false);
+  };
+
   return (
     <div className="space-y-8 pb-24">
       <header>
@@ -204,6 +231,16 @@ export const Deliverables: React.FC = () => {
                   className="flex items-center gap-1.5 bg-aura text-sovereign text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90">
                   <Download size={12} /> Download
                 </a>
+              </div>
+              {/* §3A (W308) — DEVELOP: the refined result persists as the next version */}
+              <div className="mt-2 flex items-end gap-2">
+                <input value={refineInstr} onChange={e => setRefineInstr(e.target.value)}
+                  className="flex-1 text-[11px] bg-slate-950 border border-slate-900 rounded-xl p-2.5 text-slate-300"
+                  placeholder="Refine this deliverable (in-house) — the result is saved as the next version…" />
+                <Button onClick={refineToNextVersion} disabled={refining || !refineInstr.trim()}
+                  className="flex items-center gap-1.5 bg-slate-900 text-highlight text-[11px]">
+                  {refining ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Refine → new version
+                </Button>
               </div>
             </Card>
           )}

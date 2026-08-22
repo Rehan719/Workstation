@@ -107,6 +107,8 @@ class ProduceRequest(BaseModel):
 class RegenerateRequest(BaseModel):
     brief: Optional[str] = None       # reconfigure the brief …
     sections: Optional[List[str]] = None  # … and/or the section structure
+    content: str = ""                 # §3A (W308): DEVELOP — refined text persists as the next
+                                      # version VERBATIM (no regeneration), same QMS gate
 
 
 @router.get("/types")
@@ -703,8 +705,17 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest):
         if d["id"] == deliverable_id:
             brief = req.brief or d["brief"]
             sections = req.sections if req.sections is not None else d.get("sections", [])
-            gen = await _generate(d["type"], d["title"], brief, d.get("domain", "enterprise"),
-                                  d.get("vsb_id"), sections)
+            if req.content.strip():
+                # §3A (W308) — DEVELOP: a refined draft (e.g. /refine output) persists as the next
+                # version VERBATIM — the develop loop lands in history instead of evaporating in the UI.
+                gen = {"content": req.content, "sections": sections or [
+                           m.group(1).strip() for m in
+                           re.finditer(r"^#{1,2}\s+(.+)$", req.content, flags=re.M)][:24],
+                       "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
+                                         "note": "refined content supplied verbatim — not regenerated"}}
+            else:
+                gen = await _generate(d["type"], d["title"], brief, d.get("domain", "enterprise"),
+                                      d.get("vsb_id"), sections)
             qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable")
             now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             d["brief"] = brief

@@ -2,19 +2,19 @@
 
 **AI-mediated workspace for moving ideas from concept to commercial output.**
 
-Version: 1.0.0 | Status: MVP (Enterprise vertical working end-to-end)
+Version: 1.0.0 | Status: working end-to-end across 4 Realms × 6 Domains; virtual economy + multi-user auth flag-gated (Owner policy)
 
 ---
 
 ## What it does
 
-Workstation gives you an organised AI workspace structured as a virtual company. You enter via an AI CEO, pick a **Realm** (Enterprise · Learning · Developing · Scholarship) and a **Domain** (Religion · Science · Education · Law · Employment · Care), create a **Project**, and run it through **Products** that move it through a lifecycle:
+Workstation gives you an organised AI workspace structured as a living virtual company. You enter via an AI avatar/CEO, pick a **Realm** (Enterprise · Learning · Developing · Scholarship) and a **Domain** (Religion · Science · Education · Law · Employment · Care), and take a challenge through the **Genesis journey**:
 
 ```
-Concept → Design → Build → Launch → Commercialise
+Concept → Research → Model·Simulate·Rank → Design → Operations → Commercialise → a LIVING VSB enterprise
 ```
 
-Each Product makes a real LLM call (Anthropic Claude by default) and returns a usable deliverable — a business model, technical spec, research report, marketing plan, or pitch deck — streamed in real time, persisted, and downloadable.
+Every deliverable is produced **in-house first** on Workstation's own native AI fabric (owned models, orchestration, and structured engines — external providers are optional, never required), gated by an owned QMS + compliance screen, persisted, exportable, and — for an established enterprise — shipped as a version-controlled entity repository (docs + website + web app + mobile scaffold + board pack) that keeps living: autonomously operated, screened, and evolved under arms-length change control.
 
 ## What you can do today
 
@@ -28,14 +28,17 @@ Each Product makes a real LLM call (Anthropic Claude by default) and returns a u
 | Upload documents → multi-format AI synthesis | `/synthesis` | Real — Report, Presentation, Business Model |
 | View portfolio metrics (CFO/CTO) | `/cfo`, `/cto` | Real — computed from project store + psutil |
 | Real-time system vitals (CPU, memory, projects) | Dashboard | Real — psutil + WebSocket |
-| Domain hubs (Religion, Science, Law, etc.) | `/religion` etc. | UI exists; domain-specific AI depth varies |
+| 18 domain tools + iterative refine (QMS + compliance gated) | `/religion` etc. | Real — in-house AI, honest provenance |
+| Genesis journey → establish a living VSB enterprise | `/genesis` | Real — simulated candidates, shipped repo at birth |
+| Entity economy (virtual WST), Board/Chief governance, marketplace | `/vsb`, `/economy` | Real computation — virtual currency only |
 
-## What is not yet built
+## What is not yet built / not enabled
 
-- User authentication (single-user local setup only)
-- Database (file-based JSON persistence — functional, not queryable at scale)
-- Mobile app
-- Marketing website
+- Multi-user mode is BUILT but OFF by default (`AUTH_ENABLED` — an Owner policy switch; `/login`
+  is the front door, self-serve signup is separately gated by `SELF_SERVE_SIGNUP_ENABLED`)
+- Real-money rails (the WST economy is **virtual/simulated only** — Stripe/KYC stay Owner-gated)
+- Database (file-based atomic JSON persistence — functional, not queryable at scale)
+- Native mobile app (entities ship a PWA scaffold, not a store app)
 - Analytics / error monitoring
 
 ## Run locally
@@ -43,8 +46,9 @@ Each Product makes a real LLM call (Anthropic Claude by default) and returns a u
 ### Prerequisites
 
 - Python 3.12+, Node 18+
-- An Anthropic API key (get one at [console.anthropic.com](https://console.anthropic.com))
-- Optional local fallback: [Ollama](https://ollama.com) — `ollama pull llama3.2`
+- Nothing else is required — the platform runs on its own native AI fabric out of the box
+- Optional: an Anthropic/OpenAI API key or [Ollama](https://ollama.com) (`ollama pull llama3.2`)
+  for richer external-model output — never a dependency
 
 ### 1. Clone
 
@@ -57,7 +61,8 @@ cd Workstation
 
 ```bash
 cp .env.example .env
-# Open .env and set ANTHROPIC_API_KEY
+# Optional: set ANTHROPIC_API_KEY / OPENAI_API_KEY for external-model output.
+# Leave unset to run fully in-house on the native fabric.
 ```
 
 ### 3. Backend
@@ -111,8 +116,9 @@ vercel deploy
 
 ```
 agentic_core/          — FastAPI backend (the real code)
-  app_mvp.py           — entrypoint; 64 routers / 313 routes, boots clean
-  ai/gateway.py        — Anthropic → OpenAI → Ollama chain (bounded timeout → labelled fallback)
+  app_mvp.py           — entrypoint; 456 routes, boots clean
+  ai/                  — the NATIVE fabric: owned models, orchestration, swarm, memory, homeostasis
+  ai/gateway.py        — in-house-first routing (native fabric → optional external providers)
   gaas/v5/             — constitutional interceptor engine + hash-chained UEG audit log
   organism/            — biomimetic systems: nervous, immune, self-healing, ATP,
                          heartbeat (continuous circadian autonomy)
@@ -131,18 +137,19 @@ apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
                          + domain hubs + all product pages
 ```
 
-> Verified: backend boots clean; **78 integration tests pass**; production build
-> (`tsc && vite build`) succeeds. Auth needs crypto deps — `pip install -r requirements.txt`.
+> Verified in CI on every push: backend boots clean; **280+ integration tests pass**; production
+> build (`tsc && vite build`) succeeds.
 
-Data persists to `data/projects/` and `data/synthesis_outputs/` as JSON files.
+Data persists under `data/` as atomically-written JSON files.
 
-## AI providers
+## AI resources (in-house first)
 
-The gateway tries providers in order:
-1. **Anthropic Claude** (`claude-sonnet-4-6`) — used when `ANTHROPIC_API_KEY` is set
-2. **OpenAI GPT-4o-mini** — fallback when `OPENAI_API_KEY` is set
-3. **Ollama llama3.2** — local fallback if Ollama is running
-4. **Labelled error response** — if nothing is available; dev still runs, never a silent fake
+Workstation's ★ critical mandate is that its AI is its **own reconfigurable resource** — models,
+orchestration, and swarm are native, not API wrappers. The gateway routes:
+1. **Native fabric** — owned models + the structured engine; always available, honest provenance
+   (`served_by` on every response)
+2. **External providers** (optional, labelled `is_external`) — Anthropic / OpenAI when a key is
+   set, Ollama when running — enrichment, never a dependency
 
 ## Roadmap
 
@@ -151,7 +158,7 @@ served at `GET /api/v1/plan`) and **`docs/ACTION_PLAN.md`**; cycle-by-cycle prog
 **`docs/AUTONOMOUS_PROGRESS.md`**. Summary:
 
 **Phase 1 — ✅ done**: authentication (opt-in JWT, resilient crypto imports), integration test
-suite (78 passing), clean boot verified, frontend↔backend integration (all 18 previously-broken
+suite (280+ passing), clean boot verified, frontend↔backend integration (all 18 previously-broken
 endpoints wired), production build verified + code-split.
 
 **Phase 2 — in progress (non-gated)**: deeper domain-specific AI depth across Realm × Domain,

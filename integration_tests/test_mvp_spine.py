@@ -699,6 +699,198 @@ def test_composition_lifecycle_params_and_gate(client):
     client.delete(f"/api/v1/resources/compositions/{bad['id']}")   # tidy the second design
 
 
+def test_marketplace_attribution_owner_scoped(client, monkeypatch):
+    # §14×§12 (W311) — marketplace mutations are OWNER-SCOPED and attribution is unspoofable:
+    # creator_id is server-stamped under auth; a listing can only be revenue-attributed to a VSB
+    # the caller owns (404 never 403); PATCH/DELETE are owner-only; creator_id immutable by patch.
+    import agentic_core.auth.core as ac
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = ac._load_users()
+    for u in ("w311a", "w311b"):
+        users[u] = {"username": u, "hashed_password": ac._pwd_ctx.hash("pw12345678"), "role": "user"}
+    ac._save_users(users)
+
+    def hdr(u):
+        t = client.post("/api/v1/auth/token",
+                        data={"username": u, "password": "pw12345678"}).json()["access_token"]
+        return {"Authorization": f"Bearer {t}"}
+
+    ha, hb = hdr("w311a"), hdr("w311b")
+    va = client.post("/api/v1/genesis/establish", json={
+        "problem": "w311a venture", "domain": "enterprise", "concept": "A.", "design": "D.",
+        "commercialisation": "C.", "ship_output": False}, headers=ha).json()["vsb_id"]
+    l1 = client.post("/api/v1/marketplace/listings", json={
+        "name": "w311 halal pack", "price_wst": 10,
+        "creator_id": "someone_else", "vsb_id": va}, headers=ha).json()
+    assert l1["creator_id"] == "w311a"                       # spoofed creator ignored
+    assert client.post("/api/v1/marketplace/listings", json={
+        "name": "spoof", "price_wst": 5, "vsb_id": va}, headers=hb).status_code == 404
+    lid = l1["id"]
+    assert client.patch(f"/api/v1/marketplace/listings/{lid}",
+                        json={"price_wst": 1}, headers=hb).status_code == 404
+    assert client.delete(f"/api/v1/marketplace/listings/{lid}", headers=hb).status_code == 404
+    assert client.patch(f"/api/v1/marketplace/listings/{lid}",
+                        json={"price_wst": 12}, headers=ha).status_code == 200
+    assert client.patch(f"/api/v1/marketplace/listings/{lid}",
+                        json={"creator_id": "hax"}, headers=ha).json()["creator_id"] == "w311a"
+    client.delete(f"/api/v1/marketplace/listings/{lid}", headers=ha)
+
+
+def test_taxonomy_is_canonical():
+    # §17.1 (W311) — ONE module owns the Realm × Domain taxonomy; the BTO catalog (previously a
+    # drifted five-realm list) serves the canon.
+    from agentic_core.taxonomy import REALMS, DOMAINS
+    from agentic_core.catalog.bto import _build_component
+    assert REALMS == ("enterprise", "learning", "developing", "scholarship")
+    assert DOMAINS == ("religion", "science", "education", "law", "employment", "care")
+    assert _build_component("realms")["available"] == ["Enterprise", "Learning", "Developing", "Scholarship"]
+    assert set(_build_component("domains")["available"]) == {"Religion", "Science", "Education",
+                                                             "Law", "Employment", "Care"}
+
+
+def test_genome_consequential_evolution_loop(client):
+    # §8 (W310) — the genome is CONSEQUENTIAL: evolution proposals are evidence-based (basis named)
+    # and route to the arms-length CCA at MEDIUM tier (never auto-approved — the Owner keeps the
+    # gate); mutations apply ONLY on approval, land traceably on the entity, mark the CCA
+    # implemented, mark the shipped repo stale (drift honesty), and the shipped IDENTITY expresses
+    # the applied mutations.
+    import json as _json
+    from agentic_core.config import data_path
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": "w310 genome venture", "domain": "enterprise",
+        "establish": True, "ship_output": True}).json()
+    vid = (j.get("established_vsb") or {}).get("vsb_id")
+    assert vid
+    ev = client.post(f"/api/v1/vsb/{vid}/evolve", json={"trigger": "w310"}).json()
+    cca = ev.get("evolution_pending_cca")
+    props = ev.get("proposals") or []
+    assert cca and props and all(p.get("basis") or p.get("expected_impact") for p in props)
+    ch = client.get(f"/api/v1/cca/{cca}").json()
+    assert ch["impact_tier"] == "MEDIUM" and ch["status"] == "submitted"   # never auto-approved
+    pre = client.post(f"/api/v1/vsb/{vid}/evolution/apply").json()
+    assert pre["applied"] is False and "cca_status" in str(pre.get("reason"))
+    client.post(f"/api/v1/cca/{cca}/review",
+                json={"override_decision": "approved", "reviewer_notes": "w310 owner approval"})
+    ap = client.post(f"/api/v1/vsb/{vid}/evolution/apply").json()
+    assert ap["applied"] is True and ap["mutations_applied"] > 0
+    assert client.get(f"/api/v1/cca/{cca}").json()["status"] == "implemented"
+    ship = _json.loads((data_path("vsb_repos") / f"{vid}.ship.json").read_text(encoding="utf-8"))
+    assert ship.get("stale") is True
+    client.post(f"/api/v1/vsb/{vid}/repo")
+    idmd = (data_path("vsb_repos") / vid / "IDENTITY.md").read_text(encoding="utf-8")
+    assert "Applied mutations (CCA-approved)" in idmd
+    # applying twice is an honest no-op (nothing pending)
+    again = client.post(f"/api/v1/vsb/{vid}/evolution/apply").json()
+    assert again["applied"] is False and again["reason"] == "no_pending_evolution"
+
+
+def test_birth_is_alive_and_consequences(client):
+    # §3×§8×§12 (W309) — birth is ALIVE: the newborn's first §11 screen + first governed economy
+    # cycle run AT establishment; a FAIL-screened entity's distributions are HELD until a re-screen
+    # clears it; autonomous drift AFTER a ship marks the repo honestly STALE.
+    import json as _json
+    from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+    e = client.post("/api/v1/genesis/establish", json={
+        "problem": "w309 living birth venture", "domain": "enterprise",
+        "concept": "A halal community textile venture with clear operations.",
+        "design": "Design body.", "commercialisation": "Commercial plan."}).json()
+    vid = e["vsb_id"]
+    bv = e.get("birth_vitals") or {}
+    assert (bv.get("first_screen") or {}).get("overall") in ("pass", "review", "fail")
+    fc = bv.get("first_cycle") or {}
+    assert fc.get("cycle") == 1 or fc.get("cycle_ran") is False     # ran, or held honestly
+    ship_p = data_path("vsb_repos") / f"{vid}.ship.json"
+    assert _json.loads(ship_p.read_text(encoding="utf-8")).get("stale") is False   # vitals BEFORE ship
+    # autonomous drift after the ship → stale, with the reason
+    from agentic_core.economy.living_vsbs import operate_vsb
+    op = operate_vsb(vid)
+    assert op and op.get("error") is None
+    ship2 = _json.loads(ship_p.read_text(encoding="utf-8"))
+    assert ship2.get("stale") is True and "cycle" in str(ship2.get("stale_reason", ""))
+    # a FAIL screen HOLDS the economy — §11 teeth in §12
+    hp = data_path("vsb_compliance_history.json")
+    h = load_json_tolerant(hp, {}) or {}
+    h[vid] = {"overall": "fail", "last_at": "2026-08-22T00:00:00Z", "history": []}
+    atomic_write_json(hp, h)
+    held = operate_vsb(vid)
+    assert held.get("cycle_ran") is False and held.get("held") == "compliance_fail_hold"
+    # ...and the hold LIFTS when a re-screen clears it (this entity screens pass/review)
+    from agentic_core.organism.heartbeat import screen_living_vsb
+    res = screen_living_vsb(vid)
+    if res and res.get("overall") != "fail":
+        lifted = operate_vsb(vid)
+        assert lifted.get("held") is None and lifted.get("error") is None
+
+
+def test_offering1_gated_and_develop_loop(client):
+    # §10×§11×§3A (W308) — Offering-1 is GATED: every domain-tool / refine response passes the same
+    # living QMS + compliance gate (FLAG, never block — the output always arrives, its real posture
+    # rides on the provenance), and the DEVELOP loop is real: refined content persists as the next
+    # deliverable version VERBATIM instead of evaporating in the UI.
+    r = client.post("/api/v1/education/feedback", json={
+        "student_work": "An essay on rivers and their role in trade across history, "
+                        "with substantive discussion of the Thames.", "criteria": "clarity"})
+    assert r.status_code == 200
+    qa = (r.json().get("ai_provenance") or {}).get("quality_assurance") or {}
+    assert "qms_gate_passed" in qa and "compliance_overall" in qa    # gated, output intact
+    rf = client.post("/api/v1/refine", json={
+        "previous": "A draft about community gardens with several substantive paragraphs "
+                    "of real content to refine further today.", "instruction": "tighten"}).json()
+    assert "qms_gate_passed" in ((rf.get("ai_provenance") or {}).get("quality_assurance") or {})
+    body = ("# Dev Loop\n\n## Objective\nSubstantive deliverable content well beyond the stub floor, "
+            "discussing the halal community meal service in specific operational detail across "
+            "procurement, kitchen operations and delivery routes.\n\n## Next Steps\nIterate.")
+    d = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "w308 dev", "content": body}).json()
+    d2 = client.post(f"/api/v1/deliverables/{d['id']}/regenerate", json={
+        "content": body + "\n\n## Refinement\nW308-REFINED-MARKER."}).json()
+    assert len(d2["versions"]) == len(d["versions"]) + 1
+    assert "W308-REFINED-MARKER" in d2["content"]
+    assert d2["ai_provenance"]["served_by"] == "verbatim-ingest"
+    # the brief-driven regeneration path is untouched
+    d3 = client.post(f"/api/v1/deliverables/{d['id']}/regenerate", json={"brief": "w308 regen"}).json()
+    assert d3["ai_provenance"]["served_by"] != "verbatim-ingest"
+
+
+def test_qms_defect_loop_and_measured_bar(client):
+    # §10 (W307) — the QMS is genuinely stateful and honest: defects are PERSISTENT + TRACEABLE,
+    # the non-conformance rate is a REAL rate (failures / gates run), the §8.7/§10.2
+    # defect→correction→re-verify loop closes only on a genuine pass (and reopens on a failed
+    # re-verify), and the quality record measures the §10 bar PER-CRITERION instead of implying
+    # a 16-criterion measurement that never ran.
+    base = client.get("/api/v1/vbs/qms/defects").json()["summary"]
+    assert client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.2, "stubs_found": False}).json()["passed"] is False
+    assert client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.99, "stubs_found": False}).json()["passed"] is True
+    d = client.get("/api/v1/vbs/qms/defects", params={"status": "open"}).json()
+    s = d["summary"]
+    assert s["gates_run"] == base["gates_run"] + 2 and s["defects_total"] == base["defects_total"] + 1
+    assert s["gates_run"] > 0 and abs(s["non_conformance_rate"] - round(s["defects_total"] / s["gates_run"], 4)) < 1e-9
+    new = [x for x in d["defects"] if x["id"].startswith("DEF-")]
+    assert new and new[0]["label"] and new[0]["status"] == "open"
+    did = new[0]["id"]
+    # correction alone never closes; re-verify on real metrics does
+    cor = client.post(f"/api/v1/vbs/qms/defects/{did}/correct", json={"correction": "regenerated"}).json()
+    assert cor["defect"]["status"] == "corrected"
+    rev = client.post(f"/api/v1/vbs/qms/defects/{did}/reverify", json={"coverage": 0.97, "stubs_found": False}).json()
+    assert rev["passed"] is True and rev["defect"]["status"] == "closed"
+    # a failed re-verify REOPENS
+    client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.1, "stubs_found": True})
+    d2 = client.get("/api/v1/vbs/qms/defects", params={"status": "open"}).json()["defects"][0]
+    client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/correct", json={"correction": "attempt"})
+    rev2 = client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/reverify", json={"coverage": 0.3, "stubs_found": False}).json()
+    assert rev2["passed"] is False and rev2["defect"]["status"] == "open"
+    # the bar is measured per-criterion, honest about what was NOT measured
+    body = ("# W307\n\n## Objective\nSubstantive content long enough to clear the stub floor — the "
+            "living QMS measures what it can and declares the rest unmeasured, never implied.\n\n"
+            "## Context\nQuality.\n\n## Key Factors\nEvidence.\n\n## Approach\nHonesty.\n\n## Next Steps\nCommit.")
+    dl = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "w307 bar", "content": body}).json()
+    bm = dl["quality_assurance"]["quality"]["bar_measured"]
+    assert bm["measured"] >= 4 and bm["not_measured"] > 0
+    assert bm["criteria"]["compliant"]["measured"] is True
+    assert bm["criteria"]["best-in-class"]["met"] is None    # never claimed unmeasured criteria
+
+
 def test_deliverables_accept_verbatim_content(client):
     # §4.9 (W306) — 'any selectable format' is reachable for work already produced elsewhere:
     # /produce with content= carries it VERBATIM (no regeneration, honest provenance), still runs
