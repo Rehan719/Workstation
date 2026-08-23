@@ -65,6 +65,42 @@ def operate_one() -> Optional[Dict[str, Any]]:
     return operate_vsb(target["vsb_id"])
 
 
+DEV_SPEND_WST = 50.0   # §12 (W330) — the per-action development cost drawn from self_investment
+
+
+def spend_self_investment(vsb_id: str, purpose: str, amount: float = DEV_SPEND_WST) -> Dict[str, Any]:
+    """§12 (W330) — 'reinvests in its own growth' becomes REAL: the waterfall's self_investment
+    stage was the only stage with no consumer (pure accounting). The entity's OWN development
+    actions (autonomous evolution · repo re-ship) now SPEND from it — a balanced double-entry
+    posting (self_investment → development_spend), UEG-logged, honest zero-spend when the
+    balance is empty (development never blocks on an empty fund; the spend is recorded as
+    unfunded). Virtual WST only."""
+    try:
+        from agentic_core.economy.metabolism import EconomicMetabolism
+        d = _load()
+        reg = d.get(vsb_id) or {}
+        m = EconomicMetabolism(vsb_id, reg.get("entity_type", "waqf_ltd_hybrid"),
+                               reg.get("owner", "Rehan"))
+        bal = float((m.ledger.statement().get("balances") or {}).get("self_investment", 0.0))
+        spent = round(min(max(bal, 0.0), float(amount)), 6)
+        if spent > 0:
+            m.ledger.post("self_investment", "development_spend", spent,
+                          memo=f"reinvestment: {purpose[:120]}")
+        rec = {"vsb_id": vsb_id, "purpose": purpose[:120], "requested_wst": float(amount),
+               "spent_wst": spent, "funded": spent > 0,
+               "note": ("self_investment funded this development action" if spent > 0 else
+                        "self_investment balance empty — action ran unfunded (recorded honestly)")}
+        try:
+            from agentic_core.economy.governance import _ueg_log
+            _ueg_log({"type": "economy.self_investment_spend", **rec,
+                      "disclaimer": "Virtual/simulated WST — no real funds moved."})
+        except Exception:
+            pass
+        return rec
+    except Exception as exc:
+        return {"vsb_id": vsb_id, "error": str(exc)[:160], "funded": False}
+
+
 def _latest_screen(vsb_id: str) -> Optional[str]:
     """The entity's latest §11 screen verdict from the per-VSB compliance history (W288), or None."""
     try:

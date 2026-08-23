@@ -4,8 +4,10 @@ Payments — honest, launch-ready rails.
 Safety model (NEVER moves real money autonomously):
 - mode "simulation": no STRIPE_SECRET_KEY → clearly-labelled simulated sessions.
 - mode "test":       a test key (sk_test_…) → real Stripe TEST sessions, no real charge.
-- mode "live_gated": a live key (sk_live_…) WITHOUT STRIPE_LIVE_ENABLED=true → charges refused.
-- mode "live":       live key AND STRIPE_LIVE_ENABLED=true → real charges (Owner must set BOTH).
+- mode "live_gated": a live key (sk_live_…) without the FULL triple gate → charges refused.
+- mode "live":       requires ALL THREE: REAL_MONEY_ENABLED=True in code (a reviewed code change,
+  currently False — the Owner's standing constraint) + a live key + STRIPE_LIVE_ENABLED=true.
+  While the code constant is False, live charging is structurally unreachable (W331).
 
 WST balances are read from the real Capital Fund — never fabricated. The previous
 version returned a hardcoded wallet and `stripe_connected: True`; that has been removed.
@@ -23,6 +25,13 @@ def _mode() -> str:
     if not key:
         return "simulation"
     if key.startswith("sk_live_"):
+        # W331 — the platform-wide MASTER gate governs above the env switches: while
+        # REAL_MONEY_ENABLED is False in code (the Owner's standing constraint — flipping it is a
+        # CODE change the Owner reviews, not an env tweak), live charging is structurally
+        # unreachable even with both Stripe switches set.
+        from agentic_core.economy.owner_payments import REAL_MONEY_ENABLED
+        if not REAL_MONEY_ENABLED:
+            return "live_gated"
         return "live" if os.getenv("STRIPE_LIVE_ENABLED", "false").lower() == "true" else "live_gated"
     return "test"   # sk_test_… (or any non-live key) → Stripe test mode
 

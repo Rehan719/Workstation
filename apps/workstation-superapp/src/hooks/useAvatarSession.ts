@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { getPrefs } from '../lib/userPrefs';
 
 export interface AvatarSuggestedArea {
   route: string;    // WHITELISTED backend catalogue — only real platform routes
@@ -18,6 +19,30 @@ export interface AvatarMessage {
 }
 
 export type AvatarFaceState = 'idle' | 'thinking' | 'speaking';
+
+// W325 — resolve the user's grounding VSB once per page load (most recent owned entity; the
+// bearer layer scopes the listing, so only accessible entities resolve). Null = no VSB yet.
+let _groundingVsb: string | null | undefined;
+async function resolveGroundingVsb(): Promise<string | null> {
+  if (_groundingVsb !== undefined) return _groundingVsb ?? null;
+  try {
+    const r = await fetch('/api/v1/vsb');
+    const d = await r.json();
+    const rows: any[] = d.entities ?? [];
+    _groundingVsb = rows.length ? (rows[rows.length - 1].vsb_id ?? null) : null;
+  } catch { _groundingVsb = null; }
+  return _groundingVsb ?? null;
+}
+
+const _LANG_NAMES: Record<string, string> = {
+  en: 'English', ur: 'Urdu', ar: 'Arabic', fr: 'French', es: 'Spanish', de: 'German',
+  tr: 'Turkish', id: 'Indonesian', ms: 'Malay', bn: 'Bengali', hi: 'Hindi', zh: 'Chinese',
+};
+function prefLanguageName(): string | undefined {
+  const raw = (getPrefs().language || '').trim();
+  if (!raw) return undefined;
+  return _LANG_NAMES[raw.split('-')[0].toLowerCase()] ?? raw;
+}
 
 // Maps the current route to a domain context the backend uses to tailor its
 // system prompt (see DOMAIN_PROMPTS in agentic_core/avatars/api.py).
@@ -80,6 +105,7 @@ export function useAvatarSession() {
   const [micAmplitude, setMicAmplitude] = useState(0);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const speechRecRef = useRef<any>(null);   // W325 — browser-native STT session
   const audioChunksRef = useRef<Blob[]>([]);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -100,7 +126,7 @@ export function useAvatarSession() {
       const res = await axios.get('/api/v1/avatar/status', { timeout: 6000, validateStatus: () => true });
       // The avatar runs on Workstation's OWN native fabric — always online. Provider flags are
       // optional accelerants only, so they no longer gate the status.
-      setAiStatus(res.status === 200 && (res.data?.online || res.data?.native || res.data?.ollama_online || res.data?.openai_configured) ? 'online' : 'offline');
+      setAiStatus(res.status === 200 && (res.data?.online || res.data?.native || res.data?.ollama_online || res.data?.openai_key_present) ? 'online' : 'offline');
     } catch {
       setAiStatus('offline');
     }
@@ -137,6 +163,20 @@ export function useAvatarSession() {
   }, [speaking, recording]);
 
   const speakText = useCallback(async (text: string) => {
+    // W325 — IN-HOUSE voice first: browser-native speechSynthesis needs no key and no external
+    // call; the OpenAI /speak path is the optional external accelerant, not the default.
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      try {
+        setSpeaking(true);
+        const u = new SpeechSynthesisUtterance(text.slice(0, 1200));
+        u.volume = volume;
+        u.onend = () => { setSpeaking(false); setAmplitude(0); };
+        u.onerror = () => { setSpeaking(false); setAmplitude(0); };
+        window.speechSynthesis.speak(u);
+        setHasPlayedAudio(true);
+        return;
+      } catch { setSpeaking(false); }
+    }
     try {
       setSpeaking(true);
       const resp = await axios.post('/api/v1/avatar/speak', { text }, { responseType: 'blob' });
@@ -178,11 +218,16 @@ export function useAvatarSession() {
     const imageBase64 = pendingImage ? pendingImage.split(',')[1] : undefined;
     setPendingImage(null);
     try {
+      // W325 — enterprise-aware from the PLATFORM surface: the user's most recent VSB grounds
+      // the avatar (resolved once, tenancy via the bearer layer), and their language preference
+      // travels with every message.
       const resp = await axios.post('/api/v1/avatar/chat', {
         session_id: sessionId,
         message: text || 'Describe this image.',
         context,
         image_base64: imageBase64,
+        vsb_id: await resolveGroundingVsb(),
+        language: prefLanguageName(),
       });
       if (!sessionId) setSessionId(resp.data.session_id);
       const replyText: string = resp.data.response;
@@ -207,6 +252,28 @@ export function useAvatarSession() {
   }, [input, pendingImage, sessionId, context, speakReplies, speakText]);
 
   const startRecording = useCallback(async () => {
+    // W325 — IN-HOUSE voice input first: the browser's Web Speech recognition needs no key; the
+    // recorder + external Whisper path is the labelled fallback when it is unavailable.
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SR) {
+      try {
+        const rec = new SR();
+        rec.lang = getPrefs().language || 'en-US';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+        rec.onresult = (ev: any) => {
+          const text = ev.results?.[0]?.[0]?.transcript || '';
+          if (text) sendMessage(text);
+          setRecording(false);
+        };
+        rec.onerror = () => { setRecording(false); setNotice('Voice input failed — try typing instead.'); };
+        rec.onend = () => setRecording(false);
+        speechRecRef.current = rec;
+        rec.start();
+        setRecording(true);
+        return;
+      } catch { /* fall through to the recorder path */ }
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -250,6 +317,7 @@ export function useAvatarSession() {
   }, [sendMessage]);
 
   const stopRecording = useCallback(() => {
+    try { speechRecRef.current?.stop?.(); } catch { /* browser STT may already be stopped */ }
     mediaRecorderRef.current?.stop();
     setRecording(false);
   }, []);

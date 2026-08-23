@@ -335,7 +335,7 @@ is now closed** — the platform runs its OWN native AI fabric, in-house-first; 
 optional and never a dependency. Since then a **systematic in-house-integration sweep** (W58–W76) has
 pulled the genuinely-real `agentic_core`/`core` capabilities INTO that fabric, and a **living-organism
 workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-by-cycle execution log:
-`docs/AUTONOMOUS_PROGRESS.md` (workstreams W1–W96); real-vs-mock integration ledger:
+`docs/AUTONOMOUS_PROGRESS.md` (workstreams W1–W331, audit Rounds 1–7); real-vs-mock integration ledger:
 `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` (~44 areas scanned). Verified state: integration suite green
 (**~177 cases**), Spine CI green on `main`.
 
@@ -519,14 +519,17 @@ workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-
   visualiser, bespoke saved swarm cascades, the capabilities catalogue, one-click Chief delivery, the
   Domains↔Genesis bridge); richer drag-to-reconfigure UX over org/resource/swarm remains.
 - ◻ **Owner-gated (designed, not switched on) — the W6 launch items:** the VSB economic model with *real*
-  money (virtual WST only today — the live Stripe key must never move money), persistence hardening
-  (file → Postgres; `DATA_DIR` is now honoured everywhere), production-deployment, and an optional live
-  external AI key.
+  money (virtual WST only today — live charging is TRIPLE-gated: REAL_MONEY_ENABLED=True in code — a
+  reviewed code change, currently False — plus a live key plus STRIPE_LIVE_ENABLED; structurally
+  unreachable today, W331), persistence hardening
+  (file → Postgres: stores remain JSON under `DATA_DIR`; an unused `config/database.py`
+  SQLModel/DATABASE_URL seam and the psycopg2 dependency are already in place), production-deployment,
+  and an optional live external AI key.
 
 The integration sweep is **complete** — the genuinely-real `agentic_core`/`core` capabilities are now
 in-house (the ledger documents what was real vs. mock). The vision is **not** redefined down to current
 capability — the ◻ items above are the work that remains, with the W6 launch items gated on the Owner.
-(Companion plan: `ACTION_PLAN.md`, W1–W6.)
+(Companion plan: archived at `_archive/docs/ACTION_PLAN.md`; the live plan is `docs/WORKSTATION_IDBO_LIVING_PLAN.md`.)
 
 ---
 
@@ -574,6 +577,33 @@ gate on every output · append-only DCS audit · **Arms-Length Agency** (AI CEO 
 board/genome) · digital-twin pre-validation before major change · torch optionality · single
 router-mount point · signal-bus atomicity · living business plan ≤5-min staleness · KPI gate before
 customer delivery.
+
+**16.1 Reconciliation addendum — Rounds 3–7 (W241–W331), reconciled 2026-08-23.**
+The W331 fidelity walk verified ~34 §16–§18 claims accurate and corrected 25; the load-bearing
+updates (each verified in code, file:line evidence in the Round-7 audit journal):
+
+- **Delivered since the last §16 update:** tenant isolation across the whole platform
+  (W252/W295/W320/W324 — VSB spine · economy · deliverables · QMS defects · design surface, all
+  404-never-403, server-stamped owners); the §14 multi-user front door (Login page, Owner-curated
+  registration, Owner-gated self-serve signup flag, real 401→/login, caller-bound purchases —
+  W296/W297/W317); §11 WITH TEETH (engine-backed verdicts sealed + UEG-logged + CCA-routed, W285–W287;
+  continuous heartbeat re-screens, W288; marketplace listings held on FAIL + unpurchasable, W322;
+  substance-aware birth verdicts holding the economy, W322; the FAIL-routing perimeter covering the
+  entity's public surfaces, W319/W322); genuinely tamper-EVIDENT evidence chains (recompute-and-verify
+  + tail anchors + a persistent, measured DCMS — W327); the mobile-first Shell below 768px (W312);
+  double-entry books + period close (W256); the §10 bar MEASURED per-criterion with true
+  failures/gates arithmetic (W307/W316); the enterprise-aware avatar grounded in live entity state
+  with honest grounded_in + in-house browser-native voice (W325/W326); the owned model genuinely
+  able to serve (streaming + adaptive learned budget; measured serving mode, W323); entity-to-entity
+  SERVICE CONTRACTS + a real self_investment consumer (W330); the Expo mobile husk archived — the
+  superapp itself is the mobile experience (W331).
+- **Corrected over-claims:** all-language holds only when a capable model serves (the native floor
+  honestly reports what it honoured); avatar provider status reports env-var presence, not a
+  validated key; the in-house deliverable formats number 10 (the self-playing animated-HTML Video
+  render shipped in W264); the frontend page counts in the old §16 text are historical.
+- **§18 open questions:** B (canonical Realm set) is RESOLVED in code — `agentic_core/taxonomy.py`
+  + `src/lib/taxonomy.ts`, 4 Realms × 6 Domains, one source each side (W311/W321). A and C are moot:
+  the native fabric was built and seven audit rounds have shipped since.
 
 ## 18. Certainty & Agreement — what I am sure of, and what I want you to confirm
 

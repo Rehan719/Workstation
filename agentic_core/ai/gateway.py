@@ -250,6 +250,7 @@ class ModelGateway:
            never depends on an external provider and never ends in a bare error line."""
         await self._rate_limiter.acquire()
         augmented = self._augment(prompt)
+        from agentic_core.organism.self_healing import self_healer   # W323 — breaker on the stream path
 
         def _log(text: str) -> None:
             try:
@@ -258,8 +259,24 @@ class ModelGateway:
             except Exception:
                 pass
 
+        # §6 (W323) — the STREAM path is on the same control plane as query_meta: circuit-breaker
+        # gated, and every streamed serve RECORDS an outcome into the W275 learning loop (the
+        # scores that drive selection previously never saw streamed work — three live §4 surfaces
+        # ran entirely outside the plane).
+        def _record(served_by: str, is_external: bool, t0: float, ok: bool) -> None:
+            try:
+                from agentic_core.api.operational_excellence import record_outcome
+                # kind=model_attempt — the SAME learning-loop rows model_health() scores on
+                record_outcome("model_attempt", f"stream:{agent}", served_by=served_by,
+                               is_external=is_external,
+                               duration_ms=int((time.time() - t0) * 1000), success=ok)
+            except Exception:
+                pass
+
         # 1 — the OWNED local model: genuine token-by-token streaming
-        if os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes"):
+        if (os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes")
+                and not self_healer.is_open("ollama")):
+            _t0 = time.time()
             try:
                 import json as _json
                 timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
@@ -284,13 +301,17 @@ class ModelGateway:
                                     continue
                 if full.strip():
                     _log(full)
+                    self_healer.record_success("ollama")
+                    _record("ollama", False, _t0, True)
                     return
             except Exception:
-                pass
+                self_healer.record_failure("ollama")
+                _record("ollama", False, _t0, False)
 
         # 2 — external accelerants: OPT-IN ONLY (never a dependency)
         if os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true":
-            if self.anthropic_key:
+            if self.anthropic_key and not self_healer.is_open("claude"):
+                _t0 = time.time()
                 try:
                     import anthropic
                     client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
@@ -304,10 +325,14 @@ class ModelGateway:
                             full += chunk
                             yield chunk
                     _log(full)
+                    self_healer.record_success("claude")
+                    _record("claude", True, _t0, True)
                     return
                 except Exception:
-                    pass
-            if self.openai_key:
+                    self_healer.record_failure("claude")
+                    _record("claude", True, _t0, False)
+            if self.openai_key and not self_healer.is_open("openai"):
+                _t0 = time.time()
                 try:
                     from openai import AsyncOpenAI
                     client = AsyncOpenAI(api_key=self.openai_key)
@@ -323,11 +348,15 @@ class ModelGateway:
                         if delta:
                             yield delta
                     _log(full)
+                    self_healer.record_success("openai")
+                    _record("openai", True, _t0, True)
                     return
                 except Exception:
-                    pass
+                    self_healer.record_failure("openai")
+                    _record("openai", True, _t0, False)
 
         # 3 — the native structured floor: guaranteed, honest, in-house (chunked stream shape)
+        _floor_t0 = time.time()
         try:
             from agentic_core.ai.native import native_engine
             out = native_engine.generate(augmented, agent)
@@ -336,6 +365,7 @@ class ModelGateway:
         for chunk in self._stream_chunks(out):
             yield chunk
         _log(out)
+        _record("native", False, _floor_t0, True)   # W323 — the floor serve is a recorded outcome too
 
 
 gateway = ModelGateway()

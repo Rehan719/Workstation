@@ -39,17 +39,6 @@
       "port": 5173
     },
     {
-      "name": "Mobile (Expo \u2014 apps/mobile :8081)",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "--prefix",
-        "apps/mobile",
-        "run",
-        "start"
-      ],
-      "port": 8081
-    },
-    {
       "name": "Backend Auth (:8020, AUTH_ENABLED)",
       "runtimeExecutable": "venv\\Scripts\\python.exe",
       "runtimeArgs": [

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUp, Compass, ImagePlus, Loader2, Trash2 } from 'lucide-react';
+import { ArrowUp, Compass, ImagePlus, Loader2, Trash2, Volume2, VolumeX } from 'lucide-react';
 import type { UseAvatarSessionReturn } from '../../hooks/useAvatarSession';
 
 interface ConversationPanelProps {
@@ -44,6 +44,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
   const {
     messages, input, setInput, sending, notice, context,
     sendMessage, clearConversation, pendingImage, setPendingImage, handleImageFile,
+    speakReplies, setSpeakReplies,   // W325 — spoken replies are finally REACHABLE
   } = avatar;
 
   const navigate = useNavigate();
@@ -139,6 +140,13 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" aria-label="Attach image" onChange={handleImagePick} />
           <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Attach image" title="Attach image" className="shrink-0 p-1.5 rounded-xl text-slate-500 hover:text-aura transition-colors">
             <ImagePlus size={15} />
+          </button>
+          {/* W325 — the speak-replies capability was exported but reachable from NO component */}
+          <button type="button" onClick={() => setSpeakReplies(!speakReplies)}
+            aria-label={speakReplies ? 'Disable spoken replies' : 'Enable spoken replies'}
+            title={speakReplies ? 'Spoken replies ON (browser-native voice)' : 'Spoken replies OFF'}
+            className={`shrink-0 p-1.5 rounded-xl transition-colors ${speakReplies ? 'text-aura' : 'text-slate-500 hover:text-aura'}`}>
+            {speakReplies ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
           <textarea
             ref={textareaRef}

@@ -243,16 +243,20 @@ class QEPFlagshipService:
         }
 
     async def secure_billing_donations(self) -> Dict[str, Any]:
-        """Feature 11: Secure Billing & Donations (Production Grade)."""
-        # Production ready sandbox configurations
+        """Feature 11: Billing & Donations — HONEST status (fabrication removed, W331 cleanup).
+
+        The previous body returned hardcoded fake payment credentials under a '(Production
+        Grade)' docstring — the same fabricated-data class the W314/W329 sweeps removed from
+        the frontend. No payment backend is wired here; the platform's ONE real payment path
+        is agentic_core/api/v310/payments.py (simulation by default; live charging is
+        triple-gated and structurally unreachable while REAL_MONEY_ENABLED is False in code)."""
         return {
-            "stripe_publishable_key": "pk_test_sample",
-            "paypal_client_id": "sb-sample",
-            "subscription_tiers": [
-                {"name": "Sovereign Free", "price": 0},
-                {"name": "Guardian Pro", "price": 10, "benefits": ["Unlimited AI Coaching", "VR Access"]}
-            ],
-            "zakat_calculator": {"eligible": True, "logic": "2.5%_annual_wealth"}
+            "payment_backend": None,
+            "note": ("No billing is wired in the QEP module — nothing is fabricated. "
+                     "The platform's real payment rails live at /api/v310/payments "
+                     "(simulation mode by default; real charging Owner-gated in code)."),
+            "zakat_calculator": {"eligible": True, "logic": "2.5%_annual_wealth",
+                                 "note": "informational calculation only — no funds move"},
         }
 
     async def ai_guidance_assistant(self, query: str) -> Dict[str, Any]:

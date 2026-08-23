@@ -1496,3 +1496,57 @@ Suites: every item verified in-process at implementation time (W313 9/9 · W315 
 - **W329 (honesty CRITICAL):** silent failures + fabricated live-look data ended at the audited sites — 'Mark as Mastered' claims success ONLY on 2xx (was: toast regardless, hardcoded payload, invented tournament player counts now honestly labelled previews); heartbeat Start/Stop + BusinessPlan generate/add/review + VSBSpawnStudio orchestrate/detail + DigitalTwins inspector + TransformationDashboard tick + CognitionIntegration align + GovernanceHub copy all surface failure inline (typed objectives survive HTTP errors); Wallet no longer renders a fabricated 10,000,000 WST / HEALTHY on a dead backend ('—' + BACKEND UNREACHABLE); the app-wide biometrics chrome renders an honest grey OFFLINE dot instead of fabricated emerald health when readings are defaults (live flag threaded hook→chrome).
 
 In-process verification: W324 14/14 · W322 8/8 · W327 10/10 (+2 re-run after probe bugs) · W329 tsc 0 (live browser leg follows in W331). +4 contract tests.
+
+---
+
+## ROUND 7 — batch 2 (W323 · W325 · W326 · W330 · W331) — 2026-08-23
+
+- **W323 (§6 CRITICAL):** the owned model can actually SERVE — _run_model streams (per-chunk read
+  timeout) under an ADAPTIVE whole-attempt budget from the W275 learning loop's measured latency
+  (2× recent avg, 25s floor / 180s ceiling; 90s unmeasured), replacing the self-inflicted 25s cap
+  that demoted it on every substantial prompt (real warm generation measured ~72s). /native-ai/status
+  reports the MEASURED serving mode (what actually served the most recent recorded work) beside the
+  prediction — it previously claimed real_model while the floor served. gateway.stream joined the
+  control plane: circuit-breaker gated, every streamed serve (owned/external/floor) records a
+  model_attempt outcome into the learning loop that drives selection.
+- **W325 (§9):** the avatar is enterprise-aware from the PLATFORM surface — sendMessage resolves the
+  user's most recent owned VSB + their language preference; _vsb_grounding carries LIVE figures
+  (operating cycles · last distributable · holds · the latest §11 verdict); grounded_in is asserted
+  only when grounding actually built. IN-HOUSE voice both directions: browser-native Web Speech STT
+  + speechSynthesis TTS as the default (no key), external Whisper/tts-1 the labelled accelerant;
+  the speak-replies toggle is finally REACHABLE (it was exported but wired to no component).
+- **W326 (honesty):** spawn-twin genuinely REGISTERS (persisted, consumed by the twins listing —
+  it previously claimed success while registering nothing); no fabricated IoT device; avatar status
+  fields renamed to *_key_present with an honest validity note; un-honoured languages are never
+  echoed back as achievements. The §16–§18 fidelity walk (background agent, ~34 claims verified
+  accurate, 25 corrected): §17.5 invariants restated to what the code supports (no KPI gate, no
+  universal per-output GaaS verdict, torch-free API path not torch-free repo, no measured plan
+  staleness bound), the stale W96-era §16 record superseded by a 16.1 reconciliation addendum,
+  §18's open question B marked RESOLVED (taxonomy canon). AND the walk's one code-material find:
+  payments.py had a REAL Stripe live mode reachable via two env switches — now TRIPLE-gated behind
+  REAL_MONEY_ENABLED=True in code (currently False; a reviewed code change), structurally unreachable.
+- **W330 (§12×§15):** the inter-entity organ beyond one verb — SERVICE CONTRACTS (offer → accept →
+  deliver via a REAL cascade scoped to the provider → settle via the existing gaas-gated,
+  materiality-held transfer; the provider's next cycle recognises the intake; tenant-scoped,
+  UEG-logged, virtual WST only). And 'reinvests in its own growth' is real: self_investment — the
+  only waterfall stage with no consumer — now funds the entity's OWN autonomous evolution and repo
+  re-ships (balanced double-entry spend, honest unfunded record on an empty balance, never blocks).
+- **W331 (runtime round):** apps/mobile ARCHIVED (_archive/mobile-expo-husk + ARCHIVED.md — it
+  imported a component that does not exist and could never bundle; the superapp IS the mobile
+  experience since W312); launch.json cleaned; browser pass green (speak toggle reachable · honest
+  backend-down state rendered for real · no fabricated WST · auth-off label in the drawer · mobile
+  drawer navigation); the live-observation legs were recorded in the W318 8-beat watch-run and the
+  round's establish/cascade probes.
+
+In-process verification: W323 5/5 · W325 4/4 (+frontend contract greps) · W326 5/5 + the 25-item
+fidelity walk applied · W330 8/8 · W331 browser 5/5. +4 contract tests. tsc 0.
+
+**W331 cleanup addendum — dead/fabricated payment code (Owner-directed):** independently re-verified
+both sites, then applied the W314/W329 standard. (1) `qep_flagship.secure_billing_donations()` —
+hardcoded fake Stripe/PayPal credentials under a '(Production Grade)' docstring, wrapped only as a
+v138 ToolRegistry tool that no route or dispatcher ever calls — rewritten HONEST (payment_backend:
+None + a pointer to the one real payments path; the informational zakat calculator kept, clearly
+no-funds). The module itself stays (it IS imported by v138/ceo.py). (2) `commercial/tier_manager.py` —
+unimportable (`from backend.stripe...`, no such package) with zero importers — archived to
+`_archive/backend-dead/` with an ARCHIVED.md record. Boot check green; `git grep pk_test_sample` = 0.
+The real payment path (api/v310/payments.py, triple-gated) untouched.

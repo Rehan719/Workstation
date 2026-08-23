@@ -214,6 +214,7 @@ class NativeOrchestrator:
             # even for a directly-named model route — fall through to the native floor.
             if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
                 return ""
+            import json as _json
             import httpx
             # "ollama" → the default model; "ollama:<name>" → that specific owned local model.
             # W276 — the default local model honours the PROMOTED lifecycle default (persisted),
@@ -221,10 +222,41 @@ class NativeOrchestrator:
             from agentic_core.ai.native.model_resource import effective_default_local
             model = name.split(":", 1)[1] if ":" in name else effective_default_local()
             url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+            # §6 (W323) — the owned model can actually SERVE: the old read=25.0 hard cap was a
+            # self-inflicted ceiling (real warm node generation measured ~72s), so the owned model
+            # was demoted on every substantial cascade prompt. STREAMING applies the read timeout
+            # PER CHUNK (a healthy generation keeps emitting), and the WHOLE attempt is bounded by
+            # an ADAPTIVE budget from the learning loop's real measured latency (2× recent avg,
+            # floor 25s, ceiling 180s; a generous 90s while unmeasured) — demotion now reflects
+            # real inability, never the cap.
+            budget = 90.0
+            try:
+                from agentic_core.api.operational_excellence import model_health
+                _h = (model_health() or {}).get("ollama") or {}
+                if _h.get("window_runs", 0) >= 3 and _h.get("avg_ms"):
+                    budget = min(180.0, max(25.0, 2.0 * float(_h["avg_ms"]) / 1000.0))
+            except Exception:
+                pass
             to = httpx.Timeout(connect=3.0, read=25.0, write=3.0, pool=3.0)
-            async with httpx.AsyncClient(timeout=to) as client:
-                r = await client.post(url, json={"model": model, "prompt": prompt, "stream": False})
-                return r.json().get("response", "")
+
+            async def _stream_generate() -> str:
+                chunks: List[str] = []
+                async with httpx.AsyncClient(timeout=to) as client:
+                    async with client.stream("POST", url, json={"model": model, "prompt": prompt,
+                                                                "stream": True}) as r:
+                        async for line in r.aiter_lines():
+                            if not line.strip():
+                                continue
+                            try:
+                                j = _json.loads(line)
+                            except Exception:
+                                continue
+                            chunks.append(j.get("response", ""))
+                            if j.get("done"):
+                                break
+                return "".join(chunks)
+
+            return await asyncio.wait_for(_stream_generate(), timeout=budget)
         if name == "anthropic":
             import anthropic
             client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))

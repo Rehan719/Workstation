@@ -312,6 +312,148 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
     return {"transfer": transfer, "governance": governance}
 
 
+# ── §15 (W330) — the inter-entity organ beyond one verb: SERVICE CONTRACTS ────────────────────
+# Entity A COMMISSIONS entity B: offer → accept → deliver (a real cascade scoped to the provider)
+# → settle (the existing gaas-gated, materiality-held transfer primitive; the provider's next
+# cycle recognises the intake). Tenant-scoped end-to-end. Virtual WST only.
+
+class ContractRequest(BaseModel):
+    client_vsb: str
+    provider_vsb: str
+    brief: str
+    price_wst: float = 100.0
+
+
+def _load_contracts() -> list:
+    from agentic_core.config import data_path, load_json_tolerant
+    return load_json_tolerant(data_path("vsb_contracts.json"), []) or []
+
+
+def _save_contracts(rows: list) -> None:
+    from agentic_core.config import atomic_write_json, data_path
+    atomic_write_json(data_path("vsb_contracts.json"), rows[-500:])
+
+
+def _contract_ueg(event: dict) -> None:
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({**event, "disclaimer": "Virtual/simulated WST — no real funds moved."})
+    except Exception:
+        pass
+
+
+@router.post("/contracts")
+async def offer_contract(req: ContractRequest, user: dict | None = Depends(get_current_user)):
+    """§15 (W330) — entity-to-entity commissioning: the CLIENT entity offers a service contract
+    to a PROVIDER entity. The caller must own the client entity; the offer is a real persisted
+    record the provider must ACCEPT before any work or money moves."""
+    _require_economy_access(req.client_vsb, user)
+    if not req.brief.strip():
+        raise HTTPException(status_code=400, detail="A contract needs a brief.")
+    if req.client_vsb == req.provider_vsb:
+        raise HTTPException(status_code=400, detail="An entity cannot contract itself.")
+    import uuid as _uuid
+    contract = {
+        "id": f"ctr-{_uuid.uuid4().hex[:10]}", "client_vsb": req.client_vsb,
+        "provider_vsb": req.provider_vsb, "brief": req.brief[:1000],
+        "price_wst": round(float(req.price_wst), 2), "status": "offered",
+        "delivery": None, "settlement": None,
+        "offered_at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ", __import__("time").gmtime()),
+    }
+    rows = _load_contracts()
+    rows.append(contract)
+    _save_contracts(rows)
+    _contract_ueg({"type": "economy.contract_offered", "contract_id": contract["id"],
+                   "client_vsb": req.client_vsb, "provider_vsb": req.provider_vsb,
+                   "price_wst": contract["price_wst"]})
+    return contract
+
+
+@router.get("/contracts")
+async def list_contracts(vsb_id: Optional[str] = None,
+                         user: dict | None = Depends(get_current_user)):
+    """Contracts the caller is party to (client- or provider-side access)."""
+    def _can(vid: str) -> bool:
+        try:
+            _require_economy_access(vid, user)
+            return True
+        except HTTPException:
+            return False
+    rows = [c for c in _load_contracts() if _can(c["client_vsb"]) or _can(c["provider_vsb"])]
+    if vsb_id:
+        rows = [c for c in rows if vsb_id in (c["client_vsb"], c["provider_vsb"])]
+    return {"contracts": rows[::-1], "total": len(rows)}
+
+
+@router.post("/contracts/{cid}/accept")
+async def accept_contract(cid: str, user: dict | None = Depends(get_current_user)):
+    rows = _load_contracts()
+    c = next((x for x in rows if x["id"] == cid), None)
+    if not c:
+        raise HTTPException(status_code=404, detail=f"Contract {cid} not found.")
+    _require_economy_access(c["provider_vsb"], user)   # only the provider accepts
+    if c["status"] != "offered":
+        raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not offered.")
+    c["status"] = "accepted"
+    _save_contracts(rows)
+    _contract_ueg({"type": "economy.contract_accepted", "contract_id": cid})
+    return c
+
+
+@router.post("/contracts/{cid}/deliver")
+async def deliver_contract(cid: str, user: dict | None = Depends(get_current_user)):
+    """The provider DELIVERS: a REAL org cascade runs scoped to the provider entity (its own
+    Chief/CEO tiers ground in ITS living plan — W280), and the run's summary + QMS verdict bind
+    to the contract. Honest: a weak delivery carries its real verdict, never a fabricated pass."""
+    rows = _load_contracts()
+    c = next((x for x in rows if x["id"] == cid), None)
+    if not c:
+        raise HTTPException(status_code=404, detail=f"Contract {cid} not found.")
+    _require_economy_access(c["provider_vsb"], user)
+    if c["status"] != "accepted":
+        raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not accepted.")
+    from agentic_core.api.swarm import CascadeRequest, cascade_orchestration
+    run = await cascade_orchestration(CascadeRequest(
+        mission=f"Deliver the commissioned work: {c['brief'][:400]}",
+        domain="enterprise", scope=c["provider_vsb"]))
+    c["delivery"] = {"run_id": run.get("run_id"), "quality": run.get("quality"),
+                     "served_by": (run.get("ai_provenance") or {}).get("served_by")}
+    c["status"] = "delivered"
+    _save_contracts(rows)
+    _contract_ueg({"type": "economy.contract_delivered", "contract_id": cid,
+                   "run_id": run.get("run_id")})
+    return c
+
+
+@router.post("/contracts/{cid}/settle")
+async def settle_contract(cid: str, user: dict | None = Depends(get_current_user)):
+    """The client SETTLES: payment moves through the EXISTING transfer primitive (gaas-gated,
+    materiality-held, double-entry, UEG-logged); the provider's next metabolic cycle recognises
+    the intake. A governance hold is recorded honestly — the contract stays 'delivered' until
+    the hold clears and settle is retried."""
+    rows = _load_contracts()
+    c = next((x for x in rows if x["id"] == cid), None)
+    if not c:
+        raise HTTPException(status_code=404, detail=f"Contract {cid} not found.")
+    _require_economy_access(c["client_vsb"], user)     # only the client pays
+    if c["status"] != "delivered":
+        raise HTTPException(status_code=409, detail=f"Contract is {c['status']}, not delivered.")
+    result = await inter_vsb_transfer(TransferRequest(
+        from_vsb=c["client_vsb"], to_vsb=c["provider_vsb"], amount=c["price_wst"],
+        memo=f"contract {cid} settlement"), user=user)
+    if not result.get("transfer"):
+        c["settlement"] = {"held": True, "governance": result.get("governance")}
+        _save_contracts(rows)
+        return {**c, "note": "settlement HELD by governance — retry after the hold clears"}
+    c["settlement"] = {"transfer_id": result["transfer"].get("transfer_id"),
+                       "governance": result.get("governance")}
+    c["status"] = "settled"
+    _save_contracts(rows)
+    _contract_ueg({"type": "economy.contract_settled", "contract_id": cid,
+                   "transfer_id": c["settlement"]["transfer_id"], "price_wst": c["price_wst"]})
+    return c
+
+
 class ClosePeriodRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
     entity_type: str = DEFAULT_ENTITY

@@ -315,6 +315,12 @@ class OrganismHeartbeat:
                                              "generation": (_ev or {}).get("generation")
                                              if isinstance(_ev, dict) else None}
                     actions.append("evolve_vsb")
+                    # §12 (W330) — the entity's OWN self_investment funds its evolution
+                    try:
+                        from agentic_core.economy.living_vsbs import spend_self_investment
+                        spend_self_investment(_t.get("vsb_id"), "autonomous evolution cycle")
+                    except Exception:
+                        pass
             except Exception:
                 pass
             # §8 (W310) — the `organism.evolution_auto_apply` lever gets its REAL consumer: when the
@@ -353,6 +359,12 @@ class OrganismHeartbeat:
                     self.last_reshipped = {"vsb_id": _vid,
                                            "coherent_whole": (_res or {}).get("coherent_whole")}
                     actions.append("reshipped_stale_repo")
+                    # §12 (W330) — the re-ship is development work the entity funds itself
+                    try:
+                        from agentic_core.economy.living_vsbs import spend_self_investment
+                        spend_self_investment(_vid, "autonomous repo re-ship")
+                    except Exception:
+                        pass
                     try:
                         self._ueg_logger().log({"type": "vsb.repo.reshipped_on_drift",
                                                 "vsb_id": _vid, "beat": self.beats})

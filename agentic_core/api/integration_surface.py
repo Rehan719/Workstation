@@ -326,13 +326,34 @@ async def federation_twins():
                   "status": v.get("status")} for v in _list_vsbs()]
     except Exception:
         pass
+    # W326 — the spawn-twin registrations are genuinely CONSUMED here (a real registry read)
+    try:
+        from agentic_core.config import data_path, load_json_tolerant
+        for t in (load_json_tolerant(data_path("federation_twins.json"), []) or []):
+            twins.append({"id": t.get("twin_id"), "name": f"node twin ({t.get('node_id')})",
+                          "domain": "federation", "status": "registered_reference"})
+    except Exception:
+        pass
     return {"twins": twins, "total": len(twins)}
 
 
 @router.post("/api/v210/federation/spawn-twin")
 async def spawn_twin(node_id: str = "node-1"):
-    return {"node_id": node_id, "twin_id": f"twin-{node_id}", "status": "spawned",
-            "note": "Federation twin registered (use /api/v1/twin for full digital-twin modelling)."}
+    """W326 — honest: this previously claimed 'Federation twin registered' while registering
+    NOTHING. Now the twin reference genuinely persists (atomic store) and the listing reads it;
+    full digital-twin modelling remains at /api/v1/twin (honestly referenced, not implied)."""
+    from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
+    import time as _time
+    import uuid as _uuid
+    store = data_path("federation_twins.json")
+    rows = load_json_tolerant(store, []) or []
+    twin = {"twin_id": f"twin-{node_id}-{_uuid.uuid4().hex[:6]}", "node_id": node_id,
+            "spawned_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())}
+    rows.append(twin)
+    atomic_write_json(store, rows[-500:])
+    return {**twin, "status": "registered",
+            "note": ("Twin REFERENCE persisted to the federation registry (a real record — "
+                     "not a modelled twin; use POST /api/v1/twin/model for actual modelling).")}
 
 
 @router.get("/api/v220/twin/blueprint/{twin_id}")
@@ -359,9 +380,9 @@ async def iot_devices():
                 devices.append({"id": s.get("id"), "type": s.get("kind"), "status": s.get("status")})
     except Exception:
         pass
-    if not devices:
-        devices = [{"id": "dev-001", "type": "wearable", "status": "connected"}]
-    return {"devices": devices, "total": len(devices)}
+    # W326 — honest: no fabricated default device; an empty fleet is an empty fleet.
+    return {"devices": devices, "total": len(devices),
+            "note": (None if devices else "No physical devices are connected — nothing is fabricated.")}
 
 
 @router.get("/api/v290/iot/telemetry/{device_id}")

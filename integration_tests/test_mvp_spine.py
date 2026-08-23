@@ -3999,12 +3999,19 @@ def test_avatar_vision_in_house_and_honest(client):
 
 
 def test_avatar_all_language_in_house(client):
-    # All-language: the avatar accepts a `language` and instructs the in-house fabric to answer in it
-    # (echoed back); the answer stays in-house. Default (no language) is not forced.
-    r = client.post("/api/v1/avatar/chat", json={"message": "Summarise the mission", "context": "general", "language": "Arabic"})
+    # All-language, HONESTLY (W326): the avatar accepts a `language` and instructs the fabric to
+    # answer in it — but the response reports only the language actually HONOURED. On the
+    # deterministic floor (which cannot translate) a requested language is NOT echoed back as an
+    # achievement; the answer stays in-house either way. Default (no language) is not forced.
+    r = client.post("/api/v1/avatar/chat", json={"message": "Summarise the mission",
+                                                 "context": "general", "language": "Arabic"})
     assert r.status_code == 200
     b = r.json()
-    assert b["language"] == "Arabic" and b["response"] and b["is_external"] is False
+    assert b["response"] and b["is_external"] is False
+    if b["served_by"] == "native":
+        assert b["language"] is None          # the floor never claims a translation it didn't do
+    else:
+        assert b["language"] == "Arabic"      # a capable model honoured it — reported truthfully
     d = client.post("/api/v1/avatar/chat", json={"message": "hi", "context": "general"}).json()
     assert d["language"] is None
 
@@ -4366,6 +4373,92 @@ def test_fabric_remaining_resources_run_real(client):
     assert rr["truth_consensus"].get("claims") == 2                        # real consensus over MY claims
     assert rr["omnimedia"].get("live_formats")                             # the real producible formats
     assert rr["federation_mesh"].get("operational") is True
+
+
+def test_service_contracts_and_self_investment_consumer(client):
+    # §15×§12 (W330) — the inter-entity organ beyond one verb: entity A COMMISSIONS entity B
+    # (offer → accept → deliver via a REAL cascade scoped to the provider → settle via the
+    # existing gaas-gated transfer primitive, the provider's next cycle recognising the intake).
+    # And 'reinvests in its own growth' is real: the waterfall's self_investment stage — the only
+    # stage with no consumer — now funds the entity's OWN development actions (honest unfunded
+    # record when the balance is empty; development never blocks).
+    a = client.post("/api/v1/genesis/establish",
+                    json={"problem": "w330t client venture", "ship_output": False}).json()["vsb_id"]
+    b = client.post("/api/v1/genesis/establish",
+                    json={"problem": "w330t provider venture", "ship_output": False}).json()["vsb_id"]
+    ctr = client.post("/api/v1/economy/contracts", json={
+        "client_vsb": a, "provider_vsb": b,
+        "brief": "produce a halal supply-chain playbook", "price_wst": 120.0}).json()
+    assert ctr.get("status") == "offered"
+    cid = ctr["id"]
+    assert client.post(f"/api/v1/economy/contracts/{cid}/accept").json().get("status") == "accepted"
+    dl = client.post(f"/api/v1/economy/contracts/{cid}/deliver").json()
+    assert dl.get("status") == "delivered"
+    assert (dl.get("delivery") or {}).get("run_id")           # a REAL provider-scoped cascade ran
+    from agentic_core.economy.revenue import record_event
+    record_event(a, "revenue", 5000.0, "marketplace", ref="w330t-fund")
+    from agentic_core.economy import living_vsbs as lv
+    lv.operate_vsb(a)                                         # fund the client's reserve
+    st = client.post(f"/api/v1/economy/contracts/{cid}/settle").json()
+    assert st.get("status") == "settled"
+    assert (st.get("settlement") or {}).get("transfer_id")    # the existing primitive moved it
+    from agentic_core.economy.living_vsbs import spend_self_investment
+    sp = spend_self_investment(a, "w330t evolution")
+    assert sp.get("funded") is True and sp.get("spent_wst", 0) > 0
+    assert spend_self_investment("vsb-none-w330t", "x").get("funded") is False
+
+
+def test_avatar_grounding_live_and_honest(client):
+    # §9 (W325) — the avatar is enterprise-aware for REAL: grounding carries the entity's LIVE
+    # figures (economy cycles/distributable/holds + the latest §11 verdict), and grounded_in is
+    # asserted ONLY when a grounding block actually built (previously the request's vsb_id was
+    # echoed back even for a missing entity, and grounding held only static header fields).
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "w325t halal courier venture", "ship_output": False}).json()
+    vid = est.get("vsb_id")
+    from agentic_core.economy import living_vsbs as lv
+    lv.operate_vsb(vid)
+    r = client.post("/api/v1/avatar/chat", json={
+        "session_id": None, "message": "How is our economy doing?",
+        "context": "ceo", "vsb_id": vid}).json()
+    assert r.get("grounded_in") == vid
+    from agentic_core.avatars.api import _vsb_grounding
+    g = _vsb_grounding(vid)
+    assert "operating cycles" in g and "compliance screen" in g   # LIVE, not just headers
+    r2 = client.post("/api/v1/avatar/chat", json={
+        "session_id": None, "message": "hello", "context": "ceo",
+        "vsb_id": "vsb-does-not-exist"}).json()
+    assert r2.get("grounded_in") is None                          # never asserted for nothing
+    # the platform surface sends vsb_id + language now (frontend contract, grep-verified)
+    hook = open("apps/workstation-superapp/src/hooks/useAvatarSession.ts", encoding="utf-8").read()
+    assert "resolveGroundingVsb()" in hook and "prefLanguageName()" in hook
+    assert "speechSynthesis" in hook and "SpeechRecognition" in hook   # in-house voice both ways
+    panel = open("apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx",
+                 encoding="utf-8").read()
+    assert "setSpeakReplies" in panel                             # the toggle is REACHABLE
+
+
+def test_stream_on_control_plane_and_status_measured(client):
+    # §6 (W323) — three fixes to the native mandate's honesty: (1) gateway.stream previously ran
+    # OUTSIDE the control plane (no learning-loop records, no circuit breaker) on three live §4
+    # surfaces — a streamed serve now records a model_attempt outcome; (2) /native-ai/status
+    # previously reported mode=real_model from the optimistic selection head while the floor
+    # actually served — mode now follows the MEASURED most-recent server; (3) the owned model's
+    # self-inflicted 25s whole-body cap is gone (streaming per-chunk timeout + adaptive budget).
+    r = client.post("/api/v1/synthesis/stream",
+                    json={"instructions": "w323t probe", "output_type": "report",
+                          "content_ids": []})
+    assert r.status_code == 200 and len(r.text) > 0
+    from agentic_core.api.operational_excellence import model_health
+    nat = (model_health() or {}).get("native") or {}
+    assert nat.get("window_runs", 0) >= 1                    # the stream serve was RECORDED
+    st = client.get("/api/v1/native-ai/status").json()
+    assert st.get("mode_measured") == "deterministic_floor"  # measured, not predicted
+    assert st.get("mode") == "deterministic_floor"
+    assert "mode_predicted" in st and "mode_note" in st      # the prediction stays visible
+    src = open("agentic_core/ai/native/orchestrator.py", encoding="utf-8").read()
+    assert "asyncio.wait_for(_stream_generate()" in src      # adaptive whole-attempt budget
+    assert '"stream": False' not in src                      # the bare 25s cap is gone
 
 
 def test_tamper_evidence_is_genuinely_evident(client):

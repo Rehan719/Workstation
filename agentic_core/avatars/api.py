@@ -18,8 +18,10 @@ Ollama vision model (e.g. `llava` / `llama3.2-vision` / `moondream`, set via OLL
 owned, no external dependency — and only falls back to an external provider (OpenAI) if a key is
 configured. If neither is available the image is received but its contents are NOT analysed and this is
 stated honestly (never a fabricated description). The response reports `image_served_by` +
-`image_is_external` so vision provenance is explicit. Voice STT/TTS (`/transcribe`, `/speak`) still
-require an external key (browser-native voice is used client-side for the in-house path).
+`image_is_external` so vision provenance is explicit. Voice: the CLIENT uses browser-native Web
+Speech (STT) + speechSynthesis (TTS) as the in-house default (W325 — genuinely wired in
+useAvatarSession, no key needed); the `/transcribe` + `/speak` endpoints are the OPTIONAL external
+accelerant (OpenAI Whisper/tts-1, 503 without a working key — honestly labelled).
 """
 import logging
 import os
@@ -155,6 +157,27 @@ def _vsb_grounding(vsb_id: str) -> str:
             bp = f"Objectives: {', '.join(o for o in objs if o)}" if any(objs) else ""
         except Exception:
             pass
+        # §9 (W325) — LIVE figures, not just static header fields: the economy's real operating
+        # state, the latest §11 verdict, and any hold — so 'enterprise-aware' is true.
+        live = []
+        try:
+            from agentic_core.economy.living_vsbs import _load as _lv_load
+            reg = _lv_load().get(vsb_id) or {}
+            if reg:
+                live.append(f"- Economy (virtual WST): {reg.get('operating_cycles', 0)} operating cycles"
+                            + (f", last distributable {reg.get('last_distributable')} WST"
+                               if reg.get("last_distributable") is not None else "")
+                            + (f" — HELD ({reg.get('last_hold')})" if reg.get("last_hold") else ""))
+        except Exception:
+            pass
+        try:
+            from agentic_core.config import data_path, load_json_tolerant
+            comp = (load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}).get(vsb_id) or {}
+            if comp.get("overall"):
+                live.append(f"- Latest §11 compliance screen: {comp['overall']}"
+                            + (" (REGRESSION)" if comp.get("regression") else ""))
+        except Exception:
+            pass
         return (
             "\n\nYou are THIS VSB's enterprise-aware avatar — ground every answer in its live state:\n"
             f"- VSB: {v.get('name')} (domain: {v.get('domain')}, stage: {v.get('stage')})\n"
@@ -162,6 +185,7 @@ def _vsb_grounding(vsb_id: str) -> str:
             f"- Chief (owner digital twin): {chief}\n"
             f"- Entity type: {eco.get('entity_type', '')}\n"
             + (f"- {bp}\n" if bp else "")
+            + ("".join(f"{ln}\n" for ln in live))
         )
     except Exception:
         return ""
@@ -311,8 +335,13 @@ async def chat(request: ChatRequest):
         context=request.context,
         served_by=meta.get("served_by", "native"),
         is_external=bool(meta.get("is_external")),
-        grounded_in=request.vsb_id,
-        language=lang or None,
+        # §9 (W325) — HONEST: grounded_in is asserted only when a grounding block actually built
+        # (previously the request's vsb_id was echoed back even for a missing entity).
+        grounded_in=(request.vsb_id if grounding else None),
+        # W326 — language reports what was HONOURED: the deterministic floor cannot translate,
+        # so a requested language served by the floor is not echoed back as an achievement.
+        language=((lang or None) if ((not lang_instr) or meta.get("served_by", "native") != "native")
+                  else None),
         suggested_areas=_suggest_areas(request.message),
     )
 
@@ -344,8 +373,11 @@ async def ai_status():
         "posture": "in-house-first",
         "native": True,
         "ollama_online": ollama,
-        "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
-        "anthropic_configured": bool(os.getenv("ANTHROPIC_API_KEY")),
+        # W326 — honest naming: these report ENV-VAR PRESENCE only, not a validated working key
+        # (a present-but-invalid key still 401s at call time — the voice endpoints say so live).
+        "openai_key_present": bool(os.getenv("OPENAI_API_KEY")),
+        "anthropic_key_present": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "key_note": "presence of the env var only — validity is only known at call time",
     }
 
 

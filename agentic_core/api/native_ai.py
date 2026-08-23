@@ -31,6 +31,22 @@ async def native_status():
     active = order[0] if order else "native"
     is_real_model = active != "native"
     active_row = next((r for r in resources if r["name"] == active), None)
+    # §6 (W323) — MEASURED serving mode beside the prediction: the selection head can list a model
+    # that keeps failing while the floor actually serves — `mode` now follows what the learning
+    # loop MEASURED on the most recent recorded work, never just the optimistic prediction.
+    measured = None
+    try:
+        from agentic_core.api.operational_excellence import model_health
+        _rows = [(k, v) for k, v in (model_health() or {}).items()
+                 if v.get("window_runs", 0) > 0 and v.get("last_at")]
+        if _rows:
+            _rows.sort(key=lambda kv: kv[1].get("last_at", ""), reverse=True)
+            measured = _rows[0][0]
+    except Exception:
+        pass
+    mode_predicted = "real_model" if is_real_model else "deterministic_floor"
+    mode_measured = ("unmeasured" if measured is None
+                     else ("deterministic_floor" if measured == "native" else "real_model"))
     return {
         "posture": "in-house-first",
         "external_allowed": external_allowed(),
@@ -39,8 +55,14 @@ async def native_status():
         "active_model": active,
         "active_model_label": (active_row or {}).get("model", active),
         "is_real_model": is_real_model,
-        "mode": "real_model" if is_real_model else "deterministic_floor",
-        "floor_active": not is_real_model,
+        "mode": mode_measured if mode_measured != "unmeasured" else mode_predicted,
+        "mode_predicted": mode_predicted,
+        "mode_measured": mode_measured,
+        "measured_recent_server": measured,
+        "mode_note": ("mode follows the MEASURED most-recent server when history exists "
+                      "(prediction only until then) — the two disagree when a listed model keeps failing"),
+        "floor_active": (mode_measured == "deterministic_floor" if mode_measured != "unmeasured"
+                         else not is_real_model),
         "floor_note": (None if is_real_model else
                        "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. "
                        "Run a local Ollama model (or enable an external accelerant) for generative prose."),
