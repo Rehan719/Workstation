@@ -27,6 +27,7 @@ export const Wallet: React.FC = () => {
   const [fund, setFund] = useState<FundStatus | null>(null);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [down, setDown] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -38,12 +39,13 @@ export const Wallet: React.FC = () => {
         const allocs: Allocation[] = portfolioRes.data.allocations ?? [];
         setAllocations(allocs.slice(-8).reverse());
       }
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => setDown(true)).finally(() => setLoading(false));
   }, []);
 
-  const wst = fund?.available ?? 10_000_000;
+  // W329 — honest: a dead backend shows '—', never a fabricated 10,000,000 WST / HEALTHY
+  const wst = fund?.available;
   const allocated = fund?.allocated ?? 0;
-  const health = fund?.fund_health ?? 'HEALTHY';
+  const health = fund ? (fund.fund_health ?? '?') : (down ? 'BACKEND UNREACHABLE' : '…');
 
   return (
     <div className="space-y-12 animate-in fade-in duration-1000">
@@ -56,7 +58,7 @@ export const Wallet: React.FC = () => {
            <div>
              <p className="text-[10px] font-black text-slate-500 uppercase">Available WST</p>
              {loading ? <div className="h-10 w-32 bg-slate-800 animate-pulse rounded" /> :
-               <p className="text-4xl font-black text-aura">{wst.toLocaleString()}</p>}
+               <p className="text-4xl font-black text-aura">{wst !== undefined ? wst.toLocaleString() : '—'}</p>}
            </div>
            <div className="h-10 w-[1px] bg-white/10"></div>
            <div>

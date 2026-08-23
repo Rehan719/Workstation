@@ -31,7 +31,11 @@ export const DigitalTwins: React.FC = () => {
 
   const open = async (m: TwinModel) => {
     setLoadingDetail(true); setSelected(m);
-    try { const r = await fetch(`/api/v1/twin/models/${m.model_id}`); setSelected(await r.json()); } catch {}
+    try {
+      const r = await fetch(`/api/v1/twin/models/${m.model_id}`);
+      if (r.ok) setSelected(await r.json());
+      else setSelected({ ...m, _load_error: `HTTP ${r.status} — showing the summary row only` } as any);   // W329
+    } catch { setSelected({ ...m, _load_error: 'backend unreachable — showing the summary row only' } as any); }
     setLoadingDetail(false);
   };
 

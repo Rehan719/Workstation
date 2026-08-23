@@ -339,6 +339,7 @@ def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
             context=(f"VSB: {name}\nMission: {problem}\nDomain: {domain}\n"
                      f"Concept: {(concept or problem)[:600]}"),
             usage_area="delivery", vsb_id=vsb_id, org=org_tiers,
+            owner_id=entity.get("owner_id"),   # §14 (W324) — the cascade belongs to the entity's owner
             stages=[
                 {"role": "ai-ceo", "instruction": "Frame the objective and set the directive for the C-Suite."},
                 {"role": "c-suite", "instruction": "Break the directive into specialist workstreams (finance, technical, market, legal/compliance)."},

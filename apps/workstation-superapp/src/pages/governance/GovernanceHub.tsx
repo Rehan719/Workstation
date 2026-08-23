@@ -294,7 +294,7 @@ const VaultTab: React.FC = () => {
   };
 
   const copyCredential = (s: { id: number; name: string; type: string }) => {
-    navigator.clipboard.writeText(`${s.name} (${s.type})`).catch(() => {});
+    navigator.clipboard.writeText(`${s.name} (${s.type})`).catch(() => toast('Copy failed — clipboard unavailable'));   // W329
     setCopiedId(s.id);
     setTimeout(() => setCopiedId(null), 1500);
   };

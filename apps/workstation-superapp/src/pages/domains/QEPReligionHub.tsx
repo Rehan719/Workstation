@@ -121,7 +121,7 @@ const TajwidCoach = () => {
              <div className="space-y-6">
                 <VitalRow label="Phonetic Precision" value="High" />
                 <VitalRow label="Temporal Alignment" value="Optimal" />
-                <VitalRow label="GaaS Compliance" value="Verified" />
+                <VitalRow label="GaaS Compliance" value="Not yet measured" />
              </div>
           </Card>
        </div>
@@ -157,9 +157,9 @@ const MemorizationSuite = () => (
       <Card className="p-10 bg-aura/5 border-aura/20">
          <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">SM-2 Algorithm</h3>
          <div className="space-y-6">
-            <VitalRow label="Ease Factor" value="2.5" />
+            <VitalRow label="Ease Factor" value="2.5 (SM-2 default)" />
             <VitalRow label="Interval" value="4 Days" />
-            <VitalRow label="Repetitions" value="12" />
+            <VitalRow label="Repetitions" value="— (no history yet)" />
             <Button onClick={async () => {
                await fetch('/api/v1/qep/hifz/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ surah_id: 2, quality: 5 }) }).catch(() => {});
                toast('Surah Al-Baqarah marked as mastered — SM-2 interval advanced to 4 days');

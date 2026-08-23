@@ -147,7 +147,7 @@ export const VSBSpawnStudio: React.FC = () => {
       try {
         const r = await axios.get(`/api/v1/vsb/${vsbId}`);
         setDetail(prev => ({ ...prev, [vsbId]: r.data }));
-      } catch {}
+      } catch { setError(`Could not load ${vsbId} — backend unreachable or entity missing`); }   // W329
     }
   };
   const orchestrateVsb = async (vsbId: string) => {
@@ -155,7 +155,7 @@ export const VSBSpawnStudio: React.FC = () => {
     try {
       const r = await axios.post('/api/v1/transformation/orchestrate', { scope: vsbId, owner_id: 'Rehan' });
       setOrch(prev => ({ ...prev, [vsbId]: r.data }));
-    } catch {}
+    } catch (e: any) { setError(`Orchestration failed — ${e?.response?.status ? `HTTP ${e.response.status}` : 'backend unreachable'}`); }   // W329
     setOrchBusy(null);
   };
 

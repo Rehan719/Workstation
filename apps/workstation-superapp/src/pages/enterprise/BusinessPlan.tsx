@@ -31,19 +31,35 @@ export const BusinessPlan: React.FC = () => {
   const load = () => fetch(`/api/v1/business-plan?scope=${encodeURIComponent(scope)}`).then(r => r.json()).then(setPlan).catch(() => {});
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [scope]);
 
+  const [actErr, setActErr] = useState('');   // W329 — actions never fail silently
   const generate = async () => {
     setBusy(true);
-    try { await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope }) }); await load(); } catch {}
+    setActErr('');
+    try {
+      const r = await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope }) });
+      if (!r.ok) setActErr(`Generate failed (HTTP ${r.status})`);
+      await load();
+    } catch { setActErr('Backend unreachable — nothing changed'); }
     setBusy(false);
   };
   const addObjective = async () => {
     if (!newObj.title.trim()) return;
     setBusy(true);
-    try { await fetch('/api/v1/business-plan/objective', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, ...newObj }) }); setNewObj({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' }); await load(); } catch {}
+    setActErr('');
+    try {
+      const r = await fetch('/api/v1/business-plan/objective', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, ...newObj }) });
+      if (r.ok) setNewObj({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' });   // the typed objective survives an error
+      else setActErr(`Objective not saved (HTTP ${r.status})`);
+      await load();
+    } catch { setActErr('Backend unreachable — the objective was NOT saved'); }
     setBusy(false);
   };
   const review = async (oid: string, progress_pct: number, status: string) => {
-    await fetch(`/api/v1/business-plan/objective/${oid}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, progress_pct, status }) });
+    setActErr('');
+    try {
+      const r = await fetch(`/api/v1/business-plan/objective/${oid}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, progress_pct, status }) });
+      if (!r.ok) setActErr(`Review not recorded (HTTP ${r.status})`);
+    } catch { setActErr('Backend unreachable — the review was NOT recorded'); }
     load();
   };
   const orchestrate = async (oid: string) => {
@@ -61,6 +77,7 @@ export const BusinessPlan: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">{scope === 'workstation' ? 'Workstation IDBO' : `VSB · ${scope}`} · Living Business Plan</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Business Plan</h1>

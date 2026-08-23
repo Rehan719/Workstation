@@ -4368,6 +4368,139 @@ def test_fabric_remaining_resources_run_real(client):
     assert rr["federation_mesh"].get("operational") is True
 
 
+def test_tamper_evidence_is_genuinely_evident(client):
+    # §13 (W327) — the 'tamper-evident' claims were not: /api/v1/ueg/verify walked parent links
+    # without recomputing content hashes (mutation passed as chain_valid), DCMS was a write-only
+    # in-memory seal (constant 1.0 integrity), and both ledgers accepted tail truncation. Now:
+    # every entry's hash is RECOMPUTED, tails are anchored, DCMS persists what it sealed and
+    # verifies by recomputation — proven here by actually tampering.
+    import asyncio
+    import json as _json
+    from agentic_core.ueg.registry import ueg_ledger
+    loop = _ensure_loop()
+    ueg_ledger.merkle_root = ueg_ledger._load_last_root()
+    for i in range(4):
+        loop.run_until_complete(ueg_ledger.log_event(f"w327t-{i}", {"n": i}))
+    assert client.get("/api/v1/ueg/verify").json()["chain_valid"] is True
+    path = ueg_ledger.log_path
+    lines = open(path, encoding="utf-8").read().splitlines()
+    mid = _json.loads(lines[len(lines) // 2])
+    mid["payload"]["data"]["tampered"] = True          # mutate a MIDDLE payload, hash untouched
+    lines[len(lines) // 2] = _json.dumps(mid)
+    open(path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+    v1 = client.get("/api/v1/ueg/verify").json()
+    assert v1["chain_valid"] is False
+    assert "content_hash" in str(v1.get("detail", {}).get("reason", ""))
+    # repair by rewriting the untampered lines, then TRUNCATE the tail
+    del mid["payload"]["data"]["tampered"]
+    lines[len(lines) // 2] = _json.dumps(mid)
+    open(path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+    assert client.get("/api/v1/ueg/verify").json()["chain_valid"] is True
+    open(path, "w", encoding="utf-8").write("\n".join(lines[:-2]) + "\n")
+    ueg_ledger.merkle_root = ueg_ledger._load_last_root()
+    v2 = client.get("/api/v1/ueg/verify").json()
+    assert v2["chain_valid"] is False
+    assert "anchor" in str(v2.get("detail", {}).get("reason", ""))
+    # restore a coherent head for later tests
+    for i in range(2):
+        loop.run_until_complete(ueg_ledger.log_event(f"w327t-restore-{i}", {"n": i}))
+    # DCMS — persistent, verifiable, honestly measured
+    from agentic_core.vbs.registry import dcms
+    loop.run_until_complete(dcms.commit_artifact("w327t-doc", {"body": "sealed"}, "test"))
+    va = dcms.verify_artifact("w327t-doc")
+    assert va["valid"] is True and va["versions"][0]["basis"] == "recomputed"
+    dcms.registry["w327t-doc"][0]["content"] = '{"body": "TAMPERED"}'
+    assert dcms.verify_artifact("w327t-doc")["valid"] is False
+    assert dcms.get_audit_integrity() < 1.0            # measured, never a constant
+    assert "w327t-doc" in type(dcms)("x").registry     # persists across instances
+
+
+def test_marketplace_screened_and_birth_verdict_substance_aware(client):
+    # §11 (W322) — compliance INSIDE the WST economy: (1) the marketplace previously had ZERO
+    # screening — a haram listing went live and was purchasable; now every listing's public text
+    # is screened, FAIL → held (invisible + unpurchasable), a clean edit is the ONLY way off hold,
+    # and status/compliance are never patchable around the screen. (2) the birth verdict screens
+    # the entity's SUBSTANCE (challenge/concept/plan), not just clean-sounding header fields —
+    # and the FAIL holds the economy (the W309 teeth).
+    bad = client.post("/api/v1/marketplace/listings", json={
+        "name": "Premium interest-bearing loans",
+        "description": "High-interest riba lending with gambling bonus spins and alcohol rewards",
+        "price_wst": 10.0, "category": "service", "tags": ["riba", "casino"]}).json()
+    assert bad.get("status") == "held"
+    assert (bad.get("compliance") or {}).get("overall") == "fail"
+    lid = bad["id"]
+    assert all(l["id"] != lid for l in client.get("/api/v1/marketplace/listings").json())
+    assert client.post(f"/api/v1/marketplace/listings/{lid}/purchase",
+                       json={"user_id": "u322", "quantity": 1}).status_code == 409
+    ok = client.patch(f"/api/v1/marketplace/listings/{lid}", json={
+        "name": "Halal community meal service",
+        "description": "Ethical halal-certified meal delivery for the community",
+        "tags": ["halal", "community"]}).json()
+    assert ok.get("status") == "active"                       # a clean re-screen releases
+    again = client.patch(f"/api/v1/marketplace/listings/{lid}", json={
+        "description": "now with interest-bearing riba loans and casino gambling"}).json()
+    assert again.get("status") == "held"                      # a failing edit re-holds
+    direct = client.patch(f"/api/v1/marketplace/listings/{lid}", json={"status": "active"}).json()
+    assert direct.get("status") == "held"                     # never patchable around the screen
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "Launch an interest-based riba lending desk with casino gambling revenue",
+        "name": "Crescent Community Services", "ship_output": False}).json()
+    fs = (est.get("birth_vitals") or {}).get("first_screen") or {}
+    assert fs.get("overall") == "fail"                        # SUBSTANCE caught behind a clean name
+    from agentic_core.economy import living_vsbs as lv
+    assert lv.operate_vsb(est["vsb_id"]).get("held") == "compliance_fail_hold"
+
+
+def test_resource_fabric_designs_tenant_scoped(client, monkeypatch):
+    # §14×§7 (W324) — the ENTIRE user-design surface (/api/v1/resources/*) previously had zero
+    # auth and zero tenant scoping: full anonymous CRUD of every tenant's compositions and swarm
+    # cascades under AUTH_ENABLED=true, cascade-to-VSB binding unchecked, and update_swarm wrote
+    # back into other tenants' VSB records. W252 pattern: server-stamped owner, 404-never-403,
+    # binding requires VSB access, auth-off unguarded.
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    from agentic_core.auth import core as ac
+    users = ac._load_users()
+    for u in ("alice324t", "bob324t"):
+        users[u] = {"username": u, "role": "user", "hashed_password": ac._pwd_ctx.hash("pw-" + u)}
+    ac._save_users(users)
+    tok = {u: {"Authorization": "Bearer " + client.post(
+        "/api/v1/auth/token", data={"username": u, "password": "pw-" + u}).json()["access_token"]}
+        for u in ("alice324t", "bob324t")}
+    A, B = tok["alice324t"], tok["bob324t"]
+    comp = client.post("/api/v1/resources/compose", headers=A, json={
+        "name": "W324t design", "usage_area": "governance",
+        "resource_ids": ["compliance"], "config": {}}).json()
+    cid = comp["id"]
+    assert comp.get("owner_id") == "alice324t"
+    assert all(x["id"] != cid for x in
+               client.get("/api/v1/resources/compositions", headers=B).json()["compositions"])
+    assert client.get(f"/api/v1/resources/compositions/{cid}", headers=B).status_code == 404
+    assert client.put(f"/api/v1/resources/compositions/{cid}",
+                      json={"name": "hijack"}, headers=B).status_code == 404
+    assert client.delete(f"/api/v1/resources/compositions/{cid}", headers=B).status_code == 404
+    assert client.post(f"/api/v1/resources/compositions/{cid}/run",
+                       json={"objective": "x"}, headers=B).status_code == 404
+    assert client.get(f"/api/v1/resources/compositions/{cid}", headers=A).status_code == 200
+    est = client.post("/api/v1/genesis/establish", headers=A,
+                      json={"problem": "w324t venture", "ship_output": False}).json()
+    vid = est.get("vsb_id")
+    mine = [s for s in client.get("/api/v1/resources/swarm", headers=A).json()["cascades"]
+            if s.get("vsb_id") == vid]
+    assert mine and mine[0].get("owner_id") == "alice324t"     # Genesis stamps the entity's owner
+    sid = mine[0]["id"]
+    assert all(s.get("vsb_id") != vid for s in
+               client.get("/api/v1/resources/swarm", headers=B).json()["cascades"])
+    assert client.put(f"/api/v1/resources/swarm/{sid}",
+                      json={"name": "hijacked org"}, headers=B).status_code == 404
+    assert client.post("/api/v1/resources/swarm/define", headers=B, json={
+        "name": "evil", "stages": [{"role": "x", "instruction": "y"}],
+        "vsb_id": vid}).status_code == 404                     # binding requires VSB access
+    assert client.post("/api/v1/resources/swarm/run",
+                       json={"swarm_id": sid}, headers=B).status_code == 404
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    assert client.get(f"/api/v1/resources/compositions/{cid}").status_code == 200
+
+
 def _ensure_loop():
     """Get-or-create the main-thread event loop: an earlier test's asyncio.run() unsets it, and
     Python 3.12's get_event_loop() then raises instead of creating one."""

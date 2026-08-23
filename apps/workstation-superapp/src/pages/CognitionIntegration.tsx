@@ -11,6 +11,7 @@ export const CognitionIntegration: React.FC = () => {
   const [wiring, setWiring] = useState<Wiring | null>(null);
   const [knowledge, setKnowledge] = useState<any>(null);
   const [align, setAlign] = useState<Align | null>(null);
+  const [alignErr, setAlignErr] = useState('');   // W329 — actions never fail silently
   const [busy, setBusy] = useState(false);
   // §7 — run the Cognitive Cascade with a user-selected subset of engines (reconfigurable resource)
   const [engineCat, setEngineCat] = useState<{ id: string; name: string }[]>([]);
@@ -43,12 +44,14 @@ export const CognitionIntegration: React.FC = () => {
 
   const runAlign = async () => {
     setBusy(true);
-    try { const r = await fetch('/api/v1/cognition/align', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ execute: false }) }); setAlign(await r.json()); } catch {}
+    try { const r = await fetch('/api/v1/cognition/align', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ execute: false }) }); setAlign(await r.json()); }
+    catch { setAlignErr('Alignment run failed — backend unreachable'); }   // W329
     setBusy(false);
   };
 
   return (
     <div className="space-y-10 pb-24">
+      {alignErr && <p className="text-vital text-xs font-bold">{alignErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Integration</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Cognition &amp; Alignment</h1>

@@ -176,7 +176,11 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         # Control Agency at MEDIUM tier (above LOW auto-approve → a real human decision), instead of
         # dying as a response field. Calibrated: only FAIL routes (post-W286 'review' is common and
         # is already surfaced in the response + UEG — routing reviews would proliferate ceremony).
-        _MATERIAL = ("cascade", "vsb_repo", "board_pack")
+        # §11 (W322) — the FAIL-routing list GROWS with the material surfaces: the entity's
+        # PUBLIC faces (website/webapp/mobile) and its living deliverables are material too —
+        # an engine-backed FAIL on any of them routes to Change Control, never just a flag.
+        _MATERIAL = ("cascade", "vsb_repo", "board_pack",
+                     "vsb_website", "vsb_webapp", "vsb_mobile", "deliverable")
         if label in _MATERIAL or label.startswith("economy"):
             try:
                 from agentic_core.api.change_control import SubmitChangeRequest, submit_change

@@ -47,8 +47,24 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
              str(target.get("domain") or "")]
     try:
         from agentic_core.api.business_plan import _load as _bp_load
-        for o in (_bp_load(vsb_id) or {}).get("objectives", [])[:10]:
+        _plan = _bp_load(vsb_id) or {}
+        for o in _plan.get("objectives", [])[:10]:
             parts.append(f"{o.get('title')} {o.get('kpi')}")
+        # §11 (W322) — the verdict with economy TEETH screens the entity's SUBSTANCE, not just
+        # header fields: a haram-substance entity previously passed because its name and
+        # objective titles read clean. The challenge, concept and plan narrative join the text.
+        parts.append(str(_plan.get("concept") or "")[:1200])
+        parts.append(str(_plan.get("executive_summary") or "")[:800])
+    except Exception:
+        pass
+    try:
+        from agentic_core.api.vsb import _load_vsb, _blueprint
+        _ent = _load_vsb(vsb_id)
+        if _ent:
+            parts.append(str(_ent.get("challenge") or "")[:800])
+            _bp = _blueprint(_ent)
+            parts.append(_bp.get("concept", "")[:1200])
+            parts.append(_bp.get("commercialisation", "")[:800])
     except Exception:
         pass
     from agentic_core.api.compliance import screen_compliance

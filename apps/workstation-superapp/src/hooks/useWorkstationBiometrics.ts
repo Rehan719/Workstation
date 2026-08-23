@@ -30,6 +30,7 @@ export interface WorkstationBiometrics {
   };
   systemState: SystemState;
   loaded: boolean;
+  live: boolean;   // W329 — true ONLY when the readings came from the backend (never for defaults)
 }
 
 const DEFAULT: WorkstationBiometrics = {
@@ -39,9 +40,10 @@ const DEFAULT: WorkstationBiometrics = {
   communication:  { active_channels: [], neurotransmitter: 'Serotonin', is_active: false },
   systemState:    'IDLE',
   loaded:         false,
+  live:           false,
 };
 
-function deriveSystemState(b: Omit<WorkstationBiometrics, 'systemState' | 'loaded'>): SystemState {
+function deriveSystemState(b: Omit<WorkstationBiometrics, 'systemState' | 'loaded' | 'live'>): SystemState {
   if (b.communication.is_active)                                          return 'COMMUNICATING';
   if (b.circadian.cycle === 'MAINTENANCE_FOCUS' ||
       b.circadian.cycle === 'MAINTENANCE_REST')                           return 'MAINTENANCE';
@@ -63,7 +65,7 @@ export function useWorkstationBiometrics(pollIntervalMs = 6000): WorkstationBiom
       }
       const r = res.data ?? {};
 
-      const next: Omit<WorkstationBiometrics, 'systemState' | 'loaded'> = {
+      const next: Omit<WorkstationBiometrics, 'systemState' | 'loaded' | 'live'> = {
         circadian: {
           cycle: r.circadian?.cycle ?? 'ACTIVE_FOCUS',
         },
@@ -82,10 +84,10 @@ export function useWorkstationBiometrics(pollIntervalMs = 6000): WorkstationBiom
         },
       };
 
-      setData({ ...next, systemState: deriveSystemState(next), loaded: true });
+      setData({ ...next, systemState: deriveSystemState(next), loaded: true, live: true });
     } catch {
-      // Backend unavailable — mark loaded so the UI shows default state rather than a spinner
-      setData(prev => ({ ...prev, loaded: true }));
+      // Backend unavailable — loaded (no spinner) but NOT live: the chrome must not fabricate health
+      setData(prev => ({ ...prev, loaded: true, live: false }));
     }
   };
 

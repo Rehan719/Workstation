@@ -21,9 +21,13 @@ router = APIRouter(prefix="/api/v1/ueg", tags=["ueg-provenance"])
 
 @router.get("/verify")
 async def verify_chain():
-    """Verify the whole audit chain's cryptographic integrity (real SHA3-512 Merkle-DAG walk)."""
-    valid = ueg_ledger.verify_chain()
-    return {"chain_valid": bool(valid), "merkle_root": ueg_ledger.merkle_root,
+    """Verify the whole audit chain's cryptographic integrity. §13 (W327): every entry's content
+    hash is RECOMPUTED (payload mutation is caught, not just broken parent links) and the tail is
+    checked against the sibling anchor (truncation/rollback is caught) — with the per-entry
+    verdict detail returned, never a bare constant."""
+    detail = ueg_ledger.verify_chain_detail()
+    return {"chain_valid": bool(detail.get("valid")), "detail": detail,
+            "merkle_root": ueg_ledger.merkle_root,
             "algo": "sha3_512", "log_path": ueg_ledger.log_path, "real": True}
 
 

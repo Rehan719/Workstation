@@ -76,6 +76,13 @@ class UEGLogger:
             graph["nodes"].append(node)
             graph["root_hash"] = node["hash"]
             self._write(graph)
+            # §13 (W327) — tail anchor beside the graph: root_hash lives INSIDE the same file, so
+            # a rollback that rewrites both stayed consistent; the sibling anchor catches it.
+            try:
+                from agentic_core.integrity import write_anchor
+                write_anchor(self.storage_path + ".anchor", node["hash"], len(graph["nodes"]))
+            except Exception:
+                pass
         logger.debug("UEG event %s logged (%s…)", node["id"], node["hash"][:16])
         return node["hash"]
 
@@ -131,4 +138,14 @@ class UEGLogger:
             if self._hash(base) != node.get("hash"):
                 return {"valid": False, "broken_at": node["id"]}
             prev = node["hash"]
+        # §13 (W327) — the tail anchor catches truncation/rollback (both graph AND its internal
+        # root_hash can be rewritten consistently; the sibling anchor cannot be forgotten silently).
+        try:
+            from agentic_core.integrity import read_anchor
+            anchor = read_anchor(self.storage_path + ".anchor")
+            if anchor and anchor.get("head") != prev:
+                return {"valid": False, "reason": "tail_anchor_mismatch (truncation/rollback suspected)",
+                        "events": len(graph["nodes"]), "anchored_head": anchor.get("head")}
+        except Exception:
+            pass
         return {"valid": True, "events": len(graph["nodes"]), "root_hash": graph.get("root_hash")}

@@ -51,8 +51,10 @@ function ecgDuration(cycle: CircadianCycle): string {
   }
 }
 
-// Cardiovascular resource flow → heartbeat dot colour
-function cardioClass(flow: number): string {
+// Cardiovascular resource flow → heartbeat dot colour.
+// W329 — honest: without LIVE readings the dot is grey 'offline', never fabricated green health.
+function cardioClass(flow: number, live: boolean = true): string {
+  if (!live) return 'bg-slate-600';          // backend unreachable — unknown, not healthy
   if (flow > 80) return 'bg-emerald-500';   // healthy — green
   if (flow > 40) return 'bg-aura';           // working — teal
   return 'bg-vital';                          // stressed — red
@@ -133,7 +135,7 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
   biometrics: b,
   compact = false,
 }) => {
-  const cardioCol  = cardioClass(b.cardiovascular.resource_flow);
+  const cardioCol  = cardioClass(b.cardiovascular.resource_flow, b.live);
   const cardioDur  = cardioDuration(b.cardiovascular.resource_flow);
   const cogCol     = cognitionClass(b.cognition.state);
   const cogDur     = cognitionDuration(b.cognition.state);

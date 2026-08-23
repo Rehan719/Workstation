@@ -51,7 +51,7 @@ export const TransformationDashboard: React.FC = () => {
 
   const tick = async () => {
     setTicking(true);
-    try { await fetch('/api/v1/transformation/tick', { method: 'POST' }); await load(); } catch {}
+    try { await fetch('/api/v1/transformation/tick', { method: 'POST' }); await load(); } catch { setError('Tick failed — backend unreachable'); }   // W329
     setTicking(false);
   };
   const assess = async () => {

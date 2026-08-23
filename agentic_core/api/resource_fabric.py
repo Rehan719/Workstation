@@ -24,7 +24,24 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
+
+
+def _fabric_owner(user) -> str:
+    """§14 (W324) — the owner id stamped onto user designs (server-side under auth)."""
+    return request_owner_id(user if isinstance(user, dict) else None, "default")
+
+
+def _require_design_access(rec: dict, user, kind: str, rid: str) -> None:
+    """§14×§7 (W324) — user DESIGNS (compositions · swarm cascades · their runs) are tenant-scoped:
+    previously the whole /api/v1/resources/* surface had zero auth and zero scoping — full
+    anonymous CRUD of every tenant's designs under AUTH_ENABLED=true, and update_swarm wrote back
+    into other tenants' VSB records. 404 (never 403); unowned legacy records admin-only under
+    auth; single-user mode (auth off) unguarded."""
+    if not user_can_access(user if isinstance(user, dict) else None, rec.get("owner_id")):
+        raise HTTPException(status_code=404, detail=f"{kind} {rid} not found.")
 from pydantic import BaseModel
 
 from agentic_core.vbs.quality import assure_delivery
@@ -152,7 +169,7 @@ _REGISTRY: List[Dict[str, Any]] = [
        "Forward-simulates a system under a scenario on the native swarm (state trajectory · emergent "
        "behaviour · stress points · setpoints) — the §7 Simulator facility.",
        ["scenario simulation", "forward modelling", "stress/failure analysis", "setpoint optimisation"],
-       {"system": "str", "scenario": "str"}, "/api/v1/twin", ["design", "development", "delivery", "forge"]),
+       {"system": "str", "scenario": "str"}, "/api/v1/twin/simulate", ["design", "development", "delivery", "forge"]),   # W324 — a REAL route, not the bare prefix
 
     # Organism biomimetic systems
     _R("gaas_v5", "Constitutional Gate (gaas.v5)", "organism_system", "governance_engine",
@@ -174,7 +191,7 @@ _REGISTRY: List[Dict[str, Any]] = [
        "Error-rate ring buffer → live health score + threat level — the organism's defence. When "
        "composed, contributes the genuine current immune reading.",
        ["health score", "threat level", "anomaly detection"], {},
-       "/api/v1/organism/immune/status", ["governance", "evolution", "delivery"], biomimetic=True, methods=("GET",)),
+       "/api/v1/organism/self-healing/status", ["governance", "evolution", "delivery"], biomimetic=True, methods=("GET",)),   # W324 — the immune reading's REAL live route
     _R("self_healing", "Self-Healing Reflex", "organism_system", "biomimetic",
        "Per-provider circuit breakers (CLOSED/OPEN/HALF_OPEN) + healing log — automatic recovery. When "
        "composed, contributes the live breaker/health reading.",
@@ -193,7 +210,7 @@ _REGISTRY: List[Dict[str, Any]] = [
     _R("genome", "Genome Registry", "organism_system", "biomimetic",
        "3-layer epigenetic memory encoding VSB DNA and acquired traits.",
        ["DNA encoding", "epigenetic memory", "trait inheritance"], {"trait": "str"},
-       "/api/v1/genome", ["design", "delivery", "evolution"], biomimetic=True),
+       "/api/v1/organism/genome", ["design", "delivery", "evolution"], biomimetic=True),   # W324 — the genome's REAL route
 
     # Enterprise / org layer
     _R("vsb_spawn", "VSB Spawn Pipeline", "enterprise_org", "spawner",
@@ -355,24 +372,30 @@ async def list_resources(resource_class: Optional[str] = None, usable_in: Option
 
 
 @router.get("/compositions")
-async def list_compositions():
-    return {"compositions": _load_compositions()}
+async def list_compositions(user: dict | None = Depends(get_current_user)):
+    _u = user if isinstance(user, dict) else None
+    return {"compositions": [c for c in _load_compositions()
+                             if user_can_access(_u, c.get("owner_id"))]}   # §14 (W324)
 
 
 @router.get("/compositions/runs")
-async def list_composition_runs(limit: int = 20):
+async def list_composition_runs(limit: int = 20, user: dict | None = Depends(get_current_user)):
     """§7 (W274) — composition run HISTORY: every run persists (compact, capped, atomic) so
     'rerunnable, reusable' includes the evidence of past runs, not just the design. (Declared
-    before /compositions/{cid} so the static path wins over the dynamic id lookup.)"""
+    before /compositions/{cid} so the static path wins over the dynamic id lookup.)
+    §14 (W324): tenant-scoped under auth."""
     from agentic_core.config import load_json_tolerant
-    rows = load_json_tolerant(data_path("composition_runs.json"), []) or []
+    _u = user if isinstance(user, dict) else None
+    rows = [r for r in (load_json_tolerant(data_path("composition_runs.json"), []) or [])
+            if user_can_access(_u, r.get("owner_id"))]
     return {"runs": list(reversed(rows[-max(1, min(int(limit), 100)):]))}
 
 
 @router.get("/compositions/{cid}")
-async def get_composition(cid: str):
+async def get_composition(cid: str, user: dict | None = Depends(get_current_user)):
     for c in _load_compositions():
         if c["id"] == cid:
+            _require_design_access(c, user, "Composition", cid)
             return c
     raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
 
@@ -385,7 +408,8 @@ class UpdateCompositionRequest(BaseModel):
 
 
 @router.put("/compositions/{cid}")
-async def update_composition(cid: str, req: UpdateCompositionRequest):
+async def update_composition(cid: str, req: UpdateCompositionRequest,
+                             user: dict | None = Depends(get_current_user)):
     """§7 (W273) — a saved composition is a LIVING design, not frozen at commit: reconfigure its
     name/usage-area/resources/params in place. The edit is RE-MODELLED + RE-SIMULATED (so
     commit_ready reflects the CURRENT design), the version bumps, identity (id + created_at) is
@@ -394,6 +418,7 @@ async def update_composition(cid: str, req: UpdateCompositionRequest):
     comp = next((c for c in rows if c["id"] == cid), None)
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
+    _require_design_access(comp, user, "Composition", cid)   # §14 (W324)
     rids = req.resource_ids if req.resource_ids is not None else [r["id"] for r in comp.get("resources", [])]
     unknown = [rid for rid in rids if rid not in _BY_ID]
     if unknown:
@@ -424,12 +449,14 @@ async def update_composition(cid: str, req: UpdateCompositionRequest):
 
 
 @router.delete("/compositions/{cid}")
-async def delete_composition(cid: str):
+async def delete_composition(cid: str, user: dict | None = Depends(get_current_user)):
     """§7 (W273) — complete the composition lifecycle: retire a saved design (UEG-logged)."""
     rows = _load_compositions()
-    keep = [c for c in rows if c["id"] != cid]
-    if len(keep) == len(rows):
+    target = next((c for c in rows if c["id"] == cid), None)
+    if not target:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
+    _require_design_access(target, user, "Composition", cid)   # §14 (W324)
+    keep = [c for c in rows if c["id"] != cid]
     _save_compositions(keep)
     try:
         from agentic_core.gaas.v5 import UEGLogger
@@ -585,7 +612,7 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
         if rid == "immune":
             from agentic_core.organism.immune import immune
             st = immune.status()
-            return {"resource": "immune", "ran": "/api/v1/organism/immune/status",
+            return {"resource": "immune", "ran": "organism.immune.status() (in-process)",   # W324 — honest label
                     "health": st.get("health"), "threat_level": st.get("threat_level"),
                     "output": json.dumps({k: st.get(k) for k in ("health", "threat_level", "errors_in_window", "hot_endpoint")}, default=str)[:400]}
         if rid == "self_healing":
@@ -867,7 +894,8 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
 
 
 @router.post("/compositions/{cid}/run")
-async def run_composition(cid: str, req: RunCompositionRequest):
+async def run_composition(cid: str, req: RunCompositionRequest,
+                          user: dict | None = Depends(get_current_user)):
     """Run a saved configuration end-to-end on Workstation's OWN native swarm (§6): each composed resource
     becomes a pipeline stage (the org-cascade resource is a §5 stage), the user's reconfigured parameters
     feed in, each stage completes in-house-first and feeds the next, and the combined run is QMS-gated +
@@ -876,6 +904,7 @@ async def run_composition(cid: str, req: RunCompositionRequest):
     comp = next((c for c in _load_compositions() if c["id"] == cid), None)
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
+    _require_design_access(comp, user, "Composition", cid)   # §14 (W324)
     # W273 — the simulation verdict is HONEST at run time, never silent and never a hard wall:
     # both signals (the declared-usage-area check and the §10 QMS simulation — each honest but
     # conservative against real composition practice: the catalogue's declared areas are narrower
@@ -1048,6 +1077,7 @@ async def run_composition(cid: str, req: RunCompositionRequest):
         _cr = load_json_tolerant(_cr_store, []) or []
         _cr.append({
             "run_id": run_id, "composition_id": cid, "name": comp["name"],
+            "owner_id": comp.get("owner_id"),   # §14 (W324) — runs inherit the design's tenant
             "version": comp.get("version", 1), "objective": objective[:200],
             "commit_ready": commit_ready, "usage_area_supported": _area_ok,
             "run_params_applied": sorted((req.params or {}).keys()),
@@ -1130,12 +1160,14 @@ def _living_vsb_grounding(vsb_id: str) -> str:
 
 def register_swarm(name: str, stages: List[Dict[str, str]], context: str = "",
                    usage_area: str = "synthesis", vsb_id: str | None = None,
-                   org: List[str] | None = None) -> Dict[str, Any]:
+                   org: List[str] | None = None,
+                   owner_id: str | None = None) -> Dict[str, Any]:
     """Persist a bespoke native swarm cascade as a reusable, re-runnable fabric resource and
     return it. Shared by the /swarm/define endpoint and by Genesis (which gives every established
     VSB its OWN cascade) — one path, so per-VSB swarms run through the same owned-resource runner."""
     cascade = {
         "id": f"swarm-{uuid.uuid4().hex[:8]}",
+        "owner_id": owner_id,   # §14 (W324) — the owning tenant (None = platform/legacy, admin-only under auth)
         "name": name,
         "kind": "ai_native_swarm",
         "stages": [{"role": s.get("role", ""), "instruction": s.get("instruction", "")} for s in stages],
@@ -1193,16 +1225,22 @@ class RunSwarmRequest(BaseModel):
 
 
 @router.post("/swarm/define")
-async def define_swarm(req: DefineSwarmRequest):
+async def define_swarm(req: DefineSwarmRequest, user: dict | None = Depends(get_current_user)):
     """Define + save a bespoke, reusable, re-runnable native swarm cascade (user design control) —
-    optionally bound to a VSB as its own delivery org (vsb_id + org tiers)."""
+    optionally bound to a VSB as its own delivery org (vsb_id + org tiers).
+    §14 (W324): owner-stamped; binding to a VSB requires ACCESS to that VSB (previously any caller
+    could bind a cascade to another tenant's entity and update_swarm would write into it)."""
+    if req.vsb_id:
+        from agentic_core.api.vsb import _require_vsb_access
+        _require_vsb_access(req.vsb_id, user if isinstance(user, dict) else None)
     return register_swarm(req.name, [s.model_dump() for s in req.stages],
                           context=req.context, usage_area=req.usage_area,
-                          vsb_id=req.vsb_id, org=req.org)
+                          vsb_id=req.vsb_id, org=req.org, owner_id=_fabric_owner(user))
 
 
 @router.put("/swarm/{sid}")
-async def update_swarm(sid: str, req: UpdateSwarmRequest):
+async def update_swarm(sid: str, req: UpdateSwarmRequest,
+                       user: dict | None = Depends(get_current_user)):
     """§7 user design control (W267) — RECONFIGURE a saved swarm cascade, including a VSB's own
     delivery org: edit the name/stages/context/org tiers. `id`, `vsb_id` and `created_at` are
     preserved; POST /swarm/run re-reads the saved stages, so re-runs pick the edits up automatically.
@@ -1210,6 +1248,9 @@ async def update_swarm(sid: str, req: UpdateSwarmRequest):
     rows = _load_swarms()
     for c in rows:
         if c["id"] == sid:
+            # §14 (W324) — cascade mutations are owner-scoped; this also guards the VSB
+            # write-back below (binding was validated at define time — W324).
+            _require_design_access(c, user, "Swarm cascade", sid)
             if req.stages is not None and not req.stages:
                 raise HTTPException(status_code=400, detail="A cascade needs at least one stage.")
             if req.name is not None:
@@ -1248,23 +1289,26 @@ async def update_swarm(sid: str, req: UpdateSwarmRequest):
 
 
 @router.get("/swarm")
-async def list_swarms(vsb_id: Optional[str] = None):
-    rows = _load_swarms()
+async def list_swarms(vsb_id: Optional[str] = None,
+                      user: dict | None = Depends(get_current_user)):
+    _u = user if isinstance(user, dict) else None
+    rows = [c for c in _load_swarms() if user_can_access(_u, c.get("owner_id"))]   # §14 (W324)
     if vsb_id:
         rows = [c for c in rows if c.get("vsb_id") == vsb_id]
     return {"cascades": rows, "total": len(rows)}
 
 
 @router.get("/swarm/{sid}")
-async def get_swarm(sid: str):
+async def get_swarm(sid: str, user: dict | None = Depends(get_current_user)):
     for c in _load_swarms():
         if c["id"] == sid:
+            _require_design_access(c, user, "Swarm cascade", sid)
             return c
     raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
 
 
 @router.post("/swarm/run")
-async def run_swarm(req: RunSwarmRequest):
+async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_current_user)):
     """Run a swarm cascade (saved via swarm_id, or ad-hoc stages) on Workstation's OWN resources.
     Returns the per-stage trace with served_by + whether any external accelerant was used."""
     stages = [s.model_dump() for s in req.stages]
@@ -1276,6 +1320,7 @@ async def run_swarm(req: RunSwarmRequest):
         saved = next((c for c in _load_swarms() if c["id"] == req.swarm_id), None)
         if not saved:
             raise HTTPException(status_code=404, detail=f"Swarm cascade {req.swarm_id} not found.")
+        _require_design_access(saved, user, "Swarm cascade", req.swarm_id)   # §14 (W324)
         stages = saved["stages"]
         context = req.context or saved.get("context", "")
         name = saved["name"]
@@ -1406,7 +1451,7 @@ async def simulate_composition(req: ComposeRequest):
 
 
 @router.post("/compose")
-async def compose(req: ComposeRequest):
+async def compose(req: ComposeRequest, user: dict | None = Depends(get_current_user)):
     """Combine selected resources into a named, reusable, re-runnable configuration — modelled +
     QMS-gated, and document-controlled under the QMS on commit (the saved config carries its model +
     quality record)."""
@@ -1419,6 +1464,7 @@ async def compose(req: ComposeRequest):
 
     composition = {
         "id": f"comp-{uuid.uuid4().hex[:8]}",
+        "owner_id": _fabric_owner(user),   # §14 (W324) — server-stamped ownership
         "name": req.name,
         "usage_area": req.usage_area,
         "resources": resolved,

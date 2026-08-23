@@ -44,7 +44,8 @@ class Listing(BaseModel):
     tier: str = "Standard"
     tags: list[str] = []
     certified: bool = False
-    status: str = "active"   # active | sold_out | draft
+    status: str = "active"   # active | sold_out | draft | held (W322 — §11 FAIL)
+    compliance: dict = {}    # §11 (W322) — the listing's real screen verdict (overall + verdicts)
     sales_count: int = 0
     created_at: float = 0.0
     updated_at: float = 0.0
@@ -127,7 +128,8 @@ async def list_marketplace_listings(
     search: Optional[str] = None,
     certified_only: bool = False,
 ) -> list[dict]:
-    listings = _all_listings()
+    # §11 (W322) — held listings never surface on the public marketplace
+    listings = [l for l in _all_listings() if l.status != "held"]
     if category:
         listings = [l for l in listings if l.category.lower() == category.lower()]
     if certified_only:
@@ -155,12 +157,27 @@ def _require_vsb_attribution(vsb_id: str, user: dict | None) -> None:
         raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
 
 
+def _screen_listing(name: str, description: str, tags: list) -> dict:
+    """§11 (W322) — the marketplace is INSIDE the compliance perimeter: every listing's public
+    text (name + description + tags) is screened by the real engines. overall='fail' → the
+    listing is HELD (never active, never purchasable) until an edit re-screens clean.
+    Previously a haram listing went live and was purchasable with zero screening."""
+    try:
+        from agentic_core.api.compliance import screen_compliance
+        s = screen_compliance(f"{name}\n{description}\n{' '.join(tags or [])}")
+        return {"overall": s.get("overall"), "compliant": s.get("compliant"),
+                "verdicts": s.get("verdicts")}
+    except Exception as exc:   # a screen fault never silently passes NOR blocks — recorded honestly
+        return {"overall": "error", "error": str(exc)[:160]}
+
+
 @router.post("/api/v1/marketplace/listings")
 async def create_listing(req: CreateListingRequest,
                          user: dict | None = Depends(get_current_user)) -> dict:
     if user is not None and not isinstance(user, dict):
         user = None
     _require_vsb_attribution(req.vsb_id, user)
+    _screen = _screen_listing(req.name, req.description, req.tags)
     lid = uuid.uuid4().hex[:12]
     listing = Listing(
         id=lid,
@@ -175,11 +192,20 @@ async def create_listing(req: CreateListingRequest,
         creator_id=request_owner_id(user, req.creator_id),
         vsb_id=req.vsb_id,
         certified=False,
-        status="active",
+        status="held" if _screen.get("overall") == "fail" else "active",   # §11 (W322)
+        compliance=_screen,
         created_at=time.time(),
         updated_at=time.time(),
     )
     _save(listing)
+    if listing.status == "held":
+        try:
+            from agentic_core.gaas.v5 import UEGLogger
+            UEGLogger().log({"type": "marketplace.listing_held", "listing_id": lid,
+                             "overall": _screen.get("overall"),
+                             "note": "§11 screen FAIL — held off the marketplace until re-screened clean"})
+        except Exception:
+            pass
     return listing.model_dump()
 
 
@@ -201,8 +227,15 @@ async def update_listing(listing_id: str, patch: dict,
     if "vsb_id" in patch and patch.get("vsb_id") != listing.vsb_id:
         _require_vsb_attribution(str(patch.get("vsb_id") or ""), user)
     for k, v in patch.items():
-        if k not in ("id", "created_at", "certified", "creator_id", "sales_count") and hasattr(listing, k):
+        if k not in ("id", "created_at", "certified", "creator_id", "sales_count",
+                     "compliance", "status") and hasattr(listing, k):
             setattr(listing, k, v)
+    # §11 (W322) — a public-text edit RE-SCREENS; a clean re-screen is the ONLY way off hold,
+    # and a failing edit puts an active listing on hold (status/compliance are never patchable).
+    if any(k in patch for k in ("name", "description", "tags")) or listing.status == "held":
+        listing.compliance = _screen_listing(listing.name, listing.description, listing.tags)
+        listing.status = ("held" if listing.compliance.get("overall") == "fail"
+                          else ("active" if listing.status == "held" else listing.status))
     return _save(listing).model_dump()
 
 
@@ -235,6 +268,9 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest,
     listing = _load(listing_id)
     if listing.status == "sold_out":
         raise HTTPException(status_code=409, detail="Listing is sold out")
+    if listing.status == "held":   # §11 (W322) — a FAIL-screened listing is not purchasable
+        raise HTTPException(status_code=409,
+                            detail="Listing is held by the §11 compliance screen and cannot be purchased.")
 
     total_cost = listing.price_wst * req.quantity
 

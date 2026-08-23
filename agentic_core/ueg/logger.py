@@ -67,22 +67,56 @@ class VSBUEGLogger:
             f.write(json.dumps(entry, default=_ser_default) + "\n")
 
         self.merkle_root = event_hash
+        # §13 (W327) — tail anchor: the head is stamped beside the ledger on every append, so
+        # verify catches truncation/rollback (see agentic_core.integrity for the threat model).
+        try:
+            from agentic_core.integrity import write_anchor
+            self._anchor_count = getattr(self, "_anchor_count", None)
+            count = self._count_entries() if self._anchor_count is None else self._anchor_count + 1
+            self._anchor_count = count
+            write_anchor(self.log_path + ".anchor", event_hash, count)
+        except Exception:
+            pass
         self.logger.info(f"UEG: Event {event_type} logged with hash {event_hash[:16]}...")
         return event_hash
 
+    def _count_entries(self) -> int:
+        try:
+            with open(self.log_path, "r") as f:
+                return sum(1 for _ in f)
+        except Exception:
+            return 0
+
     def verify_chain(self) -> bool:
-        """Verifies the integrity of the entire audit trail."""
-        expected_parent = "0" * 128
+        """Verify the ENTIRE audit trail: §13 (W327) — every entry's content hash is RECOMPUTED
+        from its payload (a mutated payload is caught, not just a broken parent link) and the tail
+        is checked against the sibling anchor (truncation/rollback is caught). Previously this
+        walked parent links only — content tampering passed as 'chain_valid'."""
+        return bool(self.verify_chain_detail().get("valid"))
+
+    def verify_chain_detail(self) -> Dict[str, Any]:
+        from agentic_core.integrity import read_anchor, verify_chain_entries
+        entries: List[Dict[str, Any]] = []
         try:
             with open(self.log_path, "r") as f:
                 for line in f:
-                    entry = json.loads(line)
-                    if entry["payload"]["parent_hash"] != expected_parent:
-                        return False
-                    expected_parent = entry["hash"]
-            return True
-        except Exception:
-            return False
+                    if line.strip():
+                        entries.append(json.loads(line))
+        except FileNotFoundError:
+            return {"valid": True, "entries": 0, "head": None,
+                    "note": "no ledger yet — vacuously valid"}
+        except Exception as exc:
+            return {"valid": False, "reason": f"ledger unreadable: {exc}"}
+        anchor = read_anchor(self.log_path + ".anchor")
+        return verify_chain_entries(
+            entries,
+            recompute=lambda e: hashlib.sha3_512(
+                json.dumps(e["payload"], sort_keys=True, default=_ser_default).encode()).hexdigest(),
+            stored_hash=lambda e: e.get("hash"),
+            parent_hash=lambda e: e["payload"].get("parent_hash"),
+            first_parent="0" * 128,
+            anchor=(anchor or {}).get("head") if anchor else None,
+        )
 
     async def log_minimisation_event(self, event_type: str, metrics: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> str:
         """

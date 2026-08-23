@@ -16,16 +16,21 @@ const PHASE_ICON: Record<string, React.ComponentType<any>> = {
 export const HeartbeatMonitor: React.FC = () => {
   const [s, setS] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
+  const [actErr, setActErr] = useState('');   // W329 — actions never fail silently
 
   const load = () => fetch('/api/v1/heartbeat/status').then(r => r.json()).then(setS).catch(() => {});
   useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, []);
 
   const act = async (path: string, body?: object) => {
     setBusy(true);
+    setActErr('');
     try {
-      await fetch(`/api/v1/heartbeat/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+      const r = await fetch(`/api/v1/heartbeat/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+      if (!r.ok) setActErr(`Action failed (HTTP ${r.status}) — nothing changed`);
       await load();
-    } catch {}
+    } catch {
+      setActErr('Backend unreachable — nothing changed');
+    }
     setBusy(false);
   };
 
@@ -33,6 +38,7 @@ export const HeartbeatMonitor: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Continuous Autonomy</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Organism Heartbeat</h1>
