@@ -441,8 +441,10 @@ def _prose_clean(text: str, one_line: bool = False) -> str:
     lines = []
     for line in (text or "").splitlines():
         # strip inline provenance markers FIRST so a content line that merely CARRIES a marker
-        # keeps its prose (dropping the whole line would lose real copy)
-        s = _re.sub(r"_\[[^\]\n]*\]_?", "", line.strip()).strip()
+        # keeps its prose (dropping the whole line would lose real copy). W331 CI round 2: the
+        # marker can arrive TRUNCATED (no closing bracket — a memory excerpt cut mid-marker),
+        # so the closing "]" is optional.
+        s = _re.sub(r"_\[[^\]\n]*\]?_?", "", line.strip()).strip()
         low = s.lower()
         if (not s or s.startswith(("#", "```", ">"))
                 or "native structured engine" in low or low.startswith("[engine")):
@@ -487,6 +489,15 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
             f"addressing: {challenge}. No headings, no markdown.")),
     }
     files = _build_website_files(vsb, copy)
+    # §13 (W331) — the no-scaffold invariant is enforced AT THE SURFACE, whatever field a marker
+    # leaks through (CI caught a truncated `_[…` fragment arriving via a memory excerpt inside
+    # floor copy — a path no per-field cleaning anticipates): no shipped public page ever carries
+    # provenance markers or the engine label. Only scaffold artifacts are removed, never content.
+    import re as _re2
+    for _p in list(files):
+        if _p.endswith(".html"):
+            files[_p] = _re2.sub(r"_\[[^\]\n]*\]?_?", "",
+                                 files[_p]).replace("Native Structured Engine", "")
     from agentic_core.vbs.quality import assure_delivery
     combined = "\n".join(c for p, c in files.items() if p.endswith(".html"))
     qa = await assure_delivery(combined, ["About", "Solution", "What we do"], label="vsb_website")
