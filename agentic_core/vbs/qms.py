@@ -53,10 +53,13 @@ class QualityManagementSystem:
     def defects(self) -> List[Dict[str, Any]]:
         return self._load_state()["defects"]
 
-    async def run_quality_gates(self, metadata: Dict[str, Any], label: str = "delivery") -> bool:
+    async def run_quality_gates(self, metadata: Dict[str, Any], label: str = "delivery",
+                                owner_id: str | None = None,
+                                delivery_ref: Dict[str, Any] | None = None) -> bool:
         """
         Enforces >95% test coverage and zero-stub policy. A failure opens a persistent,
-        traceable defect (unique id, the label of the delivery surface, the real metrics).
+        traceable defect (unique id, the label of the delivery surface, the real metrics,
+        and — W320 — the owning tenant where the delivery carries one).
         """
         coverage = float(metadata.get("coverage", 0.0))
         stubs_found = bool(metadata.get("stubs_found", False))
@@ -66,9 +69,15 @@ class QualityManagementSystem:
         st["gates_run"] = int(st.get("gates_run", 0)) + 1
         if not passed:
             st["defects_total"] = int(st.get("defects_total", 0)) + 1
+            # §10 (W316) — gate FAILURES are counted separately from distinct defects: a failed
+            # re-verification must also count as a failure (previously it inflated the
+            # denominator only, so WORSE corrections produced a BETTER reported rate).
+            st["gate_failures"] = int(st.get("gate_failures", st.get("defects_total", 0) - 1)) + 1
             st["defects"].append({
                 "id": f"DEF-{uuid.uuid4().hex[:8]}",
                 "label": label,
+                "owner_id": owner_id,   # §14 (W320) — None = platform-level (admin-only under auth)
+                "delivery_ref": delivery_ref,   # §10 (W316) — the REAL delivery this defect traces to
                 "meta": {"coverage": coverage, "stubs_found": stubs_found},
                 "status": "open",
                 "opened_at": _now(),
@@ -82,10 +91,13 @@ class QualityManagementSystem:
         return passed
 
     def get_non_conformance_rate(self) -> float:
-        """REAL rate: gate failures over gates run (0.0 with no history — never a fabricated figure)."""
+        """REAL rate: gate FAILURES over gates run (0.0 with no history — never fabricated).
+        §10 (W316): failures include failed re-verifications; the historical fallback for stores
+        written before gate_failures existed is defects_total (the best available true count)."""
         st = self._load_state()
         gates = int(st.get("gates_run", 0))
-        return round(int(st.get("defects_total", 0)) / gates, 4) if gates > 0 else 0.0
+        failures = int(st.get("gate_failures", st.get("defects_total", 0)))
+        return round(failures / gates, 4) if gates > 0 else 0.0
 
     # ── §10 (W307) — the defect → correction → re-verify loop (ISO 9001 §8.7 / §10.2) ──
     def correct_defect(self, defect_id: str, correction: str, actor: str = "owner") -> Optional[Dict[str, Any]]:
@@ -112,8 +124,14 @@ class QualityManagementSystem:
                 stubs_found = bool(metadata.get("stubs_found", False))
                 passed = (coverage >= self.min_coverage) and not stubs_found
                 st["gates_run"] = int(st.get("gates_run", 0)) + 1
+                if not passed:
+                    # §10 (W316) — a FAILED re-verification RAISES the non-conformance rate
+                    # (previously it only inflated the denominator, rewarding bad corrections)
+                    st["gate_failures"] = int(st.get("gate_failures",
+                                                     st.get("defects_total", 0))) + 1
                 d["reverified"] = passed
                 d["reverify_meta"] = {"coverage": coverage, "stubs_found": stubs_found}
+                d["reverify_basis"] = str(metadata.get("basis", "caller_attested"))
                 d["reverified_at"] = _now()
                 d["status"] = "closed" if passed else "open"
                 self._save_state()
@@ -126,7 +144,8 @@ class QualityManagementSystem:
         for d in st["defects"]:
             by[d.get("status", "open")] = by.get(d.get("status", "open"), 0) + 1
         return {"gates_run": int(st.get("gates_run", 0)),
-                "defects_total": int(st.get("defects_total", 0)), **by,
+                "defects_total": int(st.get("defects_total", 0)),
+                "gate_failures": int(st.get("gate_failures", st.get("defects_total", 0))), **by,
                 "non_conformance_rate": self.get_non_conformance_rate()}
 
     async def control_document(self, doc_id: str, content: Dict[str, Any], actor: str) -> str:

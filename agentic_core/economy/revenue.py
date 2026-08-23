@@ -49,6 +49,48 @@ def record_event(vsb_id: str, kind: str, amount_wst: float, source: str, ref: st
     return ev
 
 
+def peek_pending(vsb_id: str) -> Dict[str, Any]:
+    """§12 (W313) — NON-CONSUMING view of a VSB's pending intake, with the exact event ids.
+    The governed cycle peeks first and consumes ONLY after every gate passes — a materiality or
+    policy hold must PRESERVE the recognised revenue it holds, never destroy it."""
+    revenue = costs = 0.0
+    sources: Dict[str, int] = {}
+    ids = []
+    for ev in _load():
+        if ev.get("vsb_id") == vsb_id and not ev.get("consumed"):
+            if ev.get("kind") == "revenue":
+                revenue += float(ev.get("amount_wst") or 0.0)
+            else:
+                costs += float(ev.get("amount_wst") or 0.0)
+            sources[ev.get("source", "?")] = sources.get(ev.get("source", "?"), 0) + 1
+            ids.append(ev["id"])
+    return {"revenue": round(revenue, 6), "costs": round(costs, 6), "events": len(ids),
+            "sources": sources, "ids": ids}
+
+
+def consume_events(vsb_id: str, ids: list) -> Dict[str, Any]:
+    """Consume (exactly once) the SPECIFIC events a passed cycle recognised — the ids its peek saw.
+    Events that arrived after the peek stay pending for the next cycle (never silently absorbed)."""
+    want = set(ids or [])
+    rows = _load()
+    revenue = costs = 0.0
+    sources: Dict[str, int] = {}
+    n = 0
+    for ev in rows:
+        if ev.get("id") in want and ev.get("vsb_id") == vsb_id and not ev.get("consumed"):
+            if ev.get("kind") == "revenue":
+                revenue += float(ev.get("amount_wst") or 0.0)
+            else:
+                costs += float(ev.get("amount_wst") or 0.0)
+            sources[ev.get("source", "?")] = sources.get(ev.get("source", "?"), 0) + 1
+            ev["consumed"] = True
+            ev["consumed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            n += 1
+    if n:
+        atomic_write_json(_STORE, rows[-2000:])
+    return {"revenue": round(revenue, 6), "costs": round(costs, 6), "events": n, "sources": sources}
+
+
 def consume_pending(vsb_id: str) -> Dict[str, Any]:
     """Consume (exactly once) all pending events for a VSB → the next cycle's REAL intake.
     Returns {"revenue": X, "costs": Y, "events": n, "sources": {...}}."""

@@ -114,6 +114,7 @@ class OrganismHeartbeat:
         self.interval_seconds = 60            # base cadence (modulated by circadian)
         self.auto_evolve = False              # opt-in: autonomous AI evolution cycles
         self.auto_economy = False             # opt-in: autonomous economy cycles
+        self.auto_ship = False                # opt-in (§13, W319): re-ship STALE repos on the beat
         self.auto_align = False               # opt-in: route vision gaps to tiers each beat (cheap, plan-only)
         self.auto_compliance = False          # opt-in (§11, W288): re-screen living VSBs on the beat
         self.last_compliance: Optional[Dict[str, Any]] = None   # last continuous-compliance reading
@@ -314,6 +315,36 @@ class OrganismHeartbeat:
             except Exception:
                 pass
 
+        # §13 (W319) — the STALE flag gets its autonomous consumer: when the Owner enables
+        # auto_ship, the heartbeat re-ships ONE stale repo per beat (oldest stale first) so the
+        # shipped body tracks the life; the re-ship itself is UEG-logged by ship_vsb_repo, and the
+        # re-ship-on-drift closure is recorded as a distinct UEG event here.
+        if self.auto_ship:
+            try:
+                from agentic_core.api.vsb import _REPO_STORE, ship_vsb_repo
+                import json as _json
+                _stale = []
+                for _p in _REPO_STORE.glob("*.ship.json"):
+                    try:
+                        _s = _json.loads(_p.read_text(encoding="utf-8"))
+                        if _s.get("stale"):
+                            _stale.append((_s.get("stale_since") or "", _s.get("vsb_id")))
+                    except Exception:
+                        continue
+                if _stale:
+                    _vid = sorted(_stale)[0][1]
+                    _res = await ship_vsb_repo(_vid, user=None)
+                    self.last_reshipped = {"vsb_id": _vid,
+                                           "coherent_whole": (_res or {}).get("coherent_whole")}
+                    actions.append("reshipped_stale_repo")
+                    try:
+                        self._ueg_logger().log({"type": "vsb.repo.reshipped_on_drift",
+                                                "vsb_id": _vid, "beat": self.beats})
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
         # 5. Constitutional audit — hash-chain the beat into the UEG
         ueg = self._ueg_logger()
         if ueg:
@@ -372,7 +403,8 @@ class OrganismHeartbeat:
     def configure(self, interval_seconds: Optional[int] = None,
                   auto_evolve: Optional[bool] = None, auto_economy: Optional[bool] = None,
                   auto_align: Optional[bool] = None,
-                  auto_compliance: Optional[bool] = None) -> None:
+                  auto_compliance: Optional[bool] = None,
+                  auto_ship: Optional[bool] = None) -> None:
         if interval_seconds is not None:
             self.interval_seconds = max(5, int(interval_seconds))
         if auto_evolve is not None:
@@ -383,6 +415,8 @@ class OrganismHeartbeat:
             self.auto_align = bool(auto_align)
         if auto_compliance is not None:
             self.auto_compliance = bool(auto_compliance)
+        if auto_ship is not None:
+            self.auto_ship = bool(auto_ship)
 
     def status(self) -> Dict[str, Any]:
         return {
@@ -399,6 +433,8 @@ class OrganismHeartbeat:
             "last_evolution": self.last_evolution,
             "last_vsb_operated": self.last_vsb_operated,
             "last_vsb_evolved": self.last_vsb_evolved,
+            "last_reshipped": getattr(self, "last_reshipped", None),
+            "auto_ship": self.auto_ship,
             "interval_seconds": self.interval_seconds,
             "auto_evolve": self.auto_evolve,
             "auto_economy": self.auto_economy,

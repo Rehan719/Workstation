@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Badge } from '@workstation/ui';
 import { Database, Plus, Settings, Play, Square, Download, Loader2, CheckCircle2, X, FileText } from 'lucide-react';
@@ -13,7 +14,7 @@ const PRODUCT_TYPES = [
   { id: 'operational_plan', label: 'Operational Plan',  icon: Settings  },
 ] as const;
 
-const DOMAINS = ['general','technology','enterprise','education','science','law','care','employment'];
+const DOMAINS: readonly string[] = WORKSPACE_DOMAINS;   // §17.1 (W321) — one shared workspace list
 
 interface ProductionLine {
   id: string;

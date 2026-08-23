@@ -11,9 +11,10 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from agentic_core.auth.core import get_current_user, user_can_access
 from agentic_core.vbs.registry import bms, qms, ems, dcms, backbone, CATALOGUE
 from agentic_core.vbs.backbone import ProtocolType
 
@@ -43,12 +44,26 @@ async def qms_gate(req: QMSGate):
 # ── §10 (W307) — the defect → correction → re-verify loop (ISO 9001 §8.7 / §10.2) ──
 
 @router.get("/qms/defects")
-async def qms_defects(status: str = ""):
-    """Persistent, traceable QMS defects + the REAL non-conformance posture (failures / gates run)."""
-    rows = qms.defects
+async def qms_defects(status: str = "", user: dict | None = Depends(get_current_user)):
+    """Persistent, traceable QMS defects + the REAL non-conformance posture (failures / gates run).
+    §14 (W320): under auth the listing is tenant-scoped — a user sees their OWN defects; unowned
+    (platform-level) defects are admin-only; single-user mode unchanged."""
+    _u = user if isinstance(user, dict) else None
+    rows = [d for d in qms.defects if user_can_access(_u, d.get("owner_id"))]
     if status:
         rows = [d for d in rows if d.get("status") == status]
     return {"summary": qms.defect_summary(), "defects": rows[-100:][::-1], "real": True}
+
+
+def _require_defect_access(defect_id: str, user: dict | None) -> None:
+    """§14 (W320) — defect mutations are owner-scoped: 404 (never 403) when scoped out; unowned
+    defects are admin-only under auth; auth-off unguarded."""
+    _u = user if isinstance(user, dict) else None
+    for d in qms.defects:
+        if d.get("id") == defect_id:
+            if not user_can_access(_u, d.get("owner_id")):
+                raise HTTPException(status_code=404, detail=f"No defect '{defect_id}'.")
+            return
 
 
 class DefectCorrection(BaseModel):
@@ -57,20 +72,50 @@ class DefectCorrection(BaseModel):
 
 
 @router.post("/qms/defects/{defect_id}/correct")
-async def qms_correct_defect(defect_id: str, req: DefectCorrection):
+async def qms_correct_defect(defect_id: str, req: DefectCorrection,
+                             user: dict | None = Depends(get_current_user)):
     """Record the correction taken for an OPEN defect. Closure requires re-verification —
     a correction alone never closes a defect."""
+    _require_defect_access(defect_id, user)
     d = qms.correct_defect(defect_id, req.correction, req.actor)
     if not d:
         raise HTTPException(status_code=404, detail=f"No OPEN defect '{defect_id}'.")
     return {"defect": d, "next": "POST /qms/defects/{id}/reverify with the corrected delivery's real metrics"}
 
 
+class DefectReverify(BaseModel):
+    coverage: float | None = None      # caller-attested metrics (legacy leg — recorded as such)
+    stubs_found: bool = False
+    content: str | None = None         # §10 (W316) — the corrected delivery ITSELF: measured here
+
+
 @router.post("/qms/defects/{defect_id}/reverify")
-async def qms_reverify_defect(defect_id: str, req: QMSGate):
-    """Re-run the SAME gate on the corrected delivery's REAL metrics: closes only on a genuine pass;
-    a failed re-verification REOPENS the defect."""
-    res = qms.reverify_defect(defect_id, {"coverage": req.coverage, "stubs_found": req.stubs_found})
+async def qms_reverify_defect(defect_id: str, req: DefectReverify,
+                              user: dict | None = Depends(get_current_user)):
+    """Re-run the SAME gate on the corrected delivery: closes only on a genuine pass; a failed
+    re-verification REOPENS the defect (and counts as a gate failure — W316). Pass `content` to
+    have the platform MEASURE the corrected delivery with the same instruments as the original
+    gate (against the defect's stored delivery reference); bare caller-typed metrics are still
+    accepted but honestly recorded as `caller_attested`."""
+    _require_defect_access(defect_id, user)
+    if req.content is not None:
+        target = next((d for d in qms.defects if d.get("id") == defect_id), None)
+        if not target:
+            raise HTTPException(status_code=404, detail=f"No defect '{defect_id}'.")
+        from agentic_core.vbs.quality import _delivery_coverage, _STUB_RE, _MIN_SUBSTANTIVE
+        secs = ((target.get("delivery_ref") or {}).get("required_sections")) or None
+        cov = _delivery_coverage(req.content, secs)
+        stub = (bool(_STUB_RE.search(req.content or ""))
+                or len((req.content or "").strip()) < _MIN_SUBSTANTIVE)
+        res = qms.reverify_defect(defect_id, {"coverage": cov, "stubs_found": stub,
+                                              "basis": "measured_from_content"})
+    else:
+        if req.coverage is None:
+            raise HTTPException(status_code=422,
+                                detail="Provide `content` (measured re-verify) or `coverage`.")
+        res = qms.reverify_defect(defect_id, {"coverage": req.coverage,
+                                              "stubs_found": req.stubs_found,
+                                              "basis": "caller_attested"})
     if not res:
         raise HTTPException(status_code=404, detail=f"No CORRECTED defect '{defect_id}' awaiting re-verification.")
     return {**res, "real": True}

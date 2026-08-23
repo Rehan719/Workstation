@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { DOMAINS as CANON_DOMAINS } from '../lib/taxonomy';
 import { Card, Button } from '@workstation/ui';
 import {
   TrendingUp, Microscope, Loader2, CheckCircle2, Circle,
@@ -114,7 +115,7 @@ export const IntelligenceLab: React.FC = () => {
   const currentStageNum = stageEvents.length;
   const progress = Math.min(100, Math.round((currentStageNum / 8) * 100));
 
-  const DOMAINS = ['enterprise', 'science', 'law', 'care', 'education', 'career'];
+  const DOMAINS = ['enterprise', ...CANON_DOMAINS];   // §17.1 (W321)
 
   return (
     <div className="space-y-10 pb-24">

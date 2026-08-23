@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { Card, Badge } from '@workstation/ui';
 import { Beaker, Trophy, Plus, X, FlaskConical, TrendingUp, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
-const DOMAINS = ['general','technology','enterprise','education','science','law','care','employment'];
+const DOMAINS = WORKSPACE_DOMAINS;   // §17.1 (W321) — one shared workspace list
 
 interface TournamentVariant {
   variant_id: string;

@@ -379,6 +379,53 @@ async def _derive_name(problem: str, domain: str, requested: str = "") -> str:
     return cand or f"VSB — {problem[:40]}"
 
 
+def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", entity: dict) -> None:
+    """§4×§5 (W315) — ONE plan-seeding core for BOTH establish paths. The SSE path (the UI's
+    primary) previously birthed entities whose Chief-owned Business Plan opened with an EMPTY
+    concept and no §4.7 operations objective, because this logic lived only inline in the
+    blocking path. Best-effort: a plan fault never loses an establishment."""
+    try:
+        from agentic_core.api import business_plan as bp_mod
+        import time as _time
+        import uuid as _uuid
+        plan = bp_mod._load(vsb_id)
+        plan["owner"] = req.owner_id
+        plan["executive_summary"] = (
+            f"{name} is a living VSB IDBO established to solve: {req.problem[:200]}."
+            + (f" Go-to-market & operating model: {req.commercialisation[:280]}" if req.commercialisation else "")
+        ).strip()[:1200]
+        plan["concept"] = (req.concept or f"Optimal solution concept for: {req.problem[:160]}").strip()[:1200]
+        plan["vision"] = f"A self-running {req.entity_type} VSB IDBO that commercialises this solution beneficently."
+        plan["mission"] = f"Deliver: {req.problem[:160]}"
+        plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
+                            "(Chief = owner's digital twin) → AI CEO → C-Suite → CoE → BTO.")
+        plan.setdefault("objectives", [])
+        if not plan["objectives"]:
+            for _title in ("Validate the concept", "Deliver the design", "Launch to market"):
+                plan["objectives"].append({
+                    "id": f"obj-{_uuid.uuid4().hex[:8]}", "title": _title, "kpi": "", "timeline": "",
+                    "owner_role": "AI CEO", "progress_pct": 0, "status": "planned", "reviews": [],
+                    "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+                })
+        # §4 (W304) — the journey's operational intelligence seeds a REAL plan objective (only
+        # when genuinely provided — never an invented one, never a duplicate).
+        if req.operations.strip() and not any(
+                o.get("source") == "genesis_journey.operations" for o in plan["objectives"]):
+            plan["objectives"].append({
+                "id": f"obj-{_uuid.uuid4().hex[:8]}",
+                "title": "Operationalise per the journey's §4.7 operational intelligence",
+                "kpi": "operational readiness delivered", "timeline": "next review",
+                "owner_role": "Business Transformation Office", "progress_pct": 0,
+                "status": "planned", "reviews": [],
+                "source": "genesis_journey.operations",
+                "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+            })
+        bp_mod._save(plan)
+        entity["business_plan_scope"] = vsb_id
+    except Exception:
+        pass
+
+
 @router.post("/establish")
 async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(get_current_user)):
     """
@@ -484,49 +531,8 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
                             "heartbeat (paced virtual economy cycles)", "virtual": True}
     except Exception:
         pass
-    # Seed the VSB's living business plan (Chief/Board own it), with objectives
-    # mapped to its Concept→Design→Commercialisation lifecycle — wires Genesis to
-    # the Business-Plan resource so every generated entity starts with a plan.
-    try:
-        from agentic_core.api import business_plan as bp_mod
-        import uuid as _uuid
-        plan = bp_mod._load(vsb_id)
-        plan["owner"] = req.owner_id
-        # Chief-owned opening (W91) — seeded FROM the Genesis journey so the living entity's plan
-        # opens with the founder's idea exactly as conceived end-to-end (Concept→Commercialisation).
-        plan["executive_summary"] = (
-            f"{name} is a living VSB IDBO established to solve: {req.problem[:200]}."
-            + (f" Go-to-market & operating model: {req.commercialisation[:280]}" if req.commercialisation else "")
-        ).strip()[:1200]
-        plan["concept"] = (req.concept or f"Optimal solution concept for: {req.problem[:160]}").strip()[:1200]
-        plan["vision"] = f"A self-running {req.entity_type} VSB IDBO that commercialises this solution beneficently."
-        plan["mission"] = f"Deliver: {req.problem[:160]}"
-        plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
-                            "(Chief = owner's digital twin) → AI CEO → C-Suite → CoE → BTO.")
-        plan.setdefault("objectives", [])
-        if not plan["objectives"]:
-            for _title in ("Validate the concept", "Deliver the design", "Launch to market"):
-                plan["objectives"].append({
-                    "id": f"obj-{_uuid.uuid4().hex[:8]}", "title": _title, "kpi": "", "timeline": "",
-                    "owner_role": "AI CEO", "progress_pct": 0, "status": "planned", "reviews": [],
-                    "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
-                })
-        # §4 (W304) — the journey's operational intelligence seeds a REAL plan objective (only
-        # when genuinely provided — never an invented one).
-        if req.operations.strip():
-            plan["objectives"].append({
-                "id": f"obj-{_uuid.uuid4().hex[:8]}",
-                "title": "Operationalise per the journey's §4.7 operational intelligence",
-                "kpi": "operational readiness delivered", "timeline": "next review",
-                "owner_role": "Business Transformation Office", "progress_pct": 0,
-                "status": "planned", "reviews": [],
-                "source": "genesis_journey.operations",
-                "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
-            })
-        bp_mod._save(plan)
-        entity["business_plan_scope"] = vsb_id
-    except Exception:
-        pass
+    # W315 — the ONE shared plan-seeding core (both establish paths call it)
+    _seed_plan_from_journey(vsb_id, name, req, entity)
     _attach_delivery_swarm(entity, vsb_id, name, req.problem, req.domain, req.concept)
     vsb_mod._save_vsb(entity)
 
@@ -646,6 +652,9 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         }
         vsb_mod.enrich_vsb_entity(entity, owner_id=req.owner_id, problem=req.problem,
                                   domain=req.domain, entity_type=req.entity_type)
+        # §4×§5 (W315) — SSE path plan PARITY: the same seeding core as the blocking path, so the
+        # Chief's living Business Plan opens with the journey's concept + the §4.7 ops objective.
+        _seed_plan_from_journey(vsb_id, name, req, entity)
         if entity.get("board"):
             yield _event("board", "Board + Chief Seated",
                          "Board of Directors chaired by the owner's digital-twin Chief (arms-length).",

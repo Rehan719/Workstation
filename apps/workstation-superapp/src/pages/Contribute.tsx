@@ -12,7 +12,7 @@ export const Contribute: React.FC = () => {
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter break-words">Contributor Portal</h1>
-          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Open Source Leadership • Article 1121 • community governance</p>
+          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Open Source Leadership • community governance</p>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
            <Button onClick={() => openExternal(REPO)} variant="outline"><Github size={18} /> View Source</Button>

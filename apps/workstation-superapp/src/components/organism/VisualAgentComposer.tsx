@@ -119,7 +119,7 @@ const VisualAgentComposer: React.FC = () => {
                             </div>
                             <div className="mt-[15px] p-2.5 bg-[#111] rounded-md border-l-[3px] border-[#00ff00]">
                                 <div className="text-[9px] text-[#00ff00] font-bold">GaaS COMPLIANT</div>
-                                <div className="text-[10px] text-[#666] mt-1">Aligns with Article 1101.</div>
+                                
                             </div>
                         </div>
                     ) : (

@@ -92,7 +92,8 @@ def _delivery_coverage(content: str, required_sections: Optional[List[str]]) -> 
 
 async def assure_delivery(content: str, required_sections: Optional[List[str]] = None,
                           label: str = "delivery",
-                          evidence: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                          evidence: Optional[Dict[str, Any]] = None,
+                          owner_id: Optional[str] = None) -> Dict[str, Any]:
     """Subject an operational delivery to the living QMS + §10 bar + §8 organism.
 
     Returns ``{"quality": {...}, "biomimetic": {...}}`` — honest and real (no fabricated numbers).
@@ -125,8 +126,14 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         from agentic_core.vbs.registry import qms
         # Real, stateful gate: failures open PERSISTENT, traceable defects (W307) and move the real
         # non-conformance rate (gate failures / gates run — no normalised constants).
+        # §10 (W316) — a failure's defect carries the REAL delivery reference (content hash +
+        # the sections it was measured against) so the close leg can RE-MEASURE, not self-attest.
+        import hashlib as _hashlib
+        _ref = {"content_sha3": _hashlib.sha3_256((content or "").encode("utf-8")).hexdigest()[:24],
+                "required_sections": [str(s) for s in (required_sections or [])], "label": label}
         quality["qms_gate_passed"] = bool(await qms.run_quality_gates(
-            {"coverage": coverage, "stubs_found": stub}, label=label))
+            {"coverage": coverage, "stubs_found": stub}, label=label, owner_id=owner_id,
+            delivery_ref=_ref))
         quality["qms_min_coverage"] = qms.min_coverage
         quality["qms_non_conformance_rate"] = qms.get_non_conformance_rate()
         quality["qms_defects"] = qms.defect_summary()

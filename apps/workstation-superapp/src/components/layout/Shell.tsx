@@ -18,6 +18,22 @@ interface ShellProps {
   children: (activeTab: string) => React.ReactNode;
 }
 
+// §2 (W312) — the democratised journey must genuinely work on a phone: below 768px the
+// 4-column cockpit (which left 124px of content and a 53px Genesis textarea at 375×812)
+// collapses into a single column with drawer navigation. Desktop is untouched.
+function useIsMobile(): boolean {
+  const [mobile, setMobile] = useState<boolean>(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches,
+  );
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const onChange = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return mobile;
+}
+
 export const Shell: React.FC<ShellProps> = ({ children }) => {
   const activeTab = useStore(state => state.currentTab);
   const setActiveTab = useStore(state => state.setCurrentTab);
@@ -71,6 +87,120 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
     }
   });
 
+  const isMobile = useIsMobile();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileOutputOpen, setMobileOutputOpen] = useState(false);
+
+  // One Sovereign Output body, rendered in the desktop panel AND the mobile sheet
+  const sovereignOutput = (
+    <aside className="flex flex-col h-full border-l border-slate-800 bg-slate-900/30 min-w-0">
+      <div className="shrink-0 px-8 pt-8 pb-4 flex items-center justify-between gap-3">
+        <h3 className="text-xs font-black uppercase tracking-widest text-aura truncate">Sovereign Output</h3>
+        {avatar.messages.length > 0 && (
+          <button
+            type="button"
+            onClick={avatar.clearConversation}
+            className="shrink-0 text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-400 transition-colors"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {avatar.messages.length === 0 && !avatar.sending ? (
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-8 pb-8 space-y-6">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+            <p className="mb-2 text-[10px] font-bold uppercase text-slate-500">Simulation Engine</p>
+            <p className="text-xs italic text-slate-300">Ready for multi-modal synthesis.</p>
+          </div>
+          <div className="rounded-2xl border border-slate-800/50 bg-slate-950/40 p-4 space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Avatar</p>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Type a query in the footer below to talk to your avatar. Responses appear here too.
+            </p>
+            <div className="flex items-center gap-2 pt-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">L12 Fabric standby</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6 space-y-4">
+          {avatar.messages.map((msg, i) => (
+            <div key={i} className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+              <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 px-2">
+                {msg.role === 'user' ? 'You' : '⚡ Avatar'}
+              </span>
+              <div className={`max-w-[90%] rounded-2xl px-4 py-3 text-xs leading-relaxed font-medium ${
+                msg.role === 'user'
+                  ? 'bg-aura/10 border border-aura/20 text-white rounded-tr-sm'
+                  : 'bg-slate-950 border border-slate-800 text-slate-300 rounded-tl-sm'
+              }`}>
+                {msg.content}
+              </div>
+            </div>
+          ))}
+          {avatar.sending && (
+            <div className="flex flex-col gap-1 items-start">
+              <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 px-2">⚡ Avatar</span>
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-aura/60 animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-aura/60 animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-aura/60 animate-bounce [animation-delay:300ms]" />
+                </div>
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Synthesizing…</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </aside>
+  );
+
+  // §2 (W312) — MOBILE: one column. Sidebar becomes a drawer, Sovereign Output a bottom sheet,
+  // the avatar conversation keeps a fixed touch-friendly footer (no mouse-only drag).
+  if (isMobile) {
+    return (
+      <div className="font-inter flex flex-col h-screen overflow-hidden bg-sovereign text-white">
+        <CommandPalette open={commandOpen} setOpen={setCommandOpen} setActiveTab={setActiveTab} />
+        <Header avatar={avatar} />
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800/60 bg-sovereign/80 shrink-0">
+          <button type="button" onClick={() => setMobileNavOpen(true)}
+            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-[10px] font-black uppercase tracking-widest text-slate-300">
+            ☰ Menu
+          </button>
+          <button type="button" onClick={() => setMobileOutputOpen(o => !o)}
+            className={`px-3 py-2 rounded-lg border text-[10px] font-black uppercase tracking-widest ${mobileOutputOpen ? 'bg-aura/15 border-aura/30 text-aura' : 'bg-slate-900 border-slate-800 text-aura/80'}`}>
+            Output{avatar.messages.length > 0 ? ` (${avatar.messages.length})` : ''}
+          </button>
+        </div>
+        <main className="custom-scrollbar relative flex-1 overflow-y-auto overflow-x-hidden p-4 min-w-0 @container">
+          <div className="mx-auto max-w-full min-w-0">
+            {children(activeTab)}
+          </div>
+        </main>
+        <div className="shrink-0 h-24 border-t border-slate-800/60 bg-sovereign/60 backdrop-blur-sm flex items-center @container">
+          <ConversationPanel avatar={avatar} />
+        </div>
+        {mobileNavOpen && (
+          <div className="fixed inset-0 z-50 flex">
+            <div className="w-72 max-w-[85%] h-full bg-sovereign border-r border-slate-800 overflow-y-auto @container"
+              onClick={() => setMobileNavOpen(false)}>
+              <Sidebar activeTab={activeTab} setActiveTab={(t: string) => { setActiveTab(t); setMobileNavOpen(false); }} />
+            </div>
+            <div className="flex-1 bg-black/60" onClick={() => setMobileNavOpen(false)} />
+          </div>
+        )}
+        {mobileOutputOpen && (
+          <div className="fixed inset-x-0 bottom-24 top-1/4 z-40 bg-sovereign border-t border-slate-800 rounded-t-2xl overflow-hidden flex flex-col @container shadow-2xl">
+            {sovereignOutput}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="font-inter flex flex-col h-screen overflow-hidden bg-sovereign text-white">
       <CommandPalette
@@ -110,69 +240,7 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
 
               {/* Sovereign Output */}
               <Panel defaultSize={30} minSize={15} collapsible className="@container min-w-0">
-                <aside className="flex flex-col h-full border-l border-slate-800 bg-slate-900/30 min-w-0">
-                  <div className="shrink-0 px-8 pt-8 pb-4 flex items-center justify-between gap-3">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-aura truncate">Sovereign Output</h3>
-                    {avatar.messages.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={avatar.clearConversation}
-                        className="shrink-0 text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-400 transition-colors"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-
-                  {avatar.messages.length === 0 && !avatar.sending ? (
-                    <div className="flex-1 overflow-y-auto custom-scrollbar px-8 pb-8 space-y-6">
-                      <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
-                        <p className="mb-2 text-[10px] font-bold uppercase text-slate-500">Simulation Engine</p>
-                        <p className="text-xs italic text-slate-300">Ready for multi-modal synthesis.</p>
-                      </div>
-                      <div className="rounded-2xl border border-slate-800/50 bg-slate-950/40 p-4 space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Avatar</p>
-                        <p className="text-xs text-slate-500 leading-relaxed">
-                          Type a query in the footer below to talk to your avatar. Responses appear here too.
-                        </p>
-                        <div className="flex items-center gap-2 pt-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">L12 Fabric standby</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6 space-y-4">
-                      {avatar.messages.map((msg, i) => (
-                        <div key={i} className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 px-2">
-                            {msg.role === 'user' ? 'You' : '⚡ Avatar'}
-                          </span>
-                          <div className={`max-w-[90%] rounded-2xl px-4 py-3 text-xs leading-relaxed font-medium ${
-                            msg.role === 'user'
-                              ? 'bg-aura/10 border border-aura/20 text-white rounded-tr-sm'
-                              : 'bg-slate-950 border border-slate-800 text-slate-300 rounded-tl-sm'
-                          }`}>
-                            {msg.content}
-                          </div>
-                        </div>
-                      ))}
-                      {avatar.sending && (
-                        <div className="flex flex-col gap-1 items-start">
-                          <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 px-2">⚡ Avatar</span>
-                          <div className="bg-slate-950 border border-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
-                            <div className="flex gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-aura/60 animate-bounce [animation-delay:0ms]" />
-                              <span className="w-1.5 h-1.5 rounded-full bg-aura/60 animate-bounce [animation-delay:150ms]" />
-                              <span className="w-1.5 h-1.5 rounded-full bg-aura/60 animate-bounce [animation-delay:300ms]" />
-                            </div>
-                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Synthesizing…</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </aside>
+                {sovereignOutput}
               </Panel>
 
               <PanelResizeHandle className="w-1 cursor-col-resize bg-slate-900 transition-colors hover:bg-aura/30" />

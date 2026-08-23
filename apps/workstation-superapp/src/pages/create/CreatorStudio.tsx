@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { REALMS as CANON_REALMS } from '../../lib/taxonomy';
 import ReactFlow, {
   addEdge,
   Background,
@@ -32,10 +33,8 @@ interface BlueprintResponse {
   generated_at: number;
 }
 
-const REALMS = [
-  'general', 'technology', 'enterprise', 'education',
-  'science', 'law', 'care', 'employment', 'religion', 'learning', 'scholarship',
-];
+// §17.1 (W321) — canonical realms (previously a mixed realm/domain list)
+const REALMS = [...CANON_REALMS];
 const STAGES = ['concept', 'design', 'build', 'launch', 'commercialise'];
 
 // ── Component ────────────────────────────────────────────────────────────────

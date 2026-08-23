@@ -53,10 +53,11 @@ class ConfigureRequest(BaseModel):
     auto_economy: Optional[bool] = None     # opt-in: run economy cycles autonomously
     auto_align: Optional[bool] = None       # opt-in: route vision gaps to tiers each beat (cheap)
     auto_compliance: Optional[bool] = None  # opt-in (§11, W288): re-screen living VSBs on the beat
+    auto_ship: Optional[bool] = None        # opt-in (§13, W319): re-ship STALE repos on the beat
 
 
 @router.post("/configure")
 async def configure(req: ConfigureRequest):
     heartbeat.configure(req.interval_seconds, req.auto_evolve, req.auto_economy, req.auto_align,
-                        auto_compliance=req.auto_compliance)
+                        auto_compliance=req.auto_compliance, auto_ship=req.auto_ship)
     return heartbeat.status()

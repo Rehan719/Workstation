@@ -55,7 +55,7 @@ export const ReligionHub: React.FC = () => {
                      Sacred Knowledge Garden
                      <Badge color="aura">Wisdom-Mesh</Badge>
                   </h3>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Global Spiritual Networks • Article 1126 Compassion Strict</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Global Spiritual Networks • compassion-first</p>
                </div>
 
                <div className="relative z-10 flex flex-col items-center gap-8">
@@ -217,7 +217,7 @@ export const ReligionHub: React.FC = () => {
                <div>
                   <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Ethical Guidance</h3>
                   <p className="text-sm text-slate-400 font-bold leading-relaxed">
-                     Real-time moral alignment checks powered by Constitutional AI and Article 1126 ethical regulons.
+                     Moral alignment checks run through the real §11 compliance engines (Halal/Sharia · Ethical).
                   </p>
                </div>
                <div className="space-y-4 pt-6 border-t border-aura/10">

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Badge } from '@workstation/ui';
 import { Wand2, Play, Download, Copy, Check, Loader2, Code2, Braces, Settings, FileText, Boxes, Cpu } from 'lucide-react';
@@ -12,7 +13,7 @@ const ARTEFACT_TYPES = [
 ] as const;
 
 const FORMATS = ['python', 'typescript', 'json', 'yaml', 'markdown', 'sql', 'html', 'toml'];
-const DOMAINS = ['general', 'technology', 'enterprise', 'education', 'science', 'law', 'care', 'employment'];
+const DOMAINS = WORKSPACE_DOMAINS;   // §17.1 (W321) — one shared workspace list
 // §6 user design control — which owned tier serves
 const MODELS = [
   { id: 'auto',   label: 'Auto (in-house first)' },

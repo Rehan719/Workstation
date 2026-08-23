@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
@@ -184,7 +185,7 @@ export const VSBSpawnStudio: React.FC = () => {
     );
   };
 
-  const DOMAINS = ['enterprise', 'science', 'law', 'care', 'education', 'career', 'religion'];
+  const DOMAINS = ['enterprise', ...CANON_DOMAINS];   // §17.1 (W321) — canonical + the general workspace
   const SCOPES  = ['concept', 'build', 'commercialise'];
 
   return (

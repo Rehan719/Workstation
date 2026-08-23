@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
 import { Card, Button } from '@workstation/ui';
@@ -91,9 +92,9 @@ function readGenesisSeed(sid: string) {
   return _seedCache[sid];
 }
 
-const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
+const REALMS: string[] = [...CANON_REALMS];   // §17.1 (W321) — the one canonical source
 // §17.1 — the six canonical Domains (matches the Domains section hubs). Realm (who you are) is separate.
-const DOMAINS = ['religion', 'science', 'education', 'law', 'employment', 'care'];
+const DOMAINS: string[] = [...CANON_DOMAINS];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 

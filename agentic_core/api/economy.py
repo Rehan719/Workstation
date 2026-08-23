@@ -16,9 +16,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from agentic_core.auth.core import get_current_user, user_can_access
 from agentic_core.economy.entities import ENTITY_TEMPLATES, DEFAULT_ENTITY, get_template
 from agentic_core.economy.metabolism import (
     EconomicMetabolism, validate_waterfall, _load_waterfall_overrides,
@@ -27,6 +28,27 @@ from agentic_core.economy.metabolism import (
 from agentic_core.economy.charity import CharityIntelligence
 
 router = APIRouter(prefix="/api/v1/economy", tags=["vsb-economy"])
+
+
+def _require_economy_access(vsb_id: str, user: dict | None) -> None:
+    """§14×§12 (W320) — economy operations on a VSB are OWNER-scoped: previously the whole router
+    had zero tenant isolation, so any authenticated user could run cycles, set waterfalls, read
+    ledgers, or DRAIN another tenant's reserve via /transfer. 404 (never 403) when scoped out.
+    Platform-level ids with no stored record (e.g. 'workstation-idbo') are admin-only under auth;
+    single-user mode (auth off) stays unguarded (no tenant boundary to protect)."""
+    if user is not None and not isinstance(user, dict):
+        user = None
+    from agentic_core.auth.core import auth_enabled
+    if not auth_enabled():
+        return
+    owner_id = None
+    try:
+        from agentic_core.api.vsb import _load_vsb
+        owner_id = (_load_vsb(vsb_id) or {}).get("owner_id")
+    except Exception:
+        pass
+    if not user_can_access(user, owner_id):
+        raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
 
 
 @router.get("/entity-types")
@@ -45,7 +67,9 @@ async def entity_types():
 
 
 @router.get("/status")
-async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY):
+async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY,
+                         user: dict | None = Depends(get_current_user)):
+    _require_economy_access(vsb_id, user)
     return EconomicMetabolism(vsb_id, entity_type).status()
 
 
@@ -59,11 +83,12 @@ class CycleRequest(BaseModel):
 
 
 @router.post("/cycle")
-async def run_cycle(req: CycleRequest):
+async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_user)):
     """Run one living metabolic cycle under the FULL §3 governance chain (economy/governance.py):
     materiality → Change Control hold when the estimated distributable meets the threshold; the
     gaas.v5 gate (a failed gate is a LOUD UEG bypass event, never silent); and an explicit UEG
     event logging every cycle's per-stage split amounts. Virtual WST only."""
+    _require_economy_access(req.vsb_id, user)
     # §14 (W295) — HONEST attribution: when vsb_id names a LIVING entity, its REGISTERED identity
     # (owner + entity type) is authoritative — the request's defaults ("Rehan" + the default
     # template) previously mis-attributed every user's VSB cycles. Request values remain the
@@ -90,13 +115,17 @@ async def run_cycle(req: CycleRequest):
 
 
 @router.get("/waterfall")
-async def get_waterfall(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY):
+async def get_waterfall(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY,
+                        user: dict | None = Depends(get_current_user)):
     """The current effective profit-distribution waterfall for a VSB (Owner override if set, else the entity
     template default) + the template's binding constraints the Owner must respect."""
+    _require_economy_access(vsb_id, user)
+    entity_type, et_source = _resolve_entity_type(vsb_id, entity_type)
     m = EconomicMetabolism(vsb_id, entity_type)
     t = m.template
     return {
-        "vsb_id": vsb_id, "entity_type": entity_type, "entity_name": t["name"],
+        "vsb_id": vsb_id, "entity_type": entity_type, "entity_type_source": et_source,
+        "entity_name": t["name"],
         "waterfall": m.waterfall, "source": m.waterfall_source,
         "template_default": t["waterfall"], "stages": _WATERFALL_STAGES,
         "constraints": {"distributes_profit": t["distributes_profit"],
@@ -111,13 +140,37 @@ class WaterfallRequest(BaseModel):
     proportions: Dict[str, float]
 
 
+def _resolve_entity_type(vsb_id: str, claimed: str) -> tuple:
+    """§4 (W313) — the template bounds bind to the VSB's REAL stored entity type, never the caller's
+    claim: previously a nonprofit VSB could pay an Owner profit share by claiming entity_type='sole'
+    at set time. Falls back to the claim only when the entity is unknown to both stores."""
+    try:
+        from agentic_core.economy.living_vsbs import _load as _lv_load
+        rec = _lv_load().get(vsb_id)
+        if rec and rec.get("entity_type"):
+            return str(rec["entity_type"]), "living_registry"
+    except Exception:
+        pass
+    try:
+        from agentic_core.api.vsb import _load_vsb
+        v = _load_vsb(vsb_id)
+        if v and v.get("entity_type"):
+            return str(v["entity_type"]), "vsb_store"
+    except Exception:
+        pass
+    return claimed, "caller_claimed"
+
+
 @router.post("/waterfall")
-async def set_waterfall(req: WaterfallRequest):
+async def set_waterfall(req: WaterfallRequest, user: dict | None = Depends(get_current_user)):
     """§4/§8/§10 Owner sovereignty: adjust the profit-distribution proportions for a VSB (virtual). The
     proposal is normalised to 1.0 and BOUND by the entity template (a non-distributing form forces owner=0;
-    a capital-preserving form requires capital_fund>0). Persisted, UEG-logged, effective from the next cycle.
+    a capital-preserving form requires capital_fund>0) — the template resolves from the VSB's STORED
+    entity type, never the caller's claim. Persisted, UEG-logged, effective from the next cycle.
     Virtual/simulated only — no real funds move."""
-    template = get_template(req.entity_type)
+    _require_economy_access(req.vsb_id, user)
+    entity_type, et_source = _resolve_entity_type(req.vsb_id, req.entity_type)
+    template = get_template(entity_type)
     waterfall, violations = validate_waterfall(req.proportions, template)
     if violations:
         raise HTTPException(status_code=400, detail={
@@ -132,12 +185,15 @@ async def set_waterfall(req: WaterfallRequest):
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({
-            "type": "waterfall_override", "vsb_id": req.vsb_id, "entity_type": req.entity_type,
+            "type": "waterfall_override", "vsb_id": req.vsb_id, "entity_type": entity_type,
+            "entity_type_source": et_source,
+            "entity_type_claimed": req.entity_type if req.entity_type != entity_type else None,
             "waterfall": waterfall, "by": "owner"})
     except Exception:
         pass
     return {
-        "vsb_id": req.vsb_id, "entity_type": req.entity_type, "waterfall": waterfall,
+        "vsb_id": req.vsb_id, "entity_type": entity_type, "entity_type_source": et_source,
+        "waterfall": waterfall,
         "source": "owner_override", "applied": True,
         "note": "Owner-set proportions persisted (virtual). Effective next cycle; logged to the UEG. "
                 "Reset by posting the template defaults.",
@@ -145,9 +201,11 @@ async def set_waterfall(req: WaterfallRequest):
 
 
 @router.get("/owner-payments")
-async def owner_payments(vsb_id: str = "workstation-idbo", owner: str = "Rehan"):
+async def owner_payments(vsb_id: str = "workstation-idbo", owner: str = "Rehan",
+                         user: dict | None = Depends(get_current_user)):
     """§7 — the Owner's accrued share (virtual WST) from each cycle's §4 owner stage, plus history. Real-money
     payout rails are DISABLED and gated; no real funds move."""
+    _require_economy_access(vsb_id, user)
     from agentic_core.economy.owner_payments import status
     return status(vsb_id, owner)
 
@@ -159,9 +217,10 @@ class PayoutRequest(BaseModel):
 
 
 @router.post("/owner-payments/payout")
-async def owner_payout(req: PayoutRequest):
+async def owner_payout(req: PayoutRequest, user: dict | None = Depends(get_current_user)):
     """Record a VIRTUAL Owner payout (reduces the accrued balance). NO real funds move — real-money rails are
     gated until the Owner explicitly authorises them AND a compliance/KYC review passes."""
+    _require_economy_access(req.vsb_id, user)
     from agentic_core.economy.owner_payments import payout
     try:
         return payout(req.vsb_id, req.amount, req.owner)
@@ -170,11 +229,30 @@ async def owner_payout(req: PayoutRequest):
 
 
 @router.get("/living-vsbs")
-async def living_vsbs():
+async def living_vsbs(user: dict | None = Depends(get_current_user)):
     """§4 — the established VSB enterprises the organism autonomously tends (each continually operated via
     paced virtual economy cycles on the circadian heartbeat). Virtual/simulated."""
     from agentic_core.economy.living_vsbs import list_living
-    return list_living()
+    res = list_living()
+    # §14 (W320) — under auth the listing is tenant-scoped: entities whose stored record the caller
+    # cannot access are omitted (registered-only/platform entities remain admin-only).
+    from agentic_core.auth.core import auth_enabled
+    if auth_enabled():
+        from agentic_core.api.vsb import _load_vsb
+        u = user if isinstance(user, dict) else None
+        rows = []
+        for v in res.get("living_vsbs", []):
+            try:
+                owner_id = (_load_vsb(v.get("vsb_id")) or {}).get("owner_id")
+            except Exception:
+                owner_id = None
+            if user_can_access(u, owner_id):
+                rows.append(v)
+        res["living_vsbs"] = rows
+        for count_key in ("living", "total", "count"):
+            if count_key in res:
+                res[count_key] = len(rows)
+    return res
 
 
 class TransferRequest(BaseModel):
@@ -185,12 +263,16 @@ class TransferRequest(BaseModel):
 
 
 @router.post("/transfer")
-async def inter_vsb_transfer(req: TransferRequest):
+async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(get_current_user)):
     """Federation seed — generated Enterprise IDBOs TRANSACT: the sender pays from its reserve fund
     (balanced double-entry posting, refused on insufficient virtual funds) and the receiver's next
     metabolic cycle consumes the amount as intake revenue (enters its §4 waterfall). gaas.v5-gated;
     MATERIAL transfers are held for Change Control like material distributions; UEG-logged.
     Virtual WST only — no real funds."""
+    # §14 (W320) — the SENDER must be the caller's own entity: previously any authenticated user
+    # could drain any tenant's reserve by naming it as from_vsb. (Receiving is a payment — the
+    # recipient needs no consent to be paid.)
+    _require_economy_access(req.from_vsb, user)
     from agentic_core.economy.governance import _materiality_gate, _ueg_log
     from agentic_core.economy.transfers import record_transfer, validate_transfer
 
@@ -237,10 +319,11 @@ class ClosePeriodRequest(BaseModel):
 
 
 @router.post("/close-period")
-async def close_period(req: ClosePeriodRequest):
+async def close_period(req: ClosePeriodRequest, user: dict | None = Depends(get_current_user)):
     """§9.1 PERIOD CLOSE — the CFO closes the books: P&L · balance sheet · cash flow computed from the
     REAL double-entry postings, then closing entries roll income/expenses into retained earnings so the
     next period starts clean. UEG-logged (tamper-evident). Virtual WST only."""
+    _require_economy_access(req.vsb_id, user)
     m = EconomicMetabolism(req.vsb_id, req.entity_type, req.owner)
     result = m.ledger.close_period()
     try:
@@ -258,11 +341,13 @@ async def close_period(req: ClosePeriodRequest):
 
 
 @router.get("/board-pack")
-async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY):
+async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY,
+                     user: dict | None = Depends(get_current_user)):
     """§7 Financial Board Pack — the live owner-facing financial statement, assembled on demand: the P&L
     summary, the effective distribution waterfall, the Owner's accrued payments, the venture portfolio, charity
     given, and the §8 organism posture. Virtual/simulated WST only — no real funds; assembled fresh (≤5-min
     staleness invariant)."""
+    _require_economy_access(vsb_id, user)
     import time as _t
     from agentic_core.economy.owner_payments import status as _owner_status
     from agentic_core.economy.ventures import portfolio as _venture_portfolio
@@ -311,7 +396,8 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
 
 
 @router.get("/ledger/{vsb_id}")
-async def get_ledger(vsb_id: str):
+async def get_ledger(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    _require_economy_access(vsb_id, user)
     return EconomicMetabolism(vsb_id).status()["ledger"]
 
 
@@ -384,10 +470,12 @@ async def ingest_charity_signals(req: CharitySignalsRequest):
 
 
 @router.get("/ventures/candidates")
-async def venture_candidates(top: int = 8, vsb_id: str = "workstation-idbo"):
+async def venture_candidates(top: int = 8, vsb_id: str = "workstation-idbo",
+                             user: dict | None = Depends(get_current_user)):
     """§6 — ranked candidate ventures for investment, harvested from the platform's REAL projects and
     living VSB offspring (metrics derived deterministically from live stage/status/governance); the
     curated demo set only when the platform is empty (honestly flagged). Virtual/simulated."""
+    _require_economy_access(vsb_id, user)
     from agentic_core.economy.ventures import VentureIntelligence, real_candidates
     vi = VentureIntelligence(real_candidates(exclude_vsb=vsb_id) or None)
     return {"candidates": vi.ranked(top),
@@ -405,10 +493,11 @@ class VentureReturnRequest(BaseModel):
 
 
 @router.post("/ventures/return")
-async def venture_return(req: VentureReturnRequest):
+async def venture_return(req: VentureReturnRequest, user: dict | None = Depends(get_current_user)):
     """§6 — record a virtual RETURN on a portfolio holding; it queues as a pending return that the
     NEXT metabolic cycle consumes as intake revenue, so returns genuinely recycle into the waterfall.
     UEG-logged. Virtual WST only — no real funds."""
+    _require_economy_access(req.vsb_id, user)
     from agentic_core.economy.ventures import record_return
     try:
         result = record_return(req.vsb_id, req.holding_id, req.amount, req.memo)
@@ -427,7 +516,9 @@ async def venture_return(req: VentureReturnRequest):
 
 
 @router.get("/ventures/portfolio")
-async def venture_portfolio(vsb_id: str = "workstation-idbo"):
+async def venture_portfolio(vsb_id: str = "workstation-idbo",
+                            user: dict | None = Depends(get_current_user)):
     """§6 — the VSB's venture portfolio: positions accrued from each cycle's user_projects allocation (virtual)."""
+    _require_economy_access(vsb_id, user)
     from agentic_core.economy.ventures import portfolio
     return portfolio(vsb_id)

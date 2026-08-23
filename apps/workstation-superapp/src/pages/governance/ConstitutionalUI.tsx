@@ -33,8 +33,8 @@ export const ConstitutionalUI: React.FC = () => {
   }, []);
 
   const timeline = [
-    { id: 'ev-1', title: 'Self-Ratified: Article 1148', type: 'AUTONOMOUS', rationale: 'LEO latency variance recovery.', time: '2h ago' },
-    { id: 'ev-2', title: 'Proposed: Article 1151', type: 'AI-PROPOSAL', rationale: 'Martian regolith harvesting rights.', time: '14h ago' },
+    { id: 'ev-1', title: 'Illustrative example (demo — not a real event)', type: 'DEMO', rationale: 'W314: fabricated self-ratified articles removed; real changes appear via Change Control.', time: '—' },
+    
   ];
 
   const filtered = articles.filter(a =>

@@ -32,6 +32,7 @@ class _CircuitState:
     last_success: float = field(default_factory=time.monotonic)
     total_calls: int = 0
     total_failures: int = 0
+    quarantine_logged: bool = False   # §8 (W318) — containment engagement logged once
 
 
 class SelfHealingSystem:
@@ -88,13 +89,39 @@ class SelfHealingSystem:
                 c.state = "OPEN"
                 self._log_event(endpoint, "OPEN", "Half-open test failed — re-opening circuit")
 
+    @staticmethod
+    def _quarantine_active() -> bool:
+        """§8 (W318) — the CRITICAL immune lever's real consumer: while the Owner-governed
+        `organism.immune_quarantine` lever is set (via the CCA's immune reconfigurator), OPEN
+        circuits are fully CONTAINED — no half-open recovery probes reach a failing backend.
+        Previously the lever was write-only (set, audited 'implemented', read by nothing)."""
+        try:
+            from agentic_core.organism.reconfiguration import _load_config
+            return bool(((_load_config() or {}).get("organism") or {}).get("immune_quarantine"))
+        except Exception:
+            return False
+
     def is_open(self, endpoint: str) -> bool:
         with self._lock:
             c = self._circuits[endpoint]
             if c.state == "OPEN":
+                if self._quarantine_active():
+                    if not getattr(c, "quarantine_logged", False):
+                        c.quarantine_logged = True   # log the engagement once per containment
+                        self._log_event(endpoint, "QUARANTINED",
+                                        "immune_quarantine lever active — containment holds "
+                                        "(no half-open probes until the lever clears)")
+                        try:
+                            from agentic_core.gaas.v5 import UEGLogger
+                            UEGLogger().log({"type": "immune.quarantine_engaged",
+                                             "endpoint": endpoint})
+                        except Exception:
+                            pass
+                    return True
                 # Try half-open after recovery timeout
                 if time.monotonic() - c.last_failure > self._recovery:
                     c.state = "HALF_OPEN"
+                    c.quarantine_logged = False
                     self._log_event(endpoint, "HALF_OPEN", "Testing recovery")
                     return False  # allow one request through
                 return True
@@ -106,6 +133,10 @@ class SelfHealingSystem:
         next request to trigger it. Called autonomously on the circadian heartbeat — the immune→self-healing
         reflex (§3 'defends and heals itself'). Returns which circuits were probed."""
         probed: list[str] = []
+        if self._quarantine_active():
+            # §8 (W318) — while the immune_quarantine lever holds, containment beats healing:
+            # the organism does NOT probe quarantined circuits (honest no-op, recorded).
+            return {"probed": [], "quarantine_hold": True}
         with self._lock:
             now = time.monotonic()
             for ep, c in self._circuits.items():
@@ -126,12 +157,15 @@ class SelfHealingSystem:
             self._healing_log.pop(0)
 
     def status(self) -> dict:
+        _q = self._quarantine_active()
         with self._lock:
             circuits = {}
             for ep, c in self._circuits.items():
-                # Refresh OPEN → HALF_OPEN check
+                # Refresh OPEN → HALF_OPEN check (containment overrides while quarantined — W318)
                 state = c.state
-                if state == "OPEN" and time.monotonic() - c.last_failure > self._recovery:
+                if state == "OPEN" and _q:
+                    state = "QUARANTINED (immune containment)"
+                elif state == "OPEN" and time.monotonic() - c.last_failure > self._recovery:
                     state = "HALF_OPEN (pending test)"
                 circuits[ep] = {
                     "state": state,

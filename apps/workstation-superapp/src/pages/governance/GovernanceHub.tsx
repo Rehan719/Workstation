@@ -276,10 +276,11 @@ const AuditStatCard = ({ label, value, icon: Icon, color }: any) => (
 
 const VaultTab: React.FC = () => {
   const navigate = useNavigate();
+  // W314 — honest: DEMO rows (no real secrets backend exists); labels no longer fabricate
+  // post-quantum algorithms or invented constitutional articles.
   const [secrets, setSecrets] = useState([
-    { id: 1, name: 'Main-Sovereign-PQC-Key', type: 'DILITHIUM-5', status: 'ROTATED', lastSync: '2h ago' },
-    { id: 2, name: 'L11-Orbital-Auth-Token', type: 'JWT-RSA4096', status: 'ACTIVE', lastSync: '5m ago' },
-    { id: 3, name: 'GaaS-Verification-Master', type: 'KYBER-1024', status: 'ACTIVE', lastSync: '1d ago' },
+    { id: 1, name: 'Demo-Credential-A', type: 'DEMO (no vault backend)', status: 'DEMO', lastSync: '—' },
+    { id: 2, name: 'Demo-Credential-B', type: 'DEMO (no vault backend)', status: 'DEMO', lastSync: '—' },
   ]);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -307,11 +308,11 @@ const VaultTab: React.FC = () => {
       <div className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h2 className="text-2xl font-black text-white uppercase tracking-tight">Sovereign Vault</h2>
-          <p className="text-vital font-black uppercase text-[10px] tracking-[0.3em] mt-1">Quantum-Resistant Credential Orchestration • Article 1107</p>
+          <p className="text-vital font-black uppercase text-[10px] tracking-[0.3em] mt-1">Demo surface — no real secrets backend; real credentials live in server-side env/config only</p>
         </div>
         <div className="flex gap-3 flex-wrap shrink-0">
           <Button onClick={rotateAll} variant="outline" className="bg-vital/10 border-vital/30 text-vital"><RefreshCw size={16} /> Rotate All</Button>
-          <Button onClick={() => toast('Vault credentials are governed by Article 1107 — submit a change request via Change Control Agency')} className="bg-white text-sovereign shadow-xl shadow-white/10"><Key size={16} /> Add Secret</Button>
+          <Button onClick={() => toast('No vault backend exists yet — this tab is a demo surface. Real credentials are server-side env/config.')} className="bg-white text-sovereign shadow-xl shadow-white/10"><Key size={16} /> Add Secret</Button>
         </div>
       </div>
 
@@ -355,9 +356,9 @@ const VaultTab: React.FC = () => {
             <Shield size={32} />
           </div>
           <div className="flex-1">
-            <h3 className="text-xl font-black text-white mb-1.5 uppercase tracking-tight">Post-Quantum Integrity</h3>
+            <h3 className="text-xl font-black text-white mb-1.5 uppercase tracking-tight">Honest Security Posture</h3>
             <p className="text-sm text-slate-400 font-bold leading-relaxed max-w-2xl">
-              Vault access is governed by multi-sig council approval (Article 1112). Any attempt to rotate master PQC keys triggers a 10-minute system-wide veto window.
+              Honest posture: this vault is a DEMO surface — there is no secrets backend, no PQC implementation, and no multi-sig council. Real credentials are held server-side in environment configuration; consequential changes route through the real Change Control Agency.
             </p>
           </div>
           <Button onClick={() => navigate('/change-control')} variant="outline" className="border-vital/30 text-vital hover:bg-vital hover:text-white transition-all px-8 shrink-0">Audit Logs</Button>

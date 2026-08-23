@@ -97,6 +97,13 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
                                f"{vsb_id}: distributions held on FAIL screen", 0.8)
         except Exception:
             pass
+        # §11×§13 (W319) — the teeth engaging is a TAMPER-EVIDENT record, not just a response field.
+        try:
+            from agentic_core.economy.governance import _ueg_log
+            _ueg_log({"type": "economy.compliance_fail_hold", "vsb_id": vsb_id,
+                      "note": "distributions held on latest FAIL screen (lifts on a clearing re-screen)"})
+        except Exception:
+            pass
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle_ran": False,
                 "held": "compliance_fail_hold",
                 "note": "latest §11 screen is FAIL — distributions held until a re-screen clears it"}
@@ -108,15 +115,30 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
         # attributed to it + QMS-passed delivery tariffs, consumed exactly once), NOT the old
         # fabricated flat 1000-WST constant. With no events: an honest ZERO-revenue maintenance
         # cycle — the organism still tends the entity, but distributes only what real work brought.
-        from agentic_core.economy.revenue import consume_pending
-        pend = consume_pending(vsb_id)
+        # §12 (W313) — PEEK-then-consume: the cycle's intake is measured WITHOUT consuming, the
+        # governance gates run on the peeked totals, and the events are consumed ONLY after every
+        # gate passes. A materiality/policy hold therefore PRESERVES the recognised revenue it
+        # holds (previously consume-before-gate destroyed it — the CCA approval then authorised a
+        # distribution of nothing).
+        from agentic_core.economy.revenue import peek_pending, consume_events
+        peek = peek_pending(vsb_id)
         res = governed_cycle_sync(vsb_id, target.get("entity_type", "waqf_ltd_hybrid"),
-                                  target.get("owner", "Rehan"), pend["revenue"], pend["costs"],
+                                  target.get("owner", "Rehan"), peek["revenue"], peek["costs"],
                                   source="heartbeat")
         report = res.get("cycle")
-        if report is None:   # held/blocked by governance — record honestly, no cycle ran
+        if report is None:   # held/blocked by governance — revenue preserved, hold recorded,
+            # and the visit still advances the rotation (a hold must intercept EVERY cycle,
+            # not just the first — mirror of the W309 compliance-hold pattern).
+            gov = res.get("governance") or {}
+            target["last_operated"] = _now()
+            target["last_hold"] = str(gov.get("status") or "governance_hold")
+            d[vsb_id] = target
+            _save(d)
             return {"vsb_id": vsb_id, "name": target.get("name"),
-                    "governance": res.get("governance"), "cycle_ran": False}
+                    "governance": gov, "cycle_ran": False,
+                    "pending_preserved_wst": peek["revenue"],
+                    "note": "recognised revenue events remain PENDING (unconsumed) while held"}
+        pend = consume_events(vsb_id, peek["ids"])   # consume exactly what the passed cycle saw
         target["operating_cycles"] = int(target.get("operating_cycles", 0)) + 1
         target["last_operated"] = _now()
         target.pop("last_hold", None)   # a real cycle ran — no standing hold implied

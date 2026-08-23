@@ -357,7 +357,18 @@ async def get_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_user
     p = _REPO_STORE / f"{vsb_id}.manifest.json"
     if not p.exists():
         raise HTTPException(status_code=404, detail=f"No repository generated for VSB {vsb_id} yet.")
-    return json.loads(p.read_text(encoding="utf-8"))
+    m = json.loads(p.read_text(encoding="utf-8"))
+    # §13 (W319) — staleness is SURFACED wherever the repo is read (the flag was write-only):
+    # the reader always learns whether the shipped body still tracks the living record, and why not.
+    sp = _REPO_STORE / f"{vsb_id}.ship.json"
+    if sp.exists():
+        try:
+            s = json.loads(sp.read_text(encoding="utf-8"))
+            m["ship_status"] = {"stale": bool(s.get("stale")), "stale_reason": s.get("stale_reason"),
+                                "stale_since": s.get("stale_since"), "shipped_at": s.get("shipped_at")}
+        except Exception:
+            pass
+    return m
 
 
 # ── §13 D1 increment 2 — integrated Website generator (real multi-page static HTML/CSS) ──────────
@@ -419,6 +430,23 @@ def _build_website_files(vsb: dict, copy: dict) -> dict:
     return f
 
 
+def _prose_clean(text: str, one_line: bool = False) -> str:
+    """§13 (W315) — shipped PUBLIC copy is prose: the native floor's scaffold artifacts
+    (provenance markers, markdown headings, code fences, engine labels) are filtered before copy
+    lands on a public surface. Honest: only formatting scaffold is removed, never content."""
+    lines = []
+    for line in (text or "").splitlines():
+        s = line.strip()
+        low = s.lower()
+        if (not s or s.startswith(("#", "_[", "```", ">"))
+                or "native structured engine" in low or low.startswith("[engine")):
+            continue
+        lines.append(s.lstrip("-*• ").strip("*_").strip())
+    if one_line:
+        return (lines[0] if lines else "")[:160]
+    return "\n\n".join(lines)
+
+
 @router.post("/{vsb_id}/website")
 async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """§13 (D1 increment 2) — generate the VSB's integrated WEBSITE: a real, multi-page static HTML/CSS
@@ -437,13 +465,18 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
         prov["any_external"] = prov["any_external"] or bool(m.get("is_external"))
         return (m.get("output", "") or "").strip()
 
+    # W315 — every public copy field is scaffold-CLEANED: the native floor's structured output
+    # (provenance markers, ## headings) previously landed verbatim on all three shipped pages.
     copy = {
-        "hero": await _q(f"Write ONE compelling website hero tagline (max 16 words, no quotes, one line) "
-                         f"for '{name}', which addresses: {challenge}."),
-        "about": await _q(f"Write 2 short plain-prose paragraphs of website 'About' copy for '{name}' "
-                          f"(domain {domain}); concept: {concept[:500]}. No headings, no markdown."),
-        "solution": await _q(f"Write 2 short plain-prose paragraphs of website 'Solution' copy for '{name}' "
-                             f"addressing: {challenge}. No headings, no markdown."),
+        "hero": _prose_clean(await _q(
+            f"Write ONE compelling website hero tagline (max 16 words, no quotes, one line) "
+            f"for '{name}', which addresses: {challenge}."), one_line=True) or f"{name}",
+        "about": _prose_clean(await _q(
+            f"Write 2 short plain-prose paragraphs of website 'About' copy for '{name}' "
+            f"(domain {domain}); concept: {concept[:500]}. No headings, no markdown.")),
+        "solution": _prose_clean(await _q(
+            f"Write 2 short plain-prose paragraphs of website 'Solution' copy for '{name}' "
+            f"addressing: {challenge}. No headings, no markdown.")),
     }
     files = _build_website_files(vsb, copy)
     from agentic_core.vbs.quality import assure_delivery
@@ -1338,11 +1371,22 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
         except Exception as exc:                     # a surface failure is honest, never silent
             surfaces[name] = {"error": str(exc)[:160]}
     root = _REPO_STORE / vsb_id
+    # §13 (W319) — the ship-level version-control record is HONEST: it aggregates the surfaces'
+    # REAL gate results (previously qa=None rendered a fabricated 'QMS fail · compliance None'
+    # message even when every surface passed).
+    _ok = [s for s in surfaces.values() if "error" not in s]
+    _overalls = [s.get("compliance_overall") for s in _ok if s.get("compliance_overall")]
+    _agg_qa = {"quality": {
+        "qms_gate_passed": bool(_ok) and all(s.get("qms_gate_passed") for s in _ok),
+        "compliance": {"overall": ("fail" if "fail" in _overalls else
+                                   "review" if "review" in _overalls else
+                                   "pass") if _overalls else None},
+    }}
     unified = {
         "vsb_id": vsb_id, "name": vsb.get("name"), "shipped": True,
         "surfaces": surfaces,
         "coherent_whole": all("error" not in s for s in surfaces.values()),
-        "version_control": _version_control_commit(root, vsb_id, "ship", None),
+        "version_control": _version_control_commit(root, vsb_id, "ship", _agg_qa),
         "stale": False,
         "shipped_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
@@ -1378,6 +1422,16 @@ def mark_repo_stale(vsb_id: str, reason: str) -> bool:
         ship["stale_since"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         ship["stale_reason"] = str(reason)[:200]
         p.write_text(json.dumps(ship, indent=2), encoding="utf-8")
+        # §13 (W319) — the stale mark is a recorded organism event, never a silent write-only flag.
+        try:
+            from agentic_core.gaas.v5 import UEGLogger
+            UEGLogger().log({"type": "vsb.repo.stale", "vsb_id": vsb_id, "reason": str(reason)[:200]})
+        except Exception:
+            pass
+        try:
+            biobus.fire_signal("reflex", "vsb.repo.stale", f"{vsb_id}: shipped repo stale — {reason}", 0.5)
+        except Exception:
+            pass
         return True
     except Exception:
         return False
@@ -1405,14 +1459,22 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | No
         stored = json.loads(casc_path.read_text(encoding="utf-8"))
     except Exception:
         stored = {}
-    from agentic_core.api.swarm import CascadeRequest, cascade_orchestration
+    from agentic_core.api.swarm import CascadeRequest, cascade_orchestration, _AGENTS
+    # §13 (W319) — the STORED cascade configuration is genuinely EXECUTED, not discarded: the
+    # entity's own swarm design (its specialist C-Suite + CoE specialisms from cascades.json)
+    # shapes the org cascade that re-runs — 'reconfigurable, re-runnable' is true on the re-run leg.
+    _sc = (stored.get("swarm_config") or {}) if isinstance(stored, dict) else {}
+    _csuite = [k for k in _sc if k in _AGENTS and k != "CEO"]
+    _coe = [str(x) for x in (_sc.get("CoE") or []) if isinstance(x, str)][:8]
     run = await cascade_orchestration(CascadeRequest(
         mission=req.mission or f"Operate and advance {vsb.get('name')} per its living plan",
         domain=vsb.get("domain", "enterprise"),
+        csuite_roles=_csuite, coe_specialisms=_coe,
         scope=vsb_id, objective_id=req.objective_id))
-    _ = stored   # the stored cascade config is the provenance of this runnable surface
     summary = {
         "run_id": run.get("run_id"), "mission": run.get("mission"),
+        "stored_config_applied": {"csuite_roles": _csuite, "coe_specialisms": _coe,
+                                  "note": "empty = balanced default (no stored swarm design)"},
         "quality": run.get("quality"), "plan_binding": run.get("plan_binding"),
         "fabric_requisitions": [f.get("resource") for f in (run.get("fabric_requisitions") or [])],
         "served_by": (run.get("ai_provenance") or {}).get("served_by"),

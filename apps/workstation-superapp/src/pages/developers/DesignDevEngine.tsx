@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { Card, Button } from '@workstation/ui';
 import {
   Code2, Loader2, CheckCircle2, AlertCircle,
@@ -70,7 +71,7 @@ const DDPIE_STAGES = [
 
 const SCALES = ['startup', 'scaleup', 'enterprise'];
 const DEPLOYMENT_TARGETS = ['cloud', 'on-prem', 'hybrid', 'serverless', 'edge'];
-const DOMAINS = ['enterprise', 'science', 'law', 'care', 'education', 'career', 'fintech', 'healthtech', 'edtech'];
+const DOMAINS = ['enterprise', ...CANON_DOMAINS];   // §17.1 (W321)
 const PRESET_STACKS = [
   'Python / FastAPI / React / PostgreSQL',
   'Node.js / Express / Next.js / MongoDB',

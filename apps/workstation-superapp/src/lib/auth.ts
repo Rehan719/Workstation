@@ -18,6 +18,16 @@ let installed = false;
 export function installAuth(): void {
   if (installed) return;
   installed = true;
+  // §14 (W317) — the documented 401→/login redirect is REAL now: a session that expires (or a
+  // token that was revoked) lands the user on the login page instead of an app full of silently
+  // failing calls. Only fires for a session that HELD a token — auth-off mode (no token) never
+  // redirects; the login page itself is exempt so its own error text keeps working.
+  const on401 = () => {
+    if (getToken() && window.location.pathname !== '/login') {
+      clearToken();
+      window.location.assign('/login');
+    }
+  };
   axios.interceptors.request.use(cfg => {
     const t = getToken();
     if (t && (cfg.url ?? '').startsWith('/api')) {
@@ -26,15 +36,24 @@ export function installAuth(): void {
     }
     return cfg;
   });
+  axios.interceptors.response.use(
+    r => r,
+    err => {
+      if (err?.response?.status === 401) on401();
+      return Promise.reject(err);
+    },
+  );
   const origFetch = window.fetch.bind(window);
-  window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const t = getToken();
     if (t && url.startsWith('/api')) {
       init = init ?? {};
       init.headers = { ...(init.headers as Record<string, string> ?? {}), Authorization: `Bearer ${t}` };
     }
-    return origFetch(input, init);
+    const res = await origFetch(input, init);
+    if (res.status === 401 && url.startsWith('/api') && !url.includes('/auth/')) on401();
+    return res;
   };
 }
 

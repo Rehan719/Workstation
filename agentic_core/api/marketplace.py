@@ -221,11 +221,17 @@ async def delete_listing(listing_id: str,
 
 
 @router.post("/api/v1/marketplace/listings/{listing_id}/purchase")
-async def purchase_listing(listing_id: str, req: PurchaseRequest) -> dict:
+async def purchase_listing(listing_id: str, req: PurchaseRequest,
+                           user: dict | None = Depends(get_current_user)) -> dict:
     """
     Deduct WST from the user's token ledger and record the sale.
     Returns purchase receipt.
+    §14 (W317): under auth the purchase is CALLER-BOUND — tokens are deducted from the
+    authenticated user's own ledger; a caller-supplied user_id can no longer spend another
+    tenant's WST. Single-user mode keeps the request value (back-compat).
     """
+    from agentic_core.auth.core import request_owner_id
+    req.user_id = request_owner_id(user if isinstance(user, dict) else None, req.user_id)
     listing = _load(listing_id)
     if listing.status == "sold_out":
         raise HTTPException(status_code=409, detail="Listing is sold out")

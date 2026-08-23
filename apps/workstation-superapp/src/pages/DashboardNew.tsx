@@ -82,6 +82,10 @@ export const DashboardNew: React.FC = () => {
     return () => window.removeEventListener('ws:output-history', refresh);
   }, []);
 
+  // §14 (W317) — failures are surfaced honestly, not swallowed: the home says when the backend
+  // is unreachable (or the session expired → the auth layer redirects to /login) instead of
+  // rendering eternal empty skeletons.
+  const [backendDown, setBackendDown] = useState(false);
   useEffect(() => {
     axios.get('/api/v1/projects/').then(({ data }) => {
       const projects: any[] = data ?? [];
@@ -92,7 +96,8 @@ export const DashboardNew: React.FC = () => {
         time: p.updated_at ? new Date(p.updated_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recently',
       }));
       if (items.length > 0) setActivity(items);
-    }).catch(() => {});
+      setBackendDown(false);
+    }).catch(() => setBackendDown(true));
 
     axios.get('/api/v1/projects/stats/summary').then(({ data }) => {
       setVitals({ cpu: data.cpu_percent ?? 0, memory: data.memory_percent ?? 0, totalProjects: data.total_projects ?? 0 });
@@ -104,7 +109,9 @@ export const DashboardNew: React.FC = () => {
   }, []);
 
   const displayActivity = activity.length > 0 ? activity
-    : [{ id: 'placeholder', type: 'System', msg: 'No projects yet — start a Genesis or open a Domain tool', time: '' }];
+    : [{ id: 'placeholder', type: 'System',
+         msg: backendDown ? 'Backend unreachable — start the backend server to see live status'
+                          : 'No projects yet — start a Genesis or open a Domain tool', time: '' }];
 
   return (
     <>

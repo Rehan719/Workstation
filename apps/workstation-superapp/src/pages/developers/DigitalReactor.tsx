@@ -1,9 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@workstation/ui';
 import { Play, Square, Terminal, Zap, Bug, Share2, Download, Loader2, CheckCircle2 } from 'lucide-react';
 
-const DOMAINS = ['general','technology','religion','science','education','law','care','employment'] as const;
+const DOMAINS = WORKSPACE_DOMAINS;   // §17.1 (W321) — one shared workspace list
 type Domain = typeof DOMAINS[number];
 
 interface Param { label: string; key: string; active: boolean }
@@ -12,7 +13,8 @@ const DEFAULT_PARAMS: Param[] = [
   { label: 'Article 1095 Logic',   key: 'article_1095',   active: true  },
   { label: 'Latency Stress Test',  key: 'latency_stress', active: false },
   { label: 'Byzantine Fault Mode', key: 'byzantine',      active: false },
-  { label: 'PQC Enforced',         key: 'pqc',            active: true  },
+  // W314 — the fabricated 'PQC Enforced' chip removed: no PQC implementation exists.
+  { label: 'In-House Fabric',      key: 'inhouse_fabric', active: true  },
 ];
 
 export const DigitalReactor: React.FC = () => {

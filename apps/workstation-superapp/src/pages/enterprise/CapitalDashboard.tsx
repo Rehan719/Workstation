@@ -114,7 +114,7 @@ export const CapitalDashboard: React.FC = () => {
         {[
             { id: 'overview', label: 'Overview', icon: PieChart },
             { id: 'external', label: 'External Markets', icon: Globe },
-            { id: 'crypto', label: 'Crypto Gateway', icon: Wallet },
+            { id: 'crypto', label: 'Real-Money Rails (gated)', icon: Wallet },
             { id: 'evolution', label: 'Evolution', icon: Code }
         ].map(tab => (
             <button
@@ -210,7 +210,7 @@ export const CapitalDashboard: React.FC = () => {
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => handleAction(`Trade order placed: ${feed.symbol} @ $${feed.price.toLocaleString()}`)}
+                                    onClick={() => handleAction(`Trading is disabled — no brokerage integration exists (reference data only): ${feed.symbol}`)}
                                     className="ml-4 border-slate-700 text-[10px] font-black uppercase"
                                 >Trade</Button>
                             </div>
@@ -245,48 +245,22 @@ export const CapitalDashboard: React.FC = () => {
       )}
 
       {activeTab === 'crypto' && (
-        <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-8">
-            <Card className="p-8 border-slate-800 bg-slate-950/50">
-                <div className="flex items-center gap-4 mb-8">
-                    <div className="p-3 bg-aura text-slate-950 rounded-2xl"><Wallet size={24} /></div>
-                    <h3 className="text-xl font-black text-white uppercase italic">On-Chain Gateway</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                    <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
-                        <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Network</p>
-                        <p className="text-sm font-bold text-white">Polygon PoS</p>
-                    </div>
-                    <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
-                        <p className="text-[10px] font-black text-slate-500 uppercase mb-1">PQC Security</p>
-                        <p className="text-sm font-black text-green-400">ENFORCED</p>
-                    </div>
-                </div>
-                <div className="space-y-4">
-                    <Button onClick={() => handleAction("Generating PQC deposit address...")} className="w-full bg-white text-slate-950 font-black uppercase italic">Deposit USDC/ETH</Button>
-                    <Button variant="outline" onClick={() => handleAction("Initiating PQC-signed withdrawal...")} className="w-full border-slate-700 text-slate-400 font-black uppercase italic">Withdraw to External Wallet</Button>
-                </div>
-            </Card>
-            <Card className="p-8 border-slate-800 bg-slate-950/50">
-                <h3 className="text-xl font-black text-white uppercase italic mb-6">Recent On-Chain Events</h3>
-                <div className="space-y-4 overflow-y-auto max-h-[300px] pr-2">
-                    {[
-                        { type: 'DEPOSIT', amount: '500 USDC', status: 'CONFIRMED', time: '2h ago' },
-                        { type: 'WITHDRAW', amount: '0.1 ETH', status: 'PENDING', time: '15m ago' },
-                        { type: 'SWAP', amount: '100 USDC -> ETH', status: 'CONFIRMED', time: '1d ago' },
-                    ].map((tx, i) => (
-                        <div key={i} className="flex justify-between p-3 bg-slate-900 rounded-xl border border-slate-800">
-                            <div>
-                                <p className="text-xs font-black text-white">{tx.type} {tx.amount}</p>
-                                <p className="text-[9px] text-slate-500 font-bold uppercase">{tx.time}</p>
-                            </div>
-                            <Badge className={tx.status === 'CONFIRMED' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}>
-                                {tx.status}
-                            </Badge>
-                        </div>
-                    ))}
-                </div>
-            </Card>
-        </div>
+        <Card className="p-8 border-slate-800 bg-slate-950/50">
+            <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 bg-aura text-slate-950 rounded-2xl"><Wallet size={24} /></div>
+                <h3 className="text-xl font-black text-white uppercase italic">Real-Money Rails — Gated</h3>
+            </div>
+            {/* W314 — honesty: the previous card fabricated an on-chain gateway (Polygon, USDC/ETH
+                deposits, invented transactions). Nothing on-chain exists. */}
+            <p className="text-sm text-slate-400 font-bold leading-relaxed mb-4">
+                No on-chain integration exists. All value on this platform is virtual, simulated WST —
+                no real funds move. Real-money rails (deposits, withdrawals, exchange) remain DISABLED
+                until the Owner explicitly authorises them and a compliance/KYC review passes.
+            </p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                Honest by construction — nothing here fabricates transactions.
+            </p>
+        </Card>
       )}
 
       {activeTab === 'evolution' && (
@@ -335,7 +309,7 @@ export const CapitalDashboard: React.FC = () => {
       )}
 
       <footer className="text-xs text-center text-slate-500 mt-10 uppercase font-black tracking-widest">
-        Integrated with global markets via Alpha Vantage & Binance | PQC-Secured | Tribunal-Admissible Audit Active
+        Virtual, simulated WST only — real-money rails Owner-gated and disabled | market rows are static reference samples, not live feeds
       </footer>
     </div>
   );

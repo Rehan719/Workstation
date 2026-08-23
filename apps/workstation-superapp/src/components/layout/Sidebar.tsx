@@ -12,6 +12,7 @@ import {
 import { useStore, RealmType } from '@workstation/shared';
 import { useT } from '../../lib/i18n';
 import { getPinned, togglePinned } from '../../lib/userPrefs';
+import { whoami, clearToken, type WhoAmI } from '../../lib/auth';
 
 interface NavItem {
   name: string;
@@ -164,6 +165,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   const { t } = useT();
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
+  // §14 (W317) — the real session state (auth-off / anonymous / authenticated)
+  const [identity, setIdentity] = useState<WhoAmI | null>(null);
+  useEffect(() => { whoami().then(setIdentity).catch(() => {}); }, []);
+
   // §9 — user-customisable interface: a personal "Pinned" quick-access section (persisted locally).
   const [pinned, setPinned] = useState<string[]>(getPinned());
   useEffect(() => {
@@ -274,16 +279,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         })}
       </nav>
 
-      {/* User profile — anchored at sidebar bottom; icon-only when narrow, full when wider */}
+      {/* §14 (W317) — the profile block shows the REAL session state (previously inert copy):
+          auth-off says so plainly; anonymous-under-auth gets the Sign-in front door; a signed-in
+          user sees who they are and can sign out. */}
       <div className="shrink-0 border-t border-slate-800/60 mt-2 py-3 flex items-center">
-        {/* Icon centered when sidebar is narrow, left-aligned when wide */}
         <div className="flex items-center gap-2.5 min-w-0 w-full @[110px]:justify-start justify-center">
           <div className="w-8 h-8 @[130px]:w-9 @[130px]:h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-black text-[9px] text-aura uppercase tracking-widest shrink-0">
-            {(user?.displayName?.substring(0, 2) || 'CO').toUpperCase()}
+            {(identity?.mode === 'authenticated'
+              ? (identity.username ?? 'U').substring(0, 2)
+              : (user?.displayName?.substring(0, 2) || 'CO')).toUpperCase()}
           </div>
           <div className="min-w-0 hidden @[110px]:block">
-            <p className="text-[10px] @[160px]:text-[11px] font-black text-white uppercase tracking-wider break-words leading-tight">{user?.displayName || 'Sovereign'}</p>
-            <p className="text-[8px] text-aura/50 uppercase font-black tracking-[0.2em] truncate">{user?.role || 'Guest'}</p>
+            {identity?.mode === 'authenticated' ? (
+              <>
+                <p className="text-[10px] @[160px]:text-[11px] font-black text-white uppercase tracking-wider break-words leading-tight">{identity.username}</p>
+                <button type="button"
+                  onClick={() => { clearToken(); window.location.assign('/login'); }}
+                  className="text-[8px] text-vital/70 hover:text-vital uppercase font-black tracking-[0.2em]">
+                  Sign out
+                </button>
+              </>
+            ) : identity?.mode === 'anonymous' ? (
+              <button type="button" onClick={() => navigate('/login')}
+                className="text-[10px] font-black text-aura uppercase tracking-wider hover:text-white transition-colors">
+                Sign in →
+              </button>
+            ) : (
+              <>
+                <p className="text-[10px] @[160px]:text-[11px] font-black text-white uppercase tracking-wider break-words leading-tight">{user?.displayName || 'Sovereign'}</p>
+                <p className="text-[8px] text-aura/50 uppercase font-black tracking-[0.2em] truncate">Single-user · auth off</p>
+              </>
+            )}
           </div>
         </div>
       </div>

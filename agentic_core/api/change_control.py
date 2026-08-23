@@ -147,6 +147,16 @@ def _immune_threat() -> str:
 
 # The immune system's defensive reconfiguration levers — SAFE, REVERSIBLE config changes only,
 # escalating with threat. Applied via the reconfiguration engine under arms-length CCA governance.
+# §8 (W318) — honesty rule: a lever may report 'implemented' ONLY when a real consumer is wired
+# to it. Every lever names its consumer here; setting a lever with no wired consumer records
+# 'lever_set_no_consumer' instead — no future lever ships decorative.
+_LEVER_CONSUMERS: dict[str, str] = {
+    "temperature_bias": "ai.gateway generation parameters (per-call)",
+    "metabolic_throttle": "organism.heartbeat evolve tick (suppressed at low ATP) — W310",
+    "immune_quarantine": "self_healing.is_open strict containment + attempt_heal hold — W318",
+    "evolution_auto_apply": "organism.heartbeat post-approval auto-apply — W310",
+}
+
 _IMMUNE_DEFENCE: dict[str, dict] = {
     "ELEVATED": {"section": "gateway",  "key": "temperature_bias",  "value": "precise", "tier": "LOW",
                  "why": "Elevated error patterns — tighten generation to precise."},
@@ -273,9 +283,18 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
             section=plan["section"], key=plan["key"], value=plan["value"],
             reason=f"Immune reconfigurator (threat={threat}, cca={cca_id})"))
         applied = res.get("change")
-        change["status"] = "implemented"
-        change["implemented_at"] = now
-        change["audit_trail"].append({"event": "implemented", "ts": now, "applied": applied})
+        _consumer = _LEVER_CONSUMERS.get(plan["key"])
+        if _consumer:
+            change["status"] = "implemented"
+            change["implemented_at"] = now
+            change["audit_trail"].append({"event": "implemented", "ts": now, "applied": applied,
+                                          "consumer": _consumer})
+        else:
+            # W318 honesty — the lever was SET but nothing consumes it: never claim 'implemented'
+            change["status"] = "approved"
+            change["audit_trail"].append({"event": "lever_set_no_consumer", "ts": now,
+                                          "applied": applied,
+                                          "note": "config value set; no wired consumer exists"})
         biobus.fire_signal("motor", "cca.immune_reconfigure.apply",
                            f"Applied immune defence: {plan['section']}.{plan['key']}={plan['value']}", 0.7)
     except Exception as e:

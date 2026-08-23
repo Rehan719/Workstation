@@ -864,7 +864,8 @@ def test_qms_defect_loop_and_measured_bar(client):
     d = client.get("/api/v1/vbs/qms/defects", params={"status": "open"}).json()
     s = d["summary"]
     assert s["gates_run"] == base["gates_run"] + 2 and s["defects_total"] == base["defects_total"] + 1
-    assert s["gates_run"] > 0 and abs(s["non_conformance_rate"] - round(s["defects_total"] / s["gates_run"], 4)) < 1e-9
+    # W316 — the rate is FAILURES over gates run (a failed re-verify counts as a failure)
+    assert s["gates_run"] > 0 and abs(s["non_conformance_rate"] - round(s["gate_failures"] / s["gates_run"], 4)) < 1e-9
     new = [x for x in d["defects"] if x["id"].startswith("DEF-")]
     assert new and new[0]["label"] and new[0]["status"] == "open"
     did = new[0]["id"]
@@ -879,6 +880,12 @@ def test_qms_defect_loop_and_measured_bar(client):
     client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/correct", json={"correction": "attempt"})
     rev2 = client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/reverify", json={"coverage": 0.3, "stubs_found": False}).json()
     assert rev2["passed"] is False and rev2["defect"]["status"] == "open"
+    # §10 (W316) — the failed re-verification RAISED the failure count (since `s`: the 0.1 gate
+    # fail + this failed re-verify = exactly 2). Previously it only inflated the denominator,
+    # so WORSE corrections produced a BETTER reported rate.
+    s2 = client.get("/api/v1/vbs/qms/defects").json()["summary"]
+    assert s2["gate_failures"] == s["gate_failures"] + 2
+    assert abs(s2["non_conformance_rate"] - round(s2["gate_failures"] / s2["gates_run"], 4)) < 1e-9
     # the bar is measured per-criterion, honest about what was NOT measured
     body = ("# W307\n\n## Objective\nSubstantive content long enough to clear the stub floor — the "
             "living QMS measures what it can and declares the rest unmeasured, never implied.\n\n"
@@ -889,6 +896,19 @@ def test_qms_defect_loop_and_measured_bar(client):
     assert bm["measured"] >= 4 and bm["not_measured"] > 0
     assert bm["criteria"]["compliant"]["measured"] is True
     assert bm["criteria"]["best-in-class"]["met"] is None    # never claimed unmeasured criteria
+    # §10 (W316) — the close leg can MEASURE instead of self-attest: reverify with the corrected
+    # delivery's CONTENT re-runs the same instruments; the basis is recorded honestly either way.
+    client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/correct", json={"correction": "second attempt"})
+    rev3 = client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/reverify", json={"content": body}).json()
+    assert rev3["defect"]["reverify_basis"] == "measured_from_content"
+    assert rev3["passed"] is True and rev3["defect"]["status"] == "closed"
+    assert rev2["defect"]["reverify_basis"] == "caller_attested"   # the legacy leg says what it is
+    # and a fresh assure_delivery failure carries the REAL delivery reference for that measured leg
+    stub_d = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "w316 stub", "content": "TODO"}).json()
+    ref_defs = [x for x in client.get("/api/v1/vbs/qms/defects").json()["defects"]
+                if (x.get("delivery_ref") or {}).get("content_sha3")]
+    assert ref_defs and stub_d.get("id")
 
 
 def test_deliverables_accept_verbatim_content(client):
@@ -1130,7 +1150,12 @@ def test_pervsb_management_surfaces_tenant_isolated(client, monkeypatch):
         assert resp.status_code == 404, f"{m} {u} leaked: {resp.status_code}"
     ship = client.post(f"/api/v1/vsb/{vid}/repo/ship", headers=alice).json()
     assert ship.get("coherent_whole") is True                 # the owner is fully served
-    cyc = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "revenue": 500}).json()
+    # W320 — under auth the economy router requires a session (anonymous → 401) and is
+    # owner-scoped, so the cycle runs AS the owner; attribution stays honest.
+    anon = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "revenue": 500})
+    assert anon.status_code == 401                            # anonymous writes refused under auth
+    cyc = client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "revenue": 500},
+                      headers=alice).json()
     att = cyc.get("attribution") or {}
     assert att.get("basis", "").startswith("living_registration")   # honest attribution
     assert att.get("owner") == "alice-295"                    # the ENTITY's owner, not "Rehan"
@@ -4341,6 +4366,298 @@ def test_fabric_remaining_resources_run_real(client):
     assert rr["truth_consensus"].get("claims") == 2                        # real consensus over MY claims
     assert rr["omnimedia"].get("live_formats")                             # the real producible formats
     assert rr["federation_mesh"].get("operational") is True
+
+
+def _ensure_loop():
+    """Get-or-create the main-thread event loop: an earlier test's asyncio.run() unsets it, and
+    Python 3.12's get_event_loop() then raises instead of creating one."""
+    import asyncio
+    try:
+        return asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop
+
+
+def test_immune_quarantine_contains_for_real_and_organism_lives(client):
+    # §8 (W318) — the CRITICAL immune lever was WRITE-ONLY (set, audited 'implemented', read by
+    # nothing). Now: while immune_quarantine holds, OPEN circuits are genuinely CONTAINED (no
+    # half-open probes; the heartbeat's proactive heal holds), the engagement is UEG-logged, the
+    # CCA audit names the wired CONSUMER (the honesty rule: no consumer → never 'implemented'),
+    # and release restores normal recovery. Then the organism is WATCHED living: real beats tend
+    # entities (economy · compliance · stale re-ship) — observed, not just code-read.
+    import asyncio
+    import collections
+    from agentic_core.organism.self_healing import self_healer
+    for _ in range(8):
+        self_healer.record_failure("w318t-probe")
+    assert self_healer.is_open("w318t-probe") is True
+    r = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": "CRITICAL"}).json()
+    assert r.get("status") == "implemented"
+    cca = client.get(f"/api/v1/cca/{r['cca_id']}").json()
+    impl = [e for e in (cca.get("audit_trail") or []) if e.get("event") == "implemented"]
+    assert impl and "self_healing" in str(impl[0].get("consumer", ""))
+    _old_recovery = self_healer._recovery
+    try:
+        self_healer._recovery = 0.0                       # without quarantine this would half-open
+        assert self_healer.is_open("w318t-probe") is True  # containment HOLDS
+        assert self_healer.attempt_heal().get("quarantine_hold") is True
+        assert "QUARANTINED" in str(self_healer.status())
+        ev = client.get("/api/v1/gaas/ueg/events", params={"limit": 150}).json()
+        types = [((e.get("data") or {}).get("type"))
+                 for e in (ev.get("events") or ev.get("nodes") or [])]
+        assert "immune.quarantine_engaged" in types
+        from agentic_core.organism.reconfiguration import update_config, ConfigUpdateRequest
+        _ensure_loop().run_until_complete(update_config(ConfigUpdateRequest(
+            section="organism", key="immune_quarantine", value=False, reason="w318t release")))
+        assert self_healer.is_open("w318t-probe") is False  # recovery resumes on release
+    finally:
+        self_healer._recovery = _old_recovery
+    # the organism, WATCHED: 3 real beats with the Owner-gated autonomy flags on
+    client.post("/api/v1/genesis/establish", json={"problem": "w318t watch venture"})
+    from agentic_core.organism.heartbeat import heartbeat
+    heartbeat.configure(auto_economy=True, auto_compliance=True, auto_ship=True)
+    seen: collections.Counter = collections.Counter()
+    try:
+        for _ in range(3):
+            beat = _ensure_loop().run_until_complete(heartbeat.beat())
+            for a in (beat.get("actions") or []):
+                seen[a] += 1
+    finally:
+        heartbeat.configure(auto_economy=False, auto_compliance=False, auto_ship=False)
+    assert seen.get("operate_vsb", 0) > 0                  # the economy genuinely tended
+    assert seen.get("compliance_rescreen", 0) > 0          # §11 continuously live
+    # (the §13 drift→re-ship loop is asserted deterministically in the W319 stale-repo test —
+    # here re-ship targets the suite-wide OLDEST stale repo, which need not be ours)
+
+
+def test_purchase_is_caller_bound_under_auth(client, monkeypatch):
+    # §14 (W317) — /purchase previously deducted WST from ANY caller-supplied user_id: Bob could
+    # spend Alice's tokens by naming her. Under auth the purchase binds to the authenticated
+    # caller (server-side); single-user mode keeps the request value (back-compat).
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    from agentic_core.auth import core as ac
+    users = ac._load_users()
+    for u in ("alice317t", "bob317t"):
+        users[u] = {"username": u, "role": "user", "hashed_password": ac._pwd_ctx.hash("pw-" + u)}
+    ac._save_users(users)
+    tok = {u: {"Authorization": "Bearer " + client.post(
+        "/api/v1/auth/token", data={"username": u, "password": "pw-" + u}).json()["access_token"]}
+        for u in ("alice317t", "bob317t")}
+    from agentic_core.commercial.token_ledger import TokenLedger, UserTier
+    led = TokenLedger()
+    led.initialize_user("alice317t", UserTier.FREE)
+    a0 = led.get_ledger_report("alice317t").get("balance")
+    lst = client.post("/api/v1/marketplace/listings", headers=tok["alice317t"],
+                      json={"name": "W317t item", "description": "probe",
+                            "price_wst": 5.0, "category": "tool"}).json()
+    lid = lst.get("listing_id") or lst.get("id")
+    r = client.post(f"/api/v1/marketplace/listings/{lid}/purchase", headers=tok["bob317t"],
+                    json={"user_id": "alice317t", "quantity": 1}).json()
+    assert r.get("user_id") == "bob317t"                            # bound to the CALLER
+    assert TokenLedger().get_ledger_report("alice317t").get("balance") == a0
+
+
+def test_establish_paths_share_one_plan_core_and_ship_clean_copy(client):
+    # §4×§5 (W315) — SSE establish (the UI's primary path) previously birthed entities whose
+    # Chief-owned Business Plan opened with an EMPTY concept and lost the §4.7 ops objective
+    # (the seeding logic lived only inline in the blocking path). One shared core now serves
+    # BOTH paths; and shipped PUBLIC website copy is scaffold-CLEANED (the native floor's
+    # provenance markers / markdown headings no longer land on public pages).
+    import json as _json
+    import pathlib
+    body = {"problem": "w315t halal logistics venture",
+            "concept": "CONCEPT-W315T-XRAY smart halal cold-chain",
+            "design": "modular design", "commercialisation": "b2b subscriptions",
+            "operations": "run cold-chain audits weekly", "ship_output": False}
+    r = client.post("/api/v1/genesis/establish/stream", json=body)
+    vid = None
+    for line in r.text.splitlines():
+        if line.startswith("data: "):
+            ev = _json.loads(line[6:])
+            if ev.get("stage") == "init":
+                vid = (ev.get("data") or {}).get("vsb_id")
+    assert vid
+    from agentic_core.api import business_plan as bp_mod
+    plan = bp_mod._load(vid)
+    assert "CONCEPT-W315T-XRAY" in (plan.get("concept") or "")
+    assert "w315t halal logistics" in (plan.get("executive_summary") or "")
+    ops = [o for o in plan.get("objectives", []) if o.get("source") == "genesis_journey.operations"]
+    assert len(ops) == 1                                           # seeded once, never duplicated
+    e2 = client.post("/api/v1/genesis/establish", json=body).json()
+    v2 = e2.get("vsb_id") or (e2.get("entity") or {}).get("vsb_id")
+    p2 = bp_mod._load(v2)
+    assert "CONCEPT-W315T-XRAY" in (p2.get("concept") or "")       # blocking-path parity
+    w = client.post(f"/api/v1/vsb/{v2}/website").json()
+    root = pathlib.Path(w["repo_root"])
+    html = "".join((root / "web" / f).read_text(encoding="utf-8")
+                   for f in ("index.html", "about.html", "solution.html")
+                   if (root / "web" / f).exists())
+    assert html                                                    # pages genuinely shipped
+    assert "Native Structured Engine" not in html
+    assert "_[" not in html and "## " not in html                  # scaffold never on public pages
+
+
+def test_stale_repo_loop_closes_and_records_honestly(client):
+    # §13 (W319) — the STALE flag was write-only: nothing surfaced, re-shipped, or logged a stale
+    # repo. Now: staleness is surfaced on every manifest read; the stale mark and the §11 economy
+    # hold are UEG-logged; the Owner-gated heartbeat auto_ship re-ships the oldest stale repo on
+    # the beat; the ship-level version-control record aggregates the surfaces' REAL results
+    # (previously it fabricated 'QMS fail · compliance None' even when every surface passed);
+    # and the repo cascade re-run EXECUTES the stored swarm design instead of discarding it.
+    import asyncio
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w319t loop venture"}).json()
+    vid = est.get("vsb_id") or (est.get("entity") or {}).get("vsb_id")
+    assert vid and est.get("initial_ship", {}).get("shipped")
+    from agentic_core.economy import living_vsbs as lv
+    lv.operate_vsb(vid)                                            # autonomous drift
+    m = client.get(f"/api/v1/vsb/{vid}/repo").json()
+    ss = m.get("ship_status") or {}
+    assert ss.get("stale") is True and "operating cycle" in str(ss.get("stale_reason"))
+    ev = client.get("/api/v1/gaas/ueg/events", params={"limit": 250}).json()
+    types = [((e.get("data") or {}).get("type")) for e in (ev.get("events") or ev.get("nodes") or [])]
+    assert "vsb.repo.stale" in types
+    from agentic_core.organism.heartbeat import heartbeat
+    heartbeat.configure(auto_ship=True)
+    try:
+        # auto_ship re-ships ONE stale repo per beat, OLDEST first — in a full-suite context other
+        # entities' older stale repos are served before ours, so beat until ours refreshes.
+        reshipped_any = False
+        for _ in range(8):
+            beat = _ensure_loop().run_until_complete(heartbeat.beat())
+            reshipped_any = reshipped_any or ("reshipped_stale_repo" in (beat.get("actions") or []))
+            s2 = client.get(f"/api/v1/vsb/{vid}/repo/ship").json()
+            if s2.get("stale") is False:
+                break
+        assert reshipped_any
+    finally:
+        heartbeat.configure(auto_ship=False)                       # never leave the flag on
+    assert s2.get("stale") is False
+    msg = (s2.get("version_control") or {}).get("message", "")
+    assert "compliance None" not in msg and "QMS" in msg           # honest aggregate, not fabricated
+    ev2 = client.get("/api/v1/gaas/ueg/events", params={"limit": 300}).json()
+    t2 = [((e.get("data") or {}).get("type")) for e in (ev2.get("events") or ev2.get("nodes") or [])]
+    assert "vsb.repo.reshipped_on_drift" in t2
+    casc = client.post(f"/api/v1/vsb/{vid}/repo/cascade", json={}).json()
+    sca = (casc.get("repo_run") or {}).get("stored_config_applied") or {}
+    assert len(sca.get("csuite_roles") or []) >= 3                 # the stored swarm design ran
+    assert casc.get("repo_run", {}).get("run_id")
+    from agentic_core.config import data_path, atomic_write_json, load_json_tolerant
+    hist = load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}
+    hist[vid] = {"overall": "fail"}
+    atomic_write_json(data_path("vsb_compliance_history.json"), hist)
+    lv.operate_vsb(vid)                                            # the teeth engage...
+    ev3 = client.get("/api/v1/gaas/ueg/events", params={"limit": 300}).json()
+    t3 = [((e.get("data") or {}).get("type")) for e in (ev3.get("events") or ev3.get("nodes") or [])]
+    assert "economy.compliance_fail_hold" in t3                    # ...tamper-evidently
+
+
+def test_economy_deliverables_and_defects_tenant_scoped(client, monkeypatch):
+    # §14 (W320) — the three cross-tenant surfaces the Round-6 audit confirmed OPEN are closed:
+    # (1) the economy router (Bob could DRAIN Alice's reserve via /transfer and read/mutate her
+    # ledger/waterfall/board-pack); (2) Living Deliverables (no owner concept — any user could
+    # read/export/refine any tenant's confidential work); (3) the QMS defect store (global
+    # unauthenticated read+mutate). W252 pattern: server-stamped owner, 404-never-403,
+    # auth-off unguarded.
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    from agentic_core.auth import core as ac
+    users = ac._load_users()
+    for u in ("alice320t", "bob320t"):
+        users[u] = {"username": u, "role": "user", "hashed_password": ac._pwd_ctx.hash("pw-" + u)}
+    ac._save_users(users)
+    tok = {}
+    for u in ("alice320t", "bob320t"):
+        r = client.post("/api/v1/auth/token", data={"username": u, "password": "pw-" + u})
+        tok[u] = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    A, B = tok["alice320t"], tok["bob320t"]
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "w320t alice venture", "ship_output": False}, headers=A).json()
+    vid = est.get("vsb_id") or (est.get("entity") or {}).get("vsb_id")
+    assert vid
+    # economy router scoped — the drain vector closed
+    assert client.get("/api/v1/economy/status", params={"vsb_id": vid}, headers=B).status_code == 404
+    assert client.get("/api/v1/economy/status", params={"vsb_id": vid}, headers=A).status_code == 200
+    assert client.post("/api/v1/economy/transfer", headers=B,
+                       json={"from_vsb": vid, "to_vsb": "vsb-b320t", "amount": 50.0}).status_code == 404
+    assert client.get(f"/api/v1/economy/ledger/{vid}", headers=B).status_code == 404
+    assert client.get("/api/v1/economy/board-pack", params={"vsb_id": vid}, headers=B).status_code == 404
+    lv = client.get("/api/v1/economy/living-vsbs", headers=B).json()
+    assert all(v.get("vsb_id") != vid for v in lv.get("living_vsbs", []))
+    # deliverables owned + confidential
+    good = ("## Executive Summary\nA substantive body of real work with enough content to pass "
+            "the substance floor of the quality gate for this contract test.\n## Analysis\n"
+            "Detailed real analysis follows here with specifics and structure.\n"
+            "## Recommendations\nConcrete next steps.")
+    d = client.post("/api/v1/deliverables/produce", headers=A,
+                    json={"type": "report", "brief": "alice confidential", "content": good}).json()
+    assert d.get("owner_id") == "alice320t"
+    assert all(x["id"] != d["id"] for x in
+               client.get("/api/v1/deliverables", headers=B).json()["deliverables"])
+    assert client.get(f"/api/v1/deliverables/{d['id']}", headers=B).status_code == 404
+    assert client.get(f"/api/v1/deliverables/{d['id']}/export",
+                      params={"format": "md"}, headers=B).status_code == 404
+    assert client.get(f"/api/v1/deliverables/{d['id']}/export",
+                      params={"format": "md"}, headers=A).status_code == 200
+    assert client.post(f"/api/v1/deliverables/{d['id']}/regenerate",
+                       json={"content": "## X\nhijack"}, headers=B).status_code == 404
+    # QMS defects owner-stamped + scoped
+    client.post("/api/v1/deliverables/produce", headers=A,
+                json={"type": "report", "brief": "alice stub", "content": "TODO"})
+    adefs = client.get("/api/v1/vbs/qms/defects", headers=A).json()["defects"]
+    bdefs = client.get("/api/v1/vbs/qms/defects", headers=B).json()["defects"]
+    mine = [x for x in adefs if x.get("owner_id") == "alice320t"]
+    assert mine
+    assert all(x.get("owner_id") != "alice320t" for x in bdefs)
+    assert client.post(f"/api/v1/vbs/qms/defects/{mine[0]['id']}/correct",
+                       json={"correction": "hijack"}, headers=B).status_code == 404
+    # single-user mode unguarded (back-compat)
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    assert client.get("/api/v1/economy/status", params={"vsb_id": vid}).status_code == 200
+    assert client.get(f"/api/v1/deliverables/{d['id']}").status_code == 200
+
+
+def test_materiality_hold_preserves_the_held_revenue(client):
+    # §12 (W313) — a materiality hold PRESERVES the recognised revenue it holds: previously
+    # consume_pending ran BEFORE the governance gates, so the hold destroyed the money and the CCA
+    # approval authorised a distribution of nothing. Peek-then-consume: events consume ONLY after
+    # every gate passes; the hold intercepts EVERY cycle (rotation still advances); approval
+    # releases the SAME recognised money exactly once. Also: waterfall template bounds bind to the
+    # VSB's STORED entity type — a nonprofit can no longer smuggle an owner share by claiming
+    # entity_type='sole' at set time.
+    from agentic_core.economy import living_vsbs as lv
+    from agentic_core.economy.revenue import record_event, peek_pending
+    lv.register("vsb-w313t", "W313 Contract", entity_type="waqf_ltd_hybrid", owner="Rehan")
+    record_event("vsb-w313t", "revenue", 400000.0, "marketplace", ref="w313t")
+    r1 = lv.operate_vsb("vsb-w313t")
+    assert r1.get("cycle_ran") is False
+    assert (r1.get("governance") or {}).get("status") == "held_for_change_control"
+    assert peek_pending("vsb-w313t")["revenue"] == 400000.0        # PRESERVED, not destroyed
+    assert r1.get("pending_preserved_wst") == 400000.0             # the record names it
+    reg = lv._load()["vsb-w313t"]
+    assert reg.get("last_operated") and reg.get("last_hold") == "held_for_change_control"
+    r1b = lv.operate_vsb("vsb-w313t")                              # hold intercepts EVERY cycle
+    assert r1b.get("cycle_ran") is False
+    assert peek_pending("vsb-w313t")["revenue"] == 400000.0
+    cca_id = (r1.get("governance") or {}).get("cca_id")
+    rv = client.post(f"/api/v1/cca/{cca_id}/review",
+                     json={"decision": "approved", "reviewer": "Rehan", "notes": "w313t"})
+    assert rv.status_code == 200
+    r2 = lv.operate_vsb("vsb-w313t")
+    assert r2.get("revenue_recognised_wst") == 400000.0            # the REAL money distributes
+    assert (r2.get("distributable_wst") or 0) > 0
+    assert peek_pending("vsb-w313t")["revenue"] == 0.0             # consumed exactly once
+    # entity-type spoof closed
+    lv.register("vsb-w313t-np", "W313 NP", entity_type="nonprofit", owner="Rehan")
+    w = client.post("/api/v1/economy/waterfall", json={
+        "vsb_id": "vsb-w313t-np", "entity_type": "sole",
+        "proportions": {"owner": 0.4, "self_investment": 0.3, "capital_fund": 0.1,
+                        "user_projects": 0.1, "charity": 0.1}})
+    assert w.status_code == 400                                    # bounds from the STORED type
+    g = client.get("/api/v1/economy/waterfall",
+                   params={"vsb_id": "vsb-w313t-np", "entity_type": "sole"}).json()
+    assert g.get("entity_type") == "nonprofit"
+    assert g.get("entity_type_source") == "living_registry"
 
 
 def test_economy_cycles_governed_and_ueg_logged(client):

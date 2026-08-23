@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
+import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../lib/taxonomy';
 import { Card, Button } from '@workstation/ui';
 import { Check, Trash2, User, Settings as SettingsIcon } from 'lucide-react';
 import { getPrefs, setPrefs, clearPrefs, LANGUAGES, type UserPrefs } from '../lib/userPrefs';
 import { clearOutputs } from '../lib/outputHistory';
 
 // §17.1 canonical realms × domains — kept consistent with Genesis.
-const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'];
-const DOMAINS = ['religion', 'science', 'education', 'law', 'employment', 'care'];
+const REALMS = [...CANON_REALMS];   // §17.1 (W321)
+const DOMAINS = [...CANON_DOMAINS];
 
 // E5 — System Settings: real, honest, local preferences (display name + defaults) that personalise the
 // experience. Replaces the former stub. All values are stored in this browser only (no server profile).

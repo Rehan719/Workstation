@@ -87,11 +87,15 @@ import { KnowledgeHub } from './pages/coe/KnowledgeHub';
 // DevPortal archived — grandiose placeholder (fabricated "PQC-MANDATORY / CRYSTALS-Dilithium / third-party
 // reactors" claims), no backend, no real third-party developer ecosystem.
 import { Contribute } from './pages/Contribute';
-import { AdminPanel } from './pages/AdminPanel';
+// AdminPanel archived (W314) — fabricated security theater (fake PQC status, hardcoded "0.04%
+// failure probability" / "12,450 samples", a setTimeout "Retrain Model", invented "Article 1107");
+// real administration = Owner-curated registration via /login + the auth API.
 import { CreatorStudio } from './pages/create/CreatorStudio';
 // PublicRoadmap archived — grandiose hardcoded roadmap ("Workstation civilization, Guardian resonance"),
 // no backend; the real living roadmap is the Living Plan (/api/v1/plan).
-import { LandingPage } from './pages/landing/LandingPage';
+// LandingPage archived (W314) — fabricated front door ("1,042,000 Concurrent Guardians",
+// "PQC-mandatory", AI advertised as sourced FROM OpenAI/Google/Meta/NVIDIA — the inversion of the
+// §6 native mandate); the real, honest home is DashboardNew at "/" (no fabricated metrics).
 
 // ── Extended (wired, reachable by URL — not in primary nav) ───────────────
 // ScholarRealm archived to _archive/frontend-pages — grandiose research hub with fabricated "50+ federated nodes".
@@ -203,8 +207,8 @@ function App() {
           {/* ── 8. Developer Portal & system ────────────────────────── */}
           <Route path="/contribute" element={<Contribute />} />
           <Route path="/creator"    element={<CreatorStudio />} />
-          <Route path="/admin"      element={<AdminPanel />} />
-          <Route path="/landing"    element={<LandingPage />} />
+          <Route path="/admin"      element={<Navigate to="/" replace />} />
+          <Route path="/landing"    element={<Navigate to="/" replace />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/login"    element={<Login />} />
 

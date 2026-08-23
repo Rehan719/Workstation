@@ -23,9 +23,21 @@ from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
+
+from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
+
+
+def _require_deliverable_access(d: Dict[str, Any], user: dict | None) -> None:
+    """§14×§13 (W320) — a living deliverable is its owner's confidential work product: previously
+    the store had NO owner concept, so any user could list, read, export, and refine any tenant's
+    deliverables. 404 (never 403) when scoped out; legacy/unowned records are admin-only under
+    auth; single-user mode (auth off) stays unguarded."""
+    u = user if isinstance(user, dict) else None
+    if not user_can_access(u, d.get("owner_id")):
+        raise HTTPException(status_code=404, detail=f"Deliverable {d.get('id')} not found.")
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.vbs.quality import assure_delivery
@@ -154,7 +166,7 @@ async def output_formats():
 
 
 @router.post("/produce")
-async def produce(req: ProduceRequest):
+async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_user)):
     """Produce a new LIVING deliverable on the native fabric (in-house provenance)."""
     if req.type not in _TYPES and not req.sections:
         raise HTTPException(status_code=400,
@@ -176,7 +188,8 @@ async def produce(req: ProduceRequest):
     _dur = int((time.time() - _t0) * 1000)
     # Continual operational delivery within the LIVING QMS: every produced deliverable is gated by the
     # OWNED QMS (real, stateful), held to the §10 Solution-Quality Bar, recorded within the §8 organism.
-    qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable")
+    _owner = request_owner_id(user if isinstance(user, dict) else None, "default")
+    qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable", owner_id=_owner)
     # §13→§8: producing a living deliverable is real cognitive work — register it with the homeostatic
     # controller so it EXPENDS metabolic ATP and carries the organism posture (like the cognition paths).
     try:
@@ -187,6 +200,8 @@ async def produce(req: ProduceRequest):
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     deliverable = {
         "id": f"deliv-{uuid.uuid4().hex[:8]}",
+        # §14 (W320) — server-stamped ownership (never caller-claimed under auth)
+        "owner_id": _owner,
         "type": req.type,
         "title": req.title or req.brief[:60],
         "brief": req.brief,
@@ -223,8 +238,10 @@ async def produce(req: ProduceRequest):
 
 
 @router.get("")
-async def list_deliverables(vsb_id: Optional[str] = None):
-    rows = _load()
+async def list_deliverables(vsb_id: Optional[str] = None,
+                            user: dict | None = Depends(get_current_user)):
+    _u = user if isinstance(user, dict) else None
+    rows = [d for d in _load() if user_can_access(_u, d.get("owner_id"))]   # §14 (W320)
     if vsb_id:
         rows = [d for d in rows if d.get("vsb_id") == vsb_id]
     summaries = [{"id": d["id"], "type": d["type"], "title": d["title"], "vsb_id": d.get("vsb_id"),
@@ -235,9 +252,10 @@ async def list_deliverables(vsb_id: Optional[str] = None):
 
 
 @router.get("/{deliverable_id}")
-async def get_deliverable(deliverable_id: str):
+async def get_deliverable(deliverable_id: str, user: dict | None = Depends(get_current_user)):
     for d in _load():
         if d["id"] == deliverable_id:
+            _require_deliverable_access(d, user)
             return d
     raise HTTPException(status_code=404, detail=f"Deliverable {deliverable_id} not found.")
 
@@ -667,7 +685,8 @@ def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
 
 
 @router.get("/{deliverable_id}/export")
-async def export_deliverable(deliverable_id: str, format: str = "md"):
+async def export_deliverable(deliverable_id: str, format: str = "md",
+                             user: dict | None = Depends(get_current_user)):
     """Export a living deliverable in a selectable in-house format (§4.9) so the user can take it out and
     use it. Live formats: md · html (styled document/website) · slides (HTML presentation) · txt · json —
     every one a REAL deterministic render of the deliverable's own content (no fabrication)."""
@@ -677,6 +696,7 @@ async def export_deliverable(deliverable_id: str, format: str = "md"):
                             detail=f"Unsupported format '{fmt}'. Live in-house formats: {sorted(_LIVE_FORMATS)}.")
     for d in _load():
         if d["id"] == deliverable_id:
+            _require_deliverable_access(d, user)
             slug = "".join(c if c.isalnum() else "-" for c in d.get("title", "deliverable")).strip("-")[:60] or "deliverable"
             media_type, ext = _LIVE_FORMATS[fmt]
             if fmt == "pdf":
@@ -698,11 +718,13 @@ async def export_deliverable(deliverable_id: str, format: str = "md"):
 
 
 @router.post("/{deliverable_id}/regenerate")
-async def regenerate(deliverable_id: str, req: RegenerateRequest):
+async def regenerate(deliverable_id: str, req: RegenerateRequest,
+                     user: dict | None = Depends(get_current_user)):
     """Re-run / reconfigure a living deliverable — appends a new version (history preserved)."""
     rows = _load()
     for d in rows:
         if d["id"] == deliverable_id:
+            _require_deliverable_access(d, user)
             brief = req.brief or d["brief"]
             sections = req.sections if req.sections is not None else d.get("sections", [])
             if req.content.strip():
@@ -716,7 +738,8 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest):
             else:
                 gen = await _generate(d["type"], d["title"], brief, d.get("domain", "enterprise"),
                                       d.get("vsb_id"), sections)
-            qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable")
+            qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable",
+                                       owner_id=d.get("owner_id"))
             now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             d["brief"] = brief
             d["sections"] = gen["sections"]

@@ -45,7 +45,9 @@ interface MissionLog {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const AI_MODELS = ['Ollama · llama3', 'Ollama · mistral', 'Ollama · deepseek-r1', 'OpenAI · gpt-4o', 'Claude · sonnet-4'];
+// W314 — honest §6 posture: the platform's OWN fabric first; external providers are Owner-gated
+// options, never advertised as the source of the platform's intelligence.
+const AI_MODELS = ['Native · workstation fabric (in-house)', 'Ollama · llama3', 'Ollama · mistral', 'Ollama · deepseek-r1', 'External · Owner-gated (disabled)'];
 const DOMAINS = ['Religion', 'Science', 'Law', 'Care', 'Education', 'Employment', 'Finance', 'Engineering', 'Health', 'Governance'];
 const REGIONS = ['EU-West', 'US-East', 'US-West', 'APAC', 'MEA', 'LATAM', 'On-Prem', 'Edge-Local'];
 const FACILITY_TYPES = ['Data Centre', 'Industrial Plant', 'Smart Grid', 'Research Lab', 'Command Hub', 'Distributed Edge'];
@@ -163,7 +165,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
       scale: buildConfig.scale_tier,
       mesh_topology: buildConfig.regions.length > 1 ? 'multi-region federated' : 'single-region',
       estimated_tps: buildConfig.scale_tier === 'planetary' ? '50,000+' : buildConfig.scale_tier === 'enterprise' ? '10,000' : buildConfig.scale_tier === 'standard' ? '2,000' : '200',
-      security_posture: 'PQC-hardened · Constitutional compliance · L5 Security layer',
+      security_posture: 'Constitutional compliance (gaas.v5) · UEG audit chain — honest: no PQC implementation exists',
       provisioned_at: new Date().toISOString(),
     };
     setBuiltConfig(config);
@@ -621,7 +623,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                   {[
                     { icon: Globe,   label: 'Global Scale',  desc: 'Multi-region sovereign mesh', color: 'text-emerald-400' },
                     { icon: Factory, label: 'Industrial',     desc: 'OT/SCADA integration layer', color: 'text-orange-400' },
-                    { icon: Shield,  label: 'PQC Security',  desc: 'Post-quantum hardened nodes', color: 'text-amber-400' },
+                    { icon: Shield,  label: 'Governed', desc: 'gaas.v5 constitutional gate + UEG audit chain', color: 'text-amber-400' },
                     { icon: Gauge,   label: 'Performance',   desc: 'Real-time TPS benchmarking', color: 'text-cyan-400' },
                   ].map(c => {
                     const Icon = c.icon;

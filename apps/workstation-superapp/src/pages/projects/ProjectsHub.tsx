@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { REALMS as CANON_REALMS, REALM_LABELS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -35,16 +36,8 @@ interface Project {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const REALMS = [
-  { value: 'technology',  label: 'Technology' },
-  { value: 'science',     label: 'Science' },
-  { value: 'education',   label: 'Education' },
-  { value: 'law',         label: 'Law' },
-  { value: 'care',        label: 'Care' },
-  { value: 'employment',  label: 'Employment' },
-  { value: 'religion',    label: 'Religion' },
-  { value: 'general',     label: 'General' },
-];
+// §17.1 (W321) — canonical realms from the ONE taxonomy source (domains were listed as realms)
+const REALMS = CANON_REALMS.map(v => ({ value: v, label: REALM_LABELS[v] }));
 
 const DOMAINS = [
   { value: 'product',    label: 'Product' },

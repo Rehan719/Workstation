@@ -101,7 +101,9 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str) -> Opt
             "cca_id": cca_id, "title": title, "change_type": "economy_material",
             "description": (f"Material virtual distribution for {vsb_id}: estimated distributable "
                             f"{est_distributable} WST ≥ materiality threshold {MATERIALITY_WST} WST. "
-                            "Held until approved (virtual WST only — no real funds)."),
+                            "Held until approved (virtual WST only — no real funds). The recognised "
+                            "revenue events remain PENDING (unconsumed) while held — approval "
+                            "releases a distribution that still exists."),
             "rationale": "VSB_ECONOMIC_LEGAL_MODEL §3: material/large actions route to Change Control.",
             "affected_systems": ["economy", "capital"], "submitted_by": f"economy:{source}",
             "submitted_at": now, "impact_tier": cca._determine_tier("economy_material", ""),
