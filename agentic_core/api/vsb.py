@@ -433,15 +433,23 @@ def _build_website_files(vsb: dict, copy: dict) -> dict:
 def _prose_clean(text: str, one_line: bool = False) -> str:
     """§13 (W315) — shipped PUBLIC copy is prose: the native floor's scaffold artifacts
     (provenance markers, markdown headings, code fences, engine labels) are filtered before copy
-    lands on a public surface. Honest: only formatting scaffold is removed, never content."""
+    lands on a public surface. Honest: only formatting scaffold is removed, never content.
+    W331 CI fix: the provenance marker `_[…]_` can also appear INLINE at the end of a content
+    line (line-start filtering alone let it leak onto a shipped page on CI) — inline markers
+    are stripped too."""
+    import re as _re
     lines = []
     for line in (text or "").splitlines():
-        s = line.strip()
+        # strip inline provenance markers FIRST so a content line that merely CARRIES a marker
+        # keeps its prose (dropping the whole line would lose real copy)
+        s = _re.sub(r"_\[[^\]\n]*\]_?", "", line.strip()).strip()
         low = s.lower()
-        if (not s or s.startswith(("#", "_[", "```", ">"))
+        if (not s or s.startswith(("#", "```", ">"))
                 or "native structured engine" in low or low.startswith("[engine")):
             continue
-        lines.append(s.lstrip("-*• ").strip("*_").strip())
+        s = s.lstrip("-*• ").strip("*_").strip()
+        if s:
+            lines.append(s)
     if one_line:
         return (lines[0] if lines else "")[:160]
     return "\n\n".join(lines)
