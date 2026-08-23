@@ -69,3 +69,4 @@ meta/*ueg*.json
 # runtime organism ledgers (churn every session — never commit)
 meta/genome_ledger.json
 meta/ueg_graph.json
+*.tsbuildinfo
