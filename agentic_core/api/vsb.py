@@ -469,7 +469,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
 
     async def _q(prompt: str) -> str:
-        m = await gateway.query_meta(prompt, agent="vsb-website")
+        m = await gateway.query_meta(prompt, agent="vsb-website", augment=False)   # W332 — shipped copy: no cross-request recall
         sb = m.get("served_by", "native")
         prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
         prov["any_external"] = prov["any_external"] or bool(m.get("is_external"))
@@ -884,7 +884,8 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         f"{operational['stage']}; generation: {operational['generation']}; domain: {operational['domain']}; "
         f"governance: {operational['governance']}. Concept: {concept[:500]}. Commercialisation: "
         f"{commercial[:400]}.\n\nProduce a concise board pack:\n## Executive Summary\n## Strategic Position\n"
-        "## Action Priorities (this period)\n## Key Risks\n## Recommendation", agent="vsb-board-pack")
+        "## Action Priorities (this period)\n## Key Risks\n## Recommendation",
+        agent="vsb-board-pack", augment=False)   # W332 — persisted board pack: no cross-request recall
     narrative = meta.get("output", "") or ""
     sb = meta.get("served_by", "native")
     prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
@@ -1266,7 +1267,7 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             f"Format as a structured business entity specification."
         )
         try:
-            ceo_spec = await gateway.query(ceo_prompt, agent="vsb_ceo")
+            ceo_spec = await gateway.query(ceo_prompt, agent="vsb_ceo", augment=False)   # W332 — persisted into the entity
         except Exception as e:
             ceo_spec = f"CEO specification pending: {e}"
         yield _event("ceo_complete", "CEO Strategy Complete", ceo_spec[:500])
@@ -1555,7 +1556,7 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
     )
 
     biobus.fire_signal("cognitive", "vsb.evolve", f"Evolution cycle: {vsb_id} gen {vsb.get('generation',0)+1}", 0.7)
-    raw = await gateway.query(prompt, agent=f"vsb_evolution_{vsb_id}")
+    raw = await gateway.query(prompt, agent=f"vsb_evolution_{vsb_id}", augment=False)   # W332 — drives persisted mutations
     proposals = []
     for line in raw.splitlines():
         if line.upper().startswith("EVOLVE"):

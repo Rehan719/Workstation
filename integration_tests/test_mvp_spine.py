@@ -4375,6 +4375,37 @@ def test_fabric_remaining_resources_run_real(client):
     assert rr["federation_mesh"].get("operational") is True
 
 
+def test_memory_no_cross_tenant_bleed_into_shipped_copy(client):
+    # §17.5 invariant 1 (W332/W333) — the native memory was one GLOBAL pool with identity-blind
+    # APIs: the audit reproduced one user's confidential prompt landing verbatim in another user's
+    # git-committed public website (recall injected into copy generation, engine echoed it as the
+    # subject). Two lines of defence: (1) generation-class callers whose output ships/persists no
+    # longer inject cross-request recall (augment=False); (2) memory is tenant-stamped and recall
+    # is scoped to the caller's namespace + platform. This proves both.
+    SECRET = "ZANZIBAR-ORCHID acquisition takeover bid"
+    client.post("/api/v1/ai/query", json={
+        "message": f"Confidential: hero tagline for the {SECRET}. Do not disclose the target."})
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "a honey cooperative for local beekeepers", "ship_output": False}).json()
+    vid = est["vsb_id"]
+    assert client.post(f"/api/v1/vsb/{vid}/website").status_code == 200
+    m = client.get(f"/api/v1/vsb/{vid}/repo").json()
+    files = ({f["path"]: f.get("content", "") for f in m["files"]}
+             if isinstance(m.get("files"), list) else (m.get("files") or {}))
+    allcopy = " ".join(str(v) for v in files.values())
+    assert "ZANZIBAR" not in allcopy and "takeover" not in allcopy   # the secret never ships
+    # memory tenancy: every entry stamped; cross-tenant recall blocked, same-tenant preserved
+    from agentic_core.ai.memory import memory
+    import os, json as _json
+    raw = _json.loads(open(f"{os.environ['DATA_DIR']}/memory.json", encoding="utf-8").read())
+    assert all((e.get("metadata") or {}).get("owner_id") for e in raw)
+    memory.add_memory("User: my private alpha-strategy margin secret | AI: ok", owner_id="user-a")
+    assert all("alpha-strategy" not in r
+               for r in memory.query_memory("private margin strategy secret", owner_id="user-b"))
+    assert any("alpha-strategy" in r
+               for r in memory.query_memory("private margin strategy secret", owner_id="user-a"))
+
+
 def test_service_contracts_and_self_investment_consumer(client):
     # §15×§12 (W330) — the inter-entity organ beyond one verb: entity A COMMISSIONS entity B
     # (offer → accept → deliver via a REAL cascade scoped to the provider → settle via the

@@ -89,20 +89,29 @@ class ModelGateway:
         """Return preferred_provider from reconfig, defaulting to 'auto'."""
         return self._reconfig_cache.get("gateway", {}).get("preferred_provider", "auto")
 
-    def _augment(self, prompt: str) -> str:
-        # W277 — recall is real now (scored token-overlap retrieval) and HONESTLY labelled: the
-        # model is told exactly what these lines are and to ignore them when irrelevant.
-        ctx = memory.query_memory(prompt)
+    def _augment(self, prompt: str, owner_id: str | None = None) -> str:
+        # W277 — recall is real (scored token-overlap retrieval) and HONESTLY labelled.
+        # W333 — recall is TENANT-SCOPED (only the caller's namespace + platform); a caller with no
+        # identity sees only platform memory, never the whole pool.
+        ctx = memory.query_memory(prompt, owner_id=owner_id)
         if not ctx:
             return prompt
-        recall = "\n".join(f"- {c[:280]}" for c in ctx)
+        # W332 — neutralise the `User:`/`AI:` tokens INSIDE recall lines: the native engine's
+        # _field/_subject take the FIRST `User:` match as the copy subject, so a recall line
+        # carrying those tokens could be baked into shipped output as the subject. Relabelling
+        # them `[recalled prompt]`/`[recalled reply]` keeps the content legible to the model while
+        # ensuring the real `User: {prompt}` line below is the only subject candidate.
+        def _neutral(c: str) -> str:
+            return c.replace("User:", "[recalled prompt]").replace("AI:", "[recalled reply]")
+        recall = "\n".join(f"- {_neutral(c[:280])}" for c in ctx)
         return ("[native memory recall — prior Workstation interactions matched by token overlap; "
                 f"use only if relevant]\n{recall}\n\nUser: {prompt}")
 
     # ── non-streaming ───────────────────────────────────────────────────────
 
     async def query(self, prompt: str, agent: str = "assistant",
-                    timeout: float | None = 90.0) -> str:
+                    timeout: float | None = 90.0,
+                    owner_id: str | None = None, augment: bool = True) -> str:
         """Run one completion through the provider cascade.
 
         `timeout` is an OVERALL bound (seconds) on the whole cascade so an AI call
@@ -111,11 +120,13 @@ class ModelGateway:
         tighter value (e.g. 20) for snappy UX; pass None to disable the bound.
         On timeout we return a clearly-labelled fallback rather than blocking.
         """
-        res = await self.query_meta(prompt, agent=agent, timeout=timeout)
+        res = await self.query_meta(prompt, agent=agent, timeout=timeout,
+                                    owner_id=owner_id, augment=augment)
         return res.get("output", "")
 
     async def query_meta(self, prompt: str, agent: str = "assistant",
-                         timeout: float | None = 90.0) -> dict:
+                         timeout: float | None = 90.0,
+                         owner_id: str | None = None, augment: bool = True) -> dict:
         """Like `query()` but returns PROVENANCE — {output, served_by, is_external} — so callers
         can surface which OWNED resource served the completion (Genesis/Forge/Transformation use
         this to prove their cascades run in-house). Same in-house-first routing as `query()`.
@@ -129,7 +140,9 @@ class ModelGateway:
         fabric — see agentic_core/ai/native/.)"""
         self._sync_reconfig()
         await self._rate_limiter.acquire()
-        augmented = self._augment(prompt)
+        # W332 — generation-class callers whose output SHIPS or PERSISTS pass augment=False: copy
+        # generation has no legitimate use for cross-request recall, and recall was the leak vector.
+        augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt
         served_by, is_external = "native", False
         try:
             from agentic_core.ai.native import orchestrator as native_orchestrator
@@ -147,8 +160,9 @@ class ModelGateway:
         if not validate_response(response):
             response = "[POLICY VIOLATION] The generated response was blocked by safety guardrails."
 
-        interaction_logger.log_interaction(agent, prompt, response)
-        memory.add_memory(f"User: {prompt} | AI: {response}")
+        interaction_logger.log_interaction(agent, prompt, response, owner_id=owner_id)
+        memory.add_memory(f"User: {prompt} | AI: {response}",
+                          metadata={"agent": agent}, owner_id=owner_id)   # W333 — tenant-stamped
         return {"output": response, "served_by": served_by, "is_external": is_external}
 
     async def _call(self, prompt: str, agent: str = "gateway") -> tuple[str, str]:
@@ -241,21 +255,25 @@ class ModelGateway:
             chunks.append(cur)
         return chunks
 
-    async def stream(self, prompt: str, agent: str = "assistant") -> AsyncIterator[str]:
+    async def stream(self, prompt: str, agent: str = "assistant",
+                     owner_id: str | None = None, augment: bool = True) -> AsyncIterator[str]:
         """Yield response tokens — IN-HOUSE FIRST (§6), mirroring query_meta's contract:
         1. the OWNED local model (Ollama), genuine token-by-token streaming, when present
            (skipped under AI_DISABLE_LOCAL, e.g. the deterministic test/CI runtime);
         2. external accelerant streaming ONLY when explicitly opted in (AI_ALLOW_EXTERNAL=true);
         3. the native structured-reasoning floor, chunked — the GUARANTEED terminal: this stream
-           never depends on an external provider and never ends in a bare error line."""
+           never depends on an external provider and never ends in a bare error line.
+        W332/W333 — tenant-scoped recall (augment=False for ship/persist callers) + tenant-stamped
+        writes, matching query_meta."""
         await self._rate_limiter.acquire()
-        augmented = self._augment(prompt)
+        augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt
         from agentic_core.organism.self_healing import self_healer   # W323 — breaker on the stream path
 
         def _log(text: str) -> None:
             try:
-                interaction_logger.log_interaction(agent, prompt, text)
-                memory.add_memory(f"User: {prompt} | AI: {text}")
+                interaction_logger.log_interaction(agent, prompt, text, owner_id=owner_id)
+                memory.add_memory(f"User: {prompt} | AI: {text}",
+                                  metadata={"agent": agent}, owner_id=owner_id)
             except Exception:
                 pass
 

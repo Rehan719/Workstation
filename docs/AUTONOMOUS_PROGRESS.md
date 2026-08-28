@@ -1550,3 +1550,17 @@ no-funds). The module itself stays (it IS imported by v138/ceo.py). (2) `commerc
 unimportable (`from backend.stripe...`, no such package) with zero importers — archived to
 `_archive/backend-dead/` with an ARCHIVED.md record. Boot check green; `git grep pk_test_sample` = 0.
 The real payment path (api/v310/payments.py, triple-gated) untouched.
+
+---
+
+## ROUND 8 — batch A (W332 · W333 · W334) — memory security — 2026-08-28
+
+**Audit:** 29-agent workflow (three credit-interrupted resumes) over the Round-7 carried candidates: 26 findings adversarially CONFIRMED / 1 refuted; the synthesis covered ALL findings (16 items W332–W347 — the truncation-dropping of Rounds 5–7 fixed by an explicit cover-everything requirement).
+
+**HEADLINE (critical, reproduced live twice):** the native memory was ONE GLOBAL POOL with identity-blind APIs — gateway wrote every prompt+response with empty metadata, _augment injected top-k of the pool into EVERY prompt, and the native engine's _subject took the FIRST `User:` match (the injected other-request line) as the copy subject. Proven: user A's confidential ZANZIBAR-ORCHID takeover prompt shipped VERBATIM into user B's git-committed public website hero.
+
+- **W332 (leak class closed at the source):** gateway.query/query_meta/stream gained `augment: bool` — every generation-class caller whose output ships or persists passes augment=False (vsb website + board pack + CEO spec + evolution, deliverables _generate, ALL genesis journey stages, and the shared ai_text seam that all 30+ domain-tool sites use — augment defaults OFF there). Defense-in-depth for callers that keep recall: _augment now NEUTRALISES `User:`/`AI:` tokens inside recall lines (`[recalled prompt]`/`[recalled reply]`) so the engine's first-match subject extraction can only ever select the REAL user line.
+- **W333 (tenant-scoped memory):** owner_id threaded through gateway → VectorMemory (add stamps metadata.owner_id; query filters to the caller's namespace + the explicit 'platform' namespace — an anonymous caller sees ONLY platform memory, never the pool) and the interactions.db log (owner_id column added idempotently).
+- **W334 (remediation for what already leaked):** scripts/purge_memory_contamination.py — Owner-run only, dry-run by default; QUARANTINES (never deletes) memory.json + the ChromaDB store under DATA_DIR/quarantine/<ts>/, resets clean, UEG-logs `memory.contamination_purge` with real counts, and reports every shipped repo page still carrying recall signatures for Owner re-shipping (the re-ship is clean under W332).
+
+Verification: the EXACT audit scenario re-probed 6/6 (secret absent from shipped website · every memory owner-stamped · cross-tenant recall blocked · same-tenant recall intact); echo-trap 2/2; purge script dry-run/apply/quarantine 3/3. Gate suite: 287 passed / 15 skipped / lone known DATA_DIR artifact. +1 contract test (test_memory_no_cross_tenant_bleed_into_shipped_copy).

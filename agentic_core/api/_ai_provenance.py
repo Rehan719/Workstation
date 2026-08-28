@@ -12,14 +12,20 @@ from typing import Any, Dict, Tuple
 from agentic_core.ai.gateway import gateway
 
 
-async def ai_text(prompt: str, agent: str, timeout: float = 30.0) -> Tuple[str, Dict[str, Any]]:
+async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
+                  owner_id: str | None = None, augment: bool = False) -> Tuple[str, Dict[str, Any]]:
     """Return (text, provenance) where provenance = {posture, served_by, is_external}.
 
     Every call is recorded into the operational-excellence learning loop (best-effort, non-critical)
     so rankings/summary reflect REAL platform AI usage — which OWNED resource served each domain tool,
-    how often, how fast, in-house vs external — not just swarm runs."""
+    how often, how fast, in-house vs external — not just swarm runs.
+
+    W332/W333 — Offering-1 output is a deliverable that the user SEES and SAVES, so recall injection
+    (the cross-tenant leak) is defaulted OFF here (`augment=False`); when a caller opts into recall it
+    is tenant-scoped by `owner_id`. Domain routers thread the authenticated user's id."""
     t0 = time.monotonic()
-    res = await gateway.query_meta(prompt, agent=agent, timeout=timeout)
+    res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
+                                   owner_id=owner_id, augment=augment)
     output = res.get("output", "")
     served_by = res.get("served_by", "native")
     is_external = bool(res.get("is_external"))

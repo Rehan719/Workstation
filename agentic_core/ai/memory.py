@@ -73,22 +73,39 @@ class VectorMemory:
         import re
         return {w for w in re.findall(r"[a-z]{4,}", (text or "").lower()) if w not in cls._STOP}
 
-    def add_memory(self, text: str, metadata: Dict[str, Any] = {}):
+    # §17.5 invariant 1 (W333) — the namespace for owner-less / organism-internal memory. Recall is
+    # scoped to the CALLER's own namespace PLUS this shared platform namespace, never across tenants.
+    PLATFORM_NS = "platform"
+
+    def add_memory(self, text: str, metadata: Dict[str, Any] | None = None,
+                   owner_id: str | None = None):
+        """Store one memory. §17.5 invariant 1 (W333): the owning tenant is stamped into metadata
+        so recall can be scoped — previously every write landed in one global pool with an empty
+        metadata dict, so any user's prompts/responses were retrievable into any other user's AI
+        calls (reproduced live: one user's confidential prompt shipped into another's public
+        website). `owner_id=None` means genuinely shared platform memory (organism beats)."""
+        meta = dict(metadata or {})
+        meta.setdefault("owner_id", owner_id or self.PLATFORM_NS)
         memories = self._load()
-        memories.append({"text": text, "metadata": metadata})
+        memories.append({"text": text, "metadata": meta})
         self._write(memories[-self.MAX_MEMORIES:])
 
-    def query_memory(self, query: str, k: int = 3) -> List[str]:
+    def query_memory(self, query: str, k: int = 3, owner_id: str | None = None) -> List[str]:
         """W277 — SCORED retrieval that genuinely fires: rank memories by meaningful-token overlap
-        with the query (≥2 shared tokens to count), best-then-most-recent first, top k. The old
-        whole-prompt substring match never matched a real prompt, so recall was ceremonial.
-        Deterministic + honest: no embedding claim, the score IS the overlap."""
+        with the query (≥2 shared tokens to count), best-then-most-recent first, top k.
+        §17.5 invariant 1 (W333): recall is TENANT-SCOPED — only the caller's own namespace and the
+        shared platform namespace are eligible; another tenant's memory can never be recalled.
+        `owner_id=None` sees only platform memory (the safe default for anonymous/unattributed
+        callers), never the whole pool."""
         q = self._tokens(query)
         if not q:
             return []
+        allowed = {owner_id or self.PLATFORM_NS, self.PLATFORM_NS}
         need = min(2, len(q))    # a 1-token query can genuinely match with 1 — 2 would be unreachable
         scored = []
         for i, m in enumerate(self._load()):
+            if (m.get("metadata") or {}).get("owner_id", self.PLATFORM_NS) not in allowed:
+                continue
             overlap = len(q & self._tokens(m.get("text", "")))
             if overlap >= need:
                 scored.append((overlap, i, m["text"]))

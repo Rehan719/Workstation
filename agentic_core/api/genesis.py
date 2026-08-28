@@ -70,7 +70,7 @@ class JourneyRequest(BaseModel):
 async def _q(prompt: str, agent: str) -> str:
     """Gateway query with graceful degradation (never raises)."""
     try:
-        return await gateway.query(prompt, agent=agent)
+        return await gateway.query(prompt, agent=agent, augment=False)   # W332 — journey copy persists/ships
     except Exception as e:
         return f"[{agent} unavailable: {e}]"
 
@@ -101,7 +101,8 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
 
     async def _q(prompt: str, agent: str) -> str:  # noqa: F811 — local, provenance-aware
         try:
-            res = await gateway.query_meta(prompt, agent=agent)
+            # W332 — journey stages persist into the entity/plan and can ship: no cross-request recall
+            res = await gateway.query_meta(prompt, agent=agent, augment=False)
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
             provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))

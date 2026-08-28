@@ -93,7 +93,8 @@ async def _generate(d_type: str, title: str, brief: str, domain: str,
         f"Brief: {brief}\nDomain: {domain}{_grounding(vsb_id)}\n\n"
         + "\n".join(f"## {s}" for s in secs)
     )
-    meta = await gateway.query_meta(prompt, agent=f"deliverable:{d_type}", timeout=30.0)
+    meta = await gateway.query_meta(prompt, agent=f"deliverable:{d_type}", timeout=30.0,
+                                    augment=False)   # W332 — deliverables are saved+exported: no cross-request recall
     return {
         "content": meta.get("output", ""),
         "sections": secs,
