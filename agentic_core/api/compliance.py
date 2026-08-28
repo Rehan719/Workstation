@@ -22,12 +22,24 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/api/v1/compliance", tags=["compliance"])
 
 # Built-in deterministic rule patterns (explainable fallbacks; engines layered on top).
-_HARAM = re.compile(r"\b(riba|interest[- ]bearing|usury|alcohol|gambling|pork|haram|pornograph|exploitat)\w*",
-                    re.IGNORECASE)
-_ILLEGAL = re.compile(r"\b(fraud|launder|illegal|counterfeit|insider[- ]trad|bribe)\w*", re.IGNORECASE)
-_REGULATED = re.compile(r"\b(financial advice|securities|medical|health claim|personal data|gdpr|kyc|aml)\w*",
-                        re.IGNORECASE)
-_EHS = re.compile(r"\b(toxic|hazardous|pollut|unsafe|emission|waste)\w*", re.IGNORECASE)
+# §11 (W342) — vocabulary hardened after an adversarial sweep: a 'fine wine subscription club'
+# survived 8 continuous re-screens because wine/beer/liquor/casino/lottery/betting were absent.
+# Word-boundary-safe; deliberately NOT matching bare 'spirit' (spiritual) or 'bet' (better) —
+# 'betting/bets on' and 'spirits' (plural, the drink) are the safe forms.
+_HARAM = re.compile(
+    r"\b(riba|interest[- ]bearing|usury|alcohol|wine|beer|liquor|whisk(?:y|ey)|vodka|spirits\b|"
+    r"brewer|distiller|gambling|gambl\w*|casino|lottery|lotteries|betting|wager|"
+    r"pork|lard|bacon|haram|pornograph|exploitat)\w*",
+    re.IGNORECASE)
+_ILLEGAL = re.compile(
+    r"\b(fraud|launder|illegal|counterfeit|insider[- ]trad|bribe|narcotic|trafficking|smuggl)\w*",
+    re.IGNORECASE)
+_REGULATED = re.compile(
+    r"\b(financial advice|securities|medical|health claim|personal data|gdpr|kyc|aml|"
+    r"pharmaceutical|firearm|weapon)\w*",
+    re.IGNORECASE)
+_EHS = re.compile(r"\b(toxic|hazardous|pollut|unsafe|emission|waste|carcinogen|flammable)\w*",
+                  re.IGNORECASE)
 
 # W285 — the registry names ONLY what genuinely runs: the Halal and UK-Legal ENGINES are actually
 # invoked (below), regulatory/EHS are built-in deterministic rules (there is no

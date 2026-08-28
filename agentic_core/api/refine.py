@@ -42,6 +42,14 @@ async def refine(req: RefineRequest):
         f"Current draft:\n{req.previous}"
     )
     refined, provenance = await ai_text(prompt, "refiner")
+    # §3A (W336) — DRAFT-PRESERVING floor: the deterministic floor cannot genuinely rewrite a
+    # draft, and the audit proved its output DISCARDED the user's work entirely. When the floor
+    # serves, the user's draft is returned intact with the floor's structured additions appended
+    # under an honest label — refinement never loses work, and the capability is never overstated.
+    if provenance.get("served_by") == "native" and req.previous.strip():
+        refined = (f"{req.previous.rstrip()}\n\n---\n\n"
+                   f"### Refinement additions (in-house structured floor — the draft above is "
+                   f"preserved verbatim; a full rewrite needs the owned model)\n\n{refined}")
     return {
         "refine_id": uuid.uuid4().hex[:10],
         "refined": refined,

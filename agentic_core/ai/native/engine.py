@@ -94,8 +94,13 @@ def _role(prompt: str) -> str:
 
 
 def _subject(prompt: str) -> str:
-    """Best-effort one-line subject from a labelled field, else the longest sentence."""
-    field = _field(prompt, "User", "Problem", "Challenge", "Objective", "Concept", "Topic")
+    """Best-effort one-line subject from a labelled field, else the longest sentence.
+    §3A (W336) — the label set covers the labels the domain routers ACTUALLY use, so the floor's
+    output grounds in the user's own input instead of the prompt scaffolding (the audit found
+    Offering-1 floor outputs that never contained the user's input at all)."""
+    field = _field(prompt, "User", "Problem", "Challenge", "Objective", "Concept", "Topic",
+                   "Research question", "Question", "Task / question", "Hypothesis",
+                   "Target role", "Current situation", "Concern", "Subject", "Search query")
     if len(field) > 8:
         return field[:220]
     sentences = re.split(r"(?<=[.!?])\s+", prompt.strip())
@@ -103,8 +108,17 @@ def _subject(prompt: str) -> str:
     return longest.strip()[:220]
 
 
+# §3A (W336) — the census of SUBSTANTIVE labels the domain routers + refine genuinely emit
+# (scaffolding labels like 'Structure as'/'Respond with a JSON object' deliberately excluded).
 _CONTENT_LABELS = ("User", "Problem", "Challenge", "Objective", "Concept", "Design",
-                   "Topic", "Brief", "Mission", "Vision", "Commercialisation", "Prior context")
+                   "Topic", "Brief", "Mission", "Vision", "Commercialisation", "Prior context",
+                   "Research question", "Hypothesis", "Question", "Task / question",
+                   "Target role", "Current role", "Current situation", "Concern",
+                   "Clinical context", "Background", "Candidate experience", "Company",
+                   "Profile", "Experience", "Subject", "Assessment", "Description",
+                   "Current draft", "Refinement instruction", "Search query", "Scope",
+                   "Product", "Ingredients", "Care setting", "Identified care needs",
+                   "Prior knowledge", "Context")
 
 
 def _content(prompt: str) -> str:

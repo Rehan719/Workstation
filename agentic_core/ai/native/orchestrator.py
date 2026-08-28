@@ -258,6 +258,7 @@ class NativeOrchestrator:
 
             return await asyncio.wait_for(_stream_generate(), timeout=budget)
         if name == "anthropic":
+            self._external_budget_check("anthropic")   # §6 (W335) — spend guard on the REAL spend path
             import anthropic
             client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
             msg = await client.messages.create(model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
@@ -265,12 +266,40 @@ class NativeOrchestrator:
                                                messages=[{"role": "user", "content": prompt}])
             return msg.content[0].text
         if name == "openai":
+            self._external_budget_check("openai")      # §6 (W335) — spend guard on the REAL spend path
             from openai import AsyncOpenAI
             client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             comp = await client.chat.completions.create(model="gpt-4o-mini", timeout=25,
                                                         messages=[{"role": "user", "content": prompt}])
             return comp.choices[0].message.content or ""
         return ""
+
+    _external_calls: List[float] = []   # timestamps of external attempts (sliding hour window)
+    _budget_logged_at: float = 0.0
+
+    def _external_budget_check(self, provider: str) -> None:
+        """§6 (W335) — an enabled external key is no longer UNBOUNDED: the audit found the
+        anti-runaway guard (GATEWAY_RPM) never covered the branch where external spend actually
+        happens. A sliding-hour cap (EXTERNAL_MAX_CALLS_PER_HOUR, default 60) bounds external
+        attempts; on breach the call is refused (raises → the cascade falls to the owned floor)
+        and the breach is UEG-logged once per window. Virtual-cost honesty: this bounds CALLS —
+        per-token spend caps stay an Owner configuration decision."""
+        cap = int(os.getenv("EXTERNAL_MAX_CALLS_PER_HOUR", "60"))
+        now = time.time()
+        cls = type(self)
+        cls._external_calls = [t for t in cls._external_calls if now - t < 3600]
+        if len(cls._external_calls) >= cap:
+            if now - cls._budget_logged_at > 300:
+                cls._budget_logged_at = now
+                try:
+                    from agentic_core.gaas.v5 import UEGLogger
+                    UEGLogger().log({"type": "ai.external_budget_breach", "provider": provider,
+                                     "cap_per_hour": cap, "attempts_in_window": len(cls._external_calls),
+                                     "note": "external call refused — serving falls to the owned floor"})
+                except Exception:
+                    pass
+            raise RuntimeError(f"external call budget reached ({cap}/hour) — falling to the owned floor")
+        cls._external_calls.append(now)
 
     def _immune_threat(self) -> str:
         """Current immune threat level — the living organism's self-protection signal."""

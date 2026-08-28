@@ -4375,6 +4375,49 @@ def test_fabric_remaining_resources_run_real(client):
     assert rr["federation_mesh"].get("operational") is True
 
 
+def test_round8_honesty_batch_contracts(client, monkeypatch):
+    # Round-8 Batch B — five confirmed findings closed, each asserted at its exact failure point:
+    # W335 (the avatar's external gate was key-presence only — user media shipped to OpenAI with
+    # AI_ALLOW_EXTERNAL off), W336 (floor outputs never contained the user's input; refine
+    # discarded the draft), W339 (self_investment never depleted — post() moved `accounts` while
+    # the check read `balances`), W342 (a 'fine wine subscription club' survived the §11 screen).
+    import base64
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-fake-w8b")
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "false")
+    r = client.post("/api/v1/avatar/transcribe",
+                    files={"file": ("a.webm", b"x", "audio/webm")})
+    assert r.status_code == 503 and "nothing was sent externally" in r.json()["detail"]
+    assert client.post("/api/v1/avatar/speak", json={"text": "hi"}).status_code == 503
+    img = base64.b64encode(b"img").decode()
+    r3 = client.post("/api/v1/avatar/chat", json={
+        "session_id": None, "message": "what is this?", "context": "general",
+        "image_base64": img}).json()
+    assert r3.get("image_is_external") is False        # never sent with the flag off
+    # W336 — groundedness + draft preservation
+    out = str(client.post("/api/v1/science/synthesise", json={
+        "research_question": "How does mycorrhizal-networking affect olive groves?",
+        "domain": "agronomy"}).json())
+    assert "mycorrhizal" in out.lower() or "olive" in out.lower()
+    DRAFT = "W8B-DRAFT-MARKER: my careful section.\nSecond section."
+    ref = client.post("/api/v1/refine", json={
+        "previous": DRAFT, "instruction": "add a risk section"}).json()["refined"]
+    assert "W8B-DRAFT-MARKER" in ref and "Second section." in ref
+    # W339 — the self_investment fund genuinely depletes
+    from agentic_core.economy import living_vsbs as lv
+    from agentic_core.economy.revenue import record_event
+    lv.register("vsb-w8b", "W8B", entity_type="waqf_ltd_hybrid", owner="Rehan")
+    record_event("vsb-w8b", "revenue", 1000.0, "marketplace", ref="w8b")
+    lv.operate_vsb("vsb-w8b")
+    flags = [lv.spend_self_investment("vsb-w8b", f"p{i}", amount=50.0).get("funded")
+             for i in range(12)]
+    assert any(f is False for f in flags)              # the fund runs dry — honestly
+    # W342 — the adversarial vocabulary
+    from agentic_core.api.compliance import screen_compliance
+    assert screen_compliance("a fine wine subscription club")["overall"] == "fail"
+    assert screen_compliance("an online casino with lottery draws")["overall"] == "fail"
+    assert screen_compliance("a spiritual retreat centre")["overall"] != "fail"
+
+
 def test_memory_no_cross_tenant_bleed_into_shipped_copy(client):
     # §17.5 invariant 1 (W332/W333) — the native memory was one GLOBAL pool with identity-blind
     # APIs: the audit reproduced one user's confidential prompt landing verbatim in another user's
@@ -4397,7 +4440,8 @@ def test_memory_no_cross_tenant_bleed_into_shipped_copy(client):
     # memory tenancy: every entry stamped; cross-tenant recall blocked, same-tenant preserved
     from agentic_core.ai.memory import memory
     import os, json as _json
-    raw = _json.loads(open(f"{os.environ['DATA_DIR']}/memory.json", encoding="utf-8").read())
+    # resolve via the app's own store path — CI runs without a DATA_DIR env var (CI-caught)
+    raw = _json.loads(open(memory.storage_path, encoding="utf-8").read())
     assert all((e.get("metadata") or {}).get("owner_id") for e in raw)
     memory.add_memory("User: my private alpha-strategy margin secret | AI: ok", owner_id="user-a")
     assert all("alpha-strategy" not in r

@@ -276,9 +276,14 @@ async def chat(request: ChatRequest):
             image_served_by = "ollama"
             image_is_external = False
         else:
-            # Optional external accelerant — only if a key is configured (never a dependency).
+            # §6 (W335) — the external accelerant requires the EXPLICIT platform opt-in, never key
+            # presence alone: previously a configured key shipped the user's image to OpenAI with
+            # AI_ALLOW_EXTERNAL off. And is_external is truthful the moment transmission is
+            # ATTEMPTED — a failed call still sent the image externally.
+            from agentic_core.ai.native.model_resource import external_allowed
             openai_key = os.getenv("OPENAI_API_KEY")
-            if openai_key:
+            if openai_key and external_allowed():
+                image_is_external = True   # transmission attempted = the image left the platform
                 try:
                     from openai import AsyncOpenAI
                     client = AsyncOpenAI(api_key=openai_key)
@@ -296,9 +301,13 @@ async def chat(request: ChatRequest):
                     image_note = vision_resp.choices[0].message.content or ""
                     image_understood = True
                     image_served_by = "openai"
-                    image_is_external = True
                 except Exception as e:
+                    image_served_by = "openai"
                     image_note = f"(Image attached but could not be analysed: vision backend unavailable — {str(e)[:150]})"
+            elif openai_key and not external_allowed():
+                image_note = ("(Image attached and received. An external vision key is configured but "
+                              "AI_ALLOW_EXTERNAL is off, so the image was NOT sent externally and was "
+                              "not analysed — set OLLAMA_VISION_MODEL for in-house vision.)")
             else:
                 # Honest: the image was received but NOT analysed — no fabricated description.
                 image_note = ("(Image attached and received, but no in-house vision model (set OLLAMA_VISION_MODEL, "
@@ -410,10 +419,17 @@ async def list_sessions():
 
 @router.post("/transcribe")
 async def transcribe(file: UploadFile = File(...)):
-    """Real Whisper transcription — requires a working OpenAI key."""
+    """Real Whisper transcription — the labelled EXTERNAL accelerant: requires BOTH a working
+    OpenAI key AND the explicit AI_ALLOW_EXTERNAL opt-in (§6, W335 — key presence alone
+    previously shipped the user's voice recording externally with the flag off). The in-house
+    default is browser-native Web Speech in the client (W325)."""
+    from agentic_core.ai.native.model_resource import external_allowed
     openai_key = os.getenv("OPENAI_API_KEY")
-    if not openai_key:
-        raise HTTPException(status_code=503, detail="Voice transcription requires a configured OPENAI_API_KEY.")
+    if not openai_key or not external_allowed():
+        raise HTTPException(status_code=503, detail=(
+            "External voice transcription is unavailable: requires a configured OPENAI_API_KEY "
+            "AND AI_ALLOW_EXTERNAL=true (Owner-gated). The browser's own speech recognition is "
+            "the in-house path — nothing was sent externally."))
     try:
         from openai import AsyncOpenAI
         client = AsyncOpenAI(api_key=openai_key)
@@ -429,10 +445,16 @@ async def transcribe(file: UploadFile = File(...)):
 
 @router.post("/speak")
 async def speak(request: SpeakRequest):
-    """Real TTS — requires a working OpenAI key. Returns raw MP3 audio bytes."""
+    """Real TTS — the labelled EXTERNAL accelerant: requires BOTH a working OpenAI key AND the
+    explicit AI_ALLOW_EXTERNAL opt-in (§6, W335). The in-house default is browser-native
+    speechSynthesis in the client (W325). Returns raw MP3 audio bytes."""
+    from agentic_core.ai.native.model_resource import external_allowed
     openai_key = os.getenv("OPENAI_API_KEY")
-    if not openai_key:
-        raise HTTPException(status_code=503, detail="Voice output requires a configured OPENAI_API_KEY.")
+    if not openai_key or not external_allowed():
+        raise HTTPException(status_code=503, detail=(
+            "External voice output is unavailable: requires a configured OPENAI_API_KEY AND "
+            "AI_ALLOW_EXTERNAL=true (Owner-gated). The browser's speechSynthesis is the in-house "
+            "path — nothing was sent externally."))
     try:
         from openai import AsyncOpenAI
         client = AsyncOpenAI(api_key=openai_key)

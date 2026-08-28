@@ -160,9 +160,21 @@ const MemorizationSuite = () => (
             <VitalRow label="Ease Factor" value="2.5 (SM-2 default)" />
             <VitalRow label="Interval" value="4 Days" />
             <VitalRow label="Repetitions" value="— (no history yet)" />
+            {/* W339/W329 — the REAL SM-2 review endpoint; success claimed only from the server's
+                actual computed interval, failure surfaced honestly. (The old code posted to a
+                nonexistent path and toasted a fabricated success regardless.) */}
             <Button onClick={async () => {
-               await fetch('/api/v1/qep/hifz/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ surah_id: 2, quality: 5 }) }).catch(() => {});
-               toast('Surah Al-Baqarah marked as mastered — SM-2 interval advanced to 4 days');
+               try {
+                  const r = await fetch('/api/v1/qep/hifz/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: 'local', ayah_ref: '2:255', quality: 5 }) });
+                  if (r.ok) {
+                     const d = await r.json();
+                     toast(`Review recorded — SM-2 next interval: ${d?.new_interval_days ?? '?'} day(s), next review ${d?.next_review_date ?? '?'}`);
+                  } else {
+                     toast(`Could not record the review (HTTP ${r.status}) — nothing was saved`);
+                  }
+               } catch {
+                  toast('Backend unreachable — nothing was saved');
+               }
             }} className="w-full bg-aura text-sovereign mt-4 font-black uppercase text-[10px]">Mark as Mastered</Button>
          </div>
       </Card>
@@ -172,9 +184,10 @@ const MemorizationSuite = () => (
 const QuranCompetitions = () => (
    <div className="space-y-8 animate-in fade-in duration-700">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-         <TournamentCard title="Ramadan Global" tier="Expert" players={1240} status="LIVE" />
-         <TournamentCard title="Linguistic Roots" tier="Novice" players={450} status="OPEN" />
-         <TournamentCard title="Sovereign Reciters" tier="All" players={890} status="UPCOMING" />
+         {/* W329/W339 — honest: illustrative previews; no real tournament backend exists yet */}
+         <TournamentCard title="Ramadan Global (preview)" tier="Expert" players={0} status="PLANNED" />
+         <TournamentCard title="Linguistic Roots (preview)" tier="Novice" players={0} status="PLANNED" />
+         <TournamentCard title="Sovereign Reciters (preview)" tier="All" players={0} status="PLANNED" />
       </div>
    </div>
 );

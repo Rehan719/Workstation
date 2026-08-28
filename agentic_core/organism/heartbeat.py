@@ -282,7 +282,9 @@ class OrganismHeartbeat:
             _cfg_org = (_load_config() or {}).get("organism") or {}
             if _cfg_org.get("metabolic_throttle"):
                 _ctx = _bb.organism_context()
-                if float(_ctx.get("atp_ratio") or 1.0) < 0.2:
+                # §8 (W341) — atp_ratio lives under the 'metabolic' key: the old top-level read
+                # always defaulted to 1.0, so the W310 defensive lever could NEVER fire.
+                if float(((_ctx.get("metabolic") or {}).get("atp_ratio")) or 1.0) < 0.2:
                     _throttled = True
                     actions.append("metabolic_throttle")
         except Exception:

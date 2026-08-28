@@ -84,8 +84,12 @@ def spend_self_investment(vsb_id: str, purpose: str, amount: float = DEV_SPEND_W
         bal = float((m.ledger.statement().get("balances") or {}).get("self_investment", 0.0))
         spent = round(min(max(bal, 0.0), float(amount)), 6)
         if spent > 0:
-            m.ledger.post("self_investment", "development_spend", spent,
-                          memo=f"reinvestment: {purpose[:120]}")
+            # §12 (W339) — the spend must hit the SAME surface the balance check reads: post()
+            # moves only the double-entry `accounts`, so the `balances` fund never depleted and
+            # every spend reported funded:true forever (audit-proven: 200 WST "spent" from a fund
+            # that never dropped). record() decrements `balances` AND makes the balanced posting.
+            m.ledger.record("self_investment", spent, kind="debit",
+                            memo=f"reinvestment: {purpose[:120]}")
         rec = {"vsb_id": vsb_id, "purpose": purpose[:120], "requested_wst": float(amount),
                "spent_wst": spent, "funded": spent > 0,
                "note": ("self_investment funded this development action" if spent > 0 else
