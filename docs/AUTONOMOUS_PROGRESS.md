@@ -1625,3 +1625,21 @@ shared 'platform' namespace (scoping without teeth). Wired end-to-end:
   second latent weakness: both memory tests posted {"message"} to a route whose model takes
   {"query"} — the stored prompt was EMPTY, so the W332 test's never-ships leg had passed
   vacuously. Both tests now store a REAL secret (the asserts have genuine teeth).
+
+---
+
+## ROUND 8 — batch F (W344: the real-cadence soak harness) — 2026-08-28
+
+**scripts/soak_organism.py** — the §8 organism observed at the TRUE 60s heartbeat (every prior
+observation fired beats sub-second): three living VSBs with distinct activity profiles (active =
+periodic labelled-synthetic virtual revenue · idle = nothing · mixed), auto_compliance +
+auto_economy + auto_ship on, sampling DCMS bytes · UEG events/verify-duration · per-entity git
+objects · beat wall-time. Refuses to run without an isolated DATA_DIR.
+
+**First honest sample (8 minutes at 60s cadence — a SAMPLE, not the full 1–2h soak, which the
+Owner can run with `--minutes 120`):** 8 beats; beat wall-time avg 1179ms (max 3763ms during the
+establishment-ship beats; steady-state 133–221ms); rotation fair at real cadence (cycles 4/4/3);
+UEG full recompute-verify 55ms @ 54 events, valid; DCMS 81KB after three establishment-ships
+(one-off birth cost, not per-beat growth). **The W340 churn fix is visible in the measurements:**
+the idle entity's repo stayed at its birth-ship git-object count (46, identical to mixed) while
+only the genuinely-active entity grew (84) — zero-activity beats now cost nothing.
