@@ -20,7 +20,9 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import Any, Dict, List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -78,10 +80,12 @@ async def ai_completion(req: AIQuery):
 
 
 @router.post("/api/v1/ai/query")
-async def ai_query(req: AIQuery):
+async def ai_query(req: AIQuery, user: dict | None = Depends(get_current_user)):
     prompt = req.query or req.prompt
     try:
-        out = await gateway.query(prompt, agent="solutions", timeout=30)
+        # §17.5 invariant 1 (W343) — identity reaches the memory layer
+        _owner = user.get("username") if isinstance(user, dict) else None
+        out = await gateway.query(prompt, agent="solutions", timeout=30, owner_id=_owner)
     except Exception as e:
         out = f"[unavailable: {e}]"
     return {"answer": out, "query": prompt[:120]}

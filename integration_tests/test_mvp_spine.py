@@ -4378,6 +4378,51 @@ def test_fabric_remaining_resources_run_real(client):
     assert rr["federation_mesh"].get("operational") is True
 
 
+def test_two_authenticated_users_memory_isolated(client, monkeypatch):
+    # §17.5 invariant 1 (W343) — the AUTH-ON acceptance test for the round's headline: the
+    # Round-8 audit ran the memory-bleed reproduction anonymous; this proves the fix under real
+    # authentication. User A's confidential chat must (1) never surface in user B's shipped
+    # website, (2) live in A's OWN namespace, (3) be unrecallable by B's queries in BOTH stores.
+    # Route wiring matters: without owner_id threading, authenticated chat landed in the shared
+    # platform namespace — scoping without teeth.
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    from agentic_core.auth import core as ac
+    users = ac._load_users()
+    for u in ("alice343", "bob343"):
+        users[u] = {"username": u, "role": "user", "hashed_password": ac._pwd_ctx.hash("pw-" + u)}
+    ac._save_users(users)
+    tok = {u: {"Authorization": "Bearer " + client.post(
+        "/api/v1/auth/token", data={"username": u, "password": "pw-" + u}).json()["access_token"]}
+        for u in ("alice343", "bob343")}
+    A, B = tok["alice343"], tok["bob343"]
+    SECRET = "KILIMANJARO-SAFFRON merger valuation"
+    client.post("/api/v1/ai/query", headers=A, json={
+        "query": f"Confidential: prepare talking points for the {SECRET}. Never disclose."})
+    # A's memory is in A's namespace; B cannot recall it in either store
+    from agentic_core.ai.memory import memory
+    assert any("KILIMANJARO" in r for r in
+               memory.query_memory("saffron merger valuation talking points", owner_id="alice343"))
+    assert all("KILIMANJARO" not in r for r in
+               memory.query_memory("saffron merger valuation talking points", owner_id="bob343"))
+    from agentic_core.ai.ceo.memory_v01 import memory_v01
+    memory_v01.add_exchange("AVATAR[general]: my private board notes ORCHID-NINE", "ok",
+                            owner_id="alice343")
+    assert all("ORCHID-NINE" not in d for d in
+               memory_v01.query("private board notes", owner_id="bob343"))
+    assert any("ORCHID-NINE" in d for d in
+               memory_v01.query("private board notes", owner_id="alice343"))
+    # B ships a website — A's secret never reaches B's public surfaces
+    est = client.post("/api/v1/genesis/establish", headers=B,
+                      json={"problem": "b343 pottery cooperative", "ship_output": False}).json()
+    vid = est["vsb_id"]
+    assert client.post(f"/api/v1/vsb/{vid}/website", headers=B).status_code == 200
+    m = client.get(f"/api/v1/vsb/{vid}/repo", headers=B).json()
+    files = ({f["path"]: f.get("content", "") for f in m["files"]}
+             if isinstance(m.get("files"), list) else (m.get("files") or {}))
+    assert "KILIMANJARO" not in " ".join(str(v) for v in files.values())
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+
+
 def test_round8_product_loop_contracts(client):
     # Round-8 Batch C — the operate→drift→re-ship loop made convergent and visible:
     # W340 (a zero-activity maintenance cycle no longer marks the shipped repo stale — the audit
@@ -4461,7 +4506,7 @@ def test_memory_no_cross_tenant_bleed_into_shipped_copy(client):
     # is scoped to the caller's namespace + platform. This proves both.
     SECRET = "ZANZIBAR-ORCHID acquisition takeover bid"
     client.post("/api/v1/ai/query", json={
-        "message": f"Confidential: hero tagline for the {SECRET}. Do not disclose the target."})
+        "query": f"Confidential: hero tagline for the {SECRET}. Do not disclose the target."})
     est = client.post("/api/v1/genesis/establish", json={
         "problem": "a honey cooperative for local beekeepers", "ship_output": False}).json()
     vid = est["vsb_id"]

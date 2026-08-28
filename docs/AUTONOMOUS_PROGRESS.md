@@ -1597,3 +1597,31 @@ Verification: backend probe 4/4 (maintenance≠stale · material=stale · owner-
 - **§7 reconfigure reachable (W344):** the W267 swarm-cascade PUT was fully functional but curl-only — NativeAI's saved-cascade cards gain an Edit affordance that loads the cascade into the existing designer and submits via PUT (non-2xx surfaced). Deferred honestly: the composition-identity edit (name/area/resources — minor; params editing already live) and a cascade DELETE endpoint, noted for the next round.
 - **Omnimedia catalogue truthful (W344):** the fabric card claimed it 'renders … mp4/mp3/png/svg: infographics, video, audio, digital-twin' — live probe: each → 400. Rewritten to match /output-formats exactly: 10 live in-house formats; mp4/mp3/png/svg catalogue targets NOT yet produced.
 - **Staleness contract updates:** two pre-W340 tests asserted any-cycle-marks-stale — updated to seed real revenue first (material drift), making them stronger; 3/3 green together.
+
+---
+
+## ROUND 8 — batch E (W343: identity to the memory layer + the auth-on acceptance test) — 2026-08-28
+
+The acceptance test immediately caught that Batch A's scoping had NO TEETH under authentication: the
+`owner_id` plumbing existed, but no ROUTE passed it —
+
+---
+
+## ROUND 8 — batch E (W343: the auth-on acceptance) — identity reaches the memory layer — 2026-08-28
+
+The audit's systematically-skipped variant, now closed — and it immediately caught a REAL gap in
+Batch A: the owner_id plumbing existed but NO ROUTE passed it, so authenticated chat landed in the
+shared 'platform' namespace (scoping without teeth). Wired end-to-end:
+
+- **Route threading:** both /api/v1/ai/query routes and the avatar /chat gained the authenticated
+  user dependency and pass owner_id into gateway.query/query_meta (auth-off → platform namespace,
+  the honest single-user semantic; auth-on → the caller's own namespace).
+- **memory_v01 tenancy (the second store):** add_exchange stamps owner_id metadata (ChromaDB +
+  the in-process fallback), query filters with a where-clause to the caller's namespace + platform
+  — the avatar's grounded conversations can no longer be recalled cross-tenant.
+- **The flagship acceptance test** (test_two_authenticated_users_memory_isolated): under REAL
+  AUTH_ENABLED with two bearer users, A's confidential text (1) lives in A's namespace, (2) is
+  unrecallable by B in BOTH stores, (3) never reaches B's shipped website. Writing it exposed a
+  second latent weakness: both memory tests posted {"message"} to a route whose model takes
+  {"query"} — the stored prompt was EMPTY, so the W332 test's never-ships leg had passed
+  vacuously. Both tests now store a REAL secret (the asserts have genuine teeth).

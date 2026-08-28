@@ -28,8 +28,10 @@ import os
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import Response
+
+from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -254,7 +256,10 @@ async def create_session():
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, user: dict | None = Depends(get_current_user)):
+    # §17.5 invariant 1 (W343) — the avatar's identity-blind route was the widest memory-bleed
+    # surface: every conversation (with VSB grounding baked into the prompt) entered the global
+    # pool twice. The authenticated caller's namespace now scopes BOTH stores.
     """Real text (and, when a multimodal key is available, image-aware) chat turn."""
     session_id = _get_or_create_session(request.session_id)
     session = _sessions[session_id]
@@ -328,12 +333,15 @@ async def chat(request: ChatRequest):
 
     # In-house-first via the native fabric — always answers (native floor) and reports which
     # OWNED resource served it; bounded so the avatar stays responsive.
-    meta = await gateway.query_meta(prompt, agent=f"avatar:{request.context}", timeout=20.0)
+    _owner = user.get("username") if isinstance(user, dict) else None
+    meta = await gateway.query_meta(prompt, agent=f"avatar:{request.context}", timeout=20.0,
+                                    owner_id=_owner)
     response_text = meta.get("output", "")
 
     history.append({"role": "user", "content": request.message})
     history.append({"role": "assistant", "content": response_text})
-    memory_v01.add_exchange(f"AVATAR[{request.context}]: {request.message}", response_text)
+    memory_v01.add_exchange(f"AVATAR[{request.context}]: {request.message}", response_text,
+                            owner_id=_owner)   # W343 — tenant-stamped
 
     return ChatResponse(
         session_id=session_id,
