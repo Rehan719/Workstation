@@ -70,11 +70,15 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str) -> Opt
         title = _HOLD_TITLE_PREFIX + vsb_id
         holds = [c for c in (cca._load_change(x["cca_id"]) or {} for x in cca._list_changes())
                  if c and c.get("title") == title]
-        # W344 CI-hardening — timestamps are second-resolution, so an APPROVED hold must win a
-        # tie against a same-second submitted duplicate (otherwise a granted approval can be
-        # shadowed and the distribution stays held forever — observed once on CI).
-        latest = max(holds, key=lambda c: (c.get("submitted_at", ""),
-                                           c.get("status") == "approved"), default=None)
+        # W344/W345 CI-hardening — an Owner APPROVAL must never be shadowed by sibling hold
+        # records, whatever their order or status: CI twice produced duplicate holds (second-
+        # resolution timestamps; a later rejected/submitted sibling outranked the approved one
+        # and the distribution stayed held after a granted approval). One approval authorises
+        # one material cycle, full stop — so an approved hold is searched for FIRST; only when
+        # none exists does the latest record's status govern.
+        approved = [c for c in holds if c.get("status") == "approved"]
+        latest = (max(approved, key=lambda c: c.get("submitted_at", ""), default=None)
+                  or max(holds, key=lambda c: c.get("submitted_at", ""), default=None))
         if latest and latest.get("status") == "approved":
             # consume the approval — one approval authorises one material cycle
             latest["status"] = "implemented"
