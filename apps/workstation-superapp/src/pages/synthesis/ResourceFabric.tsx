@@ -166,6 +166,7 @@ export const ResourceFabric: React.FC = () => {
   const [filterClass, setFilterClass] = useState<string>('');
   const [selected, setSelected] = useState<string[]>([]);
   const [name, setName] = useState('');
+  const [actErr, setActErr] = useState('');   // W344 — actions never fail silently
   const [usageArea, setUsageArea] = useState('synthesis');
   const [composing, setComposing] = useState(false);
   const [compositions, setCompositions] = useState<Composition[]>([]);
@@ -231,7 +232,7 @@ export const ResourceFabric: React.FC = () => {
         body: JSON.stringify({ name: name || '(unnamed)', resource_ids: selected, usage_area: usageArea, config: buildConfig() }),
       });
       setSim(await r.json());
-    } catch { /* ignore */ }
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setSimulating(false);
   };
 
@@ -255,7 +256,7 @@ export const ResourceFabric: React.FC = () => {
         body: JSON.stringify({ objective: runObjective || undefined, params: cleanRunParams() }),
       });
       setRunResult(await r.json());
-    } catch { /* ignore */ }
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setRunningComp(false);
   };
 
@@ -271,7 +272,7 @@ export const ResourceFabric: React.FC = () => {
         body: JSON.stringify({ config: cfg }),
       });
       loadCompositions();
-    } catch { /* ignore */ }
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setSavingParams(false);
   };
 
@@ -280,7 +281,7 @@ export const ResourceFabric: React.FC = () => {
       await fetch(`/api/v1/resources/compositions/${cid}`, { method: 'DELETE' });
       if (runCompId === cid) setRunCompId(null);
       loadCompositions();
-    } catch { /* ignore */ }
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
 
   const loadRunsHistory = () =>
@@ -297,12 +298,13 @@ export const ResourceFabric: React.FC = () => {
       });
       setName(''); setSelected([]); setSim(null); setParamConfig({});
       loadCompositions();
-    } catch { /* ignore */ }
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setComposing(false);
   };
 
   return (
     <div className="space-y-10 pb-24">
+      {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Resource Fabric</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Resource Fabric</h1>

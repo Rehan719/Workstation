@@ -801,8 +801,11 @@ def test_birth_is_alive_and_consequences(client):
     assert fc.get("cycle") == 1 or fc.get("cycle_ran") is False     # ran, or held honestly
     ship_p = data_path("vsb_repos") / f"{vid}.ship.json"
     assert _json.loads(ship_p.read_text(encoding="utf-8")).get("stale") is False   # vitals BEFORE ship
-    # autonomous drift after the ship → stale, with the reason
+    # autonomous drift after the ship → stale, with the reason. W340 — drift requires MATERIAL
+    # change (a zero-activity maintenance cycle no longer marks stale), so seed real activity.
     from agentic_core.economy.living_vsbs import operate_vsb
+    from agentic_core.economy.revenue import record_event as _rec_ev
+    _rec_ev(vid, "revenue", 250.0, "marketplace", ref="w309-drift")
     op = operate_vsb(vid)
     assert op and op.get("error") is None
     ship2 = _json.loads(ship_p.read_text(encoding="utf-8"))
@@ -4375,6 +4378,37 @@ def test_fabric_remaining_resources_run_real(client):
     assert rr["federation_mesh"].get("operational") is True
 
 
+def test_round8_product_loop_contracts(client):
+    # Round-8 Batch C — the operate→drift→re-ship loop made convergent and visible:
+    # W340 (a zero-activity maintenance cycle no longer marks the shipped repo stale — the audit
+    # measured perpetual 5-surface re-ship churn per beat; ties in the operate rotation break by
+    # fewest cycles so bursts cannot starve later-registered entities — observed 23×/8×/7×),
+    # W338 (an OWNER-driven economic cycle marks drift too — previously only autonomous cycles
+    # did, so a user-run cycle silently outdated the shipped body).
+    from agentic_core.economy import living_vsbs as lv
+    from agentic_core.economy.revenue import record_event
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w8c date-farm cooperative", "ship_output": False}).json()
+    vid = est["vsb_id"]
+    client.post(f"/api/v1/vsb/{vid}/repo/ship")
+    lv.operate_vsb(vid)                                       # zero activity
+    assert client.get(f"/api/v1/vsb/{vid}/repo/ship").json().get("stale") is False
+    record_event(vid, "revenue", 500.0, "marketplace", ref="w8c")
+    lv.operate_vsb(vid)                                       # real activity
+    assert client.get(f"/api/v1/vsb/{vid}/repo/ship").json().get("stale") is True
+    client.post(f"/api/v1/vsb/{vid}/repo/ship")
+    client.post("/api/v1/economy/cycle", json={"vsb_id": vid, "revenue": 800.0})
+    s3 = client.get(f"/api/v1/vsb/{vid}/repo/ship").json()
+    assert s3.get("stale") is True and "owner-driven" in str(s3.get("stale_reason", ""))
+    # burst-fair rotation
+    for n in ("c1", "c2", "c3"):
+        lv.register(f"vsb-w8c-{n}", f"W8C {n}", entity_type="waqf_ltd_hybrid", owner="Rehan")
+    from collections import Counter
+    ops = [(lv.operate_one() or {}).get("vsb_id") for _ in range(9)]
+    cnt = Counter(o for o in ops if o and o.startswith("vsb-w8c"))
+    assert len(cnt) == 3 and max(cnt.values()) - min(cnt.values()) <= 1
+
+
 def test_round8_honesty_batch_contracts(client, monkeypatch):
     # Round-8 Batch B — five confirmed findings closed, each asserted at its exact failure point:
     # W335 (the avatar's external gate was key-presence only — user media shipped to OpenAI with
@@ -4812,6 +4846,8 @@ def test_stale_repo_loop_closes_and_records_honestly(client):
     vid = est.get("vsb_id") or (est.get("entity") or {}).get("vsb_id")
     assert vid and est.get("initial_ship", {}).get("shipped")
     from agentic_core.economy import living_vsbs as lv
+    from agentic_core.economy.revenue import record_event as _rec319
+    _rec319(vid, "revenue", 250.0, "marketplace", ref="w319t-drift")   # W340 — drift needs MATERIAL change
     lv.operate_vsb(vid)                                            # autonomous drift
     m = client.get(f"/api/v1/vsb/{vid}/repo").json()
     ss = m.get("ship_status") or {}

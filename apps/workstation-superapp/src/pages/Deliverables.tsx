@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
+import { downloadExport } from '../lib/download';
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
@@ -227,10 +228,14 @@ export const Deliverables: React.FC = () => {
                   className="text-[11px] bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-300">
                   {formats.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
                 </select>
-                <a href={`/api/v1/deliverables/${selected.id}/export?format=${dlFormat}`} download
+                {/* W338 — bearer-carrying download (a raw anchor 401s under auth) */}
+                <button type="button" onClick={async () => {
+                    try { await downloadExport(`/api/v1/deliverables/${selected.id}/export?format=${dlFormat}`, `${selected.title || 'deliverable'}.${dlFormat}`); }
+                    catch (e: any) { alert(e?.message ?? 'Export failed'); }
+                  }}
                   className="flex items-center gap-1.5 bg-aura text-sovereign text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90">
                   <Download size={12} /> Download
-                </a>
+                </button>
               </div>
               {/* §3A (W308) — DEVELOP: the refined result persists as the next version */}
               <div className="mt-2 flex items-end gap-2">

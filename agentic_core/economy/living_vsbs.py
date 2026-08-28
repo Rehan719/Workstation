@@ -60,8 +60,13 @@ def operate_one() -> Optional[Dict[str, Any]]:
     d = _load()
     if not d:
         return None
-    # pick the least-recently-operated (None sorts first)
-    target = sorted(d.values(), key=lambda v: (v.get("last_operated") or ""))[0]
+    # pick the least-recently-operated (None sorts first). §8 (W340) — FAIR under bursts: the
+    # second-resolution timestamps tie when beats fire sub-second (the audit observed 23×/8×/7×
+    # starvation), so ties break by FEWEST operating cycles, then registration order — every
+    # entity gets tended even under a burst of manual beats.
+    target = sorted(d.values(), key=lambda v: (v.get("last_operated") or "",
+                                               int(v.get("operating_cycles", 0)),
+                                               v.get("registered_at", "")))[0]
     return operate_vsb(target["vsb_id"])
 
 
@@ -185,13 +190,17 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
         target["last_distributable"] = report.get("distributable_profit")
         d[vsb_id] = target
         _save(d)
-        # §13 (W309) — autonomous DRIFT is honest: a real operating cycle moved the entity's living
-        # record, so an already-shipped repo is marked stale (never silently outdated).
-        try:
-            from agentic_core.api.vsb import mark_repo_stale
-            mark_repo_stale(vsb_id, f"autonomous operating cycle {target['operating_cycles']}")
-        except Exception:
-            pass
+        # §13 (W309/W340) — autonomous DRIFT is honest AND material: only a cycle that genuinely
+        # moved the entity's shipped-visible state marks the repo stale. A zero-activity
+        # maintenance cycle changed nothing a page shows — marking it stale caused a perpetual
+        # stale→re-ship churn under auto_economy+auto_ship (full 5-surface regeneration + a git
+        # commit per beat, audit-measured 81KB DCMS growth in 80s).
+        if pend["events"] or (report.get("distributable_profit") or 0) > 0:
+            try:
+                from agentic_core.api.vsb import mark_repo_stale
+                mark_repo_stale(vsb_id, f"autonomous operating cycle {target['operating_cycles']}")
+            except Exception:
+                pass
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle": target["operating_cycles"],
                 "distributable_wst": report.get("distributable_profit"),
                 "revenue_events_consumed": pend["events"],

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
+import { openExport } from '../../lib/download';
 import { Card, Button } from '@workstation/ui';
 import { AttachDocument, appendDocBlock } from '../../components/AttachDocument';
 import { DictateButton } from '../../components/DictateButton';
@@ -211,7 +212,8 @@ export const GenesisJourney: React.FC = () => {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const d = await res.json();
-      window.open(`/api/v1/deliverables/${d.id}/export?format=${kind === 'presentation' ? 'slides' : 'html'}`, '_blank');
+      // W338 — bearer-carrying open (a raw window.open 401s under auth)
+      await openExport(`/api/v1/deliverables/${d.id}/export?format=${kind === 'presentation' ? 'slides' : 'html'}`);
     } catch (e: any) {
       setError(e?.message ?? String(e));
     }
@@ -280,8 +282,8 @@ export const GenesisJourney: React.FC = () => {
     setRepoBusy(true); setRepo(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/repo`, { method: 'POST' });
-      if (res.ok) setRepo(await res.json());
-    } catch { /* ignore */ }
+      if (res.ok) setRepo(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+    } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setRepoBusy(false);
   };
 
@@ -291,8 +293,8 @@ export const GenesisJourney: React.FC = () => {
     setSiteBusy(true); setSite(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/website`, { method: 'POST' });
-      if (res.ok) setSite(await res.json());
-    } catch { /* ignore */ }
+      if (res.ok) setSite(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+    } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setSiteBusy(false);
   };
 
@@ -302,8 +304,8 @@ export const GenesisJourney: React.FC = () => {
     setWebappBusy(true); setWebapp(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/webapp`, { method: 'POST' });
-      if (res.ok) setWebapp(await res.json());
-    } catch { /* ignore */ }
+      if (res.ok) setWebapp(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+    } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setWebappBusy(false);
   };
 
@@ -313,8 +315,8 @@ export const GenesisJourney: React.FC = () => {
     setPwaBusy(true); setPwa(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/mobile`, { method: 'POST' });
-      if (res.ok) setPwa(await res.json());
-    } catch { /* ignore */ }
+      if (res.ok) setPwa(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+    } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setPwaBusy(false);
   };
 
@@ -324,8 +326,8 @@ export const GenesisJourney: React.FC = () => {
     setPackBusy(true); setPack(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/board-pack`, { method: 'POST' });
-      if (res.ok) setPack(await res.json());
-    } catch { /* ignore */ }
+      if (res.ok) setPack(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+    } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setPackBusy(false);
   };
 
@@ -333,7 +335,7 @@ export const GenesisJourney: React.FC = () => {
   const openGates = async () => {
     setGatesOpen(true);
     if (!vsb) return;
-    try { setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json())); } catch { /* */ }
+    try { setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json())); } catch { setError('Could not load review gates — backend unreachable.'); }
   };
   const toggleGate = async (stageId: string) => {
     if (!vsb || !gates) return;
@@ -342,8 +344,8 @@ export const GenesisJourney: React.FC = () => {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stages: next }),
       });
-      if (res.ok) setGates(await res.json());
-    } catch { /* */ }
+      if (res.ok) setGates(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+    } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
   const decideGate = async (stage: string, decision: 'approve' | 'reject') => {
     if (!vsb) return;
@@ -352,7 +354,7 @@ export const GenesisJourney: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decision }),
       });
       setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json()));
-    } catch { /* */ }
+    } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
 
   const phases = result ? [

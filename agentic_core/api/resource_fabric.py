@@ -287,10 +287,12 @@ _REGISTRY: List[Dict[str, Any]] = [
     # Workstation's OWN omnimedia output factory — surfaced into the fabric so the swarm/delivery
     # pipeline can render deliverables across formats (agentic_core.omnimedia).
     _R("omnimedia", "Omnimedia Output Factory", "output_media", "generator",
-       "Workstation's own multimedia output factory — renders deliverables across formats "
-       "(pptx/pdf/docx/xlsx/html/mp4/mp3/png/svg): infographics, video, audio, digital-twin, "
-       "documents, dashboards. Markdown export is live; richer formats via the omnimedia generators.",
-       ["multi-format output", "infographic", "video", "audio", "document", "dashboard"],
+       # W344 — HONEST: matches /output-formats exactly. 10 LIVE in-house renders; binary AV
+       # formats are catalogue targets not yet produced — never advertised as rendering.
+       "Workstation's own output factory — 10 LIVE in-house formats rendered via /export?format= "
+       "(md · html · slides · txt · json · self-playing video-html · pdf · docx · pptx · xlsx). "
+       "mp4/mp3/png/svg are catalogue targets NOT yet produced (honestly listed, never faked).",
+       ["multi-format output", "document", "presentation", "spreadsheet", "self-playing video (HTML)"],
        {"deliverable_id": "str", "format": "str"}, "/api/v1/deliverables/output-formats",
        ["synthesis", "delivery", "commercialisation", "forge"], methods=("GET",)),
 

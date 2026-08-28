@@ -111,6 +111,15 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
                                   req.revenue, req.costs, req.reserve_rate, source="api")
     if isinstance(result, dict):
         result["attribution"] = {"owner": owner, "entity_type": entity_type, "basis": attribution}
+        # §13 (W338) — USER-driven cycles drift the living record too: a cycle that genuinely
+        # moved the ledger marks the shipped repo stale (the audit found only AUTONOMOUS cycles
+        # marked drift — an owner-run cycle silently outdated the shipped body).
+        if result.get("cycle") is not None and float(req.revenue or 0) > 0:
+            try:
+                from agentic_core.api.vsb import mark_repo_stale
+                mark_repo_stale(req.vsb_id, "owner-driven economic cycle")
+            except Exception:
+                pass
     return result
 
 

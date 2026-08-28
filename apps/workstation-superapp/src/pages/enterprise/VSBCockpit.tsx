@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { downloadExport } from '../../lib/download';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
 import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2, Paperclip, Download } from 'lucide-react';
@@ -79,6 +80,14 @@ export const VSBCockpit: React.FC = () => {
     }).catch(() => {});
   }, []);
 
+  // §13 (W338) — drift honesty reaches the USER: the shipped-body manifest (stale flag + reason)
+  // is read on selection and after every ship — previously no UI ever read the stale flag, so a
+  // drifted shipped body was invisible end-to-end.
+  const [shipState, setShipState] = useState<Dict | null>(null);
+  const loadShipState = (vid: string) =>
+    axios.get(`/api/v1/vsb/${vid}/repo/ship`).then(r => setShipState(r.data))
+      .catch(() => setShipState(null));   // 404 = never shipped — honestly nothing to show
+
   useEffect(() => {
     if (!selected) return;
     setLoading(true); setTx(null); setMessages([]); setLastCycle(null);
@@ -88,11 +97,13 @@ export const VSBCockpit: React.FC = () => {
       axios.get(`/api/v1/economy/ledger/${selected}`).then(r => r.data).catch(() => null),
     ]).then(([d, p, l]) => { setDetail(d); setPlan(p); setLedger(l); setLoading(false); });
     loadDeliverables(selected);
+    loadShipState(selected);
   }, [selected]);
 
   // W299 — the §13 GROWTH machinery reaches the user for THEIR entity (repo ship · repo cascade ·
   // evolve had zero UI callers); W300 — instruct THEIR Chief (apex delegation scoped to this VSB).
   const [growthBusy, setGrowthBusy] = useState('');
+  const [actErr, setActErr] = useState('');   // W344 — actions never fail silently
   const [growthResult, setGrowthResult] = useState<Dict | null>(null);
   const [chiefText, setChiefText] = useState('');
   const [chiefBusy, setChiefBusy] = useState(false);
@@ -108,6 +119,7 @@ export const VSBCockpit: React.FC = () => {
       const body = kind === 'evolve' ? { trigger: 'cockpit' } : {};
       const r = await axios.post(url, body);
       setGrowthResult({ kind, ...r.data });
+      loadShipState(selected);   // W338 — the staleness banner reflects the ship immediately
     } catch (e: any) {
       setGrowthResult({ kind, error: e?.response?.data?.detail ?? e?.message ?? 'failed' });
     }
@@ -138,7 +150,7 @@ export const VSBCockpit: React.FC = () => {
       const r = await axios.post('/api/v1/transformation/orchestrate',
         { objective, scope: selected, owner_id: detail?.owner_id || 'Owner', deep: false });
       setTx(r.data);
-    } catch { /* keep */ }
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setTxRunning(false);
   };
 
@@ -231,7 +243,7 @@ export const VSBCockpit: React.FC = () => {
       setLastCycle(r.data.cycle || null);
       const l = await axios.get(`/api/v1/economy/ledger/${selected}`).then(x => x.data).catch(() => null);
       if (l) setLedger(l);
-    } catch { /* keep */ }
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setCycling(false);
   };
 
@@ -242,7 +254,7 @@ export const VSBCockpit: React.FC = () => {
       const r = await axios.post('/api/v1/bto/configure',
         { entity_name: detail?.name || 'Enterprise', components: btoSel, product_resources: [] });
       setBtoBlueprint(r.data);
-    } catch { /* keep */ }
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setBtoBusy(false);
   };
 
@@ -255,6 +267,7 @@ export const VSBCockpit: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-24">
+      {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Living VSB Enterprise</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">VSB Cockpit</h1>
@@ -508,8 +521,12 @@ export const VSBCockpit: React.FC = () => {
                         <p className="text-sm font-black text-white truncate">{d.title}</p>
                         <p className="text-[9px] text-slate-500 uppercase tracking-widest">{d.type} · {d.versions} version{d.versions === 1 ? '' : 's'} · {d.served_by || 'native'}</p>
                       </div>
-                      <a href={`/api/v1/deliverables/${d.id}/export?format=${delivFormat}`} download
-                        className="shrink-0 text-[10px] font-black uppercase text-sovereign bg-aura px-3 py-1.5 rounded-lg flex items-center gap-1 hover:opacity-90"><Download size={11} /> Export</a>
+                      {/* W338 — bearer-carrying export (a raw anchor 401s under auth) */}
+                      <button type="button" onClick={async () => {
+                          try { await downloadExport(`/api/v1/deliverables/${d.id}/export?format=${delivFormat}`, `${d.title || 'deliverable'}.${delivFormat}`); }
+                          catch (e: any) { alert(e?.message ?? 'Export failed'); }
+                        }}
+                        className="shrink-0 text-[10px] font-black uppercase text-sovereign bg-aura px-3 py-1.5 rounded-lg flex items-center gap-1 hover:opacity-90"><Download size={11} /> Export</button>
                     </div>
                   ))}
                   {deliverables.length === 0 && <p className="text-slate-600 text-xs">No deliverables yet — produce one above.</p>}
@@ -599,6 +616,21 @@ export const VSBCockpit: React.FC = () => {
           {/* Transformation */}
           {tab === 'transform' && (
             <div className="space-y-4">
+              {/* §13 (W338) — drift honesty: the stale flag is finally VISIBLE, with the re-ship
+                  action right beside it. Amber = the shipped body lags the living record. */}
+              {shipState?.stale && (
+                <Card className="p-4 border-amber-500/40 bg-amber-500/5">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-amber-400">Shipped body is STALE</p>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    The living record moved since the last ship{shipState?.stale_reason ? <> — {String(shipState.stale_reason)}</> : null}
+                    {shipState?.stale_since ? <> (since {String(shipState.stale_since)})</> : null}.
+                    Use “Ship the repo” below to regenerate every surface from the current life.
+                  </p>
+                </Card>
+              )}
+              {shipState && !shipState.stale && (
+                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500/80">Shipped body is current (shipped {String(shipState.shipped_at ?? '')})</p>
+              )}
               {/* W299 — §13 growth machinery, now reachable for THIS entity (previously API-only) */}
               <Card className="p-6 border-emerald-500/30">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-2">Grow the living enterprise (§13)</h4>

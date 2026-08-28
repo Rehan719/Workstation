@@ -294,14 +294,28 @@ export const NativeAI: React.FC = () => {
   const addStage = () => setStages(s => [...s, { role: '', instruction: '' }]);
   const removeStage = (i: number) => setStages(s => s.filter((_, idx) => idx !== i));
 
+  // §7 (W344) — RECONFIGURE from the UI: the PUT reconfigure path (W267) was fully functional
+  // but reachable by curl only — no page offered an Edit. editingId switches the designer between
+  // define (POST) and reconfigure (PUT) of the loaded cascade.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const startEdit = (c: SavedCascade) => {
+    setEditingId(c.id);
+    setName(c.name);
+    setStages(c.stages.map(s => ({ role: s.role, instruction: s.instruction })));
+  };
+
   const saveCascade = async () => {
     setSaving(true);
     try {
       const valid = stages.filter(s => s.role.trim() && s.instruction.trim());
-      await fetch('/api/v1/resources/swarm/define', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, context, stages: valid, usage_area: 'synthesis' }),
+      const url = editingId ? `/api/v1/resources/swarm/${editingId}` : '/api/v1/resources/swarm/define';
+      const r = await fetch(url, {
+        method: editingId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingId ? { name, stages: valid }
+                                       : { name, context, stages: valid, usage_area: 'synthesis' }),
       });
+      if (!r.ok) setError(`Save failed (HTTP ${r.status}).`);   // W344 — never a silent click
+      setEditingId(null);
       await loadCascades();
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setSaving(false);
@@ -611,9 +625,15 @@ export const NativeAI: React.FC = () => {
                       <p className="font-black text-white text-sm">{c.name}</p>
                       <p className="text-[9px] text-slate-600 font-bold uppercase mt-0.5">{c.stages.length} stages · {c.stages.map(s => s.role).join(' → ')}</p>
                     </div>
-                    <Button onClick={() => runSaved(c.id)} disabled={runningId === c.id} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[11px]">
-                      {runningId === c.id ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Run
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {/* §7 (W344) — the reconfigure path, finally reachable from the page */}
+                      <Button onClick={() => startEdit(c)} className="bg-slate-900 text-slate-300 text-[11px]">
+                        {editingId === c.id ? 'Editing…' : 'Edit'}
+                      </Button>
+                      <Button onClick={() => runSaved(c.id)} disabled={runningId === c.id} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[11px]">
+                        {runningId === c.id ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Run
+                      </Button>
+                    </div>
                   </div>
                   {savedRun?.id === c.id && <Trace run={savedRun.run} />}
                 </Card>

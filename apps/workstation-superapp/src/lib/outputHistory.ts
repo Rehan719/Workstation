@@ -13,6 +13,10 @@ export interface OutputRecord {
   output: string;      // the result text (capped)
   provenance?: { served_by?: string; is_external?: boolean } | null;
   vsb_id?: string;    // W303 - links a genesis record to its living entity
+  // §3A (W337) — refinement HISTORY: `output` is always the latest text; each refine pushes the
+  // prior text here, so 'version n+1 persisted' is structural and no draft is ever lost.
+  versions?: { output: string; refinedAt: number }[];
+  refineCount?: number;
   ts: number;
 }
 
@@ -49,6 +53,10 @@ export function saveOutput(rec: Omit<OutputRecord, 'id' | 'ts'> & { id?: string;
     input: rec.input ? rec.input.slice(0, MAX_INPUT_CHARS) : undefined,
     output: (rec.output || '').slice(0, MAX_OUTPUT_CHARS),
     provenance: rec.provenance ?? null,
+    // W337 — cap version history (latest 5 priors, each output-capped) so quota stays sane
+    versions: (rec.versions ?? []).slice(-5).map(v => ({
+      output: (v.output || '').slice(0, MAX_OUTPUT_CHARS), refinedAt: v.refinedAt })),
+    refineCount: rec.refineCount ?? 0,
   };
   const next = [record, ...read().filter(r => r.id !== record.id)].slice(0, MAX_ENTRIES);
   write(next);

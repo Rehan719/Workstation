@@ -5,7 +5,7 @@ import { Card, Button } from '@workstation/ui';
 import { Loader2, Sparkles, Copy, Download, Check, Rocket } from 'lucide-react';
 import { AttachDocument, appendDocBlock } from './AttachDocument';
 import { DictateButton } from './DictateButton';
-import { saveOutput } from '../lib/outputHistory';
+import { listOutputs, saveOutput } from '../lib/outputHistory';
 import { getPrefs } from '../lib/userPrefs';
 
 export interface DomainField {
@@ -86,6 +86,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const [refinedText, setRefinedText] = useState<string | null>(null);
   const [refineProv, setRefineProv] = useState<Record<string, any> | null>(null);
   const [refineCount, setRefineCount] = useState(0);
+  const [historyId, setHistoryId] = useState<string | null>(null);   // W337 — the My Work record refines update
 
   const run = async () => {
     setBusy(true); setError(''); setResult(null);
@@ -103,8 +104,9 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       // E3 — save to "My Work" history so the output is revisitable (not lost on navigate).
       try {
         const text = String(r.data?.[resultKey] ?? r.data?.deliverable ?? JSON.stringify(r.data, null, 2));
-        saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
+        const rec = saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
           input: primary ? form[primary] : undefined, output: text, provenance: r.data?.ai_provenance ?? null });
+        setHistoryId(rec.id);   // W337 — refines update THIS record in place
       } catch { /* history is best-effort */ }
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Request failed — the backend may be unavailable.');
@@ -123,11 +125,25 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
     setRefining(true);
     try {
       const r = await axios.post('/api/v1/refine', { previous: displayText, instruction: refineText, context: title });
-      setRefinedText(String(r.data.refined ?? displayText));
+      const newText = String(r.data.refined ?? displayText);
+      setRefinedText(newText);
       setRefineProv(r.data.ai_provenance ?? null);
       setRefineCount(c => c + 1);
       setRefineText('');
-    } catch { /* keep current output */ }
+      // §3A (W337) — the refined version PERSISTS: My Work previously kept only v1, so every
+      // refinement evaporated on navigation despite the page's 'nothing is lost' promise.
+      try {
+        if (historyId) {
+          const prior = listOutputs().find(x => x.id === historyId);
+          saveOutput({ ...(prior ?? { kind: 'domain-tool' as const, title, domain: domainSeed, endpoint }),
+            id: historyId, output: newText, provenance: r.data.ai_provenance ?? prior?.provenance ?? null,
+            versions: [...(prior?.versions ?? []), { output: displayText, refinedAt: Date.now() }],
+            refineCount: (prior?.refineCount ?? 0) + 1 });
+        }
+      } catch { /* history is best-effort */ }
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Refine failed — the backend may be unavailable. Your current output is unchanged.');   // W337 — never a silent click
+    }
     setRefining(false);
   };
 

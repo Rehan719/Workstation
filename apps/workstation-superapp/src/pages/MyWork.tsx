@@ -79,6 +79,8 @@ export const MyWork: React.FC = () => {
                         <Clock size={9} /> {new Date(rec.ts).toLocaleString()}
                         {rec.domain ? <span className="text-slate-500">· {rec.domain}</span> : null}
                         {rec.provenance ? <span className={rec.provenance.is_external ? 'text-amber-400' : 'text-emerald-400'}>· {rec.provenance.is_external ? `via ${rec.provenance.served_by}` : 'in-house'}</span> : null}
+                        {/* W337 — refinement history is visible: the latest text IS the record; priors kept */}
+                        {(rec.refineCount ?? 0) > 0 ? <span className="text-aura">· v{(rec.refineCount ?? 0) + 1} ({rec.versions?.length ?? 0} prior kept)</span> : null}
                       </p>
                     </div>
                   </button>
