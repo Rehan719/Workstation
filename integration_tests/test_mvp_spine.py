@@ -5156,7 +5156,7 @@ def test_materiality_hold_preserves_the_held_revenue(client):
     assert peek_pending("vsb-w313t")["revenue"] == 400000.0
     cca_id = (r1.get("governance") or {}).get("cca_id")
     rv = client.post(f"/api/v1/cca/{cca_id}/review",
-                     json={"decision": "approved", "reviewer": "Rehan", "notes": "w313t"})
+                     json={"override_decision": "approved", "reviewer_notes": "w313t owner approval"})
     assert rv.status_code == 200
     r2 = lv.operate_vsb("vsb-w313t")
     if r2.get("cycle_ran") is False and (r2.get("governance") or {}).get("cca_id"):
@@ -5165,7 +5165,7 @@ def test_materiality_hold_preserves_the_held_revenue(client):
         # must still be fully preserved at this point.
         assert peek_pending("vsb-w313t")["revenue"] == 400000.0
         client.post(f"/api/v1/cca/{(r2['governance'])['cca_id']}/review",
-                    json={"decision": "approved", "reviewer": "Rehan", "notes": "w313t dup"})
+                    json={"override_decision": "approved", "reviewer_notes": "w313t dup owner approval"})
         r2 = lv.operate_vsb("vsb-w313t")
     assert r2.get("revenue_recognised_wst") == 400000.0, f"post-approval operate: {r2}"
     assert (r2.get("distributable_wst") or 0) > 0
