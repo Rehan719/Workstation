@@ -4378,6 +4378,139 @@ def test_fabric_remaining_resources_run_real(client):
     assert rr["federation_mesh"].get("operational") is True
 
 
+def test_invariants_sweep_the_never_tested_absolutes(client):
+    # §17.5 (W345) — live verdicts for the five invariants no round ever tested. Each leg asserts
+    # what the code genuinely guarantees (per the W331 honest restatement) — nothing aspirational.
+    import json as _json
+    import threading
+    from agentic_core.config import data_path
+
+    # (1) ARMS-LENGTH FALSIFICATION — drive the AI-CEO-tier surfaces AT the Board/genome and
+    # prove none of them mutates it: the only mutation path is the CCA-approved apply.
+    est = client.post("/api/v1/genesis/establish",
+                      json={"problem": "w345 invariant venture", "ship_output": False}).json()
+    vid = est["vsb_id"]
+    before = client.get(f"/api/v1/vsb/{vid}").json()
+    board0 = _json.dumps(before.get("board"), sort_keys=True)
+    genome0 = _json.dumps(before.get("genome_spec"), sort_keys=True)
+    # attack a: the swarm write-back path (updates native_swarm ONLY)
+    sw = [s for s in client.get("/api/v1/resources/swarm").json()["cascades"]
+          if s.get("vsb_id") == vid]
+    if sw:
+        client.put(f"/api/v1/resources/swarm/{sw[0]['id']}", json={"name": "w345 attack rename"})
+    # attack b: evolution apply WITHOUT approval
+    ev = client.post(f"/api/v1/vsb/{vid}/evolve", json={"trigger": "w345"}).json()
+    pre = client.post(f"/api/v1/vsb/{vid}/evolution/apply").json()
+    assert pre.get("applied") is False                       # never without the Owner's CCA
+    # attack c: a chief instruction (delegation, not board mutation)
+    client.post("/api/v1/board/chief/instruct",
+                json={"instruction": "w345 probe", "owner": "Rehan", "scope": vid,
+                      "cascade_to_ceo": False})
+    after = client.get(f"/api/v1/vsb/{vid}").json()
+    assert _json.dumps(after.get("board"), sort_keys=True) == board0       # board untouched
+    assert _json.dumps(after.get("genome_spec"), sort_keys=True) == genome0  # genome untouched
+
+    # (2) TWIN PRE-VALIDATION fires on a HIGH-tier change (the §17.5 major-change gate):
+    # a real twin verdict with an honest source (model marker, or the organism health gate on
+    # the deterministic floor).
+    from agentic_core.api.change_control import SubmitChangeRequest, submit_change
+    sub = _ensure_loop().run_until_complete(submit_change(SubmitChangeRequest(
+        title="w345 genome edit probe", change_type="genome_edit",
+        description="w345 invariant probe — a deliberately HIGH-tier change",
+        rationale="w345 invariant sweep", affected_systems=["genome"])))
+    cid = sub["cca_id"] if isinstance(sub, dict) else getattr(sub, "cca_id", None)
+    assert cid
+    tp = client.post(f"/api/v1/cca/{cid}/twin-prevalidate").json()
+    v = tp.get("twin_prevalidation") or {}
+    assert v.get("verdict") in ("pass", "fail") and v.get("source")
+
+    # (3) SIGNAL-BUS ATOMICITY — 8 threads × 50 concurrent fire_signal: never raises, and the
+    # organism context stays coherent afterwards.
+    from agentic_core.organism.biobus import biobus
+    _errs = []
+    def _blast():
+        try:
+            for i in range(50):
+                biobus.fire_signal("reflex", "w345.blast", f"s{i}", 0.4)
+        except Exception as e:
+            _errs.append(e)
+    _threads = [threading.Thread(target=_blast) for _ in range(8)]
+    for t in _threads: t.start()
+    for t in _threads: t.join()
+    assert not _errs
+    ctx = biobus.organism_context()
+    assert "composite_health" in ctx and "immune" in ctx
+
+    # (4) PLAN FRESHNESS (the honestly-restated invariant: assembled fresh on demand) — a
+    # just-added objective is visible on the immediately-following read.
+    client.post("/api/v1/business-plan/objective", json={
+        "scope": vid, "title": "W345-FRESHNESS-MARKER", "kpi": "visible immediately"})
+    plan = client.get("/api/v1/business-plan", params={"scope": vid}).json()
+    assert any(o.get("title") == "W345-FRESHNESS-MARKER" for o in plan.get("objectives", []))
+
+    # (5) SINGLE ROUTER-MOUNT POINT — every include_router call in the live tree belongs to
+    # app_mvp (agent_hub is a helper the same app calls; _archive excluded).
+    import re as _re
+    import subprocess as _sp
+    _files = _sp.run(["git", "grep", "-l", "include_router("], capture_output=True, text=True,
+                     cwd=".").stdout.split()
+    _offenders = []
+    for _p in _files:
+        if not _p.startswith("agentic_core/") or "app_mvp" in _p or "agent_hub" in _p:
+            continue
+        _src = open(_p, encoding="utf-8", errors="replace").read()
+        if _re.search(r"^\s*\w+\.include_router\(", _src, _re.M):
+            _offenders.append(_p)
+    assert _offenders == [], _offenders
+
+
+def test_evolution_auto_apply_loop_end_to_end(client):
+    # §8 (W346) — the ONE leg of the sovereign-evolution loop never driven in eight rounds: the
+    # Owner-enabled `evolution_auto_apply` lever applying a CCA-APPROVED proposal ON THE BEAT,
+    # with the post-apply re-ship closing the loop (approval stays Owner-gated — the lever only
+    # automates the post-approval application; proposals here emerge from REAL journey evidence).
+    import json as _json
+    from agentic_core.config import data_path
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": "w346 loop venture", "domain": "enterprise",
+        "establish": True, "ship_output": True}).json()
+    vid = (j.get("established_vsb") or {}).get("vsb_id")
+    assert vid
+    ev = client.post(f"/api/v1/vsb/{vid}/evolve", json={"trigger": "w346"}).json()
+    cca = ev.get("evolution_pending_cca")
+    assert cca and (ev.get("proposals") or [])                     # REAL evidence-based proposals
+    client.post(f"/api/v1/cca/{cca}/review",
+                json={"override_decision": "approved", "reviewer_notes": "w346 owner approval"})
+    # the lever is OFF by default — a beat must NOT apply
+    from agentic_core.organism.heartbeat import heartbeat
+    from agentic_core.organism.reconfiguration import _load_config, _save_config
+    loop = _ensure_loop()
+    beat0 = loop.run_until_complete(heartbeat.beat())
+    assert "evolution_applied" not in (beat0.get("actions") or [])
+    cfg = _load_config() or {}
+    cfg.setdefault("organism", {})["evolution_auto_apply"] = True
+    _save_config(cfg)
+    try:
+        heartbeat.configure(auto_evolve=True, auto_ship=True)
+        heartbeat._beats_since_evolve = 999                        # force the paced evolve tick
+        applied = False
+        for _ in range(3):
+            beat = loop.run_until_complete(heartbeat.beat())
+            applied = applied or ("evolution_applied" in (beat.get("actions") or []))
+            if applied:
+                break
+        assert applied                                             # the lever genuinely consumes
+    finally:
+        heartbeat.configure(auto_evolve=False, auto_ship=False)
+        cfg["organism"]["evolution_auto_apply"] = False
+        _save_config(cfg)
+    vsb = _json.loads((data_path("vsb_entities") / f"{vid}.json").read_text(encoding="utf-8")) \
+        if (data_path("vsb_entities") / f"{vid}.json").exists() else \
+        client.get(f"/api/v1/vsb/{vid}").json()
+    assert vsb.get("applied_mutations")                            # mutations genuinely landed
+    assert client.get(f"/api/v1/cca/{cca}").json()["status"] == "implemented"
+
+
 def test_two_authenticated_users_memory_isolated(client, monkeypatch):
     # §17.5 invariant 1 (W343) — the AUTH-ON acceptance test for the round's headline: the
     # Round-8 audit ran the memory-bleed reproduction anonymous; this proves the fix under real

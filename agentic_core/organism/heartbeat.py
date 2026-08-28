@@ -289,6 +289,26 @@ class OrganismHeartbeat:
                     actions.append("metabolic_throttle")
         except Exception:
             pass
+        # §8 (W310/W346) — the `organism.evolution_auto_apply` lever gets its REAL consumer: when
+        # the Owner enables it, CCA-APPROVED evolution proposals are applied on the beat (mutations
+        # still gated by the CCA decision — this only automates the post-approval application).
+        # W346 — runs on EVERY beat, not inside the paced evolve tick's maintenance-phase gate:
+        # applying an ALREADY-APPROVED change is cheap and must not wait hours for a circadian
+        # window (the e2e test caught approved mutations stranded until the next maintenance phase).
+        # ORDER MATTERS: apply runs BEFORE the paced evolve tick — a re-evolve replaces the
+        # proposal set with a new submitted CCA, which would orphan the approved one.
+        try:
+            if _cfg_org.get("evolution_auto_apply"):
+                from agentic_core.api.vsb import apply_approved_evolution
+                from agentic_core.economy.living_vsbs import list_living as _ll
+                for _v in ((_ll() or {}).get("living_vsbs") or [])[:10]:
+                    _ap = apply_approved_evolution(_v.get("vsb_id"))
+                    if _ap.get("applied"):
+                        actions.append("evolution_applied")
+        except Exception:
+            pass
+
+
         if (self.auto_evolve and not _throttled and phase in ("MAINTENANCE_FOCUS", "MAINTENANCE_REST")
                 and self._beats_since_evolve >= self._evolve_every):
             self._beats_since_evolve = 0
@@ -325,20 +345,6 @@ class OrganismHeartbeat:
                         pass
             except Exception:
                 pass
-            # §8 (W310) — the `organism.evolution_auto_apply` lever gets its REAL consumer: when the
-            # Owner enables it, CCA-APPROVED evolution proposals are applied on the beat (mutations
-            # still gated by the CCA decision — this only automates the post-approval application).
-            try:
-                if _cfg_org.get("evolution_auto_apply"):
-                    from agentic_core.api.vsb import apply_approved_evolution
-                    from agentic_core.economy.living_vsbs import list_living as _ll
-                    for _v in ((_ll() or {}).get("living_vsbs") or [])[:10]:
-                        _ap = apply_approved_evolution(_v.get("vsb_id"))
-                        if _ap.get("applied"):
-                            actions.append("evolution_applied")
-            except Exception:
-                pass
-
         # §13 (W319) — the STALE flag gets its autonomous consumer: when the Owner enables
         # auto_ship, the heartbeat re-ships ONE stale repo per beat (oldest stale first) so the
         # shipped body tracks the life; the re-ship itself is UEG-logged by ship_vsb_repo, and the

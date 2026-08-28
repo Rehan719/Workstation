@@ -1643,3 +1643,34 @@ UEG full recompute-verify 55ms @ 54 events, valid; DCMS 81KB after three establi
 (one-off birth cost, not per-beat growth). **The W340 churn fix is visible in the measurements:**
 the idle entity's repo stayed at its birth-ship git-object count (46, identical to mixed) while
 only the genuinely-active entity grew (84) — zero-activity beats now cost nothing.
+
+---
+
+## ROUND 9 — the verification round (W345 · W346 · W347 + lifecycle completion) — 2026-08-28/29
+
+- **W346 (the evolution-apply loop, finally driven):** the e2e test caught TWO real product flaws
+  before passing: (1) the `evolution_auto_apply` lever lived INSIDE the paced evolve tick's
+  maintenance-phase gate — an approved mutation could wait HOURS for a circadian window; it now
+  runs on every beat (applying an approved change is cheap). (2) ORDER: the tick's re-evolve
+  replaced the proposal set with a fresh submitted CCA BEFORE apply looked — orphaning the
+  Owner's approval; apply now runs before the tick. Fresh-store green ×2: lever off → no apply;
+  on → applied on the beat, mutations landed, CCA implemented.
+- **W345 (the never-tested §17.5 absolutes, one honest verdict each):** ARMS-LENGTH FALSIFIED —
+  the AI-tier surfaces (swarm write-back rename, unapproved evolution apply, chief instruct)
+  were driven AT the Board/genome and every one left them byte-identical (the only mutation path
+  is the CCA-approved apply); TWIN PRE-VALIDATION fires on a HIGH-tier genome_edit with a real
+  verdict + honest source; the SIGNAL BUS survives 8×50 concurrent fires with a coherent context;
+  PLAN FRESHNESS holds (a just-added objective is on the next read); SINGLE ROUTER-MOUNT holds
+  repo-wide. (The test file needed a splice repair after a blocked-request resolution left a
+  mid-dict truncation — py_compile now guards it.)
+- **Lifecycle completion:** DELETE /resources/swarm/{sid} (owner-scoped, UEG-logged, clears the
+  entity's native_swarm pointer honestly) — saved cascades could never be retired; 3/3 probe.
+- **W347 (the first REAL-browser pass, live backend :8010 + vite :5173):** Offering-1 in-browser —
+  the science tool's output GROUNDED in the typed input (W336 visually), refine PRESERVED the
+  draft with the 'REFINED ×1' chip, and My Work held v2 with refineCount/versions (W337
+  visually); the Cockpit drift loop end-to-end — SHIPPED BODY IS STALE banner with the real
+  reason → one-click re-ship → 'SHIPPED BODY IS CURRENT' in 8s (W338 visually); the NativeAI
+  cascade Edit affordance loads the entity's REAL delivery cascade into the designer (W344
+  visually); the Deliverables Download fetches through the bearer layer and hands the browser a
+  blob with the server's filename. Bonus observation: the owned local model (llama3.2) was live
+  on this machine — /native-ai/status honestly reported it as the selection head.

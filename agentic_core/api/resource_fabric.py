@@ -1309,6 +1309,37 @@ async def get_swarm(sid: str, user: dict | None = Depends(get_current_user)):
     raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
 
 
+@router.delete("/swarm/{sid}")
+async def delete_swarm(sid: str, user: dict | None = Depends(get_current_user)):
+    """§7 (W345) — complete the cascade lifecycle: saved cascades could never be retired from
+    anywhere (the audit's secondary finding). Owner-scoped; UEG-logged; a VSB-bound cascade also
+    clears the entity's native_swarm pointer so the record stays honest."""
+    rows = _load_swarms()
+    target = next((c for c in rows if c["id"] == sid), None)
+    if not target:
+        raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
+    _require_design_access(target, user, "Swarm cascade", sid)
+    keep = [c for c in rows if c["id"] != sid]
+    _save_swarms(keep)
+    if target.get("vsb_id"):
+        try:
+            from agentic_core.api.vsb import _load_vsb, _save_vsb
+            ent = _load_vsb(target["vsb_id"])
+            if ent and (ent.get("native_swarm") or {}).get("cascade_id") == sid:
+                ent["native_swarm"] = {**ent["native_swarm"], "retired": True,
+                                       "retired_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+                _save_vsb(ent)
+        except Exception:
+            pass
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "resource_fabric.swarm.retired", "swarm_id": sid,
+                         "vsb_id": target.get("vsb_id")})
+    except Exception:
+        pass
+    return {"deleted": sid, "remaining": len(keep)}
+
+
 @router.post("/swarm/run")
 async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_current_user)):
     """Run a swarm cascade (saved via swarm_id, or ad-hoc stages) on Workstation's OWN resources.
