@@ -2293,3 +2293,37 @@ report committed as `docs/soak_report_2026-08-30.json`.
   the active one. That may be correct (round-robin operation with a near-zero cycle for an idle
   entity) or it may mean W340's material-change staleness is not damping idle work. It needs its own
   probe before anything is asserted either way.
+
+## Owner decisions taken (2026-08-31)
+
+### Federation — OPTION A: stays honestly simulated until a second instance exists
+The mesh module is real (discovery/consensus/health/ledger/aggregator) but peers are flagged
+`simulated: true` because this is a single-node deployment. Owner's decision: leave it there and
+revisit when a second instance actually exists — federation's value is proportional to instance
+count, and making it real means executing work from hosts we do not control. **No code change; the
+honest flag is the correct state.** When a second instance appears, the first step is a private mesh
+with explicitly-configured peer URLs and a pre-shared key (option B in the decision brief) — not open
+discovery.
+
+### W381 — browser smoke in CI (OPTION B), and the three iterations it took to make it BITE
+`scripts/browser_smoke.mjs` loads the eight core §3A routes in a real Chromium, and fails on: a page
+that does not render its own landmark content, any unhandled console error, any same-origin 5xx, a
+visible error boundary, or a fabricated marker on screen. Wired into Spine CI as a job that runs **in
+parallel** with the backend suite — so it adds **zero wall-clock** while the ~30-minute suite remains
+the long pole (better than the 5–8 minute estimate given in the decision brief).
+
+**It took three attempts to make this guard real, and each failure is worth recording:**
+1. First version asserted the Change Control page contained `cca-`. It FAILED against a page showing
+   50 real rows — the id only renders in the EXPANDED card. The guard was wrong, not the app.
+2. Second version accepted "rows OR the honest empty state". Reintroducing the exact cluster-1 defect
+   (reading `.entries` instead of `.changes`) still PASSED — because the wrong key yields an empty
+   list and the page then shows its honest empty state. **The guard was blind to the class it exists
+   for.** Fixed by verifying the page against the BACKEND: if `/api/v1/cca` returns changes, they
+   must be on screen.
+3. Third version still passed, reporting `rows=true` on a page with none — the token list included
+   `constitutional`, which matched the static tier legend ("CRITICAL — Constitutional Change").
+   Chrome must never be able to satisfy a data assertion; narrowed to snake_case `change_type`
+   tokens that only rows render.
+**Now proven both ways:** passes clean (`api=50, rows=true, empty=false`), and with the cluster-1
+defect reintroduced it fails with the right diagnosis — *"the API returned 50 changes but NONE
+rendered — the governance surface is showing an empty page over real data."*
