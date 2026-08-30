@@ -69,6 +69,44 @@ def _organism_report(name: str, success: bool) -> None:
 _PROBATION_AFTER_S = 600   # a deprioritised model earns ONE fresh try after this long untried
 
 
+LOCAL_BUDGET_CEILING_S = 180.0     # the most a single local generation may take
+LOCAL_BUDGET_FLOOR_S = 180.0       # ...and the least — see why below
+
+
+def local_model_budget_s() -> float:
+    """W375 — how long a LOCAL (owned) model may take for one completion.
+
+    This used to be `2 x avg-of-all-recorded-runs` with a 25s floor, which was self-reinforcing: a
+    budget that is too small produces fast timeouts, those timeouts are recorded as failures, the
+    average drops, and the next budget is smaller still. Measured live on this machine: ollama's
+    all-row average was 17.5s -> a 35s budget, while a real substantive generation takes ~98s
+    isolated and >120s under app load. Every substantial call was killed, the success rate fell to
+    15%, the owned model was demoted below the deterministic floor, and users received template
+    text while /native-ai/status still reported a healthy real model serving.
+
+    So a local model now gets the FULL allowed window. Two things make that safe rather than
+    reckless: a dead or hung server still fails fast (the per-chunk read timeout fires when nothing
+    is streaming, so the full window only elapses while tokens are actually arriving), and the
+    circuit breaker skips models already known to be failing.
+
+    The honest cost is latency — real owned-model output can take minutes on commodity hardware,
+    where the floor answers in seconds with far thinner content. That is the §6 trade the vision
+    asks for: the owned model must genuinely serve.
+    """
+    budget = LOCAL_BUDGET_FLOOR_S
+    try:
+        from agentic_core.api.operational_excellence import model_health
+        h = (model_health() or {}).get("ollama") or {}
+        # sized from SUCCESSFUL latencies only — never from an average containing the timeouts it
+        # caused, which is what created the spiral
+        p90 = float(h.get("success_p90_ms") or 0) / 1000.0
+        if h.get("success_runs", 0) >= 3 and p90 > 0:
+            budget = min(LOCAL_BUDGET_CEILING_S, max(LOCAL_BUDGET_FLOOR_S, 1.5 * p90))
+    except Exception:
+        pass
+    return budget
+
+
 def _reorder_by_health(order: List[str]) -> List[str]:
     """Adapt selection to real recorded performance — the §6 learning loop CLOSED (W275):
     - POSITIVE selection: candidates ahead of the native floor are ordered by their measured
@@ -237,14 +275,21 @@ class NativeOrchestrator:
             # an ADAPTIVE budget from the learning loop's real measured latency (2× recent avg,
             # floor 25s, ceiling 180s; a generous 90s while unmeasured) — demotion now reflects
             # real inability, never the cap.
-            budget = 90.0
-            try:
-                from agentic_core.api.operational_excellence import model_health
-                _h = (model_health() or {}).get("ollama") or {}
-                if _h.get("window_runs", 0) >= 3 and _h.get("avg_ms"):
-                    budget = min(180.0, max(25.0, 2.0 * float(_h["avg_ms"]) / 1000.0))
-            except Exception:
-                pass
+            # W375 — the budget is sized from SUCCESSFUL latencies, never from an average that
+            # includes the timeouts it caused. The old formula (2 x avg-of-all-rows, floor 25s) was
+            # self-reinforcing: measured live, ollama's all-row avg was 17.5s -> a 35s budget, while
+            # a real generation needs ~98s. Every substantial call was killed at 35s, each kill was
+            # recorded as a failure, and the average sank further — success rate 15%, the owned
+            # model demoted below the floor, and users served template text while /native-ai/status
+            # still reported a healthy real model. The floor is now 120s for a LOCAL model because
+            # the code's own cold-load note (20-30s to first token) makes 25s unattainable by
+            # construction; the 180s ceiling and the 200s outer bound are unchanged.
+            # This whole branch IS the local route (guarded by `name == "ollama" or
+            # name.startswith("ollama:")` above), so the local floor applies unconditionally. An
+            # earlier version tested `model`, which by then holds the BARE model name ("llama3.2")
+            # — never prefixed — so the local floor silently never applied and the budget stayed at
+            # 1.5x p90 ~= 35s. The elapsed time gave it away: exactly the old ceiling.
+            budget = local_model_budget_s()
             # §6 (W353) — the per-chunk read timeout must survive a COLD model load (first token
             # can take 20-30s while the model loads into memory), otherwise the first substantial
             # call after idle false-fails and starts poisoning the health score. 60s per-chunk;

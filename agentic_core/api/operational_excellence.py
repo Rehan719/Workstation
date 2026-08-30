@@ -116,11 +116,22 @@ def model_health(window: int = 40) -> Dict[str, Dict[str, Any]]:
         recent = rows[-max(1, int(window)):]
         succ = sum(1 for r in recent if r.get("success"))
         total_ms = sum(int(r.get("duration_ms", 0)) for r in recent)
+        # W375 — SUCCESS-only latency, exposed separately. `avg_ms` averages every row INCLUDING
+        # timeouts, so using it to size a timeout budget is self-defeating: a budget that is too
+        # small produces fast failures, those failures pull the average down, and the next budget
+        # is smaller still. Measured live: ollama's all-row avg was 17.5s while a real generation
+        # needs ~98s, so the derived budget (2x avg = 35s) killed every substantial completion and
+        # drove the success rate to 15%.
+        ok_ms = sorted(int(r.get("duration_ms", 0)) for r in recent if r.get("success"))
+        p90 = ok_ms[min(len(ok_ms) - 1, int(round(0.9 * (len(ok_ms) - 1))))] if ok_ms else 0
         out[name] = {
             "runs": len(rows),                                    # all-time volume (context)
             "window_runs": len(recent),
             "success_rate": round(succ / len(recent), 3),         # WINDOWED — the score that routes
             "avg_ms": round(total_ms / len(recent)) if recent else 0,
+            "success_runs": len(ok_ms),
+            "success_avg_ms": round(sum(ok_ms) / len(ok_ms)) if ok_ms else 0,
+            "success_p90_ms": p90,                                # what a budget must actually allow
             "last_at": max((r.get("created_at") or "" for r in recent), default=""),
         }
     return out

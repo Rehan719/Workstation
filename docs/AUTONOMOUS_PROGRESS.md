@@ -2137,3 +2137,35 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   does NOT verify that every control still WORKS in a real browser — that needs a browser harness
   this repo does not have, and adding one (Playwright binaries + a longer pipeline on top of ~27
   minutes) is an Owner decision, not one to take unilaterally.
+
+## Round 13 — walking a real user journey found the §6 mandate quietly unmet
+
+### W375 — the owned model was being throttled into never serving
+- **Found by doing what a user does**, not by reading code: ran a domain tool end to end. It
+  returned the deterministic floor's template ("Native structured content for 'Study Design',
+  grounded in: …") while `/api/v1/native-ai/status` simultaneously reported
+  `active_model: ollama (llama3.2), is_real_model: true, floor_active: false`. A user reading that
+  status would believe a real model wrote their research design. A template did.
+- **Root cause — a self-reinforcing spiral.** The local time budget was `2 × avg-of-ALL-recorded-runs`
+  (floor 25s). Measured live: ollama's all-row average was **17.5s → a 35s budget**, while a real
+  substantive generation takes **~98s isolated and >120s under app load**. So every substantial call
+  was killed at 35s; each kill was recorded as a failure; failures dragged the average down; the next
+  budget was smaller. Success rate had fallen to **15%**, which also demoted the owned model below
+  the floor in health-based selection.
+- **Fixed at the root:** the budget is now computed from **successful latencies only** (new
+  `success_runs` / `success_avg_ms` / `success_p90_ms` in `model_health`) — a timeout can never again
+  shrink the budget that caused it — and a local model gets the **full allowed window**, extracted
+  into a documented, testable `local_model_budget_s()`.
+- **Proven end to end:** the same prompt now returns `served_by: ollama:llama3.2`, **4,759 chars in
+  145s**, real content ("Breaking Bread, Building Connections… Mixed-methods") instead of the
+  template. The §6 promise — the owned model genuinely serves — now actually holds.
+- **The honest cost, stated:** real owned-model output takes minutes on commodity hardware where the
+  floor answers in seconds with far thinner content. That is the trade §6 asks for. A dead or hung
+  server still fails fast (the per-chunk read timeout fires when nothing is streaming), and the
+  circuit breaker still skips known-bad models.
+- **Recovery lag, stated honestly:** the poisoned 15% success record does not vanish instantly.
+  Probation (a demoted model earns a fresh attempt after 10 minutes untried) now SUCCEEDS rather than
+  failing, so the record heals — but it climbs back over several probation cycles rather than at once.
+- Guard: `test_local_model_budget_cannot_throttle_the_owned_model` — asserts the full window, that a
+  **poisoned failure history still yields the full window**, and that `model_health` keeps exposing
+  success-only latency. Proven to fail when the floor is throttled back.

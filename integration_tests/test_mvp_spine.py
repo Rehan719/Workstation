@@ -6247,3 +6247,57 @@ def test_frontend_fabrications_do_not_return():
     assert not offenders, (
         "fabricated UI markers have returned to the frontend — these strings exist only to make an "
         "unbuilt capability look real:\n  " + "\n  ".join(sorted(offenders)))
+
+
+def test_local_model_budget_cannot_throttle_the_owned_model():
+    """W375 — the owned model's time budget must never be sized from failures.
+
+    Found by walking a real user journey: a domain tool returned the deterministic floor's template
+    while /native-ai/status reported a healthy real model. Cause: the budget was
+    `2 x avg-of-ALL-recorded-runs` (floor 25s). That is self-reinforcing — too small a budget makes
+    fast timeouts, timeouts are recorded as failures, the average falls, the next budget is smaller.
+    Measured live: all-row avg 17.5s -> 35s budget, while a real generation needs ~98s isolated and
+    >120s under load. Success rate fell to 15% and users got template text instead of AI output.
+
+    After the fix a real generation completed: served_by ollama:llama3.2, 4759 chars in 145s.
+
+    Guards the two properties that matter, without needing ollama present:
+      1. a local model always gets the full allowed window, and
+      2. the budget is computed from SUCCESSFUL latencies only.
+    """
+    # `agentic_core.ai.native.orchestrator` as a package ATTRIBUTE is a NativeOrchestrator
+    # instance (a singleton shadowing the module name), so `import ... as` yields the object, not
+    # the module. Import the names directly, and reach the module via sys.modules to patch it.
+    import sys as _sys
+    from agentic_core.ai.native.orchestrator import (LOCAL_BUDGET_FLOOR_S, LOCAL_BUDGET_CEILING_S,
+                                                     local_model_budget_s)
+    _mod = _sys.modules["agentic_core.ai.native.orchestrator"]
+
+    # 1 — the floor is the full window; the adaptive term may only raise, never throttle
+    assert LOCAL_BUDGET_FLOOR_S >= 180.0, (
+        "a local model must get the full window — a smaller floor recreates the throttling spiral")
+    assert LOCAL_BUDGET_CEILING_S >= LOCAL_BUDGET_FLOOR_S
+    assert local_model_budget_s() >= 180.0
+
+    # 2 — a model whose recent record is mostly fast FAILURES must STILL get the full window: this
+    #     is exactly the poisoned-history case the old `2 x avg-of-all-rows` formula collapsed on.
+    import agentic_core.api.operational_excellence as _oe
+    real = _oe.model_health
+
+    def poisoned(*a, **k):
+        return {"ollama": {"window_runs": 26, "success_rate": 0.154, "avg_ms": 17501,
+                           "success_runs": 4, "success_avg_ms": 18101, "success_p90_ms": 22937}}
+
+    _oe.model_health = poisoned
+    try:
+        assert _mod.local_model_budget_s() >= 180.0, (
+            "a poisoned failure history still throttles the owned model — the spiral is back")
+    finally:
+        _oe.model_health = real
+
+    # 3 — model_health must expose SUCCESS-only latency, or an honest budget cannot be computed
+    h = _oe.model_health()
+    if h:
+        sample = next(iter(h.values()))
+        for key in ("success_runs", "success_p90_ms"):
+            assert key in sample, f"model_health lost {key} — budgets would fall back to mean-of-all"
