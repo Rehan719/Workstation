@@ -992,8 +992,11 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
 
 
 @router.get("/{vsb_id}/board-pack")
-async def get_vsb_board_pack(vsb_id: str):
+async def get_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """Retrieve the latest Board Pack for a VSB (assembled fresh on each POST)."""
+    # W364 — a board pack carries the VSB's financial + strategic content; the POST that generates
+    # it was scoped but these READS were not, so another tenant could fetch it. 404-never-403.
+    _require_vsb_access(vsb_id, user)
     p = _BOARDPACK_STORE / vsb_id / "latest.json"
     if not p.exists():
         raise HTTPException(status_code=404, detail=f"No board pack assembled for VSB {vsb_id} yet.")
@@ -1001,8 +1004,9 @@ async def get_vsb_board_pack(vsb_id: str):
 
 
 @router.get("/{vsb_id}/board-packs")
-async def list_vsb_board_packs(vsb_id: str):
+async def list_vsb_board_packs(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """List the VSB's Board Pack history (each is a fresh, DCS-registered point-in-time pack)."""
+    _require_vsb_access(vsb_id, user)   # W364 — same scoping as the pack itself
     root = _BOARDPACK_STORE / vsb_id
     packs = []
     if root.exists():

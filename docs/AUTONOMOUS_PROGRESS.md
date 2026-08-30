@@ -1917,3 +1917,28 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   pushed it to the server workspace with no sync error.
 - Guard: `test_user_workspace_store` (round-trip, all four caps, delete, per-owner separation).
   tsc 0 + vite build clean.
+
+### W364 — the mechanical tenancy matrix, and the cross-tenant gap it found
+- **Built the harness the frontier called for**: `test_tenancy_matrix_user_data_routes` enumerates
+  the LIVE route table and fails if any route on a user-data surface (projects, user workspace, vsb,
+  avatar, deliverables) lacks a tenancy dependency. `require_admin` counts as protection; every
+  exemption states WHY it holds no tenant data (platform status, static catalogues, the shared
+  proposal queue, stateless speak/transcribe transforms) — never a blanket suppression.
+- **It immediately found a real, material gap.** The projects module — a primary user surface — had
+  NO ownership concept at all: no `owner_id`, and not one of its routes declared an auth dependency.
+  Verified under AUTH_ENABLED with two real users: **bob could list, read and permanently DELETE
+  alice's project** (bob's delete returned 204; alice's project was gone). Every surface had been
+  secured by hand, one audit at a time, so the one nobody audited stayed open.
+- **Fixed** with the platform pattern: `owner_id` on the model, stamped SERVER-side via
+  `request_owner_id` on create; the list filtered by `user_can_access`; every by-id route
+  (get/patch/delete/run/advance/outputs/propose-advance) routed through a scoped loader that raises
+  404-never-403 so the store cannot be probed for other tenants' ids. Re-ran the same probe: bob no
+  longer sees alice's project, gets 404 on read AND delete, and **alice's project survives**.
+  Auth-off single-user mode verified unchanged (create/list/read/patch/outputs/delete all work).
+- **The matrix also caught two more**: `GET /vsb/{id}/board-pack` and `/board-packs` were unscoped
+  reads of a VSB's financial + strategic content (the POST that generates them was already scoped).
+  Both now call `_require_vsb_access`.
+- **Both guards proven to bite**: removing the dependency from one projects route makes the matrix
+  FAIL; the file was restored and re-verified. A guard that cannot fail is not a guard.
+- Note on my own first survey: it counted only `get_current_user` and so wrongly listed
+  `/api/v1/auth/users` as unprotected — it is gated by `require_admin`. The matrix counts both.

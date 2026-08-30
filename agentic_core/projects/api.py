@@ -29,9 +29,11 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import AsyncIterator, Literal, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+
+from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.organism.biobus import biobus
@@ -90,6 +92,9 @@ class ProjectOutput(BaseModel):
 
 class Project(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    # W364 — the owner this project belongs to. Stamped SERVER-side on create; legacy projects
+    # written before ownership existed carry None and are admin-only (never leaked to a tenant).
+    owner_id: Optional[str] = None
     title: str
     description: str
     realm: str = "general"
@@ -124,6 +129,16 @@ def _load(project_id: str) -> Project:
     if not p.exists():
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     return Project(**json.loads(p.read_text()))
+
+
+def _load_scoped(project_id: str, user: dict | None) -> Project:
+    """W364 — load a project the caller is entitled to. A project owned by someone else is
+    indistinguishable from one that does not exist (404-never-403), so the store cannot be probed
+    for other tenants' ids. Auth-off single-user mode is unguarded by design."""
+    project = _load(project_id)
+    if not user_can_access(user, project.owner_id):
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    return project
 
 
 def _save(project: Project) -> None:
@@ -266,8 +281,10 @@ async def vote_proposal(proposal_id: str, approve: bool = True) -> Proposal:
 # ── CRUD endpoints ────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=Project, status_code=201)
-async def create_project(req: CreateProjectRequest) -> Project:
+async def create_project(req: CreateProjectRequest,
+                         user: dict | None = Depends(get_current_user)) -> Project:
     project = Project(
+        owner_id=request_owner_id(user),   # W364 — server-stamped; a client cannot claim an owner
         title=req.title,
         description=req.description,
         realm=req.realm.lower(),
@@ -279,18 +296,20 @@ async def create_project(req: CreateProjectRequest) -> Project:
 
 
 @router.get("/", response_model=list[Project])
-async def list_projects() -> list[Project]:
-    return _all_projects()
+async def list_projects(user: dict | None = Depends(get_current_user)) -> list[Project]:
+    # W364 — a tenant sees only their own projects (auth-off returns everything, unchanged)
+    return [p for p in _all_projects() if user_can_access(user, p.owner_id)]
 
 
 @router.get("/{project_id}", response_model=Project)
-async def get_project(project_id: str) -> Project:
-    return _load(project_id)
+async def get_project(project_id: str, user: dict | None = Depends(get_current_user)) -> Project:
+    return _load_scoped(project_id, user)
 
 
 @router.patch("/{project_id}", response_model=Project)
-async def update_project(project_id: str, req: UpdateProjectRequest) -> Project:
-    project = _load(project_id)
+async def update_project(project_id: str, req: UpdateProjectRequest,
+                         user: dict | None = Depends(get_current_user)) -> Project:
+    project = _load_scoped(project_id, user)
     if req.title is not None:
         project.title = req.title
     if req.description is not None:
@@ -300,17 +319,18 @@ async def update_project(project_id: str, req: UpdateProjectRequest) -> Project:
 
 
 @router.delete("/{project_id}", status_code=204)
-async def delete_project(project_id: str) -> None:
-    p = _path(project_id)
-    if not p.exists():
-        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
-    p.unlink()
+async def delete_project(project_id: str, user: dict | None = Depends(get_current_user)) -> None:
+    # W364 — deletion is destructive and was previously unscoped: any signed-in user could
+    # permanently delete another user's project. Scoped now (404 when not the caller's).
+    _load_scoped(project_id, user)
+    _path(project_id).unlink()
 
 
 # ── AI Run endpoint (SSE streaming) ──────────────────────────────────────────
 
 @router.post("/{project_id}/run")
-async def run_project(project_id: str) -> StreamingResponse:
+async def run_project(project_id: str,
+                      user: dict | None = Depends(get_current_user)) -> StreamingResponse:
     """
     Stream AI-generated content for this project's current stage.
     SSE format:
@@ -318,7 +338,7 @@ async def run_project(project_id: str) -> StreamingResponse:
       data: {"done": true, "output_id": "...", "download_url": "..."}  — final
       data: {"error": "..."}          — on failure
     """
-    project = _load(project_id)
+    project = _load_scoped(project_id, user)
     if project.status == "running":
         raise HTTPException(status_code=409, detail="Project is already running")
 
@@ -382,12 +402,13 @@ async def run_project(project_id: str) -> StreamingResponse:
 # ── Stage advancement ─────────────────────────────────────────────────────────
 
 @router.post("/{project_id}/advance", response_model=Project)
-async def advance_stage(project_id: str) -> Project:
+async def advance_stage(project_id: str,
+                        user: dict | None = Depends(get_current_user)) -> Project:
     """
     Advance the project's lifecycle stage: concept → prototype → commercialise.
     Guard: at least one output must exist at the current stage before advancing.
     """
-    project = _load(project_id)
+    project = _load_scoped(project_id, user)
     current_idx = STAGE_ORDER.index(project.stage)
 
     if current_idx >= len(STAGE_ORDER) - 1:
@@ -418,20 +439,22 @@ async def advance_stage(project_id: str) -> Project:
 # ── Outputs list ──────────────────────────────────────────────────────────────
 
 @router.get("/{project_id}/outputs", response_model=list[ProjectOutput])
-async def list_outputs(project_id: str) -> list[ProjectOutput]:
-    project = _load(project_id)
+async def list_outputs(project_id: str,
+                       user: dict | None = Depends(get_current_user)) -> list[ProjectOutput]:
+    project = _load_scoped(project_id, user)
     return list(reversed(project.outputs))
 
 
 # ── Governance propose-advance (per-project, needs project_id) ────────────────
 
 @router.post("/{project_id}/propose-advance", response_model=Proposal, status_code=201)
-async def propose_advance(project_id: str) -> Proposal:
+async def propose_advance(project_id: str,
+                          user: dict | None = Depends(get_current_user)) -> Proposal:
     """
     Create a governance proposal to advance this project's stage.
     The stage does NOT advance until the proposal is approved via GovernanceHub.
     """
-    project = _load(project_id)
+    project = _load_scoped(project_id, user)
     current_idx = STAGE_ORDER.index(project.stage)
     if current_idx >= len(STAGE_ORDER) - 1:
         raise HTTPException(status_code=400, detail="Already at final stage.")

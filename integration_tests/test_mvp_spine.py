@@ -5759,3 +5759,92 @@ def test_user_workspace_store(client):
     b = client.get("/api/v1/user/workspace?owner_id=owner-b").json()
     assert a["history"][0]["output"] == "A" and b["history"][0]["output"] == "B", \
         "workspaces must be per-owner, never a single shared file"
+
+
+def test_tenancy_matrix_user_data_routes():
+    """W364 — the MECHANICAL tenancy matrix: every route on a user-data surface must declare a
+    tenancy dependency.
+
+    Round 12 found the projects module had NO ownership at all: under AUTH_ENABLED any signed-in
+    user could list, read and permanently DELETE another user's projects. It was missed because
+    nothing checked mechanically — each surface was secured by hand, one audit at a time. This test
+    enumerates the live route table and fails the moment a user-data route loses (or ships without)
+    its tenancy dependency.
+
+    `require_admin` counts as protection — it is a stricter gate than per-owner scoping.
+    """
+    import inspect
+    from agentic_core.app_mvp import app as _app
+    from agentic_core.auth.core import get_current_user, require_admin
+
+    # Surfaces that hold or mutate a USER's own data. Platform-wide status/catalogue/config routes
+    # are deliberately not listed — they expose no tenant data.
+    USER_DATA_PREFIXES = (
+        "/api/v1/projects",
+        "/api/v1/user/",
+        "/api/v1/vsb/",
+        "/api/v1/avatar/",
+        "/api/v1/deliverables",
+    )
+    # Honest exemptions: routes on those prefixes that are genuinely not per-user.
+    # Each exemption states WHY it holds no tenant data — never a blanket suppression.
+    EXEMPT = {
+        "/api/v1/projects/stats/summary",           # aggregate counts, no tenant content
+        "/api/v1/projects/governance/proposals",    # the SHARED stage-proposal queue (not per-user)
+        "/api/v1/projects/governance/proposals/{proposal_id}/vote",  # a vote on that shared queue
+        "/api/v1/deliverables/types",               # static catalogue of deliverable types
+        "/api/v1/deliverables/output-formats",      # static catalogue of export formats
+        "/api/v1/avatar/status",                    # platform availability, not a user's session
+        "/api/v1/avatar/speak",                     # stateless text->audio transform, stores nothing
+        "/api/v1/avatar/transcribe",                # stateless audio->text transform, stores nothing
+    }
+
+    unprotected = []
+    for r in _app.routes:
+        path = getattr(r, "path", None)
+        ep = getattr(r, "endpoint", None)
+        methods = getattr(r, "methods", None)
+        if not (path and ep and methods):
+            continue
+        if not path.startswith(USER_DATA_PREFIXES):
+            continue
+        if path in EXEMPT or path.rstrip("/") in EXEMPT:
+            continue
+        guarded = False
+        try:
+            for prm in inspect.signature(ep).parameters.values():
+                dep = getattr(prm.default, "dependency", None)
+                if dep in (get_current_user, require_admin):
+                    guarded = True
+                    break
+        except (ValueError, TypeError):
+            guarded = True   # un-introspectable — do not fabricate a failure
+        if not guarded:
+            unprotected.append(f"{','.join(sorted(methods - {'HEAD', 'OPTIONS'}))} {path}")
+
+    assert not unprotected, (
+        "user-data routes without a tenancy dependency (add "
+        "`user: dict | None = Depends(get_current_user)` and scope with user_can_access, "
+        "404-never-403):\n  " + "\n  ".join(sorted(unprotected)))
+
+
+def test_projects_are_owner_scoped(client):
+    """W364 — projects carry an owner and the by-id routes scope to it.
+
+    Cross-user isolation itself is proven by the auth-on probe (this suite runs auth-off, where
+    single-user mode is unguarded BY DESIGN — that back-compat is what this test pins down, plus
+    the owner stamp that makes scoping possible at all)."""
+    made = client.post("/api/v1/projects/", json={"title": "owner-stamp probe", "description": "d"})
+    assert made.status_code == 201, made.text
+    proj = made.json()
+    pid = proj["id"]
+    try:
+        assert "owner_id" in proj, "projects must carry an owner_id for scoping to be possible"
+        # auth-off: every operation still works unguarded (single-user back-compat)
+        assert client.get(f"/api/v1/projects/{pid}").status_code == 200
+        assert client.patch(f"/api/v1/projects/{pid}", json={"title": "renamed"}).status_code == 200
+        assert client.get(f"/api/v1/projects/{pid}/outputs").status_code == 200
+        assert any(p["id"] == pid for p in client.get("/api/v1/projects/").json())
+    finally:
+        client.delete(f"/api/v1/projects/{pid}")
+    assert client.get(f"/api/v1/projects/{pid}").status_code == 404
