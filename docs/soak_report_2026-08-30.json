@@ -1,0 +1,382 @@
+{
+  "requested_minutes": 60.0,
+  "cadence_s": 60.0,
+  "beats": 60,
+  "beat_ms": {
+    "min": 125,
+    "max": 2540,
+    "avg": 972
+  },
+  "profiles": {
+    "active": {
+      "vsb_id": "vsb-3d765348d9",
+      "operating_cycles": 21
+    },
+    "idle": {
+      "vsb_id": "vsb-d58b19365b",
+      "operating_cycles": 21
+    },
+    "mixed": {
+      "vsb_id": "vsb-4a7f3e325d",
+      "operating_cycles": 21
+    }
+  },
+  "samples": [
+    {
+      "beat": 5,
+      "at": "22:17:25",
+      "beat_ms": 223,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick"
+      ],
+      "dcms_bytes": 81612,
+      "ueg_events": 54,
+      "ueg_by_type_top": {
+        "compliance.screen": 25,
+        "economy.cycle_split": 8,
+        "vsb.repo.ship": 5,
+        "heartbeat": 5,
+        "checkpoint": 3,
+        "economy.capital_fund.contribution": 2
+      },
+      "git_objects": {
+        "active": 84,
+        "idle": 46,
+        "mixed": 46
+      },
+      "ueg_verify_ms": 37,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 10,
+      "at": "22:22:26",
+      "beat_ms": 1692,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick",
+        "reshipped_stale_repo"
+      ],
+      "dcms_bytes": 130469,
+      "ueg_events": 94,
+      "ueg_by_type_top": {
+        "compliance.screen": 40,
+        "economy.cycle_split": 13,
+        "heartbeat": 10,
+        "vsb.repo.ship": 8,
+        "economy.capital_fund.contribution": 5,
+        "vsb.repo.stale": 5
+      },
+      "git_objects": {
+        "active": 122,
+        "idle": 46,
+        "mixed": 65
+      },
+      "ueg_verify_ms": 33,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 15,
+      "at": "22:27:26",
+      "beat_ms": 1662,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick",
+        "reshipped_stale_repo"
+      ],
+      "dcms_bytes": 163052,
+      "ueg_events": 124,
+      "ueg_by_type_top": {
+        "compliance.screen": 50,
+        "economy.cycle_split": 18,
+        "heartbeat": 15,
+        "vsb.repo.ship": 10,
+        "economy.capital_fund.contribution": 7,
+        "vsb.repo.stale": 7
+      },
+      "git_objects": {
+        "active": 141,
+        "idle": 46,
+        "mixed": 84
+      },
+      "ueg_verify_ms": 33,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 20,
+      "at": "22:32:25",
+      "beat_ms": 226,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick"
+      ],
+      "dcms_bytes": 195620,
+      "ueg_events": 154,
+      "ueg_by_type_top": {
+        "compliance.screen": 60,
+        "economy.cycle_split": 23,
+        "heartbeat": 20,
+        "vsb.repo.ship": 12,
+        "economy.capital_fund.contribution": 9,
+        "vsb.repo.stale": 9
+      },
+      "git_objects": {
+        "active": 179,
+        "idle": 46,
+        "mixed": 84
+      },
+      "ueg_verify_ms": 40,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 25,
+      "at": "22:37:27",
+      "beat_ms": 2006,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick",
+        "reshipped_stale_repo"
+      ],
+      "dcms_bytes": 244492,
+      "ueg_events": 194,
+      "ueg_by_type_top": {
+        "compliance.screen": 75,
+        "economy.cycle_split": 28,
+        "heartbeat": 25,
+        "vsb.repo.ship": 15,
+        "economy.capital_fund.contribution": 12,
+        "vsb.repo.stale": 12
+      },
+      "git_objects": {
+        "active": 217,
+        "idle": 46,
+        "mixed": 103
+      },
+      "ueg_verify_ms": 30,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 30,
+      "at": "22:42:27",
+      "beat_ms": 2134,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick",
+        "reshipped_stale_repo"
+      ],
+      "dcms_bytes": 277080,
+      "ueg_events": 224,
+      "ueg_by_type_top": {
+        "compliance.screen": 85,
+        "economy.cycle_split": 33,
+        "heartbeat": 30,
+        "vsb.repo.ship": 17,
+        "economy.capital_fund.contribution": 14,
+        "vsb.repo.stale": 14
+      },
+      "git_objects": {
+        "active": 236,
+        "idle": 46,
+        "mixed": 122
+      },
+      "ueg_verify_ms": 41,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 35,
+      "at": "22:47:25",
+      "beat_ms": 232,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick"
+      ],
+      "dcms_bytes": 309648,
+      "ueg_events": 254,
+      "ueg_by_type_top": {
+        "compliance.screen": 95,
+        "economy.cycle_split": 38,
+        "heartbeat": 35,
+        "vsb.repo.ship": 19,
+        "economy.capital_fund.contribution": 16,
+        "vsb.repo.stale": 16
+      },
+      "git_objects": {
+        "active": 274,
+        "idle": 46,
+        "mixed": 122
+      },
+      "ueg_verify_ms": 40,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 40,
+      "at": "22:52:27",
+      "beat_ms": 2063,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick",
+        "reshipped_stale_repo"
+      ],
+      "dcms_bytes": 358520,
+      "ueg_events": 294,
+      "ueg_by_type_top": {
+        "compliance.screen": 110,
+        "economy.cycle_split": 43,
+        "heartbeat": 40,
+        "vsb.repo.ship": 22,
+        "economy.capital_fund.contribution": 19,
+        "vsb.repo.stale": 19
+      },
+      "git_objects": {
+        "active": 312,
+        "idle": 46,
+        "mixed": 141
+      },
+      "ueg_verify_ms": 40,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 45,
+      "at": "22:57:27",
+      "beat_ms": 1862,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick",
+        "reshipped_stale_repo"
+      ],
+      "dcms_bytes": 391108,
+      "ueg_events": 324,
+      "ueg_by_type_top": {
+        "compliance.screen": 120,
+        "economy.cycle_split": 48,
+        "heartbeat": 45,
+        "vsb.repo.ship": 24,
+        "economy.capital_fund.contribution": 21,
+        "vsb.repo.stale": 21
+      },
+      "git_objects": {
+        "active": 331,
+        "idle": 46,
+        "mixed": 160
+      },
+      "ueg_verify_ms": 51,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 50,
+      "at": "23:02:26",
+      "beat_ms": 209,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick"
+      ],
+      "dcms_bytes": 423676,
+      "ueg_events": 354,
+      "ueg_by_type_top": {
+        "compliance.screen": 130,
+        "economy.cycle_split": 53,
+        "heartbeat": 50,
+        "vsb.repo.ship": 26,
+        "economy.capital_fund.contribution": 23,
+        "vsb.repo.stale": 23
+      },
+      "git_objects": {
+        "active": 369,
+        "idle": 46,
+        "mixed": 160
+      },
+      "ueg_verify_ms": 27,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 55,
+      "at": "23:07:27",
+      "beat_ms": 1856,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick",
+        "reshipped_stale_repo"
+      ],
+      "dcms_bytes": 472548,
+      "ueg_events": 394,
+      "ueg_by_type_top": {
+        "compliance.screen": 145,
+        "economy.cycle_split": 58,
+        "heartbeat": 55,
+        "vsb.repo.ship": 29,
+        "economy.capital_fund.contribution": 26,
+        "vsb.repo.stale": 26
+      },
+      "git_objects": {
+        "active": 407,
+        "idle": 46,
+        "mixed": 179
+      },
+      "ueg_verify_ms": 33,
+      "ueg_verify_valid": true
+    },
+    {
+      "beat": 60,
+      "at": "23:12:26",
+      "beat_ms": 166,
+      "actions": [
+        "pulse",
+        "homeostasis",
+        "operate_vsb",
+        "compliance_rescreen",
+        "transformation_tick"
+      ],
+      "dcms_bytes": 505136,
+      "ueg_events": 424,
+      "ueg_by_type_top": {
+        "compliance.screen": 155,
+        "economy.cycle_split": 63,
+        "heartbeat": 60,
+        "vsb.repo.ship": 31,
+        "economy.capital_fund.contribution": 28,
+        "vsb.repo.stale": 28
+      },
+      "git_objects": {
+        "active": 426,
+        "idle": 46,
+        "mixed": 198
+      },
+      "ueg_verify_ms": 32,
+      "ueg_verify_valid": true
+    }
+  ],
+  "note": "REAL-cadence sample \u2014 actual measurements only, nothing extrapolated. Virtual WST throughout; soak revenue explicitly labelled synthetic."
+}

@@ -2265,3 +2265,31 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   That is the trade §6 asks for, and it is now a visible product decision rather than a hidden
   failure: the Owner can accept the wait (the journey already has an SSE streaming variant for
   progress), use a faster owned model (llama3.2:1b is installed), or gate in the external accelerant.
+
+### §8 — a real-cadence 60-minute organism soak (measured, not asserted)
+Ran `scripts/soak_organism.py --minutes 60 --cadence 60` in an isolated data dir: **60 beats at the
+true 60s heartbeat over a full hour**, three living VSBs with active / idle / mixed profiles. Full
+report committed as `docs/soak_report_2026-08-30.json`.
+
+**What it measured:**
+- **No degradation over time.** Beat 5 took 223 ms; beat 60 took 166 ms — while the data underneath
+  grew **6.2×** (DCMS 81,612 → 505,136 bytes) and the UEG chain grew 54 → 424 events. Average beat
+  972 ms, max 2,540 ms. The organism does **not** slow as its own record accumulates, which is the
+  substantive self-management claim.
+- **The living loops genuinely fire**, by UEG event class: `compliance.screen` 155,
+  `economy.cycle_split` 63, `heartbeat` 60, `vsb.repo.ship` 31, `capital_fund.contribution` 28,
+  `vsb.repo.stale` 28. The §13 drift loop is visibly alive — repos go stale and re-ship — and §11
+  re-screening is continuous rather than event-only.
+- Each of the three entities received 21 operating cycles (round-robin, as designed).
+
+**What it does NOT prove — stated plainly:**
+- One hour is a sample, not sustained operation. Nothing here extrapolates to days or weeks.
+- It ran with `AI_DISABLE_LOCAL=1` **on purpose**: this measures ORGANISM dynamics (cadence,
+  compliance, economy, staleness, ledger growth), not AI-mediated evolution. With the live model each
+  beat would overrun its own 60s cadence (§6 measured separately: ~2 min per generation).
+- The integrity-recompute timing field was not sampled in this run (`verify_ms` empty), so W327
+  recompute cost under growth remains unmeasured.
+- **Open observation, not a claim:** the idle-profile VSB received the same 21 operating cycles as
+  the active one. That may be correct (round-robin operation with a near-zero cycle for an idle
+  entity) or it may mean W340's material-change staleness is not damping idle work. It needs its own
+  probe before anything is asserted either way.
