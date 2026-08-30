@@ -5608,8 +5608,14 @@ def test_cca_ui_contract_shapes(client):
     try:
         assert "auto_approved" not in sub and sub["status"] in (
             "submitted", "under_review", "approved")
-        # trailing slash is NOT forgiven (SPA catch-all) — the UI must call the bare path
-        assert client.get("/api/v1/cca/").status_code == 404
+        # Trailing slash is NOT forgiven when the built SPA is served (its catch-all route
+        # intercepts '/api/v1/cca/' before the slash-redirect — true in production and local dev).
+        # Without dist/ (CI's backend job) the 307 redirect fires instead — so assert the 404
+        # only in the SPA-mounted environment; the UI calls the bare path, correct in BOTH.
+        import pathlib as _pl
+        _spa = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "dist" / "index.html"
+        if _spa.exists():
+            assert client.get("/api/v1/cca/").status_code == 404
         d = client.get("/api/v1/cca")
         assert d.status_code == 200
         body = d.json()
