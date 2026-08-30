@@ -83,9 +83,11 @@ a real browser → regression guard → honest progress-log entry.
 - Whole-tree sweep confirms ZERO remaining raw /api anchors, window.open('/api'), or response-field
   hrefs. ALL FIVE LEDGER CLUSTERS ARE NOW CLOSED.
 
-**New discovery-sweep item (open):** ws://localhost:8010/api/v154/ws/streams fails repeatedly in the
-browser console (pre-existing; the frontend opens a WebSocket the backend refuses) — triage in the
-discovery sweep.
+**Discovery-sweep item — INVESTIGATED, NOT A DEFECT (2026-08-30):** the repeated
+`ws://localhost:8010/api/v154/ws/streams` failures + 500s in the console were logged while the dev
+backend was down/restarting. Re-probed against a healthy backend: the WebSocket opens cleanly
+(`result: open`, the handler is real at app_mvp.py:498) and all six Shell-polled status endpoints
+return 200. Recorded here rather than "fixed" — a normalization/timing artifact is not a defect.
 
 ## Endpoint layer (method-aware diff: 170 UI calls vs 459 backend method+route pairs)
 - Exactly ONE missing endpoint: `POST /api/v1/claude/chat` (components/ClaudeAgentPanel.tsx) — backend has only `/api/v1/claude/status`. **CONFIRMED**

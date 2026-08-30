@@ -1862,3 +1862,17 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
 - Swept the whole src tree afterwards: ZERO remaining raw `/api` anchors, `window.open('/api'…)`,
   or response-field hrefs. Verified the underlying fetch path serves a real generated VSB website
   page (HTTP 200, real HTML). tsc 0.
+
+### Round-11 discovery sweep — 18 routes, instrumented, clean
+- Swept /, my-work, deliverables, genesis, economy, native-ai, resource-fabric, organism,
+  change-control, governance-hub, marketplace, settings, projects, solutions, ceo, management,
+  transformation, cognition in a REAL browser, instrumenting BOTH `fetch` and `XMLHttpRequest`
+  (axios) plus console.error, and flagging any near-blank page.
+- Result: **zero failed calls, zero console errors, zero blank pages.**
+- The harness was then VALIDATED against deliberate bad calls (one fetch, one XHR) and captured
+  both 404s — so the clean result is a real signal, not a blind instrument. (The first pass caught
+  only `fetch`; axios/XHR was added after noticing the gap.)
+- The earlier `ws://…/api/v154/ws/streams` console failures were re-probed against a healthy
+  backend: the socket opens cleanly and all six Shell-polled status endpoints return 200 — those
+  errors were logged while the dev backend was restarting. Recorded as NOT a defect rather than
+  "fixed".
