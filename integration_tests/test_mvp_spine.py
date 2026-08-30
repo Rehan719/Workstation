@@ -6045,3 +6045,45 @@ def test_ueg_first_touch_construction_is_race_free(tmp_path):
             "first-touch construction — an initialisation race is erasing ledger events")
         assert UEGLogger(path).verify_chain().get("valid") is True, (
             f"trial {trial}: chain invalid after concurrent first touch")
+
+
+def test_ai_memory_survives_concurrent_writes(tmp_path, monkeypatch):
+    """W368 — concurrent AI-memory writes must not destroy each other.
+
+    `add_memory` was an UNSERIALISED read-append-write, and `_write` was a bespoke temp+os.replace
+    that bypassed the hardened shared writer. Measured before the fix with 8 concurrent writers x
+    15 writes: **107 of 120 memories lost and 93 PermissionError raised** (os.replace fails on
+    Windows when another writer holds the destination). The gateway writes here after every
+    completion, so this ran on the live request path. After the fix: 0 lost, 0 raised.
+    """
+    import json as _json
+    import threading as _th
+    import importlib
+
+    store = tmp_path / "memory.json"
+    import agentic_core.ai.memory as _mem
+    importlib.reload(_mem)
+    m = _mem.VectorMemory()
+    monkeypatch.setattr(m, "storage_path", str(store), raising=False)
+
+    WRITERS, EACH = 8, 15
+    errors: list = []
+
+    def writer(w: int):
+        for i in range(EACH):
+            try:
+                m.add_memory(f"probe w{w} i{i}", {"w": w})
+            except Exception as exc:                     # noqa: BLE001 — recording, not swallowing
+                errors.append(type(exc).__name__)
+
+    threads = [_th.Thread(target=writer, args=(k,)) for k in range(WRITERS)]
+    for th in threads:
+        th.start()
+    for th in threads:
+        th.join()
+
+    assert not errors, f"concurrent memory writes raised: {sorted(set(errors))}"
+    stored = _json.loads(store.read_text(encoding="utf-8"))
+    assert len(stored) == WRITERS * EACH, (
+        f"{WRITERS * EACH - len(stored)} of {WRITERS * EACH} memories were destroyed by "
+        "concurrent writers — the read-append-write cycle is not serialised")

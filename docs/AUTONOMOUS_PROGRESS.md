@@ -1993,3 +1993,23 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   loses events in **18 of 60 trials before the fix and 0 of 60 after**.
 - Guard: `test_ueg_first_touch_construction_is_race_free` (12 trials × 6 threads, asserting every
   event survives and the chain still verifies).
+
+### W368 — the same defect class, found by sweeping: the AI memory store was losing most writes
+- W367 was a *class*, not a one-off, so the tree was swept for the same shapes (unguarded singleton
+  init; "create empty store if absent" clobber; bespoke atomic-write reimplementations). That found
+  `ai/memory.py`.
+- **Measured, clean harness (8 concurrent writers × 15 writes = 120 expected):
+  107 memories LOST and 93 PermissionError RAISED.** Two causes, both the same family as defects
+  already fixed elsewhere:
+  1. `add_memory` was an UNSERIALISED read-append-write — concurrent writers each loaded the same
+     list and wrote back their own copy, destroying every other append.
+  2. `_write` was a *second implementation* of atomic write (bespoke temp + `os.replace`) that never
+     received W348's bounded replace-retry, so on Windows it raised whenever another writer held
+     the destination.
+- This is on the LIVE request path: the gateway writes a memory after every completion, so
+  concurrent requests were actively losing them.
+- **Fixed**: the cycle now runs under `store_lock` (threads AND processes, as the money paths and
+  the constitutional ledger already do), and `_write` delegates to the hardened
+  `config.atomic_write_json` instead of duplicating it. A lock timeout skips the memory and says so
+  in the log — a memory is never worth failing a user's AI call, but silence would be dishonest.
+- **After the fix: 0 lost, 0 raised.** Guarded by `test_ai_memory_survives_concurrent_writes`.
