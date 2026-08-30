@@ -63,6 +63,19 @@ a real browser → regression guard → honest progress-log entry.
   QEPFlagshipFeatures cards (mock results on 7 hub pages); CEOChat "Retry" flipping the status pill
   without reconnecting; the unbound Composer temperature slider.
 
+**Batch D — cluster 3 COMPLETE (all remaining fabricated handlers), 2026-08-30:**
+- SolutionsPlatform: design-catch fabrication removed (failure now visible); Build no longer invents
+  a provisioned infrastructure (honest PLAN instead); Launch replaced the scripted always-success
+  "Mission is LIVE" log with a REAL readiness check + an honest "this page provisions nothing" +
+  a pointer to Genesis.
+- QEPDashboard engine cards (7 hub pages) and the 13 QEPFlagshipFeatures cards: mock results deleted,
+  honest "not yet built" states with links to the live capabilities.
+- CEOChat "Retry": real health check instead of flipping the pill to online.
+- VisualAgentComposer temperature slider: bound to the agent's real params.temp (was inert).
+- Proof: the shipped bundle contains ZERO occurrences of the fabricated strings ("Mission … is LIVE",
+  "All systems nominal", "infra-", "Engine running at 100", "CERT-87a1b2c3", "1,420", "2.42x",
+  "Provisioning infrastructure"). CLUSTER 3 IS CLOSED.
+
 **New discovery-sweep item (open):** ws://localhost:8010/api/v154/ws/streams fails repeatedly in the
 browser console (pre-existing; the frontend opens a WebSocket the backend refuses) — triage in the
 discovery sweep.

@@ -109,13 +109,28 @@ const VisualAgentComposer: React.FC = () => {
                             <p className="text-[11px] text-[#aaa]">Agent ID: <span className="text-[#00d4ff]">{selectedAgent.id}</span></p>
                             <div className="mt-2.5">
                                 <label htmlFor="agent-inference-temp" className="text-[10px] block mb-1">Inference Temperature</label>
+                                {/* Ledger cluster 3 — this slider was completely unbound (no value,
+                                    no onChange): dragging it changed nothing anywhere. It now edits
+                                    the selected agent's real params.temp. */}
                                 <input
                                     id="agent-inference-temp"
                                     type="range"
+                                    min={0}
+                                    max={1}
+                                    step={0.05}
                                     aria-label="Inference Temperature"
                                     title="Inference Temperature"
                                     className="w-full"
+                                    value={selectedAgent.params?.temp ?? 0.7}
+                                    onChange={e => {
+                                        const temp = Number(e.target.value);
+                                        setAgents(prev => prev.map(a =>
+                                            a.id === selectedAgent.id
+                                                ? { ...a, params: { ...a.params, temp } }
+                                                : a));
+                                    }}
                                 />
+                                <p className="text-[10px] text-[#aaa] mt-1">temp: {(selectedAgent.params?.temp ?? 0.7).toFixed(2)}</p>
                             </div>
                             <div className="mt-[15px] p-2.5 bg-[#111] rounded-md border-l-[3px] border-[#00ff00]">
                                 <div className="text-[9px] text-[#00ff00] font-bold">GaaS COMPLIANT</div>

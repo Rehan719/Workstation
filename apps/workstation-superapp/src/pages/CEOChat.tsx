@@ -187,7 +187,15 @@ export const CEOChat: React.FC = () => {
           {aiStatus !== 'online' && (
             <button
               type="button"
-              onClick={() => setAiStatus('online')}
+              onClick={async () => {
+                    // Ledger cluster 3 — this used to just flip the pill to 'online', showing a dead
+                    // backend as healthy. It now performs a REAL health check.
+                    setAiStatus('offline');   // neutral while the check runs
+                    try {
+                      const r = await fetch('/api/v1/native-ai/status');
+                      setAiStatus(r.ok ? 'online' : 'offline');
+                    } catch { setAiStatus('offline'); }
+                  }}
               title="Retry connection"
               aria-label="Retry connection"
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-500/30 text-amber-500 hover:bg-amber-500/10 transition-colors"

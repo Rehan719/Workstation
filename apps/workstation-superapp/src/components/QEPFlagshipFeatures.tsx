@@ -40,31 +40,13 @@ export const QEPFlagshipFeatures: React.FC = () => {
     { id: 'swarm', name: 'Swarm Learning', icon: Share2, color: 'text-aura', desc: 'AI-coordinated group pacing.' },
   ];
 
-  const launchFeature = async (id: string) => {
-    setLoading(true);
+  // Ledger cluster 3 — this used to sleep 1.2s and render hardcoded mock results for all 13
+  // cards (fake tajwid scores, a fabricated "ISSUED" certificate id, invented active-user counts,
+  // a zakat eligibility flag) with a success tick, calling no backend. None of these modules has
+  // an endpoint yet, so selecting a card now says so honestly instead of inventing an outcome.
+  const launchFeature = (id: string) => {
     setActiveFeature(id);
-    // Simulated API call to the new CEO tools
-    await new Promise(resolve => setTimeout(resolve, 1200));
-
-    // Mock data based on the backend QEPFlagshipService
-    const mockData: Record<string, any> = {
-      tajwid: { score: 0.92, suggestions: ["Madd Jaa'iz", "Ikhfa'"] },
-      memorization: { next_review: "Tomorrow", strength: 0.85 },
-      competitions: { rank: 3, points: 8100 },
-      ar_vr: { mode: "VR", scene: "Historical_Makkah_360" },
-      education: { playlists: ["Surah Al-Fatiha Deep Dive"], progress: 0.45 },
-      adaptive_ui: { theme: "Sovereign_Dark", layout: "Guided" },
-      community: { active_users: 142, rooms: 1 },
-      analytics: { mastery: 0.88, trends: ["Focused", "Calm"] },
-      credentials: { status: "ISSUED", id: "CERT-87a1b2c3" },
-      offline: { assets_ready: 3, sync_pending: 0 },
-      finance: { zakat_eligible: true, methods: ["Sovereign-Pay"] },
-      assistant: { response: "Consistency is key to growth.", references: ["2:183"] },
-      swarm: { cohesion: 0.92, active_swarms: 5 }
-    };
-
-    setData(mockData[id]);
-    setLoading(false);
+    setData({ status: 'not yet built' });
   };
 
   return (
@@ -108,11 +90,19 @@ export const QEPFlagshipFeatures: React.FC = () => {
                       <h3 className="text-3xl font-black text-white uppercase tracking-tighter">
                         {features.find(f => f.id === activeFeature)?.name} Module
                       </h3>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Execution Mode: Sovereign-Integrated</p>
+                      <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Not yet built — nothing was run</p>
                     </div>
                   </div>
                   <Button variant="outline" onClick={() => setActiveFeature(null)}>Minimize</Button>
                 </div>
+
+                <p className="text-sm text-slate-400 font-bold leading-relaxed mb-8 max-w-2xl">
+                  This module is described in the platform plan but has no backend yet, so no result can be
+                  shown — a fabricated one would be worse than none. The capabilities that ARE live for this
+                  domain are the AI-mediated domain tools on this page, the{' '}
+                  <a href="/native-ai" className="text-aura underline underline-offset-2">Native AI fabric</a>, and{' '}
+                  <a href="/genesis" className="text-aura underline underline-offset-2">Genesis</a> for establishing a living enterprise.
+                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                   {Object.entries(data).map(([key, val]: [string, any]) => (

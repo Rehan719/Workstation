@@ -1825,3 +1825,27 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   with the truth: Owner · sovereign, the real pending-constitutional-change count, and what a
   sovereign vote actually does.
 - tsc 0. Frontend-only.
+
+### Batch D — cluster 3 completed: every remaining fabricated handler removed
+- **SolutionsPlatform**: `handleDesign`'s catch used to FABRICATE a canned specification and mark the
+  phase done, so a failed AI call looked like a successful design — now it surfaces the failure and
+  leaves the phase idle. `handleBuild` used to sleep 1.8s and invent a provisioned infrastructure
+  (random `infrastructure_id`, invented `estimated_tps`, a `provisioned_at` timestamp) although NO
+  provisioning backend exists — it now records an honestly-labelled deployment PLAN. `handleLaunch`
+  played an 11-step scripted log always ending "All systems nominal / Mission is LIVE" while
+  contacting nothing — it now runs a REAL readiness check (native-AI fabric + UEG chain), states
+  plainly that this surface provisions nothing, and points to Genesis, which genuinely establishes a
+  living VSB.
+- **QEPDashboard** (engine cards on 7 hub pages): clicking used to sleep 1.5s and render a hardcoded
+  "status: OPTIMAL / Engine running at 100% fidelity". Now says honestly that the engine has no
+  backend yet and links the capabilities that ARE live (Native AI fabric, Resource Fabric).
+- **QEPFlagshipFeatures** (13 cards): mock tajwid scores, a fabricated "ISSUED" certificate id,
+  invented active-user counts and a zakat-eligibility flag — all deleted for an honest
+  "not yet built" state with real alternatives.
+- **CEOChat "Retry"**: flipped the status pill to online without reconnecting; now performs a real
+  health check against /api/v1/native-ai/status.
+- **VisualAgentComposer temperature slider**: was completely unbound (no value/onChange); now edits
+  the selected agent's real `params.temp` and displays it.
+- Verified by grepping the SHIPPED bundle: "Mission … is LIVE", "All systems nominal", "infra-",
+  "Engine running at 100", "CERT-87a1b2c3", "1,420", "2.42x", "Provisioning infrastructure" — all 0
+  occurrences. tsc 0 + vite build clean.

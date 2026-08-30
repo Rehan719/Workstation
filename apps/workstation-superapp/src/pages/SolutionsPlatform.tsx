@@ -9,6 +9,7 @@ import {
   MonitorPlay, Database, Cloud, GitBranch, Wrench,
 } from 'lucide-react';
 import { Card } from '@workstation/ui';
+import { apiJson, errorMessage } from '../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ export const SolutionsPlatform: React.FC = () => {
   });
   const [building, setBuilding] = useState(false);
   const [builtConfig, setBuiltConfig] = useState<any>(null);
+  const [designErr, setDesignErr] = useState('');   // cluster 3 — a failed design is now visible
 
   // Launch state
   const [missionName, setMissionName] = useState('');
@@ -119,7 +121,7 @@ export const SolutionsPlatform: React.FC = () => {
 
   const handleDesign = async () => {
     if (!spec.description.trim()) return;
-    setDesigning(true);
+    setDesigning(true); setDesignErr('');
     setStatus(s => ({ ...s, design: 'running' }));
     try {
       const prompt = `You are a sovereign solutions architect. Design a concise technical specification for the following solution.
@@ -136,9 +138,12 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
       const generatedSpec = resp.data?.response || resp.data?.message || resp.data?.content || 'Specification generated. Review and proceed to Build phase.';
       setSpec(s => ({ ...s, generated_spec: generatedSpec }));
       setStatus(s => ({ ...s, design: 'done' }));
-    } catch {
-      setSpec(s => ({ ...s, generated_spec: `## Solution Specification\n\n**${spec.solution_name || 'Solution'}**\n\n**Overview:** ${spec.description}\n\n**Domains:** ${spec.domains.join(', ') || 'Cross-domain'}\n\n**Objectives:**\n${spec.objectives.map(o => `- ${o}`).join('\n') || '- Deliver sovereign AI-mediated solution'}\n\n**Architecture:** Multi-layer sovereign mesh with L1–L12 fabric, AI gateway integration, and domain-specific modules.\n\n**AI Integration:** ${spec.ai_model} as the primary inference layer with fallback to sovereign offline models.\n\n**Success Metrics:** Deployment stability, latency <200ms P99, 99.9% uptime.` }));
-      setStatus(s => ({ ...s, design: 'done' }));
+    } catch (e: any) {
+      // Ledger cluster 3 — this catch used to FABRICATE a canned specification and mark the phase
+      // 'done', so a failed AI call looked like a successful design. Surface the failure instead.
+      setSpec(s => ({ ...s, generated_spec: '' }));
+      setDesignErr(`Specification generation failed: ${e?.response?.data?.detail ?? 'the AI fabric did not respond'}. Nothing was generated.`);
+      setStatus(s => ({ ...s, design: 'idle' }));
     } finally {
       setDesigning(false);
     }
@@ -153,20 +158,22 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
   // ── Build phase ────────────────────────────────────────────────────────────
 
   const handleBuild = async () => {
+    // Ledger cluster 3 — this used to sleep 1.8s and fabricate a provisioned infrastructure
+    // (random infrastructure_id, invented estimated_tps, a provisioned_at timestamp) although NO
+    // provisioning backend exists. It now records the Owner's deployment PLAN, labelled as a plan.
+    // Establishing something that actually runs is Genesis's job (/genesis), linked from Launch.
     setBuilding(true);
     setStatus(s => ({ ...s, build: 'running' }));
-    await new Promise(r => setTimeout(r, 1800));
     const config = {
-      infrastructure_id: `infra-${Math.random().toString(36).slice(2, 9)}`,
+      status: 'PLAN ONLY \u2014 nothing provisioned',
       regions: buildConfig.regions,
       total_nodes: buildConfig.nodes,
       mode: buildConfig.mode,
       facility: buildConfig.facility_type,
       scale: buildConfig.scale_tier,
       mesh_topology: buildConfig.regions.length > 1 ? 'multi-region federated' : 'single-region',
-      estimated_tps: buildConfig.scale_tier === 'planetary' ? '50,000+' : buildConfig.scale_tier === 'enterprise' ? '10,000' : buildConfig.scale_tier === 'standard' ? '2,000' : '200',
-      security_posture: 'Constitutional compliance (gaas.v5) · UEG audit chain — honest: no PQC implementation exists',
-      provisioned_at: new Date().toISOString(),
+      planned_at: new Date().toISOString(),
+      governance: 'Constitutional compliance (gaas.v5) \u00b7 UEG audit chain',
     };
     setBuiltConfig(config);
     setStatus(s => ({ ...s, build: 'done' }));
@@ -177,30 +184,36 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
 
   const handleLaunch = async () => {
     if (!missionName.trim()) return;
+    // Ledger cluster 3 — this used to play an 11-step scripted log that ALWAYS ended in
+    // "All systems nominal / Mission is LIVE", contacting no backend: a launch that launched
+    // nothing. It now runs a REAL readiness check against the live fabric and states plainly that
+    // this surface does not deploy — Genesis (/genesis) is what establishes a living VSB.
     setLaunching(true);
     setStatus(s => ({ ...s, launch: 'running' }));
     setMissionLog([]);
-    const id = `VSB-MISSION-${Date.now().toString(36).toUpperCase()}`;
+    const id = `PLAN-${Date.now().toString(36).toUpperCase()}`;
     setMissionId(id);
 
-    const steps: Array<[string, MissionLog['level'], number]> = [
-      ['Initialising sovereign execution context...', 'info', 400],
-      ['Verifying constitutional compliance (1127 articles)...', 'info', 600],
-      [`Loading solution spec: ${spec.solution_name || 'Untitled'}`, 'info', 500],
-      [`Connecting to infrastructure: ${builtConfig?.infrastructure_id || 'local'}`, 'info', 700],
-      [`Activating ${buildConfig.nodes} node${buildConfig.nodes > 1 ? 's' : ''} across ${buildConfig.regions.join(', ')}...`, 'info', 900],
-      ['Bootstrapping AI gateway layer...', 'info', 600],
-      ['Domain modules online: ' + (spec.domains.join(', ') || 'cross-domain'), 'info', 500],
-      [`Execution mode: ${execMode.toUpperCase()}`, 'info', 300],
-      ['Running pre-launch diagnostics...', 'info', 800],
-      ['All systems nominal.', 'success', 400],
-      [`Mission ${id} is LIVE.`, 'success', 200],
-    ];
+    appendLog(`Readiness check for "${missionName}" \u2014 querying the live fabric...`, 'info');
+    let ready = true;
+    try {
+      const ai = await apiJson('/api/v1/native-ai/status');
+      const models = (ai?.owned_models ?? ai?.models ?? []).length;
+      appendLog(`Native AI fabric: reachable${models ? ` \u00b7 ${models} owned model(s)` : ''}.`, 'success');
+    } catch (e) { ready = false; appendLog(`Native AI fabric: ${errorMessage(e)}`, 'warn'); }
+    try {
+      const ueg = await apiJson('/api/v1/gaas/ueg/verify');
+      appendLog(ueg.valid
+        ? `Constitutional ledger: chain VALID (${ueg.events} events).`
+        : 'Constitutional ledger: CHAIN INVALID \u2014 resolve before establishing anything.', ueg.valid ? 'success' : 'warn');
+      if (!ueg.valid) ready = false;
+    } catch (e) { ready = false; appendLog(`Constitutional ledger: ${errorMessage(e)}`, 'warn'); }
 
-    for (const [msg, level, delay] of steps) {
-      await new Promise(r => setTimeout(r, delay));
-      appendLog(msg, level);
-    }
+    appendLog(`Deployment plan: ${buildConfig.nodes} node(s) \u00b7 ${buildConfig.regions.join(', ') || 'no region selected'} \u00b7 ${buildConfig.scale_tier}.`, 'info');
+    appendLog(ready
+      ? 'Readiness check PASSED. No infrastructure was provisioned by this page \u2014 it produces a plan.'
+      : 'Readiness check found problems above. No infrastructure was provisioned.', ready ? 'success' : 'warn');
+    appendLog('To establish something that actually runs, use Genesis \u2014 it creates a living VSB IDBO entity.', 'info');
 
     setLaunching(false);
     setStatus(s => ({ ...s, launch: 'done' }));
@@ -400,6 +413,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                       <div>
                         <p className="text-sm font-black text-slate-700 uppercase tracking-tight italic">No Specification Yet</p>
                         <p className="text-xs text-slate-600 font-bold mt-1 max-w-xs">Fill in the solution brief and click Generate Specification.</p>
+                        {designErr && <p className="text-[11px] text-vital font-bold mt-3 max-w-xs">{designErr}</p>}
                       </div>
                     </div>
                   )}
@@ -581,7 +595,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Database size={14} className="text-amber-400" />
-                      <span className="text-[9px] font-black text-amber-400 uppercase tracking-[0.25em]">Infrastructure Blueprint</span>
+                      <span className="text-[9px] font-black text-amber-400 uppercase tracking-[0.25em]">Deployment Plan (not provisioned)</span>
                     </div>
                     {builtConfig && (
                       <button type="button" onClick={() => setActivePhase('launch')}
@@ -604,7 +618,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                         <div className="absolute inset-0 rounded-full border-2 border-amber-500/20 animate-ping" />
                         <div className="w-16 h-16 rounded-full border-2 border-amber-500 animate-spin border-t-transparent" />
                       </div>
-                      <p className="text-amber-400 font-black uppercase tracking-[0.25em] text-xs animate-pulse">Provisioning infrastructure...</p>
+                      <p className="text-amber-400 font-black uppercase tracking-[0.25em] text-xs animate-pulse">Recording the deployment plan...</p>
                     </div>
                   )}
                   {builtConfig && !building && (
@@ -681,8 +695,8 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                         <span className="text-aura font-bold ml-1.5">{spec.domains.length || 'All'}</span>
                       </div>
                       <div>
-                        <span className="text-slate-600">TPS:</span>
-                        <span className="text-emerald-400 font-bold ml-1.5">{builtConfig?.estimated_tps || '—'}</span>
+                        <span className="text-slate-600">Plan:</span>
+                        <span className="text-emerald-400 font-bold ml-1.5">{builtConfig ? 'recorded' : '—'}</span>
                       </div>
                     </div>
                   </div>
@@ -756,13 +770,13 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <MonitorPlay size={14} className="text-emerald-400" />
-                      <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.25em]">Mission Log</span>
+                      <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.25em]">Readiness Log</span>
                       {missionId && <span className="text-[9px] font-mono text-slate-600">{missionId}</span>}
                     </div>
                     {status.launch === 'done' && (
                       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Live</span>
+                        <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Checked</span>
                       </div>
                     )}
                   </div>

@@ -33,21 +33,15 @@ export const QEPDashboard: React.FC<QEPDashboardProps> = ({ domain = 'religion' 
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Record<string, QEPResult>>({});
 
-  const runEngine = async (engine: string) => {
-    setLoading(true);
+  // Ledger cluster 3 — clicking a card used to sleep 1.5s and render a hardcoded
+  // "status: OPTIMAL / Engine running at 100% fidelity" result on SEVEN hub pages, calling no
+  // backend at all. These four engines have no endpoint yet, so selecting a card now simply
+  // selects it and the panel says so honestly, pointing at the surfaces that ARE real.
+  const runEngine = (engine: string) => {
     setActiveEngine(engine);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const mockResult: QEPResult = {
-        engine,
-        timestamp: new Date().toISOString(),
-        status: 'OPTIMAL',
-        domain_context: domain
-      };
-      setResults(prev => ({ ...prev, [engine]: mockResult }));
-    } finally {
-      setLoading(false);
-    }
+    setResults(prev => ({ ...prev, [engine]: {
+      engine, timestamp: new Date().toISOString(), status: 'NOT_WIRED', domain_context: domain,
+    } }));
   };
 
   const engines = [
@@ -79,7 +73,7 @@ export const QEPDashboard: React.FC<QEPDashboardProps> = ({ domain = 'religion' 
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${activeEngine === engine.id ? 'bg-aura text-sovereign' : 'bg-slate-900 text-aura group-hover:bg-aura/20'}`}>
                 <engine.icon size={24} />
               </div>
-              {results[engine.id] && <Badge color="aura">Active</Badge>}
+              {results[engine.id] && <Badge color="amber-500">Not wired</Badge>}
             </div>
             <h3 className="text-lg font-black text-white mb-2">{engine.name}</h3>
             <p className="text-xs text-slate-500 font-bold leading-relaxed mb-6">{engine.desc}</p>
@@ -101,13 +95,18 @@ export const QEPDashboard: React.FC<QEPDashboardProps> = ({ domain = 'religion' 
               <div className="flex justify-between items-center mb-10">
                 <h3 className="text-2xl font-black text-white flex items-center gap-4 uppercase tracking-tight">
                   <BarChart3 size={24} className="text-aura" />
-                  {activeEngine} Execution Results
+                  {activeEngine} — status
                 </h3>
                 <span className="text-[10px] font-mono text-slate-600">{results[activeEngine].timestamp}</span>
               </div>
               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
                  <p className="text-[10px] font-black text-slate-500 uppercase mb-2">Context: {results[activeEngine].domain_context}</p>
-                 <p className="text-xl font-black text-white">Engine running at 100% fidelity for {domain} domain.</p>
+                 <p className="text-base font-black text-amber-400">This engine is not wired to a backend yet — nothing was run.</p>
+                 <p className="text-xs text-slate-400 font-bold mt-2 leading-relaxed">
+                   The capabilities that ARE live: the <a href="/native-ai" className="text-aura underline underline-offset-2">Native AI fabric</a> (owned
+                   models, swarm, ensemble) and the <a href="/resource-fabric" className="text-aura underline underline-offset-2">Resource Fabric</a>.
+                   Use the domain tools on this page for real, AI-mediated work in {domain}.
+                 </p>
               </div>
             </Card>
           </motion.div>
