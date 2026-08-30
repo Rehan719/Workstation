@@ -68,7 +68,8 @@ a real browser → regression guard → honest progress-log entry.
   submitted,review_started,approved,twin_prevalidation_pass.
 - Fabricated "1,420 reputation / 2.42x voting weight / 142 cross-realm contributions" panel deleted;
   replaced with Owner-sovereign truth + the real pending-change count.
-- STILL OPEN in cluster 3 (next): SolutionsPlatform Build/Launch fake provisioning + scripted
+- (Was listed here as STILL OPEN mid-round; ALL of it was closed by Batch D immediately below —
+  corrected so this durable record cannot mislead a later reader.) Formerly open: SolutionsPlatform Build/Launch fake provisioning + scripted
   "Mission is LIVE" log and its catch that fabricates a spec; QEPDashboard engine cards and the 13
   QEPFlagshipFeatures cards (mock results on 7 hub pages); CEOChat "Retry" flipping the status pill
   without reconnecting; the unbound Composer temperature slider.

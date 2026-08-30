@@ -2246,3 +2246,22 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
 - **Honest note on my own process:** one earlier journey run was invalid because I saw "(old backend
   up)" and re-ran without restarting it, so it measured pre-fix code. The re-run after a real
   restart is what produced the numbers above.
+
+### §6 CLOSED — the owned model now serves the FLAGSHIP journey end to end
+- Measured, not asserted. The full Concept → Commercialisation journey:
+  **`served_by: {"ollama": 11}` — all 11 stages served by the owned model, zero floor fallbacks**,
+  no engine scaffolding, real content ("**Concept Name:** HalalConnect — A Zero-Waste Community Meal
+  Service for Elderly Londoners…"). Phase 1 alone is 2,628 chars of genuine reasoning.
+- **Before this round the same journey returned `{"native": 11}` in 2 seconds** — every stage a
+  template. The §6 mandate ("Workstation's OWN AI must genuinely serve") was reported as satisfied
+  by `/native-ai/status` while being false in practice.
+- It took FOUR independent fixes, each found by measuring rather than reasoning:
+  W375 (budget sized from its own timeouts: 35s vs the ~98s needed) → W378 (the poisoned success
+  record kept it demoted even after the fix; auditable re-baseline) → W379 (the per-chunk read
+  timeout killed cold loads at 66s while the budget was correctly 180s) → W380 (demotion at <0.6
+  exiled a model measured at 58.8%, and the floor is a fallback, not a rival).
+- **The honest cost: 1,309 seconds (~22 minutes) for the full journey.** Real owned-model reasoning
+  on commodity hardware is minutes per stage, where the floor answered instantly with template text.
+  That is the trade §6 asks for, and it is now a visible product decision rather than a hidden
+  failure: the Owner can accept the wait (the journey already has an SSE streaming variant for
+  progress), use a faster owned model (llama3.2:1b is installed), or gate in the external accelerant.
