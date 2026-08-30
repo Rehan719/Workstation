@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { progressWidthClass } from '../../lib/progressWidth';
+import { apiJson, errorMessage } from '../../lib/api';
 
 // ── Governance Proposals sub-component ────────────────────────────────────────
 
@@ -105,40 +106,48 @@ type Tab = 'audit' | 'vault' | 'sanctum';
 
 const AuditTab: React.FC = () => {
   const navigate = useNavigate();
-  const [commits, setCommits] = useState<any[]>([]);
-  const [inventory, setInventory] = useState<any>(null);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'FAILED'>('ALL');
+  // Ledger cluster 3 — the audit surface is REAL now. "Run Manual Audit" recomputes the whole
+  // tamper-evident UEG hash chain (GET /api/v1/gaas/ueg/verify) and the log lists ACTUAL
+  // constitutional events. The old tab fabricated PASSED commit rows with Math.random() hashes
+  // and hardcoded inventory stats — deleted.
+  const [verify, setVerify] = useState<{ valid: boolean; events: number; root_hash: string } | null>(null);
+  const [events, setEvents] = useState<any[]>([]);
+  const [auditRuns, setAuditRuns] = useState<{ at: string; valid: boolean; events: number; root: string }[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'FLAGGED'>('ALL');
   const [auditing, setAuditing] = useState(false);
-  const [selectedCommit, setSelectedCommit] = useState<any>(null);
+  const [loadErr, setLoadErr] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
-  useEffect(() => {
-    const mockInventory = {
-      articles_verified: 1127,
-      gaas_mutations: 12,
-      zero_placeholder_integrity: true,
-      critical_enforcement: '100%',
-    };
-    const mockCommits = [
-      { hash: '2867f475', status: 'PASSED', date: '2026-03-26', issues: 0 },
-      { hash: '77860782', status: 'PASSED', date: '2026-03-25', issues: 0 },
-      { hash: 'a1b2c3d4', status: 'FAILED', date: '2026-03-24', issues: 2, msg: 'Missing GaaS validation on endpoint /api/v1/meta' },
-    ];
-    fetch('/api/v154/status')
-      .then(() => { setInventory(mockInventory); setCommits(mockCommits); })
-      .catch(() => { setInventory(mockInventory); setCommits(mockCommits); });
-  }, []);
-
-  const filteredCommits = statusFilter === 'ALL' ? commits : commits.filter(c => c.status === 'FAILED');
-
-  const runManualAudit = () => {
-    setAuditing(true);
-    setTimeout(() => {
-      setCommits(prev => [
-        { hash: Math.random().toString(16).slice(2, 10), status: 'PASSED', date: new Date().toISOString().slice(0, 10), issues: 0 },
-        ...prev,
+  const load = async () => {
+    try {
+      const [v, ev] = await Promise.all([
+        apiJson('/api/v1/gaas/ueg/verify'),
+        apiJson('/api/v1/gaas/ueg/events?limit=40'),
       ]);
-      setAuditing(false);
-    }, 1200);
+      setVerify(v);
+      setEvents((ev.events ?? []).slice().reverse());   // newest first
+      setLoadErr('');
+    } catch (e) { setLoadErr(errorMessage(e)); }
+  };
+  useEffect(() => { load(); }, []);
+
+  const isFlagged = (e: any) => {
+    const d = e?.data ?? {};
+    return d.decision === 'deny' || d.status === 'denied' || String(d.type ?? '').includes('violation');
+  };
+  const filteredEvents = statusFilter === 'ALL' ? events : events.filter(isFlagged);
+  const fmtTs = (ts: number) => { try { return new Date(ts * 1000).toLocaleString(); } catch { return String(ts); } };
+
+  const runManualAudit = async () => {
+    setAuditing(true);
+    try {
+      const v = await apiJson('/api/v1/gaas/ueg/verify');   // REAL: recomputes the full chain
+      setVerify(v);
+      setAuditRuns(prev => [{ at: new Date().toLocaleString(), valid: v.valid, events: v.events,
+                              root: String(v.root_hash).slice(0, 12) }, ...prev]);
+      await load();
+    } catch (e) { setLoadErr(errorMessage(e)); }
+    setAuditing(false);
   };
 
   return (
@@ -146,30 +155,32 @@ const AuditTab: React.FC = () => {
       <div className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h2 className="text-2xl font-black text-white uppercase tracking-tight">GaaS Audit Center</h2>
-          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em] mt-1">Constitutional Compliance • CI/CD Monitoring • v0.3</p>
+          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em] mt-1">Constitutional UEG chain · tamper-evidence recomputed on demand</p>
         </div>
         <div className="flex gap-3 flex-wrap shrink-0">
           <Button onClick={() => navigate('/change-control')} variant="outline" className="border-slate-800"><History size={16} /> Full History</Button>
           <Button onClick={runManualAudit} disabled={auditing} className="bg-white text-sovereign shadow-xl">
-            <ShieldCheck size={16} /> {auditing ? 'Auditing...' : 'Run Manual Audit'}
+            <ShieldCheck size={16} /> {auditing ? 'Verifying chain...' : 'Run Manual Audit'}
           </Button>
         </div>
       </div>
 
+      {loadErr && <p className="text-vital text-xs font-bold">{loadErr}</p>}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <AuditStatCard label="Articles Verified" value={inventory?.articles_verified || '0'} icon={CheckCircle2} color="text-aura" />
-        <AuditStatCard label="Enforcement" value={inventory?.critical_enforcement || '0%'} icon={ShieldCheck} color="text-emerald-500" />
-        <AuditStatCard label="Mutation Blocks" value="0" icon={XCircle} color="text-vital" />
-        <AuditStatCard label="System Integrity" value="OPTIMAL" icon={AlertCircle} color="text-highlight" />
+        <AuditStatCard label="UEG Events" value={verify ? verify.events : '—'} icon={CheckCircle2} color="text-aura" />
+        <AuditStatCard label="Chain Integrity" value={verify ? (verify.valid ? 'VALID' : 'BROKEN') : '—'} icon={ShieldCheck} color={verify && !verify.valid ? 'text-vital' : 'text-emerald-500'} />
+        <AuditStatCard label="Flagged Events" value={events.filter(isFlagged).length} icon={XCircle} color="text-vital" />
+        <AuditStatCard label="Root Hash" value={verify ? `${String(verify.root_hash).slice(0, 10)}…` : '—'} icon={AlertCircle} color="text-highlight" />
       </div>
 
       <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-8">
         <div className="@[440px]:col-span-8">
           <Card className="p-8 space-y-8">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-black text-white uppercase tracking-tight">Commit Compliance Log</h3>
+              <h3 className="text-xl font-black text-white uppercase tracking-tight">Constitutional Event Log</h3>
               <div className="flex gap-2 p-1 rounded-xl bg-slate-900 border border-slate-800">
-                {(['ALL', 'FAILED'] as const).map(f => (
+                {(['ALL', 'FLAGGED'] as const).map(f => (
                   <button
                     key={f}
                     type="button"
@@ -177,28 +188,43 @@ const AuditTab: React.FC = () => {
                     {...({ 'aria-pressed': statusFilter === f ? 'true' : 'false' } as { 'aria-pressed': 'true' | 'false' })}
                     className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${statusFilter === f ? 'bg-slate-800 text-aura' : 'text-slate-500'}`}
                   >
-                    {f === 'ALL' ? 'All' : 'Failed'}
+                    {f === 'ALL' ? 'All' : 'Flagged'}
                   </button>
                 ))}
               </div>
             </div>
 
+            {auditRuns.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Audit runs (this session — each recomputed the full chain)</p>
+                {auditRuns.map((r, i) => (
+                  <div key={i} className={`p-3 rounded-xl border flex items-center justify-between text-[10px] font-black uppercase ${r.valid ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' : 'bg-vital/5 border-vital/20 text-vital'}`}>
+                    <span>{r.at}</span>
+                    <span>{r.valid ? 'CHAIN VALID' : 'CHAIN BROKEN'} · {r.events} events · root {r.root}…</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="space-y-3">
-              {filteredCommits.map((c, i) => (
-                <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+              {filteredEvents.length === 0 && (
+                <p className="text-sm text-slate-500 font-bold">{loadErr ? 'Event log unavailable.' : statusFilter === 'FLAGGED' ? 'No flagged events — nothing has been denied this epoch.' : 'No constitutional events recorded yet.'}</p>
+              )}
+              {filteredEvents.map((ev) => (
+                <motion.div key={ev.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
                   className="p-5 rounded-2xl bg-slate-950 border border-slate-900 flex items-center justify-between group hover:border-aura/30 transition-all">
                   <div className="flex items-center gap-5">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${c.status === 'PASSED' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-vital/10 text-vital'}`}>
-                      {c.status === 'PASSED' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isFlagged(ev) ? 'bg-vital/10 text-vital' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                      {isFlagged(ev) ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
                     </div>
                     <div>
-                      <p className="text-sm font-black text-white uppercase tracking-widest">Commit: {c.hash}</p>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase">{c.date} • {c.issues} Issues</p>
+                      <p className="text-sm font-black text-white uppercase tracking-widest">{String(ev.data?.type ?? 'event')} · {ev.id}</p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase">{fmtTs(ev.timestamp)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge color={c.status === 'PASSED' ? 'emerald-500' : 'vital'}>{c.status}</Badge>
-                    <Button onClick={() => setSelectedCommit(c)} variant="outline" className="px-3 py-1.5 text-[8px]">View Report</Button>
+                    <Badge color={isFlagged(ev) ? 'vital' : 'emerald-500'}>{isFlagged(ev) ? 'FLAGGED' : 'CHAINED'}</Badge>
+                    <Button onClick={() => setSelectedEvent(ev)} variant="outline" className="px-3 py-1.5 text-[8px]">View Event</Button>
                   </div>
                 </motion.div>
               ))}
@@ -216,43 +242,45 @@ const AuditTab: React.FC = () => {
           <Card className="p-8 bg-aura/5 border-aura/20">
             <h4 className="text-base font-black text-white mb-4 uppercase tracking-tight">Audit Intelligence</h4>
             <p className="text-sm text-slate-400 font-bold leading-relaxed mb-6">
-              Constitutional AI scanning state mutations in real-time. No unauthorized behavioral drifts detected in the current epoch.
+              {verify
+                ? (verify.valid
+                    ? `All ${verify.events} constitutional events verified against the recomputed hash chain.`
+                    : 'CHAIN VERIFICATION FAILED — the ledger does not match its recomputed hashes. Investigate immediately.')
+                : loadErr || 'Verifying the constitutional ledger…'}
             </p>
             <div className="space-y-3">
               <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
-                <span>Coverage</span><span className="text-white">100%</span>
+                <span>Chain verified</span><span className="text-white">{verify ? (verify.valid ? '100%' : 'FAILED') : '—'}</span>
               </div>
               <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-aura w-full" />
+                <div className={`h-full ${verify && !verify.valid ? 'bg-vital w-1/4' : verify ? 'bg-aura w-full' : 'bg-slate-700 w-0'}`} />
               </div>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* Commit report panel */}
+      {/* Event report panel */}
       <AnimatePresence>
-        {selectedCommit && (
+        {selectedEvent && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
-            onClick={() => setSelectedCommit(null)}>
+            onClick={() => setSelectedEvent(null)}>
             <div className="bg-slate-950 border border-slate-800 rounded-3xl p-10 max-w-md w-full space-y-6 shadow-2xl"
               onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-start">
-                <h3 className="text-xl font-black text-white uppercase tracking-tight">Commit Report</h3>
-                <button type="button" onClick={() => setSelectedCommit(null)} aria-label="Close report" title="Close" className="text-slate-500 hover:text-white transition-colors"><X size={20} /></button>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">UEG Event</h3>
+                <button type="button" onClick={() => setSelectedEvent(null)} aria-label="Close report" title="Close" className="text-slate-500 hover:text-white transition-colors"><X size={20} /></button>
               </div>
               <div className="space-y-3 text-sm font-bold">
-                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Hash</span><span className="text-white font-mono">{selectedCommit.hash}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Status</span><Badge color={selectedCommit.status === 'PASSED' ? 'emerald-500' : 'vital'}>{selectedCommit.status}</Badge></div>
-                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Date</span><span className="text-white">{selectedCommit.date}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Issues</span><span className="text-white">{selectedCommit.issues}</span></div>
-                {selectedCommit.msg && (
-                  <div className="pt-4 border-t border-slate-800">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Details</p>
-                    <p className="text-vital text-sm leading-relaxed">{selectedCommit.msg}</p>
-                  </div>
-                )}
+                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Event</span><span className="text-white font-mono">{selectedEvent.id}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Status</span><Badge color={isFlagged(selectedEvent) ? 'vital' : 'emerald-500'}>{isFlagged(selectedEvent) ? 'FLAGGED' : 'CHAINED'}</Badge></div>
+                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Time</span><span className="text-white">{fmtTs(selectedEvent.timestamp)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500 uppercase tracking-widest text-[10px]">Hash</span><span className="text-white font-mono">{String(selectedEvent.hash ?? '').slice(0, 16)}…</span></div>
+                <div className="pt-4 border-t border-slate-800">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Event data (verbatim)</p>
+                  <pre className="text-[10px] text-slate-400 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">{JSON.stringify(selectedEvent.data ?? {}, null, 2)}</pre>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -400,15 +428,10 @@ const SanctumTab: React.FC = () => {
         return;
       }
       const data = await res.json();
-      setProposals(prev => [...prev, {
-        id: data.cca_id ?? `meta-${Date.now()}`,
-        title: proposalInput,
-        status: `CCA ${data.status ?? 'submitted'} (${data.cca_id ?? 'no id'})`,
-        support: '0%',
-      }]);
       setProposalInput('');
       setShowProposalForm(false);
       toast(`Constitutional meta-proposal ${data.cca_id ?? ''} submitted to the Change Control Agency (CRITICAL tier)`);
+      await loadSanctum();   // the REAL entry appears from the CCA store, not a local phantom
     } catch {
       toast('Submission failed — please try again');
     } finally {
@@ -416,20 +439,39 @@ const SanctumTab: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    setTimeout(() => setAccessGranted(true), 1500);
-    setProposals([
-      { id: 'meta-01', title: 'Evolve Article 1096: Post-Quantum Autonomy', status: 'Deliberation', support: '84%' },
-      { id: 'meta-02', title: 'Modify Amendment Threshold to 75% Supermajority', status: 'Voting', support: '92%' },
-    ]);
-  }, []);
+  const [sanctumErr, setSanctumErr] = useState('');
+  const [votingId, setVotingId] = useState('');
 
-  const castSovereignVote = (id: string) => {
-    setProposals(prev => prev.map(p => {
-      if (p.id !== id) return p;
-      const next = Math.min(100, parseFloat(p.support) + 1);
-      return { ...p, support: `${next}%` };
-    }));
+  // Ledger cluster 3 — the Sanctum is REAL now: proposals are the actual pending CONSTITUTIONAL
+  // change requests in the CCA, the access gate is the constitutional ledger answering (no fake
+  // reputation timer), and a sovereign vote is the Owner's audit-trailed review override. The old
+  // tab hardcoded two proposals and incremented a local percentage that vanished on reload.
+  const loadSanctum = async () => {
+    try {
+      await apiJson('/api/v1/gaas/ueg/verify');   // the constitutional ledger must answer
+      setAccessGranted(true);
+      const d = await apiJson('/api/v1/cca');
+      setProposals((d.changes ?? [])
+        .filter((c: any) => c.change_type === 'constitutional' && ['submitted', 'under_review'].includes(c.status))
+        .map((c: any) => ({ id: c.cca_id, title: c.title, status: c.status, tier: c.impact_tier, submitted_at: c.submitted_at })));
+      setSanctumErr('');
+    } catch (e) {
+      setAccessGranted(true);   // never fake a lock — show the honest error instead
+      setProposals([]);
+      setSanctumErr(errorMessage(e));
+    }
+  };
+  useEffect(() => { loadSanctum(); }, []);
+
+  const castSovereignVote = async (id: string, decision: 'approved' | 'rejected') => {
+    setVotingId(id); setSanctumErr('');
+    try {
+      await apiJson(`/api/v1/cca/${id}/review`, { method: 'POST',
+        body: { override_decision: decision, reviewer_notes: 'Sovereign vote — Owner decision from the Sanctum' } });
+      toast(`Sovereign ${decision === 'approved' ? 'approval' : 'rejection'} recorded for ${id} — audit-trailed in the CCA`);
+      await loadSanctum();
+    } catch (e) { setSanctumErr(errorMessage(e)); }
+    setVotingId('');
   };
 
   if (!accessGranted) {
@@ -437,7 +479,7 @@ const SanctumTab: React.FC = () => {
       <div className="h-64 flex flex-col items-center justify-center text-center gap-6">
         <Lock size={48} className="text-slate-700" />
         <h2 className="text-xl font-black text-slate-500 uppercase tracking-[0.4em]">The Sanctum</h2>
-        <p className="text-slate-600 font-bold max-w-xs text-sm">Verifying multi-dimensional resonance. Minimum reputation threshold: 1,000.</p>
+        <p className="text-slate-600 font-bold max-w-xs text-sm">Verifying the constitutional ledger (UEG chain)…</p>
         <div className="w-40 h-1 bg-slate-900 rounded-full overflow-hidden">
           <div className={`h-full bg-aura animate-pulse ${progressWidthClass(65)}`} />
         </div>
@@ -494,13 +536,17 @@ const SanctumTab: React.FC = () => {
               <div key={p.id} className="p-7 glass-card border-aura/20 bg-aura/5 hover:bg-aura/10 transition-all">
                 <div className="flex justify-between items-start mb-5">
                   <div className="text-[10px] font-black text-aura uppercase tracking-[0.2em] border border-aura/30 px-3 py-1 rounded-full">{p.status}</div>
-                  <span className="text-sm font-black text-white">{p.support} Consensus</span>
+                  <span className="text-sm font-black text-vital">{p.tier ?? 'CRITICAL'} tier</span>
                 </div>
                 <h4 className="text-xl font-black mb-4 leading-tight">{p.title}</h4>
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => castSovereignVote(p.id)}
-                    className="flex-1 py-3 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest">
-                    Cast Sovereign Vote
+                  <button type="button" onClick={() => castSovereignVote(p.id, 'approved')} disabled={votingId === p.id}
+                    className="flex-1 py-3 bg-aura text-sovereign font-black rounded-xl text-xs uppercase tracking-widest disabled:opacity-50">
+                    {votingId === p.id ? 'Recording…' : 'Sovereign Approve'}
+                  </button>
+                  <button type="button" onClick={() => castSovereignVote(p.id, 'rejected')} disabled={votingId === p.id}
+                    className="py-3 px-4 bg-vital/15 text-vital border border-vital/30 font-black rounded-xl text-xs uppercase tracking-widest disabled:opacity-50">
+                    Reject
                   </button>
                   <button type="button" onClick={() => setExpandedProposal(expandedProposal === p.id ? null : p.id)}
                     aria-label="View proposal details" title="View proposal details"
@@ -514,7 +560,7 @@ const SanctumTab: React.FC = () => {
                       className="mt-4 pt-4 border-t border-aura/20 space-y-2 overflow-hidden">
                       <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Proposal ID: {p.id}</p>
                       <p className="text-sm text-slate-300 font-bold">{p.title}</p>
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Status: <span className="text-aura">{p.status}</span> • Consensus: <span className="text-aura">{p.support}</span></p>
+                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Status: <span className="text-aura">{p.status}</span> • Submitted: <span className="text-aura">{p.submitted_at ?? 'unknown'}</span></p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -526,19 +572,24 @@ const SanctumTab: React.FC = () => {
         <aside className="space-y-6">
           <section className="p-7 glass-card border-white/5 bg-sovereign/40">
             <h3 className="text-lg font-bold mb-5 flex items-center gap-3">
-              <Award size={18} className="text-highlight" /> Resonance Authority
+              <Award size={18} className="text-highlight" /> Sovereign Authority
             </h3>
+            {/* Ledger cluster 3 — the old panel fabricated a "1,420 reputation / 2.42x voting
+                weight / 142 cross-realm contributions" persona. Workstation is Owner-sovereign:
+                the real authority is the Owner's override on a CRITICAL-tier change, and the real
+                counts come from the CCA store. No invented reputation economy. */}
             <div className="space-y-5">
               <div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sovereign Reputation</p>
-                <p className="text-4xl font-black text-white">1,420</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Authority</p>
+                <p className="text-2xl font-black text-white">Owner · sovereign</p>
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta-Voting Weight</p>
-                <p className="text-xl font-black text-aura">2.42x</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pending constitutional changes</p>
+                <p className="text-xl font-black text-aura">{proposals.length}</p>
               </div>
               <div className="pt-4 border-t border-white/5 text-[10px] text-slate-500 font-bold leading-relaxed">
-                Authority derived from 142 cross-realm contributions and 12 passed constitutional amendments.
+                A sovereign vote here writes the Owner's decision straight onto the CRITICAL-tier change
+                request in the Change Control Agency — audit-trailed in the tamper-evident UEG ledger.
               </div>
             </div>
           </section>

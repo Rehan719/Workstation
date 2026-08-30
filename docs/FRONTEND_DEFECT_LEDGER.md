@@ -45,6 +45,24 @@ a real browser → regression guard → honest progress-log entry.
 - Browser-verified representative: Deliverables produce ran through apiJson and rendered the detail
   pane; no new console errors. tsc 0 + vite build clean.
 
+**Batch C — cluster 3 (fabricated/theatrical governance handlers), fixed + browser-verified 2026-08-30:**
+- GovernanceHub AuditTab: "Run Manual Audit" now recomputes the real tamper-evident UEG hash chain
+  (GET /api/v1/gaas/ueg/verify) instead of fabricating a PASSED row with a Math.random() hash; stats
+  and the event log are live UEG data (326 events, chain VALID verified in-browser); hardcoded
+  mockInventory/mockCommits deleted.
+- GovernanceHub SanctumTab: proposals are the REAL pending constitutional CCA changes; the fake
+  1.5s "reputation" access timer is now the constitutional ledger answering; "Cast Sovereign Vote"
+  (approve/reject) POSTs the Owner's audit-trailed override. VERIFIED END TO END in the browser: a
+  real CRITICAL change submitted -> appeared in the Sanctum -> Sovereign Approve clicked -> server
+  record approved with review_result "Manual override: Sovereign vote..." and audit trail
+  submitted,review_started,approved,twin_prevalidation_pass.
+- Fabricated "1,420 reputation / 2.42x voting weight / 142 cross-realm contributions" panel deleted;
+  replaced with Owner-sovereign truth + the real pending-change count.
+- STILL OPEN in cluster 3 (next): SolutionsPlatform Build/Launch fake provisioning + scripted
+  "Mission is LIVE" log and its catch that fabricates a spec; QEPDashboard engine cards and the 13
+  QEPFlagshipFeatures cards (mock results on 7 hub pages); CEOChat "Retry" flipping the status pill
+  without reconnecting; the unbound Composer temperature slider.
+
 **New discovery-sweep item (open):** ws://localhost:8010/api/v154/ws/streams fails repeatedly in the
 browser console (pre-existing; the frontend opens a WebSocket the backend refuses) — triage in the
 discovery sweep.

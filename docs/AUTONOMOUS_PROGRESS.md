@@ -1801,3 +1801,27 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   Login, Generator, GovernanceHub meta-proposal (which also now sends the REAL `submitted_by` field
   — its `requester`/`risk_level` were silently dropped by pydantic — and lists the real cca_id).
 - Browser-verified representative happy path (Deliverables produce). tsc 0 + build clean.
+
+### Batch C — cluster 3: the fabricated governance surface replaced with the real one
+- **GaaS Audit Center was theatre**: "Run Manual Audit" invented a PASSED row with a
+  `Math.random()` hash and no backend call; the stats were hardcoded (`articles_verified: 1127`,
+  `critical_enforcement: '100%'`) and the commit log was three mock rows. REPLACED with the real
+  constitutional audit: the button recomputes the tamper-evident UEG hash chain
+  (GET /api/v1/gaas/ueg/verify), the stats are the live event count / chain validity / flagged count /
+  real root hash, and the log lists ACTUAL UEG events with per-event verbatim data. Browser-verified:
+  326 real events, chain VALID, and each audit run records its own recomputation
+  ("CHAIN VALID · 326 events · root 0d34465a6fad…").
+- **The Sanctum was hardcoded**: two invented meta-proposals, a fake 1.5s "reputation" access timer,
+  and a "Cast Sovereign Vote" that only incremented a local percentage (lost on reload). REPLACED:
+  proposals are the real pending CONSTITUTIONAL change requests from the CCA, the gate is the
+  constitutional ledger answering, and a sovereign vote POSTs the Owner's audit-trailed override
+  (approve/reject). Browser-verified END TO END: submitted a real CRITICAL change, it appeared in the
+  Sanctum (pending 1), clicked Sovereign Approve, and the server record became
+  `status=approved, decision=approved`, review_result "Manual override: Sovereign vote — Owner
+  decision from the Sanctum", audit trail `submitted,review_started,approved,twin_prevalidation_pass`
+  (the §17.5 digital-twin pre-validation genuinely ran).
+- **Fabricated authority stats deleted**: the "1,420 sovereign reputation / 2.42x meta-voting weight /
+  142 cross-realm contributions" panel invented a reputation economy that does not exist. Replaced
+  with the truth: Owner · sovereign, the real pending-constitutional-change count, and what a
+  sovereign vote actually does.
+- tsc 0. Frontend-only.
