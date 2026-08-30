@@ -661,6 +661,50 @@ updates (each verified in code, file:line evidence in the Round-7 audit journal)
   understanding ratified first and a different workstream started?
 - **D — Anything in §1–§17 that does not match what you mean** — name it and I will correct the canon.
 
+**16.3 Reconciliation addendum — Rounds 11–12 (W363–W370), reconciled 2026-08-30.**
+
+*Round 11 — the frontend was fixed for real.* A 5-agent scan plus a method-aware endpoint diff seeded
+a 47-finding ledger (`docs/FRONTEND_DEFECT_LEDGER.md`); all five clusters are closed and browser-verified:
+the Change Control page was dead end-to-end (it read keys the backend never returned, so the governance
+surface rendered permanently empty — economy materiality holds queued where the Owner could not see
+them); HTTP-status blindness was class-killed with a shared `apiJson` across 11 pages; every fabricated
+handler was deleted (the "Run Manual Audit" that invented PASSED rows with random hashes, fake
+infrastructure provisioning, a scripted "Mission is LIVE" log, mock results on 7 hub pages, 13
+fabricated flagship cards) — verified by ZERO fabricated strings in the shipped bundle; the invisible
+Owner-approval hold became visible; and five bearer-bypassing links were fixed.
+
+*Round 12 — §9 personalisation, and three real data-loss defects found by mechanical checks.*
+- **§9 is real (W363):** a per-USER server-side workspace (`/api/v1/user/workspace`) — history and
+  preferences follow the authenticated user across devices, tenancy-scoped and lock-serialised;
+  localStorage remains the honest auth-off fallback.
+- **A cross-tenant defect existed and is closed (W364).** The mechanical tenancy matrix found the
+  projects module had NO ownership concept at all: under `AUTH_ENABLED` one user could list, read and
+  **permanently delete** another's project. It survived because every other surface had been secured
+  by hand, one audit at a time — the one nobody audited stayed open. Also caught two unscoped reads of
+  VSB board packs (financial/strategic content).
+- **Durability proven, not assumed (W365/W366):** `store_lock` is now proven across real PROCESSES
+  (100/100 writes survive; 54 of 100 lost without it), and CI now exercises AUTH-ON isolation, which it
+  never did before — the whole suite runs auth-off, where surfaces are unguarded by design, so no
+  tenancy regression could ever have been caught.
+- **Three silent data-loss bugs, each measured (W367–W369):** the constitutional UEG ledger erased
+  events on concurrent first-touch construction (18 of 60 trials → 0); the AI memory store lost
+  **107 of 120** memories and raised 93 errors under concurrent writes, on the live request path
+  (→ 0 and 0); and the ACCOUNT store could be left unreadable by concurrent registration — and because
+  a decode error is tolerated by returning `{}`, that presented as **every account silently vanishing**
+  (→ 21 of 21 intact). All three shared one root: the fixes already existed in this codebase and had
+  simply never been applied to those stores.
+- **Right-to-left is real (W370):** `isRTL` existed but nothing ever set `dir` on the document, so
+  Arabic and Urdu rendered as left-to-right pages with Arabic glyphs. Now applied at boot and on change.
+  The Settings claim that interface translation "depends on the external AI accelerant" was inaccurate
+  and is corrected — Arabic, French, Spanish and Urdu are translated in-house today (chrome only; AI
+  output is still English).
+
+*Honest frontier after Round 12:* full-interface i18n beyond chrome; binary omnimedia (mp4/mp3/png/svg
+remain catalogue-only); cross-INSTANCE federation; a scripted real-browser regression pass in CI. The
+Stripe key exposed in git history **still requires Owner rotation**, and `AUTH_ENABLED` remains an
+Owner policy decision — now materially safer, since the cross-tenant projects gap would have gone live
+the moment it was switched on.
+
 ---
 
 *This document is the canonical fine-resolution statement of the Owner's whole vision. If any future

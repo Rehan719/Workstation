@@ -2050,3 +2050,30 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   real coverage from the dictionaries (`coverageFor`), says plainly when a language has no
   dictionary yet, and still states honestly that coverage is interface chrome only and that
   AI-generated content is produced in English.
+
+### W371 — the lock primitive itself was broken under contention (and had a dead twin)
+- The W365 multi-process test FAILED in the full suite though it passed standalone. Reproducing at
+  higher contention (10 processes × 40 cycles) showed why, and it was not a flaky test:
+  **`PermissionError` escaping from `store_lock`'s acquire — 3 of 10 workers died and 109 of 400
+  increments were lost.**
+- **Root cause 1 — the acquire treated contention as failure.** On Windows a lockfile another
+  process has just unlinked sits in a *delete-pending* state, and `O_CREAT|O_EXCL` then raises
+  `PermissionError` (EACCES) rather than `FileExistsError`. The loop caught only `FileExistsError`,
+  so under contention the lock RAISED instead of waiting — the caller's write destroyed by the very
+  primitive meant to protect it.
+- **Root cause 2 — there were TWO `store_lock` implementations.** A contextmanager function and a
+  class defined later in the same file; the class shadowed the function, so the function was dead
+  code that still read as the implementation (my first fix landed in it and changed nothing). This
+  is precisely how W368 arose: one copy gets hardened, the other silently does not. The dead twin
+  is deleted — one primitive, one implementation.
+- **Root cause 3 — the timeout path proceeded UNSERIALISED.** On deadline it logged a warning and
+  continued "thread-serialised only". Within one process that is fine; across processes — the
+  heartbeat and API workers write the same stores — it is exactly the unserialised read-modify-write
+  the lock exists to prevent, failing silently apart from a log line, on the money paths, the
+  constitutional ledger, the AI memory and the account store. It now raises `TimeoutError` so the
+  caller decides honestly; callers that care already handle it.
+- **Correction to an earlier claim of mine:** I previously reported that "store_lock raises on
+  timeout rather than proceeding unlocked". That was read from the DEAD function. The live class did
+  proceed unlocked. It is true now, and only now.
+- **After: 400 of 400 increments, 0 worker failures** under the same 10-process contention. All 13
+  concurrency/durability tests pass.

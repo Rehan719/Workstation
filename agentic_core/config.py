@@ -108,61 +108,10 @@ def atomic_write_json(path, data, indent: int = 2) -> None:
         raise
 
 
-def store_lock(path, timeout_s: float = 10.0, stale_s: float = 30.0):
-    """§12/§13 (W348/W349/W351) — a CROSS-PROCESS mutual-exclusion lock for a JSON store's
-    load-modify-write cycle. atomic_write_json makes each WRITE atomic, but the read→modify→write
-    sequence was unserialised: the Round-10 audit reproduced money-shaped losses (17 sales
-    confirmed on an 11-sale balance with ONE charge; 89% of recognised revenue destroyed; 196/200
-    constitutional UEG events silently lost). Usage:
-
-        with store_lock(store_path):
-            rows = load_json_tolerant(store_path, [])
-            ...modify...
-            atomic_write_json(store_path, rows)
-
-    Implementation: an O_CREAT|O_EXCL lockfile beside the store (works across processes on
-    Windows and POSIX), bounded wait with backoff, and stale-lock breaking (a crashed holder's
-    lock older than `stale_s` is removed with a warning — liveness over strictness, honestly)."""
-    import os as _os
-    import time as _time
-    from contextlib import contextmanager
-    from pathlib import Path as _Path
-
-    lock_path = _Path(str(path) + ".lock")
-
-    @contextmanager
-    def _ctx():
-        lock_path.parent.mkdir(parents=True, exist_ok=True)
-        deadline = _time.monotonic() + timeout_s
-        fd = None
-        while True:
-            try:
-                fd = _os.open(str(lock_path), _os.O_CREAT | _os.O_EXCL | _os.O_WRONLY)
-                _os.write(fd, str(_os.getpid()).encode())
-                break
-            except FileExistsError:
-                try:   # stale-lock breaking: a crashed holder must not deadlock the store forever
-                    if _time.time() - lock_path.stat().st_mtime > stale_s:
-                        lock_path.unlink(missing_ok=True)
-                        continue
-                except OSError:
-                    pass
-                if _time.monotonic() > deadline:
-                    raise TimeoutError(f"store_lock timeout on {lock_path.name}")
-                _time.sleep(0.005)
-        try:
-            yield
-        finally:
-            try:
-                _os.close(fd)
-            except OSError:
-                pass
-            try:
-                lock_path.unlink(missing_ok=True)
-            except OSError:
-                pass
-
-    return _ctx()
+# W371 — a SECOND `store_lock` (a contextmanager) used to live here, shadowed by the class below
+# (a later definition wins), so it was dead code that still read as the implementation. It has been
+# removed: two implementations of one primitive is how the class of defect fixed in W368 arises —
+# one copy gets hardened and the other silently does not.
 
 
 def load_json_tolerant(path, default):
@@ -235,7 +184,13 @@ class store_lock:
             try:
                 self._fd = _os.open(str(self._lockpath), _os.O_CREAT | _os.O_EXCL | _os.O_RDWR)
                 return self
-            except FileExistsError:
+            except (FileExistsError, PermissionError):
+                # W371 — PermissionError means HELD, not failed. On Windows a lockfile another
+                # process has just unlinked sits in a delete-pending state, and O_CREAT|O_EXCL then
+                # raises PermissionError (EACCES) rather than FileExistsError. Catching only
+                # FileExistsError made the ACQUIRE raise under contention, so the caller's write was
+                # destroyed by the very primitive meant to protect it. Reproduced with 10 concurrent
+                # processes: 3 of 10 workers died and 109 of 400 increments were lost.
                 # a live holder — or a stale lockfile from a crashed process
                 try:
                     age = _time.time() - _os.path.getmtime(str(self._lockpath))
@@ -248,11 +203,21 @@ class store_lock:
                 except OSError:
                     pass
                 if _time.monotonic() >= deadline:
-                    # bounded — never a silent deadlock; proceed thread-serialised, log loudly
+                    # W371 — this used to proceed WITHOUT the file lock ("thread-serialised only"),
+                    # logging a warning. Within one process that is fine; across processes — the
+                    # heartbeat and the API workers write the same stores — it is precisely the
+                    # unserialised read-modify-write this lock exists to prevent, and it failed
+                    # SILENTLY apart from a log line. The money paths, the constitutional ledger,
+                    # the AI memory and the account store all sit behind this lock, so a lost update
+                    # here is exactly the class of defect W348/W349/W367-W369 closed. Raising lets
+                    # the caller decide honestly (surface an error, skip the write, or retry);
+                    # every caller that cares already handles TimeoutError.
+                    self._tlock.release()
                     import logging
-                    logging.getLogger("config.store_lock").warning(
-                        "store_lock timeout on %s — proceeding thread-serialised only", self._lockpath)
-                    return self
+                    logging.getLogger("config.store_lock").error(
+                        "store_lock timeout on %s after %.1fs — refusing to write unserialised",
+                        self._lockpath, self._timeout)
+                    raise TimeoutError(f"store_lock timeout on {self._lockpath.name}")
                 _time.sleep(0.02)
 
     def __exit__(self, *exc):
