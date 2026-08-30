@@ -1955,3 +1955,22 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
 - **Result: 100/100 survive under the lock.** Running the IDENTICAL workload with the lock removed
   loses **54 of 100** increments across processes — so the lock is doing real work and the test is
   a meaningful guard rather than a passing formality.
+
+### W366 — CI now exercises AUTH-ON isolation (the verification gap behind W364)
+- The whole suite runs in single-user (auth-off) mode, where every surface is unguarded BY DESIGN.
+  So all the tenancy work was proven only by hand-run probes: **CI could never have caught a
+  regression that re-opened cross-user access** — which is precisely how the projects module stayed
+  unowned long enough that one user could delete another's work.
+- `test_cross_tenant_isolation_under_auth` runs the isolation checks with AUTH_ENABLED=true: the
+  server stamps the authenticated user (a client-supplied `owner_id` is ignored), no cross-user read
+  of the §9 workspace by body OR query parameter, and on projects — invisible to others, 404 (never
+  403, so ids cannot be probed) on read AND delete, the owner's project survives another user's
+  delete attempt, and the owner keeps full access to their own work.
+- **Runs in a SUBPROCESS on purpose.** The first version flipped auth and rebound the stores
+  in-process, which meant reloading modules mid-suite — mutating shared interpreter state is exactly
+  the class that has broken this suite before. It passed locally and did not pollute a 6-test mixed
+  run, but rather than ship that risk on partial evidence (a second full suite could not be run
+  concurrently without corrupting the first), it was rewritten to run in a child process, which
+  cannot pollute its parent by construction.
+- Proven to bite: reverting the projects DELETE scoping fails it with "bob can DELETE alice's
+  project"; restored and re-verified clean.

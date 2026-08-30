@@ -5905,3 +5905,103 @@ def test_store_lock_serialises_across_processes(tmp_path):
     assert len(doc["by_worker"]) == WORKERS, "a whole worker's writes vanished"
     # no lockfile left behind to block the next writer
     assert not (tmp_path / "counter.json.lock").exists(), "lock leaked after the last release"
+
+
+def test_cross_tenant_isolation_under_auth(tmp_path):
+    """W366 — CI now exercises AUTH-ON isolation, not just auth-off behaviour.
+
+    The whole suite runs in single-user (auth-off) mode, where every surface is unguarded BY
+    DESIGN. That means the tenancy work (W252/W295/W320/W324/W343/W350/W363/W364) was proven only
+    by hand-run probes — CI could never catch a regression that re-opened cross-user access, which
+    is how the projects module stayed unowned long enough that one user could delete another's
+    work. This runs the isolation checks with AUTH_ENABLED=true so a regression fails the build.
+
+    It runs in a SUBPROCESS on purpose: flipping auth and rebinding the stores in-process would
+    mean reloading modules mid-suite, and mutating shared interpreter state is exactly the class
+    that has broken this suite before. A child process cannot pollute its parent.
+    """
+    import json
+    import pathlib as _pl
+    import subprocess
+    import sys
+
+    repo_root = str(_pl.Path(__file__).resolve().parents[1])
+    child = r"""
+import json, os, sys
+sys.path.insert(0, %(root)r)
+from fastapi.testclient import TestClient
+from agentic_core.app_mvp import app
+c = TestClient(app)
+out = {}
+
+admin = c.post("/api/v1/auth/token", data={"username": "admin", "password": os.environ["ADMIN_PASSWORD"]})
+assert admin.status_code == 200, f"admin bootstrap failed: {admin.text}"
+ah = {"Authorization": "Bearer " + admin.json()["access_token"]}
+tok = {}
+for u in ("alice", "bob"):
+    c.post("/api/v1/auth/register", json={"username": u, "password": "pw-" + u + "-X1", "role": "user"}, headers=ah)
+    r = c.post("/api/v1/auth/token", data={"username": u, "password": "pw-" + u + "-X1"})
+    assert r.status_code == 200, u + " login failed: " + r.text
+    tok[u] = {"Authorization": "Bearer " + r.json()["access_token"]}
+
+# §9 user workspace — a client-supplied owner_id must be ignored, and no cross-user read
+for u in ("alice", "bob"):
+    r = c.put("/api/v1/user/workspace",
+              json={"history": [{"id": u + "-1", "output": u + "-private"}],
+                    "prefs": {"tone": u}, "owner_id": "SPOOF"}, headers=tok[u])
+    assert r.status_code == 200, r.text
+    out["stamp_" + u] = r.json()["owner_id"]
+a_ws = c.get("/api/v1/user/workspace", headers=tok["alice"]).json()
+out["alice_sees_own"] = a_ws["history"][0]["output"] == "alice-private"
+out["alice_sees_bob"] = "bob-private" in json.dumps(a_ws)
+probe = c.get("/api/v1/user/workspace?owner_id=bob", headers=tok["alice"]).json()
+out["param_probe_owner"] = probe["owner_id"]
+out["param_probe_leaks"] = "bob-private" in json.dumps(probe)
+
+# projects — the surface where a cross-user DELETE was possible (W364)
+made = c.post("/api/v1/projects/", json={"title": "alice project", "description": "d"}, headers=tok["alice"])
+assert made.status_code == 201, made.text
+pid = made.json()["id"]
+out["owner_stamped"] = made.json().get("owner_id")
+out["bob_lists_it"] = any(p["id"] == pid for p in c.get("/api/v1/projects/", headers=tok["bob"]).json())
+out["bob_read_status"] = c.get("/api/v1/projects/" + pid, headers=tok["bob"]).status_code
+out["bob_delete_status"] = c.delete("/api/v1/projects/" + pid, headers=tok["bob"]).status_code
+out["alice_project_survives"] = c.get("/api/v1/projects/" + pid, headers=tok["alice"]).status_code == 200
+# the owner keeps full access to their own work
+out["owner_patch"] = c.patch("/api/v1/projects/" + pid, json={"title": "renamed"}, headers=tok["alice"]).status_code
+out["owner_delete"] = c.delete("/api/v1/projects/" + pid, headers=tok["alice"]).status_code
+print("RESULT" + json.dumps(out))
+""" % {"root": repo_root}
+
+    env = {
+        **os.environ,
+        "AUTH_ENABLED": "true",
+        "ADMIN_PASSWORD": "ci-authon-probe-Pw9",
+        "AI_DISABLE_LOCAL": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "DATA_DIR": str(tmp_path / "data"),
+        "WORKSTATION_DATA_DIR": str(tmp_path / "data"),
+        "PROJECTS_DIR": str(tmp_path / "projects"),
+        "WORKSTATION_UEG_PATH": str(tmp_path / "ueg.jsonl"),
+    }
+    proc = subprocess.run([sys.executable, "-c", child], capture_output=True, timeout=600, env=env)
+    stdout = proc.stdout.decode("utf-8", "replace")
+    assert proc.returncode == 0, (
+        "auth-on child failed:\n" + proc.stderr.decode("utf-8", "replace")[-1500:])
+    marker = [ln for ln in stdout.splitlines() if ln.startswith("RESULT")]
+    assert marker, f"no result from the auth-on child:\n{stdout[-800:]}"
+    res = json.loads(marker[0][len("RESULT"):])
+
+    # the server stamps the authenticated user — a client cannot claim another owner
+    assert res["stamp_alice"] == "alice" and res["stamp_bob"] == "bob", res
+    # no cross-user read of the personal workspace, by body or by query parameter
+    assert res["alice_sees_own"] and not res["alice_sees_bob"], res
+    assert res["param_probe_owner"] == "alice" and not res["param_probe_leaks"], res
+    # projects: owned, invisible to others, and NOT deletable by them
+    assert res["owner_stamped"] == "alice", res
+    assert not res["bob_lists_it"], "bob can list alice's project"
+    assert res["bob_read_status"] == 404, "must be 404, never 403 — ids must not be probeable"
+    assert res["bob_delete_status"] == 404, "bob can DELETE alice's project"
+    assert res["alice_project_survives"], "alice's project did not survive bob's delete attempt"
+    # and the owner still has full access to their own work
+    assert res["owner_patch"] == 200 and res["owner_delete"] == 204, res
