@@ -116,7 +116,7 @@ vercel deploy
 
 ```
 agentic_core/          — FastAPI backend (the real code)
-  app_mvp.py           — entrypoint; 466 routes, boots clean
+  app_mvp.py           — entrypoint; 461 API endpoints (method+path; 440 distinct paths), boots clean
   ai/                  — the NATIVE fabric: owned models, orchestration, swarm, memory, homeostasis
   ai/gateway.py        — in-house-first routing (native fabric → optional external providers)
   gaas/v5/             — constitutional interceptor engine + hash-chained UEG audit log

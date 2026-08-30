@@ -1,4 +1,14 @@
-# Frontend Defect Ledger — seeded by the Round-11 reconnaissance (2026-08-30)
+# Frontend Defect Ledger — **ALL FIVE CLUSTERS CLOSED** (2026-08-30)
+
+> **Status: closed.** All 47 seeded findings plus the one endpoint break are fixed and
+> browser-verified; the discovery sweep that followed (18 routes, `fetch` + XHR + console
+> instrumented, harness validated against deliberate 404s) found nothing further. The fix log is
+> below, newest first. Two guards now protect this work in CI: `test_cca_ui_contract_shapes` and
+> `test_ui_response_shape_contracts` — both proven to FAIL when the shapes they lock are broken.
+>
+> What this ledger does NOT cover, honestly: a scripted real-browser regression pass in CI (the
+> fixes are guarded at the response-shape level, not yet by an automated browser run), and screens
+> beyond the swept routes.
 
 Source: a 5-agent static scan (one agent per defect class) over `apps/workstation-superapp/src`,
 cross-referenced against `agentic_core` handlers, plus a method-aware UI→backend endpoint diff.
