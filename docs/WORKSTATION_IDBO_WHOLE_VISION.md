@@ -705,6 +705,40 @@ Stripe key exposed in git history **still requires Owner rotation**, and `AUTH_E
 Owner policy decision — now materially safer, since the cross-tenant projects gap would have gone live
 the moment it was switched on.
 
+**16.4 The §6 claim, corrected — architecture vs practice (2026-08-30).**
+
+§16 has stated since 2026-06-24 that the §6 gap "is now closed" because the platform runs its own
+native AI fabric. That was true of the ARCHITECTURE and false of the PRACTICE, and the distinction
+matters more than the claim: the fabric existed, `/api/v1/native-ai/status` reported
+`active_model: ollama (llama3.2), is_real_model: true, floor_active: false` — and the owned model was
+serving **nothing**. Every domain tool and every stage of the flagship journey was answered by the
+deterministic floor with template text. The full Concept → Commercialisation journey returned
+`served_by: {"native": 11}` in **2 seconds**.
+
+Twelve audit rounds, adversarial verification and a green CI never caught it, because every one of
+those checks asked whether the system reported itself healthy. Using the product as a person would —
+running a domain tool and reading the answer — found it immediately.
+
+Four independent gates were each individually sufficient to prevent the owned model from ever
+serving:
+- **W375** — the time budget was `2 × avg-of-ALL-recorded-runs`, so the model's own forced timeouts
+  shrank the budget that caused them. Measured: a 35s budget against a ~98s real generation.
+- **W378** — fixing the budget did not clear the damage; the 14.8% success rate that the defect had
+  produced kept the model demoted. Now correctable by an auditable, reason-required re-baseline that
+  preserves every row.
+- **W379** — the per-chunk read timeout killed a cold model load at 66s while the budget was
+  correctly 180s.
+- **W380** — demotion at `<0.6` exiled a model measured at 58.8%. The native floor is a FALLBACK,
+  not a rival: ordering a model behind it means it is never attempted at all.
+
+**Now measured true:** `served_by: {"ollama": 11}` — all eleven stages on the owned model, no
+scaffolding, real reasoning ("**Concept Name:** HalalConnect — A Zero-Waste Community Meal Service
+for Elderly Londoners"). The honest cost is **1,309 seconds (~22 minutes)** for the full journey.
+
+The lesson for this document: a §16 row should say what was OBSERVED, not what the system reports
+about itself. "The native fabric exists" and "the owned model serves users" are different claims, and
+only the second one is the promise §6 actually makes.
+
 ---
 
 *This document is the canonical fine-resolution statement of the Owner's whole vision. If any future
