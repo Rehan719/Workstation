@@ -2327,3 +2327,17 @@ the long pole (better than the 5–8 minute estimate given in the decision brief
 **Now proven both ways:** passes clean (`api=50, rows=true, empty=false`), and with the cluster-1
 defect reintroduced it fails with the right diagnosis — *"the API returned 50 changes but NONE
 rendered — the governance surface is showing an empty page over real data."*
+
+### Soak open observation — RESOLVED, and it was NOT a defect
+The 60-minute soak noted that the idle-profile VSB received the same 21 operating cycles as the
+active one, and I flagged it as needing a probe before asserting anything. Probed:
+- `operate_one()` is **round-robin by design** — it tends the least-recently-operated entity, and
+  W340's own comment states fairness is the intent ("every entity gets tended even under a burst").
+  Equal cycles is therefore CORRECT, not waste.
+- The cost that matters is repo re-ship, and it is **already gated on material change**
+  (`living_vsbs.py`): `if pend["events"] or distributable_profit > 0: mark_repo_stale(...)`. A
+  zero-activity maintenance cycle changes nothing a page shows, so it does not mark the repo stale
+  and does not trigger the stale→re-ship churn (W340 records the audit that found that churn:
+  full 5-surface regeneration plus a git commit per beat, 81KB DCMS growth in 80s).
+**Conclusion: no defect, no change.** Recorded as a non-finding rather than left as an open question
+or turned into a fix that was not needed.
