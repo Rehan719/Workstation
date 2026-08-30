@@ -6345,3 +6345,52 @@ def test_client_apps_never_ship_engine_scaffolding():
     for marker in ("Workstation native structured engine", "Acting as:", "Native structured"):
         assert marker.lower() not in blob.lower(), (
             f"{marker!r} reaches the client apps through _entity_appdata")
+
+
+def test_model_health_rebaseline_preserves_history(client, tmp_path, monkeypatch):
+    """W378 — re-baselining a model's health must EXCLUDE old rows from scoring, never delete them.
+
+    W375 fixed a budget defect that had been recording the owned model's forced timeouts as its own
+    failures. The fix did not clear the damage: a 14.8% success rate kept the model demoted below
+    the deterministic floor, so users kept getting thin template output while probation healed it
+    one attempt per ten minutes — hours of wall clock.
+
+    Deleting those rows would erase evidence, so this records a baseline timestamp with a REQUIRED
+    reason, keeps every row readable, and logs the action to the UEG.
+    """
+    import agentic_core.api.operational_excellence as _oe
+
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "outcomes.json", raising=False)
+    monkeypatch.setattr(_oe, "_BASELINE_STORE", tmp_path / "baselines.json", raising=False)
+
+    import json as _json
+    rows = [
+        {"kind": "model_attempt", "served_by": "probe-model", "success": False,
+         "duration_ms": 35000, "created_at": "2026-01-01T00:00:00Z"},
+        {"kind": "model_attempt", "served_by": "probe-model", "success": False,
+         "duration_ms": 35000, "created_at": "2026-01-01T00:01:00Z"},
+        {"kind": "model_attempt", "served_by": "probe-model", "success": True,
+         "duration_ms": 90000, "created_at": "2026-06-01T00:00:00Z"},
+    ]
+    (tmp_path / "outcomes.json").write_text(_json.dumps(rows), encoding="utf-8")
+
+    before = _oe.model_health()["probe-model"]
+    assert before["window_runs"] == 3 and before["success_rate"] < 0.5
+
+    # a reason is REQUIRED — a silent reset would be exactly the evidence-erasing this avoids
+    import pytest as _pytest
+    with _pytest.raises(ValueError):
+        _oe.set_health_baseline("probe-model", "   ")
+
+    _oe.set_health_baseline("probe-model", "the failures measured a since-fixed budget defect",
+                            at="2026-03-01T00:00:00Z")
+
+    after = _oe.model_health()["probe-model"]
+    assert after["window_runs"] == 1, "rows after the baseline should be the only ones scoring"
+    assert after["success_rate"] == 1.0, "the post-fix success should now define the score"
+
+    # HISTORY PRESERVED: the excluded rows are still on disk, readable and auditable
+    kept = _json.loads((tmp_path / "outcomes.json").read_text(encoding="utf-8"))
+    assert len(kept) == 3, "re-baselining must not delete recorded history"
+    stored = _json.loads((tmp_path / "baselines.json").read_text(encoding="utf-8"))
+    assert stored["probe-model"]["reason"], "the baseline must record WHY it was set"

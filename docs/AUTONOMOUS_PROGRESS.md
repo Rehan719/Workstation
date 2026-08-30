@@ -2204,3 +2204,24 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   5,400 and reasonably conclude the reserve rate was wrong. Renamed to "Costs + reserves".
 - Small, but it is the same principle as the rest of this round: a number presented as one thing
   while being another is a quiet form of dishonesty, even when the maths underneath is right.
+
+### W378 — the owned model was fixed but still not SELECTED; an auditable re-baseline
+- W375 fixed the throttling, but the damage remained: the recorded 14.8% success rate (produced BY
+  that defect) kept demoting the owned model below the deterministic floor. Walking the flagship
+  Genesis journey proved it — it completed in **2 seconds** on floor templates while a model that
+  demonstrably produces real content in ~113s sat unused. Probation heals this at roughly one
+  attempt per ten minutes, i.e. HOURS of thin output.
+- **Deleting the failing rows would erase evidence**, so instead: `set_health_baseline(model,
+  reason)` records a baseline timestamp with a REQUIRED reason; `model_health` scores only rows at
+  or after it. Every row stays on disk and readable, the decision is attributable, and the action is
+  logged to the tamper-evident UEG. Exposed as `POST /api/v1/operations/model-health/rebaseline`
+  so the Owner can invoke it directly.
+- **Invoked it for the ollama resources**, with the reason recorded verbatim: the failures measured
+  a budget defect (2× avg-of-all-rows → 35s while a real generation needs ~98s), not the model.
+- **Result — the §6 mandate now holds in practice.** Selection returned to `['ollama','native']`,
+  and a real domain-tool call produced `served_by: ollama`, 3,851 chars in 113s, with no scaffolding
+  and genuinely domain-aware content ("**Name:** Hanaa (Arabic for 'nourishment')… nourishes the
+  body and soul of elderly Londoners"), replacing "Native structured content for 'INKASHAF',
+  grounded in:".
+- Guard: `test_model_health_rebaseline_preserves_history` — asserts scoring restarts, a reason is
+  required, and **the excluded rows are still on disk**.

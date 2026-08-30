@@ -24,7 +24,7 @@ from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/operations", tags=["operational-excellence"])
@@ -99,6 +99,47 @@ def _rankings(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
+_BASELINE_STORE = data_path("model_health_baselines.json")
+
+
+def _load_baselines() -> Dict[str, Dict[str, Any]]:
+    from agentic_core.config import load_json_tolerant
+    return load_json_tolerant(_BASELINE_STORE, {}) or {}
+
+
+def set_health_baseline(model: str, reason: str, at: str | None = None) -> Dict[str, Any]:
+    """§6 (W378) — declare that a model's recorded history predates a FIX and should no longer
+    score it.
+
+    Why this exists: W375 found the owned model was being throttled into failure by a budget
+    derived from its own timeouts. Fixing that did not clear the damage — the model's recorded
+    success rate (14.8%) still demoted it below the deterministic floor, so users kept receiving
+    thin template output for hours while probation healed it one attempt per ten minutes.
+
+    Deleting those rows would erase evidence. Instead the rows are KEPT and a baseline timestamp is
+    recorded with an explicit reason; `model_health` scores only rows at or after it. The full
+    history remains readable, the decision is attributable, and the action is UEG-logged.
+    """
+    import time as _t
+    from agentic_core.config import atomic_write_json as _awj, store_lock as _lock
+    reason = (reason or "").strip()
+    if not reason:
+        raise ValueError("a reason is required — a baseline reset must say what changed")
+    stamp = at or _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime())
+    with _lock(_BASELINE_STORE):
+        data = _load_baselines()
+        data[model] = {"since": stamp, "reason": reason[:400],
+                       "set_at": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime())}
+        _awj(_BASELINE_STORE, data)
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "ai.model_health_rebaselined", "model": model,
+                         "since": stamp, "reason": reason[:200]})
+    except Exception:
+        pass
+    return data[model]
+
+
 def model_health(window: int = 40) -> Dict[str, Dict[str, Any]]:
     """Per-model-resource health from recorded attempts, keyed by the model name (served_by).
     The native orchestrator uses this to ADAPT selection. Honest: only real recorded rows.
@@ -106,11 +147,18 @@ def model_health(window: int = 40) -> Dict[str, Dict[str, Any]]:
     doesn't condemn a model forever and old glory doesn't mask decay), carries `last_at` (enabling
     probation retries), and folds in measured QUALITY rows (kind="model_quality" — e.g. the QMS
     verdict of a cascade the model served) alongside raw attempt success."""
+    # W378 — rows recorded BEFORE a declared baseline are preserved but do not score the model
+    # (they measured a since-fixed defect). Nothing is deleted; see set_health_baseline.
+    baselines = _load_baselines()
     rows_by_model: Dict[str, list] = {}
     for r in _load():
         if r.get("kind") not in ("model_attempt", "model_quality"):
             continue
-        rows_by_model.setdefault(r.get("served_by", ""), []).append(r)
+        name = r.get("served_by", "")
+        since = (baselines.get(name) or {}).get("since")
+        if since and (r.get("created_at") or "") < since:
+            continue
+        rows_by_model.setdefault(name, []).append(r)
     out: Dict[str, Dict[str, Any]] = {}
     for name, rows in rows_by_model.items():
         recent = rows[-max(1, int(window)):]
@@ -206,6 +254,29 @@ async def degradation(resource: Optional[str] = None, cycles: int = 3, window: i
 @router.get("/rankings")
 async def rankings():
     return {"rankings": _rankings([r for r in _load() if r.get("kind") != "model_attempt"])}
+
+
+class RebaselineRequest(BaseModel):
+    model: str
+    reason: str
+
+
+@router.post("/model-health/rebaseline")
+async def rebaseline_model_health(req: RebaselineRequest):
+    """§6 (W378) — declare that a model's recorded history predates a FIX, so it stops scoring it.
+
+    Owner-invoked and deliberately explicit: a `reason` is REQUIRED, the prior rows are KEPT (this
+    records a baseline timestamp, it does not delete evidence), and the action is logged to the
+    tamper-evident UEG ledger. Use it when recorded failures measured a defect that has since been
+    fixed — otherwise a model stays demoted below the deterministic floor long after it works again,
+    and users keep receiving thin output.
+    """
+    try:
+        rec = set_health_baseline(req.model, req.reason)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
+    return {"model": req.model, "baseline": rec, "history": "preserved (excluded from scoring only)",
+            "health_now": model_health().get(req.model, {})}
 
 
 @router.get("/model-health")
