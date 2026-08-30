@@ -6087,3 +6087,51 @@ def test_ai_memory_survives_concurrent_writes(tmp_path, monkeypatch):
     assert len(stored) == WRITERS * EACH, (
         f"{WRITERS * EACH - len(stored)} of {WRITERS * EACH} memories were destroyed by "
         "concurrent writers — the read-append-write cycle is not serialised")
+
+
+def test_user_store_survives_concurrent_writes(tmp_path, monkeypatch):
+    """W369 — the ACCOUNT store must never be corrupted or emptied by concurrent writes.
+
+    `_save_users` was a plain `write_text`, so two concurrent writers left the users file truncated
+    mid-JSON. `_load_users()` tolerates a decode error by returning {} — so a torn write silently
+    emptied EVERY account, and the admin bootstrap would then mint a brand-new admin. Reproduced
+    before the fix: 20 concurrent registrations left the file unreadable (JSONDecodeError) with all
+    accounts gone. After: 21 of 21 intact, file readable, no exceptions.
+    """
+    import json as _json
+    import threading as _th
+    import agentic_core.auth.core as ac
+
+    store = tmp_path / "users.json"
+    monkeypatch.setattr(ac, "_USER_STORE", store, raising=False)
+    store.write_text("{}", encoding="utf-8")
+
+    WRITERS = 20
+    errors: list = []
+
+    def register(i: int):
+        try:
+            with ac._users_mutation():
+                users = ac._load_users()
+                users[f"user{i}"] = {"username": f"user{i}", "role": "user",
+                                     "hashed_password": "hashed"}
+                ac._save_users(users)
+        except Exception as exc:                     # noqa: BLE001 — recording, not swallowing
+            errors.append(type(exc).__name__)
+
+    threads = [_th.Thread(target=register, args=(i,)) for i in range(WRITERS)]
+    for th in threads:
+        th.start()
+    for th in threads:
+        th.join()
+
+    assert not errors, f"concurrent account writes raised: {sorted(set(errors))}"
+    raw = store.read_text(encoding="utf-8")
+    try:
+        users = _json.loads(raw)
+    except Exception as exc:                          # noqa: BLE001
+        raise AssertionError(
+            f"the account store was CORRUPTED by concurrent writes ({type(exc).__name__}); "
+            "_load_users would return {} and every account would silently vanish") from exc
+    assert len(users) == WRITERS, (
+        f"{WRITERS - len(users)} of {WRITERS} accounts were destroyed by concurrent registration")

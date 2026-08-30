@@ -2013,3 +2013,20 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   `config.atomic_write_json` instead of duplicating it. A lock timeout skips the memory and says so
   in the log — a memory is never worth failing a user's AI call, but silence would be dishonest.
 - **After the fix: 0 lost, 0 raised.** Guarded by `test_ai_memory_survives_concurrent_writes`.
+
+### W369 — the ACCOUNT store could be corrupted (and silently emptied) by concurrent writes
+- The class sweep continued into the stores that hold identity. `_save_users` was a plain
+  `write_text` — not atomic — and the mutation cycles took no lock.
+- **Measured: 20 concurrent registrations left the users file UNREADABLE (JSONDecodeError).** The
+  severity is in what happens next: `_load_users()` tolerates a decode error by returning `{}`, so
+  a torn write does not fail loudly — it silently presents an EMPTY account store. Every account
+  disappears, and `_create_default_admin()` (which returns early only `if users:`) would then mint
+  a brand-new admin with a fresh password.
+- **Fixed**: `_save_users` now uses the hardened `config.atomic_write_json` (no torn writes), and a
+  `_users_mutation()` helper serialises every read-modify-write across threads AND processes. All
+  four cycles are wrapped — the admin bootstrap, login's env-password self-heal, admin register, and
+  self-serve signup/API-key issue — so the duplicate-username check is now INSIDE the lock (two
+  concurrent registrations of the same name can no longer both pass it). A lock timeout raises 503
+  rather than pretending the write succeeded.
+- **After: 21 of 21 accounts intact, file readable, no exceptions.** Guarded by
+  `test_user_store_survives_concurrent_writes`; the 11 auth/login/register/tenancy tests pass.

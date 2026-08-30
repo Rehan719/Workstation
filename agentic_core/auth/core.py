@@ -27,6 +27,7 @@ Environment variables:
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import secrets
@@ -121,8 +122,30 @@ def _load_users() -> dict[str, dict]:
 
 
 def _save_users(users: dict[str, dict]) -> None:
+    """W369 — ATOMIC write. This was a plain write_text: two concurrent writers left the users file
+    truncated mid-JSON, and because _load_users() tolerates a decode error by returning {}, a torn
+    write silently emptied the entire account store (and would let the admin bootstrap mint a fresh
+    admin). Reproduced: 20 concurrent registrations -> JSONDecodeError, all accounts gone.
+    Deliberately does NOT take store_lock — callers hold it around the read-modify-write, and
+    store_lock is not reentrant."""
+    from agentic_core.config import atomic_write_json
     _USER_STORE.parent.mkdir(parents=True, exist_ok=True)
-    _USER_STORE.write_text(json.dumps(users, indent=2))
+    atomic_write_json(_USER_STORE, users)
+
+
+@contextlib.contextmanager
+def _users_mutation():
+    """W369 — serialise a users read-modify-write across threads AND processes. Without it two
+    concurrent registrations each loaded the same dict and wrote back their own copy, so one
+    account was silently discarded."""
+    from agentic_core.config import store_lock
+    try:
+        with store_lock(_USER_STORE):
+            yield
+    except TimeoutError:
+        # Identity writes must never be silently dropped: surface it rather than pretend success.
+        raise HTTPException(status_code=503,
+                            detail="User store busy — please retry.") from None
 
 
 def _get_user(username: str) -> dict | None:
@@ -137,21 +160,22 @@ def _create_default_admin() -> None:
     self-heals from the ADMIN_PASSWORD env var once the operator sets it (see login())."""
     if not _AUTH_DEPS_OK:
         return  # cannot hash without passlib; admin is created once deps are present
-    users = _load_users()
-    if users:
-        return
-    env_password = os.getenv("ADMIN_PASSWORD", "")
-    admin_password = env_password or secrets.token_urlsafe(24)
-    users["admin"] = {
-        "user_id": str(uuid.uuid4()),
-        "username": "admin",
-        "hashed_password": _pwd_ctx.hash(admin_password),
-        "password_source": "env" if env_password else "random-unset",
-        "role": "admin",
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "api_keys": [],
-    }
-    _save_users(users)
+    with _users_mutation():                      # W369
+        users = _load_users()
+        if users:
+            return
+        env_password = os.getenv("ADMIN_PASSWORD", "")
+        admin_password = env_password or secrets.token_urlsafe(24)
+        users["admin"] = {
+            "user_id": str(uuid.uuid4()),
+            "username": "admin",
+            "hashed_password": _pwd_ctx.hash(admin_password),
+            "password_source": "env" if env_password else "random-unset",
+            "role": "admin",
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "api_keys": [],
+        }
+        _save_users(users)
 
 
 # Create default admin on module import (idempotent)
@@ -266,11 +290,12 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     if (user and user.get("username") == "admin" and user.get("password_source") == "random-unset"):
         env_pw = os.getenv("ADMIN_PASSWORD", "")
         if env_pw:
-            users = _load_users()
-            users["admin"]["hashed_password"] = _pwd_ctx.hash(env_pw)
-            users["admin"]["password_source"] = "env"
-            _save_users(users)
-            user = users["admin"]
+            with _users_mutation():                      # W369
+                users = _load_users()
+                users["admin"]["hashed_password"] = _pwd_ctx.hash(env_pw)
+                users["admin"]["password_source"] = "env"
+                _save_users(users)
+                user = users["admin"]
     if not user or not _pwd_ctx.verify(form.password, user["hashed_password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -300,18 +325,19 @@ async def refresh(req: RefreshRequest):
 async def register(req: RegisterRequest, _admin: dict = Depends(require_admin)):
     """Register a new user. Admin only."""
     _require_auth_deps()
-    users = _load_users()
-    if req.username in users:
-        raise HTTPException(status_code=409, detail=f"Username '{req.username}' already exists.")
-    users[req.username] = {
-        "user_id": str(uuid.uuid4()),
-        "username": req.username,
-        "hashed_password": _pwd_ctx.hash(req.password),
-        "role": req.role if req.role in ("admin", "user", "viewer") else "user",
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "api_keys": [],
-    }
-    _save_users(users)
+    with _users_mutation():                      # W369
+        users = _load_users()
+        if req.username in users:
+            raise HTTPException(status_code=409, detail=f"Username '{req.username}' already exists.")
+        users[req.username] = {
+            "user_id": str(uuid.uuid4()),
+            "username": req.username,
+            "hashed_password": _pwd_ctx.hash(req.password),
+            "role": req.role if req.role in ("admin", "user", "viewer") else "user",
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "api_keys": [],
+        }
+        _save_users(users)
     return {"status": "created", "username": req.username, "role": users[req.username]["role"]}
 
 
@@ -353,18 +379,19 @@ async def self_serve_signup(req: SignupRequest):
     if len(req.username.strip()) < 3 or len(req.password) < 8:
         raise HTTPException(status_code=422,
                             detail="Username must be ≥3 chars and password ≥8 chars.")
-    users = _load_users()
-    if req.username in users:
-        raise HTTPException(status_code=409, detail=f"Username '{req.username}' already exists.")
-    users[req.username] = {
-        "user_id": str(uuid.uuid4()),
-        "username": req.username.strip(),
-        "hashed_password": _pwd_ctx.hash(req.password),
-        "role": "user",                     # NEVER admin via self-serve
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "api_keys": [],
-    }
-    _save_users(users)
+    with _users_mutation():                      # W369
+        users = _load_users()
+        if req.username in users:
+            raise HTTPException(status_code=409, detail=f"Username '{req.username}' already exists.")
+        users[req.username] = {
+            "user_id": str(uuid.uuid4()),
+            "username": req.username.strip(),
+            "hashed_password": _pwd_ctx.hash(req.password),
+            "role": "user",                     # NEVER admin via self-serve
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "api_keys": [],
+        }
+        _save_users(users)
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({"type": "auth.self_serve_signup", "username": req.username.strip()})
@@ -393,20 +420,21 @@ async def generate_api_key(current_user: dict | None = Depends(get_current_user)
         return {"message": "Auth disabled — API keys not required in single-user mode."}
 
     raw_key = f"wstn_{secrets.token_hex(24)}"
-    users = _load_users()
-    user = users.get(current_user["username"])
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
+    with _users_mutation():                      # W369
+        users = _load_users()
+        user = users.get(current_user["username"])
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found.")
 
-    key_record = {
-        "key_id": uuid.uuid4().hex[:8],
-        "key_prefix": raw_key[:12],
-        "hashed_key": _pwd_ctx.hash(raw_key),
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    user.setdefault("api_keys", []).append(key_record)
-    users[current_user["username"]] = user
-    _save_users(users)
+        key_record = {
+            "key_id": uuid.uuid4().hex[:8],
+            "key_prefix": raw_key[:12],
+            "hashed_key": _pwd_ctx.hash(raw_key),
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        user.setdefault("api_keys", []).append(key_record)
+        users[current_user["username"]] = user
+        _save_users(users)
 
     return {
         "api_key": raw_key,
