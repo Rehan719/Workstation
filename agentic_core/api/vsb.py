@@ -660,6 +660,41 @@ _WEBAPP_APP_JS = r"""(async function () {
 """
 
 
+def _public_prose(text: str) -> str:
+    """§13 (W376) — make entity prose fit for a SHIPPED surface.
+
+    The website's builder scrubs its own HTML (W355/W356), but the Web app and Phone app render
+    prose from `data.json`, which came straight from the stored blueprint. Result: a VSB's public
+    web app displayed the engine's internal scaffolding to end users — the provenance marker, an
+    "_Acting as: <role>._" line, and floor sentences like
+    "Native structured content for 'X', grounded in: <challenge> (domain: <d>)."
+    Found by opening a generated app and LOOKING at it: every automated check passed, because the
+    files served 200 with real bytes.
+
+    Strips those markers and floor sentences and collapses the whitespace they leave. Prose that is
+    genuinely the entity's own survives untouched.
+    """
+    import re as _re
+    if not text:
+        return ""
+    out = _re.sub(r"_\[[^\]\n]*\]?_?", " ", text)            # _[provenance marker]_
+    out = _re.sub(r"_Acting as:[^_\n]*_", " ", out)           # _Acting as: <role>._
+    # consume the WHOLE floor sentence, not just its opening clause — removing only the first half
+    # left a dangling "grounded in: …", which still reads as machine scaffolding on a public page
+    # Generalised rather than enumerated: the floor emits several sibling phrasings — "Native
+    # structured content for 'X', grounded in: …", "Native structured synthesis grounded in the
+    # input's salient terms: …" — and matching them one at a time is whack-a-mole that loses to the
+    # next variant. Any sentence that opens with "Native structured …" is engine narration.
+    out = _re.sub(r"Native structured[^.\n]*\.?", " ", out, flags=_re.I)
+    out = _re.sub(r"(?m)^\s*grounded in:[^.\n]*\.?", " ", out, flags=_re.I)
+    out = out.replace("Native Structured Engine", " ")
+    for _m in _FLOOR_NARRATION:
+        out = _re.sub(r"[^.\n]*" + _re.escape(_m) + r"[^.\n]*\.?", " ", out, flags=_re.I)
+    out = _re.sub(r"[ \t]{2,}", " ", out)
+    out = _re.sub(r"\n{3,}", "\n\n", out)
+    return out.strip()
+
+
 def _entity_appdata(vsb: dict) -> dict:
     """The entity's data shaped as the client-app data source (shared by the Web app + Phone app)."""
     name = vsb.get("name") or vsb.get("vsb_id")
@@ -675,6 +710,10 @@ def _entity_appdata(vsb: dict) -> dict:
         roles += [str(o) for o in (ns.get("org") or []) if o]
     if not roles:
         roles = ["AI CEO", "C-Suite", "Centres of Excellence", "Build-to-Order", "Cognitive Cascade", "Genesis"]
+    # W376 — scrub BEFORE truncating: these strings are rendered verbatim by the Web app and the
+    # Phone app, which are public surfaces exactly like the website.
+    concept = _public_prose(concept)
+    challenge = _public_prose(challenge)
     return {
         "name": name, "domain": domain, "realm": realm, "challenge": challenge,
         "concept": concept[:1500],

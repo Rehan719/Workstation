@@ -2169,3 +2169,25 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
 - Guard: `test_local_model_budget_cannot_throttle_the_owned_model` — asserts the full window, that a
   **poisoned failure history still yields the full window**, and that `model_health` keeps exposing
   success-only latency. Proven to fail when the floor is throttled back.
+
+### W376 — the VSB's own Web app and Phone app were shipping engine scaffolding to end users
+- **Found by opening a generated web app and LOOKING at it.** Every automated check passed: the
+  files served 200 with real bytes, the SPA shell was correct, styling and tab navigation worked.
+  But the page a customer sees rendered the engine's internals —
+  `_[Workstation native structured engine — owned, no external dependency]_`,
+  `_Acting as: IDBO Conceptualisation engine._`, and floor sentences like
+  "Native structured content for 'INKASHAF', grounded in: …".
+- **Root cause:** W355/W356 scrubbed the WEBSITE builder's HTML, but `_build_webapp_files` and
+  `_build_mobile_files` render prose from `data.json` via `_entity_appdata`, which took the stored
+  blueprint concept RAW. Two of the three §13 public surfaces had no scrub at all.
+- **Fixed at the shared source** (`_entity_appdata`), so the Web app and the PWA are both covered by
+  one change. The scrub is GENERALISED, not enumerated: any sentence opening "Native structured …"
+  is engine narration — matching each phrasing individually was whack-a-mole that lost to the next
+  variant (the first pass killed "…content for 'X'" and left "…synthesis grounded in the input's
+  salient terms").
+- **Verified the way it was found:** regenerated the app and re-rendered it in the browser — the
+  scaffolding is gone and the entity's own terms survive.
+- **Stated honestly:** scrubbing makes floor-era content PRESENTABLE, not SUBSTANTIVE. Entities
+  generated while the owned model was throttled (W375) still hold thin content; only regeneration
+  with a real model serving gives them substance.
+- Guard: `test_client_apps_never_ship_engine_scaffolding`.

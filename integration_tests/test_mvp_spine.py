@@ -6301,3 +6301,47 @@ def test_local_model_budget_cannot_throttle_the_owned_model():
         sample = next(iter(h.values()))
         for key in ("success_runs", "success_p90_ms"):
             assert key in sample, f"model_health lost {key} — budgets would fall back to mean-of-all"
+
+
+def test_client_apps_never_ship_engine_scaffolding():
+    """W376 — the Web app and Phone app are PUBLIC surfaces and must not display engine internals.
+
+    W355/W356 scrubbed the website's HTML, but the client apps render prose from `data.json`, which
+    came straight from the stored blueprint — so a VSB's public web app showed end users the
+    provenance marker, an "_Acting as: <role>._" line, and floor sentences ("Native structured
+    content for 'X', grounded in: …"). Found by opening a generated app and LOOKING at it; every
+    automated check passed because the files served 200 with real bytes.
+
+    Note what this does and does not do: scrubbing makes floor-era content PRESENTABLE, not
+    SUBSTANTIVE. Entities generated while the owned model was throttled (W375) still hold thin
+    content; only regeneration with a real model serving fixes that.
+    """
+    from agentic_core.api.vsb import _public_prose, _entity_appdata
+
+    raw = ("_[Workstation native structured engine — owned, no external dependency]_\n\n"
+           "_Acting as: IDBO Conceptualisation engine._\n\n"
+           "## INKASHAF Native structured content for 'INKASHAF', grounded in: Atmospheric water "
+           "energy harvesting (domain: science).\n- atmospheric water\n\n"
+           "## Problem Understanding Native structured synthesis grounded in the input's salient "
+           "terms: - energy harvesting\n")
+
+    cleaned = _public_prose(raw)
+    for marker in ("Workstation native structured engine", "Acting as:", "Native structured",
+                   "grounded in:"):
+        assert marker.lower() not in cleaned.lower(), (
+            f"{marker!r} would be shown to an end user of the VSB's public app")
+    # the entity's OWN terms must survive — scrubbing must not gut real content
+    assert "INKASHAF" in cleaned and "atmospheric water" in cleaned
+
+    # and the app data actually served to the client is scrubbed at source (covers webapp + PWA,
+    # which share _entity_appdata)
+    appdata = _entity_appdata({
+        "vsb_id": "vsb-scrub-probe", "name": "Probe VSB", "domain": "science",
+        "challenge": "Atmospheric water energy harvesting",
+        "genesis_blueprint": {"concept": raw},
+    })
+    blob = f"{appdata.get('concept','')} {appdata.get('challenge','')} " \
+           f"{appdata.get('business_plan',{}).get('executive_summary','')}"
+    for marker in ("Workstation native structured engine", "Acting as:", "Native structured"):
+        assert marker.lower() not in blob.lower(), (
+            f"{marker!r} reaches the client apps through _entity_appdata")
