@@ -1771,3 +1771,24 @@ durable per-user server-side history, verification harnesses W358-W361.
   finish/skip, and re-runs on demand via a "Take the tour" control in Settings (ws:start-tour
   event). The tour walks the §3A two-offering split.
 Verification: tsc 0 + production frontend build clean. Frontend only.
+
+## Round 11 — the ledger pass (frontend e2e made real)
+
+### Batch A — cluster 1: the governance surface lives (CCA page + invisible hold + Genesis honesty)
+- **Change Control Agency page was dead end-to-end** (ledger cluster 1, CONFIRMED): the UI read
+  `entries`/`id`/`tier`/UPPERCASE statuses/`auto_approved` — none of which the backend returns — and
+  POSTed a bodiless review to a required-body endpoint. REWRITTEN to the real contract; failures now
+  surface the backend's own detail (incl. the §17.5 twin-pre-validation 409s). Browser-verified: 50
+  real change records render where the page was permanently empty; an Implement click transitioned a
+  record approved→implemented live (stats 34/16 → 33/17).
+- **Bonus root cause found by the probe:** GET `/api/v1/cca/` (trailing slash) 404s — the SPA
+  catch-all intercepts it before FastAPI's slash-redirect fires. Trailing slashes are NOT forgiven;
+  the other two slashed callers (`/projects/`, `/ingest/`) were probed and are correct (their routers
+  register the slash).
+- **The invisible governance hold is visible** (CONFIRMED): a material cycle's 200
+  `{cycle:null, governance:held_for_change_control}` now renders an amber Owner-approval card with
+  the cca_id and a link to /change-control. Browser-verified with a 2M-WST cycle.
+- **Genesis honesty:** the SSE complete event now carries the real `governance` object (was omitted →
+  the card always claimed "allowed"); the establish fallback no longer renders an error body as a
+  born VSB; gate approve/reject no longer silently no-op on HTTP errors.
+- Guard: `test_cca_ui_contract_shapes` locks the shapes + slash behavior in CI. tsc 0.

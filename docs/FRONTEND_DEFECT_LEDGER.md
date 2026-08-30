@@ -7,6 +7,33 @@ Status legend: **CONFIRMED** = independently re-verified against the tree by the
 re-verify line numbers (they drift). Every fix needs: fix at source → re-test the exact control in
 a real browser → regression guard → honest progress-log entry.
 
+## Round-11 fix log (append-only)
+
+**Batch A — cluster 1 (the governance surface), fixed + browser-verified 2026-08-30:**
+- ChangeControlAgency.tsx REWRITTEN to the real contract: reads `changes` (not `entries`), rows keyed
+  `cca_id`/`impact_tier`/lowercase status, AUTO badge from `decision === 'auto_approved'`, detail
+  (description/review_result/twin verdict) fetched from GET /{cca_id} on expand, review POSTs the
+  required ReviewDecision body, review/implement failures surface the backend's `detail` (the 409
+  twin-pre-validation messages included), honest load-error state. BROWSER-VERIFIED: 50 real records
+  render (was permanently empty); Implement click transitioned approved->implemented live.
+- NEW DISCOVERY fixed with it: the UI called GET `/api/v1/cca/` (trailing slash) which the SPA
+  catch-all intercepts into a 404 BEFORE FastAPI's slash-redirect — trailing slashes are NOT
+  forgiven in this app. `/api/v1/projects/` + `/api/v1/ingest/` were probed and are correct as-is
+  (those routers register WITH the slash).
+- VSBEconomy.tsx: the 200 `{cycle:null, governance:held}` materiality branch now renders an amber
+  Owner-approval hold card (cca_id + link to /change-control). BROWSER-VERIFIED with a 2,000,000 WST
+  material cycle.
+- genesis.py: the SSE `complete` event now carries the real `governance` object (parity with the
+  blocking path); GenesisJourney badge fallback is 'not reported', never a fabricated 'allowed'.
+- GenesisJourney.tsx: the blocking-establish fallback no longer renders an error body as a born VSB
+  (res.ok + visible error), and gate approve/reject no longer silently no-ops on 4xx/5xx.
+- Regression guard: `test_cca_ui_contract_shapes` (integration_tests/test_mvp_spine.py) locks the
+  list/review/submit/detail shapes + the trailing-slash 404 behavior in CI.
+
+**New discovery-sweep item (open):** ws://localhost:8010/api/v154/ws/streams fails repeatedly in the
+browser console (pre-existing; the frontend opens a WebSocket the backend refuses) — triage in the
+discovery sweep.
+
 ## Endpoint layer (method-aware diff: 170 UI calls vs 459 backend method+route pairs)
 - Exactly ONE missing endpoint: `POST /api/v1/claude/chat` (components/ClaudeAgentPanel.tsx) — backend has only `/api/v1/claude/status`. **CONFIRMED**
 - ZERO method mismatches. The user-visible breakage therefore lives almost entirely in the classes below, not in missing routes.

@@ -265,13 +265,21 @@ export const GenesisJourney: React.FC = () => {
       if (!complete) throw new Error('stream ended without completion');
       setVsb(complete);
     } catch {
-      // fallback — the blocking establish (same machinery, no live stages)
+      // fallback — the blocking establish (same machinery, no live stages). Ledger cluster 1:
+      // an error body must NEVER render as a born VSB, and a failure must be VISIBLE.
       try {
         const res = await fetch('/api/v1/genesis/establish', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
         });
-        setVsb(await res.json());
-      } catch { /* surfaced by absence of vsb */ }
+        if (!res.ok) {
+          const detail = await res.json().then(d => d?.detail).catch(() => null);
+          setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${String(detail).slice(0, 160)}` : ''}.`);
+        } else {
+          setVsb(await res.json());
+        }
+      } catch {
+        setError('Establishment failed — backend unreachable.');
+      }
     }
     setEstablishing(false);
   };
@@ -350,9 +358,11 @@ export const GenesisJourney: React.FC = () => {
   const decideGate = async (stage: string, decision: 'approve' | 'reject') => {
     if (!vsb) return;
     try {
-      await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates/${stage}/decision`, {
+      const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates/${stage}/decision`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decision }),
       });
+      // Ledger cluster 1 — the Owner's gate decision must never silently no-op on a 4xx/5xx
+      if (!res.ok) { setError(`Gate ${decision} failed (HTTP ${res.status}).`); return; }
       setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json()));
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
@@ -717,7 +727,7 @@ export const GenesisJourney: React.FC = () => {
                     <p className="font-black text-white text-sm">{vsb.name}</p>
                   </div>
                   <p className="text-[10px] text-slate-500 font-mono">
-                    {vsb.vsb_id} · operational · governance {vsb.governance?.status ?? 'allowed'}
+                    {vsb.vsb_id} · operational · governance {vsb.governance?.status ?? 'not reported'}
                   </p>
                   <p className="text-[10px] text-emerald-400 font-bold mt-1">
                     Living Enterprise IDBO generated — dashboard {vsb.dashboard}

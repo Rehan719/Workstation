@@ -5588,3 +5588,49 @@ def test_economy_waterfall_template_constraints(client):
         "proportions": {"owner": 0.1, "self_investment": 0.3, "capital_fund": 0.0,
                         "user_projects": 0.2, "charity": 0.4}})
     assert bad2.status_code == 400
+
+
+def test_cca_ui_contract_shapes(client):
+    """Round-11 ledger cluster 1 — the Change Control Agency page's EXACT contract, guarded so
+    shape drift breaks CI instead of silently emptying the governance surface:
+      - GET /api/v1/cca (NO trailing slash — the SPA catch-all intercepts '/api/v1/cca/' into a
+        404 before FastAPI's slash-redirect can fire) returns {"changes": [...]} whose rows carry
+        cca_id / impact_tier / lowercase status (never id / tier / UPPERCASE);
+      - POST /{id}/review REQUIRES a ReviewDecision body (bodiless = 422, the old UI's bug);
+      - submit signals auto-approval via status, not an auto_approved key;
+      - the detail GET carries the description the expand pane renders."""
+    r = client.post("/api/v1/cca/submit", json={
+        "title": "UI-contract guard", "description": "cca ui contract probe",
+        "change_type": "config_major", "submitted_by": "workstation-ui"})
+    assert r.status_code == 200, r.text
+    sub = r.json()
+    cid = sub["cca_id"]
+    try:
+        assert "auto_approved" not in sub and sub["status"] in (
+            "submitted", "under_review", "approved")
+        # trailing slash is NOT forgiven (SPA catch-all) — the UI must call the bare path
+        assert client.get("/api/v1/cca/").status_code == 404
+        d = client.get("/api/v1/cca")
+        assert d.status_code == 200
+        body = d.json()
+        assert "changes" in body and "entries" not in body
+        row = next(x for x in body["changes"] if x["cca_id"] == cid)
+        for key in ("cca_id", "title", "change_type", "impact_tier", "status",
+                    "submitted_at", "decision"):
+            assert key in row, f"list row lost {key}"
+        assert "id" not in row and "tier" not in row
+        assert row["status"] == row["status"].lower()
+        # bodiless review (the old UI) is rejected; the fixed body is accepted
+        assert client.post(f"/api/v1/cca/{cid}/review").status_code == 422
+        rev = client.post(f"/api/v1/cca/{cid}/review",
+                          json={"override_decision": "approved", "reviewer_notes": "contract guard"})
+        assert rev.status_code == 200, rev.text
+        assert rev.json()["status"] == "approved"
+        det = client.get(f"/api/v1/cca/{cid}").json()
+        assert det["description"] == "cca ui contract probe"
+    finally:
+        # keep the shared change-control store clean for sibling tests
+        from agentic_core.config import data_path
+        p = data_path("change_control") / f"{cid}.json"
+        if p.exists():
+            p.unlink()

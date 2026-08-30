@@ -729,6 +729,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "dashboard": f"/api/v1/vsb/{vsb_id}",
             "initial_ship": initial_ship,
             "birth_vitals": birth_vitals,
+            # parity with the blocking path — the UI badge must reflect the REAL gate outcome
+            "governance": entity["governance"],
             "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
         })
 

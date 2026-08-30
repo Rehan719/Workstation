@@ -2,28 +2,36 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  GitBranch, AlertTriangle, CheckCircle2, XCircle, Clock, Loader2,
-  Plus, RefreshCw, ChevronDown, ChevronUp, Zap, Shield,
+  GitBranch, CheckCircle2, XCircle, Clock, Loader2,
+  Plus, RefreshCw, ChevronDown, ChevronUp, Zap, Shield, Undo2,
   type LucideIcon
 } from 'lucide-react';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types — matched to the REAL backend contract (agentic_core/api/change_control.py):
+//    list rows carry cca_id / impact_tier / lowercase status; the full record (description,
+//    review_result, twin_prevalidation) lives on GET /api/v1/cca/{cca_id}. (Ledger cluster 1.)
 
 type Tier = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-type Status = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPLEMENTED';
+type Status = 'submitted' | 'under_review' | 'approved' | 'rejected' | 'implemented' | 'withdrawn';
 
-interface CCAEntry {
-  id: string;
+interface CCARow {
+  cca_id: string;
   title: string;
-  description: string;
   change_type: string;
-  tier: Tier;
+  impact_tier: Tier;
   status: Status;
+  submitted_by?: string;
   submitted_at: string;
-  submitter?: string;
-  health_at_submission?: number;
-  ai_review?: string;
-  auto_approved?: boolean;
+  reviewed_at?: string | null;
+  decision?: string | null;
+}
+
+interface CCADetail extends CCARow {
+  description?: string;
+  rationale?: string | null;
+  review_result?: string | null;
+  rollback_plan?: string | null;
+  twin_prevalidation?: { verdict?: string; source?: string } | null;
 }
 
 interface CCAStats {
@@ -44,17 +52,21 @@ const TIER_COLORS: Record<Tier, string> = {
 };
 
 const STATUS_COLORS: Record<Status, string> = {
-  PENDING:     'text-yellow-400',
-  APPROVED:    'text-green-400',
-  REJECTED:    'text-red-400',
-  IMPLEMENTED: 'text-blue-400',
+  submitted:    'text-yellow-400',
+  under_review: 'text-amber-400',
+  approved:     'text-green-400',
+  rejected:     'text-red-400',
+  implemented:  'text-blue-400',
+  withdrawn:    'text-slate-400',
 };
 
 const STATUS_ICONS: Record<Status, LucideIcon> = {
-  PENDING:     Clock,
-  APPROVED:    CheckCircle2,
-  REJECTED:    XCircle,
-  IMPLEMENTED: Zap,
+  submitted:    Clock,
+  under_review: Shield,
+  approved:     CheckCircle2,
+  rejected:     XCircle,
+  implemented:  Zap,
+  withdrawn:    Undo2,
 };
 
 const CHANGE_TYPES = [
@@ -68,16 +80,32 @@ function fmtDate(iso: string) {
   try { return new Date(iso).toLocaleString(); } catch { return iso; }
 }
 
+const isPending = (s: Status) => s === 'submitted' || s === 'under_review';
+
 // ── Entry card ────────────────────────────────────────────────────────────────
 
-function CCACard({ entry, onReview, onImplement, refreshing }: {
-  entry: CCAEntry;
+function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
+  entry: CCARow;
   onReview: (id: string) => void;
   onImplement: (id: string) => void;
   refreshing: string | null;
+  actionError: { id: string; message: string } | null;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const Icon = STATUS_ICONS[entry.status];
+  const [detail, setDetail] = useState<CCADetail | null>(null);
+  const Icon = STATUS_ICONS[entry.status] ?? Clock;
+
+  // The list row is intentionally thin — the description/review live on the detail record.
+  const toggle = async () => {
+    const opening = !expanded;
+    setExpanded(opening);
+    if (opening && !detail) {
+      try {
+        const r = await axios.get(`/api/v1/cca/${entry.cca_id}`);
+        setDetail(r.data);
+      } catch { /* the row still renders; detail pane shows an honest fallback below */ }
+    }
+  };
 
   return (
     <motion.div
@@ -86,26 +114,27 @@ function CCACard({ entry, onReview, onImplement, refreshing }: {
       animate={{ opacity: 1, y: 0 }}
       className="bg-white/4 border border-white/10 rounded-xl overflow-hidden"
     >
-      <div className="flex items-start gap-3 p-4 cursor-pointer hover:bg-white/3" onClick={() => setExpanded(e => !e)}>
-        <Icon size={16} className={`mt-0.5 shrink-0 ${STATUS_COLORS[entry.status]}`} />
+      <div className="flex items-start gap-3 p-4 cursor-pointer hover:bg-white/3" onClick={toggle}>
+        <Icon size={16} className={`mt-0.5 shrink-0 ${STATUS_COLORS[entry.status] ?? 'text-white/40'}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-semibold text-white leading-tight">{entry.title}</p>
             <div className="flex items-center gap-2 shrink-0">
-              <span className={`text-xs px-2 py-0.5 rounded border font-mono ${TIER_COLORS[entry.tier]}`}>{entry.tier}</span>
-              {entry.auto_approved && (
+              <span className={`text-xs px-2 py-0.5 rounded border font-mono ${TIER_COLORS[entry.impact_tier] ?? TIER_COLORS.MEDIUM}`}>{entry.impact_tier}</span>
+              {entry.decision === 'auto_approved' && (
                 <span className="text-xs px-2 py-0.5 rounded border text-green-400 bg-green-500/10 border-green-500/20">AUTO</span>
               )}
+              <span className={`text-xs font-mono uppercase ${STATUS_COLORS[entry.status] ?? 'text-white/40'}`}>{entry.status.replace('_', ' ')}</span>
             </div>
           </div>
           <div className="flex items-center gap-3 mt-1 text-xs text-white/40">
             <span className="font-mono">{entry.change_type}</span>
             <span>·</span>
             <span>{fmtDate(entry.submitted_at)}</span>
-            {entry.health_at_submission !== undefined && (
+            {entry.submitted_by && (
               <>
                 <span>·</span>
-                <span>Health: {(entry.health_at_submission * 100).toFixed(0)}%</span>
+                <span>{entry.submitted_by}</span>
               </>
             )}
           </div>
@@ -120,38 +149,55 @@ function CCACard({ entry, onReview, onImplement, refreshing }: {
             className="overflow-hidden border-t border-white/8"
           >
             <div className="p-4 space-y-3">
-              <p className="text-sm text-white/60">{entry.description}</p>
+              {detail
+                ? <p className="text-sm text-white/60">{detail.description || 'No description recorded.'}</p>
+                : <p className="text-sm text-white/30">Loading details…</p>}
 
-              {entry.ai_review && (
+              {detail?.review_result && (
                 <div className="bg-white/3 border border-white/8 rounded-lg p-3">
-                  <p className="text-xs text-white/40 mb-1 font-semibold uppercase tracking-wider">AI Review</p>
-                  <pre className="text-xs text-white/60 font-mono whitespace-pre-wrap leading-relaxed">{entry.ai_review}</pre>
+                  <p className="text-xs text-white/40 mb-1 font-semibold uppercase tracking-wider">
+                    Review {detail.decision ? `— ${detail.decision.replace('_', ' ')}` : ''}
+                  </p>
+                  <pre className="text-xs text-white/60 font-mono whitespace-pre-wrap leading-relaxed">{detail.review_result}</pre>
                 </div>
               )}
 
+              {detail?.twin_prevalidation?.verdict && (
+                <p className="text-xs font-mono text-white/40">
+                  §17.5 twin pre-validation:{' '}
+                  <span className={detail.twin_prevalidation.verdict === 'pass' ? 'text-green-400' : 'text-red-400'}>
+                    {detail.twin_prevalidation.verdict.toUpperCase()}
+                  </span>{' '}({detail.twin_prevalidation.source})
+                </p>
+              )}
+
               <div className="flex items-center gap-2 pt-1">
-                {entry.status === 'PENDING' && (
+                {isPending(entry.status) && (
                   <button
-                    onClick={e => { e.stopPropagation(); onReview(entry.id); }}
-                    disabled={refreshing === entry.id}
+                    onClick={e => { e.stopPropagation(); onReview(entry.cca_id); }}
+                    disabled={refreshing === entry.cca_id}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/25 disabled:opacity-50"
                   >
-                    {refreshing === entry.id ? <Loader2 size={12} className="animate-spin" /> : <Shield size={12} />}
+                    {refreshing === entry.cca_id ? <Loader2 size={12} className="animate-spin" /> : <Shield size={12} />}
                     AI Review
                   </button>
                 )}
-                {entry.status === 'APPROVED' && (
+                {entry.status === 'approved' && (
                   <button
-                    onClick={e => { e.stopPropagation(); onImplement(entry.id); }}
-                    disabled={refreshing === entry.id}
+                    onClick={e => { e.stopPropagation(); onImplement(entry.cca_id); }}
+                    disabled={refreshing === entry.cca_id}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600/20 hover:bg-green-600/35 text-green-300 border border-green-500/25 disabled:opacity-50"
                   >
-                    {refreshing === entry.id ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                    {refreshing === entry.cca_id ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
                     Implement
                   </button>
                 )}
-                <span className="text-xs text-white/30 font-mono">{entry.id}</span>
+                <span className="text-xs text-white/30 font-mono">{entry.cca_id}</span>
               </div>
+
+              {actionError?.id === entry.cca_id && (
+                <p className="text-xs text-red-400">{actionError.message}</p>
+              )}
             </div>
           </motion.div>
         )}
@@ -175,9 +221,12 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
     setLoading(true); setMsg(null);
     try {
       const res = await axios.post('/api/v1/cca/submit', {
-        title, description: desc, change_type: type, submitter: 'workstation-ui'
+        title, description: desc, change_type: type, submitted_by: 'workstation-ui'
       });
-      setMsg(res.data.auto_approved ? '✓ Change auto-approved (LOW tier + healthy organism)' : '✓ Change submitted — awaiting AI review');
+      // Auto-approval is signalled by the returned status (the backend sends no auto_approved key).
+      setMsg(res.data.status === 'approved'
+        ? '✓ Change auto-approved (LOW tier + healthy organism)'
+        : '✓ Change submitted — awaiting AI review');
       setTitle(''); setDesc(''); setType('config_minor');
       setTimeout(() => { onSubmitted(); setOpen(false); setMsg(null); }, 1500);
     } catch (e: any) {
@@ -277,51 +326,57 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
 type FilterTab = 'all' | 'pending' | 'approved' | 'rejected' | 'implemented';
 
 export const ChangeControlAgency: React.FC = () => {
-  const [entries, setEntries] = useState<CCAEntry[]>([]);
+  const [entries, setEntries] = useState<CCARow[]>([]);
   const [filter, setFilter] = useState<FilterTab>('all');
   const [stats, setStats] = useState<CCAStats>({ total: 0, pending: 0, approved: 0, rejected: 0, implemented: 0 });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [allRes, statsRes] = await Promise.all([
-        axios.get('/api/v1/cca/'),
-        axios.get('/api/v1/cca/queue'),
-      ]);
-      const all: CCAEntry[] = allRes.data.entries ?? [];
+      // NOTE: no trailing slash — the SPA catch-all route intercepts '/api/v1/cca/' before
+      // FastAPI's slash-redirect can fire, returning 404. (Discovered by the cluster-1 probe.)
+      const allRes = await axios.get('/api/v1/cca');
+      const all: CCARow[] = allRes.data.changes ?? [];
       setEntries(all);
-      const pending = all.filter(e => e.status === 'PENDING').length;
-      const approved = all.filter(e => e.status === 'APPROVED').length;
-      const rejected = all.filter(e => e.status === 'REJECTED').length;
-      const implemented = all.filter(e => e.status === 'IMPLEMENTED').length;
+      setLoadError(null);
+      const pending = all.filter(e => isPending(e.status)).length;
+      const approved = all.filter(e => e.status === 'approved').length;
+      const rejected = all.filter(e => e.status === 'rejected').length;
+      const implemented = all.filter(e => e.status === 'implemented').length;
       setStats({ total: all.length, pending, approved, rejected, implemented });
     } catch {
-      // graceful empty state
+      setLoadError('Could not load the change queue — backend unreachable.');
     } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const triggerReview = async (id: string) => {
-    setActionId(id);
+  const runAction = async (id: string, act: () => Promise<unknown>) => {
+    setActionId(id); setActionError(null);
     try {
-      await axios.post(`/api/v1/cca/${id}/review`);
+      await act();
       await load();
+    } catch (e: any) {
+      // Surface the real reason — the 409s here (twin pre-validation) are meaningful governance messages.
+      setActionError({ id, message: String(e?.response?.data?.detail ?? 'Request failed — backend unreachable.') });
     } finally { setActionId(null); }
   };
 
-  const triggerImplement = async (id: string) => {
-    setActionId(id);
-    try {
-      await axios.post(`/api/v1/cca/${id}/implement`);
-      await load();
-    } finally { setActionId(null); }
-  };
+  const triggerReview = (id: string) =>
+    // ReviewDecision body is required by the endpoint; empty overrides = "let the AI decide".
+    runAction(id, () => axios.post(`/api/v1/cca/${id}/review`, { reviewer_notes: 'Requested via the Change Control Agency UI' }));
+
+  const triggerImplement = (id: string) =>
+    runAction(id, () => axios.post(`/api/v1/cca/${id}/implement`));
 
   const filtered = filter === 'all'
     ? entries
-    : entries.filter(e => e.status === filter.toUpperCase());
+    : filter === 'pending'
+      ? entries.filter(e => isPending(e.status))
+      : entries.filter(e => e.status === filter);
 
   const FILTER_TABS: { id: FilterTab; label: string; count: number; color: string }[] = [
     { id: 'all',         label: 'All',         count: stats.total,       color: 'text-white/60'   },
@@ -398,6 +453,10 @@ export const ChangeControlAgency: React.FC = () => {
           <Loader2 size={20} className="animate-spin mr-2" />
           Loading change queue...
         </div>
+      ) : loadError ? (
+        <div className="text-center py-16">
+          <p className="text-sm text-red-400">{loadError}</p>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-white/25">
           <GitBranch size={36} className="mx-auto mb-3 opacity-30" />
@@ -410,11 +469,12 @@ export const ChangeControlAgency: React.FC = () => {
           <AnimatePresence>
             {filtered.map(entry => (
               <CCACard
-                key={entry.id}
+                key={entry.cca_id}
                 entry={entry}
                 onReview={triggerReview}
                 onImplement={triggerImplement}
                 refreshing={actionId}
+                actionError={actionError}
               />
             ))}
           </AnimatePresence>

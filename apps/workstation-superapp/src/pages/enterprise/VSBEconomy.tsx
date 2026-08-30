@@ -50,6 +50,9 @@ export const VSBEconomy: React.FC = () => {
   const [error, setError] = useState('');
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [gov, setGov] = useState<string>('');
+  // Ledger cluster 1 — a MATERIAL cycle returns 200 {cycle:null, governance:held...}; that hold
+  // must be VISIBLE (it is exactly the flow the Owner has to approve), never a silent no-op.
+  const [hold, setHold] = useState<{ status?: string; cca_id?: string; note?: string } | null>(null);
   // §4/§8/§10 — Owner-adjustable profit waterfall (virtual, template-bounded)
   const [wf, setWf] = useState<WaterfallState | null>(null);
   const [wfDraft, setWfDraft] = useState<Record<string, number>>({});   // percentages (0-100) the Owner edits
@@ -130,6 +133,7 @@ export const VSBEconomy: React.FC = () => {
       if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
       const d = await r.json();
       setCycle(d.cycle); setGov(d.governance?.status ?? '');
+      setHold(d.cycle == null ? (d.governance ?? { status: 'no_cycle', note: 'The cycle returned no result.' }) : null);
       loadOwnerPay();   // the cycle accrued the Owner's §4 share — refresh the ledger
       loadBoardPack();  // refresh the live financial Board Pack
     } catch (e: any) { setError(e?.message ?? String(e)); }
@@ -306,6 +310,23 @@ export const VSBEconomy: React.FC = () => {
                 </div>
               ))}
             </div>
+          )}
+        </Card>
+      )}
+
+      {/* Governance hold — a material distribution awaiting Owner approval (rendered FIRST:
+          this is the branch the Owner must see, not a silent no-op). */}
+      {hold && (
+        <Card className="p-6 border-amber-500/40">
+          <p className="text-[10px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-2">
+            <ShieldCheck size={14} /> Held for Change Control — Owner approval required
+          </p>
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed">{hold.note || 'This distribution is material and awaits Change Control approval before any WST moves.'}</p>
+          {hold.cca_id && (
+            <p className="text-[10px] font-mono text-slate-500 mt-2">
+              Change request: <span className="text-aura">{hold.cca_id}</span> — review it on the{' '}
+              <a href="/change-control" className="text-aura underline underline-offset-2">Change Control Agency</a> page, then run the cycle again.
+            </p>
           )}
         </Card>
       )}
