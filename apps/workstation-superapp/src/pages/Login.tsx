@@ -60,12 +60,16 @@ export const Login: React.FC = () => {
   const addUser = async () => {
     if (!nu.username.trim() || !nu.password) return;
     setNuMsg('');
-    const r = await fetch('/api/v1/auth/register', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(nu),
-    });
-    const d = await r.json().catch(() => ({}));
-    setNuMsg(r.ok ? `Created '${nu.username}' (${d.role}).` : `Failed: ${d?.detail ?? r.status}`);
-    if (r.ok) setNu({ username: '', password: '', role: 'user' });
+    try {
+      const r = await fetch('/api/v1/auth/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(nu),
+      });
+      const d = await r.json().catch(() => ({}));
+      setNuMsg(r.ok ? `Created '${nu.username}' (${d.role}).` : `Failed: ${d?.detail ?? r.status}`);
+      if (r.ok) setNu({ username: '', password: '', role: 'user' });
+    } catch {
+      setNuMsg('Failed: backend unreachable.');   // cluster 2 — network failure must not reject unhandled
+    }
   };
 
   return (

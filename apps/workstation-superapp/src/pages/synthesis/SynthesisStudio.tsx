@@ -173,7 +173,10 @@ export const SynthesisStudio: React.FC = () => {
       await axios.delete(`/api/v1/ingest/${fileId}`);
       setIngestedFiles(prev => prev.filter(f => f.file_id !== fileId));
       setSelectedIds(prev => prev.filter(id => id !== fileId));
-    } catch (e) { console.error('Delete failed:', e); }
+    } catch (e: any) {
+      // Ledger cluster 2 — a failed delete leaves the file in the list; say so
+      setErrorMsg(`Delete failed: ${e?.response?.data?.detail ?? 'backend unreachable'}`);
+    }
   };
 
   // ── Selection helpers ────────────────────────────────────────────────────────

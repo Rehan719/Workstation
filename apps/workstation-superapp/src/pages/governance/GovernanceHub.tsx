@@ -389,20 +389,26 @@ const SanctumTab: React.FC = () => {
           title: proposalInput,
           description: `Constitutional Meta-Amendment: ${proposalInput}`,
           change_type: 'constitutional',
-          risk_level: 'HIGH',
-          requester: 'sovereign-sanctum',
+          // the real request field is submitted_by (unknown fields are silently dropped by pydantic)
+          submitted_by: 'sovereign-sanctum',
         }),
       });
+      // Ledger cluster 2 — a 4xx/5xx must never produce the success toast + a phantom list entry
+      if (!res.ok) {
+        const detail = await res.json().then(d => d?.detail).catch(() => null);
+        toast(`Submission failed (HTTP ${res.status})${detail ? `: ${String(detail).slice(0, 120)}` : ''}`);
+        return;
+      }
       const data = await res.json();
       setProposals(prev => [...prev, {
-        id: data.id ?? `meta-${Date.now()}`,
+        id: data.cca_id ?? `meta-${Date.now()}`,
         title: proposalInput,
-        status: 'Deliberation',
+        status: `CCA ${data.status ?? 'submitted'} (${data.cca_id ?? 'no id'})`,
         support: '0%',
       }]);
       setProposalInput('');
       setShowProposalForm(false);
-      toast('Constitutional meta-proposal submitted to Change Control Agency for review');
+      toast(`Constitutional meta-proposal ${data.cca_id ?? ''} submitted to the Change Control Agency (CRITICAL tier)`);
     } catch {
       toast('Submission failed — please try again');
     } finally {

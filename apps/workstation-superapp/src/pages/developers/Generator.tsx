@@ -72,11 +72,16 @@ export const Generator: React.FC = () => {
     }
   };
 
+  const [copyMsg, setCopyMsg] = useState('');
   const handleCopy = async () => {
     if (!result?.output) return;
-    await navigator.clipboard.writeText(result.output);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(result.output);
+      setCopied(true); setCopyMsg('');
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopyMsg('Copy failed — clipboard unavailable (browser permission).');   // cluster 2
+    }
   };
 
   const handleExport = () => {
@@ -187,7 +192,7 @@ export const Generator: React.FC = () => {
                 <div className="flex gap-2">
                   <button type="button" onClick={handleCopy}
                     className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-700 text-slate-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:text-white hover:border-aura/50 transition-colors">
-                    {copied ? <><Check size={10} className="text-emerald-400" /> Copied</> : <><Copy size={10} /> Copy</>}
+                    {copied ? <><Check size={10} className="text-emerald-400" /> Copied</> : <><Copy size={10} /> {copyMsg ? 'Copy failed' : 'Copy'}</>}
                   </button>
                   <button type="button" onClick={handleExport}
                     className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-700 text-slate-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:text-white hover:border-aura/50 transition-colors">

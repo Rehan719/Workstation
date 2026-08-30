@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
+import { apiJson, errorMessage } from '../lib/api';
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
@@ -57,39 +58,34 @@ export const Deliverables: React.FC = () => {
     loadList().finally(() => setLoading(false));
   }, []);
 
+  // Ledger cluster 2 — apiJson throws on !ok, so an error body can never become `selected`
+  // (it used to crash the detail pane dereferencing versions/ai_provenance on {detail:...}).
   const produce = async () => {
     if (!brief.trim()) return;
     setProducing(true); setError('');
     try {
-      const r = await fetch('/api/v1/deliverables/produce', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, title, brief }),
-      });
-      const d = await r.json();
-      setSelected(d);
+      setSelected(await apiJson('/api/v1/deliverables/produce', { method: 'POST', body: { type, title, brief } }));
       await loadList();
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e) { setError(errorMessage(e)); }
     setProducing(false);
   };
 
   const open = async (id: string) => {
     setViewVer(null);   // W-versions — always open on the latest version
-    try { setSelected(await fetch(`/api/v1/deliverables/${id}`).then(r => r.json())); }
-    catch { /* the list already renders an honest empty state */ }
+    setError('');
+    try { setSelected(await apiJson(`/api/v1/deliverables/${id}`)); }
+    catch (e) { setError(errorMessage(e)); }
   };
 
   const regenerate = async () => {
     if (!selected) return;
-    setBusy(true);
+    setBusy(true); setError('');
     try {
-      const r = await fetch(`/api/v1/deliverables/${selected.id}/regenerate`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief: regenBrief || undefined }),
-      });
-      setSelected(await r.json());
+      setSelected(await apiJson(`/api/v1/deliverables/${selected.id}/regenerate`, {
+        method: 'POST', body: { brief: regenBrief || undefined } }));
       setRegenBrief('');
       await loadList();
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e) { setError(errorMessage(e)); }
     setBusy(false);
   };
 

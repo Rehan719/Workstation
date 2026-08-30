@@ -121,6 +121,9 @@ function QMSPanel({ onResult }: { onResult: (r: string) => void }) {
     try {
       const res = await axios.post('/api/v1/mgmt/qms/generate', { organisation_name: org, domain, size });
       onResult(res.data.framework);
+    } catch (e: any) {
+      // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
+      onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
     } finally { setLoading(false); }
   };
 
@@ -153,6 +156,9 @@ function BMSPanel({ onResult }: { onResult: (r: string) => void }) {
     try {
       const res = await axios.post('/api/v1/mgmt/bms/generate', { organisation_name: org, mission, domain, planning_horizon: horizon });
       onResult(res.data.framework);
+    } catch (e: any) {
+      // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
+      onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
     } finally { setLoading(false); }
   };
 
@@ -184,6 +190,9 @@ function DCSPanel({ onResult }: { onResult: (r: string) => void }) {
     try {
       const res = await axios.post('/api/v1/mgmt/dcs/generate', { organisation_name: org, domain });
       onResult(res.data.framework);
+    } catch (e: any) {
+      // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
+      onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
     } finally { setLoading(false); }
   };
 
@@ -214,6 +223,9 @@ function EMSPanel({ onResult }: { onResult: (r: string) => void }) {
     try {
       const res = await axios.post('/api/v1/mgmt/ems/generate', { organisation_name: org, domain, sector });
       onResult(res.data.framework);
+    } catch (e: any) {
+      // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
+      onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
     } finally { setLoading(false); }
   };
 
@@ -244,6 +256,9 @@ function AuditPanel({ onResult }: { onResult: (r: string) => void }) {
     try {
       const res = await axios.post('/api/v1/mgmt/audit/schedule', { organisation_name: org, audit_standard: standard, year: new Date().getFullYear() });
       onResult(res.data.schedule);
+    } catch (e: any) {
+      // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
+      onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
     } finally { setLoading(false); }
   };
 
@@ -275,6 +290,9 @@ function RiskPanel({ onResult }: { onResult: (r: string) => void }) {
     try {
       const res = await axios.post('/api/v1/mgmt/risk-register', { organisation_name: org, domain, context, num_risks: parseInt(numRisks) });
       onResult(res.data.register);
+    } catch (e: any) {
+      // Ledger cluster 2 — a failed generation must be visible, never a silent spinner-stop
+      onResult(`⚠ Generation failed: ${e?.response?.data?.detail ?? 'backend unreachable'}. Nothing was generated.`);
     } finally { setLoading(false); }
   };
 

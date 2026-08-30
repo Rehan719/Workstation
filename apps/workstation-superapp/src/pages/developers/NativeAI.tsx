@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save, Activity } from 'lucide-react';
+import { apiJson, errorMessage } from '../../lib/api';
 
 interface ModelResource {
   name: string; kind: string; available: boolean; is_external: boolean; model?: string; note?: string;
@@ -202,12 +203,10 @@ export const NativeAI: React.FC = () => {
   const lifecycleAction = async (action: 'evaluate' | 'promote' | 'retire' | 'reinstate', model: string) => {
     setLcBusy(`${action}:${model}`);
     try {
-      await fetch(`/api/v1/native-ai/lifecycle/${action}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model }),
-      });
+      // Ledger cluster 2 — a failed retire/promote must be visible, never a silent reload
+      await apiJson(`/api/v1/native-ai/lifecycle/${action}`, { method: 'POST', body: { model } });
       loadLifecycle();
-    } catch { /* surfaced via reload */ }
+    } catch (e) { setError(errorMessage(e)); }
     setLcBusy('');
   };
 
@@ -233,12 +232,9 @@ export const NativeAI: React.FC = () => {
     if (!cPrompt.trim()) return;
     setCompleting(true); setCRes(null);
     try {
-      const r = await fetch('/api/v1/native-ai/complete', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: cPrompt, agent: 'console', model: cModel }),
-      });
-      setCRes(await r.json());
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+      setCRes(await apiJson('/api/v1/native-ai/complete', {
+        method: 'POST', body: { prompt: cPrompt, agent: 'console', model: cModel } }));
+    } catch (e) { setError(errorMessage(e)); }
     setCompleting(false);
   };
 
@@ -249,24 +245,18 @@ export const NativeAI: React.FC = () => {
     if (!cPrompt.trim()) return;
     setEnsembling(true); setEnsRes(null);
     try {
-      const r = await fetch('/api/v1/native-ai/ensemble', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: cPrompt, agent: 'console' }),
-      });
-      setEnsRes(await r.json());
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+      setEnsRes(await apiJson('/api/v1/native-ai/ensemble', {
+        method: 'POST', body: { prompt: cPrompt, agent: 'console' } }));
+    } catch (e) { setError(errorMessage(e)); }
     setEnsembling(false);
   };
 
   const runSwarm = async () => {
     setRunning(true); setRun(null);
     try {
-      const r = await fetch('/api/v1/native-ai/swarm', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: 'demo', context }),
-      });
-      setRun(await r.json());
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+      setRun(await apiJson('/api/v1/native-ai/swarm', {
+        method: 'POST', body: { agent: 'demo', context } }));
+    } catch (e) { setError(errorMessage(e)); }
     setRunning(false);
   };
 
@@ -324,12 +314,9 @@ export const NativeAI: React.FC = () => {
   const runSaved = async (id: string) => {
     setRunningId(id); setSavedRun(null);
     try {
-      const r = await fetch('/api/v1/resources/swarm/run', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ swarm_id: id }),
-      });
-      setSavedRun({ id, run: await r.json() });
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+      setSavedRun({ id, run: await apiJson('/api/v1/resources/swarm/run', {
+        method: 'POST', body: { swarm_id: id } }) });
+    } catch (e) { setError(errorMessage(e)); }
     setRunningId('');
   };
 

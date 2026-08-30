@@ -4,6 +4,7 @@ import {
   Target, Activity, GitBranch, CheckCircle2, Circle, Loader2,
   Sparkles, HeartPulse, AlertCircle, Eye, Map, Workflow, ShieldCheck,
 } from 'lucide-react';
+import { apiJson, errorMessage } from '../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -51,26 +52,26 @@ export const TransformationDashboard: React.FC = () => {
 
   const tick = async () => {
     setTicking(true);
-    try { await fetch('/api/v1/transformation/tick', { method: 'POST' }); await load(); } catch { setError('Tick failed — backend unreachable'); }   // W329
+    try { await apiJson('/api/v1/transformation/tick', { method: 'POST' }); await load(); } catch (e) { setError(errorMessage(e)); }   // cluster 2: 4xx/5xx surfaces too
     setTicking(false);
   };
   const assess = async () => {
     setAssessing(true); setAssessment('');
     try {
-      const r = await fetch('/api/v1/transformation/assess', { method: 'POST' });
-      const d = await r.json(); setAssessment(d.assessment ?? '');
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+      const d = await apiJson('/api/v1/transformation/assess', { method: 'POST' });
+      setAssessment(d.assessment ?? '');
+      if (!d.assessment) setError('Assessment returned no content.');
+    } catch (e) { setError(errorMessage(e)); }
     setAssessing(false);
   };
   const orchestrate = async () => {
     setOrchestrating(true); setOrch(null);
     try {
-      const r = await fetch('/api/v1/transformation/orchestrate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scope: 'workstation', owner_id: 'Rehan' }),
-      });
-      setOrch(await r.json()); loadRuns();
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+      // Ledger cluster 2 — an error body must never reach the orch.validation render (it crashed the page)
+      setOrch(await apiJson('/api/v1/transformation/orchestrate', {
+        method: 'POST', body: { scope: 'workstation', owner_id: 'Rehan' } }));
+      loadRuns();
+    } catch (e) { setError(errorMessage(e)); }
     setOrchestrating(false);
   };
 

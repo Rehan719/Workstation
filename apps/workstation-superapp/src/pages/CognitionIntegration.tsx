@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Network, CheckCircle2, Circle, Loader2, Sparkles, GitBranch, Layers, Brain } from 'lucide-react';
+import { apiJson, errorMessage } from '../lib/api';
 
 interface Tier { tier: string; endpoint: string; role: string; connected: boolean }
 interface Wiring { tiers: Tier[]; connected: number; total: number; coherence: number; principle: string }
@@ -33,19 +34,17 @@ export const CognitionIntegration: React.FC = () => {
     if (!problem.trim()) return;
     setSolving(true); setSolveRes(null);
     try {
-      const r = await fetch('/api/v1/intelligence/solve', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problem, domain: 'general', engines: [...selEngines] }),
-      });
-      setSolveRes(await r.json());
-    } catch { /* surfaced by absent result */ }
+      // Ledger cluster 2 — a failed cascade must say WHY, never render an empty success pane
+      setSolveRes(await apiJson('/api/v1/intelligence/solve', {
+        method: 'POST', body: { problem, domain: 'general', engines: [...selEngines] } }));
+    } catch (e) { setAlignErr(errorMessage(e)); }
     setSolving(false);
   };
 
   const runAlign = async () => {
     setBusy(true);
-    try { const r = await fetch('/api/v1/cognition/align', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ execute: false }) }); setAlign(await r.json()); }
-    catch { setAlignErr('Alignment run failed — backend unreachable'); }   // W329
+    try { setAlign(await apiJson('/api/v1/cognition/align', { method: 'POST', body: { execute: false } })); }
+    catch (e) { setAlignErr(errorMessage(e)); }   // W329 + cluster 2: 4xx/5xx surfaces too
     setBusy(false);
   };
 

@@ -30,6 +30,21 @@ a real browser → regression guard → honest progress-log entry.
 - Regression guard: `test_cca_ui_contract_shapes` (integration_tests/test_mvp_spine.py) locks the
   list/review/submit/detail shapes + the trailing-slash 404 behavior in CI.
 
+**Batch B — cluster 2 (HTTP-status blindness), class-killed 2026-08-30:**
+- NEW `lib/api.ts`: `apiJson()` throws ApiError (with the backend's own `detail`) on any non-2xx +
+  `errorMessage()` for honest user-facing text — the structural end of `setState(await r.json())`
+  swallowing error bodies.
+- Adopted at: Deliverables (produce/open/regenerate — error bodies can no longer crash the detail
+  pane), NativeAI (complete/ensemble/swarm/saved-run/lifecycle — page-crash paths closed, lifecycle
+  failures visible), TransformationDashboard (tick/assess/orchestrate — crash path closed),
+  CognitionIntegration (solve/align — blank-success pane closed), ManagementSystemsHub (all six
+  Generate buttons now surface failure), VSBCockpit (produce + orchestrate route into actErr),
+  SynthesisStudio (delete failure → errorMsg), Login (create-user network catch), Generator (copy
+  failure visible), GovernanceHub (meta-proposal: res.ok gate — no more false success toast — plus
+  the REAL request field `submitted_by` and the real `cca_id` in the list entry).
+- Browser-verified representative: Deliverables produce ran through apiJson and rendered the detail
+  pane; no new console errors. tsc 0 + vite build clean.
+
 **New discovery-sweep item (open):** ws://localhost:8010/api/v154/ws/streams fails repeatedly in the
 browser console (pre-existing; the frontend opens a WebSocket the backend refuses) — triage in the
 discovery sweep.

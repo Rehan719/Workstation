@@ -1792,3 +1792,12 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   the card always claimed "allowed"); the establish fallback no longer renders an error body as a
   born VSB; gate approve/reject no longer silently no-op on HTTP errors.
 - Guard: `test_cca_ui_contract_shapes` locks the shapes + slash behavior in CI. tsc 0.
+
+### Batch B — cluster 2: HTTP-status blindness class-killed (lib/api.ts + 11 pages)
+- New shared `apiJson()`/`errorMessage()` (lib/api.ts): throws on any non-2xx with the backend's own
+  detail — an error body can never again render as a result, crash a detail pane, or produce a false
+  success toast. Adopted across Deliverables, NativeAI (5 handlers), TransformationDashboard,
+  CognitionIntegration, ManagementSystemsHub (6 Generate buttons), VSBCockpit, SynthesisStudio,
+  Login, Generator, GovernanceHub meta-proposal (which also now sends the REAL `submitted_by` field
+  — its `requester`/`risk_level` were silently dropped by pydantic — and lists the real cca_id).
+- Browser-verified representative happy path (Deliverables produce). tsc 0 + build clean.

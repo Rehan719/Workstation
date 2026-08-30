@@ -162,7 +162,8 @@ export const VSBCockpit: React.FC = () => {
     try {
       const r = await axios.post(`/api/v1/business-plan/objective/${oid}/orchestrate`, { scope: selected });
       if (r.data?.tree) setObjOrchResult(m => ({ ...m, [oid]: r.data.tree }));
-    } catch { /* best-effort — the run is recorded server-side */ }
+      else setActErr('Orchestration ran but returned no delivery tree.');
+    } catch (e: any) { setActErr(`Orchestration failed: ${e?.response?.data?.detail ?? 'backend unreachable'}`); }
     setObjOrch('');
   };
 
@@ -179,7 +180,7 @@ export const VSBCockpit: React.FC = () => {
       await axios.post('/api/v1/deliverables/produce', { type: delivType, brief: delivBrief, vsb_id: selected });
       setDelivBrief('');
       await loadDeliverables(selected);
-    } catch { /* surfaced by the list not growing */ }
+    } catch (e: any) { setActErr(`Produce failed: ${e?.response?.data?.detail ?? 'backend unreachable'}`); }
     setDelivProducing(false);
   };
 
