@@ -3,6 +3,7 @@ import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../lib/taxonom
 import { Card, Button } from '@workstation/ui';
 import { Check, Trash2, User, Settings as SettingsIcon } from 'lucide-react';
 import { getPrefs, setPrefs, clearPrefs, LANGUAGES, type UserPrefs } from '../lib/userPrefs';
+import { coverageFor, applyDocumentDirection } from '../lib/i18n';
 import { clearWorkspaceEverywhere } from '../lib/outputHistory';
 
 // §17.1 canonical realms × domains — kept consistent with Genesis.
@@ -17,7 +18,7 @@ export const Settings: React.FC = () => {
   const [saved, setSaved] = useState(false);
 
   const update = (patch: Partial<UserPrefs>) => { setLocal(p => ({ ...p, ...patch })); setSaved(false); };
-  const save = () => { setPrefs(prefs); setSaved(true); setTimeout(() => setSaved(false), 1800); };
+  const save = () => { setPrefs(prefs); applyDocumentDirection(prefs.language); setSaved(true); setTimeout(() => setSaved(false), 1800); };
 
   return (
     <div className="space-y-8 pb-16 max-w-2xl">
@@ -67,10 +68,26 @@ export const Settings: React.FC = () => {
             className="block w-full @[440px]:w-72 mt-1.5 text-xs font-black bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2.5">
             {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
+          {/* §14 (W370) — state coverage from the REAL dictionaries, not a blanket claim. The old
+              text said interface translation "depends on the external AI accelerant", which was
+              inaccurate: Arabic, French, Spanish and Urdu are translated in-house today. */}
           <p className="text-[10px] text-slate-600 mt-1.5 leading-relaxed">
-            <span className="text-emerald-400 font-bold">Voice dictation works in your language now.</span>{' '}
-            AI text responses in your language and full interface translation depend on the external AI accelerant
-            (Owner-gated) — the in-house engine currently reasons in English.
+            <span className="text-emerald-400 font-bold">Voice dictation works in your language.</span>{' '}
+            {(() => {
+              const cov = coverageFor(prefs.language);
+              if (cov.hasDict) return (
+                <span className="text-emerald-400 font-bold">
+                  The interface is translated ({cov.keys} strings){cov.rtl ? ', and the layout switches to right-to-left' : ''}.{' '}
+                </span>
+              );
+              return (
+                <span className="text-amber-400 font-bold">
+                  The interface is not translated into this language yet — it stays in English.{' '}
+                </span>
+              );
+            })()}
+            Translation covers interface chrome, not every screen, and AI-generated content is still produced
+            in English — the in-house engine reasons in English.
           </p>
         </div>
 

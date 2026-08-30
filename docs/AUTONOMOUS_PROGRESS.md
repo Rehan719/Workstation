@@ -2030,3 +2030,23 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   rather than pretending the write succeeded.
 - **After: 21 of 21 accounts intact, file readable, no exceptions.** Guarded by
   `test_user_store_survives_concurrent_writes`; the 11 auth/login/register/tenancy tests pass.
+
+### W370 — right-to-left layout genuinely applied, and the language claim corrected
+- **Correction to my own premise first:** I began building a new i18n module, having assumed none
+  existed. One did — `lib/i18n.tsx` (dictionaries for en/ar/fr/es/ur, `translate`, a `useT` hook,
+  RTL detection), already wired into the Sidebar, Dashboard and Domains hub. My new `lib/i18n.ts`
+  shadowed it in module resolution and broke those three consumers. Deleted, the three edits
+  reverted, and the work redone as a small extension of what was already there. Checking for an
+  existing implementation before writing one is the lesson.
+- **The genuine gap it exposed:** `isRTL` existed and components could read an `rtl` flag, but
+  NOTHING ever set `dir` on the document. Without that the browser's own direction handling never
+  engages — default text alignment, scrollbar side, logical CSS properties and caret behaviour all
+  stay left-to-right, so Arabic and Urdu rendered as LTR pages with Arabic glyphs.
+  `applyDocumentDirection()` now sets `lang` + `dir` at boot, on every preference change, and
+  immediately on save. **Verified live: `ltr` → `rtl` with `lang="ar-SA"`.**
+- **The language claim was inaccurate and is corrected.** Settings said interface translation
+  "depend[s] on the external AI accelerant (Owner-gated)" — untrue: Arabic, French, Spanish and
+  Urdu are translated in-house today (the Arabic dictionary alone has 60 strings). It now reports
+  real coverage from the dictionaries (`coverageFor`), says plainly when a language has no
+  dictionary yet, and still states honestly that coverage is interface chrome only and that
+  AI-generated content is produced in English.

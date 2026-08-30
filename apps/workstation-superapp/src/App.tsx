@@ -103,6 +103,7 @@ import { Introspection as CognitiveIntrospection } from './pages/cognitive/Intro
 import { Login } from './pages/Login';
 import { installAuth } from './lib/auth';
 import { syncWorkspaceFromServer } from './lib/outputHistory';
+import { applyDocumentDirection } from './lib/i18n';
 
 // W296 - the bearer token rides on every /api call app-wide (honest no-op when auth is off)
 installAuth();
@@ -116,7 +117,8 @@ function App() {
   useEffect(() => {
     // §9 — adopt the signed-in user's server-side workspace (no-op in auth-off mode)
     syncWorkspaceFromServer();
-    const onIdentity = () => { syncWorkspaceFromServer(); };
+    applyDocumentDirection();      // §14 (W370) — genuine RTL layout for Arabic/Urdu
+    const onIdentity = () => { syncWorkspaceFromServer(); applyDocumentDirection(); };
     window.addEventListener('ws:user-prefs', onIdentity);
     try {
       if (!localStorage.getItem('ws_tour_seen_v1')) setRunTutorial(true);

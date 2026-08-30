@@ -193,6 +193,31 @@ const ur: Dict = {
 
 const DICTS: Record<string, Dict> = { en, ar, fr, es, ur };
 
+/**
+ * W370 — apply the user's language + text direction to the DOCUMENT.
+ *
+ * `isRTL` and the per-component `rtl` flag already existed, so individual components could flip,
+ * but nothing ever set `dir` on <html>. Without it the browser's own direction handling never
+ * engages: default text alignment, scrollbar side, logical CSS properties and caret behaviour all
+ * stayed left-to-right, so Arabic and Urdu read as LTR pages with Arabic glyphs. Setting it here
+ * makes the whole interface genuinely right-to-left.
+ */
+export function applyDocumentDirection(lang?: string): void {
+  try {
+    const code = lang ?? getPrefs().language ?? 'en';
+    const root = document.documentElement;
+    root.setAttribute('lang', code);
+    root.setAttribute('dir', isRTL(code) ? 'rtl' : 'ltr');
+  } catch { /* no DOM (SSR/tests) — nothing to apply */ }
+}
+
+/** What is ACTUALLY translated for a language, so the UI can state coverage without overclaiming. */
+export function coverageFor(lang?: string): { hasDict: boolean; keys: number; rtl: boolean } {
+  const base = baseLang(lang ?? getPrefs().language);
+  const dict = DICTS[base];
+  return { hasDict: !!dict && base !== 'en', keys: dict ? Object.keys(dict).length : 0, rtl: isRTL(base) };
+}
+
 export function translate(key: string, lang?: string, fallback?: string): string {
   const base = baseLang(lang ?? getPrefs().language);
   return DICTS[base]?.[key] ?? en[key] ?? fallback ?? key;
