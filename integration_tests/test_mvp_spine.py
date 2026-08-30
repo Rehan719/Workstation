@@ -5848,3 +5848,60 @@ def test_projects_are_owner_scoped(client):
     finally:
         client.delete(f"/api/v1/projects/{pid}")
     assert client.get(f"/api/v1/projects/{pid}").status_code == 404
+
+
+def test_store_lock_serialises_across_processes(tmp_path):
+    """W365 — `store_lock` is a CROSS-PROCESS lock; prove it across real processes.
+
+    Round 10 built store_lock after the audit reproduced money-shaped losses on unserialised
+    load-modify-write cycles (17 sales confirmed against one charge; 89% of recognised revenue
+    destroyed; 196/200 constitutional UEG events lost). Its regression test used THREADS — but
+    threads share one interpreter, so a thread-only test cannot distinguish a real file lock from
+    an in-process one. A deployment runs multiple workers. This test spawns genuine OS processes.
+
+    Each worker performs N lock-protected read-modify-write cycles on one shared JSON store. With
+    correct serialisation the final total is exactly WORKERS*CYCLES; a lost update shows up as a
+    smaller number, and a torn write as an unreadable file.
+    """
+    import json
+    import pathlib as _pl
+    import subprocess
+    import sys
+
+    store = tmp_path / "counter.json"
+    store.write_text(json.dumps({"total": 0, "by_worker": {}}), encoding="utf-8")
+
+    WORKERS, CYCLES = 4, 25
+    repo_root = str(_pl.Path(__file__).resolve().parents[1])
+    worker_src = (
+        "import sys, json\n"
+        f"sys.path.insert(0, {repo_root!r})\n"
+        "from agentic_core.config import store_lock, atomic_write_json, load_json_tolerant\n"
+        "from pathlib import Path\n"
+        "store = Path(sys.argv[1]); wid = sys.argv[2]; cycles = int(sys.argv[3])\n"
+        "for _ in range(cycles):\n"
+        "    with store_lock(store):\n"
+        "        doc = load_json_tolerant(store, {'total': 0, 'by_worker': {}})\n"
+        "        doc['total'] = doc.get('total', 0) + 1\n"
+        "        doc['by_worker'][wid] = doc['by_worker'].get(wid, 0) + 1\n"
+        "        atomic_write_json(store, doc)\n"
+    )
+
+    procs = [
+        subprocess.Popen([sys.executable, "-c", worker_src, str(store), f"w{i}", str(CYCLES)],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        for i in range(WORKERS)
+    ]
+    for pr in procs:
+        _out, err = pr.communicate(timeout=180)
+        assert pr.returncode == 0, f"worker failed: {err.decode('utf-8', 'replace')[:400]}"
+
+    # the store must still be readable (no torn write) and hold EVERY increment (no lost update)
+    doc = json.loads(store.read_text(encoding="utf-8"))
+    assert doc["total"] == WORKERS * CYCLES, (
+        f"lost updates across processes: {doc['total']} of {WORKERS * CYCLES} survived "
+        "— store_lock is not serialising real processes")
+    assert sum(doc["by_worker"].values()) == WORKERS * CYCLES
+    assert len(doc["by_worker"]) == WORKERS, "a whole worker's writes vanished"
+    # no lockfile left behind to block the next writer
+    assert not (tmp_path / "counter.json.lock").exists(), "lock leaked after the last release"

@@ -1942,3 +1942,16 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   FAIL; the file was restored and re-verified. A guard that cannot fail is not a guard.
 - Note on my own first survey: it counted only `get_current_user` and so wrongly listed
   `/api/v1/auth/users` as unprotected — it is gated by `require_admin`. The matrix counts both.
+
+### W365 — the multi-PROCESS concurrency proof (the frontier's last durability harness)
+- Round 10 built `store_lock` after the audit reproduced money-shaped losses on unserialised
+  load-modify-write cycles. Its regression test used THREADS — but threads share one interpreter,
+  so a thread-only test cannot distinguish a real cross-process file lock from an in-process one,
+  and a deployment runs multiple workers. That was a genuine hole in the evidence.
+- `test_store_lock_serialises_across_processes` spawns 4 real OS processes, each doing 25
+  lock-protected read-modify-write cycles on one shared store, and asserts the final total is
+  exactly 100 (no lost update), the file is still readable (no torn write), every worker's writes
+  survive, and no lockfile leaks.
+- **Result: 100/100 survive under the lock.** Running the IDENTICAL workload with the lock removed
+  loses **54 of 100** increments across processes — so the lock is doing real work and the test is
+  a meaningful guard rather than a passing formality.
