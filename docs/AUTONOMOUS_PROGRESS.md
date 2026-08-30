@@ -1876,3 +1876,17 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   backend: the socket opens cleanly and all six Shell-polled status endpoints return 200 — those
   errors were logged while the dev backend was restarting. Recorded as NOT a defect rather than
   "fixed".
+
+### Round-11 regression lock — `test_ui_response_shape_contracts`
+- Round 11's headline defect class was SILENT response-shape drift: the Change Control page read
+  keys the backend never returned, so the governance surface rendered empty with zero errors and
+  nothing in CI noticed. This test asserts the exact shapes the frontend consumes — the UEG
+  verify/events shapes behind the audit surface, the deliverables list + types shapes, the
+  native-AI status the readiness check probes, and BOTH branches of the economy cycle (a normal
+  result vs the `cycle:null` + governance-hold branch the Owner must see). Each assertion names its
+  consuming UI so a break is self-explaining.
+- **Made non-vacuous:** a fresh DATA_DIR starts with an empty ledger and no deliverables, so the
+  original `if rows:` guards asserted NOTHING. The test now forces a real UEG event and produces a
+  real deliverable first, then asserts unconditionally.
+- **Proven to bite:** renaming `served_by` → `servedBy` in the backend (the exact Round-11 defect
+  class) makes the test FAIL; the file was restored and the working tree verified clean.

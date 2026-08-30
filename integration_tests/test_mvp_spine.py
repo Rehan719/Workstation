@@ -5640,3 +5640,74 @@ def test_cca_ui_contract_shapes(client):
         p = data_path("change_control") / f"{cid}.json"
         if p.exists():
             p.unlink()
+
+
+def test_ui_response_shape_contracts(client):
+    """Round-11 regression lock — the response shapes the FRONTEND actually reads.
+
+    Round 11's headline defect class was silent response-shape drift: the Change Control page read
+    keys the backend never returned, so the whole governance surface rendered empty with zero
+    errors. Nothing guarded that. These assertions fail CI the moment a shape the UI depends on
+    changes, instead of the user discovering an empty page.
+
+    Each assertion names the consuming UI so the fix is obvious when it breaks.
+    """
+    # GovernanceHub AuditTab — "Run Manual Audit" + the stat cards + the event log
+    v = client.get("/api/v1/gaas/ueg/verify")
+    assert v.status_code == 200
+    vj = v.json()
+    for key in ("valid", "events", "root_hash"):
+        assert key in vj, f"AuditTab stat cards read verify.{key}"
+    assert isinstance(vj["valid"], bool) and isinstance(vj["events"], int)
+
+    # Force at least one real UEG event so the row assertions below are NEVER vacuous (a fresh
+    # DATA_DIR starts with an empty ledger — an `if rows:` guard would silently assert nothing).
+    client.post("/api/v1/gaas/intercept", json={"intent": "ui_shape_contract_probe"})
+    ev = client.get("/api/v1/gaas/ueg/events?limit=5")
+    assert ev.status_code == 200
+    evj = ev.json()
+    assert "events" in evj, "AuditTab reads events[]"
+    assert evj["events"], "expected at least one UEG event after an intercept"
+    row = evj["events"][0]
+    for key in ("id", "timestamp", "data", "hash"):
+        assert key in row, f"AuditTab event rows read {key}"
+
+    # Deliverables page — the list and the type selector
+    # Produce one real deliverable first — otherwise a fresh DATA_DIR yields an empty list and the
+    # row-shape assertions below would pass without ever running (a vacuous guard).
+    made = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "title": "UI shape contract probe",
+        "brief": "a short probe deliverable for the UI response-shape contract"})
+    assert made.status_code == 200, made.text
+    dl = client.get("/api/v1/deliverables")
+    assert dl.status_code == 200
+    dlj = dl.json()
+    assert "deliverables" in dlj, "Deliverables page reads d.deliverables[]"
+    assert dlj["deliverables"], "expected the produced deliverable in the list"
+    row = dlj["deliverables"][0]
+    for key in ("id", "type", "title", "versions", "served_by"):
+        assert key in row, f"Deliverables list rows read {key}"
+
+    types = client.get("/api/v1/deliverables/types")
+    assert types.status_code == 200
+    assert "types" in types.json(), "Deliverables page reads d.types"
+
+    # SolutionsPlatform readiness check + CEOChat retry both probe this
+    st = client.get("/api/v1/native-ai/status")
+    assert st.status_code == 200
+
+    # VSBEconomy — BOTH branches of the metabolic cycle must stay distinguishable: a normal cycle
+    # returns a cycle object, and a MATERIAL one returns cycle:null + a governance hold. The UI
+    # renders the hold card off exactly this shape (it was invisible before Round 11).
+    cyc = client.post("/api/v1/economy/cycle", json={
+        "vsb_id": "shape-contract-probe", "entity_type": "waqf_ltd_hybrid",
+        "revenue": 5000, "costs": 500})
+    assert cyc.status_code == 200, cyc.text
+    cj = cyc.json()
+    assert "cycle" in cj and "governance" in cj, "VSBEconomy reads d.cycle and d.governance"
+    if cj["cycle"] is None:
+        assert isinstance(cj["governance"], dict) and "status" in cj["governance"], \
+            "a held cycle must carry a governance object the hold card can render"
+    else:
+        for key in ("intake_revenue", "distributable_profit", "circulation"):
+            assert key in cj["cycle"], f"the cycle result card reads cycle.{key}"
