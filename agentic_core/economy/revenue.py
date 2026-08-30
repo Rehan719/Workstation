@@ -37,15 +37,19 @@ def _load() -> list:
 
 def record_event(vsb_id: str, kind: str, amount_wst: float, source: str, ref: str = "",
                  note: str = "") -> Dict[str, Any]:
-    """Append one economic event (kind: revenue | cost). Best-effort callers should try/except —
-    recording is non-critical to the activity that earned it."""
+    """Append one economic event (kind: revenue | cost; VIRTUAL simulated WST only).
+    §12 (W349) — the append is SERIALISED: the Round-10 concurrency audit measured 89% of
+    recorded events destroyed under concurrent writers (unserialised load-modify-write clobbered
+    the store). The cross-process store_lock makes recording exactly-once."""
+    from agentic_core.config import store_lock
     ev = {"id": f"rev-{uuid.uuid4().hex[:10]}", "vsb_id": vsb_id, "kind": kind,
           "amount_wst": round(float(amount_wst), 6), "source": source, "ref": ref,
           "note": note, "consumed": False,
           "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
-    rows = _load()
-    rows.append(ev)
-    atomic_write_json(_STORE, rows[-2000:])
+    with store_lock(_STORE):
+        rows = _load()
+        rows.append(ev)
+        atomic_write_json(_STORE, rows[-2000:])
     return ev
 
 
@@ -70,8 +74,15 @@ def peek_pending(vsb_id: str) -> Dict[str, Any]:
 
 def consume_events(vsb_id: str, ids: list) -> Dict[str, Any]:
     """Consume (exactly once) the SPECIFIC events a passed cycle recognised — the ids its peek saw.
-    Events that arrived after the peek stay pending for the next cycle (never silently absorbed)."""
+    Events that arrived after the peek stay pending for the next cycle (never silently absorbed).
+    §12 (W349) — serialised under the same store lock so exactly-once genuinely holds."""
+    from agentic_core.config import store_lock
     want = set(ids or [])
+    with store_lock(_STORE):
+        return _consume_locked(vsb_id, want)
+
+
+def _consume_locked(vsb_id: str, want: set) -> Dict[str, Any]:
     rows = _load()
     revenue = costs = 0.0
     sources: Dict[str, int] = {}
@@ -93,7 +104,14 @@ def consume_events(vsb_id: str, ids: list) -> Dict[str, Any]:
 
 def consume_pending(vsb_id: str) -> Dict[str, Any]:
     """Consume (exactly once) all pending events for a VSB → the next cycle's REAL intake.
-    Returns {"revenue": X, "costs": Y, "events": n, "sources": {...}}."""
+    Returns {"revenue": X, "costs": Y, "events": n, "sources": {...}}.
+    §12 (W349) — serialised: two concurrent consumers previously both read the same pending set."""
+    from agentic_core.config import store_lock
+    with store_lock(_STORE):
+        return _consume_pending_locked(vsb_id)
+
+
+def _consume_pending_locked(vsb_id: str) -> Dict[str, Any]:
     rows = _load()
     revenue = costs = 0.0
     sources: Dict[str, int] = {}

@@ -29,9 +29,30 @@ _DEFAULT_PATH = os.environ.get("WORKSTATION_UEG_PATH") or os.path.join("meta", "
 
 
 class UEGLogger:
-    """Append-only, SHA3-512 hash-chained constitutional event log."""
+    """Append-only, SHA3-512 hash-chained constitutional event log.
+
+    §13 (W351) — ONE instance per storage path: production constructed a fresh UEGLogger() per
+    call, so each instance held its own threading.Lock and concurrent appenders clobbered the
+    whole-file graph (the Round-10 audit measured 196/200 constitutional events silently lost
+    while verify_chain reported the survivors 'valid'). __new__ returns the per-path singleton,
+    and log() additionally holds the cross-process store_lock."""
+
+    _instances: dict = {}
+    _instances_guard = threading.Lock()
+
+    def __new__(cls, storage_path: str = _DEFAULT_PATH):
+        with cls._instances_guard:
+            inst = cls._instances.get(storage_path)
+            if inst is None:
+                inst = super().__new__(cls)
+                inst._initialised = False
+                cls._instances[storage_path] = inst
+            return inst
 
     def __init__(self, storage_path: str = _DEFAULT_PATH):
+        if getattr(self, "_initialised", False):
+            return
+        self._initialised = True
         self.storage_path = storage_path
         self._lock = threading.Lock()
         self._initialise()
@@ -52,8 +73,9 @@ class UEGLogger:
             return {"nodes": [], "root_hash": None}
 
     def _write(self, graph: Dict[str, Any]) -> None:
-        with open(self.storage_path, "w", encoding="utf-8") as f:
-            json.dump(graph, f, indent=2)
+        # W351 — atomic: a torn whole-file write under contention wiped the chain
+        from agentic_core.config import atomic_write_json
+        atomic_write_json(self.storage_path, graph)
 
     @staticmethod
     def _hash(node_base: Dict[str, Any]) -> str:
@@ -62,8 +84,11 @@ class UEGLogger:
 
     # ── append ────────────────────────────────────────────────────────────
     def log(self, event_data: Dict[str, Any]) -> str:
-        """Append an event, chaining it to the current root hash. Returns the new hash."""
-        with self._lock:
+        """Append an event, chaining it to the current root hash. Returns the new hash.
+        W351 — the in-process lock serialises threads; the cross-process store_lock serialises
+        separate processes (the heartbeat + API workers write the same chain in production)."""
+        from agentic_core.config import store_lock
+        with self._lock, store_lock(self.storage_path):
             graph = self._read()
             base = {
                 "id": f"event_{len(graph['nodes'])}",
@@ -146,6 +171,15 @@ class UEGLogger:
             if anchor and anchor.get("head") != prev:
                 return {"valid": False, "reason": "tail_anchor_mismatch (truncation/rollback suspected)",
                         "events": len(graph["nodes"]), "anchored_head": anchor.get("head")}
+            # W351 — MONOTONICITY: a clobbered graph with fewer nodes than the anchor ever
+            # recorded is a silent wipe, not a valid chain (the audit saw 196 lost events
+            # 'verify' as valid because the survivors chained cleanly).
+            if anchor and int(anchor.get("count") or 0) > len(graph["nodes"]):
+                return {"valid": False,
+                        "reason": (f"node_count_below_anchor (anchor recorded "
+                                   f"{anchor.get('count')}, graph holds {len(graph['nodes'])} — "
+                                   "silent loss detected)"),
+                        "events": len(graph["nodes"])}
         except Exception:
             pass
         return {"valid": True, "events": len(graph["nodes"]), "root_hash": graph.get("root_hash")}

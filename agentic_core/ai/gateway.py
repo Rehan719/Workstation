@@ -146,8 +146,12 @@ class ModelGateway:
         served_by, is_external = "native", False
         try:
             from agentic_core.ai.native import orchestrator as native_orchestrator
+            # §6 (W353) — pass the caller's timeout THROUGH: the old min(...,30) clamp made the
+            # W323 adaptive budget dead code on every gateway path (the owned model failed every
+            # substantial completion and was demoted below the floor). The orchestrator bounds the
+            # local model by its own budget; this bound governs only the external accelerants.
             res = await native_orchestrator.complete(augmented, agent=agent,
-                                                     timeout=min(timeout or 30.0, 30.0))
+                                                     timeout=(timeout or 30.0))
             response = res.get("output", "")
             served_by, is_external = res.get("served_by", "native"), res.get("is_external", False)
         except Exception:

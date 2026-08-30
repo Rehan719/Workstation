@@ -72,11 +72,16 @@ class TokenLedger:
                 }
                 for uid, rec in self.ledgers.items()
             }
-            self._snapshot_path.write_text(json.dumps(
-                {"ledgers": serializable, "last_tx_hash": self.last_tx_hash}, indent=2
-            ))
+            # §12 (W348) — ATOMIC + LOUD: the balance snapshot is money-shaped (virtual WST) —
+            # a torn write or a silently-swallowed failure loses charges (audit: 17 confirmed
+            # sales, ONE charge persisted). atomic_write_json + re-raise; callers holding the
+            # purchase lock decide how to surface it.
+            from agentic_core.config import atomic_write_json
+            atomic_write_json(self._snapshot_path,
+                              {"ledgers": serializable, "last_tx_hash": self.last_tx_hash})
         except Exception as exc:
-            logger.warning("TokenLedger: could not save snapshot: %s", exc)
+            logger.error("TokenLedger: snapshot persistence FAILED: %s", exc)
+            raise
 
     def initialize_user(self, user_id: str, tier: UserTier = UserTier.FREE, airdrop_bonus: float = 100.0):
         if user_id not in self.ledgers:

@@ -155,7 +155,15 @@ class NativeOrchestrator:
                 return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
             _t = time.monotonic()
             try:
-                out = await asyncio.wait_for(self._run_model(name, prompt), timeout)
+                # §6 (W353) — the OUTER bound must not undercut the owned model's own adaptive
+                # budget: for a local (ollama) route, _run_model self-bounds by the W323 budget
+                # (≤180s), so the outer guard is set generously above it (a hard backstop, not the
+                # governing cap). The 30s clamp here was the real self-inflicted ceiling — it fired
+                # before the budget could act, failed every substantial completion, and the
+                # resulting false failures demoted a healthy owned model below the floor.
+                _is_local = (name == "ollama" or name.startswith("ollama:"))
+                _outer = 200.0 if _is_local else timeout
+                out = await asyncio.wait_for(self._run_model(name, prompt), _outer)
                 if out and out.strip():
                     _record_model(name, True, _t)        # learned: this model performed
                     _organism_report(name, True)         # §6×§8 (W278) — breaker heals on success
@@ -237,7 +245,11 @@ class NativeOrchestrator:
                     budget = min(180.0, max(25.0, 2.0 * float(_h["avg_ms"]) / 1000.0))
             except Exception:
                 pass
-            to = httpx.Timeout(connect=3.0, read=25.0, write=3.0, pool=3.0)
+            # §6 (W353) — the per-chunk read timeout must survive a COLD model load (first token
+            # can take 20-30s while the model loads into memory), otherwise the first substantial
+            # call after idle false-fails and starts poisoning the health score. 60s per-chunk;
+            # the adaptive budget still bounds the whole attempt.
+            to = httpx.Timeout(connect=5.0, read=60.0, write=5.0, pool=5.0)
 
             async def _stream_generate() -> str:
                 chunks: List[str] = []

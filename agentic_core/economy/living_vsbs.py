@@ -36,14 +36,18 @@ def _save(d: Dict[str, Any]) -> None:
 
 def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
              domain: str = "enterprise", owner: str = "Rehan") -> Dict[str, Any]:
-    """Register an established VSB as a living entity the organism will autonomously tend."""
-    d = _load()
-    if vsb_id not in d:
-        d[vsb_id] = {"vsb_id": vsb_id, "name": name or vsb_id, "entity_type": entity_type,
-                     "domain": domain, "owner": owner, "registered_at": _now(),
-                     "operating_cycles": 0, "last_operated": None, "status": "living"}
-        _save(d)
-    return d[vsb_id]
+    """Register an established VSB as a living entity the organism will autonomously tend.
+    §12 (W349) — serialised: the Round-10 concurrency audit lost 28 of 32 concurrent
+    registrations to the unserialised load-modify-write."""
+    from agentic_core.config import store_lock
+    with store_lock(_STORE):
+        d = _load()
+        if vsb_id not in d:
+            d[vsb_id] = {"vsb_id": vsb_id, "name": name or vsb_id, "entity_type": entity_type,
+                         "domain": domain, "owner": owner, "registered_at": _now(),
+                         "operating_cycles": 0, "last_operated": None, "status": "living"}
+            _save(d)
+        return d[vsb_id]
 
 
 def list_living() -> Dict[str, Any]:

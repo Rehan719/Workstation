@@ -1674,3 +1674,66 @@ only the genuinely-active entity grew (84) — zero-activity beats now cost noth
   visually); the Deliverables Download fetches through the bearer layer and hands the browser a
   blob with the server's filename. Bonus observation: the owned local model (llama3.2) was live
   on this machine — /native-ai/status honestly reported it as the selection head.
+
+---
+
+## ROUND 10 — the concurrency + live-model round — 2026-08-29
+
+**Audit:** 28-agent workflow (two credit-interrupted resumes), the FIRST round with the owned
+llama3.2 genuinely running. 19 findings, all adversarially confirmed. The headline humbled an
+earlier fix: W323's adaptive budget was dead code.
+
+### Batch A — store concurrency + session scoping (W348-W351)
+The Round-10 concurrency audit reproduced money-shaped losses under concurrent writers (the suite
+is single-threaded; production uvicorn is not). Root cause: unserialised load-modify-write + a
+Windows os.replace sharing-violation that was silently swallowed.
+- **config.py**: `store_lock(path)` — a cross-process O_CREAT|O_EXCL lockfile (bounded wait,
+  stale-lock breaking) for the whole load-modify-write cycle; atomic_write_json gained bounded
+  os.replace retry.
+- **W349**: revenue record/consume/peek + living_vsbs.register serialised — 120 concurrent records
+  now all persist (was 89% lost); 24 concurrent registrations all persist (was 4).
+- **W348**: the marketplace purchase money path serialised under one lock with the listing reloaded
+  INSIDE it and the balance loaded fresh — 6×2 concurrent buys on an 1100-WST balance now confirm
+  ≤11 with charges==receipts==sales and zero 500s (was 17 confirmed / 1 charged / 4 sales); the
+  token snapshot is atomic + LOUD (raises, not swallowed); recognition failures are UEG-logged.
+- **W351**: UEGLogger is now a per-path singleton (was a fresh instance per call, so concurrent
+  appenders clobbered the graph — 196/200 events lost while verify reported valid); log() holds the
+  cross-process lock, _write is atomic, and verify adds a node-count-below-anchor monotonicity
+  check so a silent wipe is a detected failure.
+- **W350**: avatar sessions stamped with their creator's owner_id; list/history/delete are
+  owner-scoped (anon → 401 under auth; cross-tenant → 404) — was fully open (any anon caller could
+  read/list/delete every user's conversations).
+- Contract test: test_store_concurrency_and_session_scoping (threaded, 5 legs) 2× green.
+
+### Batch B — the live owned model genuinely serves (W353 + W355/W356)
+- **W353 (critical, the headline):** with Ollama genuinely up, query_meta's `min(timeout,30)` clamp
+  fired BEFORE the W323 adaptive budget could act, so every substantial owned-model completion
+  timed out, the false failures poisoned model_health, and _reorder_by_health demoted the healthy
+  owned model BELOW the floor — the exact self-inflicted ceiling W323 claimed to have fixed. Fix:
+  the caller timeout passes through; complete() bounds a local route by its own budget (200s
+  backstop) not the caller cap; the per-chunk read timeout raised 25→60s to survive cold load.
+  Verified with a healthy 36s stub model: served_by=ollama, real output, success recorded.
+- **W355/W356:** shipped public copy is now GROUNDED + FLOOR-SAFE — floor-served, ungrounded, or
+  narration-laden output never ships (falls back to deterministic entity-data copy built from the
+  real challenge/concept); every prompt carries the entity's challenge (the About prompt omitted
+  it, so the live model shipped copy for an unrelated business); the surface scrub drops floor
+  narration lines. Verified on floor-served output: no narration, grounded, no hallucination, 3/3.
+
+### Batch C — deployment honesty (W354 + the secrets sweep)
+- **The shipped Docker image could not boot:** the Dockerfile COPYied only agentic_core + core,
+  omitting config/ (imported by ai/memory, ai/logger + ~10 more at boot) and src/ (the tool
+  registry) — app_mvp died at import. Fixed (COPY config + src). The Docker daemon was unavailable
+  in this environment, so instead of falsely claiming a real build I PROVED the fix by a boot-path
+  import audit: app_mvp pulls in exactly {config, core, src} local packages at boot, all now in the
+  COPY set — encoded as a standing contract test (test_dockerfile_copies_every_boot_path_package).
+- **docker-compose.prod.yml was dead fiction** (build targets that don't exist — the Dockerfile is
+  single-stage; a phantom frontend service — the backend serves the SPA; env vars the app never
+  reads — DATABASE_URL/REDIS_URL/PQC_SECRET/NODE_ENV; monitoring mounting a missing
+  infra/prometheus.yml). Rewritten to a bootable single backend service honoring only the vars the
+  app reads (DATA_DIR, AI_ALLOW_EXTERNAL, OLLAMA_URL) + an optional Ollama sidecar, with an honest
+  note that a UI-serving image must include the built dist.
+- **SECRETS (serious):** the sweep found a LIVE Stripe secret key (sk_live_…) and a webhook secret
+  (whsec_…) committed in three archived text files. Both REDACTED from the working tree (6
+  replacements, asserted). They remain in git HISTORY — surfaced to the Owner, who chose
+  working-tree redaction for now; **rotation at Stripe is still required to fully close the
+  exposure** (history rewrite deferred). Recorded here so the rotation decision stays visible.

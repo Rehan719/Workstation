@@ -232,21 +232,41 @@ class SessionSummary(BaseModel):
 _sessions: Dict[str, Dict[str, Any]] = {}
 
 
-def _get_or_create_session(session_id: Optional[str], user_id: str = "demo_user") -> str:
+def _get_or_create_session(session_id: Optional[str], user_id: str = "demo_user",
+                           owner_id: str | None = None) -> str:
+    """§17.5 invariant 1 (W350) — every session is stamped with its creator's namespace at
+    creation: the Round-10 audit proved any ANONYMOUS caller could list, read (with message
+    previews), and DELETE every user's conversations. owner_id=None = the single-user namespace
+    (auth off); under auth it is the authenticated username."""
     if session_id and session_id in _sessions:
         return session_id
     new_id = session_id or str(uuid.uuid4())
     avatar_id = f"did:workstation:{uuid.uuid4().hex[:16]}"
     state = AvatarState(avatar_id=avatar_id, user_id=user_id)
     state.state_checksum = state.compute_state_hash()
-    _sessions[new_id] = {"avatar": state, "history": [], "context": "general"}
+    _sessions[new_id] = {"avatar": state, "history": [], "context": "general",
+                         "owner_id": owner_id}
     return new_id
 
 
+def _require_session_access(session_id: str, user: dict | None) -> dict:
+    """§17.5 invariant 1 (W350) — session reads/mutations are owner-scoped: 404 (never 403)
+    when scoped out; auth-off single-user mode unguarded (one tenant)."""
+    session = _sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    from agentic_core.auth.core import user_can_access
+    u = user if isinstance(user, dict) else None
+    if not user_can_access(u, session.get("owner_id")):
+        raise HTTPException(status_code=404, detail="Session not found")
+    return session
+
+
 @router.post("/session", response_model=AvatarSession)
-async def create_session():
-    """Creates a new avatar identity + conversation session."""
-    session_id = _get_or_create_session(None)
+async def create_session(user: dict | None = Depends(get_current_user)):
+    """Creates a new avatar identity + conversation session (owner-stamped, W350)."""
+    session_id = _get_or_create_session(
+        None, owner_id=(user.get("username") if isinstance(user, dict) else None))
     session = _sessions[session_id]
     return AvatarSession(
         session_id=session_id,
@@ -261,8 +281,9 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     # surface: every conversation (with VSB grounding baked into the prompt) entered the global
     # pool twice. The authenticated caller's namespace now scopes BOTH stores.
     """Real text (and, when a multimodal key is available, image-aware) chat turn."""
-    session_id = _get_or_create_session(request.session_id)
-    session = _sessions[session_id]
+    _owner = user.get("username") if isinstance(user, dict) else None
+    session_id = _get_or_create_session(request.session_id, owner_id=_owner)   # W350 — stamped
+    session = _require_session_access(session_id, user)   # resuming another tenant's id → 404
     history: List[Dict[str, str]] = session["history"]
 
     session["context"] = request.context
@@ -364,9 +385,12 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
 
 
 @router.delete("/session/{session_id}")
-async def delete_session(session_id: str):
-    """Clears a session's conversation history and removes it from memory."""
+async def delete_session(session_id: str, user: dict | None = Depends(get_current_user)):
+    """Clears a session's conversation history and removes it from memory.
+    §17.5 invariant 1 (W350) — owner-scoped: an anonymous caller could previously delete ANY
+    user's conversation."""
     if session_id in _sessions:
+        _require_session_access(session_id, user)
         del _sessions[session_id]
     return {"cleared": True, "session_id": session_id}
 
@@ -399,19 +423,24 @@ async def ai_status():
 
 
 @router.get("/session/{session_id}/history")
-async def get_history(session_id: str):
-    session = _sessions.get(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+async def get_history(session_id: str, user: dict | None = Depends(get_current_user)):
+    # §17.5 invariant 1 (W350) — owner-scoped read (any caller could previously read any
+    # user's full conversation, message previews included)
+    session = _require_session_access(session_id, user)
     return {"session_id": session_id, "history": session["history"]}
 
 
 @router.get("/sessions", response_model=List[SessionSummary])
-async def list_sessions():
-    """Lists all currently active avatar conversation sessions. Real, live,
-    in-memory data — resets on server restart, no fabricated entries."""
+async def list_sessions(user: dict | None = Depends(get_current_user)):
+    """Lists the CALLER's active avatar conversation sessions (owner-scoped, W350 — the listing
+    previously exposed every user's sessions with message previews to anonymous callers). Real,
+    live, in-memory data — resets on server restart, no fabricated entries."""
+    from agentic_core.auth.core import user_can_access
+    _u = user if isinstance(user, dict) else None
     summaries: List[SessionSummary] = []
     for sid, data in _sessions.items():
+        if not user_can_access(_u, data.get("owner_id")):
+            continue
         history: List[Dict[str, str]] = data["history"]
         last_message = history[-1]["content"] if history else None
         summaries.append(SessionSummary(

@@ -19,8 +19,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Only the live, integrated backend (archived/unwired code in _archive/ and the frontend are excluded
 # via .dockerignore — see docs/DEPLOYMENT.md).
+# W354 — config/ and src/ are on the import path (config.paths + config.loader are imported by
+# ai/memory, ai/logger and ~10 more modules app_mvp loads at boot; src/ backs the tool registry):
+# omitting them made the shipped image die at import. Verified by a boot-path import audit —
+# every top-level package app_mvp imports at boot is now in the COPY set (test_dockerfile_copies_
+# every_boot_path_package). The image's own COPY list is the contract; keep it in sync.
 COPY agentic_core ./agentic_core
 COPY core ./core
+COPY config ./config
+COPY src ./src
 
 # Persistent data dir — mount a volume here (or set DATA_DIR) in production so data survives redeploys.
 RUN mkdir -p /app/data && useradd -m app && chown -R app:app /app

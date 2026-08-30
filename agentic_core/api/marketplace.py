@@ -274,26 +274,40 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest,
 
     total_cost = listing.price_wst * req.quantity
 
-    if total_cost > 0:
-        try:
-            from agentic_core.commercial.token_ledger import TokenLedger, UserTier
-            ledger = TokenLedger()
-            # Ensure user exists with at least a free tier
-            ledger.initialize_user(req.user_id, UserTier.FREE)
-            success = ledger.consume_tokens(req.user_id, total_cost, f"Purchase: {listing.name}")
-            if not success:
-                raise HTTPException(
-                    status_code=402,
-                    detail=f"Insufficient WST balance. Required: {total_cost} WST."
-                )
-        except HTTPException:
-            raise
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Ledger error: {exc}")
+    # §12 (W348) — the WHOLE virtual-WST purchase sequence is SERIALISED under one cross-process
+    # lock, with the balance loaded FRESH inside it: previously each request constructed its own
+    # in-memory TokenLedger, so N concurrent purchases each saw the starting balance, each
+    # "deducted" in memory, and the last snapshot write won — the audit confirmed 17 sales on an
+    # 11-sale balance with only ONE charge persisted, plus torn listing/receipt state.
+    from agentic_core.config import data_path as _dp, store_lock
+    with store_lock(_dp("token_ledger_snapshot.json")):
+        # W348 — the listing is RELOADED inside the lock: each racer otherwise increments its own
+        # stale pre-lock copy's sales_count and the last writer wins (audit: 4 recorded of 11).
+        listing = _load(listing_id)
+        if listing.status == "sold_out":
+            raise HTTPException(status_code=409, detail="Listing is sold out")
+        if listing.status == "held":
+            raise HTTPException(status_code=409,
+                                detail="Listing is held by the §11 compliance screen and cannot be purchased.")
+        if total_cost > 0:
+            try:
+                from agentic_core.commercial.token_ledger import TokenLedger, UserTier
+                ledger = TokenLedger()   # constructed INSIDE the lock → fresh balance load
+                ledger.initialize_user(req.user_id, UserTier.FREE)
+                success = ledger.consume_tokens(req.user_id, total_cost, f"Purchase: {listing.name}")
+                if not success:
+                    raise HTTPException(
+                        status_code=402,
+                        detail=f"Insufficient WST balance. Required: {total_cost} WST."
+                    )
+            except HTTPException:
+                raise
+            except Exception as exc:
+                raise HTTPException(status_code=500, detail=f"Ledger error: {exc}")
 
-    # Record sale
-    listing.sales_count += req.quantity
-    _save(listing)
+        # Record sale (still inside the lock — the listing write is part of the money sequence)
+        listing.sales_count += req.quantity
+        _save(listing)
 
     receipt = {
         "receipt_id": uuid.uuid4().hex[:16],
@@ -321,8 +335,20 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest,
                          ref=receipt["receipt_id"],
                          note=f"sale of '{listing.name}' ×{req.quantity} (virtual WST)")
             receipt["revenue_recognised_for"] = listing.vsb_id
-        except Exception:
-            pass
+        except Exception as exc:
+            # §12 (W348) — recognition failure is LOUD, never silent: the purchase stands (the
+            # buyer was charged) but the receipt and the UEG both carry the honest miss so the
+            # seller's books can be reconciled — the audit found this branch swallowing 170
+            # recognition failures invisibly.
+            receipt["revenue_recognition_failed"] = str(exc)[:160]
+            try:
+                from agentic_core.gaas.v5 import UEGLogger
+                UEGLogger().log({"type": "marketplace.recognition_failed",
+                                 "receipt_id": receipt["receipt_id"],
+                                 "vsb_id": listing.vsb_id, "amount_wst": total_cost,
+                                 "error": str(exc)[:160]})
+            except Exception:
+                pass
 
     return receipt
 

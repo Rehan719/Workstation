@@ -457,6 +457,54 @@ def _prose_clean(text: str, one_line: bool = False) -> str:
     return "\n\n".join(lines)
 
 
+# §13 (W355) — the native floor emits a STRUCTURED FRAME, not marketing prose: its narration
+# lines ('The request concerns:', 'Workstation composes a structured response…', 'Route richer
+# generation…', 'Iterate via the orchestrator's cascade…', 'Validate the structured outputs…')
+# are legitimate structured output but must NEVER ship as a public page's copy. The W315/W331
+# scrubs only removed markers/headings; these plain-prose narration lines passed straight through.
+_FLOOR_NARRATION = (
+    "the request concerns", "workstation composes a structured response",
+    "route richer generation", "iterate via the orchestrator", "validate the structured outputs",
+    "native approach", "process-intelligence and knowledge for the agent", "record outcomes to",
+    "plain-prose paragraphs", "the stated domain", "no headings", "no markdown",
+)
+
+
+def _looks_like_floor(text: str) -> bool:
+    low = (text or "").lower()
+    return any(m in low for m in _FLOOR_NARRATION)
+
+
+def _is_grounded(text: str, source: str, need: int = 2) -> bool:
+    """§13 (W356) — cheap groundedness check: the shipped copy must share real terms with the
+    entity's OWN challenge/concept, so a fluent-but-unrelated hallucination (the live model wrote
+    domain-registration copy for a pharmacy-stock venture) is caught. Token overlap ≥ need."""
+    import re as _re
+    stop = {"the", "and", "for", "with", "that", "this", "from", "your", "have", "will",
+            "our", "we", "a", "an", "to", "of", "in", "is", "it", "on", "as", "at", "by"}
+    def toks(t):
+        return {w for w in _re.findall(r"[a-z]{4,}", (t or "").lower()) if w not in stop}
+    src = toks(source)
+    if not src:
+        return True   # nothing to ground against — don't reject
+    return len(toks(text) & src) >= min(need, len(src))
+
+
+def _entity_fallback_copy(name: str, challenge: str, concept: str, kind: str) -> str:
+    """§13 (W355/W356) — deterministic, TRUTHFUL public copy built from the entity's own data,
+    used whenever the model can't be trusted for a public page (floor-served, ungrounded, or
+    narration-laden). Honest and on-topic by construction — never fabricated, never off-subject."""
+    subj = (challenge or concept or f"{name}'s mission").strip().rstrip(".")
+    if kind == "hero":
+        return f"{name} — {subj[:120]}"
+    if kind == "about":
+        base = f"{name} is a purpose-built venture addressing {subj}."
+        return base + (f" Its approach: {concept.strip()[:400]}" if concept.strip() else "")
+    return (f"{name} exists to solve {subj}. "
+            + (concept.strip()[:400] if concept.strip()
+               else "Its solution is developed and delivered in-house, end to end."))
+
+
 @router.post("/{vsb_id}/website")
 async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """§13 (D1 increment 2) — generate the VSB's integrated WEBSITE: a real, multi-page static HTML/CSS
@@ -468,25 +516,39 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     concept = _blueprint(vsb)["concept"]     # W301 - canonical accessor (both shapes)
     prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
 
-    async def _q(prompt: str) -> str:
-        m = await gateway.query_meta(prompt, agent="vsb-website", augment=False)   # W332 — shipped copy: no cross-request recall
+    # §13 (W355/W356) — public copy is GROUNDED and FLOOR-SAFE: every prompt carries the entity's
+    # real challenge + concept, and generated text is accepted for a public page ONLY when it was
+    # model-served, carries no floor narration, and genuinely overlaps the entity's own subject.
+    # Otherwise it falls back to deterministic entity-data copy (truthful + on-topic by
+    # construction) — the audit found the floor's structured frame AND a live hallucination (an
+    # unrelated business) shipping on public pages with qms_gate_passed=true.
+    _ground_src = f"{challenge} {concept}"
+
+    async def _public_copy(prompt: str, kind: str, one_line: bool = False) -> str:
+        m = await gateway.query_meta(prompt, agent="vsb-website", augment=False)   # W332 — no cross-request recall
         sb = m.get("served_by", "native")
         prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
         prov["any_external"] = prov["any_external"] or bool(m.get("is_external"))
-        return (m.get("output", "") or "").strip()
+        cleaned = _prose_clean((m.get("output", "") or "").strip(), one_line=one_line)
+        trustworthy = (sb != "native" and cleaned and not _looks_like_floor(cleaned)
+                       and _is_grounded(cleaned, _ground_src))
+        if trustworthy:
+            return cleaned
+        return _entity_fallback_copy(name, challenge, concept, kind)
 
-    # W315 — every public copy field is scaffold-CLEANED: the native floor's structured output
-    # (provenance markers, ## headings) previously landed verbatim on all three shipped pages.
     copy = {
-        "hero": _prose_clean(await _q(
-            f"Write ONE compelling website hero tagline (max 16 words, no quotes, one line) "
-            f"for '{name}', which addresses: {challenge}."), one_line=True) or f"{name}",
-        "about": _prose_clean(await _q(
-            f"Write 2 short plain-prose paragraphs of website 'About' copy for '{name}' "
-            f"(domain {domain}); concept: {concept[:500]}. No headings, no markdown.")),
-        "solution": _prose_clean(await _q(
+        "hero": await _public_copy(
+            f"Write ONE compelling website hero tagline (max 16 words, no quotes, one line) for "
+            f"'{name}', a {domain}-sector venture solving: {challenge}. Concept: {concept[:300]}.",
+            "hero", one_line=True),
+        "about": await _public_copy(
+            f"Write 2 short plain-prose paragraphs of website 'About' copy for '{name}', a "
+            f"{domain}-sector venture solving: {challenge}. Concept: {concept[:500]}. "
+            f"Ground every sentence in that mission. No headings, no markdown.", "about"),
+        "solution": await _public_copy(
             f"Write 2 short plain-prose paragraphs of website 'Solution' copy for '{name}' "
-            f"addressing: {challenge}. No headings, no markdown.")),
+            f"addressing: {challenge}. Concept: {concept[:400]}. No headings, no markdown.",
+            "solution"),
     }
     files = _build_website_files(vsb, copy)
     # §13 (W331) — the no-scaffold invariant is enforced AT THE SURFACE, whatever field a marker
@@ -496,8 +558,12 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     import re as _re2
     for _p in list(files):
         if _p.endswith(".html"):
-            files[_p] = _re2.sub(r"_\[[^\]\n]*\]?_?", "",
-                                 files[_p]).replace("Native Structured Engine", "")
+            _h = _re2.sub(r"_\[[^\]\n]*\]?_?", "",
+                          files[_p]).replace("Native Structured Engine", "")
+            # W355 — drop any floor-narration sentence that reached a page through any builder
+            for _m in _FLOOR_NARRATION:
+                _h = _re2.sub(r"[^<>.]*" + _re2.escape(_m) + r"[^<>]*\.?", "", _h, flags=_re2.I)
+            files[_p] = _h
     from agentic_core.vbs.quality import assure_delivery
     combined = "\n".join(c for p, c in files.items() if p.endswith(".html"))
     qa = await assure_delivery(combined, ["About", "Solution", "What we do"], label="vsb_website")

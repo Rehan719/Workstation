@@ -4464,6 +4464,132 @@ def test_invariants_sweep_the_never_tested_absolutes(client):
     assert _offenders == [], _offenders
 
 
+def test_dockerfile_copies_every_boot_path_package():
+    # §16 deployment honesty (W354) — the shipped image must contain every LOCAL package app_mvp
+    # imports at boot. The old Dockerfile COPYied only agentic_core + core, omitting config/ (used
+    # by ai/memory + ai/logger + ~10 more) and src/ (the tool registry), so the image died at
+    # import. This test is the standing contract: whatever app_mvp pulls in at boot must be COPYied.
+    import sys, pathlib
+    import agentic_core.app_mvp  # noqa: F401 — the exact production boot import
+    repo = pathlib.Path(__file__).resolve().parent.parent
+    # exclude the test harness itself (it runs inside pytest, which imports the test module +
+    # conftest + integration_tests — none of which ship in the production image)
+    _harness = {"integration_tests", "conftest", "test_mvp_spine", "tests"}
+    boot_local = set()
+    for m in list(sys.modules):
+        top = m.split(".")[0]
+        if top == "agentic_core" or top in _harness:
+            continue
+        spec = getattr(sys.modules.get(m), "__spec__", None)
+        origin = getattr(spec, "origin", None) if spec else None
+        if origin and str(repo) in str(origin) and "site-packages" not in str(origin) \
+                and ("\\venv\\" not in str(origin) and "/venv/" not in str(origin)):
+            boot_local.add(top)
+    dockerfile = (repo / "Dockerfile").read_text(encoding="utf-8")
+    import re as _re
+    copied = set(_re.findall(r"^COPY\s+(?:\./)?([A-Za-z_][\w]*)\b", dockerfile, _re.M))
+    copied.add("agentic_core")
+    missing = {p for p in boot_local if p not in copied}
+    assert not missing, f"Dockerfile omits boot-path packages (image would die at import): {missing}"
+    # and the two the old image specifically dropped are present
+    assert "config" in copied and "src" in copied
+
+
+def test_store_concurrency_and_session_scoping(client, monkeypatch):
+    # §12/§13/§17.5 (W348-W351) — the store layer is correct under concurrent writers, and the
+    # avatar session store is owner-scoped. The Round-10 concurrency audit measured lost writes
+    # in the money path (confirmed sales exceeding balance; recognised revenue dropped) and an
+    # unscoped session store; a shared cross-process store_lock + a single UEG instance close them.
+    import threading
+    # (1) revenue events: 120 concurrent records → none dropped, full amount intact
+    from agentic_core.economy.revenue import record_event, _load as _rev_load
+    def _rec(i): record_event("vsb-conc-t", "revenue", 10.0, "probe", ref=f"c{i}")
+    ts = [threading.Thread(target=_rec, args=(i,)) for i in range(120)]
+    for t in ts: t.start()
+    for t in ts: t.join()
+    got = [e for e in _rev_load() if e["vsb_id"] == "vsb-conc-t"]
+    assert len(got) == 120 and round(sum(e["amount_wst"] for e in got), 2) == 1200.0
+    # (2) living registrations: 24 concurrent → all persisted. Cleaned up afterward so the shared
+    # module registry is left as found (operate_one() rotates the GLOBAL registry, so leftover
+    # entities would skew a sibling test's rotation-fairness assertion).
+    from agentic_core.economy import living_vsbs as lv
+    rs = [threading.Thread(target=lv.register, args=(f"vsb-cr-{i}",), kwargs={"name": f"R{i}"})
+          for i in range(24)]
+    for t in rs: t.start()
+    for t in rs: t.join()
+    assert sum(1 for k in lv._load() if k.startswith("vsb-cr-")) == 24
+    from agentic_core.config import store_lock as _sl, atomic_write_json as _awj
+    with _sl(lv._STORE):
+        _d = lv._load()
+        for _k in [k for k in _d if k.startswith("vsb-cr-")]:
+            _d.pop(_k, None)
+        _awj(lv._STORE, _d)
+    # (3) marketplace money path under 6×2 concurrent purchases of a 100-WST listing: confirmations
+    #     never exceed the balance, and the ledgers agree (charges == receipts == sales).
+    lid = client.post("/api/v1/marketplace/listings", json={
+        "name": "Conc probe", "description": "an honest halal test product",
+        "price_wst": 100.0, "category": "product"}).json()["id"]
+    from agentic_core.app_mvp import app as _app   # threads need their own client on the same app
+    import os as _os, glob as _glob
+    _rcpt_glob = _os.path.join(_os.environ["WORKSTATION_DATA_DIR"], "marketplace", "receipts", "*.json")
+    _rcpt_before = len(_glob.glob(_rcpt_glob))                    # the receipts dir is module-shared
+    codes = []
+    def _buy():
+        cc = TestClient(_app)
+        for _ in range(2):
+            codes.append(cc.post(f"/api/v1/marketplace/listings/{lid}/purchase",
+                                 json={"user_id": "conc-buyer", "quantity": 1}).status_code)
+    bs = [threading.Thread(target=_buy) for _ in range(6)]
+    for t in bs: t.start()
+    for t in bs: t.join()
+    confirms = codes.count(200)
+    assert codes.count(500) == 0                                  # no crash-after-charge
+    from agentic_core.commercial.token_ledger import TokenLedger
+    rec = TokenLedger().ledgers.get("conc-buyer", {})
+    # the money invariant: charged for EXACTLY the confirmations, no more, no less; balance +
+    # consumed conserves the starting allowance (never oversold, never charged-without-confirm).
+    assert round(rec.get("total_consumed", -1), 2) == confirms * 100.0
+    assert round(rec.get("balance", 0) + rec.get("total_consumed", 0), 2) == 1100.0
+    assert len(_glob.glob(_rcpt_glob)) - _rcpt_before == confirms   # one NEW receipt per charge
+    assert client.get(f"/api/v1/marketplace/listings/{lid}").json()["sales_count"] == confirms
+    # (4) UEG chain: 6×20 concurrent appends via fresh loggers → all stored, chain valid. The
+    #     truncation-detection leg runs on a THROWAWAY UEG path (not the shared module ledger,
+    #     which later tests append to and verify) so it can't poison sibling tests.
+    import json as _json, os as _os, tempfile as _tf
+    from agentic_core.gaas.v5 import UEGLogger
+    _tmp_ueg = _os.path.join(_tf.mkdtemp(), "throwaway_ueg.json")
+    def _log():
+        for i in range(20):
+            UEGLogger(_tmp_ueg).log({"type": "conc.probe", "n": i})
+    ls = [threading.Thread(target=_log) for _ in range(6)]
+    for t in ls: t.start()
+    for t in ls: t.join()
+    g = UEGLogger(_tmp_ueg)
+    n_before = len(_json.load(open(g.storage_path, encoding="utf-8"))["nodes"])
+    assert n_before >= 120 and g.verify_chain().get("valid") is True   # no lost events under load
+    graph = _json.load(open(g.storage_path, encoding="utf-8"))
+    graph["nodes"] = graph["nodes"][:20]
+    graph["root_hash"] = graph["nodes"][-1]["hash"]
+    open(g.storage_path, "w", encoding="utf-8").write(_json.dumps(graph))
+    assert g.verify_chain().get("valid") is False                # silent loss is detected
+    # (5) avatar session store owner-scoped under auth
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    from agentic_core.auth import core as ac
+    for u in ("s350a", "s350b"):
+        us = ac._load_users(); us[u] = {"username": u, "role": "user",
+                                        "hashed_password": ac._pwd_ctx.hash("pw")}; ac._save_users(us)
+    tok = {u: {"Authorization": "Bearer " + client.post(
+        "/api/v1/auth/token", data={"username": u, "password": "pw"}).json()["access_token"]}
+        for u in ("s350a", "s350b")}
+    sid = client.post("/api/v1/avatar/chat", headers=tok["s350a"],
+                      json={"session_id": None, "message": "private", "context": "general"}).json()["session_id"]
+    assert client.get("/api/v1/avatar/sessions").status_code == 401           # anon denied
+    assert client.get(f"/api/v1/avatar/session/{sid}/history", headers=tok["s350b"]).status_code == 404
+    assert client.delete(f"/api/v1/avatar/session/{sid}", headers=tok["s350b"]).status_code == 404
+    assert client.get(f"/api/v1/avatar/session/{sid}/history", headers=tok["s350a"]).status_code == 200
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+
+
 def test_evolution_auto_apply_loop_end_to_end(client):
     # §8 (W346) — the ONE leg of the sovereign-evolution loop never driven in eight rounds: the
     # Owner-enabled `evolution_auto_apply` lever applying a CCA-APPROVED proposal ON THE BEAT,
