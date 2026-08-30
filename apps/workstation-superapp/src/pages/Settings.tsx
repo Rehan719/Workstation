@@ -102,9 +102,14 @@ export const Settings: React.FC = () => {
         </div>
         <p className="text-[10px] text-slate-600">On save, text size takes effect across the whole app; guidance and tone drive the affordances shown on the domain hubs.</p>
 
-        <Button type="button" onClick={save} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
-          {saved ? <><Check size={14} /> Saved</> : 'Save preferences'}
-        </Button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button type="button" onClick={save} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
+            {saved ? <><Check size={14} /> Saved</> : 'Save preferences'}
+          </Button>
+          {/* W-tour — re-run the onboarding tour on demand (it auto-runs once for new visitors) */}
+          <Button type="button" onClick={() => window.dispatchEvent(new CustomEvent('ws:start-tour'))}
+            className="bg-slate-900 text-slate-300 text-xs">Take the tour</Button>
+        </div>
       </Card>
 
       <Card className="p-8 space-y-4 border-slate-900">

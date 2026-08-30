@@ -1759,3 +1759,15 @@ Windows os.replace sharing-violation that was silently swallowed.
 Verification: tsc 0 + production frontend build clean. Backend suite unaffected (frontend/docs only).
 Round-10 REMAINING (next): version viewers (Deliverables/My Work), first-run onboarding tour,
 durable per-user server-side history, verification harnesses W358-W361.
+
+### Batch E — version viewers + first-run onboarding (frontend tail)
+- **Version viewers (W-versions):** the Deliverables detail card and My Work both STORED full
+  version text but only ever showed a count. Deliverables now renders a version strip (newest→
+  oldest, latest highlighted) that swaps the <pre> to any version's stored text; My Work's
+  "(N prior kept)" chip expands to a list of prior refinement versions, each readable + copyable.
+  Data was already in the API/localStorage — no new endpoint.
+- **First-run onboarding (W-tour):** the Joyride tour was permanently dead (run=false, no setter).
+  Now it auto-runs ONCE for a new visitor (localStorage flag, try/caught), persists completion on
+  finish/skip, and re-runs on demand via a "Take the tour" control in Settings (ws:start-tour
+  event). The tour walks the §3A two-offering split.
+Verification: tsc 0 + production frontend build clean. Frontend only.

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Shell } from './components/layout/Shell';
@@ -107,7 +107,26 @@ import { installAuth } from './lib/auth';
 installAuth();
 
 function App() {
-  const [runTutorial] = useState(false);
+  // §2/§9 (W-tour) — the first-run onboarding was permanently dead (run={false}, no setter). Now:
+  // it auto-runs once for a new visitor (localStorage flag, try/caught) and any "Take the tour"
+  // control can re-trigger it via the ws:start-tour event (wired from Settings).
+  const [runTutorial, setRunTutorial] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('ws_tour_seen_v1')) setRunTutorial(true);
+    } catch { /* storage unavailable — skip the tour, never block the app */ }
+    const start = () => setRunTutorial(true);
+    window.addEventListener('ws:start-tour', start);
+    return () => window.removeEventListener('ws:start-tour', start);
+  }, []);
+
+  const onTour = (data: { status?: string }) => {
+    if (data.status === 'finished' || data.status === 'skipped') {
+      setRunTutorial(false);
+      try { localStorage.setItem('ws_tour_seen_v1', '1'); } catch { /* best-effort */ }
+    }
+  };
 
   const steps = [
     { target: '.neon-text', content: 'Welcome to Workstation IDBO — your living, in-house AI organism.' },
@@ -120,7 +139,7 @@ function App() {
     <AdaptiveUIProvider>
     <ErrorBoundary>
     <PlayfulEffectsManager />
-    <Joyride steps={steps} run={runTutorial} continuous showProgress showSkipButton />
+    <Joyride steps={steps} run={runTutorial} callback={onTour} continuous showProgress showSkipButton />
     <Shell>
       {() => (
         <ErrorBoundary>

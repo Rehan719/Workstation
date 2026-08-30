@@ -19,7 +19,9 @@ interface Deliverable {
   content: string; ai_provenance: { posture: string; served_by: string; is_external: boolean };
   quality_assurance?: QualityAssurance;
   homeostasis?: { posture?: string; organism?: { atp_ratio?: number; circadian?: string } } | null;
-  versions: { created_at: string }[];
+  // §13 (W-versions) — each version carries its full stored text (the API already returns it);
+  // the UI now lets the user read any prior version, not just the count.
+  versions: { created_at: string; content?: string; brief?: string }[];
 }
 
 export const Deliverables: React.FC = () => {
@@ -30,6 +32,7 @@ export const Deliverables: React.FC = () => {
   const [brief, setBrief] = useState('a halal, zero-waste community meal service for elderly Londoners');
   const [producing, setProducing] = useState(false);
   const [selected, setSelected] = useState<Deliverable | null>(null);
+  const [viewVer, setViewVer] = useState<number | null>(null);   // §13 (W-versions) — which version's text is shown (null = latest)
   const [regenBrief, setRegenBrief] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -70,7 +73,9 @@ export const Deliverables: React.FC = () => {
   };
 
   const open = async (id: string) => {
-    try { setSelected(await fetch(`/api/v1/deliverables/${id}`).then(r => r.json())); } catch { /* */ }
+    setViewVer(null);   // W-versions — always open on the latest version
+    try { setSelected(await fetch(`/api/v1/deliverables/${id}`).then(r => r.json())); }
+    catch { /* the list already renders an honest empty state */ }
   };
 
   const regenerate = async () => {
@@ -216,7 +221,28 @@ export const Deliverables: React.FC = () => {
                   )}
                 </div>
               )}
-              <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">{selected.content}</pre>
+              {/* §13 (W-versions) — read any prior version, not just the count. Newest first;
+                  the latest is the live selected.content. */}
+              {selected.versions.length > 1 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {selected.versions.map((_, i) => {
+                    const idx = selected.versions.length - 1 - i;   // render newest→oldest
+                    const isLatest = idx === selected.versions.length - 1;
+                    const active = (viewVer ?? (selected.versions.length - 1)) === idx;
+                    return (
+                      <button key={idx} type="button" onClick={() => setViewVer(isLatest ? null : idx)}
+                        className={`text-[9px] font-black uppercase px-2 py-1 rounded ${active ? 'bg-aura text-sovereign' : 'bg-slate-900 text-slate-400 hover:text-aura'}`}>
+                        v{idx + 1}{isLatest ? ' (latest)' : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">{
+                viewVer !== null && selected.versions[viewVer]?.content !== undefined
+                  ? selected.versions[viewVer].content
+                  : selected.content
+              }</pre>
               <div className="mt-3 flex items-end gap-2">
                 <input value={regenBrief} onChange={e => setRegenBrief(e.target.value)}
                   className="flex-1 text-[11px] bg-slate-950 border border-slate-900 rounded-xl p-2.5 text-slate-300"

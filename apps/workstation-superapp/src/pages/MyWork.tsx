@@ -98,9 +98,38 @@ export const MyWork: React.FC = () => {
                   <p className="text-[10px] text-slate-600 italic mt-3 line-clamp-2">Asked: {rec.input}</p>
                 )}
                 {open && (
-                  <pre className="mt-3 text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">
-                    {rec.output}
-                  </pre>
+                  <>
+                    <pre className="mt-3 text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">
+                      {rec.output}
+                    </pre>
+                    {/* §9 (W-versions) — the prior refinement versions were STORED but unviewable;
+                        each is now readable + copyable (newest prior first). */}
+                    {(rec.versions?.length ?? 0) > 0 && (
+                      <div className="mt-2 space-y-1.5">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-600">Prior versions ({rec.versions!.length})</p>
+                        {rec.versions!.slice().reverse().map((v, i) => {
+                          const label = `${rec.id}-v${rec.versions!.length - 1 - i}`;
+                          const vopen = openId === label;
+                          return (
+                            <div key={label} className="border border-slate-900 rounded-lg">
+                              <div className="flex items-center justify-between px-3 py-1.5">
+                                <button type="button" onClick={() => setOpenId(vopen ? rec.id : label)}
+                                  className="text-[9px] font-black uppercase text-slate-400 hover:text-aura">
+                                  v{rec.versions!.length - 1 - i} · {new Date(v.refinedAt).toLocaleString()}
+                                </button>
+                                <button type="button" aria-label="Copy this version"
+                                  onClick={() => { try { navigator.clipboard.writeText(v.output); } catch { /* clipboard unavailable */ } }}
+                                  className="text-[8px] font-black uppercase text-slate-500 hover:text-aura">Copy</button>
+                              </div>
+                              {vopen && (
+                                <pre className="text-[10px] text-slate-400 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 rounded-b-lg p-3 max-h-[300px] overflow-y-auto">{v.output}</pre>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
               </Card>
             );
