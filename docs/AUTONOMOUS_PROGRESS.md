@@ -2095,3 +2095,19 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
 - Guard: `test_svg_and_png_exports_are_real` — asserts the SVG parses as XML and the PNG genuinely
   decodes as a 1200×675 image, that the render carries the real title, that card lines are unique
   and bounded, and **that mp4/mp3 are never advertised as live** while no encoder exists.
+
+### W373 — interface translation: every requested key now covered in ar/fr/es/ur
+- **Corrected my own method twice before trusting the result.** My first survey used a line-anchored
+  regex, which undercounted (dictionary keys share lines) and made a populated dictionary look
+  nearly empty — so I began adding `nav.*` keys that ALREADY EXISTED. tsc caught the duplicates, the
+  additions were reverted, and the survey was rewritten to count all `'key':` occurrences. Third
+  time this session that a "missing" thing already existed; the lesson is that a measurement must be
+  validated before it justifies work.
+- **Measured properly:** dictionaries held 60 keys each, the app requests 71 → exactly 30 genuinely
+  missing, identical across all four languages, mostly NAVIGATION (shown on every screen, so the
+  highest-leverage remaining surface).
+- Added those 30 in Arabic, French, Spanish and Urdu (120 translations). **Coverage is now 71/71 —
+  zero fallbacks** — verified live in the browser for all four languages.
+- Product/proper nouns (VSB, Genesis, CoE, Qur'an Platform) stay untranslated deliberately.
+- `docs/I18N_COVERAGE.md` records the measurement command (including the regex trap) and states the
+  scope honestly: chrome only, and AI-generated content is still English.
