@@ -6394,3 +6394,46 @@ def test_model_health_rebaseline_preserves_history(client, tmp_path, monkeypatch
     assert len(kept) == 3, "re-baselining must not delete recorded history"
     stored = _json.loads((tmp_path / "baselines.json").read_text(encoding="utf-8"))
     assert stored["probe-model"]["reason"], "the baseline must record WHY it was set"
+
+
+def test_working_owned_model_is_not_demoted_below_the_floor():
+    """W380 — a model that works most of the time must still be TRIED before the floor.
+
+    The native floor is a FALLBACK, not a rival: ordering a model after it means the model is never
+    attempted, because the floor always answers. The old rule demoted anything under a 0.6 success
+    rate, and a local model measured at 58.8% (10 of 17) missed by 1.2 points — so it served nothing
+    while /native-ai/status reported it healthy and §6 required it to serve. Every failure is caught
+    by the floor anyway, so the true cost of trying is latency, not a broken response.
+
+    Demotion now means "effectively dead" (< 0.25), not "imperfect".
+    """
+    import sys
+    import agentic_core.ai.native.orchestrator  # noqa: F401 — load the module
+    mod = sys.modules["agentic_core.ai.native.orchestrator"]
+    import agentic_core.api.operational_excellence as _oe
+
+    assert mod._DEMOTE_BELOW_FLOOR_RATE <= 0.35, (
+        "demotion must mean effectively dead; a stricter bar silently stops the owned model serving")
+
+    real = _oe.model_health
+    try:
+        # a model working ~59% of the time — the exact case that was being exiled
+        _oe.model_health = lambda *a, **k: {
+            "ollama": {"window_runs": 17, "success_rate": 0.588, "avg_ms": 90000,
+                       "success_runs": 10, "success_p90_ms": 120000,
+                       "last_at": "2099-01-01T00:00:00Z"}}
+        order = mod._reorder_by_health(["ollama", "native"])
+        assert order.index("ollama") < order.index("native"), (
+            f"a 58.8%-success owned model was ordered behind the floor ({order}) — it would never "
+            "be tried, so users get template output from a model that mostly works")
+
+        # ...but a genuinely dead model IS demoted, so the guard still protects latency
+        _oe.model_health = lambda *a, **k: {
+            "ollama": {"window_runs": 20, "success_rate": 0.05, "avg_ms": 180000,
+                       "success_runs": 1, "success_p90_ms": 180000,
+                       "last_at": "2099-01-01T00:00:00Z"}}
+        dead_order = mod._reorder_by_health(["ollama", "native"])
+        assert dead_order.index("native") < dead_order.index("ollama"), (
+            "an effectively-dead model must still be demoted below the floor")
+    finally:
+        _oe.model_health = real

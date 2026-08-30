@@ -66,6 +66,7 @@ def _organism_report(name: str, success: bool) -> None:
             pass
 
 
+_DEMOTE_BELOW_FLOOR_RATE = 0.25   # W380 — only an effectively-dead model goes behind the floor
 _PROBATION_AFTER_S = 600   # a deprioritised model earns ONE fresh try after this long untried
 
 
@@ -138,7 +139,14 @@ def _reorder_by_health(order: List[str]) -> List[str]:
 
     def poor(name: str) -> bool:
         h = health.get(name)
-        if not (h and h.get("window_runs", 0) >= 5 and h["success_rate"] < 0.6):
+        # W380 — the native floor is a FALLBACK, not a rival. Ordering a model *after* it means the
+        # model is never attempted, because the floor always answers; so demotion must mean
+        # "effectively dead", not merely "imperfect". The old 0.6 threshold demoted a local model
+        # measured at 58.8% success (10 of 17) — it missed by 1.2 points and therefore served
+        # NOTHING, while the §6 mandate says the owned model must genuinely serve. Every failure is
+        # caught by the floor anyway, so the real cost of trying is latency, not a broken response.
+        floor_rival = _DEMOTE_BELOW_FLOOR_RATE
+        if not (h and h.get("window_runs", 0) >= 5 and h["success_rate"] < floor_rival):
             return False
         return _age_s(name) < _PROBATION_AFTER_S      # long-untried → probation try, not exile
 
@@ -294,7 +302,12 @@ class NativeOrchestrator:
             # can take 20-30s while the model loads into memory), otherwise the first substantial
             # call after idle false-fails and starts poisoning the health score. 60s per-chunk;
             # the adaptive budget still bounds the whole attempt.
-            to = httpx.Timeout(connect=5.0, read=60.0, write=5.0, pool=5.0)
+            # W379 — 60s per-chunk was still too tight for a COLD load on this hardware: a journey-scale
+            # prompt produced no first token inside it, so the stream timed out at ~66s and every
+            # stage fell to the floor (measured: 11/11 journey stages served by the floor while the
+            # budget was correctly 180s). The whole attempt is already bounded by that budget, so
+            # this only needs to detect a genuinely dead stream — not to police total duration.
+            to = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
 
             async def _stream_generate() -> str:
                 chunks: List[str] = []

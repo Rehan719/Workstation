@@ -2225,3 +2225,24 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   grounded in:".
 - Guard: `test_model_health_rebaseline_preserves_history` — asserts scoring restarts, a reason is
   required, and **the excluded rows are still on disk**.
+
+### W379 + W380 — two more gates were stopping the owned model, both found by re-walking the journey
+- After W375/W378 the model STILL served nothing on the flagship journey: 11 of 11 stages fell to
+  the floor. Two further gates, each found by measuring rather than reasoning:
+- **W379 — the per-chunk read timeout (60s) fired during a COLD load.** A journey-scale prompt
+  produced no first token inside 60s, so the stream failed at ~66s while the budget was correctly
+  180s. The whole attempt is already bounded by that budget, so the read timeout only needs to
+  detect a genuinely dead stream: raised to 120s.
+- **W380 — the demotion rule exiled a model that mostly works.** Measured after re-baselining:
+  **10 successes in 17 attempts (58.8%)** — and the threshold was 0.6. It missed by 1.2 points, so
+  it was ordered BEHIND the native floor. But the floor is a FALLBACK, not a rival: ordering a model
+  after it means it is never attempted, because the floor always answers. Every failure is caught by
+  the floor anyway, so the real cost of trying is latency, not a broken response. Demotion now means
+  **effectively dead (<0.25)**, not merely imperfect.
+- **Verified:** selection `['ollama','native']`, `resources_tried: ['ollama']`,
+  `served_by: ollama`, real content in 29s ("**Halal Care**: A halal-certified meal service…").
+- Guard: `test_working_owned_model_is_not_demoted_below_the_floor` — a 58.8% model must be tried
+  BEFORE the floor, while a genuinely dead one (5%) is still demoted.
+- **Honest note on my own process:** one earlier journey run was invalid because I saw "(old backend
+  up)" and re-ran without restarting it, so it measured pre-fix code. The re-run after a real
+  restart is what produced the numbers above.
