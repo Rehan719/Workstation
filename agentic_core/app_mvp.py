@@ -352,6 +352,11 @@ app.include_router(employment_api.router)
 from agentic_core.api import refine as refine_api
 app.include_router(refine_api.router)
 
+# §9 — the user's OWN durable workspace (work history + interface preferences), owner-scoped so it
+# follows the authenticated user across devices instead of living in one browser's localStorage.
+from agentic_core.api import user_workspace as user_workspace_api
+app.include_router(user_workspace_api.router)
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 import datetime

@@ -102,6 +102,7 @@ import { CreatorStudio } from './pages/create/CreatorStudio';
 import { Introspection as CognitiveIntrospection } from './pages/cognitive/Introspection';
 import { Login } from './pages/Login';
 import { installAuth } from './lib/auth';
+import { syncWorkspaceFromServer } from './lib/outputHistory';
 
 // W296 - the bearer token rides on every /api call app-wide (honest no-op when auth is off)
 installAuth();
@@ -113,12 +114,19 @@ function App() {
   const [runTutorial, setRunTutorial] = useState(false);
 
   useEffect(() => {
+    // §9 — adopt the signed-in user's server-side workspace (no-op in auth-off mode)
+    syncWorkspaceFromServer();
+    const onIdentity = () => { syncWorkspaceFromServer(); };
+    window.addEventListener('ws:user-prefs', onIdentity);
     try {
       if (!localStorage.getItem('ws_tour_seen_v1')) setRunTutorial(true);
     } catch { /* storage unavailable — skip the tour, never block the app */ }
     const start = () => setRunTutorial(true);
     window.addEventListener('ws:start-tour', start);
-    return () => window.removeEventListener('ws:start-tour', start);
+    return () => {
+      window.removeEventListener('ws:start-tour', start);
+      window.removeEventListener('ws:user-prefs', onIdentity);
+    };
   }, []);
 
   const onTour = (data: { status?: string }) => {

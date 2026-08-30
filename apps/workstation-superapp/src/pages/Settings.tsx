@@ -3,14 +3,15 @@ import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../lib/taxonom
 import { Card, Button } from '@workstation/ui';
 import { Check, Trash2, User, Settings as SettingsIcon } from 'lucide-react';
 import { getPrefs, setPrefs, clearPrefs, LANGUAGES, type UserPrefs } from '../lib/userPrefs';
-import { clearOutputs } from '../lib/outputHistory';
+import { clearWorkspaceEverywhere } from '../lib/outputHistory';
 
 // §17.1 canonical realms × domains — kept consistent with Genesis.
 const REALMS = [...CANON_REALMS];   // §17.1 (W321)
 const DOMAINS = [...CANON_DOMAINS];
 
-// E5 — System Settings: real, honest, local preferences (display name + defaults) that personalise the
-// experience. Replaces the former stub. All values are stored in this browser only (no server profile).
+// §9 — System Settings: real preferences (display name, defaults, adaptive UI) that personalise the
+// experience. Signed in, they are saved to the user's own server-side workspace and follow them
+// across devices; in auth-off single-user mode they live in this browser only.
 export const Settings: React.FC = () => {
   const [prefs, setLocal] = useState<UserPrefs>(() => getPrefs());
   const [saved, setSaved] = useState(false);
@@ -24,7 +25,8 @@ export const Settings: React.FC = () => {
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-aura mb-2 flex items-center gap-2"><SettingsIcon size={12} /> Workstation IDBO</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">System Settings</h1>
         <p className="text-slate-500 font-bold mt-2 leading-relaxed">
-          Personalise your experience. These preferences are saved locally in this browser (no server profile).
+          Personalise your experience. Signed in, these preferences are saved to your account and follow you
+          across devices; in single-user mode they are saved in this browser.
         </p>
       </header>
 
@@ -115,10 +117,11 @@ export const Settings: React.FC = () => {
       <Card className="p-8 space-y-4 border-slate-900">
         <h3 className="text-sm font-black text-white uppercase tracking-wide">Your data</h3>
         <p className="text-[11px] text-slate-500 leading-relaxed">
-          Everything here lives only in this browser. Clear it any time — this removes your saved preferences
-          and your <span className="text-slate-300">My Work</span> output history.
+          Signed in, your preferences and <span className="text-slate-300">My Work</span> history are saved to
+          your own account and follow you across devices; in single-user mode they live only in this browser.
+          Clearing removes both copies.
         </p>
-        <Button type="button" onClick={() => { clearPrefs(); clearOutputs(); setLocal({}); }}
+        <Button type="button" onClick={() => { clearPrefs(); clearWorkspaceEverywhere(); setLocal({}); }}
           variant="outline" className="text-[10px] border-slate-800 text-slate-400 w-fit">
           <Trash2 size={14} /> Clear preferences & history
         </Button>

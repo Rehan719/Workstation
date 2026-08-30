@@ -1890,3 +1890,30 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   real deliverable first, then asserts unconditionally.
 - **Proven to bite:** renaming `served_by` → `servedBy` in the backend (the exact Round-11 defect
   class) makes the test FAIL; the file was restored and the working tree verified clean.
+
+## Round 12 — §9 personalisation made real: the per-USER server-side workspace
+
+**W363 — "My Work" and preferences now follow the USER, not the browser.**
+- The frontier item Round 10 left open: history/prefs lived in one browser's localStorage, so they
+  did not follow a user to another device, and on a shared browser one person's work was visible to
+  the next. W352 cleared local data on every identity change — the honest minimum. This is the fix.
+- NEW `agentic_core/api/user_workspace.py`: GET/PUT/DELETE `/api/v1/user/workspace`, storing each
+  user's history + prefs server-side. Tenancy follows the platform invariant exactly
+  (`Depends(get_current_user)` → `request_owner_id` stamps the owner SERVER-side →
+  `user_can_access` gates → 404-never-403); auth-off single-user mode keeps working unguarded under
+  the "default" namespace. Durability follows it too: every mutation is a lock-serialised
+  load → modify → `atomic_write_json`, so two devices saving at once cannot interleave. Server-side
+  caps (50 records, 24k output, 400 input, 5 versions) mean a client cannot push an unbounded blob.
+- Frontend (`lib/outputHistory.ts`): a two-tier store that is honest about which tier is active —
+  signed in, every local change mirrors up (debounced) and the workspace is pulled at boot and on
+  identity change, merging by id so work made offline is never dropped; auth-off stays pure-local.
+  A failed sync leaves local data intact and is reported via `lastSyncError()`, never silently.
+  Settings' "Clear preferences & history" now clears BOTH copies, and its copy no longer claims
+  browser-only storage.
+- **Verified:** an auth-OFF probe (round-trip + caps + delete) and an auth-ON probe with two real
+  users proving isolation — the server ignores a client-supplied `owner_id` (spoof rejected), alice
+  and bob each see only their own workspace, `?owner_id=bob` as alice returns ALICE's data, and
+  clearing alice leaves bob intact. Then END-TO-END in the live browser: saving a record in the app
+  pushed it to the server workspace with no sync error.
+- Guard: `test_user_workspace_store` (round-trip, all four caps, delete, per-owner separation).
+  tsc 0 + vite build clean.

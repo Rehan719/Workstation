@@ -5711,3 +5711,51 @@ def test_ui_response_shape_contracts(client):
     else:
         for key in ("intake_revenue", "distributable_profit", "circulation"):
             assert key in cj["cycle"], f"the cycle result card reads cycle.{key}"
+
+
+def test_user_workspace_store(client):
+    """§9 — the user's OWN durable workspace (My Work history + interface preferences).
+
+    Before this, history lived in one browser's localStorage: it did not follow the user to another
+    device, and on a shared browser one person's work was visible to the next (W352 cleared it on
+    identity change — the honest minimum, not the fix). This guards the real store: round-trip,
+    the caps, and the auth-off single-user path. Cross-user ISOLATION is proven separately in the
+    auth-on probe (a token-bearing client cannot be built in this auth-off suite)."""
+    body = {
+        "history": [{
+            "id": "ws-probe-1", "kind": "domain-tool", "title": "workspace probe",
+            "output": "o" * 30_000,           # over the 24k cap
+            "input": "i" * 900,               # over the 400 cap
+            "versions": [{"output": "v", "refinedAt": 1}] * 9,   # over the 5 cap
+            "ts": 1,
+        }],
+        "prefs": {"fontScale": "large", "tone": "neutral"},
+    }
+    r = client.put("/api/v1/user/workspace", json=body)
+    assert r.status_code == 200, r.text
+
+    g = client.get("/api/v1/user/workspace")
+    assert g.status_code == 200
+    doc = g.json()
+    assert doc["count"] == 1
+    assert doc["prefs"]["fontScale"] == "large", "prefs must survive the round trip"
+    rec = doc["history"][0]
+    # the server enforces its own caps — a client cannot push an unbounded blob into the store
+    assert len(rec["output"]) == 24_000, f"output cap not enforced ({len(rec['output'])})"
+    assert len(rec["input"]) == 400, f"input cap not enforced ({len(rec['input'])})"
+    assert len(rec["versions"]) == 5, f"version cap not enforced ({len(rec['versions'])})"
+
+    # the delete control clears the server copy
+    d = client.delete("/api/v1/user/workspace")
+    assert d.status_code == 200 and d.json()["cleared"] is True
+    assert client.get("/api/v1/user/workspace").json()["count"] == 0
+
+    # a workspace is stored per owner id, so two owners never share a file even in single-user mode
+    client.put("/api/v1/user/workspace", json={"history": [{"id": "a", "output": "A"}],
+                                              "prefs": {}, "owner_id": "owner-a"})
+    client.put("/api/v1/user/workspace", json={"history": [{"id": "b", "output": "B"}],
+                                               "prefs": {}, "owner_id": "owner-b"})
+    a = client.get("/api/v1/user/workspace?owner_id=owner-a").json()
+    b = client.get("/api/v1/user/workspace?owner_id=owner-b").json()
+    assert a["history"][0]["output"] == "A" and b["history"][0]["output"] == "B", \
+        "workspaces must be per-owner, never a single shared file"

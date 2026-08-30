@@ -1,7 +1,12 @@
-// E3 — "My Work": a lightweight, honest, per-browser history of the user's AI tool/journey outputs.
-// Stored in localStorage (local to this browser — no server, no fabrication). Lets users revisit, copy,
-// download and remove past results that were previously lost on navigation. (§9 "personalised to each
-// user's history" foundation; E5 builds on this.)
+// §9 — "My Work": the user's history of AI tool/journey outputs.
+//
+// Storage is now two-tier and honest about which tier is in play:
+//   • SIGNED IN  → the server-side per-user workspace (/api/v1/user/workspace). The history follows
+//     the USER across devices and browsers; localStorage acts as an offline-capable mirror.
+//   • AUTH OFF   → localStorage only, exactly as before (single-user mode, no server profile).
+// Round 10 (W352) cleared local history on every identity change to stop a shared browser leaking
+// one user's work to the next — the honest minimum. This is the real fix: the workspace lives with
+// the user. Nothing here fabricates: a failed sync leaves local data intact and is reported.
 
 export interface OutputRecord {
   id: string;
@@ -35,6 +40,8 @@ function read(): OutputRecord[] {
 
 function write(records: OutputRecord[]) {
   try { localStorage.setItem(KEY, JSON.stringify(records.slice(0, MAX_ENTRIES))); } catch { /* quota/full — ignore */ }
+  // §9 — mirror every local change up to the user's server workspace (no-op when signed out)
+  scheduleWorkspacePush();
 }
 
 export function listOutputs(): OutputRecord[] {
@@ -72,4 +79,82 @@ export function removeOutput(id: string) {
 export function clearOutputs() {
   write([]);
   try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+}
+
+// ── Server sync (§9) ─────────────────────────────────────────────────────────────────────────
+// Only active when the user is signed in (a bearer token exists). Auth-off keeps the pure-local
+// behaviour, so single-user mode is untouched.
+
+import { getToken } from './auth';
+import { getPrefs, setPrefs } from './userPrefs';
+
+const WORKSPACE_URL = '/api/v1/user/workspace';
+let _pushTimer: ReturnType<typeof setTimeout> | null = null;
+let _lastSyncError = '';
+
+/** The most recent sync failure, for surfacing honestly in the UI ('' when healthy). */
+export function lastSyncError(): string { return _lastSyncError; }
+
+function signedIn(): boolean {
+  try { return !!getToken(); } catch { return false; }
+}
+
+/** Push the local workspace to the server (debounced). No-op when signed out. */
+export function scheduleWorkspacePush(): void {
+  if (!signedIn()) return;
+  if (_pushTimer) clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(WORKSPACE_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ history: read(), prefs: getPrefs() }),
+      });
+      _lastSyncError = res.ok ? '' : `Sync failed (HTTP ${res.status}) — your work is still saved in this browser.`;
+    } catch {
+      _lastSyncError = 'Sync failed — offline. Your work is still saved in this browser.';
+    }
+    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+  }, 1200);
+}
+
+/** Pull the server workspace and adopt it locally. Call at boot and right after a login.
+ *  Returns the number of records adopted, or null when signed out / unavailable. */
+export async function syncWorkspaceFromServer(): Promise<number | null> {
+  if (!signedIn()) return null;
+  try {
+    const res = await fetch(WORKSPACE_URL);
+    if (!res.ok) {
+      _lastSyncError = `Could not load your saved work (HTTP ${res.status}).`;
+      return null;
+    }
+    const doc = await res.json();
+    const serverHistory: OutputRecord[] = Array.isArray(doc.history) ? doc.history : [];
+    // Union by id, newest first — a record made offline on this device is never dropped.
+    const merged = [...serverHistory, ...read()]
+      .filter((r, i, arr) => r && r.id && arr.findIndex(x => x.id === r.id) === i)
+      .sort((a, b) => (b.ts ?? 0) - (a.ts ?? 0))
+      .slice(0, MAX_ENTRIES);
+    write(merged);
+    if (doc.prefs && typeof doc.prefs === 'object' && Object.keys(doc.prefs).length) {
+      setPrefs({ ...doc.prefs, ...getPrefs() });   // local edits win over the stored copy
+    }
+    _lastSyncError = '';
+    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+    if (merged.length !== serverHistory.length) scheduleWorkspacePush();   // push what the server lacked
+    return merged.length;
+  } catch {
+    _lastSyncError = 'Could not reach the server — showing the work saved in this browser.';
+    return null;
+  }
+}
+
+/** Clear the server-side copy too (the Settings 'Clear preferences & history' control). */
+export async function clearWorkspaceEverywhere(): Promise<void> {
+  clearOutputs();
+  if (!signedIn()) return;
+  try {
+    const res = await fetch(WORKSPACE_URL, { method: 'DELETE' });
+    _lastSyncError = res.ok ? '' : `Server copy not cleared (HTTP ${res.status}).`;
+  } catch { _lastSyncError = 'Server copy not cleared — offline.'; }
 }
