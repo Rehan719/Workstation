@@ -337,7 +337,10 @@ export const VSBEconomy: React.FC = () => {
           <Card className="p-6">
             <div className="grid grid-cols-2 @[560px]:grid-cols-4 gap-3 text-center">
               <Metric label="Intake (revenue)" value={cycle.intake_revenue} />
-              <Metric label="Reserves (homeostasis)" value={cycle.homeostasis_reserves} />
+              {/* W377 — this figure is costs + the homeostasis reserve (backend: reserves = costs +
+                  revenue x rate), so labelling it 'Reserves' alone left a user who entered costs
+                  wondering why the number was larger than their reserve rate implied. */}
+              <Metric label="Costs + reserves" value={cycle.homeostasis_reserves} />
               <Metric label="Distributable" value={cycle.distributable_profit} tone="good" />
               <Metric label="Metabolic Energy" value={cycle.metabolic_energy != null ? `${Math.round(cycle.metabolic_energy * 100)}%` : '—'} tone="good" />
             </div>

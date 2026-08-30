@@ -2191,3 +2191,16 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   generated while the owned model was throttled (W375) still hold thin content; only regeneration
   with a real model serving gives them substance.
 - Guard: `test_client_apps_never_ship_engine_scaffolding`.
+
+### W377 — a metric labelled "Reserves" actually included costs
+- Journey step: ran a real economy cycle (revenue 12,000 / costs 3,000). Result: intake 12,000,
+  "Reserves (homeostasis)" 5,400, distributable 6,600. The arithmetic looked wrong at a glance —
+  the costs seemed to vanish.
+- **Checked before claiming a defect, and the model is CORRECT:** `reserves = costs + revenue ×
+  rate` = 3,000 + 2,400 = 5,400, so distributable 6,600 = 12,000 − 3,000 − 2,400. The backend's own
+  ledger memo already said "homeostasis (reserves + costs)".
+- The DEFECT was the label. The UI called that figure "Reserves (homeostasis)" while it also
+  contained the user's costs, so an Owner entering 3,000 costs with a 20% reserve rate would see
+  5,400 and reasonably conclude the reserve rate was wrong. Renamed to "Costs + reserves".
+- Small, but it is the same principle as the rest of this round: a number presented as one thing
+  while being another is a quiet form of dishonesty, even when the maths underneath is right.
