@@ -113,16 +113,21 @@ async def put_workspace(req: WorkspacePut, user: dict | None = Depends(get_curre
     if not user_can_access(user, resolved):
         raise HTTPException(status_code=404, detail="No workspace found.")
     path = _path_for(resolved)
-    with store_lock(path):
-        doc = _load(resolved)
-        history = [_trim_record(r) for r in req.history if isinstance(r, dict)][:MAX_RECORDS]
-        doc.update({
-            "owner_id": resolved,
-            "history": history,
-            "prefs": req.prefs,
-            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        })
-        atomic_write_json(path, doc)
+    try:
+        # W371 — store_lock now RAISES on timeout rather than writing unserialised. Surface it as a
+        # retryable 503 instead of a bare 500: the client's local copy is intact, so retrying is safe.
+        with store_lock(path):
+            doc = _load(resolved)
+            history = [_trim_record(r) for r in req.history if isinstance(r, dict)][:MAX_RECORDS]
+            doc.update({
+                "owner_id": resolved,
+                "history": history,
+                "prefs": req.prefs,
+                "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            })
+            atomic_write_json(path, doc)
+    except TimeoutError:
+        raise HTTPException(status_code=503, detail="Workspace busy — please retry.") from None
     return {"owner_id": resolved, "count": len(doc["history"]), "updated_at": doc["updated_at"]}
 
 
@@ -133,8 +138,11 @@ async def clear_workspace(owner_id: str = "default", user: dict | None = Depends
     if not user_can_access(user, resolved):
         raise HTTPException(status_code=404, detail="No workspace found.")
     path = _path_for(resolved)
-    with store_lock(path):
-        doc = _empty(resolved)
-        doc["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        atomic_write_json(path, doc)
+    try:
+        with store_lock(path):                      # W371 — timeout is a retryable 503, not a 500
+            doc = _empty(resolved)
+            doc["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            atomic_write_json(path, doc)
+    except TimeoutError:
+        raise HTTPException(status_code=503, detail="Workspace busy — please retry.") from None
     return {"owner_id": resolved, "cleared": True, "updated_at": doc["updated_at"]}
