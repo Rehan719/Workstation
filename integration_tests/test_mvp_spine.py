@@ -4530,8 +4530,9 @@ def test_store_concurrency_and_session_scoping(client, monkeypatch):
         "name": "Conc probe", "description": "an honest halal test product",
         "price_wst": 100.0, "category": "product"}).json()["id"]
     from agentic_core.app_mvp import app as _app   # threads need their own client on the same app
-    import os as _os, glob as _glob
-    _rcpt_glob = _os.path.join(_os.environ["WORKSTATION_DATA_DIR"], "marketplace", "receipts", "*.json")
+    import glob as _glob
+    from agentic_core.config import data_path as _dp2      # resolve via the app, not an env var (CI sets none)
+    _rcpt_glob = str(_dp2("marketplace/receipts") / "*.json")
     _rcpt_before = len(_glob.glob(_rcpt_glob))                    # the receipts dir is module-shared
     codes = []
     def _buy():
