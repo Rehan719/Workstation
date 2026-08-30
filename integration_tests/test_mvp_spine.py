@@ -3055,12 +3055,18 @@ def test_deliverables_living_lifecycle(client):
     assert "<h1>" in client.get(f"/api/v1/deliverables/{did}/export", params={"format": "html"}).text
     assert client.get(f"/api/v1/deliverables/{did}/export", params={"format": "mp4"}).status_code == 400  # never faked
     of = client.get("/api/v1/deliverables/output-formats").json()
-    from agentic_core.api.deliverables import _PDF_OK, _DOCX_OK, _PPTX_OK, _XLSX_OK   # live iff lib installed
+    from agentic_core.api.deliverables import (_PDF_OK, _DOCX_OK, _PPTX_OK, _XLSX_OK,
+                                               _PNG_OK)   # live iff lib installed
+    # Kept as EXACT equality on purpose: this is the honesty guard that no format is advertised as
+    # live unless it can actually be produced. W372 added svg (dependency-free, always live) and
+    # png (Pillow-gated, exactly like pdf/docx/pptx/xlsx).
     expected = {"md", "html", "slides", "txt", "json", "video-html"}   # video-html live since W264
+    expected |= {"svg"}                                               # W372 — no dependency needed
     expected |= {"pdf"} if _PDF_OK else set()
     expected |= {"docx"} if _DOCX_OK else set()
     expected |= {"pptx"} if _PPTX_OK else set()
     expected |= {"xlsx"} if _XLSX_OK else set()
+    expected |= {"png"} if _PNG_OK else set()                         # W372
     assert set(of["live_ids"]) == expected
     if _PDF_OK:   # real in-house PDF via fpdf2 (pure-python)
         pr = client.get(f"/api/v1/deliverables/{did}/export", params={"format": "pdf"})

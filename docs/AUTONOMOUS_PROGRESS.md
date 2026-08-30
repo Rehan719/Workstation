@@ -2111,3 +2111,14 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
 - Product/proper nouns (VSB, Genesis, CoE, Qur'an Platform) stay untranslated deliberately.
 - `docs/I18N_COVERAGE.md` records the measurement command (including the regex trap) and states the
   scope honestly: chrome only, and AI-generated content is still English.
+
+### W372 follow-up — CI caught a guard I broke, and the fix keeps the guard strict
+- Adding svg/png broke `test_deliverables_living_lifecycle`, which pins the live-format set with
+  EXACT equality. That assertion is deliberate and valuable: it is the honesty guard ensuring no
+  format is advertised as live unless it can actually be produced. So it was **extended, not
+  weakened to a superset** — `svg` unconditionally (no dependency) and `png` gated on `_PNG_OK`,
+  exactly like pdf/docx/pptx/xlsx. It therefore holds whether or not Pillow exists on CI.
+- **My process gap, plainly:** I ran the full suite *before* W372 and only the new test afterwards,
+  so I shipped a change that altered a shared contract without re-running the suite that pins it.
+  CI caught what I should have. Running the full suite after any change to a shared contract — not
+  just the tests I wrote — is the correction.
