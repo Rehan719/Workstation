@@ -2122,3 +2122,18 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   so I shipped a change that altered a shared contract without re-running the suite that pins it.
   CI caught what I should have. Running the full suite after any change to a shared contract — not
   just the tests I wrote — is the correction.
+
+### W374 — the deleted fabrications can no longer return silently
+- Round 11 removed handlers that invented results with no backend behind them. That was verified
+  ONCE by grepping the shipped bundle — but nothing stopped them coming back.
+  `test_frontend_fabrications_do_not_return` now fails CI if any of those exact markers reappears in
+  the frontend **code**.
+- **Running it on a clean tree first was the point.** It failed immediately — every hit a FALSE
+  POSITIVE: the markers survive only inside the comments that document what was removed. A guard
+  that fires on its own documentation is noise, and the tempting "fix" is deleting useful history.
+  It now strips block, whole-line and trailing comments and scans code only. Verified both ways:
+  passes clean, still fails when a fabrication is put back into real code.
+- **Scope stated honestly, in the test's own docstring:** this is the cheap, automatable half. It
+  does NOT verify that every control still WORKS in a real browser — that needs a browser harness
+  this repo does not have, and adding one (Playwright binaries + a longer pipeline on top of ~27
+  minutes) is an Owner decision, not one to take unilaterally.

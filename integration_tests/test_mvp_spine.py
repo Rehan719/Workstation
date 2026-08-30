@@ -6189,3 +6189,61 @@ def test_svg_and_png_exports_are_real(client):
     lines = _D._card_lines(doc)
     assert len(lines) == len({ln.lower() for ln in lines}), f"duplicate card lines: {lines}"
     assert len(lines) <= _D._CARD_MAX_LINES, f"{len(lines)} lines will overlap the footer"
+
+
+def test_frontend_fabrications_do_not_return():
+    """W374 — the fabricated UI markers deleted in Round 11 must never come back.
+
+    Round 11 removed handlers that invented results with no backend behind them: a "Run Manual
+    Audit" that fabricated PASSED rows with random hashes, fake infrastructure provisioning, a
+    scripted mission log that always ended "All systems nominal / Mission is LIVE", mock results on
+    seven hub pages, thirteen fabricated flagship cards, and an invented reputation economy. That
+    work was verified once by grepping the shipped bundle — but nothing STOPPED it returning.
+
+    This is the cheap, automatable half of that protection: the exact fabricated strings must not
+    reappear in the frontend source. The other half — that every control still WORKS in a real
+    browser — is honestly NOT covered here; it needs a browser harness this repo does not have
+    (recorded in docs/FRONTEND_DEFECT_LEDGER.md rather than left implied).
+    """
+    import pathlib as _pl
+    import re
+    import pytest as _pytest
+
+    src = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    if not src.exists():                       # backend-only checkouts
+        _pytest.skip("frontend source not present")
+
+    # Each marker is a string that only ever existed to make an unbuilt thing look real.
+    FABRICATIONS = {
+        "All systems nominal": "the scripted launch log that always succeeded",
+        "Engine running at 100": "the QEP engine card's invented fidelity result",
+        "CERT-87a1b2c3": "a fabricated issued-certificate id",
+        "Historical_Makkah_360": "a fabricated AR/VR scene result",
+        "2.42x": "the invented meta-voting weight",
+        "142 cross-realm": "the invented contribution count",
+        "Provisioning infrastructure": "fake infrastructure provisioning",
+        "zero_placeholder_integrity": "the hardcoded audit inventory",
+    }
+
+    # Scan CODE only. Running this on a clean tree first showed every hit was a false positive:
+    # the markers survive only inside the comments that document what was removed. A guard that
+    # fires on its own documentation is noise — and the "fix" would be deleting useful history.
+    def _strip_comments(text: str) -> str:
+        text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)      # block comments
+        text = re.sub(r"^\s*//.*$", " ", text, flags=re.M)       # whole-line comments
+        text = re.sub(r"(?<![:'\"])//[^\n'\"]*$", " ", text, flags=re.M)   # trailing comments
+        return text
+
+    offenders = []
+    for f in list(src.rglob("*.tsx")) + list(src.rglob("*.ts")):
+        try:
+            code = _strip_comments(f.read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            continue
+        for marker, why in FABRICATIONS.items():
+            if marker in code:
+                offenders.append(f"{f.relative_to(src)}: {marker!r} ({why})")
+
+    assert not offenders, (
+        "fabricated UI markers have returned to the frontend — these strings exist only to make an "
+        "unbuilt capability look real:\n  " + "\n  ".join(sorted(offenders)))
