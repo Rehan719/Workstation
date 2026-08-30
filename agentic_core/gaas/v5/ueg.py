@@ -41,21 +41,27 @@ class UEGLogger:
     _instances_guard = threading.Lock()
 
     def __new__(cls, storage_path: str = _DEFAULT_PATH):
+        # W367 — initialisation happens HERE, under the same guard that hands out the singleton.
+        # It used to live in __init__, which runs UNGUARDED: two threads constructing the logger
+        # for a not-yet-existing path could both see `_initialised` False, so both ran
+        # `_initialise()` — and `_initialise` writes an EMPTY graph. The second write could land
+        # after the first thread had already logged an event, destroying it. That is a silent loss
+        # from a tamper-evident ledger, and CI caught it as 119 of 120 concurrent events surviving.
         with cls._instances_guard:
             inst = cls._instances.get(storage_path)
             if inst is None:
                 inst = super().__new__(cls)
-                inst._initialised = False
+                inst.storage_path = storage_path
+                inst._lock = threading.Lock()
+                inst._initialise()
+                inst._initialised = True          # set LAST: a partially-built instance is never published
                 cls._instances[storage_path] = inst
             return inst
 
     def __init__(self, storage_path: str = _DEFAULT_PATH):
-        if getattr(self, "_initialised", False):
-            return
-        self._initialised = True
-        self.storage_path = storage_path
-        self._lock = threading.Lock()
-        self._initialise()
+        # Construction is complete before __new__ returns; __init__ is intentionally a no-op so a
+        # second construction for the same path can never re-run initialisation.
+        return
 
     # ── storage ───────────────────────────────────────────────────────────
     def _initialise(self) -> None:
@@ -63,7 +69,18 @@ class UEGLogger:
         if directory:
             os.makedirs(directory, exist_ok=True)
         if not os.path.exists(self.storage_path):
-            self._write({"nodes": [], "root_hash": None})
+            # W367 — the exists→write window must be serialised across PROCESSES too: another
+            # worker may create and append to the chain between the check and the write, and an
+            # empty-graph write would erase its events. Re-check inside the lock.
+            from agentic_core.config import store_lock
+            try:
+                with store_lock(self.storage_path):
+                    if not os.path.exists(self.storage_path):
+                        self._write({"nodes": [], "root_hash": None})
+            except Exception:
+                # never let lock contention stop construction — but only create when still absent
+                if not os.path.exists(self.storage_path):
+                    self._write({"nodes": [], "root_hash": None})
 
     def _read(self) -> Dict[str, Any]:
         try:

@@ -6005,3 +6005,43 @@ print("RESULT" + json.dumps(out))
     assert res["alice_project_survives"], "alice's project did not survive bob's delete attempt"
     # and the owner still has full access to their own work
     assert res["owner_patch"] == 200 and res["owner_delete"] == 204, res
+
+
+def test_ueg_first_touch_construction_is_race_free(tmp_path):
+    """W367 — concurrent FIRST-TOUCH construction must never erase a logged event.
+
+    CI caught this as 119 of 120 concurrent UEG events surviving. Root cause: the singleton's
+    initialisation lived in __init__, which runs UNGUARDED — two threads constructing the logger
+    for a not-yet-existing path could both run `_initialise()`, and `_initialise` writes an EMPTY
+    graph. The second write could land after the first thread had already appended, destroying a
+    constitutional event: silent loss from a tamper-evident ledger.
+
+    Measured before the fix: 18 of 60 trials lost events. After: 0 of 60. This guards the window.
+    """
+    import json as _json
+    import pathlib as _pl
+    import threading as _th
+    from agentic_core.gaas.v5 import UEGLogger
+
+    THREADS, TRIALS = 6, 12
+    for trial in range(TRIALS):
+        path = str(tmp_path / f"ueg_{trial}.json")
+        UEGLogger._instances.pop(path, None)          # force a genuine first touch
+        barrier = _th.Barrier(THREADS)
+
+        def worker(n: int, _p=path, _b=barrier):
+            _b.wait()                                  # every thread hits construction together
+            UEGLogger(_p).log({"type": "first_touch.probe", "n": n})
+
+        threads = [_th.Thread(target=worker, args=(i,)) for i in range(THREADS)]
+        for th in threads:
+            th.start()
+        for th in threads:
+            th.join()
+
+        nodes = _json.loads(_pl.Path(path).read_text(encoding="utf-8"))["nodes"]
+        assert len(nodes) == THREADS, (
+            f"trial {trial}: {len(nodes)} of {THREADS} constitutional events survived concurrent "
+            "first-touch construction — an initialisation race is erasing ledger events")
+        assert UEGLogger(path).verify_chain().get("valid") is True, (
+            f"trial {trial}: chain invalid after concurrent first touch")

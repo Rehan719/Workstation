@@ -1974,3 +1974,22 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   cannot pollute its parent by construction.
 - Proven to bite: reverting the projects DELETE scoping fails it with "bob can DELETE alice's
   project"; restored and re-verified clean.
+
+### W367 — a REAL concurrency defect in the constitutional ledger, caught by CI
+- CI failed on the Round-11 head with `assert (119 >= 120)`: one of 120 concurrent UEG events had
+  vanished. Not a flake — a genuine silent loss from a **tamper-evident ledger**, which is the one
+  place a lost record is least acceptable.
+- **Root cause:** the UEGLogger singleton's initialisation lived in `__init__`, which runs OUTSIDE
+  the `_instances_guard`. Two threads constructing the logger for a not-yet-existing path could
+  both read `_initialised` as False and both run `_initialise()` — and `_initialise` writes an
+  EMPTY graph. The second write could land *after* the first thread had already appended,
+  destroying that event. It only opens in the first-touch window, which is why it surfaced once in
+  120 on a slow CI runner and never locally.
+- **Fixed:** initialisation moved into `__new__` under the same guard that hands out the singleton,
+  with `_initialised` set LAST so a partially-built instance is never published; `__init__` is now
+  a deliberate no-op. `_initialise` additionally re-checks existence inside `store_lock`, so a
+  second PROCESS cannot clobber a chain another worker just created.
+- **Measured, not asserted:** the same first-touch stress (60 trials × 6 concurrent constructors)
+  loses events in **18 of 60 trials before the fix and 0 of 60 after**.
+- Guard: `test_ueg_first_touch_construction_is_race_free` (12 trials × 6 threads, asserting every
+  event survives and the chain still verifies).
