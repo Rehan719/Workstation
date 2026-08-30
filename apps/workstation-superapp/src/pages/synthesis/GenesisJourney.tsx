@@ -810,10 +810,10 @@ export const GenesisJourney: React.FC = () => {
                             )}
                           </div>
                           <p className="text-[9px] text-slate-500">Pages: {site.nav.map(n => n.label).join(' · ')}</p>
-                          <a href={site.preview} target="_blank" rel="noreferrer"
+                          <button type="button" onClick={() => openExport(site.preview).catch(e => setError(`Preview failed: ${e.message}`))}
                             className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
-                            Open the live site →
-                          </a>
+                              Open the live site →
+                            </button>
                         </div>
                       )}
 
@@ -840,10 +840,10 @@ export const GenesisJourney: React.FC = () => {
                               )}
                             </div>
                             <p className="text-[9px] text-slate-500">{webapp.features.join(' · ')}</p>
-                            <a href={webapp.preview} target="_blank" rel="noreferrer"
+                            <button type="button" onClick={() => openExport(webapp.preview).catch(e => setError(`Preview failed: ${e.message}`))}
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-highlight border border-highlight/40 px-3 py-1.5 rounded-lg hover:bg-highlight/10 transition-colors">
-                              Open the web app →
-                            </a>
+                                Open the web app →
+                              </button>
                           </div>
                         )}
                       </div>
@@ -872,10 +872,10 @@ export const GenesisJourney: React.FC = () => {
                               )}
                             </div>
                             <p className="text-[9px] text-slate-500">{pwa.features.join(' · ')}</p>
-                            <a href={pwa.preview} target="_blank" rel="noreferrer"
+                            <button type="button" onClick={() => openExport(pwa.preview).catch(e => setError(`Preview failed: ${e.message}`))}
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
-                              Open the phone app →
-                            </a>
+                                Open the phone app →
+                              </button>
                           </div>
                         )}
                       </div>

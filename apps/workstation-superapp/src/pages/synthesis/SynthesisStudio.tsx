@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FabricLink } from '../../components/FabricLink';
+import { downloadExport } from '../../lib/download';
 import {
   Sparkles, FileText, Presentation, Globe, Layers, Download, Play, Loader2,
   CheckCircle2, Upload, BarChart3, BookOpen, Archive, Video, Headphones,
@@ -270,15 +271,16 @@ export const SynthesisStudio: React.FC = () => {
 
   // ── Download ─────────────────────────────────────────────────────────────────
 
-  const handleDownload = (result: SynthesisResult) => {
+  const handleDownload = async (result: SynthesisResult) => {
+    // Ledger cluster 5 — clicking a raw anchor at /api/... skips the bearer layer (401 under auth);
+    // downloadExport fetches through the patched window.fetch and hands the browser a blob.
     const fmt = result.metadata?.format || 'json';
     const title = (result.metadata?.title || result.outputType).replace(/[^a-z0-9_\-]/gi, '_');
-    const a = document.createElement('a');
-    a.href = result.output_url;
-    a.download = `${title}.${fmt}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      await downloadExport(result.output_url, `${title}.${fmt}`);
+    } catch (e: any) {
+      setErrorMsg(`Download failed: ${e?.message ?? 'backend unreachable'}`);
+    }
   };
 
   const handleWebsitePreview = (content: string) => {

@@ -76,6 +76,13 @@ a real browser → regression guard → honest progress-log entry.
   "All systems nominal", "infra-", "Engine running at 100", "CERT-87a1b2c3", "1,420", "2.42x",
   "Provisioning infrastructure"). CLUSTER 3 IS CLOSED.
 
+**Batch E — cluster 5 CLOSED (raw-anchor bearer bypass), 2026-08-30:**
+- GenesisJourney's three preview links (site/webapp/PWA), ProjectsHub Download, and SynthesisStudio's
+  per-format + history downloads now use openExport/downloadExport (bearer-carrying fetch -> blob)
+  instead of raw navigations that 401 under auth; failures surface instead of dying in a new tab.
+- Whole-tree sweep confirms ZERO remaining raw /api anchors, window.open('/api'), or response-field
+  hrefs. ALL FIVE LEDGER CLUSTERS ARE NOW CLOSED.
+
 **New discovery-sweep item (open):** ws://localhost:8010/api/v154/ws/streams fails repeatedly in the
 browser console (pre-existing; the frontend opens a WebSocket the backend refuses) — triage in the
 discovery sweep.

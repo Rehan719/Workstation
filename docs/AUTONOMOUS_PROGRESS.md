@@ -1849,3 +1849,16 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
 - Verified by grepping the SHIPPED bundle: "Mission … is LIVE", "All systems nominal", "infra-",
   "Engine running at 100", "CERT-87a1b2c3", "1,420", "2.42x", "Provisioning infrastructure" — all 0
   occurrences. tsc 0 + vite build clean.
+
+### Batch E — cluster 5 closed: no UI path bypasses the bearer layer any more
+- Five controls navigated raw to `/api/...` (via response fields like `site.preview` /
+  `out.download_url` / `result.output_url`, which literal greps miss): GenesisJourney's "Open the
+  live site / web app / phone app" previews, the ProjectsHub per-output Download, and Synthesis
+  Studio's per-format + history downloads. A plain navigation carries no Authorization header, so
+  under AUTH_ENABLED each dead-ended in a 401 tab.
+- All five now route through the existing bearer-carrying helpers (`openExport` / `downloadExport`
+  in lib/download.ts — fetch via the patched window.fetch, then hand the browser a blob), and each
+  failure surfaces instead of dying silently in a new tab.
+- Swept the whole src tree afterwards: ZERO remaining raw `/api` anchors, `window.open('/api'…)`,
+  or response-field hrefs. Verified the underlying fetch path serves a real generated VSB website
+  page (HTTP 200, real HTML). tsc 0.

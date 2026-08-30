@@ -3,6 +3,7 @@ import { REALMS as CANON_REALMS, REALM_LABELS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { downloadExport } from '../../lib/download';
 import {
   Plus, Play, ChevronRight, Download, Loader2, Trash2,
   Sparkles, FolderOpen, AlertCircle, CheckCircle2, Clock
@@ -419,13 +420,16 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
                   <StagePill stage={out.stage} />
                   <span className="text-[8px] text-slate-600">{fmt(out.created_at)}</span>
                 </div>
-                <a
-                  href={out.download_url}
-                  download
+                {/* Ledger cluster 5 — a raw <a download> to /api/... skips the bearer layer and
+                    401s under auth; downloadExport fetches through the patched window.fetch. */}
+                <button
+                  type="button"
+                  onClick={() => downloadExport(out.download_url, String(out.output_id ?? 'output'))
+                    .catch((e: any) => alert(`Download failed: ${e?.message ?? 'backend unreachable'}`))}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-aura/30 text-aura text-[8px] font-black uppercase tracking-widest hover:bg-aura/10 transition-colors"
                 >
                   <Download size={9} /> Download
-                </a>
+                </button>
               </div>
               <p className="text-[10px] text-slate-400 leading-relaxed line-clamp-3">{out.preview}</p>
             </div>
