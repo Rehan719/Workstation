@@ -116,7 +116,7 @@ vercel deploy
 
 ```
 agentic_core/          — FastAPI backend (the real code)
-  app_mvp.py           — entrypoint; 456 routes, boots clean
+  app_mvp.py           — entrypoint; 466 routes, boots clean
   ai/                  — the NATIVE fabric: owned models, orchestration, swarm, memory, homeostasis
   ai/gateway.py        — in-house-first routing (native fabric → optional external providers)
   gaas/v5/             — constitutional interceptor engine + hash-chained UEG audit log
@@ -137,7 +137,7 @@ apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
                          + domain hubs + all product pages
 ```
 
-> Verified in CI on every push: backend boots clean; **274 integration tests passing / 15 skipped** (last CI-green full run; grows every round); production
+> Verified in CI on every push: backend boots clean; **≈295 integration tests passing / 15 skipped** (last CI-green full run; grows every round); production
 > build (`tsc && vite build`) succeeds.
 
 Data persists under `data/` as atomically-written JSON files.
@@ -154,11 +154,12 @@ orchestration, and swarm are native, not API wrappers. The gateway routes:
 ## Roadmap
 
 The live, authoritative roadmap is the **Living Plan** (`docs/WORKSTATION_IDBO_LIVING_PLAN.md`,
-served at `GET /api/v1/plan`) and **`docs/ACTION_PLAN.md`**; cycle-by-cycle progress is in
+served at `GET /api/v1/plan`) and **`docs/AUTONOMOUS_PROGRESS.md`** (the cycle-by-cycle log; the
+older `ACTION_PLAN.md` is archived under `_archive/docs/`); cycle-by-cycle progress is in
 **`docs/AUTONOMOUS_PROGRESS.md`**. Summary:
 
 **Phase 1 — ✅ done**: authentication (opt-in JWT, resilient crypto imports), integration test
-suite (274 passing at the last CI-green run), clean boot verified, frontend↔backend integration (all 18 previously-broken
+suite (≈295 passing at the last CI-green run), clean boot verified, frontend↔backend integration (all 18 previously-broken
 endpoints wired), production build verified + code-split.
 
 **Phase 2 — in progress (non-gated)**: deeper domain-specific AI depth across Realm × Domain,

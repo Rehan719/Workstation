@@ -1,40 +1,60 @@
 import React, { useState, createContext, useContext, useEffect } from 'react';
+import { getPrefs, setPrefs } from '../lib/userPrefs';
 
+// §9 (W357) — REAL adaptive UI, driven by the user's OWN stored preferences (was fabricated
+// constants + a dead updateProfile). fontScale genuinely enlarges the interface (an inline root
+// font-size, not a decorative class); guidedMode/tone reflect the user's actual choice and persist
+// via userPrefs (ws:user-prefs). Honesty-over-polish: every value here is a real, user-set signal.
 interface AdaptiveUIState {
-  theme: string;
-  fontSize: string;
-  layout: string;
-  emotionalAdjustment: string;
-  updateProfile: (profile: any) => void;
+  fontScale: 'standard' | 'large';
+  guidedMode: boolean;
+  tone: 'encouraging' | 'neutral';
+  layout: string;                 // derived label the hubs render — now from a real preference
+  emotionalAdjustment: string;    // derived label the hubs render — now from a real preference
+  setFontScale: (v: 'standard' | 'large') => void;
+  setGuidedMode: (v: boolean) => void;
+  setTone: (v: 'encouraging' | 'neutral') => void;
 }
 
 const AdaptiveUIContext = createContext<AdaptiveUIState | undefined>(undefined);
 
+function readState() {
+  const p = getPrefs();
+  const fontScale = p.fontScale === 'large' ? 'large' : 'standard';
+  const guidedMode = p.guidedMode !== false;         // default on
+  const tone = p.tone === 'neutral' ? 'neutral' : 'encouraging';
+  return { fontScale, guidedMode, tone } as const;
+}
+
 export const AdaptiveUIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [uiState, setUiState] = useState({
-    theme: 'Sovereign_Dark',
-    fontSize: 'Standard',
-    layout: 'Guided',
-    emotionalAdjustment: 'Encouraging'
-  });
+  const [ui, setUi] = useState(readState);
 
-  const updateProfile = (profile: any) => {
-    // Cross-Domain Adaptive Logic powered by DRAD engine
-    const age = profile.age || 25;
-    const skill = profile.skill || 'Intermediate';
-    const role = profile.role || 'Guardian';
+  // stay in sync when preferences change anywhere (Settings, another tab component)
+  useEffect(() => {
+    const h = () => setUi(readState());
+    window.addEventListener('ws:user-prefs', h);
+    return () => window.removeEventListener('ws:user-prefs', h);
+  }, []);
 
-    setUiState({
-      theme: age < 12 ? 'Playful_Light' : 'Sovereign_Dark',
-      fontSize: age > 60 ? 'Large' : 'Standard',
-      layout: (skill === 'Expert' || role === 'CEO') ? 'Advanced' : 'Guided',
-      emotionalAdjustment: profile.emotion === 'Frustrated' ? 'Gentle' : 'Encouraging'
-    });
+  const persist = (patch: Partial<ReturnType<typeof readState>>) => {
+    setPrefs({ ...getPrefs(), ...patch });   // fires ws:user-prefs → the effect re-reads
+  };
+
+  const value: AdaptiveUIState = {
+    fontScale: ui.fontScale,
+    guidedMode: ui.guidedMode,
+    tone: ui.tone,
+    layout: ui.guidedMode ? 'Guided' : 'Advanced',
+    emotionalAdjustment: ui.tone === 'neutral' ? 'Neutral' : 'Encouraging',
+    setFontScale: (v) => persist({ fontScale: v }),
+    setGuidedMode: (v) => persist({ guidedMode: v }),
+    setTone: (v) => persist({ tone: v }),
   };
 
   return (
-    <AdaptiveUIContext.Provider value={{ ...uiState, updateProfile }}>
-      <div className={`adaptive-ui-root v1-baseline font-size-${uiState.fontSize.toLowerCase()}`}>
+    <AdaptiveUIContext.Provider value={value}>
+      {/* the font scale is a REAL rendered effect, not a label */}
+      <div className="adaptive-ui-root" style={{ fontSize: ui.fontScale === 'large' ? '1.15rem' : undefined }}>
         {children}
       </div>
     </AdaptiveUIContext.Provider>

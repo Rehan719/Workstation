@@ -72,6 +72,36 @@ export const Settings: React.FC = () => {
           </p>
         </div>
 
+        {/* §9 (W357) — REAL adaptive-UI controls: these genuinely change the interface (font
+            scale enlarges rendering; guided mode + tone drive the affordances the hubs show). */}
+        <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-4 pt-2 border-t border-slate-800/60">
+          <div>
+            <label htmlFor="pref-font" className="text-[9px] font-black uppercase tracking-widest text-slate-500">Text size</label>
+            <select id="pref-font" value={prefs.fontScale ?? 'standard'} onChange={e => update({ fontScale: e.target.value as any })}
+              className="block w-full mt-1.5 text-xs font-black bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2.5">
+              <option value="standard">Standard</option>
+              <option value="large">Large (accessible)</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="pref-guided" className="text-[9px] font-black uppercase tracking-widest text-slate-500">Guidance</label>
+            <select id="pref-guided" value={(prefs.guidedMode !== false) ? 'on' : 'off'} onChange={e => update({ guidedMode: e.target.value === 'on' })}
+              className="block w-full mt-1.5 text-xs font-black bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2.5">
+              <option value="on">Guided mode</option>
+              <option value="off">Advanced (less hand-holding)</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="pref-tone" className="text-[9px] font-black uppercase tracking-widest text-slate-500">Tone</label>
+            <select id="pref-tone" value={prefs.tone ?? 'encouraging'} onChange={e => update({ tone: e.target.value as any })}
+              className="block w-full mt-1.5 text-xs font-black bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2.5">
+              <option value="encouraging">Encouraging</option>
+              <option value="neutral">Neutral</option>
+            </select>
+          </div>
+        </div>
+        <p className="text-[10px] text-slate-600">On save, text size takes effect across the whole app; guidance and tone drive the affordances shown on the domain hubs.</p>
+
         <Button type="button" onClick={save} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
           {saved ? <><Check size={14} /> Saved</> : 'Save preferences'}
         </Button>

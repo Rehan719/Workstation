@@ -605,6 +605,31 @@ updates (each verified in code, file:line evidence in the Round-7 audit journal)
   + `src/lib/taxonomy.ts`, 4 Realms × 6 Domains, one source each side (W311/W321). A and C are moot:
   the native fabric was built and seven audit rounds have shipped since.
 
+**16.2 Reconciliation addendum — Rounds 8–10 (W332–W354), reconciled 2026-08-30.**
+- **Tenant isolation — §16.1's "across the whole platform" was over-broad and is now honest:** it
+  did NOT cover the native memory layer. Round 8 reproduced a real cross-tenant bleed — one user's
+  confidential prompt shipped verbatim into another user's git-committed public website via a single
+  global memory pool with identity-blind APIs. Closed at the source: recall is off for ship/persist
+  copy generation and the engine's subject-echo trap is neutralised (W332); both memory stores +
+  the interaction log carry per-tenant namespaces threaded through every chat route (W333/W343);
+  and an Owner-run quarantine script remediates what already leaked (W334). Avatar conversation
+  sessions are likewise owner-scoped (W350). Proven under real two-user authentication.
+- **The owned model genuinely serves now (the W323 claim was incomplete):** a 30s clamp made the
+  adaptive budget dead code, so the healthy owned model failed every substantial completion and was
+  demoted below the floor; the caller timeout now passes through and the local route is bounded by
+  its own budget (W353).
+- **Store durability under concurrent writers:** the money paths (marketplace purchase, revenue
+  recognition), the living registry, and the gaas UEG audit chain lost writes under production-style
+  concurrency; a cross-process store lock + atomic writes + a UEG single-instance/monotonicity check
+  close them (W348/W349/W351).
+- **Deployment honesty:** the shipped Docker image omitted config/ + src/ and died at import; the
+  prod compose was unbuildable fiction — both fixed (W354). A live Stripe key + webhook secret found
+  committed in three archived files were redacted from the working tree; **they remain in git
+  history — rotation at Stripe is still required to fully close the exposure.**
+- **Shipped public copy is grounded + floor-safe** (W355/W356); the §17.5 invariants were
+  live-verified incl. arms-length falsification (W345); the evolution-apply loop was driven
+  end-to-end (W346).
+
 ## 18. Certainty & Agreement — what I am sure of, and what I want you to confirm
 
 **The spine I am certain of (please correct any line that is even slightly off):**

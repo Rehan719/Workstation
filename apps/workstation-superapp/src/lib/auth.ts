@@ -8,9 +8,23 @@ import axios from 'axios';
 
 const KEY = 'workstation_token';
 
+// §9 (W352) — "My Work" and prefs are a PER-BROWSER store (localStorage). On a shared browser that
+// would leak one user's history to the next, contradicting the §9 "personalised to each user's
+// history" intent. Clearing the local history+prefs on every identity change (login AND logout)
+// closes that at a single choke point covering all call sites. (A durable per-USER server-side
+// store is the larger follow-up, tracked in the backlog — this is the honest minimum.)
+function _clearLocalUserData(): void {
+  try {
+    localStorage.removeItem('ws_output_history_v1');
+    localStorage.removeItem('ws_user_prefs_v1');
+    window.dispatchEvent(new CustomEvent('ws:output-history'));
+    window.dispatchEvent(new CustomEvent('ws:user-prefs'));
+  } catch { /* storage unavailable — nothing to clear */ }
+}
+
 export const getToken = (): string | null => localStorage.getItem(KEY);
-export const setToken = (t: string): void => localStorage.setItem(KEY, t);
-export const clearToken = (): void => localStorage.removeItem(KEY);
+export const setToken = (t: string): void => { _clearLocalUserData(); localStorage.setItem(KEY, t); };
+export const clearToken = (): void => { localStorage.removeItem(KEY); _clearLocalUserData(); };
 
 let installed = false;
 

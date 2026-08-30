@@ -7,6 +7,11 @@ export interface UserPrefs {
   defaultDomain?: string;  // §17.1 domain (religion · science · education · law · employment · care)
   language?: string;       // E7 — BCP-47 code; drives voice-dictation language (real, today)
   pinned?: string[];       // §9 — user-customisable interface: nav item ids the user pinned for quick access
+  // §9 (W357) — REAL adaptive-UI preferences (were fabricated constants): fontScale genuinely
+  // enlarges the interface; guidedMode/tone are the user's own stored choice, honestly reflected.
+  fontScale?: 'standard' | 'large';
+  guidedMode?: boolean;    // show the guided affordances (default on)
+  tone?: 'encouraging' | 'neutral';
 }
 
 // E7 — supported languages (§9 "accessible to all — all languages"). BCP-47 codes are used by the

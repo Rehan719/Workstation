@@ -1737,3 +1737,25 @@ Windows os.replace sharing-violation that was silently swallowed.
   replacements, asserted). They remain in git HISTORY — surfaced to the Owner, who chose
   working-tree redaction for now; **rotation at Stripe is still required to fully close the
   exposure** (history rewrite deferred). Recorded here so the rotation decision stays visible.
+
+### Batch D — honesty: adaptive UI made real, per-user history, docs reconciled (W352 + W357 + W362)
+- **W357** — the AdaptiveUIProvider rendered fabricated constants (theme/fontSize/layout/tone) via
+  a dead updateProfile, and six domain hubs showed "GUIDED MODE / ENCOURAGING TONE" badges asserting
+  an adaptivity that never occurred. Made REAL: the provider now reads the user's OWN stored prefs
+  (userPrefs: fontScale/guidedMode/tone), font scale genuinely enlarges the interface (inline root
+  font-size, not a decorative class), and Settings gained real controls for all three (persist via
+  ws:user-prefs; the hub badges now reflect a genuine stored choice).
+- **W352** — "My Work" + prefs are a per-BROWSER localStorage store, so a shared browser leaked one
+  user's history to the next (contra §9 "personalised to each user's history"). setToken/clearToken
+  now clear the local history+prefs on every identity change (login AND logout) at a single choke
+  point covering all call sites. A durable per-USER server-side store is the honest follow-up.
+- **W362** — docs reconciled to measured reality: LIVING_PLAN.md (466 routes, ≈295✓/15 skip, a
+  W322–W354 delivery sentence); README counts (466 routes, ≈295 passing, roadmap pointer →
+  AUTONOMOUS_PROGRESS.md with ACTION_PLAN noted archived); a WHOLE_VISION §16.2 addendum recording
+  the Rounds 8–10 load-bearing honesty facts — §16.1's platform-wide isolation claim did NOT cover
+  the memory layer until W332/W333/W343, the owned model now genuinely serves (W353), store
+  concurrency correctness (W348-W351), and the still-open Stripe-key rotation.
+
+Verification: tsc 0 + production frontend build clean. Backend suite unaffected (frontend/docs only).
+Round-10 REMAINING (next): version viewers (Deliverables/My Work), first-run onboarding tour,
+durable per-user server-side history, verification harnesses W358-W361.
