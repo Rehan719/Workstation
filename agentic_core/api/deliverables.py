@@ -152,6 +152,11 @@ async def output_formats():
         live.append({"id": "pptx", "label": "PowerPoint (.pptx)", "kind": "presentation"})
     if _XLSX_OK:  # produced in-house by openpyxl when available
         live.append({"id": "xlsx", "label": "Excel spreadsheet (.xlsx)", "kind": "data"})
+    # W372 — svg is dependency-free; png needs Pillow. mp4/mp3 stay in the catalogue: there is no
+    # media encoder here, and a "video" that is silently a slideshow would be a fabrication.
+    live.append({"id": "svg", "label": "Vector summary card (.svg)", "kind": "image"})
+    if _PNG_OK:
+        live.append({"id": "png", "label": "Image summary card (.png)", "kind": "image"})
     try:
         from agentic_core.omnimedia.factory import OutputFormat
         catalogue = [f.value for f in OutputFormat if f.value not in {x["id"] for x in live}]
@@ -649,6 +654,120 @@ def _xlsx_bytes(d: Dict[str, Any]) -> bytes:
 
 
 # Live, end-to-end in-house formats (real renders) — keep in sync with /output-formats.
+# ── §13 (W372) — real vector + raster renders ────────────────────────────────────────────────
+# mp4/mp3/png/svg were all catalogue-only. Two of the four can be produced HONESTLY in-house today
+# and now are; the other two cannot, and stay catalogued rather than faked:
+#   • svg — a text format, so a genuine self-contained vector render with NO dependency at all.
+#   • png — a genuine raster render via Pillow when it is importable (optional, gated exactly like
+#     pdf/docx/pptx/xlsx above).
+#   • mp4/mp3 — need a real media encoder. There is no ffmpeg/av/imageio here, so they remain in the
+#     not-yet catalogue. A "video" that is silently a slideshow of stills would be a fabrication.
+
+_CARD_W, _CARD_H = 1200, 675          # 16:9 — shares and prints cleanly
+
+# How many bullet lines actually FIT above the footer. Rendering the card and LOOKING at it showed
+# the 8th line colliding with the provenance footer, and a repeated heading printing twice — both
+# invisible when only checking that the bytes decode.
+_CARD_MAX_LINES = 6
+
+
+def _card_lines(d: Dict[str, Any]) -> List[str]:
+    """The deliverable's OWN section headings — never invented filler. De-duplicated (a document
+    that repeats a heading, or lists it in both `sections` and the body, must not print it twice)
+    and capped to what fits above the footer."""
+    seen = set()
+    out: List[str] = []
+    for line in (d.get("content", "") or "").split("\n"):
+        m = re.match(r"^##+\s+(.*)", line)
+        if m:
+            head = m.group(1).strip()
+            key = head.lower()
+            if head and key not in seen:
+                seen.add(key)
+                out.append(head)
+    if not out:
+        for s in (d.get("sections") or []):
+            if isinstance(s, str) and s.strip() and s.strip().lower() not in seen:
+                seen.add(s.strip().lower())
+                out.append(s.strip())
+    return out[:_CARD_MAX_LINES]
+
+
+def _svg_doc(d: Dict[str, Any]) -> str:
+    """A real, self-contained SVG summary card of the deliverable (vector, no dependencies)."""
+    import html as _h
+    title = _h.escape((d.get("title") or "Deliverable")[:90])
+    sub = _h.escape(_doc_subtitle(d)[:120])
+    prov = d.get("ai_provenance") or {}
+    served = _h.escape(str(prov.get("served_by") or "in-house"))
+    posture = "external" if prov.get("is_external") else "in-house"
+    rows = []
+    y = 300
+    for head in _card_lines(d):
+        rows.append(
+            f'<text x="90" y="{y}" font-family="Segoe UI, Helvetica, Arial, sans-serif" '
+            f'font-size="30" fill="#cbd5e1">\u2022 {_h.escape(head[:70])}</text>')
+        y += 46
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{_CARD_W}" height="{_CARD_H}" '
+        f'viewBox="0 0 {_CARD_W} {_CARD_H}" role="img" aria-label="{title}">'
+        f'<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">'
+        f'<stop offset="0%" stop-color="#0b1220"/><stop offset="100%" stop-color="#111c33"/>'
+        f'</linearGradient></defs>'
+        f'<rect width="{_CARD_W}" height="{_CARD_H}" fill="url(#bg)"/>'
+        f'<rect x="0" y="0" width="{_CARD_W}" height="8" fill="#64ffda"/>'
+        f'<text x="90" y="150" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="56" '
+        f'font-weight="700" fill="#ffffff">{title}</text>'
+        f'<text x="90" y="205" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="28" '
+        f'fill="#94a3b8">{sub}</text>'
+        + "".join(rows) +
+        f'<text x="90" y="{_CARD_H - 60}" font-family="Segoe UI, Helvetica, Arial, sans-serif" '
+        f'font-size="22" fill="#64ffda">Workstation IDBO \u00b7 {posture} \u00b7 {served}</text>'
+        f'</svg>'
+    )
+
+
+try:
+    from PIL import Image as _PILImage, ImageDraw as _PILDraw, ImageFont as _PILFont  # noqa: F401
+    _PNG_OK = True
+except Exception:
+    _PNG_OK = False
+
+
+def _png_bytes(d: Dict[str, Any]) -> bytes:
+    """A real raster render of the same card via Pillow. Uses a real TrueType face when one can be
+    found so the text is legible at size; falls back to Pillow's bitmap font rather than failing."""
+    from PIL import Image, ImageDraw, ImageFont
+    img = Image.new("RGB", (_CARD_W, _CARD_H), (11, 18, 32))
+    dr = ImageDraw.Draw(img)
+
+    def _font(size: int):
+        for cand in ("segoeui.ttf", "arial.ttf", "DejaVuSans.ttf",
+                     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"):
+            try:
+                return ImageFont.truetype(cand, size)
+            except Exception:
+                continue
+        return ImageFont.load_default()
+
+    dr.rectangle([0, 0, _CARD_W, 8], fill=(100, 255, 218))
+    dr.text((90, 110), (d.get("title") or "Deliverable")[:70], font=_font(54), fill=(255, 255, 255))
+    dr.text((90, 185), _doc_subtitle(d)[:110], font=_font(26), fill=(148, 163, 184))
+    y = 280
+    body = _font(28)
+    for head in _card_lines(d):
+        dr.text((90, y), f"\u2022 {head[:66]}", font=body, fill=(203, 213, 225))
+        y += 44
+    prov = d.get("ai_provenance") or {}
+    posture = "external" if prov.get("is_external") else "in-house"
+    dr.text((90, _CARD_H - 78), f"Workstation IDBO \u00b7 {posture} \u00b7 {prov.get('served_by') or 'in-house'}",
+            font=_font(22), fill=(100, 255, 218))
+    import io as _io
+    buf = _io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 _LIVE_FORMATS = {
     "md":     ("text/markdown; charset=utf-8", "md"),
     "html":   ("text/html; charset=utf-8", "html"),
@@ -656,7 +775,10 @@ _LIVE_FORMATS = {
     "txt":    ("text/plain; charset=utf-8", "txt"),
     "json":   ("application/json; charset=utf-8", "json"),
     "video-html": ("text/html; charset=utf-8", "video.html"),   # self-playing video-style render (W264)
+    "svg":    ("image/svg+xml; charset=utf-8", "svg"),          # W372 — real vector card, no deps
 }
+if _PNG_OK:
+    _LIVE_FORMATS["png"] = ("image/png", "png")                 # W372 — real raster card via Pillow
 if _PDF_OK:
     _LIVE_FORMATS["pdf"] = ("application/pdf", "pdf")
 if _DOCX_OK:
@@ -668,6 +790,8 @@ if _XLSX_OK:
 
 
 def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
+    if fmt == "svg":
+        return _svg_doc(d)
     if fmt == "md":
         return _to_markdown(d)
     if fmt == "txt":
@@ -708,6 +832,8 @@ async def export_deliverable(deliverable_id: str, format: str = "md",
                 content = _pptx_bytes(d)
             elif fmt == "xlsx":
                 content = _xlsx_bytes(d)
+            elif fmt == "png":
+                content = _png_bytes(d)
             else:
                 content = _render_deliverable(d, fmt)
             return Response(

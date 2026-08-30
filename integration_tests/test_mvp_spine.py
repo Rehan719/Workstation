@@ -6135,3 +6135,51 @@ def test_user_store_survives_concurrent_writes(tmp_path, monkeypatch):
             "_load_users would return {} and every account would silently vanish") from exc
     assert len(users) == WRITERS, (
         f"{WRITERS - len(users)} of {WRITERS} accounts were destroyed by concurrent registration")
+
+
+def test_svg_and_png_exports_are_real(client):
+    """W372 — svg/png are produced for REAL, and mp4/mp3 stay honestly un-faked.
+
+    All four were catalogue-only. Two can be produced honestly in-house (svg is a text format, png
+    via Pillow) and now are; mp4/mp3 need a real media encoder that is not present, so they must
+    remain catalogued — a "video" that is silently a slideshow of stills would be a fabrication.
+
+    Asserts the bytes are genuinely valid (SVG parses as XML, PNG decodes as an image), that the
+    render carries the deliverable's OWN title rather than filler, and that the card lines are
+    de-duplicated and bounded — defects that only became visible by rendering the card and LOOKING
+    at it (a repeated heading, and the last line colliding with the footer).
+    """
+    import xml.etree.ElementTree as _ET
+    import agentic_core.api.deliverables as _D
+
+    made = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "title": "Media export contract probe",
+        "brief": "a short probe deliverable for the svg/png export contract"})
+    assert made.status_code == 200, made.text
+    did = made.json()["id"]
+
+    fmts = client.get("/api/v1/deliverables/output-formats").json()
+    assert "svg" in fmts["live_ids"], "svg must be advertised as live"
+    # mp4/mp3 must NOT be advertised as live while no encoder exists
+    assert "mp4" not in fmts["live_ids"] and "mp3" not in fmts["live_ids"], \
+        "mp4/mp3 advertised as live but no media encoder exists — that would be a fabrication"
+
+    svg = client.get(f"/api/v1/deliverables/{did}/export?format=svg")
+    assert svg.status_code == 200 and svg.headers["content-type"].startswith("image/svg+xml")
+    _ET.fromstring(svg.content)                       # genuinely well-formed XML, not a stub
+    assert b"Media export contract probe" in svg.content, "the render lost the deliverable's title"
+
+    if "png" in fmts["live_ids"]:                     # Pillow-gated, exactly like pdf/docx/pptx
+        png = client.get(f"/api/v1/deliverables/{did}/export?format=png")
+        assert png.status_code == 200 and png.headers["content-type"] == "image/png"
+        from PIL import Image
+        import io as _io
+        img = Image.open(_io.BytesIO(png.content))
+        img.load()                                    # decodes: a real raster, not bytes labelled png
+        assert img.size == (_D._CARD_W, _D._CARD_H)
+
+    # the card's lines come from the deliverable and are de-duplicated + bounded so they fit
+    doc = [x for x in _D._load() if x["id"] == did][0]
+    lines = _D._card_lines(doc)
+    assert len(lines) == len({ln.lower() for ln in lines}), f"duplicate card lines: {lines}"
+    assert len(lines) <= _D._CARD_MAX_LINES, f"{len(lines)} lines will overlap the footer"

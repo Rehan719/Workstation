@@ -2077,3 +2077,21 @@ Verification: tsc 0 + production frontend build clean. Frontend only.
   proceed unlocked. It is true now, and only now.
 - **After: 400 of 400 increments, 0 worker failures** under the same 10-process contention. All 13
   concurrency/durability tests pass.
+
+### W372 — omnimedia: svg + png produced for REAL; mp4/mp3 stay honestly un-faked
+- `mp4/mp3/png/svg` were all catalogue-only ("documented targets, not faked"). Two of the four can
+  be produced honestly in-house today, so they now are:
+  - **svg** — a genuine self-contained vector summary card with NO dependency at all (SVG is text).
+  - **png** — a genuine raster render of the same card via Pillow, gated exactly like pdf/docx/pptx/
+    xlsx so it only appears as `live` when the library is importable.
+  - **mp4/mp3 remain catalogued.** There is no ffmpeg/av/imageio here, and a "video" that was
+    silently a slideshow of stills would be exactly the kind of fabrication this codebase forbids.
+    The existing `video-html` (a real self-playing HTML render) stays what it honestly is.
+- Both renders carry the deliverable's OWN title, subtitle and section headings — never filler — and
+  the honest provenance footer (in-house vs external, and which model served).
+- **Rendering the card and LOOKING at it caught two defects that byte-checking missed:** a repeated
+  heading printed twice, and the eighth line colliding with the provenance footer. Fixed by
+  de-duplicating headings and capping to what fits.
+- Guard: `test_svg_and_png_exports_are_real` — asserts the SVG parses as XML and the PNG genuinely
+  decodes as a 1200×675 image, that the render carries the real title, that card lines are unique
+  and bounded, and **that mp4/mp3 are never advertised as live** while no encoder exists.
