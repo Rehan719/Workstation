@@ -2579,3 +2579,41 @@ with every test still green. Reproduced exactly by importing `agentic_core.confi
   when an entity picker holds 1,552 rows.
 Proven by reproducing the CI condition — guard fires with "integration tests are NOT isolated", and
 after the fix `data_dir` resolves to `data\_test_store` and the test passes.
+
+### W397–W400 — the last unreachable surfaces, and three routes that crashed on a plain GET
+**W397 · §5 charity directives.** GET/POST existed with no UI, so the priorities governing a whole
+stage of the profit waterfall were visible only to code — sitting at their defaults (`clean_water`,
+`orphan_sponsorship`, `conflict_relief`, `dawah`, recorded as a 2026-06-21 Owner directive) with no
+way to read or revise them. Now editable, stating plainly that it sets policy for **virtual** WST and
+that live charity rails stay gated. Provenance is shown as reported, so *"still on defaults"* is
+visibly different from *"set by you"*. **Save was verified against an ISOLATED store on purpose:**
+writing to the live directives would set `updated_at` and make the record claim the Owner chose
+values they never chose.
+
+**W398 · board charter.** `GET /board/charter` had no caller, so the governance INVARIANT was
+invisible — *"The AI CEO and below cannot instruct the board or mutate the genome directly. Direction
+flows Owner → Chief → Board → AI CEO."* A hierarchy diagram without that constraint is an org chart.
+
+**W399 · smoke coverage.** The smoke checked 8 routes and none of the day's new surfaces, and its
+landmark check passes if **any** landmark matches — proving a route did not crash but blind to a
+section quietly failing to render, which is precisely how every new card would regress. Added
+`/marketplace`, `/vsb-cockpit`, `/ceo?tab=board` and `REQUIRED_SECTIONS` (all must be present).
+Proven to bite by injecting a nonexistent section.
+
+**W400 · three GET routes returned 500 on a plain request** — found by probing all **175**
+parameterless GETs. Each was worse than a crash:
+- `/api/qep/analytics/overview` called `UEGManager.get_summary()`, which **has never existed** (that
+  class exposes only `add_*` writes). Fixing the crash would have shipped the fabrication it guarded:
+  `accuracy_score 0.999`, `morphology_coverage "99.9%"`, `quiz_accuracy "98.2%"`,
+  `study_groups_active 42`, `avg_oxytocin 0.992`, and a real count with `+ 1024  # v128 scaling`.
+  Now returns `measured: false` and says why.
+- `/api/tools/constellation` raised `KeyError: 'category'` and invented a link under the comment
+  *"Mock links for visualization"*. `get_constellation_map()` already did it properly — real
+  trust-derived radii, real capabilities, links from the actual dependency graph — and **nobody
+  called it**. Now used.
+- `/api/v138/ceo/meeting/minutes`: `meeting_log` was `type('Mock', (), {...})` whose lambdas took no
+  `self`, so every bound call raised. Two live paths hit it, and `post_argument` survived only
+  because `lambda *a` swallows `self` — **so every argument the C-Suite posted went nowhere,
+  silently**. `export_minutes` returned the literal string `"# Minutes"`. Replaced with a real
+  `MeetingLog`.
+Re-probed: **175 GETs and 157 POSTs → 0 5xx, 0 exceptions.**
