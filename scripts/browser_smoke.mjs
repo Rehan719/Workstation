@@ -41,7 +41,22 @@ const ROUTES = [
   ['/economy',          ['Economy', 'Metabolism']],
   ['/my-work',          ['My Work']],
   ['/governance-hub',   ['Governance']],
+  // W399 — surfaces added on 2026-08-31, none of which the smoke covered:
+  ['/marketplace',      ['Living Marketplace']],
+  ['/vsb-cockpit',      ['VSB Cockpit']],
+  ['/ceo?tab=board',    ['Board of Directors', 'Apex Governance']],
 ];
+
+// The landmark check above passes if ANY landmark is present, which proves the route did not crash
+// but says nothing about a section quietly failing to render. These must ALL be present. Each entry
+// is a surface that shipped with no coverage and would otherwise regress in silence — the §15
+// contracts card, the charity directives, the board charter's invariant, and the marketplace's
+// listings layer.
+const REQUIRED_SECTIONS = {
+  '/economy': ['Service contracts', 'Charity directives'],
+  '/ceo?tab=board': ['cannot instruct the board'],
+  '/marketplace': ['Listings'],
+};
 
 const failures = [];
 const note = (m) => console.log(`  ${m}`);
@@ -78,6 +93,13 @@ for (const [route, landmarks] of ROUTES) {
     // 1. the page rendered its own content (not a blank shell / crashed boundary)
     const hit = landmarks.find((l) => body.toLowerCase().includes(l.toLowerCase()));
     if (!hit) failures.push(`${route}: none of ${JSON.stringify(landmarks)} rendered — blank or crashed page`);
+
+    // 1b. required sections must ALL be present, not merely one landmark
+    for (const needle of REQUIRED_SECTIONS[route] ?? []) {
+      if (!body.toLowerCase().includes(needle.toLowerCase())) {
+        failures.push(`${route}: required section missing — ${JSON.stringify(needle)}`);
+      }
+    }
 
     // 2. no fabricated marker is shown to a user
     for (const f of FABRICATIONS) {
