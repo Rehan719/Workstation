@@ -87,3 +87,19 @@ exactly the kind of file a dynamically-built path can reach without ever naming 
 Note: `configs/governance/profiles.yaml` looks missing but was **never in the tree** — the default in
 `agentic_core/governance/industry_adaptive.py` is decorative, since that constructor ignores its
 `profile_path` argument and hardcodes the profiles inline.
+
+## Addendum — `conscious_organism_v99.py`, the flagship fabrication
+329 lines named "conscious organism v99" that **have never been importable by anyone**. It imports
+**35 modules that exist nowhere in the repo** — `agentic_core.consciousness.global_workspace`,
+`agentic_core.quantum.unified_gateway`, `agentic_core.pc_agent.*`, `agentic_core.transition.*` and
+30 more — and its only importer, `src/dashboard/app.py`, reaches for it through a **typo'd path**
+(`agentic_core.orchestrator.` where the real package is `orchestration`). So even the one reference
+to it was broken.
+
+**Left in place, deliberately:** roughly 30 modules whose only importer was this file
+(`governance/grn_modeler.py`, `governance/span_control.py`, `molecular/triad_integration.py`,
+`optimization/engine.py`, `config/loader.py`, and the `evolution/{mutation,rearrangement,search}`
+sets). They are dead, but the evidence for each is now weaker, not stronger — "no importer at all"
+says less than "the only importer cannot run" — and `config/loader.py` is named in a Dockerfile
+comment. Keeping a dead file costs nothing; the bar for removal does not drop just because a first
+pass succeeded.
