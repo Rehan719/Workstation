@@ -2381,3 +2381,52 @@ or turned into a fix that was not needed.
 - **Commit-hygiene mistake, recorded not hidden:** an over-broad `git add -A` swept these 259
   renames into `7a1aa7dd` (the W382 WebSocket fix), so two unrelated changes share a message that
   mentions only one. Already pushed; rewriting shared history would be worse than the mess.
+
+### W384 — CI caught a live file I archived; 53 of 259 restored
+Doc-Sync went red: `ModuleNotFoundError: agentic_core.synthesis.doc_linter`. The four-signal archive
+method had a hole, and the hole was in the **instrument**, not the judgement:
+- the string sweep matched only fully-quoted tokens `['"]([A-Za-z0-9_.]+)['"]`, so it could not see a
+  module named inside a multi-word string — and Doc-Sync invokes it as
+  `python -c "from agentic_core.synthesis.doc_linter import ...; ..."`;
+- the runtime signal (`sys.modules` after 34 endpoints) is **blind by construction** to code that only
+  runs in a separate CI job, a setup script, or the Dockerfile;
+- the green suite proved only that the suite does not cover those paths. It was read as if it proved
+  more.
+Restored 4 infra-referenced files (two of them, `scripts/init_data.py` and `scripts/verify_environment.py`,
+were silently breaking `setup.ps1`/`setup_windows.ps1` for anyone cloning the repo) and 49 named in
+real import statements — to a **fixed point**, since restoring a module surfaces its own archived deps.
+
+### W385 — the mistake became a permanent guard (`scripts/check_import_integrity.py`, in CI)
+Static check: fails when a live module imports a first-party module with no file behind it. It would
+have caught 49 of the 53 bad archives instantly. **Two instrument bugs were found while building it,
+both of which gave confident wrong answers first:** namespace packages (a dir without `__init__.py`
+IS importable — demanding one flagged `app_mvp.py`, a file that demonstrably boots with 470 routes)
+and self-rooted products (`products/mjm-intelligence-engine` ships its own `core/`, so resolving
+`core.models` against the repo root wrongly condemned 21 modules). **Proven to bite, not assumed:**
+re-injected the exact defect, guard exited 1 naming the file; restored it, exited 0.
+Baselines the 14 pre-existing dangling files — including
+`agentic_core/orchestration/conscious_organism_v99.py`, which imports **35 modules that have never
+existed** and whose only importer reaches it through a typo'd path. It has never been importable.
+
+### W386 — the Agents tab's send button 404'd on every message
+Checked all **205** distinct frontend API paths against the **447** live backend routes. Four
+unmatched paths were template literals that resolve fine; one was a doc comment; **one was real**:
+`ClaudeAgentPanel` POSTed to `/api/v1/claude/chat`, a route that has never existed — and rendered the
+404 **as an assistant turn** ("⚠️ Not Found"), so the UI looked like the assistant had replied.
+Building that route would have been the wrong fix: the panel advertised Anthropic tiers, an
+external-gateway design that contradicts the native-AI mandate. Replaced with `NativeAgentPanel`,
+which reads the tiers that actually exist here, sends to the in-house orchestrator, **stamps every
+reply with the `served_by` the backend reports**, and surfaces failures as failures. Verified live:
+selector populated with the real owned models, message sent, reply returned `served by ollama`.
+
+### W387 — 166 non-Python Jules leftovers archived (`_archive/jules-phase2/`)
+Two findings beyond tidiness: **`.github/workflows/jules-auto-merge.yml` was a standing unattended
+merge path** (`gh pr merge --auto --merge` on any `ready-to-merge` label, for an agent no longer in
+use), and **`meta/SHARIA_AUDIT_v100.0.json` carried a fabricated halal certification** with an
+invented digital signature and a code module as its "auditor", alongside `REGULATORY_COMPLIANCE.md`
+claiming ISO/NIST/EU AI Act alignment. No measuring code produced any of it.
+**`products/` was kept in full** — `catalog/api.py` does `PRODUCTS_DIR.iterdir()`, so those dirs are
+reached *by existence*; an import-based pass would have emptied the live catalog. Verified: catalog
+still lists 20 products, boot unchanged at 470/447, tsc + production build clean, smoke 8/8.
+Also hardened the smoke harness: `networkidle` never settles on pages that poll, and it failed
+`/domains` on a run where the page rendered perfectly.
