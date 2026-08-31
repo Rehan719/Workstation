@@ -9,8 +9,12 @@ class BusinessModelSimulator:
     def generate_model(self, data: str, topic: str = "Long-Term Safety Assurance (LTSA)") -> Dict[str, Any]:
         timestamp = datetime.datetime.utcnow().isoformat()
 
-        # 1. Market Opportunity (Derived from Dossier)
-        market_size = 4.2e9 # $4.2B by 2030
+        # W407 — NOTHING here is derived or simulated. `data` is ignored entirely and every figure
+        # below is a literal, including comments claiming methods that are never used ("28% gain via
+        # SciPy" — SciPy is not imported; "2.4x faster via AI Swarms" — no swarm runs). Callers must
+        # be able to tell: the returned dict is stamped `"source": "template"` and `"measured":
+        # False`, and the live synthesis path no longer substitutes it for a real result.
+        market_size = 4.2e9  # literal, not derived
 
         # 2. Simulation Results (ESE/ARO/BTO/DRAD)
         simulation = {
@@ -32,8 +36,11 @@ class BusinessModelSimulator:
                 "adaptation_latency_ms": 142
             }
         }
+        # stamped so no consumer can mistake this for a measurement
 
         return {
+            "source": "template",
+            "measured": False,
             "title": f"Business Model: {topic}",
             "market_summary": f"Targeting a ${market_size/1e9}B market by 2030 with a focus on {topic}.",
             "projections": {

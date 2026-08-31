@@ -3,28 +3,58 @@ import { Card, Badge, Button, toast } from '@workstation/ui';
 import { BarChart3, TrendingUp, Users, Zap, ShieldCheck, PieChart, ArrowUpRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
+// W407 — the four stat cards below were HARDCODED ("$4.2B", "+28%", "2.4x", "0.99") and rendered
+// identically whatever the model returned, and the chart read data.projections.* unconditionally.
+// Upstream, synthesis/api.py used to graft a fixed template's sim_results and the literal
+// projections {4.5e7, 2.1e8, 8.4e8} onto real model output when the model omitted them, so a
+// genuine result and invented financials were rendered side by side with nothing distinguishing
+// them. Both ends now report absence as absence.
+const fmtMoney = (n: unknown): string => {
+  if (typeof n !== "number" || !isFinite(n)) return "—";
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+  return `$${n.toLocaleString()}`;
+};
+const fmtPct = (n: unknown): string =>
+  typeof n === "number" && isFinite(n) ? `${(n * 100).toFixed(0)}%` : "—";
+const fmtNum = (n: unknown, suffix = ""): string =>
+  typeof n === "number" && isFinite(n) ? `${n}${suffix}` : "—";
+
 export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
-  const chartData = [
-    { name: 'Year 1', value: data.projections.year_1 },
-    { name: 'Year 3', value: data.projections.year_3 },
-    { name: 'Year 5', value: data.projections.year_5 },
-  ];
+  const sim = data?.sim_results ?? null;
+  const proj = data?.projections ?? null;
+  const chartData = proj
+    ? [
+        { name: "Year 1", value: proj.year_1 },
+        { name: "Year 3", value: proj.year_3 },
+        { name: "Year 5", value: proj.year_5 },
+      ].filter(d => typeof d.value === "number")
+    : [];
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {(data?.sim_results_note || data?.projections_note || data?.generated === false) && (
+        <p role="status" className="text-[10px] font-bold text-amber-400 leading-relaxed">
+          {data?.detail || data?.sim_results_note || data?.projections_note}
+        </p>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-         <StatCard label="Market Size" value="$4.2B" icon={TrendingUp} color="text-aura" />
-         <StatCard label="ROI Efficiency" value="+28%" icon={Zap} color="text-highlight" />
-         <StatCard label="Swarm Multiplier" value="2.4x" icon={Users} color="text-vital" />
-         <StatCard label="GaaS Alignment" value="0.99" icon={ShieldCheck} color="text-emerald-500" />
+         <StatCard label="Market Size" value={fmtMoney(data?.market_size)} icon={TrendingUp} color="text-aura" />
+         <StatCard label="ROI Efficiency" value={fmtPct(sim?.aro_efficiency?.resource_optimization_gain)} icon={Zap} color="text-highlight" />
+         <StatCard label="Swarm Multiplier" value={fmtNum(sim?.bto_roadmap?.implementation_speed_multiplier, "x")} icon={Users} color="text-vital" />
+         <StatCard label="GaaS Alignment" value={fmtNum(sim?.drad_resilience?.compliance_score)} icon={ShieldCheck} color="text-emerald-500" />
       </div>
-
       <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-8">
          <Card className="@[440px]:col-span-8 p-8 border-slate-900 bg-slate-950/40">
             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-10 flex items-center gap-3">
                <BarChart3 size={18} className="text-aura" />
                Revenue Projections (LTSA Offering)
             </h3>
+            {chartData.length === 0 ? (
+               <p className="text-xs text-slate-500 italic py-10">
+                  The model returned no financial projections, so none are charted.
+               </p>
+            ) : (
             <div className="h-[300px] w-full">
                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
@@ -43,6 +73,7 @@ export const BusinessModelDashboard: React.FC<{ data: any }> = ({ data }) => {
                   </BarChart>
                </ResponsiveContainer>
             </div>
+            )}
          </Card>
 
          <Card className="@[440px]:col-span-4 p-8 bg-aura/5 border-aura/20 flex flex-col justify-between">

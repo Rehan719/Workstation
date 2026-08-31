@@ -97,13 +97,13 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** shipped product surface — products/qep-sdk/qep_sdk.py:42 QEPClient.generate_quiz (Pro tier); the qep-sdk product is advertised in the catalog at route /qep-religion (agentic_core/catalog/api.py:19)
 
 ### `agentic_core/synthesis/api.py:256`
-- **status:** OPEN
+- **status:** FIXED (W407)
 - **claim:** After a live model result is parsed: `if "sim_results" not in model ...: model["sim_results"] = fallback["sim_results"]` and `if "projections" not in model: model["projections"] = {"year_1": 4.5e7, "year_3": 2.1e8, "year_5": 8.4e8}`.
 - **why it is a fabrication:** Hardcoded five-year revenue projections and engine "simulation results" are welded onto an otherwise-genuine output whenever the model omits those keys. The merged object is indistinguishable from a computed one — same JSON, same shape, no provenance flag, no note. BusinessModelDashboard.tsx:8-10 charts data.projections.year_1/3/5 directly, so the user sees a revenue curve that is three literals from source code.
 - **reach:** live route — POST /api/v1/synthesis/generate with output_type="simulation"; charted in BusinessModelDashboard.tsx (SynthesisStudio.tsx:518)
 
 ### `agentic_core/synthesis/business_model.py:9`
-- **status:** OPEN
+- **status:** FIXED (W407)
 - **claim:** BusinessModelSimulator.generate_model() ignores its `data` argument and returns `sim_results` keyed by engine name: aro_efficiency.resource_optimization_gain 0.28 (comment: "# 28% gain via SciPy"), bto_roadmap.implementation_speed_multiplier 2.4 ("# 2.4x faster via AI Swarms"), bto_roadmap.milestone_confidence 0.94, drad_resilience.compliance_score 0.99, drad_resilience.adaptation_latency_ms 142, plus ese_adoption revenue/market_share per segment.
 - **why it is a fabrication:** The class is named Simulator, the key is `sim_results`, and each block is labelled with a real engine (ESE/ARO/BTO/DRAD) — an API consumer reasonably believes these engines ran. No engine is invoked, SciPy is never imported, and the ingested `data` string is discarded. A 0.99 "compliance_score" in particular is a compliance pass nothing screened.
 - **reach:** live route — the fallback path of POST /api/v1/synthesis/generate (output_type="simulation"), agentic_core/synthesis/api.py:249 and :254
@@ -157,7 +157,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — /economy?tab=capital (App.tsx:216 EconomyCenter, EconomyCenter.tsx:13 registers CapitalDashboard; /capital redirects here at App.tsx:194), 'External Markets' tab
 
 ### `apps/workstation-superapp/src/pages/synthesis/BusinessModelDashboard.tsx:16`
-- **status:** OPEN
+- **status:** FIXED (W407)
 - **claim:** `<StatCard label="Market Size" value="$4.2B" />`, `<StatCard label="ROI Efficiency" value="+28%" />`, `<StatCard label="Swarm Multiplier" value="2.4x" />`, `<StatCard label="GaaS Alignment" value="0.99" />`; plus `<SimParam ... detail="15% Market Share" />`, `detail="28% Gain"`, `detail="2.4x Multiplier"` (lines 74-76) and an 'Adoption Velocity: High' bar fixed at `w-3/4` (line 61).
 - **why it is a fabrication:** These four stat cards sit in the same panel as, and directly above, a chart driven by genuine per-run data (`data.projections.year_1/3/5`). A user viewing the output of *their* simulation reads '$4.2B market size' and 'GaaS Alignment 0.99' as findings derived from that simulation. Nothing computes them — they are literals identical for every simulation ever run, and the component ignores `data` entirely except for the three projection values.
 - **reach:** live route — SynthesisStudio.tsx:518 renders it for any result with outputType === 'simulation', at /synthesis (App.tsx:199)

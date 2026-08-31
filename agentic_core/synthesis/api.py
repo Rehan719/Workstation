@@ -246,15 +246,36 @@ class SynthesisManager:
             raw = await self._query(prompt, "simulation")
             model = self._extract_json_object(raw)
             if not model:
-                model = business_simulator.generate_model(context[:2000] or topic, topic)
+                # W407 — this substituted business_simulator.generate_model(), a FIXED template whose
+                # figures ($4.2B market, 28% "gain via SciPy", 2.4x "faster via AI Swarms", 0.99
+                # compliance) are literals and whose `data` argument is ignored entirely. Handing
+                # that back when the model produced nothing presents invention as simulation.
+                model = {
+                    "title": f"Simulation: {topic}",
+                    "generated": False,
+                    "detail": ("The model did not return a parseable simulation for this topic, so "
+                               "none is shown. A template was previously substituted here."),
+                }
             model.setdefault("title", f"Simulation: {topic}")
             model["timestamp"] = timestamp
-            # Ensure BusinessModelDashboard has the required sim_results shape
-            if "sim_results" not in model or not isinstance(model.get("sim_results"), dict):
-                fallback = business_simulator.generate_model(context[:500] or topic, topic)
-                model["sim_results"] = fallback["sim_results"]
-            if "projections" not in model:
-                model["projections"] = {"year_1": 4.5e7, "year_3": 2.1e8, "year_5": 8.4e8}
+            # W407 — this used to GRAFT fabricated figures onto a real model result: when the AI
+            # reply lacked sim_results it copied them from business_simulator (a fixed template),
+            # and when it lacked projections it injected the literals
+            #     {"year_1": 4.5e7, "year_3": 2.1e8, "year_5": 8.4e8}.
+            # The output was then a blend of genuine model reasoning and invented financials with
+            # nothing marking which was which — the consumer could not tell them apart, and the UI
+            # rendered both identically. Real mixed with fabricated is worse than either alone.
+            #
+            # Absence is now reported as absence. The dashboard shows what the model produced and
+            # says plainly when it produced no simulation.
+            if not isinstance(model.get("sim_results"), dict) or not model.get("sim_results"):
+                model["sim_results"] = None
+                model["sim_results_note"] = ("The model did not return simulation results. None are "
+                                             "shown, because any shown here would be invented.")
+            if not model.get("projections"):
+                model["projections"] = None
+                model["projections_note"] = ("The model did not return financial projections. None "
+                                             "are shown.")
             content = json.dumps(model, indent=2)
             metadata.update(format="json", title=model["title"])
 
