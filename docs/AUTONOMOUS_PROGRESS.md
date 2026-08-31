@@ -2358,3 +2358,26 @@ or turned into a fix that was not needed.
   **zero occurrences of `localhost:8000` in the shipped bundle** plus a clean smoke run.
 - This is the harness paying for itself immediately: a defect invisible to tsc, the build, the
   backend suite and every response-shape test, because it only manifests in a browser.
+
+### W383 — archived 259 Jules-era modules nothing reaches (`_archive/jules-unwired/`)
+- The repo carries work from two authors: Rehan719 (859 commits) and `google-labs-jules[bot]` (534).
+  **1,276 Jules-created files were still live.** Jules built real, load-bearing things — the AI
+  gateway, memory, the orchestrator, much of `api/` — so authorship alone archives nothing:
+  **512 Jules Python modules are provably in use and stayed.**
+- **259 moved**, each meeting FOUR independent conditions: Jules-authored, absent from the AST
+  import closure (top-level + lazy + relative + dynamic-string imports), absent from `sys.modules`
+  after exercising 34 real endpoints, and named in no quoted string in live source. Any single
+  "live" signal kept a file. All moves are `git mv` — history preserved, one command to restore.
+- **Deliberately kept despite meeting the criteria:** `agentic_core/mesh/**` (the Owner chose
+  federation option A today — archiving it would contradict a live decision) and
+  `agentic_core/network/**` (the June cleanup found it DYNAMICALLY imported and restored it; static
+  analysis called it dead then too).
+- **Deviation stated:** June's rule was "archive only fully-unwired directories". Re-running that
+  analysis found **zero** such directories remain — June took them all — so this went finer, to
+  modules inside partially-live packages. Riskier, hence the four-signal bar and verification
+  against the running system.
+- **Verified:** boot OK · **34/34** endpoint probes · live-module count **unchanged at 304** ·
+  browser smoke green · **full suite 310 passed / 15 skipped** (only the known DATA_DIR artifact).
+- **Commit-hygiene mistake, recorded not hidden:** an over-broad `git add -A` swept these 259
+  renames into `7a1aa7dd` (the W382 WebSocket fix), so two unrelated changes share a message that
+  mentions only one. Already pushed; rewriting shared history would be worse than the mess.
