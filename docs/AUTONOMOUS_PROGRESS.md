@@ -2551,3 +2551,31 @@ it off. The button I had just shipped spun with a bare spinner for that long —
 from a hang, and exactly the failure this surface exists to remove. It now states the cost *before*
 the click and counts elapsed seconds while running. A correct backend does not excuse a UI that
 misrepresents how long it takes.
+
+### W394c/W396 — the isolation silently did nothing in CI, and a test that depended on your shell
+Two follow-ups from verifying W394, both found by refusing to let a loose end go.
+
+**The test that depended on the developer's shell.** `test_data_dir_configurable` asserted the
+DEFAULT (`data_path('vsb_entities') == data/vsb_entities`) **in-process**, which only holds when the
+ambient environment carries no `DATA_DIR`. That is the whole story of the long-standing "known local
+failure": any developer with `DATA_DIR` exported saw it fail; CI, which sets none, saw it pass. The
+environment decided the result, not the code. Both halves now run in a fresh subprocess,
+symmetrically — the default with `DATA_DIR`/`WORKSTATION_DATA_DIR` stripped, the override with
+`DATA_DIR` set. A test of "what happens with no DATA_DIR" must actually run with no DATA_DIR.
+
+**The isolation itself was a no-op in CI.** I had noted, and could not explain, that the commit which
+made that test fail locally left it *passing* in CI. That discrepancy WAS the bug.
+`agentic_core.config` captures the directory once, when its frozen `settings` is constructed
+(`default_factory=lambda: os.getenv("DATA_DIR", "data")`). If anything imports `agentic_core` before
+conftest runs, the env change lands too late and the suite writes to the **real store** — silently,
+with every test still green. Reproduced exactly by importing `agentic_core.config` before pytest.
+- conftest now corrects an already-loaded config with `object.__setattr__` (`Settings` is
+  `@dataclass(frozen=True)`). **My first attempt used a plain assignment inside
+  `except Exception: pass`, so the correction failed silently while looking fixed** — the same
+  silent-catch antipattern removed elsewhere this session, written an hour earlier by me. The bare
+  except is gone.
+- A session-scoped autouse fixture now **fails the run** when the resolved store is not the isolated
+  one. Without it the pollution is invisible: tests pass either way, and you find out months later
+  when an entity picker holds 1,552 rows.
+Proven by reproducing the CI condition — guard fires with "integration tests are NOT isolated", and
+after the fix `data_dir` resolves to `data\_test_store` and the test passes.
