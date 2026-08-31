@@ -115,12 +115,20 @@ async def generate_business_plan_stream(req: PlanRequest) -> StreamingResponse:
 
 
 @router.get("/mentors")
-async def list_mentors() -> List[Dict[str, Any]]:
-    return [
-        {"id": "m-001", "name": "Dr. Aisha Sovereign", "expertise": "AI Governance & Compliance",      "domain": "law",        "rating": 4.9, "available": True},
-        {"id": "m-002", "name": "Prof. Marcus Forge",   "expertise": "Deep Tech Commercialisation",    "domain": "technology", "rating": 4.8, "available": True},
-        {"id": "m-003", "name": "Fatima Capital",       "expertise": "Islamic Finance & Halal Markets", "domain": "religion",   "rating": 4.9, "available": False},
-        {"id": "m-004", "name": "Dr. Leo Nexus",        "expertise": "EdTech & Curriculum Design",     "domain": "education",  "rating": 4.7, "available": True},
-        {"id": "m-005", "name": "Zara Vance",           "expertise": "Healthcare Innovation",           "domain": "care",       "rating": 4.8, "available": True},
-        {"id": "m-006", "name": "Omar Pathfinder",      "expertise": "Workforce & Employment Tech",     "domain": "employment", "rating": 4.6, "available": True},
-    ]
+async def list_mentors() -> Dict[str, Any]:
+    """No mentors are registered, and none are invented.
+
+    W408 - this returned six people who do not exist - "Dr. Aisha Sovereign", "Prof. Marcus Forge",
+    "Fatima Capital" and three more - each with an expertise, a rating between 4.6 and 4.9, and an
+    `available` flag. Presented as a bookable mentor directory, a user would believe these were real
+    people, that the ratings came from real reviews, and that "available: true" meant they could be
+    booked. Nothing rates them and nothing tracks availability.
+
+    Inventing a person is a different order of fabrication from inventing a number: a user could act
+    on it, and one of the invented profiles offered guidance on Islamic finance.
+    """
+    return {
+        "mentors": [],
+        "detail": ("No mentor register exists on this deployment, so no mentors are listed. Six "
+                   "invented profiles with ratings were previously returned here."),
+    }

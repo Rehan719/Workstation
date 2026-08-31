@@ -31,25 +31,25 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route + reaches the UI: apps/workstation-superapp/src/pages/CEOChat.tsx:46 posts to /api/v138/ceo/chat, and the "vitals" keyword injects this dict into the streamed answer
 
 ### `agentic_core/api/v310/business.py:119`
-- **status:** OPEN
+- **status:** FIXED (W408)
 - **claim:** GET /api/v310/entrepreneur/mentors returns six invented people presented as a bookable mentor directory — e.g. {"id": "m-001", "name": "Dr. Aisha Sovereign", "expertise": "AI Governance & Compliance", "rating": 4.9, "available": True} — with ratings 4.6–4.9 and per-mentor availability flags.
 - **why it is a fabrication:** A user would believe these are real mentors, that the ratings came from real reviews, and that `available: true` means they can be booked now. Nothing rates them, nothing tracks availability, and the people do not exist. Nothing in the payload marks it as sample or demo data.
 - **reach:** live route (mounted app_mvp.py:89); not currently called by the SPA
 
 ### `agentic_core/api/v310/fund.py:14`
-- **status:** OPEN
+- **status:** FIXED (W408)
 - **claim:** GET /api/v310/fund/grants/active returns two invented grant records: {"id": "g-001", "title": "Bio-Reactor Optimization", "recipient": "@NatureBuild", "amount": 5000, "status": "funded"} and a second at 2500 WST with status "voting".
 - **why it is a fabrication:** An endpoint named `grants/active` returning a `funded` grant of 5,000 to a named recipient asserts that money was awarded. No grant store is read, no recipient exists, and the sibling endpoint on the same router (/epoch-synthesis) does call a real engine — so a consumer has every reason to treat this list as equally real.
 - **reach:** live route (mounted app_mvp.py:121); not currently called by the SPA
 
 ### `agentic_core/api/v310/governance.py:20`
-- **status:** OPEN
+- **status:** FIXED (W408)
 - **claim:** Module-level `PROPOSALS` literal seeds two DAO proposals with `"votes_for": 12400.0 / "votes_against": 1200.0` and `"votes_for": 45000.0 / "votes_against": 0.0`, proposed by "Scholar-DID-782" and "Guardian-Alpha". Served verbatim by GET /api/v310/governance/proposals and then incremented by POST /vote.
 - **why it is a fabrication:** A consumer sees 45,000 votes cast in favour of a constitutional amendment by a named proposer. No vote was cast, no proposer exists, and no ledger recorded any of it — the tallies are literals. Because /vote adds real votes on top of the invented baseline, every genuine vote is thereafter reported inside a fabricated total.
 - **reach:** live route (mounted app_mvp.py:113); the mount comment claims "called by DAODashboard" but no such page exists in apps/workstation-superapp
 
 ### `agentic_core/api/v310/governance.py:59`
-- **status:** OPEN
+- **status:** FIXED (W408)
 - **claim:** GET /api/v310/governance/treasury — docstring "Real-time public treasury ledger view." — returns `"balance_wst": 1240500.0, "total_grants_distributed": 250000.0` plus two invented `recent_inflow` records ({"source": "Marketplace-Fees", "amount": 1420.5, "timestamp": "2026-01-01T12:00:00Z"}, {"source": "Sovereign-Bond-Issuance", "amount": 50000.0, ...}).
 - **why it is a fabrication:** A consumer reads a "real-time public treasury ledger" and believes the platform holds 1,240,500 WST and has distributed 250,000 WST in grants, with two dated inflow transactions to back it. Nothing produces any of it — the function body is a literal dict with no reads of the capital fund, the token ledger, or any store. The fabricated inflows even carry timestamps, which is the shape that makes them read as records.
 - **reach:** live route (mounted app_mvp.py:113); not currently called by the SPA
