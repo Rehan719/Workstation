@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 from config.paths import DATA_DIR
 from pydantic import BaseModel
 from agentic_core.ai.ceo.memory_v01 import memory_v01, meeting_log
+from agentic_core.ai.native.orchestrator import orchestrator
 from agentic_core.layers.ueg import ueg
 from agentic_core.simulation.ese import get_ese_instance
 from agentic_core.optimization.aro import get_aro_instance
@@ -215,22 +216,113 @@ class ToolRegistry:
         return {"available_tools": available, "message": "New tools can be registered in the ToolRegistry class."}
 
     async def call_meeting(self, agenda: str):
-        """v0.1: Trigger C-Suite Debate."""
-        agents = ["CEvO", "CGO", "CPEO", "CBO", "CoS", "CEnvO"]
-        for agent in agents:
-            # Simulated Agent Debate logic based on agenda
-            meeting_log.post_argument(agent, f"Synthesized position on {agenda} from {agent} perspective.", "APPROVE")
-        return {"status": "MEETING_COMPLETE", "log_updated": True}
+        """Deliberate for real, or record nothing.
 
+        W404 - this looped six officer titles and wrote
+            "Synthesized position on {agenda} from {agent} perspective."   stance APPROVE
+        into the meeting record for every one of them, then reported MEETING_COMPLETE. No officer
+        deliberated; the "argument" was a template with the agenda echoed back, and every officer
+        always approved. Those rows were then served as genuine governance record by
+        GET /api/v138/ceo/meeting/log and rendered as minutes.
+
+        This got worse in W400, not better: the meeting log used to be a broken stub that silently
+        discarded everything posted to it, so the fabricated positions went nowhere. Making the log
+        real meant they would have started persisting convincingly. Fixing one honesty defect
+        exposed another it had been hiding.
+
+        Each officer now states a REAL position from the native fabric, grounded in the agenda, and
+        its own stance is taken from what it said. If the fabric cannot answer, nothing is written -
+        an empty record is honest, a unanimous invented approval is not.
+        """
+        agents = ["CEvO", "CGO", "CPEO", "CBO", "CoS", "CEnvO"]
+        posted, failed = [], []
+        for agent in agents:
+            prompt = (f"You are the {agent} of an AI C-Suite. State your position on this agenda "
+                      "in at most two sentences, then end with exactly one word on its own line: "
+                      "APPROVE, OBJECT or ABSTAIN." + chr(10) + chr(10)
+                      + f"Agenda: {agenda}")
+            try:
+                res = await orchestrator.complete(prompt, agent=f"csuite:{agent}", timeout=90)
+                text = (res or {}).get("output", "").strip()
+            except Exception:
+                text = ""
+            if not text:
+                failed.append(agent)
+                continue
+            stance = ""
+            for token in ("APPROVE", "OBJECT", "ABSTAIN"):
+                if token in text.upper():
+                    stance = token
+                    break
+            meeting_log.post_argument(agent, text[:600], stance)
+            posted.append(agent)
+        return {
+            "status": "MEETING_COMPLETE" if posted else "NO_POSITIONS_RECORDED",
+            "agenda": agenda,
+            "officers_deliberated": posted,
+            "officers_unavailable": failed,
+            "log_updated": bool(posted),
+            "note": ("Only officers that actually produced a position are recorded. "
+                     "Nothing is written for an officer whose reply could not be obtained."),
+        }
     async def get_system_vitals(self):
-        return {"status": "OPTIMAL", "cpu_load": "12%", "memory_usage": "4.2GB", "latency": "18ms"}
+        """Real host vitals from psutil.
+
+        W404 - this returned {"status": "OPTIMAL", "cpu_load": "12%", "memory_usage": "4.2GB",
+        "latency": "18ms"} as literals. Those are measurements by every convention of their names,
+        and the chat path injects this dict into the AI CEO's answer whenever the user asks about
+        vitals - so the CEO narrated invented numbers back to the Owner as its own observation of
+        the running system. psutil was already used for real in api/csuite.py, so the instrument was
+        there the whole time.
+
+        latency is NOT reported: nothing measures it, and a plausible millisecond figure is exactly
+        the kind of value that reads as measured. Absent beats invented.
+        """
+        import psutil
+        cpu = psutil.cpu_percent(interval=0.1)
+        mem = psutil.virtual_memory()
+        return {
+            "cpu_load_percent": round(cpu, 1),
+            "memory_used_gb": round(mem.used / (1024 ** 3), 2),
+            "memory_percent": round(mem.percent, 1),
+            "latency_ms": None,
+            "measured_by": "psutil",
+            "note": "latency is not measured on this host, so none is reported.",
+        }
 
     async def deploy_agent(self, agent_type: str):
-        return {"status": "DEPLOYED", "agent_id": f"agent-{agent_type}-v138", "node": "L11-ORBITAL-01"}
+        """Nothing here deploys anything.
+
+        W404 - this returned {"status": "DEPLOYED", "agent_id": ..., "node": "L11-ORBITAL-01"} for
+        any input. No deployment occurs, no such node exists, and the AI CEO reported the result to
+        the Owner as a completed action.
+        """
+        return {
+            "status": "NOT_IMPLEMENTED",
+            "agent_type": agent_type,
+            "detail": ("Agent deployment is not implemented on this deployment. Nothing was "
+                       "deployed, so nothing is reported as deployed."),
+        }
 
     async def check_gaas_compliance(self, action: str):
-        return {"compliant": True, "score": 0.99, "justification": "Action aligns with Article 1127 (Autonomous Evolution)."}
+        """Run the REAL §11 compliance screen instead of asserting a pass.
 
+        W404 - this returned {"compliant": True, "score": 0.99, "justification": "Action aligns with
+        Article 1127 (Autonomous Evolution)."} unconditionally. A compliance verdict with a score and
+        a cited article, produced by no check, narrated to the Owner by the AI CEO. The real screen
+        (api/compliance.screen_compliance) already gates every delivery elsewhere.
+        """
+        try:
+            from agentic_core.api.compliance import screen_compliance
+            verdict = screen_compliance(action)
+            return {"compliant": verdict.get("compliant"),
+                    "overall": verdict.get("overall"),
+                    "verdicts": verdict.get("verdicts"),
+                    "screened_by": "agentic_core.api.compliance.screen_compliance"}
+        except Exception as exc:
+            return {"compliant": None,
+                    "detail": "The compliance screen could not run, so no verdict is given: "
+                              + str(exc)[:160]}
     async def register_custom_tool(self, name: str, description: str, parameters: Dict[str, Any], autonomous: bool = False):
         """v0.3/v0.5: Dynamic and Autonomous tool registration."""
         if name in self.tools: return {"error": "Tool already exists."}

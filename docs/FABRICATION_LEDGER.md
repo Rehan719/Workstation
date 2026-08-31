@@ -25,7 +25,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route POST /api/v1/economy/cycle (router mounted at agentic_core/app_mvp.py:285) + UI-rendered in VSBCockpit.tsx ("Run cycle" button) + stored in the per-VSB virtual ledger, owner-payments ledger
 
 ### `agentic_core/api/v138/ceo.py:226`
-- **status:** OPEN
+- **status:** FIXED (W404)
 - **claim:** `get_system_vitals()` returns `{"status": "OPTIMAL", "cpu_load": "12%", "memory_usage": "4.2GB", "latency": "18ms"}` — served directly by GET /api/v138/ceo/vitals (route at line 411), and injected into the AI CEO chat prompt as `Tool Output` whenever the user's message contains "vitals" (line 319-320), including in the offline fallback text at line 374-376.
 - **why it is a fabrication:** These are measurements by every convention of their names — CPU load, memory in GB, latency in ms, and an OPTIMAL health verdict. Nothing measures them; psutil is never called on this path (csuite.py proves the real instrument was available). Worse, the chat path makes the AI CEO narrate the fabricated figures back to the user as its own observation of the running system.
 - **reach:** live route + reaches the UI: apps/workstation-superapp/src/pages/CEOChat.tsx:46 posts to /api/v138/ceo/chat, and the "vitals" keyword injects this dict into the streamed answer
@@ -115,13 +115,13 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — POST /api/v1/synthesis/generate (mounted /api/v1 in app_mvp.py:64); rendered by SynthesisStudio.tsx:489 and downloadable via /api/v1/synthesis/download/{id}
 
 ### `apps/workstation-superapp/src/components/LearnTeachModule.tsx:12`
-- **status:** OPEN
+- **status:** FIXED (W403b)
 - **claim:** `await fetch('/api/v1/education/curriculum', {...})` with no `res.ok` check, followed unconditionally by `toast('Class report generated — 12-week curriculum plan ready for 42 students')`. The response body is never read or displayed.
 - **why it is a fabrication:** A 4xx or 5xx response still reports 'Class report generated'. The catch only fires on a network-level failure, so any HTTP error produces a success message for a report that was never produced and is never shown to the user. The '42 students' in the message is the hardcoded literal, not a count from the response.
 - **reach:** live route — /religion, 'Generate Class Report' button
 
 ### `apps/workstation-superapp/src/components/LearnTeachModule.tsx:88`
-- **status:** OPEN
+- **status:** FIXED (W403b)
 - **claim:** `{['Sheikh Al-Ghauri', 'Dr. Fatima Zahra', 'Ustadh Ibrahim'].map(scholar => ...)}` each rendered under the caption `Verified Scholar` (line 93), inside a card headed 'Scholar Governance Board'. Alongside: `Total Students` `42` (line 69) and `Avg. Mastery` `88%` (line 73).
 - **why it is a fabrication:** Three named individuals are presented to users as verified scholars sitting on a governance board. No verification process exists, no roster is fetched, and the names are string literals — this asserts religious credentials for named people that nobody certified, the same class as the invented SHARIA_AUDIT signature. The adjacent 'Total Students 42' and 'Avg. Mastery 88%' are equally hardcoded (42 again) and read as this educator's real class analytics under a heading 'Class Management & Analytics'.
 - **reach:** live route — ReligionHub.tsx:106 renders <LearnTeachModule /> inside /religion (App.tsx:175)
@@ -201,7 +201,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route (mounted app_mvp.py:261)
 
 ### `agentic_core/api/v138/ceo.py:222`
-- **status:** OPEN
+- **status:** FIXED (W404)
 - **claim:** `call_meeting(agenda)` loops six C-Suite roles and writes a fabricated position for each into the REAL meeting record: `meeting_log.post_argument(agent, f"Synthesized position on {agenda} from {agent} perspective.", "APPROVE")` — every officer, always stance APPROVE — then returns {"status": "MEETING_COMPLETE", "log_updated": True}.
 - **why it is a fabrication:** No officer deliberated and no position was formed; the "argument" is a template string containing only the agenda echoed back. Those rows are then served as genuine governance record by GET /api/v138/ceo/meeting/log and rendered as a markdown minutes document by GET /api/v138/ceo/meeting/minutes, and re-injected into later chat turns as "Recent C-Suite Debate". MeetingLog itself was already fixed to be honest (agentic_core/ai/ceo/memory_v01.py) — this endpoint is what feeds it invented content, including a unanimous APPROVE that no one voted.
 - **reach:** live route + UI: triggered from CEOChat.tsx whenever the user's message contains "meeting" or "debate" (v138/ceo.py:321-322); persists into the served meeting log and minutes
