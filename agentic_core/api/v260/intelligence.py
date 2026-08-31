@@ -6,12 +6,19 @@ router = APIRouter(prefix="/civilization", tags=["Civilization Intelligence"])
 
 @router.get("/recommendations")
 async def get_civilization_recommendations(user_id: str):
-    return [
-        {"type": "governance", "title": "Vote on AMD-146", "resonance": 0.95, "path": "/governance"},
-        {"type": "economy", "title": "New Marketplace Product: Neural Filter", "resonance": 0.88, "path": "/marketplace"},
-        {"type": "evolution", "title": "Reinforce Empathy Trait", "resonance": 0.92, "path": "/garden"}
-    ]
+    """No personalised recommendations are computed.
 
+    W413 - this took a user_id, ignored it completely, and returned three fixed items with invented
+    relevance scores (0.95, 0.88, 0.92) - one of them pointing at "AMD-146", an amendment that does
+    not exist. Every user received the same three, and the scores implied a personalisation engine
+    that was never consulted.
+    """
+    return {
+        "user_id": user_id,
+        "recommendations": [],
+        "detail": ("No recommendation engine is wired to this deployment. Three fixed items with "
+                   "invented relevance scores were previously returned for every user."),
+    }
 @router.post("/assistant/query")
 async def assistant_query(query: str):
     ai_response = await gateway.query(query)

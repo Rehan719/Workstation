@@ -223,6 +223,9 @@ async def debug_creation(blueprint: dict) -> dict:
     analysis = await gateway.query(prompt, agent="ceo_debug")
     return {
         "analysis": analysis,
-        "fidelity_score": 0.95,
+        # W413 — "fidelity_score": 0.95 was returned on EVERY call, whatever blueprint was
+        # submitted and whatever the review said. It sat beside genuine model analysis, which is
+        # what made it read as a grade the review had produced. Nothing scores the analysis.
+        "fidelity_score": None,
         "reviewed_at": time.time(),
     }

@@ -47,28 +47,17 @@ async def generate_business_plan(req: PlanRequest) -> Dict[str, Any]:
             cleaned = cleaned.rsplit("```", 1)[0]
         result = json.loads(cleaned.strip())
     except Exception:
+        # W413 — the fallback used to invent a whole business plan: quarterly "financial_projections"
+        # computed as the CALLER'S OWN funding_goal times 0.15 / 0.40 / 0.90 / 1.60 with growth
+        # figures "+15%".."+160%", plus fixed strategic steps, risks and a revenue model. A consumer
+        # asking for a plan received one that looked complete and was derived from nothing but the
+        # number they had just supplied. Whatever the model actually produced is returned instead,
+        # and when it produced nothing parseable that is what is reported.
         result = {
-            "market_analysis": raw[:500] if raw else f"Strong opportunity in {req.target_market} for {req.creation_id}.",
-            "financial_projections": [
-                {"period": "Q1", "revenue": round(req.funding_goal * 0.15, 0), "growth": "+15%"},
-                {"period": "Q2", "revenue": round(req.funding_goal * 0.40, 0), "growth": "+40%"},
-                {"period": "Q3", "revenue": round(req.funding_goal * 0.90, 0), "growth": "+90%"},
-                {"period": "Q4", "revenue": round(req.funding_goal * 1.60, 0), "growth": "+160%"},
-            ],
-            "strategic_steps": [
-                "Validate product-market fit with 50 pilot users",
-                "Build core AI-powered feature set",
-                "Launch in primary target market segment",
-                "Establish partnership and distribution channels",
-                "Scale internationally with localised offering",
-            ],
-            "key_risks": [
-                "Market adoption slower than projected",
-                "Technical complexity underestimated",
-                "Regulatory changes in target domain",
-            ],
-            "revenue_model": "Subscription SaaS with tiered pricing based on usage.",
-            "go_to_market": f"Target {req.target_market} via direct outreach and content marketing.",
+            "generated": False,
+            "raw": raw[:2000] if raw else "",
+            "detail": ("The model did not return a parseable business plan. No projections, steps "
+                       "or risks are invented in its place."),
         }
 
     result["status"] = "plan_synthesized"

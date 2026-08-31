@@ -94,7 +94,11 @@ async def cosmic_response_protocol(req: ResponseProtocolRequest):
         "region": req.region,
         "stimulus": req.stimulus,
         "arc": ["sensory→reflex", "reflex→motor", "motor→effector"],
-        "latency_ms": round(req.intensity * 12, 1),
+        # W413 — this reported round(req.intensity * 12, 1) as "latency_ms": the CALLER'S OWN input
+        # multiplied by a constant, returned as if it were a measured response time. Nothing timed
+        # anything; a caller could dictate the latency it was told about.
+        "latency_ms": None,
+        "latency_note": "No response time is measured on this path.",
         "status": "responded",
     }
 
@@ -131,11 +135,14 @@ async def reality_status():
     grants = _load(_GRANTS)
     allocated = sum(g.get("amount", 0) for g in grants)
     return {
-        "coherence": 0.987,
+        # W413 — "coherence": 0.987 and "reality_anchor": "stable" were literals in a payload
+        # documented as "Reality coherence dashboard metrics", sitting beside grant counts and
+        # capital figures that ARE read from the store. Nothing computes coherence.
+        "coherence": None,
         "active_branches": sorted({g.get("branch", "prime") for g in grants}) or ["prime"],
         "total_grants": len(grants),
         "capital_allocated": allocated,
-        "reality_anchor": "stable",
+        "reality_anchor": "not_measured",
     }
 
 

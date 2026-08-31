@@ -177,13 +177,13 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route (mounted app_mvp.py:60); not currently called by the SPA
 
 ### `agentic_core/api/frontier.py:134`
-- **status:** OPEN
+- **status:** FIXED (W413)
 - **claim:** GET /api/v1/frontier/reality/status — docstring "Reality coherence dashboard metrics." — returns `"coherence": 0.987` and `"reality_anchor": "stable"` as literals, alongside `total_grants` and `capital_allocated` which ARE computed from the real grant store.
 - **why it is a fabrication:** Same real-neighbour pattern as the csuite finding: two genuinely computed fields make the two literals read as measured. A dashboard renders 98.7% coherence and a "stable" anchor verdict; nothing computes or checks either.
 - **reach:** live route (mounted app_mvp.py:257)
 
 ### `agentic_core/api/frontier.py:97`
-- **status:** OPEN
+- **status:** FIXED (W413)
 - **claim:** POST /api/v1/frontier/cosmic/response-protocol returns `"latency_ms": round(req.intensity * 12, 1)` — the reported latency is the caller's own `intensity` request parameter multiplied by 12.
 - **why it is a fabrication:** `latency_ms` names a measured elapsed time. No clock is read on this path (`time` is imported and used elsewhere in the file). Sending intensity 0.7 yields "8.4ms"; sending 0.9 yields "10.8ms" — the consumer is shown their own input knob dressed as a performance measurement.
 - **reach:** live route (mounted app_mvp.py:257)
@@ -207,25 +207,25 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route + UI: triggered from CEOChat.tsx whenever the user's message contains "meeting" or "debate" (v138/ceo.py:321-322); persists into the served meeting log and minutes
 
 ### `agentic_core/api/v200/contribute.py:11`
-- **status:** OPEN
+- **status:** FIXED (W413)
 - **claim:** POST /api/v200/contribute/feedback returns `{"status": "ingested", "resonance": 0.99}` for any body. Line 13: POST /api/v200/contribute/vote returns `{"status": "recorded", "proposal": proposal_id}` while the function body does nothing at all — no store, no list append, not even the module's in-memory FEEDBACK.
 - **why it is a fabrication:** `resonance: 0.99` is a per-submission quality score that nothing scores. The vote endpoint is the sharper problem: it reports a vote as `recorded` when the vote is discarded on return — a user who votes gets a success response for an action that never happened.
 - **reach:** live route (mounted app_mvp.py:133)
 
 ### `agentic_core/api/v250/treaties.py:23`
-- **status:** OPEN
+- **status:** FIXED (W413)
 - **claim:** GET /api/v250/treaties/active returns two invented treaties, one with `"status": "enforced"` between nodes "Alpha" and "Beta". Separately, POST /api/v250/treaties/{treaty_id}/sign (line 28) returns `{"status": "signed", ...}` without touching the `DRAFTS` list or appending to any `signatures` array.
 - **why it is a fabrication:** Two distinct fabrications. The listing asserts a treaty is being enforced when no treaty, node, or enforcement mechanism exists. The sign endpoint reports a completed signature while the module's own draft store is left untouched — a fabricated success, so a caller who drafts a treaty, signs it, then lists drafts will find it unsigned.
 - **reach:** live route (mounted app_mvp.py:105); the mount comment names a "Treaty Studio" frontend that does not call it
 
 ### `agentic_core/api/v260/intelligence.py:9`
-- **status:** OPEN
+- **status:** FIXED (W413)
 - **claim:** GET /api/civilization/recommendations takes `user_id` and ignores it entirely, returning three fixed items with invented relevance scores: resonance 0.95 ("Vote on AMD-146"), 0.88 ("New Marketplace Product: Neural Filter"), 0.92 ("Reinforce Empathy Trait"). Line 20: POST /api/civilization/assistant/query stamps `"confidence": 0.99` on whatever the AI gateway returns.
 - **why it is a fabrication:** A per-user recommendations endpoint that discards user_id but reports personal `resonance` scores tells the consumer these were computed against that user — the same false-attribution shape as the wallet finding. The referenced proposal AMD-146 and product "Neural Filter" do not exist. And 0.99 confidence is attached to every AI answer without any confidence estimate being made.
 - **reach:** live route (mounted app_mvp.py:109); not currently called by the SPA
 
 ### `agentic_core/api/v290/ceo_generate.py:226`
-- **status:** OPEN
+- **status:** FIXED (W413)
 - **claim:** POST /api/v290/ceo/debug-creation returns `"fidelity_score": 0.95` beside the real AI analysis text, on every call regardless of the blueprint submitted or what the model said.
 - **why it is a fabrication:** A `fidelity_score` next to an AI review reads as a scored assessment of that review. Nothing scores it; the gateway response is not inspected, and the value cannot vary.
 - **reach:** live route (mounted app_mvp.py:56)
@@ -353,7 +353,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 ## LOW (7)
 
 ### `agentic_core/api/v310/business.py:52`
-- **status:** OPEN
+- **status:** FIXED (W413)
 - **claim:** POST /api/v310/entrepreneur/generate-plan falls back, when the AI reply fails to parse as JSON, to a hardcoded plan: quarterly revenue of funding_goal × 0.15 / 0.40 / 0.90 / 1.60 with growth strings "+15%/+40%/+90%/+160%", plus fixed strategic_steps and key_risks. The response then sets `result["status"] = "plan_synthesized"` on both paths (line 78).
 - **why it is a fabrication:** The fallback is never disclosed to the caller. Both the AI-generated plan and the arithmetic-on-the-funding-goal plan come back with the same `plan_synthesized` status and no flag, so a user cannot tell that their Q4 revenue projection is simply their own funding goal times 1.6. This is a fallback that fails the "clearly labelled as a fallback" exemption purely because the label never reaches the consumer.
 - **reach:** live route (mounted app_mvp.py:89)
