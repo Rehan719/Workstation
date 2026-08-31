@@ -29,3 +29,40 @@ os.environ.setdefault("DATA_DIR", _TEST_STORE)
 os.environ.setdefault("WORKSTATION_DATA_DIR", _TEST_STORE)
 os.environ.setdefault("WORKSTATION_UEG_PATH", os.path.join(_TEST_STORE, "ueg.jsonl"))
 os.environ.setdefault("LISTINGS_DIR", os.path.join(_TEST_STORE, "marketplace"))
+
+# Setting the env is NOT sufficient on its own. agentic_core.config captures the directory ONCE, when
+# its `settings` object is constructed at import time:
+#     data_dir: str = field(default_factory=lambda: os.getenv("DATA_DIR", "data"))
+# So if anything imports agentic_core before this file runs, the env change arrives too late and the
+# suite writes to the real store anyway — silently. That is exactly what happened in CI: the same
+# commit that isolated DATA_DIR locally left CI resolving to plain "data", which is why a test
+# asserting the default kept passing there while failing locally.
+#
+# Isolation that depends on import order is not isolation. If config is already loaded, correct it.
+import sys as _sys
+
+if "agentic_core.config" in _sys.modules:
+    _cfg = _sys.modules["agentic_core.config"]
+    _s = getattr(_cfg, "settings", None)
+    if _s is not None and getattr(_s, "data_dir", None) != os.environ["DATA_DIR"]:
+        # Settings is @dataclass(frozen=True), so a plain assignment raises FrozenInstanceError.
+        # A first attempt did exactly that and wrapped it in `except Exception: pass`, so the
+        # correction failed SILENTLY and the suite still pointed at the real store while looking
+        # fixed. No bare except here: if this cannot work, it must say so.
+        object.__setattr__(_s, "data_dir", os.environ["DATA_DIR"])
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _assert_store_is_isolated():
+    """Fail loudly if the suite is about to write into the real data store.
+
+    Without this the pollution is invisible: tests pass either way, and you only notice months later
+    when an entity picker holds 1,552 rows.
+    """
+    from agentic_core.config import data_path
+    resolved = str(data_path("vsb_entities"))
+    assert "_test_store" in resolved, (
+        "integration tests are NOT isolated — they would write to the real store at "
+        f"{resolved}. agentic_core.config was probably imported before conftest ran."
+    )
+    yield
