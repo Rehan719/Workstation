@@ -60,23 +60,12 @@ export const Contribute: React.FC = () => {
                   </h3>
                   <Button onClick={() => openExternal(`${REPO}/discussions`)} variant="outline" className="text-[10px]">View RFC Archive</Button>
                </div>
-               <div className="space-y-4">
-                  {[
-                    { id: 'RFC-142', title: 'Planetary Latency Optimization via LEO Routing', status: 'Proposed', date: '2h ago' },
-                    { id: 'RFC-107', title: 'Standardized Care Plan JSON Schema v3', status: 'Ratified', date: '1d ago' },
-                  ].map(rfc => (
-                    <div key={rfc.id} className="p-8 rounded-[2.5rem] bg-slate-950 border border-slate-900 flex items-center justify-between group hover:border-aura/30 transition-all cursor-pointer">
-                       <div className="flex items-center gap-8">
-                          <div className="text-[10px] font-black text-slate-700 uppercase vertical-rl">Open</div>
-                          <div>
-                             <p className="text-lg font-black text-white mb-1 uppercase tracking-widest">{rfc.title}</p>
-                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{rfc.id} • {rfc.date}</span>
-                          </div>
-                       </div>
-                       <Badge color={rfc.status === 'Ratified' ? 'emerald-500' : 'aura'}>{rfc.status}</Badge>
-                    </div>
-                  ))}
-               </div>
+               {/* W412 — two invented RFCs were listed here, one marked "Ratified", with relative
+                   dates ("2h ago", "1d ago") that made them read as live activity. No RFC feed is
+                   connected; the archive button above links to the real repo discussions. */}
+               <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                  No RFC feed is connected. Open the archive above to see real discussions.
+               </p>
             </Card>
          </main>
 
@@ -86,20 +75,12 @@ export const Contribute: React.FC = () => {
                   <Users size={20} className="text-aura" />
                   Community Vitals
                </h4>
-               <div className="space-y-8">
-                  <div className="flex justify-between items-end">
-                     <span className="text-[10px] font-black uppercase text-slate-500">External Contributors</span>
-                     <span className="text-2xl font-black text-white">142</span>
-                  </div>
-                  <div className="flex justify-between items-end">
-                     <span className="text-[10px] font-black uppercase text-slate-500">Adopting Projects</span>
-                     <span className="text-2xl font-black text-white">12</span>
-                  </div>
-                  <div className="flex justify-between items-end">
-                     <span className="text-[10px] font-black uppercase text-slate-500">Open Issues</span>
-                     <span className="text-2xl font-black text-aura">24</span>
-                  </div>
-               </div>
+               {/* W412 — "External Contributors 142", "Adopting Projects 12" and "Open Issues 24"
+                   were rendered here as live community figures. Nothing counts contributors,
+                   adopters or issues; all three were literals. */}
+               <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                  No contribution registry is connected, so no community counts are shown.
+               </p>
             </Card>
 
             <Card className="p-10 bg-slate-950 border-slate-900 space-y-8">

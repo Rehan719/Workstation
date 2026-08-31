@@ -100,15 +100,14 @@ const MemorizationSuite = () => (
    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in duration-700">
       <Card className="p-10 col-span-2 border-slate-900 bg-slate-950/20">
          <h3 className="text-xl font-black text-white uppercase tracking-tight mb-8">Retention Heatmap</h3>
-         <div className="grid grid-cols-12 gap-2">
-            {Array.from({ length: 60 }).map((_, i) => (
-               <div
-                  key={i}
-                  className={`aspect-square rounded-sm ${i % 7 === 0 ? 'bg-aura' : i % 3 === 0 ? 'bg-aura/40' : 'bg-slate-900'}`}
-                  title={`Level ${i % 5}`}
-               />
-            ))}
-         </div>
+         {/* W412 — this drew 60 cells coloured from the LOOP INDEX (i % 7, i % 3) with titles
+             reading "Level {i % 5}". It is a picture of the modulo operator presented as a
+             retention history: it looked identical for every user, on every visit, forever, and
+             nobody had a retention record behind it. */}
+         <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+            No retention history is recorded for this user yet. Review ayat with the SM-2 scheduler
+            below and the heatmap will show real intervals once there is something to show.
+         </p>
          <div className="mt-8 flex justify-between items-center text-[9px] font-black uppercase text-slate-500">
             <span>Last 60 Days Intensity</span>
             <div className="flex gap-1">

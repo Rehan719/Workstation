@@ -117,7 +117,9 @@ export const QEPFlagshipFeatures: React.FC = () => {
 
                 <div className="mt-10 pt-8 border-t border-white/5 flex justify-between items-center">
                    <div className="flex gap-4">
-                      <Badge color="aura">GaaS Verified</Badge>
+                      {/* W412 — a "GaaS Verified" badge used to sit here on every result panel.
+                          Nothing ran a GaaS verification on these results; the badge asserted a
+                          governance check that never happened. The version tag is a fact and stays. */}
                       <Badge color="highlight">v0.9-P0</Badge>
                    </div>
                    <Button onClick={() => notImplemented('Launch Full Dashboard')} className="bg-aura text-sovereign px-8 py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">
