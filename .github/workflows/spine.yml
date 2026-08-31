@@ -30,6 +30,20 @@ jobs:
       - name: Integration suite (AI tests auto-skip without a key)
         run: python -m pytest integration_tests/test_mvp_spine.py --noconftest -q
 
+  import-integrity:
+    name: Import integrity — no dangling first-party imports
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Static only: no deps, no fixtures, a couple of seconds. It catches imports that no test
+      # happens to exercise — the gap that let an archive pass move a live module out of the tree
+      # while the whole suite stayed green.
+      - name: Check import integrity
+        run: python scripts/check_import_integrity.py
+
   browser-smoke:
     name: Browser smoke — the §3A routes actually render
     runs-on: ubuntu-latest
