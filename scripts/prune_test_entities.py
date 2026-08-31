@@ -50,6 +50,12 @@ TEST_NAME_PATTERNS = [
     r"\bseed check\b",
 ]
 
+# W416 — owner_id is far stronger evidence than a name pattern: it records WHO created the entity,
+# not what it happens to be called. After the first pass, 652 of the 707 survivors were owned by
+# "pytest" — the suite made them. Only 8 belonged to a real person. "default" is the single-user
+# owner (AUTH_ENABLED off) and is NEVER pruned: those are the Owner's own entities.
+TEST_OWNERS = {"pytest", "test", "testuser"}
+
 # These fields are reported, NOT used as a veto. A first draft treated them as "this entity carries
 # real work, never touch it" and consequently protected all 1,037 matches, making the script useless:
 # the tests exercise genuine flows, so of course their entities have boards, plans and swarms. The
@@ -105,6 +111,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true", help="actually delete (default: report only)")
     ap.add_argument("--pattern", action="append", default=[], help="extra name pattern (regex)")
+    ap.add_argument("--by-owner", action="store_true",
+                    help="also match on owner_id being a test identity (pytest/test), which is "
+                         "provenance rather than a name heuristic — see TEST_OWNERS")
     args = ap.parse_args()
 
     store = pathlib.Path(str(data_path("vsb_entities")))
@@ -125,7 +134,9 @@ def main() -> int:
             continue
         total += 1
         name = str(doc.get("name") or "")
-        if not any(p.search(name) for p in patterns):
+        owner = str(doc.get("owner_id") or "").strip().lower()
+        owner_is_test = args.by_owner and owner in TEST_OWNERS
+        if not owner_is_test and not any(p.search(name) for p in patterns):
             continue
         # The reference check is the HARD guard and must run first: deleting a record something
         # else points at creates a dangling reference, which is worse than clutter. (In the first
