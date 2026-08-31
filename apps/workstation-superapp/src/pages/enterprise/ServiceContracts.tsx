@@ -69,6 +69,7 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   const [notice, setNotice] = useState('');
 
   const [client, setClient] = useState('');
@@ -108,6 +109,16 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
     const step = NEXT_ACTION[c.status];
     if (!step) return;
     setBusy(c.id); setError(''); setNotice('');
+    // Deliver runs the full org cascade — roughly 22 model calls across Chief → Board → AI CEO →
+    // C-Suite → CoE → BTO → catalogue. On a local model that is 15–25 minutes. Measured, not
+    // guessed: a first run was still going at 15 minutes. Without this the button just spins in
+    // silence and reads as a hang, which is precisely the failure this surface exists to avoid.
+    let tick: ReturnType<typeof setInterval> | null = null;
+    if (step.path === 'deliver') {
+      const t0 = Date.now();
+      setElapsed(0);
+      tick = setInterval(() => setElapsed(Math.round((Date.now() - t0) / 1000)), 1000);
+    }
     try {
       const res = await apiJson<Contract>(`/api/v1/economy/contracts/${c.id}/${step.path}`, { method: 'POST' });
       // A held settlement comes back 200 with the contract still "delivered" and a note. Report it.
@@ -122,6 +133,8 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
     } catch (e) {
       setError(errorMessage(e));
     } finally {
+      if (tick) clearInterval(tick);
+      setElapsed(0);
       setBusy(null);
     }
   };
@@ -221,11 +234,19 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
                     {c.delivery?.served_by && <><span>·</span><span>served by {c.delivery.served_by}</span></>}
                     {c.settlement?.held && <Badge className="text-[8px]">settlement held</Badge>}
                     {c.settlement?.transfer_id && <><span>·</span><span>transfer {String(c.settlement.transfer_id).slice(0, 10)}</span></>}
+                    {c.status === 'accepted' && (
+                      <span className="normal-case tracking-normal font-semibold text-slate-500">
+                        · delivering runs a full org cascade (~22 model calls) — expect 15–25 minutes
+                      </span>
+                    )}
                   </div>
                   {step && (
                     <Button type="button" onClick={() => advance(c)} disabled={busy === c.id}
                       className="text-[9px] px-3 py-1.5">
-                      {busy === c.id ? <Loader2 size={11} className="animate-spin" /> : `${step.verb} (${step.who})`}
+                      {busy === c.id
+                        ? <span className="flex items-center gap-1.5"><Loader2 size={11} className="animate-spin" />
+                            {step.path === 'deliver' ? `${elapsed}s` : ''}</span>
+                        : `${step.verb} (${step.who})`}
                     </Button>
                   )}
                 </div>
