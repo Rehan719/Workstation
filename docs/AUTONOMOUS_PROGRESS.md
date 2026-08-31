@@ -2495,3 +2495,26 @@ Verified against the running app: fresh store → 20 real listings, 0 priced, 0 
 priced listing runs the real §11 halal screen; purchase returns a receipt with a token-ledger TX
 hash; planted fabrications with and without sales take the retire-in-place and delete paths.
 Money stays virtual WST; `REAL_MONEY_ENABLED` untouched.
+
+### W392b — a listing file readable on Windows and silently dropped on Linux
+Found while verifying W392: one fabricated listing refused to retire. The cause was **not** the
+migration. The file held byte `0x97` (a cp1252 em-dash), and `_all_listings()` called `read_text()`
+with **no encoding** — which uses the *platform default*: cp1252 on Windows, where it decodes, and
+UTF-8 on Linux, where it raises, swallowed by a bare `except Exception: pass`. **The same store
+showed that listing in Windows development and silently dropped it in Linux CI and production.**
+A record vanishing by platform is worse than the fabricated data that led me to it.
+My own retirement code had the mirror bug: it read strict UTF-8 and caught `(OSError, ValueError)` —
+and `UnicodeDecodeError` subclasses `ValueError`, so it skipped the file and reported success.
+
+`_read_doc()` now decodes explicitly (utf-8 → cp1252 → latin-1) everywhere listings are read.
+**The regression test was deliberately made non-vacuous**: the realistic cp1252 fixture only fails
+pre-fix where the default is UTF-8, so on Windows the broken code would have *passed* it. A second
+record uses U+0081 (byte `0x81`) — undefined in cp1252 **and** invalid in UTF-8 — so only a
+deliberate fallback recovers it. Proven by restoring the old read (fails) and reapplying (passes).
+
+**End-to-end browser verification of W392:** `/marketplace` shows the honest empty state
+("Nothing is priced for trade yet. 20 catalogue entries are registered but unpriced…"), zero purchase
+buttons and no certification badge; after creating a priced listing the card, price and Purchase
+button render, and buying returns a real receipt — *"Confirmed: 1 × … for 120 WST (virtual).
+Receipt 69706d5b103d48f7."* Dev store after migration: 20 listings, all catalogue-derived,
+**0 certified, 0 invented prices, 0 leftover fabrications**.
