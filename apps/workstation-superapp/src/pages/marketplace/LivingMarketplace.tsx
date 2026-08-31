@@ -7,14 +7,24 @@ import {
 import { Card, Badge } from '@workstation/ui';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { apiJson, errorMessage } from '../../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 //
-// The Living Marketplace is the §12 economy surface. It presents the platform's
-// LIVE registered products (from /api/v1/catalog/products) — every entry is a real,
-// openable capability. (It deliberately holds NO fabricated trading data: a real
-// VSB-to-VSB listing/orders economy is Owner-gated and will be built on real WST
-// rails, not seeded with invented sales/trust figures.)
+// The Living Marketplace is the §12 economy surface. Two distinct layers:
+//
+//   1. CATALOGUE (/api/v1/catalog/products) — the platform's LIVE registered products. Every entry
+//      is a real, openable capability.
+//   2. LISTINGS (/api/v1/marketplace/listings) — what someone has actually PRICED for virtual-WST
+//      trade. Purchases run through the real token ledger and return a real receipt.
+//
+// W392 — an earlier round left layer 2 unwired, noting the listings economy was Owner-gated and
+// must not be "seeded with invented sales/trust figures". That was the right call at the time: the
+// backend was auto-writing six fabricated listings at boot (invented products, invented prices,
+// certified: true asserted by nobody). The Owner has since decided to wire it ON REAL DATA, so the
+// fabricated seeds were retired and listings now derive from the real catalogue — unpriced and
+// uncertified, because nobody has priced or certified them. Money here stays virtual WST; no
+// real-money rail is involved.
 
 interface CatalogProduct {
   slug: string;
@@ -24,6 +34,25 @@ interface CatalogProduct {
   features: string[];
   source: string | null;
   route: string | null;
+}
+
+// W392 — the TRADEABLE layer. The catalogue above says what exists; a listing says what someone has
+// priced for virtual-WST trade. The two are deliberately not merged: a catalogue-derived listing is
+// unpriced (origin 'catalog', price_wst 0) and would only duplicate the grid above, so this section
+// shows what is genuinely purchasable and says so plainly when nothing is.
+interface Listing {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  category: string;
+  price_wst: number;
+  tier: string;
+  certified: boolean;
+  status: string;
+  sales_count: number;
+  origin: string;
+  route: string;
 }
 
 const CATEGORY_ICON: Record<string, React.ElementType> = {
@@ -52,12 +81,54 @@ export const LivingMarketplace: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('tier');
 
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [listingsError, setListingsError] = useState('');
+  const [buying, setBuying] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<string>('');
+
   useEffect(() => {
     axios.get('/api/v1/catalog/products')
       .then(r => setCatalogProducts(r.data.products))
       .catch(() => setCatalogError(true))
       .finally(() => setCatalogLoading(false));
   }, []);
+
+  const loadListings = () => {
+    apiJson<Listing[]>('/api/v1/marketplace/listings')
+      .then(d => { setListings(Array.isArray(d) ? d : []); setListingsError(''); })
+      .catch(e => setListingsError(errorMessage(e)));
+  };
+  useEffect(loadListings, []);
+
+  // Only what someone has actually priced is purchasable. A §11-held listing never reaches the
+  // client — the backend filters it — so nothing here can offer a compliance-failed item.
+  const tradeable = listings.filter(l => l.price_wst > 0 && l.status !== 'held');
+
+  const purchase = async (l: Listing) => {
+    setBuying(l.id);
+    setListingsError('');
+    setReceipt('');
+    try {
+      // Field names taken from a real response, not assumed: the server returns receipt_id,
+      // listing_name, quantity, total_cost_wst and status.
+      const res = await apiJson<{
+        receipt_id?: string; listing_name?: string; quantity?: number;
+        total_cost_wst?: number; status?: string;
+      }>(`/api/v1/marketplace/listings/${l.id}/purchase`, { method: 'POST', body: { quantity: 1 } });
+      const cost = res.total_cost_wst ?? l.price_wst;
+      setReceipt(
+        `${res.status === 'confirmed' ? 'Confirmed' : res.status ?? 'Recorded'}: ` +
+        `${res.quantity ?? 1} × "${res.listing_name ?? l.name}" for ${cost.toLocaleString()} WST (virtual).` +
+        (res.receipt_id ? ` Receipt ${res.receipt_id}.` : ''),
+      );
+      loadListings();
+    } catch (e) {
+      // 409 sold-out and 409 §11-held are real outcomes, not glitches — show what the server said.
+      setListingsError(errorMessage(e));
+    } finally {
+      setBuying(null);
+    }
+  };
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
@@ -242,6 +313,68 @@ export const LivingMarketplace: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* ── Tradeable listings (virtual WST) ──────────────────────────────────────
+          Separate from the catalogue above on purpose: the catalogue says what EXISTS,
+          this says what someone has PRICED. Nothing is presented as certified unless the
+          listing actually carries a certification, and an empty state says why. */}
+      <section className="border-t border-slate-800/60 pt-8">
+        <h2 className="text-lg font-black uppercase tracking-tight text-white italic">
+          Listings <span className="text-aura">· virtual WST</span>
+        </h2>
+        <p className="text-slate-500 text-xs font-semibold mt-2 max-w-2xl leading-relaxed">
+          Priced for trade in virtual WST. Money here is simulated — no real-money rail is involved.
+          Catalogue entries above are registered but unpriced, so they are not listed here.
+        </p>
+
+        {listingsError && (
+          <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-vital/30 bg-vital/10 px-3 py-2">
+            <AlertTriangle size={12} className="text-vital shrink-0 mt-0.5" />
+            <p className="text-[10px] font-bold text-vital leading-relaxed">{listingsError}</p>
+          </div>
+        )}
+        {receipt && (
+          <div role="status" className="mt-4 rounded-xl border border-aura/30 bg-aura/10 px-3 py-2">
+            <p className="text-[10px] font-bold text-aura leading-relaxed">{receipt}</p>
+          </div>
+        )}
+
+        {tradeable.length === 0 ? (
+          <p className="text-xs text-slate-500 italic py-8">
+            Nothing is priced for trade yet. {listings.length > 0
+              ? `${listings.length} catalogue ${listings.length === 1 ? 'entry is' : 'entries are'} registered but unpriced — nobody has set a WST price, so none is offered for sale.`
+              : 'No listings are registered.'}
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 @[700px]:grid-cols-2 @[1100px]:grid-cols-3 gap-4 mt-5">
+            {tradeable.map(l => (
+              <Card key={l.id} className="p-4 flex flex-col gap-2 border-slate-800">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-black text-white leading-tight">{l.name}</h3>
+                  {l.certified && <Badge className="shrink-0 text-[8px]">Certified</Badge>}
+                </div>
+                <p className="text-[10px] text-slate-500 font-semibold leading-relaxed line-clamp-3">{l.description}</p>
+                <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-600">
+                  <span>{l.category}</span><span>·</span><span>{l.author}</span>
+                  {l.sales_count > 0 && <><span>·</span><span>{l.sales_count} sold</span></>}
+                </div>
+                <div className="flex items-center justify-between gap-2 mt-1">
+                  <span className="text-sm font-black text-aura">{l.price_wst.toLocaleString()} WST</span>
+                  <button
+                    type="button"
+                    onClick={() => purchase(l)}
+                    disabled={buying === l.id || l.status === 'sold_out'}
+                    className="px-3 py-1.5 bg-aura text-sovereign font-black rounded-xl text-[9px] uppercase tracking-widest disabled:opacity-40 hover:scale-105 transition-all"
+                  >
+                    {buying === l.id ? <Loader2 size={10} className="animate-spin" />
+                      : l.status === 'sold_out' ? 'Sold out' : 'Purchase'}
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 };

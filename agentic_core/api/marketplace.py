@@ -50,6 +50,11 @@ class Listing(BaseModel):
     created_at: float = 0.0
     updated_at: float = 0.0
     creator_id: str = "community"
+    # W392 — where this listing came from, so the UI never has to guess:
+    #   "catalog" → derived from a REAL registered product; identity is a fact, price is unset.
+    #   "user"    → created by someone through POST /listings, with a price they chose.
+    origin: str = "user"
+    route: str = ""          # the real in-app route for a catalog-derived listing ("" otherwise)
     # W293 — optional VSB attribution: sales of this listing are recognised as that VSB's revenue
     vsb_id: str = ""
 
@@ -94,30 +99,113 @@ def _all_listings() -> list[Listing]:
             pass
     return listings
 
-def _seed_platform_listings():
-    """Seed built-in platform listings on first boot if the store is empty."""
-    if any(_LISTINGS_DIR.glob("*.json")):
-        return
-    seeds = [
-        {"name": "Sovereign Synthesis Pack", "description": "Full Synthesis Studio access with unlimited document generation, AI summarisation, and export to any format.", "author": "Workstation Core", "category": "Platform", "price_wst": 5000, "tier": "Pro", "tags": ["synthesis","ai","documents"], "certified": True, "creator_id": "platform"},
-        {"name": "Digital Reactor — Religion Domain", "description": "Plug-in domain reactor for Islamic jurisprudence processing, consensus validation, and fatwa generation.", "author": "Workstation CoE", "category": "Reactor", "price_wst": 8000, "tier": "Enterprise", "tags": ["religion","reactor","ai"], "certified": True, "creator_id": "platform"},
-        {"name": "Capital Intelligence Module", "description": "AI-powered portfolio analysis, governance proposals tracker, and Sovereign Vault integration.", "author": "Workstation CoE", "category": "Analytics", "price_wst": 12000, "tier": "Enterprise", "tags": ["capital","analytics","governance"], "certified": True, "creator_id": "platform"},
-        {"name": "AI CEO Consultation Bundle", "description": "Unlimited AI CEO chat sessions with persistent ChromaDB memory across all realms and domains.", "author": "Workstation Core", "category": "AI Agent", "price_wst": 3000, "tier": "Standard", "tags": ["ceo","ai","chat"], "certified": True, "creator_id": "platform"},
-        {"name": "Forge Multi-Step Pipeline Pack", "description": "Unlock unlimited pipeline steps in the AI Forge with LLM, Search, Memory, and Guardrail nodes.", "author": "Workstation Core", "category": "Developer", "price_wst": 4500, "tier": "Pro", "tags": ["forge","pipeline","developer"], "certified": True, "creator_id": "platform"},
-        {"name": "Incubator Evolution Engine Pro", "description": "Run 5-variant prompt tournaments with advanced fitness scoring and auto-export of winning prompts.", "author": "Community", "category": "Developer", "price_wst": 2000, "tier": "Standard", "tags": ["incubator","evolution","prompts"], "certified": False, "creator_id": "community"},
-    ]
-    for s in seeds:
+# W392 — the six listings this module used to write at first boot. Every one was invented: a made-up
+# product ("Sovereign Synthesis Pack"), a made-up price (5,000 WST), and `certified: True` asserted by
+# nobody. They were never shown, because the frontend deliberately refused to display them — but they
+# sat in the data store as if real, and any API consumer would have read them as certified products.
+# They are retired on boot and replaced by listings derived from the REAL product catalogue.
+_INVENTED_SEED_NAMES = {
+    "Sovereign Synthesis Pack",
+    "Digital Reactor — Religion Domain",
+    "Capital Intelligence Module",
+    "AI CEO Consultation Bundle",
+    "Forge Multi-Step Pipeline Pack",
+    "Incubator Evolution Engine Pro",
+}
+
+
+def _retire_invented_seeds() -> list[str]:
+    """Remove the fabricated demo listings. Anything with a recorded sale is KEPT and reported —
+    a receipt must never point at a listing that vanished, even a fabricated one."""
+    removed, kept = [], []
+    for path in _LISTINGS_DIR.glob("*.json"):
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if doc.get("name") in _INVENTED_SEED_NAMES and doc.get("creator_id") in {"platform", "community"}:
+            if doc.get("sales_count"):
+                # A recorded sale means a receipt points here, so the record must survive. But it
+                # must stop ASSERTING things nobody established: the invented certification is
+                # dropped and the listing is moved to "draft", which the public list already filters
+                # out while GET /listings/{id} still resolves it for the receipt. Retained, not
+                # advertised.
+                if doc.get("certified") or doc.get("status") != "draft":
+                    doc["certified"] = False
+                    doc["status"] = "draft"
+                    doc["description"] = (
+                        (doc.get("description") or "").rstrip()
+                        + " [Retired sample listing: retained because it carries a recorded sale. "
+                          "Its original 'certified' flag was asserted by no certifying process.]"
+                    ).strip()
+                    doc["updated_at"] = time.time()
+                    atomic_write_json(path, doc)
+                kept.append(doc.get("name", "?"))
+                continue
+            try:
+                path.unlink()
+                removed.append(doc.get("name", "?"))
+            except OSError:
+                pass
+    if kept:
+        import logging
+        logging.getLogger(__name__).warning(
+            "marketplace: retired-in-place %d fabricated seed listing(s) that carry sales "
+            "(certification dropped, withdrawn from the public list, receipts still resolve): %s",
+            len(kept), kept)
+    return removed
+
+
+def _seed_from_catalog() -> int:
+    """Seed listings from the REAL registered product catalogue.
+
+    Every field here is a fact about something that exists: name, category and tier come from the
+    product the catalogue actually serves, and `route` is the real in-app route. What is NOT known is
+    left unset rather than invented — `price_wst` stays 0 (nobody has priced these) and `certified`
+    stays False (nothing has certified them). The UI reports both as unset rather than as "free" or
+    "certified", so the marketplace can be real without asserting anything nobody established.
+    """
+    # Seed when there is no catalogue-derived listing yet — NOT merely when the store is empty.
+    # "Empty" was wrong: a single retired fabrication kept for its receipt left the store non-empty,
+    # so seeding never ran and the marketplace showed nothing but that fabrication.
+    for path in _LISTINGS_DIR.glob("*.json"):
+        try:
+            if json.loads(path.read_text(encoding="utf-8")).get("origin") == "catalog":
+                return 0
+        except (OSError, ValueError):
+            continue
+    try:
+        from agentic_core.catalog.api import list_products   # local: avoids an import cycle at boot
+        products = list_products()
+    except Exception:                                        # a catalogue read must never block boot
+        return 0
+    n = 0
+    for prod in products:
         lid = uuid.uuid4().hex[:12]
         listing = Listing(
             id=lid,
+            name=prod.get("name") or prod.get("slug", "Unnamed"),
+            description=", ".join(prod.get("features") or []) or "Registered product in the live catalogue.",
+            author="Platform catalogue",
+            category=(prod.get("category") or "Product").split(" (")[0].strip(),
+            price_wst=0.0,          # unset, not free — nobody has priced this
+            tier=prod.get("tier") or "Standard",
+            tags=[t for t in [str(prod.get("slug", "")).lower()] if t],
+            certified=False,        # nothing has certified this
+            status="active",
+            creator_id="platform",
+            origin="catalog",
+            route=prod.get("route") or "",
             created_at=time.time(),
             updated_at=time.time(),
-            status="active",
-            **s,
         )
         atomic_write_json(_listing_path(lid), listing.model_dump())
+        n += 1
+    return n
 
-_seed_platform_listings()
+
+_retire_invented_seeds()
+_seed_from_catalog()
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
