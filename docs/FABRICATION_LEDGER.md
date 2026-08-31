@@ -189,13 +189,13 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route (mounted app_mvp.py:257)
 
 ### `agentic_core/api/qep_intelligence.py:197`
-- **status:** OPEN
+- **status:** FIXED (W409)
 - **claim:** POST /api/v1/qep/adaptation/execute stamps `"fidelity": 0.9` onto every adaptation it writes to the registry. The prompt at line 180-184 explicitly asks the AI for "## Expected Fidelity (0-1)", but the reply is stored only as free text in `blueprint` — the number is never parsed, and the literal 0.9 is persisted instead. The seed set `_DEFAULT_ADAPTATIONS` (lines 45-49) does the same with 0.94 and 0.89.
 - **why it is a fabrication:** `fidelity` is served as a per-adaptation quality measurement by GET /adaptation/registry and persisted to the qep_intel store, so it survives as data. Nothing derives it — least of all the model output that was solicited for exactly that purpose and then discarded.
 - **reach:** live route (mounted app_mvp.py:261) + written to the persistent adaptation_registry.json store
 
 ### `agentic_core/api/qep_intelligence.py:213`
-- **status:** OPEN
+- **status:** FIXED (W409)
 - **claim:** GET /api/v1/qep/compliance/audit returns `"compliant": True` unconditionally, with two checks hardcoded to pass — {"control": "Explainability (XAI) available", "status": "pass"} and {"control": "Translation tajweed-preservation", "status": "pass"} — and a third, "Adaptation fidelity ≥ 0.85", evaluated against the invented 0.9/0.94/0.89 values from the same module.
 - **why it is a fabrication:** This is a compliance verdict with an `audited_at` timestamp and an `adaptations_audited` count, so a consumer reads it as the output of an audit. Two of the four controls assert `pass` without testing anything, the fidelity control can only ever pass because the numbers it grades are constants chosen above the threshold, and the top-level `compliant: True` is a literal that no branch can change.
 - **reach:** live route (mounted app_mvp.py:261)

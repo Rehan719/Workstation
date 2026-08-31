@@ -42,11 +42,15 @@ _MODEL = _STORE / "recommendation_model.json"
 
 _SUPPORTED_LANGUAGES = ["Arabic", "English", "Urdu", "Turkish", "Indonesian", "French", "Malay", "Bengali"]
 
+# W409 — these two seeds carried fidelity 0.94 and 0.89, and the compliance audit graded adaptation
+# fidelity against them. Both numbers were literals, so the control could only ever pass: the audit
+# was marking its own homework with answers it had written itself. The patterns are real examples
+# and are kept; the invented scores are not, so fidelity is null until something measures it.
 _DEFAULT_ADAPTATIONS = [
     {"id": "ADP-hifz-science", "pattern": "SM-2 spaced repetition", "from": "religion",
-     "to": "science", "status": "active", "fidelity": 0.94},
+     "to": "science", "status": "active", "fidelity": None},
     {"id": "ADP-tajweed-care", "pattern": "phoneme feedback loop", "from": "religion",
-     "to": "care", "status": "active", "fidelity": 0.89},
+     "to": "care", "status": "active", "fidelity": None},
 ]
 
 
@@ -174,6 +178,29 @@ async def adaptation_registry():
     return {"adaptations": registry, "count": len(registry)}
 
 
+def _parse_fidelity(blueprint: str):
+    """Pull the model's own "Expected Fidelity" figure out of its reply, or return None.
+
+    Took three attempts, each caught by testing rather than reasoning:
+      1. allowing a bare 0 or 1 matched the "0" inside the prompt's own range hint "(0-1)" and
+         returned 0.0 for a reply that said 0.72 — a worse lie than the constant it replaced;
+      2. requiring a decimal then failed on that same reply, because the digits inside "(0-1)"
+         break any non-digit gap between the word and the number.
+    Parenthetical hints are therefore removed before matching, and only a decimal counts.
+    """
+    import re as _re
+    if not isinstance(blueprint, str):
+        return None
+    cleaned = _re.sub(r"\([^)]*\)", " ", blueprint)
+    m = _re.search(r"fidelity\D{0,40}(0?\.\d+|1\.0+)", cleaned, _re.I)
+    if not m:
+        return None
+    try:
+        val = float(m.group(1))
+    except ValueError:
+        return None
+    return val if 0.0 <= val <= 1.0 else None
+
 @router.post("/adaptation/execute")
 async def adaptation_execute(req: AdaptationRequest):
     """Adapt a learning pattern from one domain into another via the AI gateway."""
@@ -194,7 +221,12 @@ async def adaptation_execute(req: AdaptationRequest):
         "from": req.source_domain,
         "to": req.target_domain,
         "status": "active",
-        "fidelity": 0.9,
+        # W409 — this was the literal 0.9. The prompt above explicitly asks the model for
+        # "## Expected Fidelity (0-1)", and the reply was stored only as free text in `blueprint`
+        # while the number was thrown away and replaced by a constant. The model was asked for the
+        # exact value that was then invented over the top of it. The reply is now parsed, and when
+        # it carries no usable figure the fidelity is null rather than a flattering default.
+        "fidelity": _parse_fidelity(blueprint),
         "ts": time.time(),
     }
     registry.append(entry)
@@ -206,20 +238,44 @@ async def adaptation_execute(req: AdaptationRequest):
 
 @router.get("/compliance/audit")
 async def compliance_audit():
-    """Compliance audit summary across the QEP intelligence surface."""
+    """Compliance summary derived from checks that can actually fail.
+
+    W409 - this returned "compliant": True as a LITERAL that no branch could change, with two of its
+    four controls hardcoded to "pass" ("Explainability (XAI) available", "Translation
+    tajweed-preservation") without testing anything. A third graded adaptation fidelity against the
+    constant 0.9 that the same module stamped on every adaptation, so it could only ever pass. Only
+    the weight-normalisation check was real. An audit that cannot fail is not an audit, and it
+    carried an audited_at timestamp and a count to make it look like one.
+
+    The two untestable controls now report not_checked, and the verdict is computed from the
+    results: any failure makes it false, and unchecked controls make it null rather than true.
+    """
     registry = _load(_REGISTRY, list(_DEFAULT_ADAPTATIONS))
     model = _load(_MODEL, {"ease_weight": 0.4, "interval_weight": 0.35, "quality_weight": 0.25})
+
+    graded = [a.get("fidelity") for a in registry if isinstance(a.get("fidelity"), (int, float))]
+    weights_ok = abs(sum(v for k, v in model.items() if k.endswith("_weight")) - 1.0) < 0.05
+
+    checks = [
+        {"control": "Explainability (XAI) available", "status": "not_checked",
+         "reason": "No explainability check exists to run; a pass was previously asserted."},
+        {"control": "Translation tajweed-preservation", "status": "not_checked",
+         "reason": "No tajweed-preservation check exists to run; a pass was previously asserted."},
+        {"control": "Adaptation fidelity >= 0.85",
+         "status": ("pass" if graded and all(f >= 0.85 for f in graded)
+                    else "review" if graded else "not_checked"),
+         "reason": (f"{len(graded)} of {len(registry)} adaptation(s) carry a measured fidelity."
+                    if registry else "No adaptations recorded.")},
+        {"control": "Recommendation weights normalised",
+         "status": "pass" if weights_ok else "review"},
+    ]
+    statuses = {c["status"] for c in checks}
+    compliant = False if "review" in statuses else (None if "not_checked" in statuses else True)
     return {
-        "compliant": True,
-        "checks": [
-            {"control": "Explainability (XAI) available", "status": "pass"},
-            {"control": "Translation tajweed-preservation", "status": "pass"},
-            {"control": "Adaptation fidelity ≥ 0.85",
-             "status": "pass" if all(a.get("fidelity", 1) >= 0.85 for a in registry) else "review"},
-            {"control": "Recommendation weights normalised",
-             "status": "pass" if abs(sum(v for k, v in model.items()
-                                          if k.endswith("_weight")) - 1.0) < 0.05 else "review"},
-        ],
+        "compliant": compliant,
+        "checks": checks,
         "audited_at": time.time(),
         "adaptations_audited": len(registry),
+        "note": ("compliant is null when a control could not be checked. It is never asserted "
+                 "true on the strength of controls that do not run."),
     }
