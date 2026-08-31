@@ -71,3 +71,19 @@ build after removal: `ai/AICapabilityDashboard.tsx`, `ai/sovereign-client.ts`,
 ```bash
 git mv _archive/jules-phase2/<path> <path>
 ```
+
+## Addendum — 33 orphan `configs/` files (same pass)
+`configs/` is **partially live**: several files are read through env-var *defaults*
+(`configs/legal_precision.yaml`, `configs/constitutional_genome_v138.yaml`, `configs/synthesis_urls.json`,
+`configs/realms.yaml`, the `configs/workflows/*.yaml` set) — a channel that names a file without any
+import and is easy to miss. So this was checked per file, not per directory: 31 kept, 33 moved.
+
+The 33 are version-stamped Jules artefacts (v8.1, v8.2, v8.4, v8.5, v8.8, v8.9, v9.0, v10 … v16,
+"omega"), including 18 under `configs/Law/EmploymentTribunal/`. For each: the full path, the basename
+and the stem appear nowhere in live source; no f-string or `os.path.join` builds a path into
+`configs/`; and nothing globs or walks the directory. All three were checked because a config is
+exactly the kind of file a dynamically-built path can reach without ever naming it.
+
+Note: `configs/governance/profiles.yaml` looks missing but was **never in the tree** — the default in
+`agentic_core/governance/industry_adaptive.py` is decorative, since that constructor ignores its
+`profile_path` argument and hardcodes the profiles inline.
