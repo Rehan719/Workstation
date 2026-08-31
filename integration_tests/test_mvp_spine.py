@@ -3653,18 +3653,27 @@ def test_vbs_living_systems_integrated_in_house(client):
 def test_data_dir_configurable(client):
     # Persistence is routed through the configured DATA_DIR (default 'data') so a deployment can point
     # all data at a durable volume (survives redeploys). Default behaviour is unchanged.
-    from pathlib import Path
-    from agentic_core.config import data_path
-    assert data_path("vsb_entities") == Path("data") / "vsb_entities"       # default unchanged
-    assert data_path("a", "b.json") == Path("data") / "a" / "b.json"
-    # DATA_DIR relocates everything — verified in a FRESH process (stores capture the dir at import)
+    # W394 — BOTH halves are checked in a fresh subprocess now, and symmetrically.
+    # The default half used to be asserted in-process, which only holds when the ambient environment
+    # happens to carry no DATA_DIR. That made the test depend on the developer's shell: it was the
+    # long-standing "known local failure", and it would have started failing in CI the moment
+    # conftest began isolating DATA_DIR. A test of "what happens with no DATA_DIR" must actually run
+    # with no DATA_DIR.
     import os
     import subprocess
     import sys
+
+    probe = "from agentic_core.config import data_path; print(data_path('vsb_entities'))"
+
+    clean_env = {k: v for k, v in os.environ.items() if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR")}
+    default_out = subprocess.check_output(
+        [sys.executable, "-c", probe], env=clean_env, text=True).strip().replace("\\", "/")
+    assert default_out.endswith("data/vsb_entities"), default_out
+    assert "_test_store" not in default_out, default_out       # the suite's isolation must not leak
+
     env = {**os.environ, "DATA_DIR": "custom_data_root"}
     out = subprocess.check_output(
-        [sys.executable, "-c", "from agentic_core.config import data_path; print(data_path('vsb_entities'))"],
-        env=env, text=True).strip().replace("\\", "/")
+        [sys.executable, "-c", probe], env=env, text=True).strip().replace("\\", "/")
     assert out.endswith("custom_data_root/vsb_entities"), out
 
 
