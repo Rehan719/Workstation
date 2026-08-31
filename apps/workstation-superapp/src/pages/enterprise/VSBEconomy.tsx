@@ -6,6 +6,7 @@ import {
   Loader2, AlertCircle, HeartPulse, ShieldCheck, Gift,
 } from 'lucide-react';
 import { ServiceContracts } from './ServiceContracts';
+import { CharityDirectives } from './CharityDirectives';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -474,6 +475,10 @@ export const VSBEconomy: React.FC = () => {
       {/* §15 (W394) — entity-to-entity service contracts. The lifecycle existed server-side since
           W330 with no UI, so none of it was reachable from the product. */}
       <ServiceContracts entities={(living?.living_vsbs ?? []).map((v: any) => ({ vsb_id: v.vsb_id, name: v.name }))} />
+
+      {/* §5 (W397) — the Owner's charity directives had GET/POST endpoints and no UI, so the
+          priorities governing a whole waterfall stage were visible only to code. */}
+      <CharityDirectives />
     </div>
   );
 };
