@@ -126,16 +126,38 @@ async def create_checkout_session(session: CheckoutSession):
 
 @router.get("/wallet/{user_id}")
 async def get_wallet(user_id: str):
-    """Honest wallet — WST from the real Capital Fund; payment mode reported truthfully."""
+    """This user's own WST balance — not the platform's pool.
+
+    W401 - this reported `wst_available` from the CAPITAL FUND, which is a platform-level pool, and
+    ignored user_id entirely. Every id, including ones with no account at all, came back with the
+    same figure (10,000,000 WST at the time of writing) presented as that user's wallet. The number
+    was real; the attribution was not, which is the more dangerous kind of wrong.
+
+    The per-user ledger already existed and was already used for marketplace purchases. It is used
+    here now: an unknown user gets null and known_user false, never a balance they do not have.
+    The platform pool is still reported, under a name that cannot be mistaken for the user's money.
+    """
     mode = _mode()
+    report = None
+    try:
+        from agentic_core.commercial.token_ledger import TokenLedger
+        report = TokenLedger().get_ledger_report(user_id)
+    except Exception:
+        report = None
+    known = isinstance(report, dict) and "balance" in report
     return {
         "user_id": user_id,
-        "wst_available": _wst_available(),   # real (None if unavailable) — never fabricated
+        "known_user": known,
+        "wst_balance": report["balance"] if known else None,
+        "tier": report.get("tier") if known else None,
         "currency": "WST (virtual)",
+        "platform_capital_fund_available": _wst_available(),
         "payment_mode": mode,
         "stripe_configured": mode in ("test", "live", "live_gated"),
+        "note": ("wst_balance is this user's own ledger balance and is null when they have no "
+                 "ledger. platform_capital_fund_available is the PLATFORM pool, not this user's "
+                 "money."),
     }
-
 
 @router.get("/wallet/{user_id}/v2")
 async def get_wallet_v2(user_id: str):

@@ -2824,11 +2824,31 @@ def test_payments_status_honest(client):
 
 
 def test_payments_wallet_no_fabrication(client):
+    """The name promised more than the test checked.
+
+    W401 - it asserted only the currency string and a boolean type, and passed happily while the
+    endpoint reported the PLATFORM capital fund as every user's personal balance: any id, including
+    ones with no account, came back with the same 10,000,000 WST. A test called "no_fabrication"
+    must actually check the number it is named after.
+    """
     r = client.get("/api/v310/payments/wallet/pytest")
     assert r.status_code == 200
     b = r.json()
     assert b["currency"] == "WST (virtual)"
     assert isinstance(b["stripe_configured"], bool)
+
+    # An id with no ledger must NOT be handed a balance.
+    ghost = client.get("/api/v310/payments/wallet/definitely-no-such-user-xyz").json()
+    assert ghost["known_user"] is False, ghost
+    assert ghost["wst_balance"] is None, ghost
+
+    # Two different unknown ids must not share one balance — that was exactly the bug.
+    other = client.get("/api/v310/payments/wallet/another-no-such-user-abc").json()
+    assert other["wst_balance"] is None, other
+
+    # The platform pool may be reported, but never under a name that reads as the user's money.
+    assert "platform_capital_fund_available" in ghost
+    assert ghost.get("wst_available") is None
 
 
 def test_payments_wst_settlement(client):

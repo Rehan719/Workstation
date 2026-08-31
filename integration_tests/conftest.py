@@ -54,15 +54,22 @@ if "agentic_core.config" in _sys.modules:
 
 @pytest.fixture(scope="session", autouse=True)
 def _assert_store_is_isolated():
-    """Fail loudly if the suite is about to write into the real data store.
+    """Fail loudly if the suite is about to write into the REAL data store.
 
     Without this the pollution is invisible: tests pass either way, and you only notice months later
     when an entity picker holds 1,552 rows.
+
+    The check is "not the real store", NOT "equals _test_store". A first version demanded the latter
+    and broke the documented isolated-run recipe (DATA_DIR=/tmp/... python -m pytest ...) - every
+    test errored at setup. An explicitly chosen DATA_DIR is deliberate isolation by definition; the
+    only thing worth rejecting is the default real store.
     """
+    import os.path
     from agentic_core.config import data_path
-    resolved = str(data_path("vsb_entities"))
-    assert "_test_store" in resolved, (
-        "integration tests are NOT isolated — they would write to the real store at "
-        f"{resolved}. agentic_core.config was probably imported before conftest ran."
+    resolved = os.path.abspath(str(data_path("vsb_entities")))
+    real = os.path.abspath(os.path.join("data", "vsb_entities"))
+    assert resolved != real, (
+        "integration tests are NOT isolated - they would write to the real store at "
+        + resolved + ". agentic_core.config was probably imported before conftest ran."
     )
     yield
