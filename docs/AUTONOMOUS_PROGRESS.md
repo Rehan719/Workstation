@@ -2430,3 +2430,37 @@ reached *by existence*; an import-based pass would have emptied the live catalog
 still lists 20 products, boot unchanged at 470/447, tsc + production build clean, smoke 8/8.
 Also hardened the smoke harness: `networkidle` never settles on pages that poll, and it failed
 `/domains` on a run where the page rendered perfectly.
+
+### W388 — the guard's baseline was never committed (`.gitignore` ate it)
+`.gitignore:17` has a blanket `*.txt`, so `git add -A` silently skipped
+`scripts/import_integrity_baseline.txt`. CI ran the new guard with no baseline and correctly reported
+all 14 pre-existing dangling imports as new. **Second `git add -A` misfire of the day** — the first
+swept 259 renames into an unrelated commit. The baseline is now explicitly un-ignored with the reason
+inline, and the guard says plainly when its baseline is absent instead of printing a wall of failures
+that hides the cause. A check whose failure mode misdirects is worse than no check.
+
+### W389 — 33 orphan `configs/` files, checked per file
+`configs/` is **partially live** through env-var *defaults* (`legal_precision.yaml`,
+`constitutional_genome_v138.yaml`, `synthesis_urls.json`, `realms.yaml`, `workflows/*.yaml`) — a
+channel that names a file without any import. Wholesale archiving would have broken governance and
+compliance loading. 31 kept, 33 moved, each cleared on three channels: path/basename/stem absent from
+live source, no f-string or `os.path.join` building into `configs/`, and no glob or walk over it.
+
+### W390 — `conscious_organism_v99.py` archived, its dependents deliberately left
+329 lines importing **35 modules that exist nowhere**; its only importer reached it through a
+**typo'd path** (`agentic_core.orchestrator` vs `orchestration`). Never importable by anyone.
+Left ~30 modules whose only importer was this file: with it gone their evidence is *weaker*, not
+stronger, and `config/loader.py` is named in a Dockerfile comment. The bar for removal does not drop
+because an earlier pass went well — today's went badly first.
+
+### W391 — My Work never pulled the server workspace
+W363 built the per-user server workspace so outputs follow the user across devices. The **push** side
+was wired; the **pull** side was not. `MyWork.tsx` read localStorage only, so a signed-in user on a
+second device saw "No saved outputs yet" over work that existed — while the page statically claimed
+everything is "saved locally in this browser (not on a server)", false for exactly those users.
+Now pulls on mount (0 → 3 requests), describes the tier actually in play, clears BOTH tiers, surfaces
+`lastSyncError()` (written for that purpose, never wired), and stops asserting emptiness mid-pull.
+**All three paths verified in a browser, not by inspection** — including injecting a 503 to prove the
+failure path reports "Workspace sync failed … HTTP 503" instead of silently showing an empty list.
+The success path could not have proven that: `AUTH_ENABLED` is off here, so the server returns 200
+with `owner_id "default"` for any token.
