@@ -8,6 +8,14 @@ import {
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Director { id: string; title: string; mandate: string }
+// W398 — GET /api/v1/board/charter had no caller, so the governance INVARIANT it states was
+// invisible in the product: direction flows Owner → Chief → Board → AI CEO, and the AI CEO and below
+// cannot instruct the board or mutate the genome. That constraint is the point of the structure.
+interface Charter {
+  owner?: { name?: string; role?: string; vision_summary?: string };
+  arms_length_agency?: string;
+  applies_to?: string;
+}
 interface Status {
   board: string; represents_owner: string; hierarchy: string[];
   chief: Director; directors: Director[]; live?: { organism_health?: number };
@@ -39,9 +47,14 @@ export const BoardOfDirectors: React.FC = () => {
   const [error, setError] = useState('');
   const [result, setResult] = useState<ChiefResult | null>(null);
   const [open, setOpen] = useState<'directive' | 'plan'>('directive');
+  const [charter, setCharter] = useState<Charter | null>(null);
+  const [loadErr, setLoadErr] = useState('');
 
   useEffect(() => {
-    fetch('/api/v1/board/status').then(r => r.json()).then(setStatus).catch(() => {});
+    fetch('/api/v1/board/status').then(r => r.json()).then(setStatus)
+      .catch(() => setLoadErr('Could not load the board status.'));
+    fetch('/api/v1/board/charter').then(r => r.json()).then(setCharter)
+      .catch(() => setLoadErr('Could not load the board charter.'));
   }, []);
 
   const instruct = async () => {
@@ -69,6 +82,28 @@ export const BoardOfDirectors: React.FC = () => {
           presence and absence, and directs the whole organism on your behalf.
         </p>
       </header>
+
+      {loadErr && (
+        <p role="alert" className="text-[10px] font-bold text-vital">{loadErr}</p>
+      )}
+
+      {/* W398 — the charter's constitutional invariant, previously fetched by nobody */}
+      {charter?.arms_length_agency && (
+        <Card className="p-6 border-highlight/20">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2">
+            <ShieldCheck size={13} /> Charter · the constraint that makes this a governance tier
+          </h3>
+          <p className="text-xs text-slate-300 font-semibold leading-relaxed">{charter.arms_length_agency}</p>
+          {charter.applies_to && (
+            <p className="text-[10px] font-bold text-slate-500 mt-3">Applies to: {charter.applies_to}</p>
+          )}
+          {charter.owner?.role && (
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mt-3">
+              {charter.owner.name ?? 'Owner'} · {charter.owner.role}
+            </p>
+          )}
+        </Card>
+      )}
 
       {/* Hierarchy */}
       {status && (
