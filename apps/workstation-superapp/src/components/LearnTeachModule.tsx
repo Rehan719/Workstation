@@ -1,33 +1,49 @@
 import React, { useState } from 'react';
 import { Card, Button, toast } from '@workstation/ui';
 import { useNavigate } from 'react-router-dom';
+import { apiJson, errorMessage } from '../lib/api';
 import { GraduationCap, Users, Shield, BookOpen, User } from 'lucide-react';
 
 export const LearnTeachModule: React.FC = () => {
   const navigate = useNavigate();
   const [reportLoading, setReportLoading] = useState(false);
 
+  // W403 — this sent { topic, grade_level, learning_objectives } but the endpoint requires
+  // { subject, level }, so every call returned 422. There was no res.ok check, so the UI toasted
+  // "Class report generated — 12-week curriculum plan ready for 42 students" regardless. The button
+  // had therefore NEVER worked and had always reported success — and the 42 students were invented
+  // too, since nothing counts students anywhere.
+  const [report, setReport] = useState<string>("");
+  const [reportError, setReportError] = useState<string>("");
+
   const generateReport = async () => {
     setReportLoading(true);
+    setReportError("");
+    setReport("");
     try {
-      await fetch('/api/v1/education/curriculum', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: 'Quran & Islamic Studies',
-          grade_level: 'Intermediate',
-          learning_objectives: ['Memorisation', 'Tajwid', 'Tafsir'],
-          duration_weeks: 12,
-        }),
-      });
-      toast('Class report generated — 12-week curriculum plan ready for 42 students');
-    } catch {
-      toast('Report generation failed — please try again');
+      const data = await apiJson<{ curriculum?: string; output?: string }>(
+        "/api/v1/education/curriculum",
+        {
+          method: "POST",
+          body: {
+            subject: "Quran & Islamic Studies",
+            level: "Intermediate",
+            duration_weeks: 12,
+          },
+        },
+      );
+      const text = data.curriculum ?? data.output ?? "";
+      if (!text.trim()) {
+        setReportError("The curriculum service returned an empty plan.");
+      } else {
+        setReport(text);
+      }
+    } catch (e) {
+      setReportError(errorMessage(e));
     } finally {
       setReportLoading(false);
     }
   };
-
   return (
     <div className="space-y-10">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -74,6 +90,14 @@ export const LearnTeachModule: React.FC = () => {
              </div>
           </div>
           <Button onClick={generateReport} disabled={reportLoading} className="w-full mt-6 bg-highlight text-sovereign uppercase font-black text-xs py-4">{reportLoading ? 'Generating…' : 'Generate Class Report'}</Button>
+          {reportError && (
+            <p role="alert" className="mt-3 text-[10px] font-bold text-vital leading-relaxed">{reportError}</p>
+          )}
+          {report && (
+            <div className="mt-4 max-h-72 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950 p-4">
+              <pre className="whitespace-pre-wrap text-[10px] text-slate-300 leading-relaxed font-medium">{report}</pre>
+            </div>
+          )}
         </Card>
       </div>
 
@@ -82,19 +106,17 @@ export const LearnTeachModule: React.FC = () => {
            <Shield size={24} className="text-aura" />
            Scholar Governance Board
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           {['Sheikh Al-Ghauri', 'Dr. Fatima Zahra', 'Ustadh Ibrahim'].map((scholar) => (
-             <div key={scholar} className="p-6 rounded-2xl bg-slate-950 border border-slate-900 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
-                   <Users size={20} className="text-slate-500" />
-                </div>
-                <div>
-                   <p className="text-sm font-black text-white">{scholar}</p>
-                   <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Verified Scholar</p>
-                </div>
-             </div>
-           ))}
-        </div>
+        {/* W403 — this listed three invented names ("Sheikh Al-Ghauri", "Dr. Fatima Zahra",
+            "Ustadh Ibrahim") each captioned "Verified Scholar". No scholar registry exists
+            anywhere in the platform — there is no route, no store, and nothing that verifies
+            anyone. In a religious-guidance context a user could reasonably trust guidance on the
+            strength of a named, "verified" scholar, so inventing them is not a placeholder. */}
+        <p className="text-xs text-slate-500 font-semibold leading-relaxed max-w-2xl">
+           No scholars are verified on this deployment. Scholar verification needs a real registry
+           of credentials and an authority that issues them; neither exists here yet, so no names
+           are shown. This board will list scholars only once there is something behind the word
+           &ldquo;verified&rdquo;.
+        </p>
       </Card>
     </div>
   );
