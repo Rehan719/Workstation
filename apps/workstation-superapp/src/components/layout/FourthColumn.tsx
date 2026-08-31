@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { History, Bot, GitCommit, ChevronRight, ChevronLeft } from 'lucide-react';
 import { CommandCenter } from '@workstation/ui';
-import { ClaudeAgentPanel } from '../ClaudeAgentPanel';
+import { NativeAgentPanel } from '../NativeAgentPanel';
 
 type DockTab = 'channels' | 'projects' | 'agents';
 
@@ -86,7 +86,7 @@ export const FourthColumn: React.FC<FourthColumnProps> = ({ isCollapsed, onToggl
         <button
           type="button"
           onClick={() => { setActiveTab('agents'); onToggle(); }}
-          aria-label="External AI Agents"
+          aria-label="In-house assistant"
           title="External AI Agents"
           className="p-2 rounded-lg text-slate-500 hover:text-aura transition-colors"
         >
@@ -194,7 +194,7 @@ export const FourthColumn: React.FC<FourthColumnProps> = ({ isCollapsed, onToggl
           </div>
         )}
 
-        {activeTab === 'agents' && <ClaudeAgentPanel />}
+        {activeTab === 'agents' && <NativeAgentPanel />}
       </div>
     </div>
   );
