@@ -1,6 +1,6 @@
 # `_archive/jules-unwired/` — Jules-era modules nothing reaches (2026-08-31)
 
-259 Python modules moved here from the live tree. They are **not deleted** — every move was
+**206** Python modules moved here from the live tree. They are **not deleted** — every move was
 `git mv`, so full history is preserved and any of them comes back with one command.
 
 ## Why these files
@@ -37,12 +37,44 @@ pass went finer: individual modules **inside** partially-live packages, which is
 That is why the evidence bar was four agreeing signals, the two exclusions above apply, and the move
 was verified against the running system rather than by imports alone.
 
+## CORRECTION — 53 of the original 259 were wrong, and CI caught it
+
+The first pass moved **259** modules. **53 were live** and had to come back. Read this before
+trusting the method below, because the method is what failed:
+
+- **The string sweep had a hole in the instrument.** It matched only fully-quoted tokens,
+  `['"]([A-Za-z0-9_.]+)['"]`, so it could not see a module named *inside* a multi-word string. The
+  Doc-Sync workflow runs
+  `python -c "from agentic_core.synthesis.doc_linter import DocumentationLinter; ..."` — one quoted
+  string containing spaces. The sweep never saw it, and a live file was archived. CI went red.
+- **The runtime signal is blind by construction** to anything that only runs in a separate CI job,
+  a setup script, or the Dockerfile. `scripts/init_data.py` (used by `setup.ps1`) and
+  `scripts/verify_environment.py` (used by `setup_windows.ps1`) were archived this way, silently
+  breaking environment setup for anyone who cloned the repo.
+- **A green test suite proved only that the suite does not cover those paths.** It is not evidence
+  of deadness, and it was read as if it were.
+
+Restored: 4 referenced from infrastructure, and 49 named in real import statements by live code —
+the latter to a **fixed point**, because restoring a module surfaces its own archived dependencies
+(it took two rounds).
+
+**A guard now exists so this cannot recur silently:** `scripts/check_import_integrity.py` runs in
+Spine CI and fails on any live module importing a first-party module with no file behind it. It was
+proven to bite by re-injecting the exact defect, not assumed to work.
+
+**What the four-signal method still cannot see**, established the same day: files reached by a
+runtime *directory scan* rather than by name. `agentic_core/catalog/api.py` does
+`PRODUCTS_DIR.iterdir()`, so every directory under `products/` is reached by existence alone. An
+import-based analysis would have called them all dead. Nothing under `products/` was ever archived,
+so no harm was done — but the blind spot is real and applies to any future pass.
+
 ## Verification after the move
 - App boots.
 - **34/34** endpoint probes still pass; the live-module count was **unchanged at 304** — nothing that
   was live got archived.
 - Browser smoke: 8 routes render, no console errors, no fabrications.
-- **Full integration suite: 310 passed / 15 skipped**, only the known `test_data_dir_configurable`
+- **Full integration suite: 310 passed / 15 skipped** (this is the weakest of the checks — see
+  the correction above; it stayed green while a live file sat in the archive), only the known `test_data_dir_configurable`
   DATA_DIR artifact (green on CI).
 
 ## Restoring something
