@@ -18,6 +18,7 @@
  * Exit 0 = clean, 1 = a real user-visible problem.
  */
 import { chromium } from 'playwright';
+import { readFileSync } from 'node:fs';
 
 const BASE = process.argv[2] || process.env.SMOKE_BASE_URL || 'http://localhost:8010';
 
@@ -134,7 +135,7 @@ try {
     { timeout: 30_000 },
   );
   await page.waitForTimeout(1000);
-  const text = await page.evaluate(() => document.body.innerText || '');
+  let text = await page.evaluate(() => document.body.innerText || '');
   const hasStats = /pending/i.test(text) && /approved/i.test(text);
   if (!hasStats) failures.push('/change-control: the stats row did not render');
 
@@ -157,6 +158,21 @@ try {
   // which matched the LEGEND and reported rows on a page that had none — the guard passed while the
   // defect was reintroduced. Chrome must never be able to satisfy a data assertion.
   const ROW_TOKENS = /config_minor|config_major|organism_mutation|immune_reconfiguration|vsb_evolution|genome_edit/i;
+  // Wait for rows rather than sampling once. The page fetches its data after mount, so a single
+  // read races the render: under load this reported "the API returned 50 changes but NONE rendered"
+  // on a page that was simply still loading, and passed on the very next run. The guard keeps its
+  // teeth - if the rows never arrive within the window it still fails - but it no longer fails at
+  // random, which is the only way anyone will trust it.
+  if (apiCount > 0) {
+    await page
+      .waitForFunction(
+        () => /config_minor|config_major|organism_mutation|immune_reconfiguration|vsb_evolution|genome_edit/i
+          .test(document.querySelector("#root")?.innerText || ""),
+        { timeout: 20_000 },
+      )
+      .catch(() => {});
+    text = await page.evaluate(() => document.querySelector("#root")?.innerText || "");
+  }
   const rowsOnScreen = ROW_TOKENS.test(text);
   const honestEmpty = /no change requests yet/i.test(text);
 
@@ -173,6 +189,64 @@ try {
   failures.push(`/change-control structure check failed — ${String(err).slice(0, 160)}`);
 }
 
+// -- W402: every remaining route must at least render ----------------------------------------
+// The checks above go deep on 11 routes. The app has ~71, and a crash on any of the others would
+// go unnoticed - today a single unrenderable value (React #31) took down a whole route through the
+// error boundary. This pass is shallow but total: every static route renders something, shows no
+// error boundary, and logs no console error.
+//
+// The route list is PARSED FROM App.tsx at run time rather than hardcoded, so a new page is covered
+// the moment it is added and this cannot silently drift out of date.
+const appSource = readFileSync(new URL("../apps/workstation-superapp/src/App.tsx", import.meta.url), "utf-8");
+const swept = [...new Set([...appSource.matchAll(/<Route\s+path="([^"]+)"/g)].map((m) => m[1]))]
+  .filter((r) => r !== "/" && !r.includes("*") && !r.includes(":"))
+  .filter((r) => !ROUTES.some(([done]) => done.split("?")[0] === r));
+
+note(`sweeping ${swept.length} further routes (render-only)`);
+for (const route of swept) {
+  const errs = [];
+  const onErr = (m) => { if (m.type() === "error") errs.push(m.text().slice(0, 160)); };
+  page.on("console", onErr);
+  // One retry on a navigation timeout. Sweeping 60+ routes back to back loads the machine, and two
+  // consecutive runs failed on DIFFERENT routes (/nexus, then /capital) - that is a timing flake,
+  // not a broken page, and a gate that fails at random teaches people to ignore it. A page that
+  // genuinely cannot load still fails, because it fails twice.
+  let navErr = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await page.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded", timeout: 45_000 });
+      navErr = null;
+      break;
+    } catch (e) {
+      navErr = e;
+    }
+  }
+  if (navErr) {
+    failures.push(`${route}: navigation failed twice - ${String(navErr).slice(0, 120)}`);
+    page.off("console", onErr);
+    continue;
+  }
+  try {
+    await page
+      .waitForFunction(() => (document.querySelector("#root")?.innerText || "").trim().length > 40,
+                       { timeout: 20_000 })
+      .catch(() => {});
+    await page.waitForTimeout(500);
+    const body = await page.evaluate(() => document.querySelector("#root")?.innerText || "");
+    if (/something went wrong|unexpected error occurred/i.test(body)) {
+      failures.push(`${route}: an error boundary is showing`);
+    } else if (body.trim().length < 120) {
+      failures.push(`${route}: near-empty render (${body.trim().length} chars)`);
+    }
+    // Dev-only noise: the vite origin and the ws stream are not part of this assertion.
+    const real = errs.filter((e) => !/favicon|ERR_CONNECTION_REFUSED|WebSocket/i.test(e));
+    if (real.length) failures.push(`${route}: console error - ${real[0]}`);
+  } catch (e) {
+    failures.push(`${route}: render check failed - ${String(e).slice(0, 120)}`);
+  }
+  page.off("console", onErr);
+}
+
 await browser.close();
 
 if (failures.length) {
@@ -180,4 +254,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`\nBROWSER SMOKE PASSED — ${ROUTES.length} routes rendered, no console errors, no fabrications.`);
+console.log(`\nBROWSER SMOKE PASSED — ${ROUTES.length} routes rendered, plus ${swept.length} swept, no console errors, no fabrications.`);
