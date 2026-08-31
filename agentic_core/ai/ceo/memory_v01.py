@@ -5,6 +5,7 @@ Backed by a real ChromaDB collection so ingested content (memory_v01.add_exchang
 is genuinely persisted and semantically searchable (memory_v01.query), rather than
 silently discarded.
 """
+import datetime as _dt
 import logging
 import uuid
 
@@ -60,9 +61,57 @@ class MemoryV01:
 
 
 memory_v01 = MemoryV01()
-meeting_log = type('Mock', (), {
-    'get_recent_debate': lambda: "No recent debates recorded.",
-    'post_argument': lambda *a: None,
-    'export_minutes': lambda: "# Minutes",
-    'log': []
-})()
+class MeetingLog:
+    """The C-Suite debate record.
+
+    W400 - this was a type('Mock', ...) whose lambdas took no self, so EVERY bound call raised
+    "TypeError: <lambda>() takes 0 positional arguments but 1 was given". Two live paths hit it:
+    GET /api/v138/ceo/meeting/minutes (a 500 on a plain GET) and ceo.py's debate flow, which calls
+    get_recent_debate() before synthesising. post_argument survived only because "lambda *a" happens
+    to swallow self - so every argument the C-Suite posted went nowhere, silently.
+
+    It also returned the literal string "# Minutes" as the meeting minutes. It now records what was
+    actually argued and renders that; with nothing recorded it says so, rather than emitting a
+    header that looks like a document.
+    """
+
+    MAX_ENTRIES = 500
+
+    def __init__(self) -> None:
+        self.log: list[dict] = []
+
+    def post_argument(self, agent: str, argument: str, stance: str = "") -> None:
+        self.log.append({
+            "agent": agent,
+            "argument": argument,
+            "stance": stance,
+            "at": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+        })
+        del self.log[:-self.MAX_ENTRIES]
+
+    def get_recent_debate(self, limit: int = 12) -> str:
+        recent = self.log[-limit:]
+        if not recent:
+            return "No recent debates recorded."
+        out = []
+        for e in recent:
+            stance = " (" + e["stance"] + ")" if e.get("stance") else ""
+            out.append(e["agent"] + stance + ": " + e["argument"])
+        return chr(10).join(out)
+
+    def export_minutes(self) -> str:
+        if not self.log:
+            return ("# C-Suite meeting minutes" + chr(10) + chr(10)
+                    + "No arguments have been recorded. Nothing is minuted because nothing was said."
+                    + chr(10))
+        lines = ["# C-Suite meeting minutes", ""]
+        for e in self.log:
+            stance = " - **" + e["stance"] + "**" if e.get("stance") else ""
+            lines.append("- `" + str(e.get("at", "")) + "` **" + e["agent"] + "**"
+                         + stance + ": " + e["argument"])
+        lines.append("")
+        lines.append("_" + str(len(self.log)) + " argument(s) recorded._")
+        return chr(10).join(lines)
+
+
+meeting_log = MeetingLog()
