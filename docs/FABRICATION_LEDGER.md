@@ -19,7 +19,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route (mounted app_mvp.py:60); not currently called by the SPA
 
 ### `agentic_core/api/economy.py:79`
-- **status:** OPEN
+- **status:** FIXED (W414)
 - **claim:** `class CycleRequest(BaseModel): ... revenue: float = 10000.0` — the request-body default for POST /api/v1/economy/cycle. The caller VSBCockpit.tsx:243 posts `axios.post('/api/v1/economy/cycle', { vsb_id: selected })` with no revenue field, so every "Run cycle" press in the VSB Cockpit runs a full metabolic cycle on 10,000 WST of intake revenue that nothing earned.
 - **why it is a fabrication:** The consumer sees the returned cycle report rendered in VSBCockpit.tsx:661 as `Intake revenue 10,000`, `Homeostasis reserves`, `Distributable profit`, `Giving back`, and then reads the refreshed `/api/v1/economy/ledger/{vsb_id}` panel showing `Total revenue` grown by 10,000 — a figure any user reads as this entity's earnings. Nothing derived it: it is a pydantic schema default. It is not ephemeral either — `EconomicMetabolism.run_cycle` calls `self.ledger.record("revenue", 10000, ...)` (agentic_core/economy/metabolism.py), which persists to the VSB's `_ledger.json`, and the invented 10,000 the
 - **reach:** live route POST /api/v1/economy/cycle (router mounted at agentic_core/app_mvp.py:285) + UI-rendered in VSBCockpit.tsx ("Run cycle" button) + stored in the per-VSB virtual ledger, owner-payments ledger
@@ -109,7 +109,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — the fallback path of POST /api/v1/synthesis/generate (output_type="simulation"), agentic_core/synthesis/api.py:249 and :254
 
 ### `agentic_core/synthesis/presentation.py:8`
-- **status:** OPEN
+- **status:** FIXED (W414)
 - **claim:** generate_presentation(topic) ignores `topic` except in slide 1's title and returns a fixed 10-slide deck: "Wu et al. 2025: Integration risks higher than estimated", "Chazarin et al. 2026: Longitudinal tracking required", "Gifford et al. 2025: Identifying regulatory lag in mRNA stability", "$4.2B market projected by 2030", "30% reduction in clinical trial attrition for early adopters".
 - **why it is a fabrication:** Three invented academic citations with author names and years, a market size, and an ROI figure — presented to the user as the researched content of the presentation they asked for. Nothing researched, retrieved or computed any of it. agentic_core/synthesis/api.py:140 serves this verbatim as the deliverable whenever `_extract_json_array(raw)` returns None (the gateway's native structured-engine floor returns prose, not a JSON array, so this fires on any deployment without a live JSON-capable model), and labels it `metadata.title = "Presentation: {topic}"` with no fallback marker. A user who as
 - **reach:** live route — POST /api/v1/synthesis/generate (mounted /api/v1 in app_mvp.py:64); rendered by SynthesisStudio.tsx:489 and downloadable via /api/v1/synthesis/download/{id}

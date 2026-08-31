@@ -137,7 +137,19 @@ class SynthesisManager:
             raw = await self._query(prompt, "presentation")
             slides = self._extract_json_array(raw)
             if not slides:
-                slides = presentation_gen.generate_presentation(topic)
+                # W414 — this substituted presentation_gen.generate_presentation(), which returns a
+                # FIXED 10-slide deck about advanced-therapy safety (AAV, CAR-T, mRNA) whatever the
+                # topic, using `topic` only in slide 1's title. Slide 2 cites "Wu et al. 2025:
+                # Integration risks higher than estimated" — an invented academic citation presented
+                # as a research finding. Asking for a deck on any subject returned that.
+                slides = [{
+                    "id": 1,
+                    "title": f"Presentation: {topic}",
+                    "content": ("The model did not return a usable slide deck for this topic, so "
+                                "none is shown."),
+                    "narration": "",
+                    "generated": False,
+                }]
             for i, s in enumerate(slides):
                 s.setdefault("id", i + 1)
                 s.setdefault("animation", ["fade-in", "slide-left", "zoom-in"][i % 3])

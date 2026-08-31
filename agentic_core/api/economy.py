@@ -76,7 +76,12 @@ async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str = DE
 class CycleRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
     entity_type: str = DEFAULT_ENTITY
-    revenue: float = 10000.0
+    # W414 — this defaulted to 10000.0, and the UI posts only {vsb_id}. So every "Run Metabolic
+    # Cycle" click processed ten thousand WST of revenue that nobody earned or supplied, and the
+    # resulting distributions, reserves and charity allocations were written to the real ledger as
+    # if they had happened. A default that silently manufactures the input to a financial
+    # calculation is worse than a missing field. Zero means zero.
+    revenue: float = 0.0
     costs: float = 0.0
     reserve_rate: float = 0.20
     owner: str = "Rehan"

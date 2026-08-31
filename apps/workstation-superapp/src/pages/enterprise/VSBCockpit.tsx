@@ -53,6 +53,7 @@ export const VSBCockpit: React.FC = () => {
   const [ledger, setLedger] = useState<Dict | null>(null);
   const [lastCycle, setLastCycle] = useState<Dict | null>(null);
   const [cycling, setCycling] = useState(false);
+  const [cycleRevenue, setCycleRevenue] = useState('');
   const [btoComponents, setBtoComponents] = useState<Dict[]>([]);
   const [btoSel, setBtoSel] = useState<string[]>(['vsb', 'csuite', 'coe', 'domains']);
   const [btoBlueprint, setBtoBlueprint] = useState<Dict | null>(null);
@@ -240,7 +241,13 @@ export const VSBCockpit: React.FC = () => {
     if (!selected || cycling) return;
     setCycling(true);
     try {
-      const r = await axios.post('/api/v1/economy/cycle', { vsb_id: selected });
+      // W414 — this posted only { vsb_id }, and the backend defaulted revenue to 10000.0. Every
+      // click therefore ran a cycle on ten thousand WST that nobody earned, writing the resulting
+      // distributions to the real ledger. The figure is now supplied explicitly, and zero is zero.
+      const r = await axios.post('/api/v1/economy/cycle', {
+        vsb_id: selected,
+        revenue: Number(cycleRevenue) || 0,
+      });
       setLastCycle(r.data.cycle || null);
       const l = await axios.get(`/api/v1/economy/ledger/${selected}`).then(x => x.data).catch(() => null);
       if (l) setLedger(l);
@@ -634,6 +641,15 @@ export const VSBCockpit: React.FC = () => {
               <Card className="p-6">
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Virtual ledger {ledger?.currency ? `· ${ledger.currency}` : ''}</h4>
+                  <input
+                    type="number"
+                    min="0"
+                    value={cycleRevenue}
+                    onChange={e => setCycleRevenue(e.target.value)}
+                    placeholder="Revenue this cycle (WST)"
+                    aria-label="Revenue for this economic cycle in virtual WST"
+                    className="w-52 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+                  />
                   <Button type="button" onClick={runCycle} disabled={cycling} className="bg-highlight text-sovereign flex items-center gap-2 text-xs">
                     {cycling ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Run economic cycle
                   </Button>
