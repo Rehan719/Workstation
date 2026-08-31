@@ -13,39 +13,48 @@ interface Biometrics {
   communication:  { neurotransmitter: string; is_active: boolean };
 }
 
-const SEED: Biometrics = {
-  circadian:      { cycle: 'ACTIVE_FOCUS' },
-  cardiovascular: { resource_flow: 75, peristaltic_delay: 1.5 },
-  cognition:      { state: 'STABLE', primary_drive: 'DISCOVERY' },
-  immune:         { health: 0.98, threat_level: 'NONE', error_rate: 0 },
-  metabolic:      { efficiency: 0.92, atp_ratio: 0.88, total_projects: 0 },
-  nervous:        { arousal_state: 'RESTING', signal_rate: 0.0 },
-  communication:  { neurotransmitter: 'Oxytocin', is_active: false },
-};
+// W406 — a SEED object used to live here with immune.health 0.98, metabolic.efficiency 0.92,
+// atp_ratio 0.88 and resource_flow 75. It was the INITIAL state, and the loader only replaced it
+// on a 200 (the catch did nothing), so a backend that was down or erroring left those figures on
+// screen indefinitely — the page reported 98% immune health for a system that was not reporting at
+// all. A fabrication that appears exactly when the real data is missing is the worst kind: it is
+// most convincing precisely when it is least true.
 
 export const Introspection: React.FC = () => {
-  const [bio, setBio] = useState<Biometrics>(SEED);
+  const [bio, setBio] = useState<Biometrics | null>(null);
+  const [bioError, setBioError] = useState("");
 
   useEffect(() => {
     const load = () => {
       axios.get<Biometrics>('/api/v1/biometrics/status', { validateStatus: () => true })
-        .then(res => { if (res.status === 200 && res.data) setBio(res.data); })
-        .catch(() => {});
+        .then(res => {
+          if (res.status === 200 && res.data) { setBio(res.data); setBioError(""); }
+          else { setBio(null); setBioError(`The organism is not reporting (HTTP ${res.status}).`); }
+        })
+        .catch(() => { setBio(null); setBioError("The organism is not reporting — it could not be reached."); });
     };
     load();
     const t = setInterval(load, 10000);
     return () => clearInterval(t);
   }, []);
 
-  // Map real biometrics to display values
-  const vitals = {
-    oxytocin:      bio.communication.neurotransmitter === 'Oxytocin'  ? 0.85 : 0.5,
-    serotonin:     bio.communication.neurotransmitter === 'Serotonin' ? 0.88 : 0.55,
-    dopamine:      bio.communication.neurotransmitter === 'Dopamine'  ? 0.82 : 0.6,
-    system_health: bio.immune.health,
-  };
-
-  if (!vitals) return <div className="p-8 text-aura animate-pulse font-black uppercase tracking-widest">Calibrating Introspection...</div>;
+  // W406 — these were levels invented from a string equality:
+  //     oxytocin: neurotransmitter === "Oxytocin" ? 0.85 : 0.5   (and the same for the other two)
+  // Nothing measures a neurotransmitter level. The backend reports WHICH signalling mode is active
+  // and whether it is active at all; that is the real fact, so that is what is shown. A bar at 85%
+  // implies a measurement that does not exist.
+  if (bioError) {
+    return (
+      <div role="alert" className="p-8 text-vital font-bold">
+        {bioError} No vitals are shown, because none were received.
+      </div>
+    );
+  }
+  if (!bio) {
+    return <div className="p-8 text-aura animate-pulse font-black uppercase tracking-widest">Reading organism vitals…</div>;
+  }
+  const activeSignal = bio.communication.neurotransmitter;
+  const vitals = { system_health: bio.immune.health };
 
   return (
     <motion.div
@@ -61,9 +70,16 @@ export const Introspection: React.FC = () => {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <ResonanceBall label="Oxytocin" value={vitals.oxytocin} color="#64ffda" icon={Heart} />
-        <ResonanceBall label="Serotonin" value={vitals.serotonin} color="#ffd740" icon={Wind} />
-        <ResonanceBall label="Dopamine" value={vitals.dopamine} color="#ff5252" icon={Zap} />
+        <div className="col-span-full rounded-2xl border border-slate-800 bg-slate-950 p-5">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Signalling</p>
+          <p className="text-lg font-black text-white">
+            {activeSignal}{bio.communication.is_active ? "" : " · idle"}
+          </p>
+          <p className="text-[10px] text-slate-500 font-semibold mt-1">
+            The organism reports which signalling mode is active. Levels are not measured, so none
+            are shown.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-12">

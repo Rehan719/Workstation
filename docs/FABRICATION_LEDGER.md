@@ -127,13 +127,13 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — ReligionHub.tsx:106 renders <LearnTeachModule /> inside /religion (App.tsx:175)
 
 ### `apps/workstation-superapp/src/pages/cognitive/Introspection.tsx:16`
-- **status:** OPEN
+- **status:** FIXED (W406)
 - **claim:** `const SEED: Biometrics = { immune: { health: 0.98, ... }, metabolic: { efficiency: 0.92, atp_ratio: 0.88, ... }, cardiovascular: { resource_flow: 75, ... } }` is the initial state; the fetch uses `validateStatus: () => true` and `.catch(() => {})`, so a non-200 or a failed request silently leaves SEED on screen (rendered at line 78 as 'System Health 98.00%' and lines 88-90 as ATP/Cardiovascular/Immune bars).
 - **why it is a fabrication:** When the backend is down or the endpoint errors, the page shows 'System Health 98.00%' in 6xl type under a header asserting 'Real-time introspection', with animated bars at 92% and 88%. Nothing distinguishes this from a live reading — there is no error state, no 'not measured' label, and the failure is swallowed twice over. This is the 'failed fetch leaves a plausible-looking value on screen instead of an error' case. Compare DashboardNew.tsx:100, which handles the identical situation honestly via `setBackendDown(true)`.
 - **reach:** live route — /cognitive-introspection; visible whenever the backend is unreachable
 
 ### `apps/workstation-superapp/src/pages/cognitive/Introspection.tsx:42`
-- **status:** OPEN
+- **status:** FIXED (W406)
 - **claim:** `oxytocin: bio.communication.neurotransmitter === 'Oxytocin' ? 0.85 : 0.5`, `serotonin: ... ? 0.88 : 0.55`, `dopamine: ... ? 0.82 : 0.6` — rendered by `ResonanceBall` at lines 64-66 as e.g. 'Oxytocin Resonance 85.0%' with an animated fill bar, under a header reading 'Real-time introspection of the Workstation's biochemical resonance'.
 - **why it is a fabrication:** The backend (agentic_core/app_mvp.py:376) genuinely computes biometrics from psutil, the immune system and an ATP simulator — but it returns only a neurotransmitter *name* ('Oxytocin' | 'Serotonin' | 'Dopamine', chosen from websocket/project counts). It never returns a magnitude. The frontend invents three percentages from a string equality test and renders them as measured resonance levels with one-decimal precision. Nothing measures oxytocin, serotonin or dopamine — this is the confirmed `avg_oxytocin 0.992` fabrication reproduced in the UI.
 - **reach:** live route — App.tsx:245 /cognitive-introspection; also linked from CommandPalette.tsx:66 and SearchMeshModal.tsx:40
