@@ -2518,3 +2518,36 @@ buttons and no certification badge; after creating a priced listing the card, pr
 button render, and buying returns a real receipt — *"Confirmed: 1 × … for 120 WST (virtual).
 Receipt 69706d5b103d48f7."* Dev store after migration: 20 listings, all catalogue-derived,
 **0 certified, 0 invented prices, 0 leftover fabrications**.
+
+### W394 — §15 contracts UI, a usable entity picker, and the test pollution behind it
+One thread, three findings. The VSB Cockpit's entity dropdown held **1,552 options**.
+
+**The picker.** 1,552 options in raw API order is not a chooser, it is a wall. Now newest-first and
+capped to 50 with the cap **stated out loud** — "newest 50 of 1552 · 1552 total — filter to narrow".
+Never truncate silently. The "newest" claim was checked rather than asserted: all 1,552 `created_at`
+values parse, and the ordering is real. (`VSBSpawnStudio` already capped at 50 — this matches an
+existing pattern rather than inventing one.)
+
+**The cause.** `integration_tests/conftest.py` opened with *"Use isolated test data directories so
+tests don't pollute real data"* and isolated only `PROJECTS_DIR`, `SYNTHESIS_OUTPUT_DIR` and
+`PROPOSALS_DIR`. It **never set `DATA_DIR`** — where VSB entities, the token ledger, the UEG chain
+and marketplace listings live. Every suite run wrote into the developer's real store: 1,552 entities
+across **45 distinct names**, 1,526 duplicated — "pytest VSB business-plan seed check" ×185,
+"pytest per-vsb swarm" ×184, "list-flags test" ×184. The comment promised what the code did not do.
+Fixed with `setdefault`, so an explicit env still wins and the isolated release recipe is untouched.
+`scripts/prune_test_entities.py` handles what already accumulated — **dry-run by default and
+deliberately not run**: 845 removable, 192 kept because something genuinely references them. Those
+are the Owner's records.
+
+**§15 service contracts.** The lifecycle existed server-side since W330 with **no UI**, so none of it
+was reachable. New `ServiceContracts`, mounted in VSB Economy: offer → accept → deliver → settle,
+with the next action driven by real contract status so no step can be taken out of order. It reports
+what the backend reports — a delivery's real quality verdict and serving resource, and a
+governance-**held** settlement shown as held, never as payment.
+
+**W394b — and the UI's own defect, found by verifying it.** `deliver` runs the full org cascade
+(~22 model calls) and takes **15–25 minutes**; the first run was still going when a 900s ceiling cut
+it off. The button I had just shipped spun with a bare spinner for that long — indistinguishable
+from a hang, and exactly the failure this surface exists to remove. It now states the cost *before*
+the click and counts elapsed seconds while running. A correct backend does not excuse a UI that
+misrepresents how long it takes.
