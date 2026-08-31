@@ -15,6 +15,10 @@ outputs_final/
 *.wav
 *.mp3
 *.txt
+# ...but the import-integrity baseline MUST be tracked: without it, CI has no record of the
+# pre-existing dangling imports and scripts/check_import_integrity.py fails on all of them.
+# That is exactly what happened on 2026-08-31 — `git add -A` silently skipped it under *.txt.
+!scripts/import_integrity_baseline.txt
 # …but the Python deps manifest MUST be tracked (the blanket *.txt above accidentally
 # excluded it, leaving fresh clones / Render deploys with no installable requirements).
 !requirements.txt

@@ -97,6 +97,14 @@ def main() -> int:
     baseline = load_baseline()
     new = {f: m for f, m in found.items() if f not in baseline}
 
+    # Say so loudly rather than reporting every pre-existing break as new. The baseline lives under a
+    # blanket *.txt ignore rule, so it is easy to leave untracked — which is how this first went red.
+    if not BASELINE.exists() and found:
+        print(f"NOTE: no baseline at {BASELINE.relative_to(ROOT)} — every pre-existing dangling import")
+        print("      below will be reported as new. If you expected a baseline here, check that it is")
+        print("      tracked by git (`git check-ignore -v` on it) rather than caught by an ignore rule.")
+        print()
+
     if "--write-baseline" in sys.argv:
         BASELINE.write_text(
             "# Files with pre-existing dangling first-party imports, recorded so that\n"
