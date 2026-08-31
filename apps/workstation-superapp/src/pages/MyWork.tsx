@@ -2,23 +2,57 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Copy, Download, Trash2, Check, FolderOpen, Clock, Sparkles } from 'lucide-react';
-import { listOutputs, removeOutput, clearOutputs, type OutputRecord } from '../lib/outputHistory';
+import {
+  listOutputs, removeOutput, clearOutputs, clearWorkspaceEverywhere,
+  syncWorkspaceFromServer, lastSyncError, type OutputRecord,
+} from '../lib/outputHistory';
+import { getToken } from '../lib/auth';
 
-// E3 — "My Work": revisit the outputs you've generated (domain tools + journeys). Stored locally in this
-// browser (honest: no server copy), so results are no longer lost on navigation.
+// §9 — "My Work": revisit the outputs you've generated (domain tools + journeys).
+//
+// Storage is two-tier (see lib/outputHistory.ts): signed in → the server-side per-user workspace,
+// which follows the user across devices; auth off → localStorage only. This page used to read
+// localStorage ONLY and describe itself as local-only regardless — so a signed-in user opening it on
+// a second device saw an empty page while their work sat on the server, and was told, wrongly, that
+// nothing had ever been stored server-side. It now pulls the workspace on mount, describes the tier
+// actually in play, and clears BOTH tiers when the user clears.
 export const MyWork: React.FC = () => {
   const navigate = useNavigate();
   const [records, setRecords] = useState<OutputRecord[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState('');
+
+  const signedIn = (() => { try { return !!getToken(); } catch { return false; } })();
 
   const refresh = () => setRecords(listOutputs());
   useEffect(() => {
+    let cancelled = false;
     refresh();
+    // Pull the server-side workspace before rendering a verdict about what the user has. Without
+    // this the page reports "no saved outputs" for work that exists.
+    if (signedIn) {
+      setSyncing(true);
+      syncWorkspaceFromServer()
+        .then(() => { if (!cancelled) { refresh(); setSyncError(lastSyncError()); } })
+        .catch(() => { if (!cancelled) setSyncError(lastSyncError() || 'Could not reach your workspace.'); })
+        .finally(() => { if (!cancelled) setSyncing(false); });
+    }
     const h = () => refresh();
     window.addEventListener('ws:output-history', h);
-    return () => window.removeEventListener('ws:output-history', h);
-  }, []);
+    return () => { cancelled = true; window.removeEventListener('ws:output-history', h); };
+  }, [signedIn]);
+
+  const clearAll = async () => {
+    // Clearing must reach the tier the work actually lives in, or it comes back on the next sync.
+    if (signedIn) {
+      try { await clearWorkspaceEverywhere(); } catch { setSyncError(lastSyncError() || 'Could not clear your server workspace.'); }
+    } else {
+      clearOutputs();
+    }
+    refresh();
+  };
 
   const copy = async (rec: OutputRecord) => {
     try { await navigator.clipboard.writeText(rec.output); setCopiedId(rec.id); setTimeout(() => setCopiedId(null), 1500); } catch { /* ignore */ }
@@ -40,19 +74,36 @@ export const MyWork: React.FC = () => {
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-aura mb-2">Workstation IDBO · Your History</p>
           <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">My Work</h1>
           <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-            The outputs you&rsquo;ve generated — revisit, copy, download or remove them. Saved locally in this
-            browser (not on a server), so nothing is lost on navigation.
+            The outputs you&rsquo;ve generated — revisit, copy, download or remove them.{' '}
+            {signedIn
+              ? 'Saved to your account workspace on the server, so they follow you across devices and browsers.'
+              : 'Saved locally in this browser (not on a server), so nothing is lost on navigation.'}
           </p>
+          {syncing && (
+            <p className="text-[10px] font-bold text-slate-600 mt-1">Checking your workspace…</p>
+          )}
+          {syncError && (
+            <p role="alert" className="text-[10px] font-bold text-vital mt-1">
+              Workspace sync failed — showing what is stored in this browser. {syncError}
+            </p>
+          )}
         </div>
         {records.length > 0 && (
-          <Button type="button" onClick={() => { clearOutputs(); refresh(); }}
+          <Button type="button" onClick={clearAll}
             variant="outline" className="text-[10px] border-slate-800 text-slate-400 shrink-0">
             <Trash2 size={14} /> Clear all
           </Button>
         )}
       </header>
 
-      {records.length === 0 ? (
+      {/* Do not assert "nothing saved" while the workspace pull is still in flight — that verdict
+          was wrong for every signed-in user on a device that had not synced yet. */}
+      {records.length === 0 && syncing ? (
+        <Card className="p-10 text-center border-dashed border-slate-800">
+          <Clock size={28} className="mx-auto text-slate-700 mb-3" />
+          <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Loading your workspace…</p>
+        </Card>
+      ) : records.length === 0 ? (
         <Card className="p-12 text-center border-dashed border-slate-800">
           <FolderOpen className="mx-auto text-slate-700 mb-4" size={44} />
           <p className="text-slate-500 font-black uppercase tracking-widest text-xs mb-2">No saved outputs yet</p>
