@@ -76,12 +76,16 @@ export const VSBEconomy: React.FC = () => {
   const loadBoardPack = () => {
     setBpLoading(true);
     fetch(`/api/v1/economy/board-pack?vsb_id=${encodeURIComponent(vsbId)}&entity_type=${entity}`)
-      .then(r => r.json()).then(setBp).catch(() => {}).finally(() => setBpLoading(false));
+      .then(r => r.json()).then(setBp).catch(() => setLoadErr('Could not load the board pack — showing nothing rather than stale figures.')).finally(() => setBpLoading(false));
   };
   // §4 — the established living VSB enterprises the organism autonomously tends
   const [living, setLiving] = useState<any>(null);
+  // W395 — these loads used to fail silently (`.catch(() => {})`), leaving the page's headline
+  // figures simply absent with no indication anything had gone wrong. An empty panel that means
+  // "the request failed" is indistinguishable from one that means "there is no data".
+  const [loadErr, setLoadErr] = useState('');
   const loadLiving = () =>
-    fetch('/api/v1/economy/living-vsbs').then(r => r.json()).then(setLiving).catch(() => {});
+    fetch('/api/v1/economy/living-vsbs').then(r => r.json()).then(setLiving).catch(() => setLoadErr('Could not load the living entities — showing nothing rather than stale figures.'));
 
   useEffect(() => {
     fetch('/api/v1/economy/entity-types').then(r => r.json()).then(d => setTypes(d.types ?? [])).catch(() => {});
@@ -161,6 +165,9 @@ export const VSBEconomy: React.FC = () => {
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">VSB · Living Economy</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Economic Metabolism</h1>
+        {loadErr && (
+          <p role="alert" className="text-[10px] font-bold text-vital mt-2">{loadErr}</p>
+        )}
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The VSB's value flows like a <span className="text-highlight">biogeochemical nutrient cycle</span> — intake →
           homeostasis → circulation → giving-back → storage → growth. A hybrid Waqf/Trust/Multinational entity that pays
