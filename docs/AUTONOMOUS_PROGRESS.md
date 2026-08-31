@@ -2617,3 +2617,29 @@ parameterless GETs. Each was worse than a crash:
   silently**. `export_minutes` returned the literal string `"# Minutes"`. Replaced with a real
   `MeetingLog`.
 Re-probed: **175 GETs and 157 POSTs → 0 5xx, 0 exceptions.**
+
+### W401 — the wallet reported the PLATFORM pool as every user's balance
+Completing the route audit (the 42 parameterised GETs, probed with a nonexistent id) found 10 routes
+answering 200 for an id that does not exist. **Three were honest** and are worth naming as the
+standard: gamification returns a true zero state; IoT telemetry says *"derived from live organism
+state — no physical wearable connected"*; twin blueprint says *"No matching VSB entity."*
+
+**One was not.** `GET /api/v310/payments/wallet/{user_id}` read `wst_available` from the **capital
+fund** — a platform-level pool — and ignored `user_id` entirely. Every id, including accounts that do
+not exist, came back with the same **10,000,000 WST** presented as that user's wallet. The number was
+real; the *attribution* was not, which is the more dangerous kind of wrong — and the docstring called
+it an "honest wallet". The per-user ledger already existed and already backed marketplace debits; it
+is used now, and an unknown user gets `null`, never a balance they do not have.
+
+**The test guarding it was named `test_payments_wallet_no_fabrication`** and asserted only a currency
+string and a boolean type, so it passed throughout. A test named after fabrication must check the
+number it is named after: it now asserts an unknown id gets null, that two different unknown ids do
+not share a balance, and that the platform figure never appears under the old user-facing key.
+
+Also repaired **my own W396 guard**, which demanded the resolved store contain `_test_store` and so
+broke the documented isolated-run recipe (`DATA_DIR=/tmp/... pytest`) — every test errored at setup.
+An explicitly chosen `DATA_DIR` is deliberate isolation by definition; only the default real store is
+worth rejecting. Proven both ways: `DATA_DIR=data` fires it, a temp dir passes.
+
+**Route audit complete:** 175 parameterless GET · 157 POST · 42 parameterised GET → **0 5xx, 0
+exceptions**; frontend→backend **202 paths, 0 dangling**. Suite 312 passed / 0 failed; CI green.
