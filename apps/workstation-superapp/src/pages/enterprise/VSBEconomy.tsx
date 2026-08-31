@@ -5,6 +5,7 @@ import {
   Coins, Recycle, Activity, Sprout, Building2, PiggyBank,
   Loader2, AlertCircle, HeartPulse, ShieldCheck, Gift,
 } from 'lucide-react';
+import { ServiceContracts } from './ServiceContracts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -462,6 +463,10 @@ export const VSBEconomy: React.FC = () => {
           <p className="text-[9px] text-amber-400/80 italic mt-3">{living.note}</p>
         </Card>
       )}
+
+      {/* §15 (W394) — entity-to-entity service contracts. The lifecycle existed server-side since
+          W330 with no UI, so none of it was reachable from the product. */}
+      <ServiceContracts entities={(living?.living_vsbs ?? []).map((v: any) => ({ vsb_id: v.vsb_id, name: v.name }))} />
     </div>
   );
 };

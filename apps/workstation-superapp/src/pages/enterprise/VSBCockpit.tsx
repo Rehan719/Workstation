@@ -282,13 +282,29 @@ export const VSBCockpit: React.FC = () => {
       {/* VSB selector — searchable (the established-VSB list can grow large) */}
       {(() => {
         const q = vsbFilter.trim().toLowerCase();
+        // W394 — this store holds 1,552 entities across only 45 distinct names, so the list was
+        // rendered in raw API order and the entity you just created sat hundreds of rows down a
+        // 1,552-option <select>. Newest first, and only a capped window is rendered: a dropdown with
+        // fifteen hundred children is not a chooser, it is a wall.
+        const recent = [...vsbs].sort((a, b) => {
+          const ts = (v: VSBRow) => {
+            const c: unknown = (v as unknown as { created_at?: unknown }).created_at;
+            if (typeof c === 'number') return c;
+            const parsed = Date.parse(String(c ?? ''));
+            return Number.isNaN(parsed) ? 0 : parsed;
+          };
+          return ts(b) - ts(a);
+        });
         const filtered = q
-          ? vsbs.filter(v => `${v.name || ''} ${v.domain || ''} ${v.entity_type || ''} ${v.vsb_id}`.toLowerCase().includes(q))
-          : vsbs;
-        // keep the current selection selectable even if filtered out
-        const options = (selected && !filtered.some(v => v.vsb_id === selected))
-          ? [...filtered, ...vsbs.filter(v => v.vsb_id === selected)]
-          : filtered;
+          ? recent.filter(v => `${v.name || ''} ${v.domain || ''} ${v.entity_type || ''} ${v.vsb_id}`.toLowerCase().includes(q))
+          : recent;
+        const OPTION_CAP = 50;
+        const capped = filtered.slice(0, OPTION_CAP);
+        const hiddenCount = filtered.length - capped.length;
+        // keep the current selection selectable even if filtered or capped out
+        const options = (selected && !capped.some(v => v.vsb_id === selected))
+          ? [...capped, ...vsbs.filter(v => v.vsb_id === selected)]
+          : capped;
         // W393 — with no established VSB the whole page is inert: `detail` is null, so nothing below
         // renders, and the only guidance used to be an UNSELECTABLE <option> inside a dropdown —
         // text that tells you to go somewhere and does nothing when you click it. Give the dead end
@@ -334,7 +350,14 @@ export const VSBCockpit: React.FC = () => {
               {vsbs.length > 0 && options.length === 0 && <option value="">No VSB matches “{vsbFilter}”</option>}
               {options.map(v => <option key={v.vsb_id} value={v.vsb_id}>{v.name || v.vsb_id}{v.domain ? ` · ${v.domain}` : ''}{v.has_board ? ' ✓' : ''}</option>)}
             </select>
-            {vsbs.length > 8 && <span className="text-[10px] font-black uppercase text-slate-500 shrink-0">{q ? `${filtered.length} of ${vsbs.length}` : `${vsbs.length} VSBs`}</span>}
+            {vsbs.length > 8 && (
+              // Never truncate silently: a capped list that looks complete is worse than a long one.
+              <span className="text-[10px] font-black uppercase text-slate-500 shrink-0">
+                {hiddenCount > 0
+                  ? `newest ${capped.length} of ${filtered.length}${q ? '' : ` · ${vsbs.length} total`} — filter to narrow`
+                  : q ? `${filtered.length} of ${vsbs.length}` : `${vsbs.length} VSBs`}
+              </span>
+            )}
             {loading && <Loader2 size={16} className="animate-spin text-highlight" />}
           </Card>
         );
