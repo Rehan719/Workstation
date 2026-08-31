@@ -79,11 +79,35 @@ class PurchaseRequest(BaseModel):
 def _listing_path(listing_id: str) -> Path:
     return _LISTINGS_DIR / f"{listing_id}.json"
 
+
+def _read_doc(path: Path) -> dict | None:
+    """Read a listing file whatever encoding it was written in.
+
+    W392 — a real listing in the dev store held byte 0x97 (a cp1252 em-dash), and this mattered more
+    than it looks. `read_text()` with no encoding uses the PLATFORM default: cp1252 on Windows, where
+    it happens to decode, and UTF-8 on Linux, where it raises. `_all_listings` swallowed that with a
+    bare `except: pass`, so the same store showed the listing in Windows development and silently
+    DROPPED it in Linux CI and production. Decode explicitly, widest-compatible last, and never let a
+    legacy encoding make a record disappear.
+    """
+    for enc in ("utf-8", "cp1252", "latin-1"):
+        try:
+            return json.loads(path.read_text(encoding=enc))
+        except UnicodeDecodeError:
+            continue
+        except (OSError, ValueError):
+            return None
+    return None
+
+
 def _load(listing_id: str) -> Listing:
     p = _listing_path(listing_id)
     if not p.exists():
         raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
-    return Listing(**json.loads(p.read_text()))
+    doc = _read_doc(p)
+    if doc is None:
+        raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
+    return Listing(**doc)
 
 def _save(listing: Listing) -> Listing:
     listing.updated_at = time.time()
@@ -93,8 +117,11 @@ def _save(listing: Listing) -> Listing:
 def _all_listings() -> list[Listing]:
     listings = []
     for f in sorted(_LISTINGS_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
+        doc = _read_doc(f)
+        if doc is None:
+            continue
         try:
-            listings.append(Listing(**json.loads(f.read_text())))
+            listings.append(Listing(**doc))
         except Exception:
             pass
     return listings
@@ -119,9 +146,8 @@ def _retire_invented_seeds() -> list[str]:
     a receipt must never point at a listing that vanished, even a fabricated one."""
     removed, kept = [], []
     for path in _LISTINGS_DIR.glob("*.json"):
-        try:
-            doc = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        doc = _read_doc(path)
+        if doc is None:
             continue
         if doc.get("name") in _INVENTED_SEED_NAMES and doc.get("creator_id") in {"platform", "community"}:
             if doc.get("sales_count"):
@@ -169,11 +195,9 @@ def _seed_from_catalog() -> int:
     # "Empty" was wrong: a single retired fabrication kept for its receipt left the store non-empty,
     # so seeding never ran and the marketplace showed nothing but that fabrication.
     for path in _LISTINGS_DIR.glob("*.json"):
-        try:
-            if json.loads(path.read_text(encoding="utf-8")).get("origin") == "catalog":
-                return 0
-        except (OSError, ValueError):
-            continue
+        doc = _read_doc(path)
+        if doc is not None and doc.get("origin") == "catalog":
+            return 0
     try:
         from agentic_core.catalog.api import list_products   # local: avoids an import cycle at boot
         products = list_products()

@@ -6437,3 +6437,40 @@ def test_working_owned_model_is_not_demoted_below_the_floor():
             "an effectively-dead model must still be demoted below the floor")
     finally:
         _oe.model_health = real
+
+
+def test_w392_marketplace_listing_survives_a_legacy_cp1252_file(tmp_path, monkeypatch):
+    """A listing written in cp1252 must still be readable.
+
+    Found in the real dev store: a listing file containing byte 0x97 (a cp1252 em-dash). The
+    module read it with read_text() and no encoding, which uses the PLATFORM default - cp1252 on
+    Windows, where it decodes, and UTF-8 on Linux, where it raises. _all_listings swallowed that
+    with a bare 'except: pass', so the SAME store showed the listing in Windows development and
+    silently DROPPED it in Linux CI and production. Fails on the pre-fix code under UTF-8.
+    """
+    import importlib
+    monkeypatch.setenv('LISTINGS_DIR', str(tmp_path))
+    import agentic_core.api.marketplace as mkt
+    mkt = importlib.reload(mkt)
+
+    name = 'Digital Reactor ' + chr(0x2014) + ' Legacy'
+    doc = {'id': 'legacy1', 'name': name, 'description': 'd', 'price_wst': 10.0,
+           'creator_id': 'someone', 'sales_count': 0, 'status': 'active'}
+    legacy = tmp_path / 'legacy1.json'
+    legacy.write_bytes(json.dumps(doc, ensure_ascii=False).encode('cp1252'))
+    assert 0x97 in legacy.read_bytes(), 'fixture must really be cp1252-encoded'
+
+    names = [l.name for l in mkt._all_listings()]
+    assert name in names, 'a cp1252-encoded listing was dropped instead of read: %r' % (names,)
+    assert mkt._load('legacy1').price_wst == 10.0
+
+    # The cp1252 case above only FAILS pre-fix where the platform default is UTF-8 (Linux CI); on
+    # Windows the old code happened to decode it. A test that cannot fail where it is written is
+    # nearly worthless, so this second record uses U+0081 -> byte 0x81, which is undefined in cp1252
+    # AND invalid in UTF-8. It is unreadable under either platform default and only a deliberate
+    # fallback recovers it, so the test bites on every platform.
+    doc2 = dict(doc, id='legacy2', name='Odd ' + chr(0x81) + ' Byte')
+    (tmp_path / 'legacy2.json').write_bytes(json.dumps(doc2, ensure_ascii=False).encode('latin-1'))
+    names2 = [l.name for l in mkt._all_listings()]
+    assert doc2['name'] in names2, (
+        'a listing readable only via an explicit fallback was dropped: %r' % (names2,))
