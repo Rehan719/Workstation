@@ -80,7 +80,13 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
 
   const biometrics = useWorkstationBiometrics();
 
-  const _wsBase = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000').replace(/^http/, 'ws');
+  // W382 — default to the CURRENT ORIGIN, not a hardcoded localhost:8000. The old default was baked
+  // in at BUILD time, so any deployment built without VITE_API_BASE_URL opened a WebSocket to
+  // 'ws://localhost:8000' — i.e. to the VIEWER's own machine, which fails for every real user.
+  // Found by the browser smoke on its first CI run (the backend there listens on 8010, so every
+  // route logged ERR_CONNECTION_REFUSED). Same-origin is correct wherever the backend serves the
+  // SPA; an explicit VITE_API_BASE_URL still wins for split dev hosts.
+  const _wsBase = (import.meta.env.VITE_API_BASE_URL ?? window.location.origin).replace(/^http/, 'ws');
   useResilientWebSocket(`${_wsBase}/api/v154/ws/streams`, (data) => {
     if (data.type === 'SYSTEM_VITALS') {
       updateSystemVitals(data.payload);

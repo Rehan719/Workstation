@@ -2341,3 +2341,20 @@ active one, and I flagged it as needing a probe before asserting anything. Probe
   full 5-surface regeneration plus a git commit per beat, 81KB DCMS growth in 80s).
 **Conclusion: no defect, no change.** Recorded as a non-finding rather than left as an open question
 or turned into a fix that was not needed.
+
+### W382 — the browser smoke found a real deployment defect on its FIRST CI run
+- CI failed the new smoke on all seven data-bearing routes with
+  `WebSocket connection to 'ws://localhost:8000/...' failed: ERR_CONNECTION_REFUSED`.
+- **Not a test artifact — a genuine production defect.** `Shell.tsx` derived the WebSocket base from
+  `import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'`, resolved at BUILD time. Any
+  deployment built without that variable ships a bundle that opens a socket to **the viewer's own
+  machine on port 8000**, which fails for every real user. It surfaced in CI only because the backend
+  there listens on 8010; a production build would have failed the same way, silently, in every
+  browser.
+- **Fixed:** the default is now `window.location.origin` — correct wherever the backend serves the
+  SPA (production and CI). An explicit `VITE_API_BASE_URL` still wins for split dev hosts.
+- **Verified under the TRUE CI condition**, not an approximation: my local `.env.local` sets the
+  variable, so the first "passing" rebuild proved nothing. Removed it, rebuilt, and confirmed
+  **zero occurrences of `localhost:8000` in the shipped bundle** plus a clean smoke run.
+- This is the harness paying for itself immediately: a defect invisible to tsc, the build, the
+  backend suite and every response-shape test, because it only manifests in a browser.
