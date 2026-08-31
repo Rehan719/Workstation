@@ -2464,3 +2464,34 @@ Now pulls on mount (0 → 3 requests), describes the tier actually in play, clea
 failure path reports "Workspace sync failed … HTTP 503" instead of silently showing an empty list.
 The success path could not have proven that: `AUTH_ENABLED` is off here, so the server returns 200
 with `owner_id "default"` for any token.
+
+### W392 — the marketplace wired on honest data (Owner-decided)
+Found by the **inverse** reachability check: 447 backend paths vs 205 frontend calls → 107
+write-capable routes nothing in the UI reaches. Most are legitimately API-only; the marketplace was
+not. It was fully built — listings, §11 compliance screening, §14 tenant binding, virtual-WST
+purchase under a §12 cross-process lock — with **zero** frontend.
+
+**It was not an oversight.** The page carried a deliberate note: the listings economy is *Owner-gated*
+and must not be "seeded with invented sales/trust figures". That call was correct — the backend
+auto-wrote **six fabricated listings at every first boot**: invented products ("Sovereign Synthesis
+Pack"), invented prices (5,000 WST) and `certified: true` asserted by nobody. Never displayed, but
+sitting in the data store as if real. I stopped and put it to the Owner rather than building over a
+documented gate; the Owner chose **wire it on real data**.
+
+- Listings now derive from the **real catalogue**: name, category, tier, route are facts; `price_wst`
+  stays 0 and `certified` stays False, because nobody has priced or certified them — **unset, not
+  invented**. New `origin`/`route` fields so the UI never guesses.
+- A fabricated seed carrying a **recorded sale** is not deleted — a receipt must never point at a
+  listing that vanished. Retired *in place*: certification dropped, moved to `draft` so the public
+  list filters it while `GET /listings/{id}` still resolves it.
+- Seeding triggers when no catalogue listing exists, **not** merely when the store is empty. "Empty"
+  was wrong and the first real run proved it: one retired-but-sold fabrication left the store
+  non-empty, so seeding never ran and the marketplace showed nothing *but* that fabrication.
+- UI: a Listings section for what is genuinely priced, kept separate from the catalogue grid rather
+  than duplicating it; the real receipt rendered from fields read off an **actual** response; an
+  empty state that says *why* nothing is purchasable.
+
+Verified against the running app: fresh store → 20 real listings, 0 priced, 0 certified; creating a
+priced listing runs the real §11 halal screen; purchase returns a receipt with a token-ledger TX
+hash; planted fabrications with and without sales take the retire-in-place and delete paths.
+Money stays virtual WST; `REAL_MONEY_ENABLED` untouched.
