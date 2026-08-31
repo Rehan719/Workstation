@@ -36,10 +36,10 @@ export const QEPImmersiveTools: React.FC<QEPImmersiveProps> = ({ domain = 'relig
                 <Video size={18} />
                 {config.action}
              </Button>
-             <div className="p-6 rounded-2xl bg-slate-950 border border-slate-900 flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-400 italic">Domain Sync Active (v1.0)</span>
-                <Badge color="aura">LIVE</Badge>
-             </div>
+             {/* W411 — a "Domain Sync Active (v1.0)" row with a LIVE badge used to sit here, on all
+                 six domain hubs. Nothing syncs and nothing is live; the badge asserted an active
+                 connection that does not exist. Removed rather than replaced — there is no status
+                 to report, and an honest widget reporting nothing is still clutter. */}
           </div>
         </Card>
 

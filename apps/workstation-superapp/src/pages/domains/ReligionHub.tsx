@@ -65,16 +65,9 @@ export const ReligionHub: React.FC = () => {
                   <HeartPulse size={120} className="text-aura opacity-40 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse-slow" />
                </div>
 
-               <div className="absolute bottom-10 right-10 flex gap-10 text-right">
-                  <div>
-                     <p className="text-[10px] font-black text-slate-700 uppercase mb-1">Active Alliances</p>
-                     <p className="text-2xl font-black text-aura">42</p>
-                  </div>
-                  <div>
-                     <p className="text-[10px] font-black text-slate-700 uppercase mb-1">Moral Resonance</p>
-                     <p className="text-2xl font-black text-aura">0.99</p>
-                  </div>
-               </div>
+               {/* W411 — "Active Alliances 42" and "Moral Resonance 0.99" were rendered here as
+                   live figures. Nothing counts alliances and nothing measures moral resonance;
+                   both were literals. No real source exists for either, so neither is shown. */}
             </Card>
 
             <Card className="p-10 space-y-10">

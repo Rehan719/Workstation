@@ -11,9 +11,11 @@ export const ConstitutionalUI: React.FC = () => {
   const [articles, setArticles] = useState<any[]>([]);
   const [gaas, setGaas] = useState<any>(null);
   const [ueg, setUeg] = useState<any[]>([]);
+  const [integrity, setIntegrity] = useState<{ valid: boolean; events: number; root_hash: string } | null>(null);
 
   useEffect(() => {
     // v0.2: Constitution Explorer - Fetch all 1127 articles
+    fetch('/api/v1/gaas/ueg/verify').then(r => r.json()).then(setIntegrity).catch(() => setIntegrity(null));
     fetch('/api/v154/constitution/articles')
       .then(res => res.json())
       .then(data => setArticles(Array.isArray(data) ? data : []))
@@ -73,13 +75,21 @@ export const ConstitutionalUI: React.FC = () => {
                   Autonomous self-healing is active. Constitutional AI generates and ratifies low-impact amendments.
                </p>
                <div className="space-y-4 pt-6 border-t border-aura/10">
+                  {/* W411 — "Trust Score 0.96 (SOVEREIGN)" with a fixed w-[96%] bar used to be here.
+                      Nothing computes trust, and a filled bar is a strong visual claim of a
+                      measurement. There IS a real integrity signal for a governance page — the UEG
+                      hash chain — so it is shown instead: verified or not, over a real event count. */}
                   <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
-                     <span>Trust Score</span>
-                     <span className="text-aura">0.96 (SOVEREIGN)</span>
+                     <span>Ledger integrity</span>
+                     <span className={integrity?.valid ? "text-aura" : "text-vital"}>
+                        {integrity === null ? "—" : integrity.valid ? "VERIFIED" : "TAMPER DETECTED"}
+                     </span>
                   </div>
-                  <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                     <div className="h-full bg-aura w-[96%]" />
-                  </div>
+                  {integrity && (
+                     <p className="text-[9px] font-bold text-slate-600">
+                        {integrity.events.toLocaleString()} events · root {String(integrity.root_hash).slice(0, 12)}…
+                     </p>
+                  )}
                </div>
                <Button type="button" onClick={() => navigate('/change-control')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-aura/20">
                   <Sparkles size={18} /> Propose Amendment

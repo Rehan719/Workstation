@@ -315,7 +315,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — ReligionHub.tsx:122 renders <QEPFlagshipFeatures /> at /religion
 
 ### `apps/workstation-superapp/src/components/QEPImmersiveTools.tsx:39`
-- **status:** OPEN
+- **status:** FIXED (W411)
 - **claim:** `<span>Domain Sync Active (v1.0)</span><Badge color="aura">LIVE</Badge>` (lines 40-41) and `<CheckCircle className="text-emerald-500" /> Data Sovereignty Verified` (line 59).
 - **why it is a fabrication:** The component contains zero fetch or axios calls (verified: 0 matches) — it has no data source of any kind. It nonetheless shows a green 'LIVE' badge asserting an active sync, and a green tick asserting that data sovereignty has been verified. Nothing syncs and nothing verifies. It renders identically on six domain hubs, so the claim appears across most of the product surface.
 - **reach:** live routes — rendered on /religion, /science, /law, /education, /care, /employment (CareHub, EducationHub, EmploymentHub, LawHub, ReligionHub, ScienceHub)
@@ -333,7 +333,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — /qep and /qep-religion, 'mem' tab
 
 ### `apps/workstation-superapp/src/pages/domains/ReligionHub.tsx:71`
-- **status:** OPEN
+- **status:** FIXED (W411)
 - **claim:** `Active Alliances` `42` (line 71) and `Moral Resonance` `0.99` (line 75) rendered in the 'Sacred Knowledge Garden' panel; plus `Alignment Score` / `OPTIMAL` with a fixed `w-[98%]` bar (lines 224-229) in a card whose body text reads 'Moral alignment checks run through the real §11 compliance engines (Halal/Sharia · Ethical).'
 - **why it is a fabrication:** 'Moral Resonance 0.99' and 'Alignment Score OPTIMAL' at 98% are literals. The alignment card explicitly tells the user the number comes from the real §11 compliance engines — an assertion of provenance for a value that is never fetched from them. '42' as an alliance count is the same round literal flagged in the confirmed `study_groups_active 42` case.
 - **reach:** live route — /religion (App.tsx:175)
@@ -345,7 +345,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — /economy?tab=capital, 'Evolution' and 'External Markets' tabs
 
 ### `apps/workstation-superapp/src/pages/governance/ConstitutionalUI.tsx:78`
-- **status:** OPEN
+- **status:** FIXED (W411)
 - **claim:** `<span>Trust Score</span><span className="text-aura">0.96 (SOVEREIGN)</span>` with a matching fixed bar `<div className="h-full bg-aura w-[96%]" />` (line 81).
 - **why it is a fabrication:** A governance trust score with a tier label ('SOVEREIGN') and a 96%-filled meter, with nothing behind it. It is especially misleading here because the very next card on the same page renders genuinely live GaaS v5 data (`gaas.circuit_breaker.threshold`, `gaas.circuit_breaker.error_rate`, `gaas.ueg.total_events`, real root hash) and the timeline below was already made honest ('Illustrative example (demo — not a real event)'). The surrounding honesty makes the constant read as measured.
 - **reach:** live route — /governance-hub?tab=constitution (App.tsx:225-226, GovernanceCenter.tsx:12)
