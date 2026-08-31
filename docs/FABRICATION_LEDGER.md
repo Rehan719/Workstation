@@ -73,13 +73,13 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** unreachable — no importer outside _archive/ and docs/
 
 ### `agentic_core/reactor/religion/qep_flagship.py:213`
-- **status:** OPEN
+- **status:** FIXED (W403)
 - **claim:** certifications(user_id, course_id) builds `{"id": "CERT-...", "user_id", "course", "issued_at", "valid_until": "PERPETUAL"}`, signs it with `pqc_service.sign_dilithium5(...)`, appends it to the on-disk certificate store, and returns `{"status": "ISSUED", "pqc_signature": ..., "verify_url": f"/verify/{cert_id}"}`.
 - **why it is a fabrication:** Neither argument is checked against anything — no progress record, no course roster, no completion test. The function is a pure issuance path. Because it then applies a REAL post-quantum signature and hands back a verify_url, the artifact is cryptographically attestable while attesting a completion nothing established — the exact shape of meta/SHARIA_AUDIT_v100.0.json's machine-invented signature, but persisted and per-user.
 - **reach:** stored (writes DATA_DIR/qep_production.json certificates[]) — no live route; registered as tool "qep_certifications", called at ceo.py:140
 
 ### `agentic_core/reactor/religion/qep_flagship.py:64`
-- **status:** OPEN
+- **status:** FIXED (W403)
 - **claim:** tajwid_coach(audio_blob, reference) never reads audio_blob. It returns `score = 0.98 + (random.random() * 0.015)` rounded to 4dp, plus `"rules_verified": ["Madd Jaa'iz", "Ikhfa'", "Ghunnah", "Qalqalah"]` and `"human_fallback": score < 0.92` (unreachable — the floor is 0.98).
 - **why it is a fabrication:** A user receives a numeric assessment of their Qur'anic recitation and a list of tajwid rules marked verified, for audio that was never analysed — the caller in ceo.py:108 does not even pass audio, it passes b"". The random floor of 0.98 also makes the "human_fallback" escape hatch structurally dead, so a genuinely poor recitation can never be routed to a human. This is a religious-practice competency judgement invented by random.random().
 - **reach:** no live route — registered as tool "qep_tajwid_coach" (ceo.py:57 region, called at ceo.py:108) but ToolRegistry.call_tool is never invoked with that name from any route
@@ -139,7 +139,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — App.tsx:245 /cognitive-introspection; also linked from CommandPalette.tsx:66 and SearchMeshModal.tsx:40
 
 ### `apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx:47`
-- **status:** OPEN
+- **status:** FIXED (W403)
 - **claim:** TajwidCoach `startRecitation()` sets `setTimeout(..., 3000)` then `setResult({ score: 94.2, violations: [{ rule: 'Ikhfa', msg: 'Noon Sakina here requires light ghunnah.' }, { rule: 'Qalqalah', msg: 'The letter Ba requires clear echo.' }] })`. Rendered at line 91 as `Accuracy Score {result.score}%` and at lines 105-113 under a heading `Real-time Coaching`.
 - **why it is a fabrication:** A user presses the mic button, sees 'Analyzing Phonetic Stream...' for 3 seconds, and is told their Qur'anic recitation scored 94.2% with two specific tajwid rule violations in their own recitation. No microphone is ever opened (no getUserMedia), no audio is captured, no backend is called. The score and both violations are literals in the source. This is a fabricated religious-performance assessment attributed to the user — the same shape as the confirmed `quiz_accuracy 98.2%` fabrication. The rest of this file was cleaned in an earlier pass (MemorizationSuite's SM-2 button now checks `r.ok`, 
 - **reach:** live route — App.tsx:181-182 maps both /qep and /qep-religion to QEPReligionHub; App.tsx:35 calls this 'the genuine Qur'an Education Platform'

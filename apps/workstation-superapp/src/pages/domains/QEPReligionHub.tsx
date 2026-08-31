@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Button, Badge, toast } from '@workstation/ui';
-import { Mic, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity } from 'lucide-react';
+import { Mic, MicOff, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity } from 'lucide-react';
 
 export const QEPReligionHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState('coach');
@@ -39,25 +39,19 @@ export const QEPReligionHub: React.FC = () => {
   );
 };
 
+// W403 — this reported a recitation score of 94.2% and two named tajwid violations (Ikhfa,
+// Qalqalah) after a three-second setTimeout. It never recorded audio and never called anything:
+// the score and the "errors" were literals. It told a user their recitation of the Qur'an was
+// assessed, and named mistakes they did not make.
+//
+// The backend is no better — qep_flagship.tajwid_coach() ignores its audio argument and returns
+// 0.98 + random()*0.015 — so there is no assessment capability anywhere to wire this to.
+//
+// Assessing recitation needs a phonetic/audio model that is not provisioned. Precedent is already
+// set in this repo (W148: image input was left unbuilt because the native floor has no vision
+// model, rather than faking analysis). The same applies here, and it matters more: a fabricated
+// judgement about someone's recitation of scripture is not a placeholder, it is a false witness.
 const TajwidCoach = () => {
-  const [reciting, setReciting] = useState(false);
-  const [result, setResult] = useState<any>(null);
-
-  const startRecitation = () => {
-    setReciting(true);
-    setResult(null);
-    setTimeout(() => {
-      setReciting(false);
-      setResult({
-        score: 94.2,
-        violations: [
-          { rule: 'Ikhfa', msg: 'Noon Sakina here requires light ghunnah.' },
-          { rule: 'Qalqalah', msg: 'The letter Ba requires clear echo.' }
-        ]
-      });
-    }, 3000);
-  };
-
   return (
     <div className="grid grid-cols-1 @[440px]:grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
        <div className="@[440px]:col-span-8">
@@ -74,55 +68,28 @@ const TajwidCoach = () => {
                 <p className="text-slate-500 italic">In the name of Allah, the Most Gracious, the Most Merciful.</p>
              </div>
 
-             <button
-               onClick={startRecitation}
-               className={`w-32 h-32 rounded-full flex items-center justify-center transition-all ${reciting ? 'bg-vital animate-pulse shadow-[0_0_40px_rgba(255,100,100,0.4)]' : 'bg-aura shadow-[0_0_30px_rgba(100,255,218,0.3)] hover:scale-105'} text-sovereign`}
-             >
-                {reciting ? <Activity size={48} /> : <Mic size={48} />}
-             </button>
+             <div className="w-32 h-32 rounded-full flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-600">
+                <MicOff size={44} />
+             </div>
              <p className="mt-8 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">
-                {reciting ? 'Analyzing Phonetic Stream...' : 'Click to start recitation'}
+                Recitation assessment unavailable
              </p>
-
-             {result && (
-               <div className="mt-12 w-full grid grid-cols-2 gap-6 animate-in zoom-in-95 duration-500">
-                  <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-left">
-                     <p className="text-[10px] font-black uppercase text-emerald-500 mb-2">Accuracy Score</p>
-                     <p className="text-4xl font-black text-white">{result.score}%</p>
-                  </div>
-                  <div className="p-6 rounded-3xl bg-vital/10 border border-vital/20 text-left">
-                     <p className="text-[10px] font-black uppercase text-vital mb-2">Rule Violations</p>
-                     <p className="text-4xl font-black text-white">{result.violations.length}</p>
-                  </div>
-               </div>
-             )}
+             <p className="mt-4 max-w-md text-xs text-slate-500 font-semibold leading-relaxed">
+                Assessing tajwid requires a phonetic model that is not provisioned on this
+                deployment. Rather than show a score nothing measured, this reports nothing. The
+                verse and riwayah above are real; no judgement is made about your recitation.
+             </p>
           </Card>
        </div>
        <div className="@[440px]:col-span-4 space-y-8">
-          <Card className="p-8 bg-aura/5 border-aura/20">
-             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Real-time Coaching</h3>
-             <div className="space-y-4">
-                {result?.violations.map((v: any, i: number) => (
-                  <div key={i} className="p-4 rounded-2xl bg-slate-900/80 border border-vital/30 flex gap-4">
-                     <AlertCircle className="text-vital shrink-0" size={18} />
-                     <div>
-                        <p className="text-[10px] font-black text-vital uppercase">{v.rule}</p>
-                        <p className="text-xs text-slate-300 font-bold">{v.msg}</p>
-                     </div>
-                  </div>
-                ))}
-                {!result && (
-                   <p className="text-xs text-slate-500 italic">Waiting for input signal...</p>
-                )}
-             </div>
-          </Card>
           <Card className="p-8 bg-slate-950 border-slate-900">
-             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">Session Vitals</h3>
-             <div className="space-y-6">
-                <VitalRow label="Phonetic Precision" value="High" />
-                <VitalRow label="Temporal Alignment" value="Optimal" />
-                <VitalRow label="GaaS Compliance" value="Not yet measured" />
-             </div>
+             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4">Coaching</h3>
+             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                Per-rule coaching (Ikhfa, Qalqalah, Ghunnah and the rest) is produced from a real
+                assessment of recorded audio. With no phonetic model provisioned there is nothing
+                to coach from, so nothing is shown. Previously this panel listed specific rule
+                violations that were written into the page as literals.
+             </p>
           </Card>
        </div>
     </div>

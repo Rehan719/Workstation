@@ -58,25 +58,29 @@ class QEPFlagshipService:
         return self.data["users"][user_id]
 
     async def tajwid_coach(self, audio_blob: bytes, reference: str) -> Dict[str, Any]:
-        """Feature 1: AI Tajwīd Coach (Production Grade)."""
-        # Backend logic to receive audio and return analysis.
-        # Real-time processing happens on the frontend via TensorFlow.js.
-        # This endpoint provides the "Rule-Based Verification" and "Ethical Gating".
+        """Tajwid assessment is NOT available, and this refuses rather than inventing a score.
 
-        # Simulated high-fidelity scoring based on "audio properties"
-        score = 0.98 + (random.random() * 0.015)
-        rules = ["Madd Jaa'iz", "Ikhfa'", "Ghunnah", "Qalqalah"]
-        feedback = []
-        if score < 0.99:
-            feedback.append("Focus on the clarity of the Qalqalah at the end of the ayah.")
+        W403 - this returned score = 0.98 + random() * 0.015 without ever reading audio_blob, under
+        a comment that said "Simulated high-fidelity scoring based on audio properties". It also
+        reported status SUCCESS and a rules_verified list, asserting that specific tajwid rules had
+        been checked. Nothing was checked and no audio was read.
 
+        A fabricated judgement about a person's recitation of the Qur'an is not a placeholder. It is
+        a false statement about their worship, and it is worse than returning nothing. Assessing
+        recitation needs a phonetic model that is not provisioned here; until one is, this reports
+        that plainly. Precedent: image analysis was left unbuilt for the same reason rather than
+        faked (W148).
+        """
         return {
-            "status": "SUCCESS",
-            "score": round(score, 4),
-            "suggestions": feedback,
-            "rules_verified": rules,
-            "human_fallback": score < 0.92,
-            "timestamp": datetime.datetime.utcnow().isoformat()
+            "status": "UNAVAILABLE",
+            "score": None,
+            "rules_verified": [],
+            "reference": reference,
+            "audio_bytes_received": len(audio_blob or b""),
+            "detail": ("Recitation assessment requires a phonetic model that is not provisioned on "
+                       "this deployment. No score is produced, because any score here would be "
+                       "invented rather than measured."),
+            "timestamp": datetime.datetime.utcnow().isoformat(),
         }
 
     async def memorization_suite(self, user_id: str, ayah_ref: str, grade: int = 5) -> Dict[str, Any]:
@@ -205,19 +209,40 @@ class QEPFlagshipService:
         }
 
     async def certifications(self, user_id: str, course_id: str) -> Dict[str, Any]:
-        """Feature 9: Certifications & Credentials (PQC-Hardened)."""
+        """Issue a credential ONLY when the course was actually completed.
+
+        W403 - this minted a certificate for any (user_id, course_id) with no check whatsoever,
+        stamped it "valid_until": "PERPETUAL" and "status": "ISSUED", and signed it with a real
+        Dilithium5 signature. The cryptography was genuine, which made it worse: a verifiable
+        signature over an unearned claim is a stronger lie than an unsigned one. Nothing recorded
+        that the user had studied anything.
+
+        A credential asserts an achievement. It is now refused unless the user's own progress record
+        shows the course completed, and it carries the evidence it was issued against.
+        """
+        user = self._get_user(user_id)
+        progress = (user.get("progress") or {}).get(course_id)
+        completed = bool(progress and progress.get("completed"))
+        if not completed:
+            return {
+                "certificate_id": None,
+                "status": "NOT_EARNED",
+                "detail": ("No completion is recorded for this user on this course, so no "
+                           "certificate is issued. A signed credential asserting an achievement "
+                           "nobody completed would be verifiable and false."),
+                "course": course_id,
+            }
+
         cert_id = f"CERT-{uuid.uuid4().hex[:12]}"
         cert_data = {
             "id": cert_id,
             "user_id": user_id,
             "course": course_id,
             "issued_at": datetime.datetime.utcnow().isoformat(),
-            "valid_until": "PERPETUAL"
+            "evidence": {"completed_at": progress.get("completed_at"),
+                         "source": "user progress record"},
         }
-
-        # Sign with PQC SCS
         signature = pqc_service.sign_dilithium5(json.dumps(cert_data).encode())
-
         cert_entry = cert_data.copy()
         cert_entry["signature"] = signature
         self.data["certificates"].append(cert_entry)
@@ -227,7 +252,8 @@ class QEPFlagshipService:
             "certificate_id": cert_id,
             "status": "ISSUED",
             "pqc_signature": signature,
-            "verify_url": f"/verify/{cert_id}"
+            "evidence": cert_data["evidence"],
+            "verify_url": f"/verify/{cert_id}",
         }
 
     async def offline_global_access(self, user_id: str) -> Dict[str, Any]:
