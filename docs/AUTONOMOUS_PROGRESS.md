@@ -2643,3 +2643,40 @@ worth rejecting. Proven both ways: `DATA_DIR=data` fires it, a temp dir passes.
 
 **Route audit complete:** 175 parameterless GET · 157 POST · 42 parameterised GET → **0 5xx, 0
 exceptions**; frontend→backend **202 paths, 0 dangling**. Suite 312 passed / 0 failed; CI green.
+
+### W403–W415 — the fabrication audit, closed: 63 of 63
+A five-area sweep with an adversarial defence pass proposed 70 findings; 11 were successfully
+defended, leaving **63 surviving fabrications** — values a user or API consumer would read as
+measured, derived or certified that nothing measured, derived or certified. All are now closed.
+Ledger with per-entry evidence: `docs/FABRICATION_LEDGER.md`.
+
+**The pattern that made them credible: proximity to truth.** Almost every one sat beside something
+real — invented `sim_results` grafted onto genuine model output, `"uptime": "99.9%"` next to live
+psutil readings, a fabricated vote tally that real votes were added to, a fixed `"latency"` beside a
+real region and stimulus. Real neighbours lend credibility to invented ones, and a blend is worse
+than either alone because the consumer cannot separate them.
+
+**The worst were faith-sensitive or safety-relevant:**
+- A **tajwid coach** reporting a recitation score of 94.2% with named rule violations after a
+  three-second timer, never reading the audio (backend: `0.98 + random()*0.015`).
+- **`certifications()`** minting a Dilithium5-**signed** credential marked "PERPETUAL" for any user
+  and course with no check at all — genuine cryptography over an unearned claim.
+- **`HealthcareHIPAAAdapter`** logging "Triggering PHI redaction" and returning `sanitized: True`
+  **with the SSN untouched**.
+- **`IslamicFinanceAdapter`** returning `halal: True` for an interest-bearing 400% APR payday loan.
+- Three invented names captioned **"Verified Scholar"**.
+
+**Where a real source existed it was wired in, not merely nulled** — that is the better outcome and
+it was available more often than expected: the treasury now reports the real capital fund; a
+fabricated "Trust Score 0.96" became real UEG hash-chain verification (`VERIFIED · 2,001 events`);
+`check_gaas_compliance` now runs the real §11 screen; `get_system_vitals` uses psutil, which was
+already in the codebase; `analyze_fairness` computes the four-fifths ratio its docstring named.
+
+**Two fabrications were writing into real stores.** `CycleRequest.revenue` defaulted to 10,000 and
+the cockpit posted only `{vsb_id}`, so every "Run economic cycle" click booked ten thousand WST
+nobody earned into the ledger. And `call_meeting` wrote unanimous invented APPROVE positions into the
+C-Suite record — which **my own W400 fix made worse** by turning that record from a broken stub into
+a real one, so the fabrications would have started persisting convincingly.
+
+**Verification:** 175 GET + 157 POST + 42 parameterised routes → 0 5xx; tsc and production build
+clean; browser smoke 11 routes + 61 swept; full suite **312 passed / 15 skipped / 0 failed**.
