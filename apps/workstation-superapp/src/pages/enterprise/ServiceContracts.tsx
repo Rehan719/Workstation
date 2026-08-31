@@ -32,7 +32,7 @@ interface Contract {
   brief: string;
   price_wst: number;
   status: string;                       // offered | accepted | delivered | settled
-  delivery?: { run_id?: string; quality?: unknown; served_by?: string } | null;
+  delivery?: { run_id?: string; quality?: unknown; served_by?: unknown } | null;
   settlement?: { transfer_id?: string; held?: boolean; governance?: unknown } | null;
   offered_at?: string;
   note?: string;
@@ -51,17 +51,56 @@ const STATUS_TONE: Record<string, string> = {
   settled:   'text-emerald-400',
 };
 
-/** Renders whatever the backend returned for a quality verdict without asserting a shape. */
+/** Formats `served_by` whatever shape it arrives in.
+ *
+ * W394d — this was typed as a string and rendered raw, which crashed the WHOLE /economy route with
+ * React error #31 ("Objects are not valid as a React child"). POST /native-ai/complete does return a
+ * string, but a CASCADE returns a count map — the real delivery came back {"ollama": 7, "native": 15}.
+ * Checking the actual response instead of assuming the shape would have caught it.
+ */
+function servedByText(s: unknown): string | null {
+  if (s === null || s === undefined) return null;
+  if (typeof s === 'string' || typeof s === 'number') return String(s);
+  if (typeof s === 'object') {
+    const pairs = Object.entries(s as Record<string, unknown>)
+      .filter(([, v]) => typeof v === 'number' || typeof v === 'string');
+    if (!pairs.length) return null;
+    return pairs.map(([k, v]) => `${k} ${v}`).join(' · ');
+  }
+  return null;
+}
+
+/** Summarises the delivery's real QMS verdict.
+ *
+ * A first version fell back to JSON.stringify and printed the `bar` criteria list — 90 characters of
+ * SHOUTING JSON that told the reader nothing. The verdict actually carries the useful signals:
+ * whether the QMS gate passed, delivery coverage, the non-conformance rate, defects against gates
+ * run, and whether a stub was detected. A weak delivery must read as weak, so a failed gate and open
+ * defects are stated first and plainly.
+ */
 function qualityText(q: unknown): string | null {
   if (q === null || q === undefined) return null;
   if (typeof q === 'string' || typeof q === 'number') return String(q);
-  if (typeof q === 'object') {
-    const o = q as Record<string, unknown>;
-    const v = o.verdict ?? o.overall ?? o.score ?? o.grade;
-    if (v !== undefined) return String(v);
-    try { return JSON.stringify(q).slice(0, 90); } catch { return null; }
+  if (typeof q !== 'object') return null;
+  const o = q as Record<string, any>;
+
+  const simple = o.verdict ?? o.overall ?? o.score ?? o.grade;
+  if (simple !== undefined && typeof simple !== 'object') return String(simple);
+
+  const parts: string[] = [];
+  if (typeof o.qms_gate_passed === 'boolean') parts.push(o.qms_gate_passed ? 'QMS pass' : 'QMS FAIL');
+  if (typeof o.delivery_coverage === 'number') parts.push(`coverage ${Math.round(o.delivery_coverage * 100)}%`);
+  const d = o.qms_defects as Record<string, any> | undefined;
+  if (d && typeof d.defects_total === 'number' && typeof d.gates_run === 'number') {
+    parts.push(`${d.defects_total} defect${d.defects_total === 1 ? '' : 's'}/${d.gates_run} gates`);
+  } else if (typeof o.qms_non_conformance_rate === 'number') {
+    parts.push(`non-conformance ${(o.qms_non_conformance_rate * 100).toFixed(1)}%`);
   }
-  return null;
+  if (o.stub_found === true) parts.push('STUB DETECTED');
+  const comp = o.compliance as Record<string, any> | undefined;
+  if (comp && typeof comp.overall === 'string') parts.push(`compliance ${comp.overall}`);
+
+  return parts.length ? parts.join(' · ') : null;
 }
 
 export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities }) => {
@@ -231,7 +270,7 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
                   <div className="flex items-center gap-2 flex-wrap text-[9px] font-black uppercase tracking-widest text-slate-600">
                     <span className="text-aura">{c.price_wst.toLocaleString()} WST</span>
                     {q && <><span>·</span><span>quality {q}</span></>}
-                    {c.delivery?.served_by && <><span>·</span><span>served by {c.delivery.served_by}</span></>}
+                    {servedByText(c.delivery?.served_by) && <><span>·</span><span>served by {servedByText(c.delivery?.served_by)}</span></>}
                     {c.settlement?.held && <Badge className="text-[8px]">settlement held</Badge>}
                     {c.settlement?.transfer_id && <><span>·</span><span>transfer {String(c.settlement.transfer_id).slice(0, 10)}</span></>}
                     {c.status === 'accepted' && (
