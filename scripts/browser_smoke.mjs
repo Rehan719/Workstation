@@ -62,7 +62,16 @@ for (const [route, landmarks] of ROUTES) {
   page.on('response', onResponse);
 
   try {
-    await page.goto(`${BASE}${route}`, { waitUntil: 'networkidle', timeout: 45_000 });
+    // 'networkidle' is the wrong condition for this app: several pages poll
+    // /api/v1/biometrics/status on an interval, so the network may never go idle and the
+    // navigation times out at random under load. That produced a red /domains on a run where the
+    // page rendered perfectly. Wait for the document instead, then for the app to actually paint
+    // something into #root — which is what we are really asserting.
+    await page.goto(`${BASE}${route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await page.waitForFunction(
+      () => (document.querySelector('#root')?.innerText || '').trim().length > 40,
+      { timeout: 30_000 },
+    );
     await page.waitForTimeout(1200);           // let deferred renders settle
     const body = await page.evaluate(() => document.body.innerText || '');
 
@@ -97,7 +106,11 @@ for (const [route, landmarks] of ROUTES) {
 // The cluster-1 class specifically: the governance surface must show real structure, never a bare
 // shell. It rendered permanently empty for months because the UI read keys the API never returned.
 try {
-  await page.goto(`${BASE}/change-control`, { waitUntil: 'networkidle', timeout: 45_000 });
+  await page.goto(`${BASE}/change-control`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await page.waitForFunction(
+    () => (document.querySelector('#root')?.innerText || '').trim().length > 40,
+    { timeout: 30_000 },
+  );
   await page.waitForTimeout(1000);
   const text = await page.evaluate(() => document.body.innerText || '');
   const hasStats = /pending/i.test(text) && /approved/i.test(text);
