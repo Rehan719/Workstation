@@ -289,6 +289,37 @@ export const VSBCockpit: React.FC = () => {
         const options = (selected && !filtered.some(v => v.vsb_id === selected))
           ? [...filtered, ...vsbs.filter(v => v.vsb_id === selected)]
           : filtered;
+        // W393 — with no established VSB the whole page is inert: `detail` is null, so nothing below
+        // renders, and the only guidance used to be an UNSELECTABLE <option> inside a dropdown —
+        // text that tells you to go somewhere and does nothing when you click it. Give the dead end
+        // a real way out instead.
+        if (!loading && vsbs.length === 0) {
+          return (
+            <Card className="p-8 text-center border-dashed border-slate-800">
+              <Building2 size={26} className="mx-auto text-slate-700 mb-3" />
+              <p className="text-slate-300 font-black uppercase tracking-widest text-xs mb-2">
+                No established VSB enterprises yet
+              </p>
+              <p className="text-slate-500 text-xs font-semibold max-w-md mx-auto leading-relaxed mb-5">
+                The cockpit operates a living VSB IDBO enterprise — its Board, business plan and
+                management systems. Establish one first and it will appear here.
+              </p>
+              <div className="flex gap-2 justify-center flex-wrap">
+                <Button type="button" onClick={() => { window.location.href = '/vsb-spawn'; }}>
+                  Open VSB Spawn Studio
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { window.location.href = '/genesis'; }}
+                  className="border-slate-800 text-slate-400"
+                >
+                  Start a Genesis journey
+                </Button>
+              </div>
+            </Card>
+          );
+        }
         return (
           <Card className="p-5 flex items-center gap-3 flex-wrap">
             <Building2 size={18} className="text-highlight shrink-0" />
