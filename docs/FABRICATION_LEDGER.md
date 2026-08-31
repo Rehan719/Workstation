@@ -13,7 +13,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 ## HIGH (25)
 
 ### `agentic_core/api/csuite.py:120`
-- **status:** OPEN
+- **status:** FIXED (W410)
 - **claim:** GET /api/csuite/cto/infrastructure — docstring "Infrastructure metrics from psutil (real) + project activity (real)." — returns genuine `psutil` cpu/memory/disk values and, in the same flat dict, `"uptime": "99.9%"` and `"pqc_status": "Enforced"`.
 - **why it is a fabrication:** Real measured neighbours are what make these dangerous: the payload is explicitly framed as real instrumentation, so a consumer reads 99.9% uptime as measured availability and "pqc_status: Enforced" as a verified post-quantum-crypto posture. No uptime is tracked anywhere and nothing checks or enforces PQC. This is the same shape as the confirmed wallet finding — a truthful frame carrying an untrue value.
 - **reach:** live route (mounted app_mvp.py:60); not currently called by the SPA
@@ -171,7 +171,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** imported by the mounted /api/v138/ceo router; only generate_v10_roadmap() is wired (registered tool, not currently HTTP-routed); outputs are written to disk under LOG_DIR/autonomy when called
 
 ### `agentic_core/api/csuite.py:84`
-- **status:** OPEN
+- **status:** FIXED (W410)
 - **claim:** GET /api/csuite/cfo/metrics — docstring at line 58-60 states "All values are calculated from real data — no hardcoded literals." The body then builds revenue and ROI from invented multipliers: stage_values {concept: 1_000, prototype: 5_000, commercialise: 15_000} (line 66), $250 per deliverable (line 71), $120 per project (line 74), $2,500 per completed project (line 78), and `"growth": f"+{min(s['total'] * 4.2, 99.9):.1f}%"` (line 84).
 - **why it is a fabrication:** The docstring's denial is the tell — every one of these is a hardcoded literal. `growth` is the worst: a percentage growth rate computed as project-count × 4.2, capped at 99.9%, with no time series behind it at all. The response ships `revenue`, `liquidity`, `operating_costs`, `realised_gain` and an ROI percentage as financial metrics, with nothing in the payload disclosing that the prices are invented.
 - **reach:** live route (mounted app_mvp.py:60); not currently called by the SPA

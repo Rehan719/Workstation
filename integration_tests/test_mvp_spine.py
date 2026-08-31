@@ -101,17 +101,31 @@ def test_projects_stats_summary(client):
 # ── C-Suite ───────────────────────────────────────────────────────────────────
 
 def test_csuite_cfo_metrics(client):
-    """CFO metrics must be computed from real project store, not literals."""
+    """CFO metrics report real counts and DO NOT synthesise a valuation.
+
+    W410 - this test was titled "must be computed from real project store, not literals" and
+    asserted that `revenue` was present and was not one specific old constant. It therefore
+    REQUIRED the presence of a field that was itself invented: revenue came from project counts
+    multiplied by hardcoded stage values (concept $1,000 / prototype $5,000 / commercialise
+    $15,000), under a docstring claiming "no hardcoded literals". The test guarded the wrong
+    property and passed throughout.
+    """
     r = client.get("/api/csuite/cfo/metrics")
     assert r.status_code == 200
     body = r.json()
-    # Response has 'revenue' (computed from project store) and a kpis array
-    assert "revenue" in body or "portfolio_value" in body, (
-        f"Expected revenue or portfolio_value in CFO response, got: {list(body.keys())}"
-    )
-    # Must not return the old hardcoded value
-    assert body.get("revenue") != 1420500
-    assert body.get("portfolio_value") != 1420500
+
+    # The real things must be reported.
+    assert "portfolio" in body, list(body.keys())
+    for key in ("total_projects", "by_stage", "complete", "total_outputs"):
+        assert key in body["portfolio"], body["portfolio"]
+    assert "token_balance" in body
+
+    # No synthesised money. A valuation may exist only when something actually values a project.
+    assert body.get("valuation") is None, body.get("valuation")
+    for invented in ("revenue", "growth", "liquidity", "unrealised_gain", "realised_gain"):
+        assert invented not in body, (
+            f"{invented} is back in the CFO payload; it was derived from invented multipliers"
+        )
 
 
 def test_biometrics_status(client):

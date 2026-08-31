@@ -55,49 +55,48 @@ def _token_stats() -> dict:
 
 @router.get("/cfo/metrics")
 async def get_cfo_metrics() -> dict:
-    """
-    Financial metrics derived from the live project portfolio and token ledger.
-    All values are calculated from real data — no hardcoded literals.
+    """Real portfolio and ledger figures. No monetary valuation is synthesised.
+
+    W410 - the docstring here used to read "All values are calculated from real data - no hardcoded
+    literals", directly above a body that was nothing but hardcoded literals:
+        stage_values  = {"concept": 1_000, "prototype": 5_000, "commercialise": 15_000}
+        output_value  = total_outputs * 250        # "each deliverable = $250 value unit"
+        cost_per_project = 120                     # "AI inference + infra per project"
+        unrealised    = prototype * 500 + concept * 100
+        realised      = complete * 2_500
+        growth        = f"+{min(total * 4.2, 99.9):.1f}%"
+    The COUNTS are real; every multiplier was invented, so "revenue", "growth", "liquidity" and
+    "ROI" were invented too. A docstring asserting the opposite is worse than silence: it forecloses
+    the question for anyone reading the code.
+
+    Counts and the real token ledger are reported. Valuation is not, because nothing values a
+    project.
     """
     s = _project_stats()
     t = _token_stats()
-
-    # Portfolio value: projects move from $0 (concept) → $1k → $5k → $15k
-    stage_values = {"concept": 1_000, "prototype": 5_000, "commercialise": 15_000}
-    portfolio_value = sum(
-        stage_values.get(stage, 0) * count
-        for stage, count in s["by_stage"].items()
-    )
-    output_value = s["total_outputs"] * 250   # each deliverable = $250 value unit
-    total_value = portfolio_value + output_value
-
-    cost_per_project = 120  # AI inference + infra per project
-    operating_costs = max(s["total"] * cost_per_project, 0)
-
-    unrealised = s["by_stage"].get("prototype", 0) * 500 + s["by_stage"].get("concept", 0) * 100
-    realised = s["complete"] * 2_500
-
-    roi = round((realised / max(operating_costs, 1)) * 100, 1)
-
     return {
-        "revenue":         total_value,
-        "growth":          f"+{min(s['total'] * 4.2, 99.9):.1f}%",
-        "liquidity":       max(total_value - operating_costs, 0),
-        "operating_costs": operating_costs,
-        "unrealised_gain": unrealised,
-        "realised_gain":   realised,
-        "token_balance":   t["balance"],
-        "token_tier":      t["tier"],
+        "portfolio": {
+            "total_projects": s["total"],
+            "by_stage": s["by_stage"],
+            "complete": s["complete"],
+            "active": s["active"],
+            "total_outputs": s["total_outputs"],
+        },
+        "token_balance": t["balance"],
+        "token_tier": t["tier"],
+        "token_spend_24h": t["spend_24h"],
+        "currency": "WST (virtual)",
+        "valuation": None,
         "kpis": [
-            {"label": "ROI",           "value": f"{roi}%"},
-            {"label": "Projects",      "value": str(s["total"])},
-            {"label": "Deliverables",  "value": str(s["total_outputs"])},
-            {"label": "Commercialised","value": str(s["complete"])},
-            {"label": "AI Tier",       "value": t["tier"]},
+            {"label": "Projects", "value": str(s["total"])},
+            {"label": "Deliverables", "value": str(s["total_outputs"])},
+            {"label": "Commercialised", "value": str(s["complete"])},
+            {"label": "Active", "value": str(s["active"])},
         ],
+        "note": ("Revenue, growth, liquidity and ROI are not reported. They were previously derived "
+                 "from project counts multiplied by invented constants."),
         "computed_at": time.time(),
     }
-
 
 @router.get("/cto/infrastructure")
 async def get_cto_infra() -> dict:
@@ -117,8 +116,14 @@ async def get_cto_infra() -> dict:
         "active_projects": s["active"],
         "total_projects":  s["total"],
         "total_outputs":   s["total_outputs"],
-        "uptime":          "99.9%",
-        "pqc_status":      "Enforced",
+        # W410 — "uptime": "99.9%" and "pqc_status": "Enforced" used to sit here, in a payload
+        # whose docstring frames it as real instrumentation and whose neighbours genuinely are
+        # psutil readings. That framing is what made them dangerous: a consumer reads 99.9% as
+        # measured availability and "Enforced" as a verified post-quantum posture. Nothing tracks
+        # uptime and nothing checks or enforces PQC. Reported as unmeasured rather than removed,
+        # so the absence is visible.
+        "uptime":          None,
+        "pqc_status":      "not_checked",
         "ai_provider":     "Anthropic Claude" if __import__("os").getenv("ANTHROPIC_API_KEY") else "Ollama (local)",
         "computed_at":     time.time(),
     }
