@@ -50,6 +50,23 @@ def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
         return d[vsb_id]
 
 
+def deregister(vsb_id: str) -> bool:
+    """Remove an entity from the autonomous operating roster. Returns True if it was there.
+
+    W417 — this module could register a VSB into the roster but never remove one, so anything that
+    ever registered was tended by the organism forever. By 2026-08-31 the roster held 191 entries of
+    which 157 were pytest fixtures, and the heartbeat had run 2,113 operating cycles round-robin —
+    so the Owner's own entities received about a sixth of the attention while the rest went to test
+    data. Deregistering does not delete the entity; it only stops the organism tending it.
+    """
+    d = _load()
+    if vsb_id not in d:
+        return False
+    del d[vsb_id]
+    _save(d)
+    return True
+
+
 def list_living() -> Dict[str, Any]:
     d = _load()
     rows = sorted(d.values(), key=lambda v: v.get("registered_at", ""), reverse=True)

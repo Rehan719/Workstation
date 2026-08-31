@@ -89,13 +89,26 @@ CROSS_REFERENCE_FILES = (
 CROSS_REFERENCE_DIRS = ("marketplace", "economy")
 
 
+def _is_self_ledger(path: pathlib.Path) -> bool:
+    """True for data/economy/<vsb_id>_ledger.json — an entity's OWN ledger.
+
+    W418 — these were protecting 305 entities from removal. An entity's own ledger is its footprint,
+    exactly like its board pack or repo: a record that points only at itself is not a cross-reference.
+    economy_owner_payments.json and economy_ventures_portfolio.json ARE genuine cross-references
+    (platform-level records naming entities) and still protect, which is why 162 test-owned entities
+    remain untouched — deleting those would dangle real financial records.
+    """
+    return bool(re.fullmatch(r"vsb-[0-9a-f]+_ledger\.json", path.name))
+
+
 def referenced_ids() -> set[str]:
     """vsb_ids named by something OTHER than the entity's own derived artifacts."""
     ids: set[str] = set()
     root = pathlib.Path(str(data_path("."))).resolve()
     targets: list[pathlib.Path] = [root / f for f in CROSS_REFERENCE_FILES]
     for d in CROSS_REFERENCE_DIRS:
-        targets += list((root / d).rglob("*.json")) if (root / d).exists() else []
+        if (root / d).exists():
+            targets += [q for q in (root / d).rglob("*.json") if not _is_self_ledger(q)]
     for path in targets:
         if not path.exists() or not path.is_file():
             continue
@@ -107,6 +120,31 @@ def referenced_ids() -> set[str]:
     return ids
 
 
+def _prune_roster(apply: bool) -> int:
+    """Deregister test-owned entries from the autonomous operating roster.
+
+    W417 — the roster held 191 entries of which 157 were owned by "pytest", and the heartbeat had
+    run 2,113 operating cycles round-robin across them: 1,786 of those cycles went to test fixtures
+    and only 327 to the Owner's own entities. The organism was spending 85% of its autonomous
+    economic attention on data the test suite created. This removes them from the roster only — the
+    entity records are untouched, and "default" (the single-user owner) is never removed.
+    """
+    from agentic_core.economy import living_vsbs as lv
+    roster = lv._load()
+    victims = [k for k, v in roster.items()
+               if str(v.get("owner") or "").strip().lower() in TEST_OWNERS]
+    cycles = sum(int(roster[k].get("operating_cycles") or 0) for k in victims)
+    print(f"roster entries                : {len(roster)}")
+    print(f"  test-owned, would deregister: {len(victims)}  ({cycles} operating cycles)")
+    print(f"  kept (real owners)          : {len(roster) - len(victims)}")
+    if not apply:
+        print("  DRY RUN — roster untouched.")
+        return 0
+    n = sum(1 for k in victims if lv.deregister(k))
+    print(f"  deregistered                : {n}")
+    return n
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true", help="actually delete (default: report only)")
@@ -114,7 +152,15 @@ def main() -> int:
     ap.add_argument("--by-owner", action="store_true",
                     help="also match on owner_id being a test identity (pytest/test), which is "
                          "provenance rather than a name heuristic — see TEST_OWNERS")
+    ap.add_argument("--roster", action="store_true",
+                    help="also deregister test-owned entries from the LIVING ECONOMY roster "
+                         "(data/living_vsbs.json) — the organism stops tending them; nothing is deleted")
     args = ap.parse_args()
+
+    if args.roster:
+        rc = _prune_roster(apply=args.apply)
+        if not args.apply:
+            print()
 
     store = pathlib.Path(str(data_path("vsb_entities")))
     if not store.exists():
@@ -163,13 +209,26 @@ def main() -> int:
         print("\nDRY RUN — nothing was deleted. Re-run with --apply to remove the entries above.")
         return 0
 
-    deleted = 0
+    deleted, ledgers = 0, 0
+    econ = pathlib.Path(str(data_path("economy")))
     for path in to_remove:
         try:
             path.unlink()
             deleted += 1
         except OSError as exc:
             print(f"  could not delete {path.name}: {exc}")
+            continue
+        # W418 — take the entity's own ledger with it, or orphaned ledger files accumulate and the
+        # next run's reference scan has nothing to point at.
+        lp = econ / f"{path.stem}_ledger.json"
+        if lp.exists():
+            try:
+                lp.unlink()
+                ledgers += 1
+            except OSError:
+                pass
+    if ledgers:
+        print(f"  own ledgers removed with them: {ledgers}")
     print(f"\ndeleted {deleted} entity file(s).")
     return 0
 
