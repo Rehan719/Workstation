@@ -145,13 +145,13 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — App.tsx:181-182 maps both /qep and /qep-religion to QEPReligionHub; App.tsx:35 calls this 'the genuine Qur'an Education Platform'
 
 ### `apps/workstation-superapp/src/pages/enterprise/CapitalDashboard.tsx:53`
-- **status:** OPEN
+- **status:** FIXED (W405)
 - **claim:** `balance: s.total_projects * 1000 + s.total_outputs * 250`, `unrealisedProfit: s.by_stage.prototype * 500 + s.by_stage.concept * 100`, `realisedProfit: s.complete * 2500`, `riskScore: Math.min(0.99, 0.6 + s.complete / Math.max(s.total_projects, 1) * 0.39)` — rendered as `Portfolio Value ${metrics?.balance.toLocaleString()}`, `Unrealised Gain $...` and `Risk Score {(metrics.riskScore * 100).toFixed(0)}%` (lines 168-180).
 - **why it is a fabrication:** Project counts are multiplied by invented dollar constants and displayed as currency on a page titled 'Sovereign Capital'. A user reading 'Portfolio Value $47,250' and 'Unrealised Gain $3,100' would believe money was measured; what actually produced it is a project tally times 1000. 'Risk Score 78%' is presented as a risk measurement but is a project-completion ratio floored at 0.6 and capped at 0.99 — no risk model exists. The only acknowledgement is a source comment ('Map project counts to capital-metaphor metrics'); nothing in the rendered UI tells the user these are metaphors, and they sit
 - **reach:** live route — /economy?tab=capital, 'Overview' tab (default)
 
 ### `apps/workstation-superapp/src/pages/enterprise/CapitalDashboard.tsx:70`
-- **status:** OPEN
+- **status:** FIXED (W405)
 - **claim:** `setFeeds([{ symbol: 'BTC/USD', price: 65420, change: 2.4 }, { symbol: 'ETH/USD', price: 3512, change: 1.8 }, { symbol: 'SPY', price: 520.4, change: 0.5 }, { symbol: 'AAPL', price: 190.2, change: -0.2 }])` — rendered under `<h3>Real-Time Market Feeds</h3>` (line 193) with a per-row source label `ALPHA VANTAGE SOURCE` (line 205).
 - **why it is a fabrication:** A user sees four instrument prices with percentage moves under a 'Real-Time' heading, each row attributed to Alpha Vantage, a real named market-data vendor. Nothing fetches Alpha Vantage anywhere in the frontend; the four literals are set unconditionally in the mount effect and never change. This is a real-looking number with a false third-party attribution — the `payments/wallet` shape, applied to financial market data.
 - **reach:** live route — /economy?tab=capital (App.tsx:216 EconomyCenter, EconomyCenter.tsx:13 registers CapitalDashboard; /capital redirects here at App.tsx:194), 'External Markets' tab

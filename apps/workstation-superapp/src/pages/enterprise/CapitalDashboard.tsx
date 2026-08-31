@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { apiJson, errorMessage } from '../../lib/api';
 import { Card, Button, Badge, toast } from '@workstation/ui';
 import {
   TrendingUp, ShieldAlert, PieChart, Activity,
@@ -29,51 +30,41 @@ interface PortfolioStats {
   complete: number;
 }
 
-interface MarketFeed {
-  symbol: string;
-  price: number;
-  change: number;
+// The real capital fund, as /api/v1/fund/status reports it. Virtual WST by design.
+interface FundStatus {
+  total_capital: number;
+  allocated: number;
+  available: number;
+  utilisation_pct: number;
+  allocation_count: number;
+  fund_health: string;
+  currency?: string;
 }
 
 export const CapitalDashboard: React.FC = () => {
-  const [metrics, setMetrics] = useState<CapitalMetrics | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioStats | null>(null);
-  const [feeds, setFeeds] = useState<MarketFeed[]>([]);
+  const [fund, setFund] = useState<FundStatus | null>(null);
+  const [fundError, setFundError] = useState('');
   const [autonomousEnabled, setAutonomousEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'external' | 'crypto' | 'evolution'>('overview');
   const [votedAmendments, setVotedAmendments] = useState<string[]>([]);
 
+  // W405 — the block that used to be here computed "capital metrics" from PROJECT COUNTS:
+  //   balance          = total_projects * 1000 + total_outputs * 250
+  //   unrealisedProfit = by_stage.prototype * 500 + by_stage.concept * 100
+  //   realisedProfit   = complete * 2500
+  // under a comment reading "Map project counts to capital-metaphor metrics", and rendered the
+  // results as "Portfolio Value $X" and "Unrealised Gain $X". A project count multiplied by an
+  // arbitrary constant is not a balance, and putting a dollar sign in front of it does not make it
+  // one. A real fund API existed the whole time and is used now.
   useEffect(() => {
-    // Derive capital metrics from real project portfolio data
-    axios.get<PortfolioStats>('/api/v1/projects/stats/summary', { validateStatus: () => true })
-      .then(res => {
-        if (res.status === 200) {
-          const s = res.data;
-          setPortfolio(s);
-          // Map project counts to capital-metaphor metrics
-          setMetrics({
-            balance:             s.total_projects * 1000 + s.total_outputs * 250,
-            totalDeposited:      s.total_projects * 1000,
-            unrealisedProfit:    s.by_stage.prototype * 500 + s.by_stage.concept * 100,
-            realisedProfit:      s.complete * 2500,
-            riskScore:           s.total_projects === 0 ? 0 : Math.min(0.99, 0.6 + s.complete / Math.max(s.total_projects, 1) * 0.39),
-            homeostasisStatus:   s.active > 0 ? 'minor_deviation' : 'stable',
-          });
-        } else {
-          // Graceful fallback so the page still renders without backend
-          setMetrics({ balance: 0, totalDeposited: 0, unrealisedProfit: 0, realisedProfit: 0, riskScore: 0, homeostasisStatus: 'stable' });
-        }
-      })
-      .catch(() => {
-        setMetrics({ balance: 0, totalDeposited: 0, unrealisedProfit: 0, realisedProfit: 0, riskScore: 0, homeostasisStatus: 'stable' });
-      });
+    apiJson<FundStatus>("/api/v1/fund/status")
+      .then(f => { setFund(f); setFundError(""); })
+      .catch(e => setFundError(errorMessage(e)));
 
-    setFeeds([
-      { symbol: 'BTC/USD', price: 65420, change: 2.4 },
-      { symbol: 'ETH/USD', price: 3512, change: 1.8 },
-      { symbol: 'SPY', price: 520.4, change: 0.5 },
-      { symbol: 'AAPL', price: 190.2, change: -0.2 },
-    ]);
+    axios.get<PortfolioStats>("/api/v1/projects/stats/summary", { validateStatus: () => true })
+      .then(res => { if (res.status === 200) setPortfolio(res.data); })
+      .catch(() => {});
   }, []);
 
   const handleAction = (msg: string) => {
@@ -163,26 +154,35 @@ export const CapitalDashboard: React.FC = () => {
           )}
           <div className="grid grid-cols-1 @[440px]:grid-cols-4 gap-6">
             <Card className="p-6 bg-slate-900/50 border-slate-800">
-              <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Portfolio Value</p>
-              <p className="text-3xl font-black text-white">${metrics?.balance.toLocaleString() ?? '—'}</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Fund Capital</p>
+              <p className="text-3xl font-black text-white">
+                {fund ? fund.total_capital.toLocaleString() : "—"}
+                <span className="text-xs text-slate-500 ml-1">WST</span>
+              </p>
             </Card>
             <Card className="p-6 bg-slate-900/50 border-slate-800">
-              <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Unrealised Gain</p>
-              <p className="text-3xl font-black text-aura">${metrics?.unrealisedProfit.toLocaleString() ?? '—'}</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Available</p>
+              <p className="text-3xl font-black text-aura">
+                {fund ? fund.available.toLocaleString() : "—"}
+                <span className="text-xs text-slate-500 ml-1">WST</span>
+              </p>
             </Card>
             <Card className="p-6 bg-slate-900/50 border-slate-800">
-              <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Risk Score</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Utilisation</p>
               <div className="flex items-center gap-2">
                 <Activity className="text-green-500" size={20} />
-                <p className="text-3xl font-black text-white">{metrics ? (metrics.riskScore * 100).toFixed(0) : '—'}%</p>
+                <p className="text-3xl font-black text-white">{fund ? fund.utilisation_pct : "—"}%</p>
               </div>
+              <p className="text-[9px] font-bold text-slate-600 mt-1">
+                {fund ? `${fund.allocation_count} allocation(s) · ${fund.fund_health}` : ""}
+              </p>
             </Card>
-            <Card className="p-6 bg-aura/10 border-aura/20">
-              <Button onClick={() => handleAction("Autonomous rebalance triggered.")} className="w-full h-full bg-aura text-slate-950 font-black hover:bg-white transition-all uppercase italic flex items-center gap-2">
-                <Zap size={16} /> Rebalance
-              </Button>
-            </Card>
-          </div>
+            <Card className="p-6 bg-aura/10 border-aura/20 flex items-center">
+              <p className="text-[10px] font-bold text-slate-400 leading-relaxed">
+                Figures are the real capital fund from <code>/api/v1/fund/status</code>, in virtual
+                WST. They were previously derived from project counts and shown in dollars.
+              </p>
+            </Card>          </div>
         </div>
       )}
 
@@ -190,32 +190,16 @@ export const CapitalDashboard: React.FC = () => {
         <div className="grid grid-cols-1 @[440px]:grid-cols-3 gap-8">
             <div className="@[440px]:col-span-2">
                 <Card className="p-8 border-slate-800 bg-slate-950/50">
-                    <h3 className="text-xl font-black text-white uppercase italic mb-6">Real-Time Market Feeds</h3>
-                    <div className="space-y-4">
-                        {feeds.map(feed => (
-                            <div key={feed.symbol} className="flex items-center justify-between p-4 bg-slate-900 rounded-2xl border border-slate-800 hover:border-aura/30 transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center font-black text-[10px] text-aura">{feed.symbol[0]}</div>
-                                    <div>
-                                        <p className="text-sm font-black text-white">{feed.symbol}</p>
-                                        <p className="text-[10px] text-slate-500 font-bold">ALPHA VANTAGE SOURCE</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-black text-white">${feed.price.toLocaleString()}</p>
-                                    <p className={`text-[10px] font-black ${feed.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                        {feed.change >= 0 ? '+' : ''}{feed.change}%
-                                    </p>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleAction(`Trading is disabled — no brokerage integration exists (reference data only): ${feed.symbol}`)}
-                                    className="ml-4 border-slate-700 text-[10px] font-black uppercase"
-                                >Trade</Button>
-                            </div>
-                        ))}
-                    </div>
+                    {/* W405 — this rendered four hardcoded prices (BTC/USD 65420, ETH/USD 3512,
+                        SPY 520.4, AAPL 190.2) under the heading "Real-Time Market Feeds", each row
+                        labelled "ALPHA VANTAGE SOURCE". Nothing fetched any market, and naming a
+                        real commercial data provider as the source of invented dollar prices is a
+                        far stronger claim than the numbers alone. */}
+                    <h3 className="text-xl font-black text-white uppercase italic mb-4">External Markets</h3>
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed max-w-xl">
+                        No market-data provider is connected to this deployment, so no prices are
+                        shown. Nothing here is fetched from any market.
+                    </p>
                 </Card>
             </div>
             <Card className="p-8 border-slate-800 bg-slate-900/30">
