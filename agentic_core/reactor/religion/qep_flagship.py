@@ -107,7 +107,26 @@ class QEPFlagshipService:
         mem["next_date"] = next_review.isoformat()
 
         user["memorization"][ayah_ref] = mem
+
+        # W404 - the payload ended with "heatmap": [random.randint(0, 5) for _ in range(30)] under
+        # the comment "# Last 30 days activity". Those 30 integers were presented as this user's own
+        # study history and were redrawn differently on every call; they rode alongside the
+        # genuinely-computed SM-2 fields above, which is exactly what made them credible.
+        # This function IS the review event, so the honest fix is to record it and then count it: a
+        # day now reads 0 because nothing was recorded that day, not because a die landed there.
+        now = datetime.datetime.utcnow()
+        cutoff = (now - datetime.timedelta(days=90)).date().isoformat()
+        review_log = [ts for ts in (user.get("review_log") or []) if ts[:10] >= cutoff]
+        review_log.append(now.isoformat())
+        user["review_log"] = review_log
         self._save_data(self.data)
+
+        per_day = {}
+        for ts in review_log:
+            per_day[ts[:10]] = per_day.get(ts[:10], 0) + 1
+        today = now.date()
+        heatmap = [per_day.get((today - datetime.timedelta(days=29 - i)).isoformat(), 0)
+                   for i in range(30)]
 
         return {
             "status": "SUCCESS",
@@ -115,7 +134,10 @@ class QEPFlagshipService:
             "next_review": mem["next_date"],
             "interval_days": mem["interval"],
             "easiness_factor": round(mem["ef"], 2),
-            "heatmap": [random.randint(0, 5) for _ in range(30)] # Last 30 days activity
+            # real: reviews recorded by this function, oldest -> newest, index 29 is today
+            "heatmap": heatmap,
+            "heatmap_source": "recorded review events in this store",
+            "heatmap_recorded_since": min(review_log)[:10],
         }
 
     async def gamified_competition(self, tournament_id: str = None, user_id: str = None) -> Dict[str, Any]:
@@ -126,10 +148,19 @@ class QEPFlagshipService:
                     t["participants"].append(user_id)
             self._save_data(self.data)
 
+        # W404 - "leaderboard" was ten synthetic rows, [{"user": f"User-{i}", "score":
+        # random.randint(80, 100)}], and "user_rank" was random.randint(1, 50): invented
+        # competitors, invented scores, and this user's competitive standing drawn from a die -
+        # sitting next to the genuinely-persisted tournament list, which is real. Nothing anywhere
+        # in this service scores a recitation or a memorisation attempt, so there is no quantity
+        # anyone could be ranked by.
         return {
-            "active_tournaments": self.data["competitions"],
-            "leaderboard": sorted([{"user": f"User-{i}", "score": random.randint(80, 100)} for i in range(10)], key=lambda x: x["score"], reverse=True),
-            "user_rank": random.randint(1, 50) if user_id else None
+            "active_tournaments": self.data["competitions"],  # real: persisted, real participants
+            "leaderboard": [],
+            "user_rank": None,
+            "detail": ("No scores are recorded for these tournaments - nothing in this service "
+                       "scores an entry - so no leaderboard and no rank can be computed. Only the "
+                       "tournaments and their real participant lists are shown."),
         }
 
     async def ar_vr_immersion(self, mode: str = "VR") -> Dict[str, Any]:
@@ -150,20 +181,36 @@ class QEPFlagshipService:
         """Feature 5: Learn-Teach Modules (Production Grade)."""
         # Integration with collaborative whiteboards (yjs) and student analytics
         if role == "Learner":
+            # W404 - each playlist carried a per-user completion count ("completed": 4) and the
+            # payload asserted "tutor_availability": True. Both are literals: nothing records which
+            # lessons this learner finished, and there is no tutor registry that could be available.
+            # The playlist titles and lesson counts are fixed syllabus content, not measurements, so
+            # they stay.
             return {
                 "playlists": [
-                    {"id": "p1", "title": "Foundation of Tajwid", "lessons": 12, "completed": 4},
-                    {"id": "p2", "title": "Surah Al-Mulk Memorization", "lessons": 30, "completed": 0}
+                    {"id": "p1", "title": "Foundation of Tajwid", "lessons": 12, "completed": None},
+                    {"id": "p2", "title": "Surah Al-Mulk Memorization", "lessons": 30, "completed": None}
                 ],
-                "tutor_availability": True,
-                "whiteboard_session": f"session-{user_id[:4]}" if user_id else "global-session"
+                "tutor_availability": None,
+                "whiteboard_session": f"session-{user_id[:4]}" if user_id else "global-session",
+                "detail": ("Per-lesson completion is not recorded for this learner and no tutor "
+                           "registry exists, so neither is reported. 'lessons' is the fixed length "
+                           "of each playlist."),
             }
         else: # Teacher
+            # W404 - this returned students 45, active_sessions 3 and analytics
+            # {"avg_progress": 0.68, "retention_rate": 0.94}: a teacher's cohort size, their live
+            # sessions and their students' retention rate, every one a literal and identical for
+            # every teacher. This store holds no teacher-student enrolment, no session record and no
+            # retention history, so nothing here can produce any of them.
             return {
-                "students": 45,
-                "active_sessions": 3,
-                "analytics": {"avg_progress": 0.68, "retention_rate": 0.94},
-                "curriculum": ["Rules of Noon Sakina", "Intro to Qalqalah"]
+                "students": None,
+                "active_sessions": None,
+                "analytics": {"avg_progress": None, "retention_rate": None},
+                "curriculum": ["Rules of Noon Sakina", "Intro to Qalqalah"],  # fixed syllabus
+                "detail": ("No cohort is recorded: this store holds no teacher-student enrolment, "
+                           "no sessions and no retention history, so none of those are reported. "
+                           "The curriculum listed is fixed syllabus content, not a measurement."),
             }
 
     async def adaptive_ui_engine(self, user_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -197,15 +244,39 @@ class QEPFlagshipService:
         }
 
     async def analytics_reports(self, user_id: str) -> Dict[str, Any]:
-        """Feature 8: Analytics, Ratings & Reports (Production Grade)."""
-        # Aggregated growth metrics using Recharts-ready format
+        """Feature 8: Analytics & Reports - reports only what this store actually records.
+
+        W404 - this discarded user_id entirely and returned the same invented week to everybody:
+        growth_data [Mon 85, Tue 88, Wed 87, Thu 92], mastery_breakdown {fluency 0.95, accuracy
+        0.88, consistency 0.98}, and the sentence "Strongest improvement in Ikhfa rules this week."
+        That last line names one specific tajwid rule as this person's strongest improvement, from a
+        literal, for a user whose id was never read. Nothing here scores fluency, accuracy or
+        consistency, and no per-day score series is recorded anywhere in this service.
+
+        The one thing this store genuinely holds is the user's SM-2 memorisation state, so that is
+        now computed for real from their own records and the rest reports its absence.
+        """
+        user = (self.data.get("users") or {}).get(user_id) or {}
+        mem = user.get("memorization") or {}
+        now_iso = datetime.datetime.utcnow().isoformat()
+        due = sum(1 for rec in mem.values()
+                  if rec.get("next_date") and rec["next_date"] <= now_iso)
+        efs = [rec["ef"] for rec in mem.values() if isinstance(rec.get("ef"), (int, float))]
         return {
-            "growth_data": [
-                {"day": "Mon", "score": 85}, {"day": "Tue", "score": 88},
-                {"day": "Wed", "score": 87}, {"day": "Thu", "score": 92}
-            ],
-            "mastery_breakdown": {"fluency": 0.95, "accuracy": 0.88, "consistency": 0.98},
-            "retrospect_summary": "Strongest improvement in Ikhfa rules this week."
+            "user_id": user_id,
+            # real: derived from this user's own persisted SM-2 records
+            "memorization_summary": {
+                "ayat_tracked": len(mem),
+                "ayat_due_for_review": due,
+                "average_easiness_factor": round(sum(efs) / len(efs), 2) if efs else None,
+            },
+            "growth_data": [],
+            "mastery_breakdown": {"fluency": None, "accuracy": None, "consistency": None},
+            "retrospect_summary": None,
+            "detail": ("Only the memorisation summary above is measured - it comes from this "
+                       "user's own SM-2 records. No per-day score series is kept, nothing scores "
+                       "fluency, accuracy or consistency, and no retrospective is generated, so "
+                       "those are reported empty rather than filled in."),
         }
 
     async def certifications(self, user_id: str, course_id: str) -> Dict[str, Any]:
@@ -297,12 +368,23 @@ class QEPFlagshipService:
         }
 
     async def swarm_intelligence_learning(self) -> Dict[str, Any]:
-        """Feature 13: Swarm Intelligence for Group Learning (Production Grade)."""
+        """Feature 13: Swarm Intelligence for Group Learning - reports the real swarm count only.
+
+        W404 - this returned active_swarms 8, coordination_model "PyTorch-Reinforcement-Learning",
+        group_analytics {"synergy_score": 0.89, "optimal_group_size": 5} and status "OPERATIONAL".
+        The store's "swarms" collection is written by nothing and has always been empty, so the 8
+        was a literal; no reinforcement-learning coordinator exists in this module to be named; and
+        nothing measures a study circle's synergy or an optimal group size.
+        """
+        swarms = self.data.get("swarms") or {}
         return {
-            "active_swarms": 8,
-            "coordination_model": "PyTorch-Reinforcement-Learning",
-            "group_analytics": {"synergy_score": 0.89, "optimal_group_size": 5},
-            "status": "OPERATIONAL"
+            "active_swarms": len(swarms),  # real: size of the persisted swarms collection
+            "coordination_model": None,
+            "group_analytics": {"synergy_score": None, "optimal_group_size": None},
+            "status": "NOT_IMPLEMENTED",
+            "detail": ("Group-learning swarms are not implemented: nothing writes the swarm "
+                       "collection, no coordinator runs, and no synergy metric is measured. The "
+                       "count above is the real size of the stored collection."),
         }
 
 qep_flagship_service = QEPFlagshipService()

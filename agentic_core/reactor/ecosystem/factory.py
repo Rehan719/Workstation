@@ -1,5 +1,4 @@
 import logging
-import random
 import uuid
 import datetime
 from typing import Dict, Any, List, Optional
@@ -47,32 +46,76 @@ class ReactorFactory:
 
         async def incubate(self, input_data: Any, params: Dict[str, Any]) -> Dict[str, Any]:
             logger.info(f"{self.registry_id}: Incubating mission - {mandate}")
-            # Dynamic Simulation Logic (Article 60)
+            # W415 — this returned "status": "SUCCESS" with
+            # "simulation_fidelity": 0.98 + random.random() * 0.015 and a result string saying the
+            # outcome was produced "based on domain heuristics". This class is built by type() for
+            # every one of the 50+ sub-domains that has no real reactor: nothing is simulated and no
+            # heuristics exist, so the fidelity was a random draw between 0.98 and 0.995 rating a
+            # computation that never happened. The mandate, domain and sub_domain below are real
+            # (they are the registration arguments) — that is what made the fidelity credible.
             return {
-                "status": "SUCCESS",
+                "status": "NOT_IMPLEMENTED",
                 "domain": self.domain,
                 "sub_domain": self.sub_domain,
                 "mandate": mandate,
-                "simulation_fidelity": 0.98 + (random.random() * 0.015),
-                "result": f"Simulated {sub_domain} outcome for {input_data} based on domain heuristics.",
+                "simulation_fidelity": None,
+                "result": None,
+                "detail": (
+                    f"No domain model is implemented for {self.registry_id}. This reactor is a "
+                    f"dynamically generated stub, so no outcome was computed for the supplied input."
+                ),
                 "timestamp": datetime.datetime.now().isoformat()
             }
 
         async def analyze(self, data: Any) -> Dict[str, Any]:
+            # W415 — this returned "fidelity": 0.99, a "Deep pattern recognition in {domain}
+            # complete." insight and "domain_score": random.uniform(0.9, 1.0). The `data` argument
+            # was never read: no analysis runs in a type()-generated stub, so the score was a random
+            # number presented as a domain assessment and the fidelity a literal presented as a
+            # measurement of it.
             return {
-                "fidelity": 0.99,
-                "insights": [f"Deep pattern recognition in {self.domain} complete."],
-                "domain_score": random.uniform(0.9, 1.0)
+                "status": "NOT_IMPLEMENTED",
+                "fidelity": None,
+                "insights": [],
+                "domain_score": None,
+                "detail": (
+                    f"No analyzer is implemented for {self.registry_id}; nothing inspected the "
+                    f"supplied data."
+                ),
             }
 
         async def validate_truth(self, content: Any) -> Dict[str, Any]:
-            return {"is_truth": True, "confidence": 0.995, "method": "PatternConsistencyCheck"}
+            # W415 — this returned {"is_truth": True, "confidence": 0.995, "method":
+            # "PatternConsistencyCheck"} for every input, including content it never read.
+            # SpecializedReactor declares validate_truth abstract as "Domain-specific truth
+            # validation", so a caller reads the answer as a verification verdict — but there is no
+            # verifier here, and no method named PatternConsistencyCheck exists anywhere in this
+            # repo. A verification stamp with no verifier is worse than no stamp: reported as
+            # unchecked.
+            return {
+                "is_truth": None,
+                "confidence": None,
+                "method": "not_checked",
+                "detail": (
+                    f"No truth validator is implemented for {self.registry_id}; the content was "
+                    f"not examined."
+                ),
+            }
 
         async def generate_artifact(self, data: Any, format: str = "pdf") -> Dict[str, Any]:
+            # W415 — this returned "url": f"https://workstation.ai/reports/{domain}/{uuid...}" for a
+            # report that is never produced, on a domain the platform does not own. It cannot ever
+            # have run: uuid.uuid4()[:8] raises TypeError because a UUID is not subscriptable, which
+            # is itself proof that nothing exercised this path. No artifact is generated here.
             return {
+                "status": "NOT_IMPLEMENTED",
                 "type": f"{self.sub_domain.upper()}_REPORT",
-                "url": f"https://workstation.ai/reports/{self.domain}/{uuid.uuid4()[:8]}",
-                "format": format
+                "url": None,
+                "format": format,
+                "detail": (
+                    f"No artifact generator is implemented for {self.registry_id}; no file was "
+                    f"produced."
+                ),
             }
 
         async def interact(self, state: Any, action: str, context: Dict[str, Any]) -> Dict[str, Any]:

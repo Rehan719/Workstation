@@ -5,6 +5,12 @@ Allocates the charity budget intelligently, not arbitrarily: candidate causes ar
 scored on urgency × gravity × reach × marginal-impact-of-funds × trust, ranked,
 and the budget is distributed to the top causes for maximal relief.
 
+PROVENANCE (W415): those five per-cause inputs are CURATED editorial weights encoding the
+Owner directive below — they are not measured, sourced or verified needs/impact/trust data.
+The ranking arithmetic over them is real; the numbers going in are hand-set. Every emitting
+path (`ranked`, `allocate`) now says so, so a reader of a cycle report cannot mistake a
+typed 0.92 for a rating something produced.
+
 Owner directives (2026-06-21):
   • Prioritise: WATER · Orphan Sponsorship · Conflict (& natural disaster) · Dawah.
   • EXCLUDE any cause without a 100% donation policy (every WST given reaches the cause).
@@ -23,8 +29,15 @@ from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
 _DIRECTIVES_STORE = data_path("economy_charity_directives.json")
 _SIGNALS_STORE = data_path("economy_charity_signals.json")
 
-# Curated candidate causes (categories). 0..1 metrics. `donation_100pct`: only causes
-# that pass 100% of donations to the cause are eligible (Owner directive).
+# W415 — these 0..1 numbers reached the Owner inside EVERY cycle report's `giving_back` (and the
+# VSB cockpit / board pack) reading as per-cause ratings — "trust 0.92", "urgency 0.85" — and
+# `donation_100pct: True` read as a verified policy check. Nothing measures or verifies any of
+# them: they are editorial priority weights a maintainer typed to encode the 2026-06-21 Owner
+# directive. They are KEPT (they are the ranking knobs, and the ranking over them is real
+# arithmetic), but every path that emits them now labels their provenance, and the unverified
+# 100%-donation claim is reported as not_checked rather than asserted as true.
+# Curated candidate causes (categories). `donation_100pct` is a hand-set ELIGIBILITY FLAG, not a
+# verification: it records the Owner's rule that only 100%-donation causes may be funded.
 _CANDIDATES: List[Dict[str, Any]] = [
     {"id": "clean_water", "cause": "Clean water & wells (WATER)", "region": "global",
      "urgency": 0.85, "gravity": 0.90, "reach": 0.92, "trust": 0.92, "donation_100pct": True},
@@ -99,7 +112,11 @@ class CharityIntelligence:
         self._live = signals or []
 
     def _candidates(self) -> List[Dict[str, Any]]:
-        pool = [c for c in (_CANDIDATES + self._live) if c["id"] not in self.exclusions]
+        # W415 — curated rows and Owner-supplied signal rows were indistinguishable once merged, so
+        # a consumer could not tell a hand-typed weight from an ingested one. Tag the origin.
+        pool = ([{**c, "weights_source": "curated"} for c in _CANDIDATES]
+                + [{**s, "weights_source": "owner_signal"} for s in self._live])
+        pool = [c for c in pool if c["id"] not in self.exclusions]
         if self.require_100pct:
             pool = [c for c in pool if c.get("donation_100pct", False)]
         return pool
@@ -146,13 +163,27 @@ class CharityIntelligence:
         grants = []
         for w in cleared:
             amount = round(budget * (w["score"] / weight_sum), 2)
+            # W415 — this carried `donation_100pct: True`, a flat assertion that 100% of the grant
+            # reaches the cause. Nothing verifies that; it is a hand-set eligibility flag on a cause
+            # CATEGORY, and no delivery organisation is even named yet. State the rule that actually
+            # ran, and report the missing check as missing.
             grants.append({"id": w["id"], "cause": w["cause"], "region": w["region"],
-                           "score": w["score"], "amount_wst": amount, "donation_100pct": True,
+                           "score": w["score"], "amount_wst": amount,
+                           "donation_100pct_required_by_directive": self.require_100pct,
+                           "donation_100pct_verified": "not_checked",
+                           "weights_source": w.get("weights_source", "curated"),
                            "compliance": w["compliance"]})
         return {
             "budget_wst": round(budget, 2),
-            "method": ("urgency × gravity × reach × marginal-impact × trust; 100%-donation causes only; "
-                       "every grant compliance-screened (halal/ethical)"),
+            # W415 — `method` asserted the split was driven by measured urgency/gravity/reach/trust.
+            # The weighting arithmetic is real; the inputs are editorial weights nobody measured,
+            # and the string never said so — which is what made the ratings credible downstream.
+            "method": ("weighted rank over CURATED priority weights (urgency · gravity · reach · "
+                       "marginal-impact · trust), budget split pro-rata by score; 100%-donation "
+                       "causes only; every grant compliance-screened (halal/ethical)"),
+            "weights_provenance": ("curated — the 0..1 cause weights are editorial values encoding the "
+                                   "Owner's 2026-06-21 directive; no needs, impact or trust data is "
+                                   "measured or sourced. Live feeds pending Owner approval."),
             "priorities": sorted(self.priorities),
             "grants": grants,
             "excluded_by_compliance": excluded,

@@ -279,12 +279,24 @@ class GrandSynthesisEngine:
 
             # 5. Generate Global Health Report
             os.makedirs("docs/introspection", exist_ok=True)
+            # W415 — this wrote four literals into a file titled "Global Ecosystem Health Report":
+            # "Global Reach: 12 Countries", "Scholarly Influence: High", "Market Liquidity:
+            # Optimal", "Symbiotic Stability: 0.98". Nothing counts countries, scores scholarly
+            # influence, measures liquidity or computes a stability figure anywhere in this repo
+            # (symbiotic_stability / market_liquidity / global_reach have no other definition),
+            # and steps 1-4 above are a negotiation, a publication and a listing simulation, so
+            # nothing upstream produced them either. The file lands in docs/ as a human-read
+            # artifact, where a reader has no way to tell a literal from a reading. The report is
+            # still written — dropping it would hide that this pipeline claims to produce one —
+            # but every metric now states that it is unmeasured.
             with open("docs/introspection/global_health_v126.0.md", "w") as f:
                 f.write("# Global Ecosystem Health Report v126.0\n\n")
-                f.write("- **Global Reach:** 12 Countries\n")
-                f.write("- **Scholarly Influence:** High\n")
-                f.write("- **Market Liquidity:** Optimal\n")
-                f.write("- **Symbiotic Stability:** 0.98\n")
+                f.write("This pipeline measures no ecosystem health metric. The figures this\n")
+                f.write("report used to carry were constants in the generator, not readings.\n\n")
+                f.write("- **Global Reach:** NOT MEASURED - no country or deployment counter exists.\n")
+                f.write("- **Scholarly Influence:** NOT MEASURED - no citation or publication metric exists.\n")
+                f.write("- **Market Liquidity:** NOT MEASURED - no market or order-book instrument exists.\n")
+                f.write("- **Symbiotic Stability:** NOT MEASURED - no stability score is computed anywhere.\n")
 
         if is_introspect:
             logger.info("ARTICLE 651: Initiating Introspection & Evolution Engine (v125.1).")
@@ -563,7 +575,14 @@ class GrandSynthesisEngine:
             content += f"| **Architectural Changes** | Integration of {p['principle']} logic into agent decision-making. |\n"
             content += f"| **Success Criteria** | Improvement in system resilience and purpose alignment. |\n"
             content += f"| **Implementation Phases** | 1. Research, 2. Prototype, 3. Integration, 4. Verification. |\n"
-            content += f"| **Purpose Alignment Review** | Verified - Aligns with Article 336. |\n\n"
+            # W415 — this row read "| **Purpose Alignment Review** | Verified - Aligns with
+            # Article 336. |" and was emitted unconditionally into every file written to
+            # docs/biomimetic/blueprints/. No review ran: the pattern dict `p` carries no
+            # alignment field, and the repo's only purpose-alignment evaluator
+            # (agentic_core.purpose.evaluator, imported by governance/verifiable_governance.py)
+            # survives only under _archive/, so there is no check available to call. A reader of a
+            # blueprint had no way to tell the "Verified" stamp was unconditional.
+            content += f"| **Purpose Alignment Review** | NOT REVIEWED - no purpose-alignment check ran against this blueprint. |\n\n"
 
             with open(filepath, 'w') as f:
                 f.write(content)

@@ -21,6 +21,11 @@ const NeuralLink: React.FC = () => {
     const [synapseActivity, setSynapseActivity] = useState<number[]>(Array(24).fill(0));
     const [isLinked, setIsLinked] = useState(false);
 
+    // W415 — this grid is an ANIMATION, not a reading. It is driven by Math.random() on a 100ms
+    // timer and nothing anywhere produces synapse activity. It sat directly above a "Telemetry
+    // Bandwidth: 1.2 GB/s" figure, and that pairing is what made the whole panel read as a live
+    // instrument. The animation is kept (deleting it would silently remove the panel's only
+    // visual) but is now labelled decorative in the UI below, so no viewer reads it as measured.
     useEffect(() => {
         const interval = setInterval(() => {
             setSynapseActivity(Array.from({ length: 24 }, () => Math.random()));
@@ -52,13 +57,25 @@ const NeuralLink: React.FC = () => {
                 ))}
             </div>
 
-            <div className="mt-5 text-[10px] text-green-900 font-mono">
-                <div className="flex justify-between">
+            {/* W415 — these two spans read:
                     <span>Telemetry Bandwidth: 1.2 GB/s</span>
                     <span>Article 1200 Compliance: VERIFIED</span>
+                Both were string literals. Nothing measures bandwidth on any path in this app, and
+                nothing evaluates Article 1200 — "VERIFIED" against a named constitutional article
+                is a certification claim of the same class as the invented SHARIA_AUDIT approval,
+                which is why it is replaced with NOT CHECKED rather than dropped: the reader should
+                see that the check is missing, not that the row never existed. */}
+            <div className="mt-5 text-[10px] text-green-900 font-mono">
+                <div className="flex justify-between">
+                    <span>Telemetry Bandwidth: NOT MEASURED</span>
+                    <span>Article 1200 Compliance: NOT CHECKED</span>
                 </div>
                 <p className="mt-1.5">
                     Subjective Qualia Feedback: {isLinked ? 'Intuiting strategic surplus…' : 'Link Idle.'}
+                </p>
+                <p className="mt-1.5">
+                    Synapse grid is a decorative animation — it is not measured activity, and no
+                    telemetry source is connected to this panel.
                 </p>
             </div>
         </div>

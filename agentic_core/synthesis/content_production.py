@@ -17,6 +17,17 @@ class ContentProductionPipeline:
     def produce_scientific_draft(self, topic: str, data_summary: str) -> str:
         """v1.0 Production: Generates a full IMRaD LaTeX-ready draft."""
         timestamp = datetime.datetime.utcnow().isoformat()
+        # W415 — the Methods section of this template asserted "We utilized the Quadruple Engine
+        # Pillar (QEP), specifically the Evolutionary Simulation Engine (ESE) and Autonomous
+        # Resource Optimization (ARO)", and the Results section always carried the constant
+        # sentence "Preliminary findings from the BTO research swarms suggest 92% confidence in
+        # the observed patterns." Nothing produced either claim: only `topic` and `data_summary`
+        # are interpolated here, so no engine was invoked, no swarm ran and no confidence was
+        # estimated. Results is the one section of an IMRaD manuscript a reader is entitled to
+        # read as measurement, and this .tex file is written to DATA_DIR and returned to the
+        # Owner as a citable draft. The abstract's "simulation results" was the same claim in the
+        # same document. All three now state the absence instead, and the placeholders are marked
+        # so an author cannot mistake them for findings.
         draft = f"""\\documentclass{{article}}
 \\usepackage{{amsmath}}
 \\begin{{document}}
@@ -27,8 +38,9 @@ class ContentProductionPipeline:
 \\maketitle
 
 \\begin{{abstract}}
-This autonomous report synthesizes the multi-modal reasoning and simulation results
-for the topic of {topic}.
+DRAFT SKELETON --- NOT A RESULTS REPORT. This file was assembled from a topic and a
+data summary supplied by the caller. No reasoning run, simulation or analysis was
+performed to produce it. Topic: {topic}.
 \\end{{abstract}}
 
 \\section{{Introduction}}
@@ -36,12 +48,14 @@ The exploration of {topic} within the sovereign framework of v1.0
 requires a departure from classical AI constraints...
 
 \\section{{Methods}}
-We utilized the Quadruple Engine Pillar (QEP), specifically the
-Evolutionary Simulation Engine (ESE) and Autonomous Resource Optimization (ARO).
+NOT RECORDED. No engine, simulation or research swarm was executed in producing this
+document, and this pipeline does not know what method (if any) generated the summary it
+was given. The author must state the actual methods here before this draft is circulated.
 
 \\section{{Results}}
 The primary analysis indicates: {data_summary}.
-Preliminary findings from the BTO research swarms suggest 92% confidence in the observed patterns.
+No confidence level, effect size or other statistic is reported here: nothing in this
+pipeline estimates one. Any figure in this section must be supplied by the author.
 
 \\section{{Discussion}}
 The implications for {topic} are profound, particularly regarding Article 1127

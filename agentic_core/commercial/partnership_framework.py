@@ -45,7 +45,25 @@ class PartnershipFramework:
         return onboarding_data
 
     def issue_verifiable_credential(self, partner_id: str) -> Optional[Dict[str, Any]]:
-        """ARTICLE 752: Issuance of VCs for certified partners."""
+        """ARTICLE 752: Record an UNSIGNED partnership declaration.
+
+        This does not certify anyone and issues no verifiable credential: no issuer key material
+        exists in this build and no compliance audit runs here. The record is a self-declaration.
+        """
+        # W415 — this minted a credential carrying
+        # "signature": sha256("VSB_SIGN_<partner_id>") (the author's own comment on that line read
+        # "# Mock signature"), then set partner["status"] = CERTIFIED and appended the record to
+        # self.certification_registry, which get_public_registry() publishes as
+        # {"status": "CERTIFIED", "certified_since": ...}. A consumer of either surface reasonably
+        # believes an issuer certified this partner and cryptographically signed the attestation.
+        # The "signature" was a SHA-256 of a fixed literal template plus the partner id: it verifies
+        # nothing, is trivially reproducible by anyone who knows the id, and no key material was
+        # involved (contrast agentic_core/commercial/token_ledger.py, which does real Ed25519
+        # signing over the transaction body and exposes verify_transaction()). The certification
+        # gate is not real either: nothing in this repo ever computes compliance_score — it is set
+        # to 0.0 by initiate_onboarding() and only a caller can raise it — so no audit backs the
+        # 0.95 threshold. The record is kept (the surface is not deleted) but is now explicitly
+        # unsigned and uncertified, and the partner's status stays UNDER_REVIEW.
         if partner_id not in self.partners:
             return None
 
@@ -61,13 +79,22 @@ class PartnershipFramework:
             "tier": partner["tier"],
             "issued_at": datetime.datetime.now().isoformat(),
             "expires_at": (datetime.datetime.now() + datetime.timedelta(days=365)).isoformat(),
-            "signature": hashlib.sha256(f"VSB_SIGN_{partner_id}".encode()).hexdigest() # Mock signature
+            "signature": None,
+            "signed": False,
+            "credential_status": "UNSIGNED_SELF_DECLARATION",
+            "compliance_verification": "not_checked",
+            "note": (
+                "Not a verifiable credential: no issuer key material exists in this build, so this "
+                "record carries no signature and cannot be verified. compliance_score is supplied "
+                "by the caller; no compliance audit in this repo produced it."
+            )
         }
-        partner["status"] = PartnershipStatus.CERTIFIED.value
+        # Nothing certified this partner, so the status must not say CERTIFIED.
+        partner["status"] = PartnershipStatus.UNDER_REVIEW.value
         partner["credential"] = vc
         self.certification_registry.append(vc)
 
-        logger.info(f"Partnership: Verifiable Credential issued to {partner['entity']}")
+        logger.info(f"Partnership: unsigned declaration recorded for {partner['entity']} (NOT certified)")
         return vc
 
     def _get_tier_requirements(self, tier: PartnershipTier) -> List[str]:
@@ -80,7 +107,16 @@ class PartnershipFramework:
         return []
 
     def get_public_registry(self) -> List[Dict[str, Any]]:
-        """ARTICLE 755: Public-facing registry of active partners."""
+        """ARTICLE 755: Public-facing registry of certified partners.
+
+        Empty until something in this system actually certifies a partner.
+        """
+        # W415 — this filter is the publishing surface for the CERTIFIED status that
+        # issue_verifiable_credential() used to assert on its own (see the note there). Nothing
+        # sets PartnershipStatus.CERTIFIED any more, so this returns [] — an honest empty registry
+        # rather than a list of machine-invented certifications. It was already empty in practice
+        # (no code path raises compliance_score past the 0.95 gate). Do not restore a CERTIFIED
+        # write without a real issuer/audit behind it.
         return [
             {
                 "entity": p["entity"],

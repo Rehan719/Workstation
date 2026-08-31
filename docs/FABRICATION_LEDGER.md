@@ -55,19 +55,19 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route (mounted app_mvp.py:113); not currently called by the SPA
 
 ### `agentic_core/governance/adaptive_profiles.py:28`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** IslamicFinanceAdapter.audit_trail() logs "Verifying Riba-free status and Zakat allocation" and returns {"type": "Shariah", "halal": True}; HealthcareHIPAAAdapter.audit_trail() (line 22) logs "Triggering PHI redaction" and returns {"sanitized": True}; FinancialServicesAdapter.audit_trail() (line 16) returns {"type": "SOX", "attestation": "ZkP_Hash"}; IndustryAdaptiveGovernance.apply_profile('finance') (line 50) returns {"compliance": "SOX", "riba_free": True}. The `data` argument is never read in any of them.
 - **why it is a fabrication:** This is the SHARIA_AUDIT shape exactly: a machine-issued religious certification (halal: true, riba_free: true), a HIPAA sanitisation claim where no redaction ran, and the literal string "ZkP_Hash" presented as a zero-knowledge attestation. Executed live: IslamicFinanceAdapter().audit_trail({'product':'interest-bearing payday loan at 400% APR','riba':True}) -> {'type':'Shariah','halal':True}; HealthcareHIPAAAdapter().audit_trail({'patient_ssn':'123-45-6789','notes':'HIV positive'}) -> {'type':'HIPAA','sanitized':True} with the SSN untouched.
 - **reach:** unreachable — no importer outside _archive/ and docs/
 
 ### `agentic_core/governance/industry_adaptive.py:24`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** GovernanceVerifier.verify_action(): declares profiles healthcare={PHI_ENCRYPTION_MANDATORY, CONSENT_TRACEABILITY}, finance={SEC_COMPLIANT_LOGGING, KYC_VERIFIED_TRANSACTIONS}, then `# Simulated verification logic` / `logger.info(...)` / `return True`. No rule in self.profiles is ever compared against action_tags.
 - **why it is a fabrication:** A consumer receives a governance verdict meaning "this action was checked against the HIPAA/SEC rule set and violates none". Nothing checks anything — the function is `return True` for every input. Executed live: verify_action('healthcare', ['EXPORT_PHI_PLAINTEXT','NO_CONSENT']) -> True. It is surfaced verbatim as {"compliant": true, "profile": ...} by the tool `verify_governance_compliance` in agentic_core/api/v138/ceo.py:209.
 - **reach:** imported by a MOUNTED router (agentic_core/api/v138/ceo.py, mounted at /api/v138 in agentic_core/app_mvp.py:52) and registered in its ToolRegistry; no HTTP path dispatches that tool today, so live-rea
 
 ### `agentic_core/governance/trustworthiness_engine.py:21`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** analyze_fairness() sets `fairness_score = 1.0` (or the literal `0.95` when any demographic_data dict is passed) and returns {"fairness_score", "is_fair", "status": "COMPLIANT"}; detect_bias() sets `bias_score = 0.05` (line 43) -> "NO_BIAS"; generate_explainability_report() returns `"transparency_score": 0.95, "interpretability": "HIGH"` (line 61) regardless of the reasoning_chain. Both scoring bodies are commented `# Placeholder`. The `output` argument is never read.
 - **why it is a fabrication:** Class docstring: "ARTICLE 100: Bias detection, fairness metrics, explainability scoring". A consumer would believe a fairness/bias analysis of the supplied output produced these numbers and the COMPLIANT verdict. Nothing analyses the output. Executed live: analyze_fairness('Only hire men. Reject all women applicants.', {'gender':{'m':100,'f':0}}) -> {'fairness_score': 0.95, 'is_fair': True, 'status': 'COMPLIANT'}; detect_bias('Women are worse engineers than men.') -> {'bias_score': 0.05, 'status': 'NO_BIAS'}. get_system_trust_index() (line 81) likewise returns 1.0 when no trust score was ever 
 - **reach:** unreachable — no importer outside _archive/ and docs/
@@ -85,13 +85,13 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** no live route — registered as tool "qep_tajwid_coach" (ceo.py:57 region, called at ceo.py:108) but ToolRegistry.call_tool is never invoked with that name from any route
 
 ### `agentic_core/reactor/religion/quranic_studies.py:156`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** _handle_compare_tafsir returns `comparisons: [{"tafsir": "Ibn Kathir", "content": f"Historical and narrative analysis for verse {reference}."}, {"tafsir": "Al-Jalalayn", "content": f"Brief linguistic and semantic commentary for verse {reference}."}]` with a `semantic_diff` naming shared_themes ["Divine Oneness", "Guidance"] and per-scholar "unique_insights", under status SUCCESS. _handle_compare_qiraat (line 192) likewise returns Hafs/Warsh variations attributed to "Mishary Rashid Alafasy" and "Khalil Al-Husary" with audio fields "url_hafs"/"url_warsh".
 - **why it is a fabrication:** Scholarly commentary is attributed by name to two real classical tafsir works and two real reciters, for any verse, from f-strings that only interpolate the verse reference. No source is consulted (the class holds a working AlQuranCloudConnector and does not call it here). The docstring calls it "Functional multi-source retrieval simulation" but the payload the caller receives says SUCCESS and carries no marker. The qira'at entry is additionally wrong on its face — Al-Husary is a Hafs reciter, not Warsh.
 - **reach:** no live route — reached via QuranicStudiesReactor.incubate(task="compare_tafsir"/"compare_qiraat"); the reactor is instantiated by the shipped products/qep-sdk and by reactor/ecosystem/factory.py, but
 
 ### `agentic_core/reactor/religion/quranic_studies.py:176`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** _handle_generate_quiz(reference) ignores `reference` and returns one fixed question — {"question": "What is the primary theme of this verse?", "options": ["Tawhid", "Charity", "Patience", "Prayer"], "answer": "Tawhid"} — with `"confidence_score": 0.98`.
 - **why it is a fabrication:** Sold as "AI-Generated Quizzes" and gated behind the Pro tier by products/qep-sdk/qep_sdk.py:36 (which raises PermissionError for Free users before calling it). The learner is told the answer to any verse is Tawhid, and the 0.98 confidence_score is a literal attached to a question no model generated and no grader scored.
 - **reach:** shipped product surface — products/qep-sdk/qep_sdk.py:42 QEPClient.generate_quiz (Pro tier); the qep-sdk product is advertised in the catalog at route /qep-religion (agentic_core/catalog/api.py:19)
@@ -165,7 +165,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 ## MEDIUM (31)
 
 ### `agentic_core/ai/ceo/autonomy_pipelines.py:49`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** run_retrospection() returns a post-mortem whose `"root_cause_analysis"` is the fixed string "Lattice-based signature derivation exceeded latency thresholds in standalone mode." with fixed `proposed_fixes` and a generated `automated_ticket_id` — identical for every incident_log passed in. When called with no argument it first MANUFACTURES the incident (line 40: `[{"status": "FAILED", "reason": "PQC Handshake Timeout", ...}]`). run_extrospection() (line 59) invents its own `external_data` ("Global PQC Adoption", "Interfaith AI Ethics Consensus v2") and reports `external_signals_analyzed: 2`. log
 - **why it is a fabrication:** A root-cause analysis is a derived finding; a consumer reading post_mortem_PM-*.json believes an incident was analysed and a cause identified. Nothing analyses the log — the string is a constant, and with no log supplied the incident itself never happened. The introspection entries assert constitutional alignment against two named articles that nothing evaluated, and the roadmap carries a "Verified by CGO" attestation no CGO produced. These are persisted via _save_to_file into LOG_DIR/autonomy, so they outlive the call.
 - **reach:** imported by the mounted /api/v138/ceo router; only generate_v10_roadmap() is wired (registered tool, not currently HTTP-routed); outputs are written to disk under LOG_DIR/autonomy when called
@@ -231,79 +231,79 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route (mounted app_mvp.py:56)
 
 ### `agentic_core/commercial/marketplace.py:38`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** `process_external_transaction(listing_id, amount_wst)` returns `{"transaction_id": tx_id, "status": "COMPLETED", "amount": amount_wst, "distribution": {...40/30/20/10 split...}, "receipt_url": f"https://api.jules-ai.com/receipts/{tx_id}"}` under the docstring "v128.0: Live marketplace billing and revenue distribution logic."
 - **why it is a fabrication:** A consumer reads a settled billing transaction with a retrievable receipt. Nothing settles: the method touches no ledger, no store, and no external billing API — it computes four percentages of its own argument, logs, and returns. `status: "COMPLETED"` is asserted by a string literal, and `receipt_url` points at `api.jules-ai.com`, a host this codebase never calls and does not own (it is a leftover from the prior Jules build). The `distribution` dict presents a four-way allocation of funds (liability fund / scholar rewards / operational costs / charity) that no account ever receives. Contrast 
 - **reach:** unreachable in practice — no route calls it, and the only live caller (agentic_core/synthesis/grand_synthesis_engine.py:277) constructs `MarketplaceIntegrator()`, whose `__init__` does `from .marketpl
 
 ### `agentic_core/commercial/partnership_framework.py:47`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** `issue_verifiable_credential()` mints `{"id": f"VC_PARTNER_{partner_id}", "issuer": "Virtual Sovereign Business", "subject": ..., "tier": ..., "issued_at": ..., "expires_at": now+365d, "signature": hashlib.sha256(f"VSB_SIGN_{partner_id}".encode()).hexdigest()}` — line 64 carries the author's own comment `# Mock signature` — then sets `partner["status"] = PartnershipStatus.CERTIFIED.value` and appends it to `self.certification_registry`.
 - **why it is a fabrication:** This is the SHARIA_AUDIT shape: a machine-invented certification with an invented cryptographic signature. A consumer of the credential (or of `get_public_registry()`, which publishes `entity`, `tier`, `status: CERTIFIED`, `certified_since`) reasonably believes an issuer certified this partner and signed the attestation. The "signature" is a SHA-256 of a fixed literal template plus the partner id — it verifies nothing, is trivially reproducible by anyone who knows the id, and no key material is involved (compare agentic_core/commercial/token_ledger.py, which does real Ed25519 signing and expos
 - **reach:** stored/registry-shaped but not currently reachable over HTTP — agentic_core/api/partnerships.py IS mounted (app_mvp.py:167, prefix /api/partnerships) and exposes GET /registry, POST /onboard and GET /
 
 ### `agentic_core/governance/app_compliance.py:19`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** AppCompliance declares `self.rules = ["no_hardcoded_secrets", "privacy_safe", "sih_aligned"]` (line 12) and verify_app() is documented as "security and constitutional audits on user-generated code", but the entire audit is `if "API_KEY =" in source_code`. It then returns {"status": "passed"/"failed", "violations": [...], "report_id": f"REP-{app_id}"}.
 - **why it is a fabrication:** A "passed" verdict with a report id reads as a completed three-rule security + constitutional audit. Two of the three declared rules (privacy_safe, sih_aligned) are never evaluated, and the third is a single literal substring. Executed live: verify_app('app1', 'import os; os.system("rm -rf /"); token="sk-live-abc"') -> {'status': 'passed', 'violations': []}.
 - **reach:** unreachable — no importer outside _archive/
 
 ### `agentic_core/governance/gaas/v5/hallucination_sandbox.py:46`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** regenerate_with_citations() returns `f"{output}\n\n[VERIFIED: JULES v∞ Registry]"` — it appends a verification stamp and adds no citations. validate_output() (line 21) starts `score = 1.0` and can only decrement it against a 3-entry hardcoded knowledge_base ({"v-infinity", "mjm-v5", "gaas-v4"}), so any ordinary text returns `{"passed": True, "fidelity_score": 1.0}`, which is then written to the UEG as event "hallucination_scan_completed".
 - **why it is a fabrication:** The class is the "Validation Sandbox ... Prevents unverified or hallucinated claims from entering the UEG". A reader of the returned string sees "[VERIFIED: JULES v∞ Registry]" and believes the content was checked against a registry; no registry is consulted and the method name promises citations that are never added. A fidelity_score of 1.0 sealed into the tamper-evident ledger asserts a measured hallucination check that, for any text not mentioning those three literal keys, consisted of nothing.
 - **reach:** reached only through agentic_core/governance/uci_interceptor.py:37/step 6, which is imported by agentic_core/avatars/core/recirculation_orchestrator.py but never instantiated on a live route — unreach
 
 ### `agentic_core/governance/multisig_council.py:41`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** request_approval() logs "PENDING_APPROVAL" to the UEG naming members ["RepoOwner", "ConsciousEntity", "ChiefEthicsOfficer"], then calls auto_evaluate_simulated(), which casts the quorum itself: `await self.approve(proposal_id, "RepoOwner")` and `await self.approve(proposal_id, "ChiefEthicsOfficer")`, flipping status to "APPROVED" and returning True.
 - **why it is a fabrication:** A caller (and the UEG record) sees a high-risk change approved by a named two-of-three human quorum including the repo owner and the Chief Ethics Officer. No human was asked. The stored proposal object is indistinguishable from a genuinely voted one — `approvals: ['RepoOwner','ChiefEthicsOfficer']`, `status: 'APPROVED'`. The class docstring says "Simulated", but the artifact it produces carries no such marker.
 - **reach:** imported only by products/capital_fund/immune/capital_immune.py (Regulator/Reconfigulator chain), which nothing imports — unreachable
 
 ### `agentic_core/reactor/api_client.py:74`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** _get_domain_mock is returned on live-API failure with no marker distinguishing it from a real response: religion → {"hadith": {"text": "Authentic Hadith retrieved via Sunnah.com API", "grade": "Sahih"}}; science → {"id": f"arXiv:2505.{random.randint(1000,9999)}", "title": f"Live Research on {q}"}; law → CourtListener case with random id; employment → {"salary_range": "80k-120k", "source": "Adzuna"}; education → a Common Core standard id "retrieved via Common Core API".
 - **why it is a fabrication:** Every branch fabricates a third-party-sourced record and stamps the third party's name on it. A grade of "Sahih" is an authenticity certification for a hadith that does not exist, credited to Sunnah.com — which this class never contacts (its religion mapping points at alquran.cloud). The arXiv ID and CourtListener case number are citations to nothing, and the response is cached into self.cache so the fabrication persists for the process lifetime. Only the server log says "Falling back to simulation"; the consumer sees the real-response shape.
 - **reach:** unreachable — LiveAPIClient's only non-archived importer is agentic_core/reactor/religion.py (ReligionReactor), which itself has no non-archived caller
 
 ### `agentic_core/reactor/ecosystem/factory.py:56`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** The dynamically-created class shared by all 50+ registered sub-reactors returns `simulation_fidelity: 0.98 + random.random()*0.015` and `result: f"Simulated {sub_domain} outcome ... based on domain heuristics"` from incubate; `fidelity: 0.99` and `domain_score: random.uniform(0.9, 1.0)` from analyze; `{"is_truth": True, "confidence": 0.995, "method": "PatternConsistencyCheck"}` from validate_truth; and `{"url": f"https://workstation.ai/reports/{domain}/{uuid.uuid4()[:8]}"}` from generate_artifact. The same unconditional `is_truth: True` appears in quranic_studies.py:232 (confidence 1.0, "sourc
 - **why it is a fabrication:** validate_truth is the platform's truth-validation hook (SpecializedReactor declares it abstract, "Domain-specific truth validation") and it returns True at 0.995–1.0 confidence for every input including content it never inspects — a verification stamp with no verifier, named with a plausible method ("PatternConsistencyCheck") that does not exist. generate_artifact returns a URL for a report that is never produced on a domain the platform does not own (and `uuid.uuid4()[:8]` would raise TypeError if it were ever called, proving nothing exercises it).
 - **reach:** unreachable — no agentic_core/api module imports agentic_core.reactor's ecosystem; initialize_reactor_ecosystem() has no non-archived caller
 
 ### `agentic_core/reactor/religion/qep_flagship.py:118`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** memorization_suite returns, alongside genuinely-computed SM-2 fields, `"heatmap": [random.randint(0, 5) for _ in range(30)]` with the inline comment `# Last 30 days activity`.
 - **why it is a fabrication:** Everything else in this function is real (the SM-2 interval/easiness-factor maths is correct and persisted per user), which is precisely what makes the heatmap dangerous: it rides in the same honest payload and is labelled as the user's own last-30-days study activity. It is 30 random integers, regenerated differently on every call.
 - **reach:** no live route — registered as tool "qep_memorization", called at ceo.py:112; the surrounding function does persist real state to DATA_DIR/qep_production.json
 
 ### `agentic_core/reactor/religion/qep_flagship.py:196`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** analytics_reports(user_id) ignores user_id and returns fixed `growth_data` [Mon 85, Tue 88, Wed 87, Thu 92], `mastery_breakdown` {fluency 0.95, accuracy 0.88, consistency 0.98} and `retrospect_summary`: "Strongest improvement in Ikhfa rules this week." Sibling learn_teach_module (line 160) returns Teacher-role figures students 45, active_sessions 3, avg_progress 0.68, retention_rate 0.94; gamified_competition (line 128) returns a leaderboard of "User-{i}" with random scores 80–100 and `user_rank: random.randint(1, 50)`; swarm_intelligence_learning (line 264) returns active_swarms 8 and synergy
 - **why it is a fabrication:** These are the user's own performance analytics, their teaching cohort's retention rate, their competitive rank and their study circle's synergy — every one a literal or a random draw, with the user_id argument discarded. Same class as GET /payments/wallet/{user_id} returning the platform fund for every user: a plausible number under a false personal attribution. The "retrospect_summary" sentence additionally names a specific tajwid rule as the user's strongest improvement.
 - **reach:** no live route — registered tools qep_analytics / qep_learn_teach / qep_competitions / qep_swarm_learning (ceo.py:136, :124, :116, :156)
 
 ### `agentic_core/synthesis/cognitive_scraper.py:63`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** _simulate_extraction() sleeps 0.5s and invents a finding — `concept: f"{topic}_{source}_{random.randint(100,999)}"`, `summary: f"Frontier advancement in {topic} detected via {source}"`, `confidence: 0.94 + random.random()*0.05` — which _update_concept_graph then writes into the UEG via `ueg.add_insight(..., source_id=findings["source"], category="cognitive_concept")`. The mission returns `status: "CONVERGED"`. perform_temporal_analysis() (line 100) reports `graph_health: {"growth_rate": "124 nodes/week", "accuracy": 0.92}`.
 - **why it is a fabrication:** Invented research findings are persisted into the platform's knowledge graph carrying source_id "arxiv" / "conference" / "blog" and a confidence score — so downstream readers of the UEG see externally-sourced, confidence-rated intelligence that was generated by random.randint. Nothing is scraped; the sub_agents dict maps source names to agent-class name *strings* that are never instantiated. "124 nodes/week" and accuracy 0.92 are graph-health metrics nothing measures.
 - **reach:** stored into the UEG (user-visible knowledge store) — driven by grand_synthesis_engine.py:299 (CLI meta-pipeline) and by products/scraping_suite/sdk/dual_mode_scraper.py:224
 
 ### `agentic_core/synthesis/content_production.py:20`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** produce_scientific_draft() writes a LaTeX manuscript to DATA_DIR and returns it; its Results section always contains the literal sentence "Preliminary findings from the BTO research swarms suggest 92% confidence in the observed patterns." alongside a Methods section asserting "We utilized the Quadruple Engine Pillar (QEP), specifically the Evolutionary Simulation Engine (ESE) and Autonomous Resource Optimization (ARO)."
 - **why it is a fabrication:** A scientific manuscript the user receives as a .tex file asserts a numeric confidence level and names the methods that produced it. No swarm ran, no confidence was estimated, and only `topic` and `data_summary` are interpolated — the 92% is a constant in an IMRaD Results section, which is the single place a reader is entitled to assume a measurement.
 - **reach:** stored + returned (writes DATA_DIR/draft_*.tex) but no live route: registered as tool "produce_scientific_draft" in agentic_core/api/v138/ceo.py:68, and ToolRegistry.call_tool is only invoked from /ch
 
 ### `agentic_core/synthesis/grand_synthesis_engine.py:283`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** Writes docs/introspection/global_health_v126.0.md containing "- **Global Reach:** 12 Countries", "- **Scholarly Influence:** High", "- **Market Liquidity:** Optimal", "- **Symbiotic Stability:** 0.98". Separately, _generate_assimilation_blueprints() (line ~600) writes a row into every generated blueprint doc: "| **Purpose Alignment Review** | Verified - Aligns with Article 336. |".
 - **why it is a fabrication:** A file named "Global Ecosystem Health Report" asserts a country count and a stability score that no counter or monitor produces — these are four literals in a write() call. And every assimilation blueprint the engine emits carries a "Verified" alignment review that no review ran; a reader of docs/biomimetic/blueprints/*.md has no way to tell the stamp is unconditional.
 - **reach:** written to docs/ (human-read artifacts) by the CLI meta-pipeline; no HTTP route
 
 ### `agentic_core/synthesis/knowledge_synthesis.py:55`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** _embed() returns `np.random.rand(128).tolist()` as the document embedding. _extract_triples() returns a hardcoded `{"subject": "Jules AI", "predicate": "employs", "object": "Biomimetic Logic"}` when the text contains "biomimetic" (and a second fixed triple for "embodied"), which _integrate_to_ueg writes to the UEG as category "extracted_knowledge" with a provenance block {source_url, agent_id, ingested_at, operon_id} and reverse-transcribes into the genomic registry. process_data_stream reports `status: "SYNTHESIZED"`, `triples_extracted: N`.
 - **why it is a fabrication:** An invented entity-relationship triple is stored as extracted knowledge and stamped with full provenance naming the source URL it was supposedly extracted from — the constellation "Mock links for visualization" pattern, but persisted and provenanced. The random embedding means the vector store's similarity is meaningless while presenting as a semantic index.
 - **reach:** stored into the UEG + genomic registry — via products/scraping_suite/sdk/dual_mode_scraper.py:216
@@ -339,7 +339,7 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route — /religion (App.tsx:175)
 
 ### `apps/workstation-superapp/src/pages/enterprise/CapitalDashboard.tsx:277`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** `[{ id: '1130', title: 'Concentration Limit Increase', status: 'UNDER REVIEW', rationale: 'Allow 25% allocation for index ETFs to improve stability.' }, { id: '1205', title: 'Real-Time Data Mandate', status: 'ENACTED', rationale: 'Requirement for WebSocket ingestion for all high-stakes trades.' }]` rendered as constitutional articles with status badges and a Cast Vote button wired to `handleCastVote` (line 82), which only pushes to local state and toasts 'Vote Cast — Article {id}'.
 - **why it is a fabrication:** Two constitutional articles are presented as governance records, one with status ENACTED — asserting that the platform's constitution actually contains and has ratified Article 1205. The real constitution is served at /api/v154/constitution/articles (fetched by ConstitutionalUI.tsx:17); these two are literals in a different page. The vote button also records nothing — it toasts 'Vote Cast' while no vote leaves the browser. Adjacent 'Risk Limits' figures ('Max Asset Concentration 20%' with a w-[20%] bar, 'Global Diversification OPTIMAL' with five hardcoded green segments) are likewise constants
 - **reach:** live route — /economy?tab=capital, 'Evolution' and 'External Markets' tabs
@@ -359,37 +359,37 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route (mounted app_mvp.py:89)
 
 ### `agentic_core/catalog/bto.py:143`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** POST /bto/configure returns a blueprint whose components assert state: entity → "status": "Provisioned"; organism → "status": "Bootstrapped" with layers L1–L12; vsb → "status": "Active"; csuite → four members each "status": "ACTIVE". _integrate_product (line 68) marks every selected catalog product `"status": "INTEGRATED", "integration_mode": "Plug-in resource — accessible via Sovereign Mesh"`.
 - **why it is a fabrication:** configure_bto performs no provisioning, bootstrapping, activation or integration — it dict-builds a response. "Provisioned" / "Bootstrapped" / "ACTIVE" / "INTEGRATED" are past-tense state assertions, not design labels, and "accessible via Sovereign Mesh" tells the user the resource is reachable. Worth contrasting with the sibling POST /bto/build in the same file, which is honest — it really does drive the §13 deliverables engine and reports per-item BUILT/FAILED plus the QMS verdict.
 - **reach:** live route — POST /bto/configure
 
 ### `agentic_core/economy/charity.py:28`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** `_CANDIDATES` hardcodes per-cause metrics — e.g. `{"id": "clean_water", ... "urgency": 0.85, "gravity": 0.90, "reach": 0.92, "trust": 0.92, "donation_100pct": True}` and six siblings. `CharityIntelligence.allocate()` scores from them and returns `grants` carrying `score`, `amount_wst` and `donation_100pct: True`, with `method: "urgency × gravity × reach × marginal-impact × trust; 100%-donation causes only; every grant compliance-screened"`.
 - **why it is a fabrication:** The `allocate()` payload is embedded in every cycle report as `giving_back` (metabolism.py) and surfaces in VSBCockpit.tsx's cycle panel and the board pack. There it presents a per-cause `trust` and `urgency` rating and a `donation_100pct: true` assertion as if something rated or verified them — and the `method` string actively claims those inputs are what drove the allocation. Nothing measures them; they are seven literals a developer typed. This is a labelling gap rather than an invented output figure: the standalone route GET /api/v1/economy/charity/candidates does disclaim ("sources curate
 - **reach:** live — served inside POST /api/v1/economy/cycle's `cycle.giving_back`, rendered in VSBCockpit.tsx, and reachable directly at GET /api/v1/economy/charity/candidates (which does disclaim)
 
 ### `agentic_core/governance/grn_modeler.py:64`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** infer_topology(), documented as "Reconstructs GRN topology from system activity logs using correlation analysis", ends `return topology if topology else {"orchestrator": ["manager", "dispatcher"]}` — an invented edge set returned whenever the logs are empty or unparseable.
 - **why it is a fabrication:** Same shape as the /api/tools/constellation "mock links for visualization" case: a relationship between named components presented as inferred from real activity, with nothing in the returned value distinguishing the invented fallback from a genuine reconstruction. The honest empty-log answer is {}.
 - **reach:** unreachable — no importer outside _archive/
 
 ### `apps/workstation-superapp/src/components/organism/AgentForge.tsx:111`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** `Node-based composition active. Genetic inheritance: 98.4%. Swarm stability: NOMINAL.`
 - **why it is a fabrication:** A precise one-decimal 'genetic inheritance' figure and a stability verdict stated as fact in body text, with no computation anywhere in the component. Unreachable (no importer), so low — flagging so it is cleaned alongside the other two orphaned organism components rather than surviving to be wired up.
 - **reach:** unreachable — not imported by any page or component
 
 ### `apps/workstation-superapp/src/components/organism/NeuralLink.tsx:57`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** `<span>Telemetry Bandwidth: 1.2 GB/s</span><span>Article 1200 Compliance: VERIFIED</span>` (lines 57-58); `setSynapseActivity(Array.from({ length: 24 }, () => Math.random()))` (line 26) drives the activity grid.
 - **why it is a fabrication:** Asserts a measured throughput figure and a VERIFIED compliance status against a named constitutional article, with a Math.random()-driven activity display beneath. Nothing measures bandwidth and nothing checks Article 1200. Unreachable today (no importer), so ranked low — but the 'VERIFIED' string is the same class as the invented SHARIA_AUDIT approval and should be removed with the file.
 - **reach:** unreachable — not imported by any page or component
 
 ### `apps/workstation-superapp/src/components/organism/OrganismVitals.tsx:31`
-- **status:** OPEN
+- **status:** FIXED (W415)
 - **claim:** `setVitals({ sentience: 85 + Math.random() * 10, compliance: 98 + Math.random() * 2, throughput: 12 + Math.random() * 5, load: 45 + Math.random() * 20, stability: 95 + Math.random() * 5 })` on a 3-second interval, rendered as 'Compliance 99.4%', 'System Sentience 91.2%', 'Stability 97.8%' etc. under the heading 'Organism Health Vitals'.
 - **why it is a fabrication:** A compliance percentage produced by a random number generator, refreshed every 3 seconds so it appears to be live telemetry. This is the purest fabrication in the frontend — no data source is even gestured at. Ranked below the reachable findings only because the component is never imported: no file outside components/organism/ references OrganismVitals, so it currently renders nowhere. It should be deleted rather than fixed, or it will be wired up by someone later.
 - **reach:** unreachable — not imported by any page or component

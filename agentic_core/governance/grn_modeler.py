@@ -49,8 +49,11 @@ class GRNModeler:
 
     def infer_topology(self, interaction_logs: List[Dict[str, Any]]) -> Dict[str, List[str]]:
         """
-        Reconstructs GRN topology from system activity logs using correlation analysis.
+        Reconstructs GRN topology from system activity logs by extracting caller -> callee edges.
+        Returns {} when the logs carry no usable caller/callee pairs.
         """
+        # W415 — the docstring said "using correlation analysis". Nothing correlates anything
+        # here: the reconstruction is a direct read of caller/callee fields off each log record.
         topology = {}
         # Article 60: Reconstruct from logs instead of returning hardcoded mock
         for log in interaction_logs:
@@ -61,4 +64,10 @@ class GRNModeler:
                 if callee not in topology[caller]:
                     topology[caller].append(callee)
 
-        return topology if topology else {"orchestrator": ["manager", "dispatcher"]}
+        # W415 — this ended `return topology if topology else {"orchestrator": ["manager",
+        # "dispatcher"]}`. Whenever the logs were empty or unparseable the method invented a
+        # three-component edge set and returned it in exactly the shape of a genuine
+        # reconstruction — nothing in the returned value distinguished the fallback from
+        # topology actually inferred from activity. The honest reconstruction of no usable
+        # logs is no topology.
+        return topology

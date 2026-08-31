@@ -26,19 +26,29 @@ class BTOConfigureRequest(BaseModel):
 
 
 def _build_component(kind: str) -> Dict[str, Any]:
+    # W415 — these read "Provisioned" / "Bootstrapped" / "Active" / "ACTIVE", and BTOCatalog.tsx
+    # renders the `status` string verbatim as each component's summary line. They are past-tense
+    # state assertions, but configure_bto provisions, bootstraps and activates nothing — it
+    # dict-builds a design blueprint. Nothing here is running when the user reads "Active".
+    # The honest label is what this actually is: a specification. POST /bto/build is the sibling
+    # that really produces (via the §13 deliverables engine) and honestly reports BUILT/FAILED.
+    _SPEC = "SPECIFIED (blueprint only)"
     if kind == "entity":
-        return {"type": "Sovereign Digital Entity", "status": "Provisioned", "identity_layer": "L1 Core Identity"}
+        return {"type": "Sovereign Digital Entity", "status": _SPEC, "provisioned": False,
+                "identity_layer": "L1 Core Identity"}
     if kind == "organism":
-        return {"type": "Sovereign Digital Organism", "layers": [f"L{n}" for n in range(1, 13)], "status": "Bootstrapped"}
+        return {"type": "Sovereign Digital Organism", "layers": [f"L{n}" for n in range(1, 13)],
+                "status": _SPEC, "bootstrapped": False}
     if kind == "vsb":
-        return {"name": "Virtual Sovereign Business", "ai_ceo": "VSB AI CEO", "status": "Active", "route": COMPONENT_ROUTES["vsb"]}
+        return {"name": "Virtual Sovereign Business", "ai_ceo": "VSB AI CEO", "status": _SPEC,
+                "activated": False, "route": COMPONENT_ROUTES["vsb"]}
     if kind == "csuite":
         return {
             "members": [
-                {"role": "CFO", "status": "ACTIVE"},
-                {"role": "CTO", "status": "ACTIVE"},
-                {"role": "CMO", "status": "ACTIVE"},
-                {"role": "COO", "status": "ACTIVE"},
+                {"role": "CFO", "status": _SPEC, "instantiated": False},
+                {"role": "CTO", "status": _SPEC, "instantiated": False},
+                {"role": "CMO", "status": _SPEC, "instantiated": False},
+                {"role": "COO", "status": _SPEC, "instantiated": False},
             ],
             "route": COMPONENT_ROUTES["csuite"],
         }
@@ -67,7 +77,11 @@ def _build_component(kind: str) -> Dict[str, Any]:
 
 
 def _integrate_product(product: Dict[str, Any]) -> Dict[str, Any]:
-    """Wraps a catalog product entry as an integrated BTO resource record."""
+    """Wraps a catalog product entry as a SELECTED BTO resource record (design-time, not wired)."""
+    # W415 — this stamped every selected catalog slug "status": "INTEGRATED" with
+    # "integration_mode": "Plug-in resource — accessible via Sovereign Mesh". No integration runs
+    # here and nothing is made reachable: the function copies catalog fields into a dict. The
+    # reachability sentence was the worst of it — it told the user the resource was live.
     return {
         "slug": product["slug"],
         "name": product["name"],
@@ -75,8 +89,9 @@ def _integrate_product(product: Dict[str, Any]) -> Dict[str, Any]:
         "category": product["category"],
         "features": product.get("features", []),
         "route": product.get("route"),
-        "status": "INTEGRATED",
-        "integration_mode": "Plug-in resource — accessible via Sovereign Mesh",
+        "status": "SELECTED (blueprint only)",
+        "integrated": False,
+        "integration_mode": "Not integrated by /bto/configure — POST /bto/build produces it for real.",
     }
 
 
@@ -144,6 +159,13 @@ async def build_to_order(request: BTOBuildRequest):
 
 @router.post("/configure")
 async def configure_bto(request: BTOConfigureRequest):
+    """Assemble a DESIGN blueprint for the requested components and catalog resources.
+
+    W415 — nothing in this handler provisions, bootstraps, activates or integrates anything; it
+    resolves catalog slugs and builds a dict. The per-component "Provisioned"/"Active"/"INTEGRATED"
+    state assertions it used to return are now honest specification labels, and the response says
+    plainly that it is a blueprint so a reader does not take it for a running system.
+    """
     # Resolve requested product resources from the catalog
     all_products: List[Dict[str, Any]] = list_products()
     slug_index: Dict[str, Dict[str, Any]] = {p["slug"]: p for p in all_products}
@@ -161,5 +183,9 @@ async def configure_bto(request: BTOConfigureRequest):
         "product_resources": integrated,
         "resource_count": len(integrated),
         "component_count": len(request.components),
+        "provisioned": False,
+        "note": ("Design blueprint only — this endpoint provisions, activates and integrates "
+                 "nothing. POST /bto/build genuinely produces the selected products via the §13 "
+                 "living-deliverables engine and reports BUILT/FAILED per item."),
     }
     return blueprint

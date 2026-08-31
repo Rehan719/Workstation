@@ -1,6 +1,5 @@
 import logging
 import asyncio
-import random
 from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ class LiveAPIClient:
 
                     # 1. Determine actual URL based on domain/endpoint mapping
                     url = self._get_real_api_url(endpoint)
-                    if not url: # Fallback to mock if no real mapping exists
+                    if not url: # W415 — was "Fallback to mock"; now reports the absence instead
                         response = self._get_domain_mock(endpoint, params)
                     else:
                         resp = await client.get(url, params=params, timeout=10.0)
@@ -43,7 +42,7 @@ class LiveAPIClient:
                     return response
                 except Exception as e:
                     if attempt == 2:
-                        logger.error(f"APIClient: Critical failure for {endpoint}. Falling back to simulation.")
+                        logger.error(f"APIClient: Critical failure for {endpoint}. Reporting result as unavailable.")
                         return self._get_domain_mock(endpoint, params)
                     logger.warning(f"APIClient: Retry {attempt+1} for {endpoint}: {e}")
 
@@ -61,17 +60,30 @@ class LiveAPIClient:
         return mappings.get(self.domain)
 
     def _get_domain_mock(self, endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        if self.domain == "science":
-            return {"results": [{"id": f"arXiv:2505.{random.randint(1000, 9999)}", "title": f"Live Research on {params.get('q')}"}]}
-        if self.domain == "religion":
-            return {"hadith": {"text": "Authentic Hadith retrieved via Sunnah.com API", "grade": "Sahih"}}
-        if self.domain == "law":
-            return {"cases": [{"id": random.randint(1000, 9999), "title": f"CourtListener: {params.get('q')} vs State"}]}
-        if self.domain == "employment":
-            return {"jobs": [{"title": params.get("q"), "salary_range": "80k-120k", "source": "Adzuna"}]}
-        if self.domain == "education":
-            return {"standards": [{"id": "CCSS.Math.Content.HSA-CED.A.1", "desc": "Alignment retrieved via Common Core API"}]}
-        return {"data": "Generic live data"}
+        # W415 — this fabricated a third-party-sourced record per domain and stamped the third
+        # party's name on it. religion returned {"hadith": {"text": "Authentic Hadith retrieved via
+        # Sunnah.com API", "grade": "Sahih"}} — an authenticity certification, in the traditional
+        # grading vocabulary, for a hadith that does not exist, credited to a service this class
+        # never contacts (its religion mapping points at alquran.cloud). science returned
+        # "arXiv:2505.{random}", law a CourtListener case with a random docket id, employment an
+        # "80k-120k" band sourced to Adzuna, education a Common Core standard id. Each came back in
+        # the live response's own shape with no marker, so the caller could not tell it from a real
+        # answer — only the server log said "Falling back to simulation" — and the unmapped-domain
+        # branch cached it for the process lifetime. Nothing is invented now: the absence of a live
+        # result is reported, with the reason it is absent.
+        mapped_url = self._get_real_api_url(endpoint)
+        if mapped_url:
+            detail = f"Live {self.domain} API at {mapped_url} returned no usable result for {endpoint}."
+        else:
+            detail = f"No live API is mapped for domain '{self.domain}'; nothing was retrieved."
+        return {
+            "status": "UNAVAILABLE",
+            "domain": self.domain,
+            "endpoint": endpoint,
+            "results": [],
+            "source": None,
+            "detail": detail,
+        }
 
     async def incubate(self, *args, **kwargs) -> Dict[str, Any]:
         """ARTICLE 60: Automated functional logic for incubate."""

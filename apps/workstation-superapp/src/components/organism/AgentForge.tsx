@@ -107,8 +107,18 @@ const AgentForge: React.FC = () => {
                 </svg>
             </div>
 
+            {/* W415 — this line read:
+                    "Node-based composition active. Genetic inheritance: 98.4%. Swarm stability: NOMINAL."
+                Only the first clause was true: the composer above is real local state. The other
+                two were invented — nothing in this component, or anywhere in the app, computes a
+                genetic-inheritance percentage, and no swarm is running to be stable (the Deploy
+                Swarm button is notImplemented). A precise one-decimal figure sitting beside a true
+                statement is what made it credible. The node count below is the real one from state;
+                the two measures that do not exist now say so. */}
             <p className="mt-4 text-[10px] text-slate-600 italic font-bold">
-                Node-based composition active. Genetic inheritance: 98.4%. Swarm stability: NOMINAL.
+                Node-based composition active — {nodes.length} node{nodes.length === 1 ? '' : 's'} on the
+                canvas (local draft only; nothing is deployed). Genetic inheritance: not computed.
+                Swarm stability: not measured.
             </p>
         </div>
     );

@@ -31,7 +31,11 @@ class KnowledgeSynthesisPipeline:
 
         # 2. Embedding
         embedding = self._embed(clean_text)
-        self.vector_db[raw_data.get("source")] = embedding
+        # W415 — this stored the embedding unconditionally, so the vector store filled up with
+        # 128-dim noise indexed by source URL and presented as a semantic index. Nothing is stored
+        # when there is no embedding to store: an empty index is honest, a noise-filled one is not.
+        if embedding:
+            self.vector_db[raw_data.get("source")] = embedding
 
         # 3. Extraction (Fine-tuned NER simulation)
         triples = self._extract_triples(clean_text)
@@ -39,10 +43,20 @@ class KnowledgeSynthesisPipeline:
         # 4. Classification & Integration
         integrated_nodes = self._integrate_to_ueg(triples, raw_data)
 
+        # W415 — status was the literal "SYNTHESIZED" on every call, including calls where nothing
+        # was embedded and nothing was extracted. The caller
+        # (products/scraping_suite/sdk/dual_mode_scraper.py) reads this payload as the mission's
+        # synthesis report, so a no-op pass reported success. It now reports what really happened.
         return {
-            "status": "SYNTHESIZED",
+            "status": "SYNTHESIZED" if triples else "NOT_IMPLEMENTED",
+            "detail": None if triples else (
+                "No entity-relationship extractor and no embedding model are wired into this "
+                "pipeline, so nothing was synthesised from this stream — the text was preprocessed "
+                "only. No UEG node and no genomic trait were written."
+            ),
             "triples_extracted": len(triples),
             "ueg_nodes_created": len(integrated_nodes),
+            "embedded": bool(embedding),
             "timestamp": datetime.datetime.now().isoformat()
         }
 
@@ -50,15 +64,31 @@ class KnowledgeSynthesisPipeline:
         return text.strip().lower()
 
     def _embed(self, text: str) -> List[float]:
-        # Simulated embedding generation
-        return np.random.rand(128).tolist()
+        """No embedding model is wired into this pipeline. Returns an empty vector."""
+        # W415 — this returned np.random.rand(128).tolist(): 128 random floats, stored in
+        # self.vector_db and presented as the document's semantic embedding. Every similarity or
+        # nearest-neighbour query over that store was therefore meaningless while looking like a
+        # working semantic index. There is no in-process embedding model in agentic_core (the only
+        # get_embeddings in the repo is the src/organism ai_gateway adapter, a separate runtime), so
+        # no vector can be produced here. An empty vector is skipped by the caller.
+        logger.debug("Synthesis: no embedding model is wired — returning no vector for this text.")
+        return []
 
     def _extract_triples(self, text: str) -> List[Dict[str, str]]:
-        """ARTICLE 581: Identification of entity-relationship triples."""
-        if "biomimetic" in text:
-            return [{"subject": "Jules AI", "predicate": "employs", "object": "Biomimetic Logic"}]
-        if "embodied" in text:
-            return [{"subject": "Organism", "predicate": "requires", "object": "Embodied Perception"}]
+        """ARTICLE 581: Identification of entity-relationship triples. No extractor is wired."""
+        # W415 — this returned INVENTED triples keyed off a substring test: any text containing
+        # "biomimetic" yielded {"subject": "Jules AI", "predicate": "employs", "object":
+        # "Biomimetic Logic"}, and "embodied" yielded {"Organism", "requires", "Embodied
+        # Perception"}. _integrate_to_ueg then wrote those into the UEG as category
+        # "extracted_knowledge" stamped with full provenance — the source_url they were supposedly
+        # extracted FROM — and reverse-transcribed them into the genomic registry as traits. That is
+        # a fabricated fact given a citation and persisted in two stores. No NER model, parser or
+        # LLM extraction path exists in this module, so nothing can be extracted; the integration
+        # path below is untouched and will persist real triples the moment an extractor is wired.
+        logger.debug(
+            "Synthesis: no entity-relationship extractor is wired — 0 triples returned "
+            f"for {len(text)} chars of preprocessed text."
+        )
         return []
 
     def _integrate_to_ueg(self, triples: List[Dict[str, str]], metadata: Dict[str, Any]) -> List[str]:

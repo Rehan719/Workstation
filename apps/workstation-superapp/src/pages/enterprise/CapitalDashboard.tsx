@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { apiJson, errorMessage } from '../../lib/api';
-import { Card, Button, Badge, toast } from '@workstation/ui';
+import { Card, Button, Badge, notImplemented } from '@workstation/ui';
 import {
   TrendingUp, ShieldAlert, PieChart, Activity,
   BarChart3, MessageCircle, AlertTriangle, RefreshCw,
@@ -41,13 +41,26 @@ interface FundStatus {
   currency?: string;
 }
 
+// The real governance change record, as GET /api/v1/cca reports it (change_control.py:_list_changes).
+interface CcaChange {
+  cca_id: string;
+  title: string;
+  change_type: string;
+  impact_tier: string;
+  status: string;
+  submitted_by: string;
+  submitted_at: string;
+  decision?: string | null;
+}
+
 export const CapitalDashboard: React.FC = () => {
   const [portfolio, setPortfolio] = useState<PortfolioStats | null>(null);
   const [fund, setFund] = useState<FundStatus | null>(null);
   const [fundError, setFundError] = useState('');
   const [autonomousEnabled, setAutonomousEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'external' | 'crypto' | 'evolution'>('overview');
-  const [votedAmendments, setVotedAmendments] = useState<string[]>([]);
+  const [changes, setChanges] = useState<CcaChange[] | null>(null);
+  const [changesError, setChangesError] = useState('');
 
   // W405 — the block that used to be here computed "capital metrics" from PROJECT COUNTS:
   //   balance          = total_projects * 1000 + total_outputs * 250
@@ -65,16 +78,13 @@ export const CapitalDashboard: React.FC = () => {
     axios.get<PortfolioStats>("/api/v1/projects/stats/summary", { validateStatus: () => true })
       .then(res => { if (res.status === 200) setPortfolio(res.data); })
       .catch(() => {});
+
+    // W415 — the Evolution tab used to render two hardcoded "constitutional articles" (see below).
+    // The real record of governance change is the Change Control Agency store, so read that.
+    apiJson<{ changes: CcaChange[] }>("/api/v1/cca")
+      .then(d => { setChanges(Array.isArray(d?.changes) ? d.changes : []); setChangesError(""); })
+      .catch(e => { setChanges([]); setChangesError(errorMessage(e)); });
   }, []);
-
-  const handleAction = (msg: string) => {
-    toast(msg);
-  };
-
-  const handleCastVote = (id: string, title: string) => {
-    setVotedAmendments(prev => [...prev, id]);
-    toast(`Vote Cast — Article ${id}: ${title}`);
-  };
 
   return (
     <div className="space-y-10">
@@ -203,26 +213,31 @@ export const CapitalDashboard: React.FC = () => {
                 </Card>
             </div>
             <Card className="p-8 border-slate-800 bg-slate-900/30">
+                {/* W415 — this card showed "Max Asset Concentration 20%" over a w-[20%] meter and
+                    "Global Diversification OPTIMAL" over five hardcoded full green segments. Both
+                    were literals in the markup: no risk limit is configured anywhere, no holdings
+                    exist to concentrate, and no diversification verdict is computed. A filled meter
+                    beside a percentage reads as a measurement of a live position against a policy
+                    cap, which is the whole reason these were credible. Absent beats invented. */}
                 <h3 className="text-xl font-black text-white uppercase italic mb-6">Risk Limits</h3>
                 <div className="space-y-6">
                     <div>
                         <div className="flex justify-between text-[10px] font-black uppercase mb-2">
                             <span className="text-slate-500">Max Asset Concentration</span>
-                            <span className="text-aura">20%</span>
-                        </div>
-                        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-aura w-[20%]" />
+                            <span className="text-slate-600">NOT CONFIGURED</span>
                         </div>
                     </div>
                     <div>
                         <div className="flex justify-between text-[10px] font-black uppercase mb-2">
                             <span className="text-slate-500">Global Diversification</span>
-                            <span className="text-green-500">OPTIMAL</span>
-                        </div>
-                        <div className="grid grid-cols-5 gap-1">
-                            {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-2 bg-green-500 rounded-full" />)}
+                            <span className="text-slate-600">NOT MEASURED</span>
                         </div>
                     </div>
+                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">
+                        No risk-limit policy is configured for this deployment and no holdings are
+                        tracked, so there is nothing to measure concentration or diversification
+                        against. These read "not configured" rather than showing a figure.
+                    </p>
                 </div>
             </Card>
         </div>
@@ -254,41 +269,66 @@ export const CapitalDashboard: React.FC = () => {
                     <div className="p-3 bg-highlight text-slate-950 rounded-2xl"><Code size={24} /></div>
                     <h3 className="text-xl font-black text-white uppercase italic">Constitutional Evolution</h3>
                 </div>
-                <Button onClick={() => handleAction("Opening proposal interface...")} size="sm" className="bg-aura text-slate-950 font-black uppercase italic">Propose Amendment</Button>
+                <Button onClick={() => notImplemented('Propose Amendment')} size="sm" className="bg-aura text-slate-950 font-black uppercase italic">Propose Amendment</Button>
             </div>
+            {/* W415 — this panel rendered two literal objects as constitutional articles:
+                  { id: '1130', title: 'Concentration Limit Increase', status: 'UNDER REVIEW', ... }
+                  { id: '1205', title: 'Real-Time Data Mandate',       status: 'ENACTED',      ... }
+                An ENACTED status badge asserts that the platform's constitution contains and has
+                ratified Article 1205 — it does not; the real articles are served at
+                /api/v154/constitution/articles and neither id appears there. The accompanying
+                'Cast Vote' button toasted "Vote Cast — Article {id}" while pushing the id into
+                local state only: nothing left the browser and no vote was ever recorded.
+                Real constitutional/policy change in this platform runs through the Change Control
+                Agency, so this now lists that agency's actual change requests, and says plainly
+                that voting is not wired here. */}
             <div className="space-y-6">
-                {[
-                    { id: '1130', title: 'Concentration Limit Increase', status: 'UNDER REVIEW', rationale: 'Allow 25% allocation for index ETFs to improve stability.' },
-                    { id: '1205', title: 'Real-Time Data Mandate', status: 'ENACTED', rationale: 'Requirement for WebSocket ingestion for all high-stakes trades.' }
-                ].map(amend => (
-                    <div key={amend.id} className="p-6 bg-slate-900/50 rounded-3xl border border-slate-800">
-                        <div className="flex justify-between items-start mb-4">
+                {changesError && (
+                    <div className="p-4 rounded-2xl border border-red-500/30 bg-red-500/5 text-xs font-bold text-red-400">
+                        Could not load change requests — {changesError}
+                    </div>
+                )}
+                {changes === null && !changesError && (
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Loading change requests…</p>
+                )}
+                {changes !== null && changes.length === 0 && !changesError && (
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed max-w-xl">
+                        No change requests have been submitted to the Change Control Agency. Nothing is
+                        shown here because nothing has been proposed — this list is not seeded with examples.
+                    </p>
+                )}
+                {(changes ?? []).map(change => (
+                    <div key={change.cca_id} className="p-6 bg-slate-900/50 rounded-3xl border border-slate-800">
+                        <div className="flex justify-between items-start mb-4 gap-4">
                             <div>
-                                <p className="text-[10px] font-black text-aura uppercase tracking-widest mb-1">Article {amend.id}</p>
-                                <h4 className="text-lg font-black text-white">{amend.title}</h4>
+                                <p className="text-[10px] font-black text-aura uppercase tracking-widest mb-1">{change.cca_id}</p>
+                                <h4 className="text-lg font-black text-white break-words">{change.title}</h4>
                             </div>
-                            <Badge className={amend.status === 'ENACTED' ? 'bg-green-500/10 text-green-500' : 'bg-highlight/10 text-highlight'}>{amend.status}</Badge>
+                            <Badge className={
+                                change.status === 'implemented' || change.status === 'approved'
+                                    ? 'bg-green-500/10 text-green-500'
+                                    : change.status === 'rejected'
+                                        ? 'bg-red-500/10 text-red-400'
+                                        : 'bg-highlight/10 text-highlight'
+                            }>{change.status.replace(/_/g, ' ').toUpperCase()}</Badge>
                         </div>
-                        <p className="text-xs text-slate-400 font-medium leading-relaxed italic mb-6">"{amend.rationale}"</p>
-                        <div className="flex gap-4">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleAction(`Opening deliberation thread for Article ${amend.id}: ${amend.title}`)}
-                                className="flex-1 border-slate-700 text-xs font-black uppercase italic"
-                            >View Deliberation</Button>
-                            {amend.status === 'UNDER REVIEW' && (
-                                <Button
-                                    size="sm"
-                                    disabled={votedAmendments.includes(amend.id)}
-                                    onClick={() => handleCastVote(amend.id, amend.title)}
-                                    className="flex-1 bg-aura text-slate-950 text-xs font-black uppercase italic disabled:opacity-50"
-                                >{votedAmendments.includes(amend.id) ? 'Voted' : 'Cast Vote'}</Button>
-                            )}
-                        </div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            {change.change_type} · impact {change.impact_tier} · by {change.submitted_by}
+                            {change.submitted_at ? ` · ${change.submitted_at}` : ''}
+                        </p>
+                        {change.decision && (
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                                Decision: {change.decision}
+                            </p>
+                        )}
                     </div>
                 ))}
             </div>
+            <p className="mt-6 text-[10px] font-bold text-slate-600 leading-relaxed">
+                Read-only view of <code>/api/v1/cca</code>. No voting mechanism exists on this page —
+                change requests are reviewed and decided in the Change Control Agency (/change-control),
+                and any decision you see above was recorded there.
+            </p>
         </Card>
       )}
 
