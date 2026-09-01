@@ -131,10 +131,24 @@ areas. What stayed weak is the JOURNEY THROUGH that machinery — §4, the lifec
 — and §10, the quality gate on everything it emits. Build the spine, not more machinery. Concretely:
 W1 (native AI fabric) is NOT the right next build (see §18 answer C); items 1 and 3 are.
 
-THE REGENERATING BACKLOG. 447 backend routes, 215 (48%) reachable from the UI; 246 write-capable
-routes, 105 unreached — AFTER 107 wiring workstreams. That is not a backlog to clear, it is a backlog
-that REGENERATES, because reach is not part of anyone's definition of done. A twelfth wiring round
-returns it to ~48%. The efficient correction is a rule, not a task:
+THE REGENERATING BACKLOG. Measured from the live OpenAPI against every /api reference in frontend
+source: 440 backend /api paths, 198 reachable (45%); 246 write-capable, 121 UNREACHED — AFTER 107
+wiring workstreams. Treat the digits as heuristic (the count moves a few points with the path-matching
+rule; an earlier pass counting method+route pairs gave 48% and 105) but the SHAPE is robust: fewer
+than half the surface is reachable.
+DECOMPOSE THE BACKLOG BEFORE WORKING IT — the raw number overstates the real debt, and part of it
+must NOT be wired at all:
+    26  legacy / non-v1 prefixes   -> DELETE or document, never wire. Historical namespaces:
+        /api/ai · /api/ceo · /api/council · /api/civilization · /api/cross-platform · /api/realms ·
+        /api/security · /api/partnerships · /api/v138 · v191 · v200 · v210 · v250 · v260 · v290 ·
+        v310. Wiring a UI onto /api/v138 would be new work on a dead namespace.
+     2  Owner-gated (auth / money) -> a decision to respect, not a gap.
+    93  GENUINE v1 reach gaps      -> the real backlog, and it is real capability, not plumbing:
+        /api/v1/board/directive (the Board apex tier) · /api/v1/economy/close-period ·
+        /api/v1/business-plan/set · /api/v1/cognitive/cascade · /api/v1/economy/charity/signals.
+That is not a backlog to clear, it is a backlog that REGENERATES, because reach is not part of
+anyone's definition of done. A twelfth wiring round returns it to ~45%. The correction is a rule,
+not a task:
     A CAPABILITY IS NOT DONE UNTIL A USER CAN REACH IT.
 Ship the route and its surface in the same workstream. This is why the ordering rule puts cheap
 reach-wiring above deep capability work: the capability is already paid for; only the reach is owed.
