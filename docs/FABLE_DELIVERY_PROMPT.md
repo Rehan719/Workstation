@@ -349,6 +349,27 @@ These exist. USE them; do not rebuild them, do not let them rot.
   except, fails silently). A session fixture FAILS the run if the store is not isolated.
 - scripts/prune_test_entities.py — dry-run reporter/pruner for test entities and the living roster.
   Never --apply unasked.
+- scripts/_button_sweep.mjs + scripts/_noop_retest.mjs — interactive sweep of every route's controls.
+  RESULT (verified, this pass): 72 routes, 498 page-specific controls, ZERO failing interactions —
+  no error boundary, no 5xx, no console error, no throw. The detector self-tests against a deliberate
+  404 before trusting any zero; if the self-test does not fire it aborts rather than report success.
+  ITS BLIND SPOTS, all of them found the hard way — a control can be correct and still look inert:
+    · shared chrome. v1 capped 12 controls per route and 10 of them were the SAME sidebar/header
+      buttons on all 72 routes, so it clicked the nav 72 times and reported "864 controls, 0 failing".
+      Now: enumerate first WITHOUT clicking, derive the set present on >=50% of routes, exclude it
+      from the per-route budget, test it once. Tells that you have this bug: an identical per-route
+      count repeating across unrelated routes, and a category that should be common coming back
+      near-zero (only 2 of 864 matched the destructive-label skip).
+    · innerText length cannot see a selection change that only alters styling. Compare button
+      classNames + aria-pressed/selected/current as well, with digits normalised so live counters
+      do not read as change.
+    · four benign classes still look inert to ANY dom signature, so verify before reporting a defect:
+      an already-active tab (correct no-op); a scroll-only handler (EmploymentHub's Career Path calls
+      setActiveTab('studio') when studio is already default — its real effect is scrollIntoView); a
+      file picker or download; and a real API call whose render lands outside the observation window.
+      Of 331 flagged "no visible change", 133 demonstrably changed state on retest and 33 survived;
+      of 11 of those probed individually, ALL 11 were explained — three fire real API calls
+      (business-plan/generate · reactor/studio · cca). No dead control was confirmed.
 </guards>
 
 <constraints>
