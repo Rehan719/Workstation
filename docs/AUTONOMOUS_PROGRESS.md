@@ -3017,3 +3017,47 @@ rather than silently widened into this change.
 
 Reach: a Settings card with the five fields, the EXACT preamble the server will send rendered back
 to the user, and a delete that empties the key rather than flagging it inactive.
+
+### W429 — PDFs at the front door, extracted in the browser (ledger item 7a)
+
+§4.1. A research report is the spec's own first example of "uploaded data" and is normally a PDF, so
+it could not be attached at all. The refusal was honest, which is why this sat at Tier 3 — a missing
+modality, not a lie.
+
+The Owner approved a BUNDLED in-browser extractor specifically to preserve the property that makes
+this control what it is: the file never leaves the machine. A server upload endpoint would have been
+easier and would have traded that away.
+
+**Spiked before writing any of it**, because the Vite worker pipeline was unproven here — there was
+no `?worker` or `?url` usage anywhere in apps/, packages/ or products/. Measured on a throwaway
+build, then confirmed identical on the real one:
+
+    main bundle   1.97 MB   (was 1.96 -- unchanged: pdfjs is a dynamic import)
+    pdf chunk     0.35 MB   (fetched only when a PDF is attached)
+    worker        1.31 MB   LOCAL hashed asset, no CDN
+    external refs 0
+
+pdf.js will resolve its worker from a CDN if left to itself, which would silently break the
+never-leaves-the-browser guarantee. `import('pdfjs-dist/build/pdf.worker.min.mjs?url')` makes Vite
+emit it locally and hand back the path. `pdfjs-dist@4.10.38` pinned exact; it is not among the 25
+pre-existing audit advisories.
+
+**Verified against real PDFs in a real browser**, not asserted. Two fixtures hand-built as ~600 bytes
+of ASCII: one with a text layer, one whose only content operator draws a filled rectangle. Driving
+the built bundle: the text reached the field, the block header stated `PDF text layer, 1/1 pages with
+text`, the image-only file was refused with "No text layer", and the page made ZERO external
+requests.
+
+That scanned case is the honest half. An image-only PDF yields nothing, and attaching an empty
+document under a cheerful "attached" chip would be a small lie about what was read. It says what
+happened and suggests pasting the text instead.
+
+The check is now permanent in `scripts/browser_smoke.mjs`, with the fixture GENERATED INLINE — no
+binary in the tree to rot — asserting extraction, the honest refusal, and the zero-external-request
+property together.
+
+**A false failure worth recording.** The first smoke run reported `/settings: console error 404`.
+That was the long-running `:8010` dev process, which predates the W428 profile route:
+`/api/v1/user/workspace` returned 200 while `/api/v1/user/profile` returned 404 on the same server.
+Booting HEAD on :8011 and re-running passed clean. Third stale-process false signal this session —
+the `<role>` caveat added in v9 earned its place.

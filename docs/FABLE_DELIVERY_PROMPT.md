@@ -420,7 +420,7 @@ because naming a gap without acceptance criteria only moves the guesswork.
    DONE WHEN: re-screening is switchable and its verdict — including a failure and any economic hold
    it causes — is visible to the entity's owner, who currently cannot see either.
 
-7. §4.1 · §4.2 — THE FRONT DOOR.  [TIER 3 · PROFILE CLOSED W428 · PDF IN PROGRESS]
+7. §4.1 · §4.2 — THE FRONT DOOR.  [TIER 3 · BOTH HALVES CLOSED W428 + W429]
    OWNER DECIDED (2026-09-01): explicit owner-scoped profile (never implicit recall), and a
    BUNDLED browser-side PDF extractor (never a server upload — it preserves the
    never-leaves-the-browser property the control already has).
@@ -430,8 +430,12 @@ because naming a gap without acceptance criteria only moves the guesswork.
    Settings card showing the exact preamble and a real delete. Guards: the tenancy branch
    (auth-on + no identity => NO profile, never 'default'), role-hijack neutralisation, and
    the round-trip. §4.1 PDF: pdfjs-dist is NOT installed and the bundle is already 2.0MB in
-   one chunk, so it must be a dynamic import() with the worker bundled locally — the Vite
-   worker pipeline is unproven in this repo (no ?worker/?url anywhere) and needs a spike first.
+   §4.1 PDF DELIVERED (W429): extracted in the browser via a dynamic import, so the main bundle is
+   unchanged at 1.97 MB and the 0.35 MB chunk + 1.31 MB worker load only when a PDF is attached.
+   The worker is emitted as a LOCAL hashed asset — pdf.js fetches one from a CDN if left to itself,
+   which would silently break the never-leaves-the-browser property this control exists for.
+   An image-only PDF is refused honestly rather than attached empty. Guard: browser_smoke.mjs,
+   fixture generated inline, asserting extraction + the refusal + ZERO external requests together.
    Uploads accept text formats only (AttachDocument.tsx:8 — .txt .md .csv .json .yaml .xml .html and
    friends), so a research report — the spec's own first example of "uploaded data" — cannot be
    attached, because it is normally a PDF. The read is entirely CLIENT-SIDE: the file never leaves

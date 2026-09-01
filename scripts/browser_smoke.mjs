@@ -189,6 +189,69 @@ try {
   failures.push(`/change-control structure check failed — ${String(err).slice(0, 160)}`);
 }
 
+// -- W429: PDFs are extracted IN THE BROWSER, and nothing is fetched to do it ------------------
+// The defining property of AttachDocument is that the file never leaves the machine. pdf.js will
+// happily fetch its worker from a CDN if left to resolve one itself, which would quietly trade that
+// away - so this asserts the extraction WORKS and that it made no external request while doing it.
+// The fixture is generated here rather than committed: a 600-byte hand-built PDF needs no binary in
+// the tree and cannot rot.
+{
+  const NL = String.fromCharCode(10);
+  const mkPdf = (text) => {
+    const objs = [
+      "<< /Type /Catalog /Pages 2 0 R >>",
+      "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+      "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 612 792] /Contents 5 0 R >>",
+      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ];
+    const stream = text
+      ? "BT /F1 18 Tf 72 700 Td (" + text + ") Tj ET"
+      : "0 0 0 rg 72 700 100 50 re f";          // no text operators at all = a "scanned" page
+    objs.push("<< /Length " + stream.length + " >>" + NL + "stream" + NL + stream + NL + "endstream");
+    let out = "%PDF-1.4" + NL;
+    const offsets = [];
+    objs.forEach((body, i) => { offsets.push(out.length); out += (i + 1) + " 0 obj" + NL + body + NL + "endobj" + NL; });
+    const xrefAt = out.length;
+    out += "xref" + NL + "0 " + (objs.length + 1) + NL + "0000000000 65535 f " + NL;
+    offsets.forEach(o => { out += String(o).padStart(10, "0") + " 00000 n " + NL; });
+    out += "trailer" + NL + "<< /Size " + (objs.length + 1) + " /Root 1 0 R >>" + NL
+        + "startxref" + NL + xrefAt + NL + "%%EOF" + NL;
+    return Buffer.from(out, "latin1");
+  };
+
+  const external = [];
+  const onReq = (r) => {
+    const u = r.url();
+    if (!u.startsWith(BASE) && !u.startsWith("data:") && !u.startsWith("blob:")) external.push(u);
+  };
+  page.on("request", onReq);
+  await page.goto(`${BASE}/genesis`, { waitUntil: "domcontentloaded", timeout: 45_000 });
+  await page.waitForFunction(() => (document.querySelector("#root")?.innerText || "").length > 40,
+    { timeout: 20_000 }).catch(() => {});
+
+  if (!(await page.evaluate(() => !!document.querySelector("input[type=file]")))) {
+    failures.push("/genesis: no file input - the attach control is gone");
+  } else {
+    await page.setInputFiles("input[type=file]",
+      { name: "probe.pdf", mimeType: "application/pdf", buffer: mkPdf("WORKSTATION PDF PROBE 4271") });
+    await page.waitForTimeout(4_000);
+    const fields = await page.evaluate(() => [...document.querySelectorAll("textarea")].map(x => x.value).join(" | "));
+    if (!/WORKSTATION PDF PROBE 4271/.test(fields)) failures.push("PDF text was not extracted into the field");
+    if (!/PDF text layer/.test(fields)) failures.push("the attached block does not state what was read");
+
+    // A scanned PDF has no text layer. Attaching an empty document, or showing a cheerful chip over
+    // nothing, would be a small lie about what was read.
+    await page.setInputFiles("input[type=file]",
+      { name: "scanned.pdf", mimeType: "application/pdf", buffer: mkPdf("") });
+    await page.waitForTimeout(4_000);
+    const body = await page.evaluate(() => document.querySelector("#root")?.innerText || "");
+    if (!/No text layer/.test(body)) failures.push("an image-only PDF was not honestly refused");
+    note(`PDF extraction ok (${external.length} external requests)`);
+  }
+  if (external.length) failures.push(`PDF extraction fetched ${external.length} external URL(s): ${external.slice(0, 2).join(", ")}`);
+  page.off("request", onReq);
+}
+
 // -- W402: every remaining route must at least render ----------------------------------------
 // The checks above go deep on 11 routes. The app has ~71, and a crash on any of the others would
 // go unnoticed - today a single unrenderable value (React #31) took down a whole route through the
