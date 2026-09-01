@@ -28,6 +28,18 @@ interface Deliverable {
   // §13 (W-versions) — each version carries its full stored text (the API already returns it);
   // the UI now lets the user read any prior version, not just the count.
   versions: { created_at: string; content?: string; brief?: string }[];
+  // §13 (W425) — a regeneration is now an IMPROVEMENT pass over the prior draft, and whether it
+  // actually improved is MEASURED. It has to reach the screen: the old behaviour replaced the
+  // content unconditionally, so a worse draft could displace a better one with nothing said.
+  improvement?: {
+    compared_against_prior_draft: boolean;
+    improvement_focus?: string[];
+    coverage_before?: number | null; coverage_after?: number | null;
+    coverage_delta?: number | null;
+    sections_uncovered_after?: string[];
+    verdict: 'improved' | 'regressed' | 'unchanged' | 'not_compared';
+    note?: string | null;
+  };
 }
 
 export const Deliverables: React.FC = () => {
@@ -211,6 +223,22 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                     <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-700/40 text-slate-300"
                       title="§10 — measured: this gate computed it. attested: a caller asserted it and nothing verified the claim. not measured: nothing established it.">
                       §10 bar: {selected.quality_assurance.quality.bar_measured.summary ?? `${selected.quality_assurance.quality.bar_measured.measured} of 16 measured`}
+                    </span>
+                  )}
+                  {/* §13 (W425) — did the last regeneration actually IMPROVE this? Measured, and
+                      said out loud. A regression used to replace the content with nothing reported. */}
+                  {selected.improvement && selected.improvement.verdict !== 'not_compared' && (
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${selected.improvement.verdict === 'improved' ? 'bg-emerald-500/15 text-emerald-400' : selected.improvement.verdict === 'regressed' ? 'bg-vital/15 text-vital' : 'bg-slate-800 text-slate-400'}`}
+                      title={`§13 — measured against the draft this version replaced.\ncoverage ${selected.improvement.coverage_before} -> ${selected.improvement.coverage_after}${(selected.improvement.improvement_focus || []).length ? `\nthe pass was aimed at: ${(selected.improvement.improvement_focus || []).join(' · ')}` : ''}${(selected.improvement.sections_uncovered_after || []).length ? `\nstill uncovered: ${(selected.improvement.sections_uncovered_after || []).join(' · ')}` : ''}${selected.improvement.note ? `\n${selected.improvement.note}` : ''}`}>
+                      v{selected.versions?.length ?? 1} {selected.improvement.verdict}
+                      {typeof selected.improvement.coverage_delta === 'number' && selected.improvement.coverage_delta !== 0
+                        ? ` ${selected.improvement.coverage_delta > 0 ? '+' : ''}${Math.round(selected.improvement.coverage_delta * 100)}%`
+                        : ''}
+                    </span>
+                  )}
+                  {selected.improvement?.verdict === 'regressed' && (
+                    <span className="text-[9px] font-bold text-vital">
+                      This version scored lower than the one it replaced — the previous version is kept in history.
                     </span>
                   )}
                   {selected.quality_assurance.biomimetic?.immune && (

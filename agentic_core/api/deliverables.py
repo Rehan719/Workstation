@@ -85,19 +85,51 @@ def _grounding(vsb_id: Optional[str]) -> str:
         return ""
 
 
+def _weakest_sections(content: str, secs: List[str]) -> List[str]:
+    """The declared sections a draft does NOT actually cover — the concrete thing an improvement
+    pass should attack. Measured from the draft, never guessed."""
+    low = (content or "").lower()
+    return [s for s in secs if str(s).lower() not in low]
+
+
 async def _generate(d_type: str, title: str, brief: str, domain: str,
-                    vsb_id: Optional[str], sections: List[str]) -> Dict[str, Any]:
+                    vsb_id: Optional[str], sections: List[str],
+                    prior: str = "") -> Dict[str, Any]:
     secs = sections or _TYPES.get(d_type, _TYPES["report"])
     prompt = (
         f"Produce a {d_type} titled '{title or brief[:60]}'.\n"
         f"Brief: {brief}\nDomain: {domain}{_grounding(vsb_id)}\n\n"
         + "\n".join(f"## {s}" for s in secs)
     )
+    # §13 (W425) — a regeneration used to be a fresh roll of the dice: the model never saw the draft
+    # it was replacing, so "every deliverable is ALIVE" meant only that a version record existed and
+    # the user could press the button again. An improvement pass now receives the prior draft AND the
+    # sections it MEASURABLY fails to cover, so it has something specific to fix rather than a hope.
+    if prior.strip():
+        missing = _weakest_sections(prior, secs)
+        focus = ("Sections the current draft does NOT cover — address these first: "
+                 + ", ".join(missing) + "\n\n") if missing else (
+                 "Every declared section is present; deepen the weakest evidence and specificity.\n\n")
+        prompt = (
+            f"IMPROVE the existing {d_type} below. Keep what is already strong; do not restart.\n"
+            f"Brief: {brief}\nDomain: {domain}{_grounding(vsb_id)}\n\n"
+            + focus
+            + "Return the FULL improved document under these headings:\n"
+            + "\n".join(f"## {s}" for s in secs)
+            + "\n\n--- CURRENT DRAFT ---\n" + prior[:6000]
+        )
     meta = await gateway.query_meta(prompt, agent=f"deliverable:{d_type}", timeout=30.0,
                                     augment=False)   # W332 — deliverables are saved+exported: no cross-request recall
     return {
         "content": meta.get("output", ""),
         "sections": secs,
+        # W425 — reported by the function that actually built the prompt, NOT inferred by the caller
+        # from whether it MEANT to pass a prior draft. A first cut set this flag from the caller's own
+        # variable, so it kept claiming "compared against the prior draft" after the prior stopped
+        # being passed at all — a self-attesting flag, which is the §10 defect this codebase just
+        # spent W419 removing. Derived from the prompt that was really sent.
+        "improved_from_prior": bool(prior.strip()),
+        "improvement_focus": _weakest_sections(prior, secs) if prior.strip() else [],
         "ai_provenance": {
             "posture": "in-house-first",
             "served_by": meta.get("served_by", "native"),
@@ -863,20 +895,57 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest,
                        "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
                                          "note": "refined content supplied verbatim — not regenerated"}}
             else:
+                # §13 (W425) — hand the model the draft it is replacing. Skipped when the brief or
+                # the section structure CHANGED: the user reconfigured the deliverable, so the prior
+                # draft answers a different question and improving it would fight the instruction.
+                _reconfigured = (brief != d["brief"]) or (sections != d.get("sections", []))
+                _prior = "" if _reconfigured else (d.get("content") or "")
                 gen = await _generate(d["type"], d["title"], brief, d.get("domain", "enterprise"),
-                                      d.get("vsb_id"), sections)
+                                      d.get("vsb_id"), sections, prior=_prior)
             qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable",
                                        owner_id=d.get("owner_id"))
             now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+            # §13 (W425) — MEASURE whether this version is actually better, on the same real proxies
+            # the QMS gate already computes. Previously a regeneration replaced `content`
+            # unconditionally: a worse draft silently displaced a better one, and nothing anywhere
+            # said the quality had gone down. The replacement still happens — the user asked for it —
+            # but the verdict is recorded and returned so no one has to guess.
+            _prev_q = ((d.get("quality_assurance") or {}).get("quality") or {})
+            _new_q = (qa.get("quality") or {})
+            _before = _prev_q.get("delivery_coverage")
+            _after = _new_q.get("delivery_coverage")
+            _delta = (round(_after - _before, 3)
+                      if isinstance(_before, (int, float)) and isinstance(_after, (int, float))
+                      else None)
+            improvement = {
+                # Taken from the generator's own report of the prompt it sent — never from whether
+                # this endpoint intended to supply a prior draft.
+                "compared_against_prior_draft": bool(gen.get("improved_from_prior")),
+                "improvement_focus": gen.get("improvement_focus") or [],
+                "coverage_before": _before,
+                "coverage_after": _after,
+                "coverage_delta": _delta,
+                "sections_uncovered_before": _weakest_sections(d.get("content") or "", gen["sections"]),
+                "sections_uncovered_after": _weakest_sections(gen["content"], gen["sections"]),
+                "verdict": ("not_compared" if _delta is None else
+                            "improved" if _delta > 0 else
+                            "regressed" if _delta < 0 else "unchanged"),
+                "note": ("This version scored LOWER than the one it replaced. The previous version is "
+                         "preserved in history." if (_delta or 0) < 0 else None),
+            }
+
             d["brief"] = brief
             d["sections"] = gen["sections"]
             d["content"] = gen["content"]
             d["ai_provenance"] = gen["ai_provenance"]
             d["quality_assurance"] = qa
+            d["improvement"] = improvement
             d["updated_at"] = now
             d.setdefault("versions", []).append({"brief": brief, "content": gen["content"],
                                                  "ai_provenance": gen["ai_provenance"],
-                                                 "quality_assurance": qa, "created_at": now})
+                                                 "quality_assurance": qa, "improvement": improvement,
+                                                 "created_at": now})
             _save(rows)
             return d
     raise HTTPException(status_code=404, detail=f"Deliverable {deliverable_id} not found.")

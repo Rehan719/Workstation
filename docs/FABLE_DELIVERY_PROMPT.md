@@ -110,11 +110,12 @@ C — IS W1 (NATIVE AI FABRIC) THE RIGHT NEXT BUILD? No. It is substantially del
     next build is §4.5 — see ledger item 1 — because it is the spec's central claim and it is wrong.
 
 D — remains open by design: anything in §1–§17 that does not match the Owner's intent. Two corrections
-    are owed regardless: §6's learning-loop copy was not updated when W380 moved the health threshold
-    0.6 → 0.25 and added probation; and DomainsHub.tsx hardcodes a per-domain tool count summing to
-    18 where 23 <DomainTool> instances are actually wired (§16 repeats the 18). Five of the six are
-    understated by exactly one — Religion 3/4, Science 2/3, Education 3/4, Care 3/4, Employment 5/6;
-    Law alone is correct at 2.
+    are owed regardless — BOTH NOW DONE: §6's learning-loop copy described the pre-W380 demotion
+    rule (0.6 threshold, no probation) on a page whose success cell also coloured against 0.6, so a
+    model the orchestrator still preferred rendered as failing — corrected in W426 and guarded
+    against the constants in orchestrator.py. And DomainsHub advertised 18 tools where 23 are wired
+    — corrected in W423 and guarded. Both guards read the real source of truth rather than
+    hardcoding a second copy of it.
 </answers_to_the_owner>
 
 <ordering>
@@ -184,9 +185,19 @@ must NOT be wired at all:
         one (method rule 14).
      2  Owner-gated (auth / money) -> /api/v1/auth/api-key and /api/v1/economy/transfer. A decision
         to respect, not a gap.
-   ~89  GENUINE v1 reach gaps -> the real backlog, and it is real capability rather than plumbing:
-        /api/v1/board/directive (the Board apex tier) · /api/v1/economy/close-period ·
-        /api/v1/business-plan/set · /api/v1/cognitive/cascade · /api/v1/economy/charity/signals.
+  72-93  GENUINE v1 reach gaps -> the real backlog, and real capability rather than plumbing:
+        /api/v1/native-ai/consensus · /api/v1/organism/config/reset · /api/v1/economy/close-period
+        · /api/v1/cognitive/cascade · /api/v1/twin/optimise · /api/v1/fund/allocate.
+        THE RANGE IS THE HONEST ANSWER, and both ends are biased in a KNOWN direction — do not
+        replace it with a single number without saying which matcher produced it:
+          · exact-literal matching gives 93 and OVERCOUNTS. It misses every call built as a
+            template — HeartbeatMonitor does `fetch(`/api/v1/heartbeat/${path}`)`, so beat,
+            configure, start and stop all looked unreached while being wired. 21 of the 93 were
+            false positives of exactly this kind.
+          · treating a template prefix as covering its whole area gives 72 and UNDERCOUNTS: one
+            dynamic call under /api/v1/economy/ marks every economy route reached.
+        Before working ANY of these, grep for the area prefix as well as the full path. A route
+        that looks unreached may be one template literal away from being called.
 That is not a backlog to clear, it is a backlog that REGENERATES, because reach is not part of
 anyone's definition of done. Another wiring round returns it to ~45%. The correction is a rule,
 not a task:
@@ -384,9 +395,15 @@ because naming a gap without acceptance criteria only moves the guesswork.
    the entity's owner (W421) — `list_living()` carries the §11 standing and `economy_held` with the
    consequence in words, and VSBEconomy renders both per row. `never_screened` renders as "not
    screened", never as a pass. Guard: test_w421_compliance_verdict_and_hold_reach_the_entity_owner.
-   STILL OPEN in this item: "every deliverable is ALIVE" still means a version record exists and the
-   user may press the button again — no research step, no improvement over the prior draft. That
-   half is a capability gap, not a reach gap. The history below is the lesson.
+   AND CLOSED W425: a regeneration is now an IMPROVEMENT pass — the model receives the prior draft
+   plus the sections it measurably fails to cover, and whether it actually improved is MEASURED
+   (coverage before/after, delta, verdict) and reported. A REGRESSION is stated rather than
+   silently replacing a better draft. Reconfiguring skips the comparison on purpose. Guard:
+   test_w425_regeneration_improves_the_prior_draft_and_says_whether_it_did — whose FIRST version
+   was VACUOUS: it asserted coverage improved, which a fresh generation achieves anyway, so it
+   passed with the prior draft removed entirely. Breaking it is the only reason anyone knew.
+   Read W425 in AUTONOMOUS_PROGRESS.md before writing your next guard.
+   The history below is the lesson.
    Continuous compliance re-screening exists and cannot be switched on from any UI, so out of the box
    compliance is evaluated ONCE, at establishment. "Every deliverable is ALIVE" currently means a
    version record exists and the user may press the button again: no research step, no improvement

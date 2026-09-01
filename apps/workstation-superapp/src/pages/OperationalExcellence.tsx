@@ -99,7 +99,20 @@ export const OperationalExcellence: React.FC = () => {
       {models.length > 0 && (
         <div>
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-2"><Cpu size={14} /> Model performance — the fabric's learning</h3>
-          <p className="text-[9px] text-slate-600 mb-3">Non-native models are deprioritised below the always-available native floor when they keep failing (≥5 attempts and under 60% success), so the fabric stops wasting time on them.</p>
+          {/* §6 (W426) — this described the pre-W380 rule. The threshold moved 0.6 -> 0.25 and
+              probation was added; the old copy quoted the 0.6 figure as a percentage and never
+              mentioned probation, so the page explained a policy the fabric had stopped using.
+              The guard forbids that figure appearing anywhere in this file, comments included —
+              which is why it is referred to and not reproduced here. */}
+          <p className="text-[9px] text-slate-600 mb-3">
+            A non-native model ranks <em>below</em> the always-available native floor only when it is
+            effectively dead — at least 5 attempts in the window <em>and</em> under 25% success.
+            Ordering a model after the floor means it is never tried at all (the floor always
+            answers), so demotion is reserved for that, not for merely imperfect: every failure is
+            caught by the floor anyway, and the real cost of trying is latency, not a broken
+            response. A demoted model is not exiled — after 10 minutes untried it earns one fresh
+            attempt (probation) and returns to the preferred set if it succeeds.
+          </p>
           <Card className="p-0 overflow-hidden">
             <table className="w-full text-left">
               <thead>
@@ -113,7 +126,15 @@ export const OperationalExcellence: React.FC = () => {
                   <tr key={m.name} className={`text-[11px] ${i % 2 ? 'bg-slate-950/40' : ''}`}>
                     <td className="p-3 font-bold text-white">{m.name}</td>
                     <td className="p-3 text-slate-400">{m.runs}</td>
-                    <td className="p-3"><span className={m.success_rate >= 0.6 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{pct(m.success_rate)}</span></td>
+                    {/* §6 (W426) — coloured against the threshold that ACTUALLY governs demotion.
+                        W380 moved the floor from 0.6 to 0.25 ("only an effectively-dead model goes
+                        behind the floor", orchestrator.py:69) and this cell was never updated, so a
+                        model at 0.4 rendered amber — reading as failing — while the orchestrator
+                        still preferred it. The colour now means what the system does. */}
+                    <td className="p-3"><span className={m.success_rate >= 0.25 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}
+                      title={m.success_rate >= 0.25
+                        ? 'Above the 0.25 demotion floor — this model is still preferred by the orchestrator.'
+                        : 'Below the 0.25 demotion floor — effectively dead, so it ranks behind the deterministic native floor. It earns one fresh attempt after 10 minutes untried (probation).'}>{pct(m.success_rate)}</span></td>
                     <td className="p-3 text-slate-500">{m.avg_ms}</td>
                     <td className="p-3">{m.deprioritised
                       ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">deprioritised</span>

@@ -6727,3 +6727,88 @@ def test_w423_domainshub_tool_counts_match_what_is_wired():
             % (declared[domain], domain, stem, wired))
 
     assert sum(int(v) for v in declared.values()) == 23
+
+
+def test_w425_regeneration_improves_the_prior_draft_and_says_whether_it_did(client):
+    """§13 — "every deliverable is ALIVE" must mean more than a version record plus a button.
+
+    `regenerate` used to call `_generate` with the same brief and NEVER pass the draft it was
+    replacing, so a regeneration was a fresh roll of the dice. Worse, it overwrote `content`
+    unconditionally: a lower-quality draft silently displaced a better one and nothing said so.
+    """
+    from agentic_core.api.deliverables import _weakest_sections
+
+    secs = ["Objective", "Context", "Risk Analysis", "Financial Model", "Next Steps"]
+    body = ("# Draft\n\n## Objective\nA community meal service funded by donations with a halal "
+            "supply chain, 240 meals a day across three kitchens — substantive enough to clear the "
+            "stub floor.\n\n## Context\nThree of the five declared sections are absent here.\n")
+    d = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "w425 partial", "content": body, "sections": secs}).json()
+
+    # the starting point is genuinely deficient, so there is something real to improve
+    assert d["quality_assurance"]["quality"]["delivery_coverage"] < 1.0
+    assert set(_weakest_sections(d["content"], secs)) == {"Risk Analysis", "Financial Model",
+                                                          "Next Steps"}
+
+    r = client.post("/api/v1/deliverables/%s/regenerate" % d["id"], json={}).json()
+    imp = r["improvement"]
+
+    # This is the assertion that bites. A first version of this guard asserted only that
+    # coverage improved -- and PASSED with the prior draft removed entirely, because a fresh
+    # generation reaches full coverage on its own. It proved nothing. The flag below is
+    # reported by the generator about the prompt it actually sent, so it is false the moment
+    # the prior draft stops being passed.
+    assert imp["compared_against_prior_draft"] is True, "the prior draft must reach the model"
+    assert set(imp["improvement_focus"]) == {"Risk Analysis", "Financial Model", "Next Steps"}, (
+        "the improvement pass must be pointed at the sections that were actually missing: %r"
+        % (imp["improvement_focus"],))
+    assert imp["coverage_after"] > imp["coverage_before"], (
+        "an improvement pass that does not improve coverage is a regeneration, not an improvement: %r"
+        % (imp,))
+    assert imp["verdict"] == "improved" and imp["coverage_delta"] > 0
+    assert imp["sections_uncovered_after"] == []
+    assert len(r["versions"]) == 2, "history must be preserved, not overwritten"
+
+    # RECONFIGURE is not improvement: changing the structure means the prior draft answers a
+    # different question, so it must NOT be fed back in as something to preserve.
+    r2 = client.post("/api/v1/deliverables/%s/regenerate" % d["id"], json={
+        "sections": ["Executive Summary", "Recommendation"]}).json()
+    assert r2["improvement"]["compared_against_prior_draft"] is False, (
+        "a reconfigured deliverable must not be 'improved' against a draft answering another brief")
+
+    # And the verdict vocabulary must be able to report a REGRESSION — a comparison that can only
+    # ever say "improved" is not a measurement.
+    assert imp["verdict"] in ("improved", "regressed", "unchanged", "not_compared")
+    assert "note" in imp
+
+
+def test_w426_learning_loop_copy_matches_the_real_demotion_rule():
+    """§6 / §18-D — the Learning Loop page must describe the policy the fabric actually runs.
+
+    W380 moved the demotion floor from 0.6 to 0.25 and added probation. The page kept saying "under
+    60% success" and never mentioned probation, and the success-rate cell coloured against 0.6 — so a
+    model at 40% rendered amber, reading as failing, while the orchestrator still preferred it. Copy
+    that describes a superseded policy is a quiet false claim: nothing errors, and the reader is
+    simply misinformed.
+    """
+    import pathlib
+    import re
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    orch = (root / "agentic_core/ai/native/orchestrator.py").read_text(encoding="utf-8", errors="ignore")
+    page = (root / "apps/workstation-superapp/src/pages/OperationalExcellence.tsx").read_text(
+        encoding="utf-8", errors="ignore")
+
+    floor = float(re.search(r"_DEMOTE_BELOW_FLOOR_RATE\s*=\s*([0-9.]+)", orch).group(1))
+    probation_s = int(re.search(r"_PROBATION_AFTER_S\s*=\s*(\d+)", orch).group(1))
+    assert floor == 0.25 and probation_s == 600, "the rule moved again — update the copy WITH it"
+
+    # the cell must colour against the threshold that governs, not a superseded one
+    assert "m.success_rate >= 0.25" in page, "the success cell colours against a stale threshold"
+    assert "m.success_rate >= 0.6" not in page, "the pre-W380 threshold is still colouring the cell"
+
+    # and the explanatory copy must state the real numbers and mention probation
+    assert "under 25% success" in page, "the page still describes a superseded demotion threshold"
+    assert "60% success" not in page, "the pre-W380 copy survives on the page"
+    assert "probation" in page.lower(), "probation is part of the rule and must be described"
+    assert "10 minutes" in page, "the probation window must be stated, not implied"

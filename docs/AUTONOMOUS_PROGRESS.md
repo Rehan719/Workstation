@@ -2881,3 +2881,67 @@ user walks does not mean handing them every switch — it means making the path 
 Also confirmed while doing this: `/api/v191/evolution/*` (propose · approve · reject) has real
 capability and **zero frontend callers** — direct evidence for the v9 correction that the non-v1
 namespaces are unreached, not dead, and must not be deleted.
+
+### W425 — "every deliverable is ALIVE" meant a version record and a button
+
+§13, the half of prompt ledger item 6 that W420/W421 left open. `regenerate` called `_generate` with
+the same brief and NEVER passed the draft it was replacing, so a regeneration was a fresh roll of the
+dice — no research step, no improvement over the prior draft, exactly as the ledger said. Worse, it
+overwrote `content` unconditionally: a lower-quality draft silently displaced a better one and no
+surface said the quality had gone down.
+
+Now the model receives the prior draft AND the sections it MEASURABLY fails to cover, so an
+improvement pass has something specific to fix rather than a hope. Measured end to end on a
+deliberately deficient draft:
+
+    coverage 0.4 -> 1.0   delta +0.6   verdict: improved
+    uncovered before: [Risk Analysis, Financial Model, Next Steps]   after: []
+
+The comparison is recorded on the deliverable and on the version (`coverage_before/after`, `delta`,
+`verdict`, the sections still uncovered), and a REGRESSION is reported rather than hidden — the
+replacement still happens because the user asked for it, but nobody has to guess. Reconfiguring
+(a changed brief or section structure) deliberately SKIPS the comparison: the prior draft answers a
+different question, and "improving" against it would fight the instruction.
+
+**The guard was vacuous on its first write, and only the break step found it.** v1 asserted that
+coverage improved — and PASSED with `prior=_prior` removed entirely, because a fresh generation
+reaches full coverage on its own. It proved nothing about the feature it existed for.
+
+**That break also exposed a self-attesting flag in this very change.** `compared_against_prior_draft`
+was computed from the endpoint's own `bool(_prior)` — its INTENTION — not from whether the generation
+used it, so with the prior draft removed the payload kept claiming the comparison happened. That is
+the §10 defect class W419 had just finished removing, reintroduced in new code within the hour. It is
+now reported by `_generate` about the prompt it actually sent, and the guard asserts both that flag
+and that `improvement_focus` names the sections that were genuinely missing. Re-verified: breaking
+`prior=_prior` now fails with *"the prior draft must reach the model"*.
+
+Reach: `Deliverables.tsx` shows the verdict with the coverage delta, what the pass was aimed at, what
+is still uncovered, and — on a regression — a plain line saying this version scored lower than the
+one it replaced and the previous one is kept.
+
+### W426 — the Learning Loop page explained a policy the fabric had stopped using
+
+§6 / §18-D, the second of the two corrections that answer owed. W380 moved the model-demotion floor
+from 0.6 to 0.25 and added probation. Two things on `OperationalExcellence.tsx` were never updated
+with it:
+
+* the success-rate cell coloured against **0.6**, so a model at 40% rendered amber — reading as
+  failing — while the orchestrator still **preferred** it;
+* the explanatory line said a model is deprioritised "under 60% success" and never mentioned
+  probation at all.
+
+Both now match `orchestrator.py`: the colour turns at the floor that actually governs, and the copy
+states the real rule — at least 5 attempts in the window AND under 25% success, because ordering a
+model after the floor means it is never tried (the floor always answers), so demotion is reserved for
+effectively dead rather than merely imperfect. It also says what the old copy omitted: a demoted
+model is not exiled, and after 10 minutes untried it earns one fresh attempt.
+
+Copy describing a superseded policy is a quiet false claim — nothing errors, and the reader is simply
+misinformed. `test_w426_learning_loop_copy_matches_the_real_demotion_rule` reads the REAL constants
+out of orchestrator.py and asserts the page agrees, so the next threshold change fails until the copy
+moves with it.
+
+**The guard immediately caught a second instance I had missed** — my own explanatory comment quoted
+the superseded figure, and the check does not distinguish a comment from live copy. Rather than
+weaken it, the comment now refers to the figure instead of reproducing it. A guard that forbids a
+stale number everywhere in the file is more useful than one clever enough to allow exceptions.
