@@ -502,14 +502,34 @@ Also true, and cheaper to learn here than in production:
     nothing wrong; the defect is only visible from the caller side. Whenever you present a record as verified,
     enumerate every path that can write into it and ask what each one had to EARN. A record is exactly
     as trustworthy as its least-verified input, never as trustworthy as its best-written checker.
-13. A NAMESPACE IS NOT DEAD BECAUSE ITS ROUTES ARE UNREACHED — and this trap has now been sprung
+13. THE §4.5 CLASS IS A CLASS, NOT AN INCIDENT — grep for it before trusting any ranked output.
+    Seven instances found in one session: §4.5's saturated candidate score, §10's caller-attested
+    criteria, nli_engine.infer_intent (max() over all-zero scores returned the first DICT KEY),
+    verify_premise_entailment (negation invisible to token overlap: "the sky is not blue" ENTAILED
+    "the sky is blue"), ConsensusEngine.check_consensus (returned the FIRST choice clearing the
+    threshold — a 2-vote minority reported as the swarm's consensus over a 3-vote majority),
+    MinimaxOptimizer.evaluate_strategy (a utility that never reads `action`, so the strict-`>` walk
+    returned whichever the CALLER LISTED FIRST — one ordering reported `detonate_reactor` as
+    maximin-optimal), and a flag I wrote myself that reported "compared against the prior draft"
+    from the endpoint's INTENTION rather than what the generator did.
+    THE SHAPE: a value selected or reported as a result when nothing discriminated. In five of the
+    seven the tie-break was LIST OR DICT ORDER presented as a determination.
+    WHERE TO LOOK: `max(` over a dict, a `sort` followed by `[0]`, any loop that returns the first
+    item clearing a threshold, and any field whose NAME asserts more than its computation can earn.
+    THE FIX IS ALWAYS THE SAME SHAPE: detect that nothing discriminated, return None rather than a
+    name, and say WHY in a `basis` field. Then prove it BOTH ways — it must still resolve when there
+    IS signal, or you have replaced a false positive with a useless refusal.
+14. AUDIT A CLUSTER BEFORE WIRING IT. "10 unreached routes" is not 10 units of value. Nine of nine
+    native-AI primitives carried a §4.5 defect; wiring the cluster would have shipped nine misleading
+    surfaces at once. Unreached is not the same as harmless, and it is not the same as ready.
+15. A NAMESPACE IS NOT DEAD BECAUSE ITS ROUTES ARE UNREACHED — and this trap has now been sprung
     TWICE here. An earlier revision told you to delete /api/v138 and its siblings as "dead
     namespaces"; /api/v138, /api/v154, /api/v280 and /api/v290 all have live frontend callers, and
     following that advice would have broken the product. Unreached ROUTES inside a live namespace are
     not a dead namespace. Before retiring anything, grep the frontend for the prefix, not the full
     path — and remember that infra-only references, runtime directory scans, and names embedded in
     multi-word strings all evade import graphs.
-14. TRUST-HOLE DEFECTS PROPAGATE UPWARD AND GET SEALED. Item 1's scorer is a local bug until it
+16. TRUST-HOLE DEFECTS PROPAGATE UPWARD AND GET SEALED. Item 1's scorer is a local bug until it
     reaches item 3's channel — then it becomes "modelled · simulated · optimised · ranked = met" in a
     sealed record. Before fixing a measurement defect, follow its OUTPUT: if a downstream record
     attests to it, the attestation is part of the defect, and fixing only the measurement leaves a
@@ -593,7 +613,7 @@ update memory.
 
 Close a ledger entry only by EXECUTING the thing, never by reading the diff — that is how item 1 was
 found and how it should be proved fixed. Write commit messages someone can learn from, and record
-your own mistakes in them: the fourteen lessons above are worth more than the fixes that produced them.
+your own mistakes in them: the sixteen lessons above are worth more than the fixes that produced them.
 When you are wrong, say so plainly, correct it, and continue without narrating at length.
 </rhythm>
 ```

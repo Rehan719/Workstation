@@ -3061,3 +3061,76 @@ That was the long-running `:8010` dev process, which predates the W428 profile r
 `/api/v1/user/workspace` returned 200 while `/api/v1/user/profile` returned 404 on the same server.
 Booting HEAD on :8011 and re-running passed clean. Third stale-process false signal this session —
 the `<role>` caveat added in v9 earned its place.
+
+### W430–W432 — the §4.5 defect class is a CLASS: nine primitives, nine instances
+
+Setting out to wire the largest reach-gap cluster (`/api/v1/native-ai`, 10 unreached routes), the
+v9 rule "decompose the backlog before working it" was applied first. It paid for itself: probing the
+endpoints showed several would put misleading output on a page, so an agent audited all nine —
+calling each endpoint, reading each implementation — with every finding attacked by an independent
+refuter told to default to "refuted".
+
+**Nine of nine carry a §4.5-class defect that survived refutation.** Full evidence in
+`docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md`. Wiring the cluster would have shipped nine misleading
+surfaces in one change. None is reachable from any UI, which is the only reason this is latent rather
+than live.
+
+Three were re-verified BY HAND against the running backend before anything was touched, because
+agent findings are not evidence until checked — and one of them corrected me: I had told the Owner
+`decide` was "genuinely good, a real minimax result". It is not.
+
+**Fixed and guarded (4):**
+
+* **`intent` (W430).** `max(intent_scores, key=...)` over all-zero scores returns the FIRST dict key,
+  so text matching nothing was reported as intent `BUILD_APP` at confidence 0.0. Now `None` with
+  `no_signal` and a reason; a tie at the top is disclosed rather than resolved by dict order.
+* **`entailment` (W431).** `"The sky is not blue"` -> `"The sky is blue"` returned **ENTAILED**. Token
+  overlap counts hypothesis tokens found in the premise, and the negator sits in the PREMISE, so the
+  one word carrying the entire meaning never entered the ratio. Now CONTRADICTION — the label the
+  docstring always promised and the code returned nowhere. The deciding `overlap_ratio` was computed
+  and discarded; it now travels with the verdict, alongside an explicit `limits` field, because a
+  label making a LOGICAL claim on LEXICAL evidence must show its evidence.
+* **`consensus` (W431).** Returned the FIRST choice to clear the threshold in insertion order, not
+  the strongest: ALPHA with 2 votes was reported as the swarm's consensus over BETA with 3, and
+  reversing the input array flipped the answer on an identical vote multiset. Now the strongest wins,
+  ties are disclosed, and `distinct_voters` is reported separately from the raw ballot count — votes
+  are keyed by voter and later ballots OVERWRITE, so one voter's three ballots had been reported as
+  "3 nodes, 3 votes" while the arithmetic used 1.
+* **`decide` (W431).** The sharpest instance. `default_utility_func(state, action, stressor)` ACCEPTS
+  the action and never reads it, so every candidate scored identically and the strict-`>` walk
+  returned whichever the caller listed first. The same three actions reordered produced a different
+  "decision", and one ordering reported **`detonate_reactor` as the maximin-optimal action under
+  adversarial stress** — while the response asserted `"minimax adversarial (owned cognition)"` and
+  the docstring said "Real game-theory, not LLM text". Both true of the ENGINE, both false of that
+  endpoint's configuration of it. `orchestrator.py:623` calls the same optimiser with a utility that
+  genuinely varies per action and works correctly — it is the control in the guard.
+
+**An existing test asserted the defect.** `test_native_minimax_decision_in_house` required
+`selected_action in [...]`, i.e. that a choice be named when nothing distinguished the candidates.
+Its own comment shows it believed the claim: "a REAL maximin decision capability — game-theory over
+actions". It now asserts the honest contract, and keeps the `/tree` half as the CONTROL that proves
+the fix is not vacuous: same engine, two callers, opposite outcomes for the right reason.
+
+**Also fixed — `validate` (W432).** The fourth flavour of the same class. `confidence = 1.0` was set
+at the top of `validate_output` and three of the four branches never reassigned it, so a flatly wrong
+answer returned `is_accurate: False, confidence: 1.0` — structurally incapable of any other value on
+that path. `APP_CODE` wore different clothes for the same defect: `0.85`/`0.2` are invented constants
+presented as a measurement. Confidence is now None wherever nothing computes one, each with a
+`confidence_basis`. Not a blanket refusal: `SEMANTIC` still returns a real difflib ratio and
+`NUMERICAL` a real `1/(1+error)`. A non-numeric input reports None with "nothing was measured" rather
+than `0.0` — zero would imply a measurement that returned no confidence, a subtler version of the
+same lie. (My own edit then broke the log line, which formatted `{confidence:.2f}` and threw on None.
+Executing it rather than reading it caught that immediately.)
+
+**Still open (4), recorded not fixed:** `rigor` (`power` is `n/100 + 0.5` over the CALL COUNT while
+advertising "power analysis"), `quorum` (nothing is sensed — the population is what the caller
+typed), `topology` (`beta1_cycles` from the raw request-list length even when every edge was
+rejected), `transduce` (`latency_s` from a hardcoded `45.0`, provably independent of every
+parameter).
+
+**The pattern, stated because it keeps recurring.** Seven instances this session: §4.5's saturated
+ranking, §10's caller-attested criteria, `intent`, `entailment`, `consensus`, `decide`, and my own
+`compared_against_prior_draft`. Every one is *a value selected or reported as a result when nothing
+discriminated* — and in five of the seven the tie-break was LIST OR DICT ORDER presented as a
+determination. It is worth grepping for `max(` over a dict, a bare `sort` followed by `[0]`, and any
+loop that `return`s the first item clearing a threshold.

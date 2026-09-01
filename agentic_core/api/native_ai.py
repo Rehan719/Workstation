@@ -476,12 +476,19 @@ class EntailmentRequest(BaseModel):
 
 @router.post("/entailment")
 async def native_entailment(req: EntailmentRequest):
-    """Owned NLP entailment (agentic_core/nlp.NLIEngine): REAL word-overlap natural-language inference —
-    does the premise entail the hypothesis? ENTAILED | PARTIAL_ENTAILMENT | NEUTRAL. Deterministic."""
+    """Owned NLP entailment (agentic_core/nlp.NLIEngine) — LEXICAL word-overlap inference.
+
+    W431: returns the deciding number and the limits of the method, not a bare verdict. It used to
+    report ENTAILED for "The sky is not blue" -> "The sky is blue", because a negator sits in the
+    PREMISE and overlap only counts hypothesis tokens found there. Asymmetric negation now yields
+    CONTRADICTION — the label this docstring always promised and the code never returned.
+    ENTAILED | PARTIAL_ENTAILMENT | NEUTRAL | CONTRADICTION | UNDECIDABLE. Deterministic, and
+    lexical: it does not read word order, quantifiers, or role inversion."""
     from agentic_core.nlp.nli_engine import NLIEngine
-    label = NLIEngine().verify_premise_entailment(req.premise, req.hypothesis)
-    return {"premise": req.premise, "hypothesis": req.hypothesis, "label": label,
-            "method": "word-overlap NLI (owned nlp)"}
+    detail = NLIEngine().entailment_detail(req.premise, req.hypothesis)
+    # The ratio and the limits travel WITH the verdict: a label that makes a logical claim on lexical
+    # evidence must show the evidence, or the caller has no way to judge it.
+    return {"premise": req.premise, "hypothesis": req.hypothesis, **detail}
 
 
 class Vote(BaseModel):

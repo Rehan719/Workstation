@@ -4020,12 +4020,23 @@ def test_native_minimax_decision_in_house(client):
                     json={"state": {"base_stability": 0.9}, "actions": ["expand", "hold", "retreat"]})
     assert d.status_code == 200, d.text
     db = d.json()
-    assert db["selected_action"] in ["expand", "hold", "retreat"]
+    # W431 — this used to assert `selected_action in [...]`, which asserted the DEFECT: the shipped
+    # `default_utility_func` accepts `action` and never reads it, so all three scored identically and
+    # the walk returned whichever was listed first. Reordering the array changed the "decision", and
+    # one ordering reported `detonate_reactor` as maximin-optimal. A utility that cannot tell two
+    # actions apart has not chosen between them, and the endpoint now says so.
+    assert db["selected_action"] is None, (
+        "the default utility does not read the action, so nothing was chosen: %r" % (db["selected_action"],))
+    assert db["discriminated"] is False and "did not distinguish" in db["basis"]
     assert 0.0 <= db["consistency_score"] <= 1.0 and "minimax" in db["method"]
-    # the workflow tree carries a real minimax decision grounded in its OWN run signals
+    # The CONTROL, and the reason the fix above is not vacuous: the workflow tree calls the SAME
+    # optimiser with its own `_util`, which genuinely varies per action and reads real run signals.
+    # Same engine, two callers, opposite outcomes — for the right reason. If this half ever starts
+    # returning None too, the fix has over-reached and is refusing decisions it can actually make.
     t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
     dec = t.get("decision")
-    assert dec and dec["recommendation"] in ("proceed", "refine", "hold")
+    assert dec and dec["recommendation"] in ("proceed", "refine", "hold"), (
+        "the discriminating utility must still produce a decision: %r" % (dec,))
     assert 0.0 <= dec["consistency"] <= 1.0 and "minimax" in dec["method"]
     assert dec["stressors"] and len(dec["stressors"]) >= 3
 
@@ -6990,3 +7001,189 @@ def test_w428_profile_round_trip_and_delete(client):
     client.delete("/api/v1/user/profile")
     assert client.get("/api/v1/user/profile").json()["preamble_preview"] == ""
     assert load_preamble("default") == "", "delete must actually stop it reaching prompts"
+
+
+def test_w430_intent_reports_no_signal_instead_of_the_first_pattern():
+    """§4.5-class — a category must not be NAMED when nothing discriminated.
+
+    `infer_intent` did `max(intent_scores, key=intent_scores.get)`. With every score 0.0, max()
+    returns the FIRST key by dict order, so text matching nothing was reported as intent
+    "BUILD_APP" at confidence 0.0. `is_verified` said False, but a field called `intent` reads as a
+    determination and any surface rendering it shows a category nothing supports. Same shape as the
+    §4.5 candidate ranking, where a saturated score let the stable sort pick whichever the hardcoded
+    list named first.
+    """
+    from agentic_core.nlp.nli_engine import NLIEngine
+
+    e = NLIEngine()
+
+    none = e.infer_intent("I need to feed elderly neighbours on a volunteer budget")
+    assert none["confidence"] == 0.0, "fixture must be text that matches no pattern"
+    assert none["intent"] is None, (
+        "no pattern matched, so there is no intent -- got %r" % (none["intent"],))
+    assert none["no_signal"] is True
+    assert none["basis"], "absence must carry a REASON, not a bare null"
+    assert none["is_verified"] is False
+
+    # …and the fix must not be vacuous the other way: a genuine match still resolves.
+    hit = e.infer_intent("build an app for me")
+    assert hit["intent"] is not None and hit["confidence"] > 0.0
+    assert hit["no_signal"] is False and hit["tied"] is False
+    assert str(hit["confidence"]) in hit["basis"]
+
+    # A TIE at the top is disclosed rather than resolved by dict order — exercised through the real
+    # function with a crafted pattern table, so it is the shipped code path being tested.
+    e3 = NLIEngine()
+    e3.intent_patterns = {"ALPHA": [r"clinic"], "BETA": [r"clinic"]}
+    t = e3.infer_intent("the clinic opens")
+    assert t["tied"] is True and t["intent"] is None, (
+        "a tie must not be resolved silently by dict order -- got %r" % (t["intent"],))
+    assert set(t["tied_intents"]) == {"ALPHA", "BETA"}
+
+
+def test_w431_decide_reports_when_the_utility_did_not_discriminate():
+    """§4.5 class — a "decision" that is really the caller's array order.
+
+    `default_utility_func(state, action, stressor)` ACCEPTS `action` and never reads it, so every
+    candidate scored identically and the strict-`>` walk returned whichever the caller listed first.
+    Proved live before the fix: the same three actions reordered produced a different
+    `selected_action`, and one ordering reported `detonate_reactor` as the maximin-optimal action
+    under adversarial stress — while the payload asserted "minimax adversarial (owned cognition)".
+    """
+    from agentic_core.cognition.minimax_optimizer import MinimaxOptimizer, default_utility_func
+
+    o = MinimaxOptimizer()
+    a = o.evaluate_strategy({"base_stability": 0.9}, ["proceed", "refine", "detonate_reactor"], default_utility_func)
+    b = o.evaluate_strategy({"base_stability": 0.9}, ["detonate_reactor", "refine", "proceed"], default_utility_func)
+
+    assert a["selected_action"] is None and b["selected_action"] is None, (
+        "a utility that cannot tell two actions apart has not chosen between them")
+    assert a["discriminated"] is False and b["discriminated"] is False
+    assert a["selected_action"] == b["selected_action"], "reordering the input must not change the answer"
+    assert "did not distinguish" in a["basis"]
+
+    # NOT vacuous the other way: a utility that genuinely reads the action must still resolve.
+    def real_util(state, action, stressor):
+        base = {"evacuate": 0.95, "wait": 0.80, "detonate": 0.10}.get(action, 0.5)
+        return max(0.0, base - (0.3 if stressor == "hypoxia" else 0.0))
+
+    r = o.evaluate_strategy({}, ["detonate", "evacuate", "wait"], real_util)
+    assert r["selected_action"] == "evacuate" and r["discriminated"] is True
+    assert r["per_action_utility"]["detonate"] < r["per_action_utility"]["evacuate"]
+
+
+def test_w431_consensus_returns_the_strongest_choice_not_the_first():
+    """§4.5 class — `check_consensus` returned the FIRST choice to clear the threshold in insertion
+    order, so a minority option was reported as the swarm's consensus.
+
+    Proved live before the fix: ALPHA with 2 votes was returned over BETA with 3 at threshold 0.4,
+    and reversing the input array flipped the "consensus" on an identical vote multiset.
+    """
+    from agentic_core.swarm.conflict_resolution import ConsensusEngine
+
+    def build(order, threshold=0.4):
+        e = ConsensusEngine(threshold=threshold)
+        for voter, choice in order:
+            e.record_vote("p", voter, choice)
+        return e.consensus_detail("p", 5)
+
+    fwd = build([("a", "ALPHA"), ("b", "ALPHA"), ("c", "BETA"), ("d", "BETA"), ("e", "BETA")])
+    rev = build([("c", "BETA"), ("d", "BETA"), ("e", "BETA"), ("a", "ALPHA"), ("b", "ALPHA")])
+
+    assert fwd["choice"] == "BETA", "the MAJORITY choice must win, not the first to clear"
+    assert fwd["choice"] == rev["choice"], "input order must not change the consensus"
+    assert fwd["tally"] == {"ALPHA": 2, "BETA": 3}
+    assert fwd["shares"]["BETA"] > fwd["shares"]["ALPHA"]
+
+    # An exact tie is DISCLOSED, never resolved by insertion order.
+    tie = ConsensusEngine(threshold=0.4)
+    for voter, choice in [("a", "X"), ("b", "X"), ("c", "Y"), ("d", "Y")]:
+        tie.record_vote("p", voter, choice)
+    t = tie.consensus_detail("p", 4)
+    assert t["tied"] is True and t["choice"] is None
+    assert set(t["tied_choices"]) == {"X", "Y"}
+
+    # Votes are keyed by voter and OVERWRITE: three ballots from one voter is one vote, and the old
+    # response reported it as three.
+    dup = ConsensusEngine(threshold=0.66)
+    for _ in range(3):
+        dup.record_vote("q", "n1", "X")
+    d = dup.consensus_detail("q", 3)
+    assert d["distinct_voters"] == 1 and d["reached"] is False
+
+
+def test_w431_entailment_does_not_call_a_negation_an_entailment():
+    """§4.5 class, and the sharpest one: the LABEL is a logical claim the measurement cannot support.
+
+    Token overlap counts hypothesis tokens found in the premise. A negator sits in the PREMISE, so
+    it never entered the ratio: "The sky is not blue" -> "The sky is blue" scored 4/4 and returned
+    ENTAILED for a premise that REFUTES the hypothesis. CONTRADICTION was named in the docstring and
+    returned nowhere in the file — the one label that would have caught it did not exist.
+    """
+    from agentic_core.nlp.nli_engine import NLIEngine
+
+    e = NLIEngine()
+
+    neg = e.entailment_detail("The sky is not blue", "The sky is blue")
+    assert neg["label"] == "CONTRADICTION", (
+        "a premise that refutes the hypothesis must not be labelled %r" % (neg["label"],))
+    assert neg["negation_conflict"] is True
+    assert neg["overlap_ratio"] == 1.0, "the ratio that decided it must be visible to the caller"
+
+    # NOT vacuous: a real entailment still passes, and symmetric negation is not a conflict.
+    ok = e.entailment_detail("The sky is blue and clear", "The sky is blue")
+    assert ok["label"] == "ENTAILED" and ok["negation_conflict"] is False
+    both = e.entailment_detail("The sky is not blue", "The sky is not blue")
+    assert both["label"] == "ENTAILED", "negation on BOTH sides is agreement, not conflict"
+
+    # An empty hypothesis is undecidable, not NEUTRAL — those are different facts.
+    empty = e.entailment_detail("The sky is blue", "")
+    assert empty["label"] == "UNDECIDABLE" and empty["overlap_ratio"] is None
+    assert empty["basis"]
+
+    # the legacy label-only API still works for existing callers
+    assert e.verify_premise_entailment("The sky is not blue", "The sky is blue") == "CONTRADICTION"
+
+
+def test_w432_validate_reports_no_confidence_where_none_is_computed():
+    """§4.5 class — `confidence` was the untouched initializer on three of four paths.
+
+    `confidence = 1.0` was set at the top and the GENERIC branch never reassigned it, so a flatly
+    wrong answer came back `is_accurate: False, confidence: 1.0` — a field named confidence
+    reporting MAXIMUM confidence in a mismatch, structurally incapable of any other value on that
+    path. APP_CODE was a different flavour of the same thing: 0.85/0.2 are invented constants
+    presented as a measurement.
+    """
+    from agentic_core.validation.accuracy_validator import AccuracyValidator
+
+    v = AccuracyValidator()
+
+    wrong = v.validate_output("alpha", "omega", "GENERIC")
+    assert wrong["is_accurate"] is False
+    assert wrong["confidence"] is None, (
+        "an exact-equality check has no confidence gradient; it must not report %r"
+        % (wrong["confidence"],))
+    assert "binary" in wrong["confidence_basis"], "absence must carry a reason"
+
+    # A correct GENERIC answer is equally binary — the fix is about the METHOD, not the outcome.
+    assert v.validate_output("alpha", "alpha", "GENERIC")["confidence"] is None
+
+    # NOT vacuous: the paths that genuinely compute a confidence still do.
+    sem = v.validate_output("the clinic opens Friday", "the clinic opens on Friday", "SEMANTIC")
+    assert isinstance(sem["confidence"], float) and 0.8 < sem["confidence"] <= 1.0
+    assert "difflib" in sem["confidence_basis"]
+    num = v.validate_output(100.0, 100.5, "NUMERICAL")
+    assert isinstance(num["confidence"], float) and num["is_accurate"] is True
+
+    # APP_CODE is a presence check and says so, instead of a fabricated 0.85.
+    code = v.validate_output("def run(): pass", "", "APP_CODE")
+    assert code["is_accurate"] is True and code["confidence"] is None
+    assert "presence" in code["confidence_basis"]
+
+    # An unusable comparison is NOT an inaccurate prediction, and reports no confidence rather
+    # than 0.0 — which would imply something was measured.
+    bad = v.validate_output("not a number", 5, "NUMERICAL")
+    assert bad["confidence"] is None and "nothing was measured" in bad["confidence_basis"]
+
+    # the aggregate still works with confidence absent
+    assert 0.0 <= v.get_aggregate_accuracy() <= 1.0
