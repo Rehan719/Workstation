@@ -20,10 +20,17 @@
 > regenerates — reach is not in anyone's definition of done — and the correcting rule. (b) Item 3 is
 > re-derived: §10's problem is not that a badge counts 4 of 16, it is that `assure_delivery(evidence=)`
 > lets a CALLER assert any criterion as measured, unverified. Executed: `{"best-in-class": "trust me"}`
-> returns met=True, measured=True. Genesis then attests three criteria whose steps never ran, so item
-> 1's broken scorer LAUNDERS into the sealed quality record as "modelled · simulated · optimised ·
-> ranked = met". Items 1 and 3 are one defect with two faces — that is why both are TIER 1, and why
-> fixing either alone leaves the class open.
+> returns met=True, measured=True. Genesis attests with hardcoded literals that nothing checks, so
+> item 1's length-dominated ranking LAUNDERS into the sealed record as "modelled · simulated ·
+> optimised · ranked = met". Items 1 and 3 are one defect with two faces — that is why both are
+> TIER 1, and why fixing either alone leaves the class open.
+>
+> A correction made while deriving this, kept visible because it changes the finding: a first pass
+> asserted stage 5 "forward-simulates nothing". It does. genesis.py:171 runs a real digital-twin call
+> per candidate and weights it 40% of the ranking. The true defect is worse than the one first
+> claimed — the twin runs, and then `_score_candidate` scores its narrative by LENGTH, so a padded
+> simulation (1.000) beats one carrying real setpoints and throughput numbers (0.557). The system
+> pays for genuine simulation and discards what it said.
 >
 > Companions: `WORKSTATION_IDBO_WHOLE_VISION.md` · `VISION_FIDELITY_LEDGER.md` (80 verdicts) ·
 > `FABRICATION_LEDGER.md` (63/63 closed) · `AUTONOMOUS_PROGRESS.md` (W1→W418) ·
@@ -147,7 +154,16 @@ because naming a gap without acceptance criteria only moves the guesswork.
 1. §4.5 — THE SELECTION IS LENGTH.  [TIER 1]
    The spec's central claim: every candidate "modelled, simulated, optimised, ranked so the BEST is
    selected on evidence — effectiveness, safety, efficiency, commercial viability, compliance". NONE
-   of those five is measured. agentic_core/api/genesis.py:31 scores
+   of those five is measured.
+   Note what IS there, because it makes the defect sharper rather than softer: stage 5 does real work.
+   Each candidate is genuinely forward-simulated through the digital-twin pattern (a model call per
+   candidate, genesis.py:171) and the ranking declares an honest 60/40 split of modelled vs simulated
+   evidence. The twin runs — and then its OUTPUT IS SCORED BY LENGTH, because both halves of that
+   split call the same _score_candidate. Executed on twin narratives: one carrying real numbers
+   (freezer -18C, 240 meals/day, 18-minute Friday queues) scores 0.557; one repeating "the system
+   evolves over time" ninety times scores 1.000, lifting the combined score from 0.553 to 0.73.
+   The system pays for a genuine simulation and then discards what it said.
+   agentic_core/api/genesis.py:31 scores
    0.30·coverage + 0.50·specificity + 0.20·structure, with specificity = min(1, len(text)/2800).
    The PROMPT dictates the headings, so coverage and structure saturate at 1.0 for every candidate
    and 100% of the discriminating weight is character count. Executed: a concrete solution carrying
@@ -202,15 +218,15 @@ because naming a gap without acceptance criteria only moves the guesswork.
        -> best-in-class: met=True, measured=True, basis="caller evidence: trust me"
    The headline count then conflates the 4 criteria the gate genuinely computes (specifically designed
    · verified · compliant · safe) with anything a caller asserted.
-   The one caller using the channel overstates on three. genesis.py:251 hardcodes
-     "simulated": "stage 5 forward-simulated each candidate through the owned digital-twin pattern"
-     "optimised": "best-of-candidates selection on combined modelled+simulated evidence"
-   Stage 5 forward-simulates nothing and optimises nothing — it generates candidate TEXTS and sorts
-   them with the item-1 scorer. So item 1's defect does not stay local: it launders into the sealed
-   quality record as modelled · simulated · optimised · ranked = MET, and the seal makes it look
-   verified. This is the fabrication class the ledger closed 63 times, re-entering through a channel
-   built to be honest. Fix the channel and the class dies; fix Genesis alone and the next caller
-   reopens it.
+   The channel is unverified in BOTH directions, which is what makes it a class defect rather than a
+   bug. genesis.py:251 attests with hardcoded LITERALS — the same strings are recorded whatever the
+   run did. Here the underlying steps genuinely execute (stage 5 really does forward-simulate each
+   candidate — see item 1), so these particular literals are not false; they are simply not evidence.
+   Nothing checks them, an empty or degraded simulation attests identically to a rich one, and the
+   next caller to use the channel can write anything at all. Meanwhile item 1's defect launders
+   straight through it: the sealed record reads modelled · simulated · optimised · ranked = MET on a
+   ranking that is dominated by character count. Fix the channel and the class dies; fix Genesis
+   alone and the next caller reopens it.
    DONE WHEN:
      (a) The record separates gate-MEASURED from caller-ATTESTED, and reports them separately — a
          reader can tell "4 measured · 4 attested · 8 not measured" from "8 measured".
