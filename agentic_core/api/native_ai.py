@@ -35,6 +35,7 @@ async def native_status():
     # that keeps failing while the floor actually serves — `mode` now follows what the learning
     # loop MEASURED on the most recent recorded work, never just the optimistic prediction.
     measured = None
+    _last_at = None
     try:
         from agentic_core.api.operational_excellence import model_health
         _rows = [(k, v) for k, v in (model_health() or {}).items()
@@ -42,6 +43,7 @@ async def native_status():
         if _rows:
             _rows.sort(key=lambda kv: kv[1].get("last_at", ""), reverse=True)
             measured = _rows[0][0]
+            _last_at = _rows[0][1].get("last_at")
     except Exception:
         pass
     mode_predicted = "real_model" if is_real_model else "deterministic_floor"
@@ -61,8 +63,17 @@ async def native_status():
         "measured_recent_server": measured,
         "mode_note": ("mode follows the MEASURED most-recent server when history exists "
                       "(prediction only until then) — the two disagree when a listed model keeps failing"),
+        # §6 (W424) — `floor_active` is derived from ONE row: the most recent recorded
+        # completion. It answers "what served last", NOT "what is serving now", and the old
+        # name invited the second reading. The value is unchanged; what it MEASURES is now
+        # stated, and the row it was computed from travels with it so the claim is checkable.
         "floor_active": (mode_measured == "deterministic_floor" if mode_measured != "unmeasured"
                          else not is_real_model),
+        "floor_active_basis": (
+            ("most recent recorded completion was served by " + str(measured)
+             + " (one row, at " + str(_last_at) + ") — this is history, not a live probe")
+            if measured is not None else
+            "no completion has been recorded yet; predicted from whether a real model is listed"),
         "floor_note": (None if is_real_model else
                        "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. "
                        "Run a local Ollama model (or enable an external accelerant) for generative prose."),

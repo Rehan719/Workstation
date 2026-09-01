@@ -192,6 +192,14 @@ class BiomimeticBus:
             sh_health = sh["overall_health"]
             metabolic = atp_ratio
             composite_health = round((immune_health * 0.4 + sh_health * 0.4 + metabolic * 0.2), 3)
+            # §8 · §17.2 (W422) — the metabolic term is 20% of this score and is SIMULATED, not
+            # measured: ATPSimulator is driven by a constant metabolic_load (default 0.3) and the
+            # circadian phase, so it is a function of time and constants rather than of anything the
+            # platform actually does. immune_health and sh_health ARE measured. The composite is left
+            # unchanged because live thresholds read it (change_control gates on >= 0.6), but it must
+            # never again be presented as wholly measured — so the measured-only score travels beside
+            # it, and the simulated term is named.
+            _measured_only = round((immune_health * 0.5 + sh_health * 0.5), 3)
 
             # Recommended behaviour
             if composite_health >= 0.8 and cycle == "ACTIVE_FOCUS":
@@ -209,6 +217,14 @@ class BiomimeticBus:
 
             return {
                 "composite_health": composite_health,
+                "composite_health_measured_only": _measured_only,
+                "composite_health_terms": {
+                    "immune_health": {"weight": 0.4, "value": immune_health, "measured": True},
+                    "self_healing_health": {"weight": 0.4, "value": sh_health, "measured": True},
+                    "metabolic": {"weight": 0.2, "value": metabolic, "measured": False,
+                                  "basis": "ATPSimulator on a constant metabolic_load — simulated, "
+                                           "not a measurement of this platform"},
+                },
                 "mode": mode,
                 "immune": {
                     "health": immune_health,

@@ -133,12 +133,17 @@ class OrganismHeartbeat:
         self.auto_ship = False                # opt-in (§13, W319): re-ship STALE repos on the beat
         self.auto_align = False               # opt-in: route vision gaps to tiers each beat (cheap, plan-only)
         self.auto_compliance = False          # opt-in (§11, W288): re-screen living VSBs on the beat
+        # W420 — surfaced so the UI can tell the user whether their choice will actually survive a
+        # restart, instead of showing a toggle that silently forgets.
+        self.autonomy_persisted: bool = True
+        self.autonomy_restored_at: Optional[str] = None
         self.last_compliance: Optional[Dict[str, Any]] = None   # last continuous-compliance reading
         self._evolve_every = 30               # beats between evolution attempts (when enabled)
         self._beats_since_evolve = 0
         self._log: List[Dict[str, Any]] = []
         self._task: Optional["asyncio.Task"] = None
         self._ueg = None
+        self._load_autonomy()   # W420 — restore the Owner's autonomy choices; defaults stand if none
 
     def _ueg_logger(self):
         if self._ueg is None:
@@ -436,6 +441,66 @@ class OrganismHeartbeat:
         target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]
         return screen_living_vsb(target.get("vsb_id"))
 
+    # §3 · §4.10 · §12 (W420) — the autonomy settings are DURABLE. Until now configure() wrote to
+    # instance attributes only, so every one of these reverted to False on restart. A user who
+    # switched on the behaviour the product is named for ("once established it runs, maintains,
+    # defends, improves and grows itself") silently lost it the next time the process came up, and
+    # nothing said so. Persisted here and reloaded in _load_autonomy() at construction.
+    _AUTONOMY_KEYS = ("auto_evolve", "auto_economy", "auto_align", "auto_compliance", "auto_ship")
+
+    def _evolution_auto_apply(self) -> Dict[str, Any]:
+        """Current state of the CCA-governed post-approval auto-apply lever, with its path."""
+        try:
+            from agentic_core.organism.reconfiguration import _load_config
+            on = bool(((_load_config() or {}).get("organism") or {}).get("evolution_auto_apply"))
+        except Exception as exc:  # noqa: BLE001 — a config read must not break status
+            return {"enabled": None, "readable": False, "error": str(exc),
+                    "governed_by": "Change Control Agency"}
+        return {
+            "enabled": on,
+            "readable": True,
+            "governed_by": "Change Control Agency",
+            "consumer": "organism.heartbeat applies CCA-APPROVED evolution proposals each beat",
+            "how_to_change": "submit a change request to the CCA at /change-control",
+            "why_not_a_toggle": "the arms-length approval it sits behind is the point",
+            "effect_when_off": "approved evolution proposals are never applied; they wait",
+        }
+
+    def _autonomy_store(self):
+        from agentic_core.config import data_path
+        return data_path("organism_autonomy.json")
+
+    def _load_autonomy(self) -> None:
+        """Restore persisted autonomy settings. Never raises: a missing or corrupt store leaves the
+        safe defaults (all False) in place rather than failing the organism's construction."""
+        import json as _json
+        try:
+            p = self._autonomy_store()
+            if not p.exists():
+                return
+            saved = _json.loads(p.read_text(encoding="utf-8"))
+            for k in self._AUTONOMY_KEYS:
+                if isinstance(saved.get(k), bool):
+                    setattr(self, k, saved[k])
+            if isinstance(saved.get("interval_seconds"), int):
+                self.interval_seconds = max(5, saved["interval_seconds"])
+            self.autonomy_restored_at = saved.get("saved_at")
+        except Exception as exc:  # noqa: BLE001 — autonomy state must never block startup
+            logger.warning("autonomy settings could not be restored (%s); defaults stand", exc)
+
+    def _save_autonomy(self) -> None:
+        from agentic_core.config import atomic_write_json
+        payload = {k: getattr(self, k) for k in self._AUTONOMY_KEYS}
+        payload["interval_seconds"] = self.interval_seconds
+        payload["saved_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        try:
+            atomic_write_json(self._autonomy_store(), payload)
+        except Exception as exc:  # noqa: BLE001 — a failed save must not silently look like success
+            logger.error("autonomy settings NOT persisted (%s) — they will revert on restart", exc)
+            self.autonomy_persisted = False
+            return
+        self.autonomy_persisted = True
+
     def configure(self, interval_seconds: Optional[int] = None,
                   auto_evolve: Optional[bool] = None, auto_economy: Optional[bool] = None,
                   auto_align: Optional[bool] = None,
@@ -453,6 +518,7 @@ class OrganismHeartbeat:
             self.auto_compliance = bool(auto_compliance)
         if auto_ship is not None:
             self.auto_ship = bool(auto_ship)
+        self._save_autonomy()
 
     def status(self) -> Dict[str, Any]:
         return {
@@ -476,6 +542,16 @@ class OrganismHeartbeat:
             "auto_economy": self.auto_economy,
             "auto_align": self.auto_align,
             "auto_compliance": self.auto_compliance,          # §11 (W288) — continuous re-screening
+            # W420 — the UI must be able to say whether these survive a restart. `False` here means a
+            # save FAILED and the choice will be lost; the surface says so rather than implying it stuck.
+            "autonomy_persisted": self.autonomy_persisted,
+            "autonomy_restored_at": self.autonomy_restored_at,
+            # §8 (W424) — `evolution_auto_apply` has a REAL consumer on this beat (it applies
+            # CCA-approved evolution proposals) and had no UI anywhere, so a user could not
+            # see whether approved work would ever land. Reported READ-ONLY on purpose: it is
+            # a governed lever set through Change Control, not a free toggle, and surfacing a
+            # switch here would route around the arms-length approval it exists behind.
+            "evolution_auto_apply": self._evolution_auto_apply(),
             "last_compliance": self.last_compliance,
             "recent": self._log[-10:],
             "integrations": ["circadian", "central_nervous_system", "immune", "self_healing",

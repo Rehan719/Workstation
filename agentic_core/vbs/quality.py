@@ -34,20 +34,33 @@ _MIN_SUBSTANTIVE = 200  # chars — below this a "delivery" is treated as an emp
 
 def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_coverage: float,
                  compliance: Dict[str, Any], evidence: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    """§10 (W307) — the Solution-Quality Bar measured PER-CRITERION, honestly. Each of the 16
-    criteria is either genuinely measured here (a real proxy with a named basis), attested by the
-    CALLER's own real process evidence (e.g. Genesis stage-5 modelling/simulation — the basis is
-    recorded), or explicitly NOT MEASURED. The sealed record no longer implies a 16-criterion
-    measurement when only two proxies ran."""
+    """§10 — the Solution-Quality Bar resolved PER-CRITERION, honestly, in THREE distinct states.
+
+    W307 made "not measured" representable, which fixed the implied-16 problem. It left a hole at the
+    INPUT, closed here (W419): a caller could pass ``evidence={"best-in-class": "trust me"}`` and the
+    criterion was recorded ``measured: True`` — indistinguishable in the sealed record from a figure
+    this gate computed itself. Twelve of the sixteen were assertable that way.
+
+    Now every criterion carries ``source``:
+      ``gate``     this function measured it from real delivery metrics. ``measured=True``.
+      ``caller``   the caller ATTESTED it. ``attested=True``, ``measured=False`` — an attestation is
+                   a claim about a run, not a measurement, and the record must never conflate them.
+      ``none``     nothing established it. ``met=None``.
+
+    The counts are reported separately for the same reason, so a reader sees "4 measured · 5 attested
+    · 7 not measured" rather than a single "9 measured" that hides which is which.
+    """
     ev = evidence or {}
     verdicts = {v.get("framework"): v.get("status") for v in (compliance.get("verdicts") or [])}
     crit: Dict[str, Dict[str, Any]] = {}
 
     def measured(name: str, met: bool, basis: str) -> None:
-        crit[name] = {"met": bool(met), "basis": basis, "measured": True}
+        crit[name] = {"met": bool(met), "basis": basis, "measured": True, "attested": False,
+                      "source": "gate"}
 
     def unmeasured(name: str) -> None:
-        crit[name] = {"met": None, "basis": "not measured by this gate", "measured": False}
+        crit[name] = {"met": None, "basis": "not measured by this gate", "measured": False,
+                      "attested": False, "source": "none"}
 
     measured("specifically designed", coverage >= min_coverage and not stub,
              f"delivery coverage {coverage} against the declared structure (min {min_coverage}), "
@@ -70,14 +83,23 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
     for name in SOLUTION_QUALITY_BAR:
         if name in crit:
             continue
-        if ev.get(name):   # the caller attests a criterion its own REAL process earned — basis kept
+        if ev.get(name):
+            # The caller ATTESTS this criterion. Recorded, attributed, and deliberately NOT counted
+            # as measured: nothing here verifies that the step named actually ran, or ran well. An
+            # empty simulation and a rich one attest identically, so the record says "attested".
             crit[name] = {"met": True, "basis": f"caller evidence: {str(ev[name])[:200]}",
-                          "measured": True}
+                          "measured": False, "attested": True, "source": "caller"}
         else:
             unmeasured(name)
-    _m = [c for c in crit.values() if c["measured"]]
-    return {"criteria": crit, "measured": len(_m), "met": sum(1 for c in _m if c["met"]),
-            "not_measured": len(crit) - len(_m)}
+    _m = [c for c in crit.values() if c["source"] == "gate"]
+    _a = [c for c in crit.values() if c["source"] == "caller"]
+    _n = [c for c in crit.values() if c["source"] == "none"]
+    return {"criteria": crit,
+            "measured": len(_m), "met": sum(1 for c in _m if c["met"]),
+            "attested": len(_a), "not_measured": len(_n),
+            "summary": f"{len(_m)} measured · {len(_a)} attested · {len(_n)} not measured",
+            "measured_criteria": sorted(k for k, c in crit.items() if c["source"] == "gate"),
+            "attested_criteria": sorted(k for k, c in crit.items() if c["source"] == "caller")}
 
 
 def _delivery_coverage(content: str, required_sections: Optional[List[str]]) -> float:
@@ -196,17 +218,33 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
             except Exception:
                 pass
 
-    biomimetic: Dict[str, Any] = {"layers": list(BIOMIMETIC_LAYERS),
+    # §8 · §17.2 (W422) — the record used to write `"layers": list(BIOMIMETIC_LAYERS)`, naming all
+    # seven on EVERY delivery regardless of what participated. Only Immune ever contributed a value
+    # here; three of the seven (Respiratory, Musculoskeletal, Endocrine) have no implementation at
+    # all system-wide. `layers` now means what it says — the layers that actually contributed to
+    # THIS record — and the spec's full set is kept alongside it, clearly labelled.
+    biomimetic: Dict[str, Any] = {"layers": [],
+                                  "layers_declared": list(BIOMIMETIC_LAYERS),
                                   "self": "self-managing · improving · healing"}
     try:
         from agentic_core.organism.immune import immune
         from agentic_core.organism.biobus import _circadian_cycle, biobus
         biomimetic["immune"] = immune.status()
         biomimetic["circadian"] = _circadian_cycle()
+        biomimetic["layers"].append("Immune")   # the only layer that contributes a measured value
         # The organism senses every quality outcome (homeostatic feedback).
         biobus.fire_signal("cognitive", f"qms.{label}",
                            f"QMS gate {'PASS' if quality.get('qms_gate_passed') else 'FAIL'} (cov={coverage})", 0.6)
     except Exception as exc:
         biomimetic["error"] = str(exc)
+
+    # Say plainly which declared layers contributed nothing, so a reader is never left to infer
+    # participation from a list that names all seven whatever happened.
+    biomimetic["layers_not_contributing"] = [l for l in BIOMIMETIC_LAYERS
+                                             if l not in biomimetic["layers"]]
+    biomimetic["layers_note"] = (
+        f"{len(biomimetic['layers'])} of {len(BIOMIMETIC_LAYERS)} declared biomimetic layers "
+        f"contributed a value to this record. The rest are named by §8/§17.2 but contribute "
+        f"nothing here; Respiratory, Musculoskeletal and Endocrine have no implementation at all.")
 
     return {"quality": quality, "biomimetic": biomimetic}

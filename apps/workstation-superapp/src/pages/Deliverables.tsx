@@ -11,6 +11,11 @@ interface DeliverableSummary {
 }
 interface QualityAssurance {
   quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[];
+    // §10 (W419) — the bar resolved per-criterion in THREE states. `measured` counts only what the
+    // gate computed; `attested` counts what a caller asserted and nothing verified. Rendering one
+    // conflated number is what let 4 real measurements vouch for 12 nobody evaluated.
+    bar_measured?: { measured: number; attested: number; not_measured: number; summary?: string;
+      measured_criteria?: string[]; attested_criteria?: string[] };
     qms_non_conformance_rate?: number; quality_record_hash?: string; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } };
   biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
@@ -193,13 +198,24 @@ export const Deliverables: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-1.5 mb-3">
                   {typeof selected.quality_assurance.quality.qms_gate_passed === 'boolean' && (
                     <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${selected.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
-                      title={`§10 Solution-Quality Bar: ${(selected.quality_assurance.quality.bar || []).join(' · ')}${selected.quality_assurance.quality.quality_record_hash ? `\nDocument-controlled under the QMS (DCMS) · record ${selected.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>
+                      title={`§10 Solution-Quality Bar — ${selected.quality_assurance.quality.bar_measured?.summary ?? 'per-criterion breakdown unavailable'}
+MEASURED by this gate: ${(selected.quality_assurance.quality.bar_measured?.measured_criteria || []).join(' · ') || 'none'}
+ATTESTED by a caller (a claim about a run, not a measurement): ${(selected.quality_assurance.quality.bar_measured?.attested_criteria || []).join(' · ') || 'none'}
+The full 16: ${(selected.quality_assurance.quality.bar || []).join(' · ')}${selected.quality_assurance.quality.quality_record_hash ? `
+Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>
                       Living-QMS gate: {selected.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((selected.quality_assurance.quality.delivery_coverage || 0) * 100)}%{selected.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                    </span>
+                  )}
+                  {/* §10 (W419) — the bar's real shape ON the surface, not only in the sealed record. */}
+                  {selected.quality_assurance.quality?.bar_measured && (
+                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-700/40 text-slate-300"
+                      title="§10 — measured: this gate computed it. attested: a caller asserted it and nothing verified the claim. not measured: nothing established it.">
+                      §10 bar: {selected.quality_assurance.quality.bar_measured.summary ?? `${selected.quality_assurance.quality.bar_measured.measured} of 16 measured`}
                     </span>
                   )}
                   {selected.quality_assurance.biomimetic?.immune && (
                     <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
-                      title={`7 biomimetic layers · ${selected.quality_assurance.biomimetic.self || ''}`}>
+                      title={`biomimetic organism — only the Immune layer contributes a measured value here; the delivery record names all seven but six contribute nothing (§8/§17.2, open) · ${selected.quality_assurance.biomimetic.self || ''}`}>
                       organism: immune {Math.round((selected.quality_assurance.biomimetic.immune.health ?? 0) * 100)}% · {selected.quality_assurance.biomimetic.circadian}
                     </span>
                   )}

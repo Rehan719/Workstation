@@ -955,17 +955,42 @@ def test_candidates_selected_on_simulated_evidence(client):
     # through the owned model-free digital-twin pattern, a simulation-derived score joins the
     # ranking with DECLARED weights (60/40), and the selection basis names both components —
     # text proxies no longer carry selection alone.
+    # W419 — the composite is no longer form-only. `form_score` is still 0.6*modelled + 0.4*simulated,
+    # but it SATURATES (specificity = min(1, len/2800)), so every candidate past ~2800 characters
+    # scored exactly 1.000, all three tied, the stable sort took the first, and selection was the
+    # constant "pragmatic" dressed as evidence. Real criteria now discriminate.
     j = client.post("/api/v1/genesis/journey", json={
         "problem": "w305 halal textile venture", "domain": "enterprise"}).json()
     s5 = j.get("stage_5_model_simulate_rank") or {}
     cands = s5.get("candidates") or []
     assert len(cands) == 3
     for c in cands:
+        # the twin genuinely runs, and its sub-scores survive as their own fields
         assert "simulation_score" in c and "modelled_score" in c and c.get("simulation")
-        assert abs(c["score"] - round(0.6 * c["modelled_score"] + 0.4 * c["simulation_score"], 3)) < 1e-9
-    assert "60%" in s5.get("method", "")                      # the weights are DECLARED
-    basis = s5.get("selection_basis", "")
-    assert "modelled" in basis and "simulated" in basis
+        assert abs(c["form_score"] - round(0.6 * c["modelled_score"] + 0.4 * c["simulation_score"], 3)) < 1e-9
+        # and the composite now carries REAL criteria, with its arithmetic declared per candidate
+        sc = c.get("screen") or {}
+        if sc.get("compliance") is not None:
+            assert abs(c["score"] - round(0.40 * c["form_score"] + 0.35 * sc["compliance"]
+                                          + 0.25 * sc["safety"], 3)) < 1e-9
+            assert "compliance" in c["score_basis"] and "safety" in c["score_basis"]
+    method = s5.get("method", "")
+    assert "0.40" in method and "0.35 compliance" in method and "0.25 safety" in method
+    assert "vetoed" in method or "veto" in method.lower()      # the weights AND the veto are DECLARED
+    # §11 veto: nothing that FAILS the screen may be selected
+    assert s5["selected"] not in (s5.get("vetoed") or [])
+    # ties are DETECTED and DISCLOSED rather than resolved silently by list position
+    assert "tie" in s5 and isinstance(s5["tie"]["detected"], bool)
+    if s5["tie"]["detected"]:
+        # A tie is the HONEST outcome when candidates are genuinely equivalent on every measured
+        # criterion — the defect was never the tie, it was resolving one silently by list order
+        # while reporting the winner as "selected on evidence".
+        assert "NOT by evidence" in s5["selection_basis"]
+        assert s5["tie"]["resolved_by"] == "list order — NOT evidence"
+        assert len(s5["tie"]["tied_candidates"]) > 1
+    # and what is NOT measured at selection time is NAMED, never proxied
+    assert set(s5["criteria_not_measured"]) == {"effectiveness", "efficiency", "commercial viability"}
+    assert set(s5["criteria_measured"]) == {"compliance", "safety"}
 
 
 def test_full_journey_record_survives_establishment(client):
@@ -2285,7 +2310,11 @@ def test_genesis_journey_in_house_provenance(client):
     qa = body["quality_assurance"]; q = qa["quality"]; bio = qa["biomimetic"]
     assert isinstance(q["qms_gate_passed"], bool) and 0.0 <= q["delivery_coverage"] <= 1.0
     assert q["qms_min_coverage"] == 0.95 and len(q["bar"]) >= 12 and {"verified", "safe"} <= set(q["bar"])
-    assert len(bio["layers"]) == 7 and "immune" in bio and bio.get("circadian")
+    # W422 — `layers` now means CONTRIBUTED, not declared. The old assertion (== 7) enshrined the
+    # defect: the record named all seven on every delivery regardless of what participated.
+    assert bio["layers"] == ["Immune"], "only layers that contributed may be named: %r" % (bio["layers"],)
+    assert len(bio["layers_declared"]) == 7 and "immune" in bio and bio.get("circadian")
+    assert set(bio["layers_not_contributing"]) == set(bio["layers_declared"]) - {"Immune"}
 
 
 def test_compliance_frameworks(client):
@@ -3063,7 +3092,8 @@ def test_deliverables_living_lifecycle(client):
     assert isinstance(q["qms_gate_passed"], bool) and 0.0 <= q["delivery_coverage"] <= 1.0
     assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
     assert len(q["bar"]) >= 12 and {"verified", "compliant", "safe", "ranked"} <= set(q["bar"])
-    assert len(bio["layers"]) == 7 and {"Genome", "Immune", "Endocrine"} <= set(bio["layers"])
+    assert bio["layers"] == ["Immune"] and len(bio["layers_declared"]) == 7
+    assert {"Genome", "Endocrine"} <= set(bio["layers_not_contributing"])
     assert "immune" in bio and bio.get("circadian")
     assert d["versions"][0]["quality_assurance"]["quality"]["qms_gate_passed"] == q["qms_gate_passed"]
     # the list summary surfaces the QMS gate (for the UI badge)
@@ -3323,7 +3353,8 @@ def test_swarm_cascade_in_house_provenance(client):
     assert {v["framework"] for v in comp["verdicts"]} >= {"sharia_halal", "uk_legal", "ehs", "ethical"}
     # §8 — the biomimetic living-organism substrate the cascade runs within (live immune + circadian)
     bio = r["biomimetic"]
-    assert len(bio["layers"]) == 7 and {"Genome", "Immune", "Endocrine"} <= set(bio["layers"])
+    assert bio["layers"] == ["Immune"] and len(bio["layers_declared"]) == 7
+    assert {"Genome", "Endocrine"} <= set(bio["layers_not_contributing"])
     assert "immune" in bio and bio.get("circadian")
 
 
@@ -6517,3 +6548,182 @@ def test_w392_marketplace_listing_survives_a_legacy_cp1252_file(tmp_path, monkey
     names2 = [l.name for l in mkt._all_listings()]
     assert doc2['name'] in names2, (
         'a listing readable only via an explicit fallback was dropped: %r' % (names2,))
+
+
+def test_w419_attestation_is_not_counted_as_measurement():
+    """§10 — a caller's evidence string must never enter the sealed record as a MEASUREMENT.
+
+    Before W419 `assure_delivery(evidence={"best-in-class": "trust me"})` recorded that criterion
+    `measured: True`, indistinguishable from a figure the gate computed itself — twelve of the
+    sixteen were assertable that way. The gate's own machinery was honest; the hole was at its input.
+    """
+    from agentic_core.vbs.quality import _measure_bar
+
+    compliance = {"verdicts": [{"framework": "ethical", "status": "pass"},
+                               {"framework": "ehs", "status": "pass"},
+                               {"framework": "sharia_halal", "status": "pass"}]}
+    bar = _measure_bar(1.0, False, True, 0.6, compliance,
+                       {"best-in-class": "trust me", "simulated": "a constant sentence"})
+
+    c = bar["criteria"]["best-in-class"]
+    assert c["measured"] is False, "an unverified caller string was counted as a measurement"
+    assert c["attested"] is True and c["source"] == "caller"
+    assert "trust me" in c["basis"], "the attribution must survive so a reader can judge it"
+
+    # The counts are reported SEPARATELY — this is the whole point. A single conflated number is
+    # what let 4 real measurements lend their credibility to anything a caller asserted.
+    assert bar["measured"] == 4, bar["summary"]
+    assert bar["attested"] == 2, bar["summary"]
+    assert set(bar["measured_criteria"]) == {
+        "specifically designed", "verified", "compliant", "safe"}
+    assert bar["measured"] + bar["attested"] + bar["not_measured"] == 16
+
+    # And with NO caller evidence the gate still measures its own four and claims nothing else.
+    bare = _measure_bar(1.0, False, True, 0.6, compliance, None)
+    assert bare["measured"] == 4 and bare["attested"] == 0
+    assert bare["criteria"]["best-in-class"]["met"] is None
+
+
+def test_w419_compliance_failure_vetoes_a_candidate():
+    """§4.5 — a candidate the §11 screen FAILS cannot be selected, whatever its prose scores.
+
+    The defect this closes: `_score_candidate` is form only, and form SATURATES — specificity is
+    min(1, len/2800), so every candidate past ~2800 characters carrying the prompt's own headings
+    scored exactly 1.000. All candidates tied, the sort is stable, and the winner was always
+    whichever `_cand_specs` named first. Selection was a constant dressed as evidence.
+    """
+    from agentic_core.api.genesis import _screen_candidate, _score_candidate, _CAND_UNMEASURED
+
+    sections = ["Approach", "Key Steps", "Effectiveness", "Risks & Mitigations"]
+    def _body(claim):
+        return "".join("## %s\n%s " % (h, claim) * 90 for h in sections)
+
+    benign = _body("A community meal service funded by donations with a halal supply chain")
+    riba = _body("Finance the rollout with an interest-bearing loan at 8% APR secured on premises")
+
+    # FORM cannot tell them apart — this is the defect, asserted so a regression is visible.
+    assert _score_candidate(benign, sections)["score"] == 1.0
+    assert _score_candidate(riba, sections)["score"] == 1.0
+
+    ok, bad = _screen_candidate(benign), _screen_candidate(riba)
+    assert ok["disqualified"] is False, ok
+    assert bad["disqualified"] is True, "an interest-bearing candidate must be vetoed: %r" % (bad,)
+    assert bad["verdicts"].get("sharia_halal") == "fail"
+
+    # The screen must not be vacuous in the other direction: a clean candidate still passes, and
+    # the criteria nothing measures are DECLARED rather than proxied.
+    assert ok["compliance"] == 1.0 and ok["safety"] == 1.0
+    assert set(_CAND_UNMEASURED) == {"effectiveness", "efficiency", "commercial viability"}
+
+
+def test_w420_autonomy_settings_survive_a_restart():
+    """§3 · §4.10 · §12 — the Owner's autonomy choices must be DURABLE.
+
+    `configure()` wrote to instance attributes only, so all five flags reverted to False whenever the
+    process came up. A user who switched on the behaviour the product is named for — "once
+    established it runs, maintains, defends, improves and grows itself" — silently lost it, and
+    nothing on any surface said so.
+    """
+    import importlib
+    import agentic_core.organism.heartbeat as hb
+
+    h = hb.OrganismHeartbeat()
+    assert all(getattr(h, k) is False for k in h._AUTONOMY_KEYS), "all five must default OFF"
+
+    h.configure(auto_economy=True, auto_compliance=True)
+    assert h.autonomy_persisted is True, "the save reported failure"
+
+    # A genuinely fresh instance — this is the assertion the old code could not pass.
+    importlib.reload(hb)
+    h2 = hb.OrganismHeartbeat()
+    assert h2.auto_economy is True, "auto_economy did not survive a restart"
+    assert h2.auto_compliance is True, "auto_compliance did not survive a restart"
+    assert h2.auto_evolve is False, "a flag that was never set must not come back on"
+
+    # Status must let a surface tell the user whether their choice actually stuck.
+    st = h2.status()
+    for k in ("auto_evolve", "auto_economy", "auto_align", "auto_compliance", "auto_ship"):
+        assert k in st, "%s is not reported, so no UI can show its real state" % k
+    assert st["autonomy_persisted"] is True
+
+    # Turning one back OFF must persist too — a one-way switch would be its own defect.
+    h2.configure(auto_economy=False)
+    importlib.reload(hb)
+    assert hb.OrganismHeartbeat().auto_economy is False, "switching OFF did not persist"
+
+
+def test_w421_compliance_verdict_and_hold_reach_the_entity_owner():
+    """§11 × §13 — the entity's owner must be able to SEE its compliance standing and any economic
+    consequence. Both existed only as side effects: `_latest_screen` was read by `operate_vsb` to
+    decide a hold, and the hold was written to the store and the UEG — so a held enterprise looked
+    simply idle to the person who owns it.
+    """
+    import json
+    from agentic_core.config import data_path, atomic_write_json
+    from agentic_core.economy import living_vsbs as lv
+
+    lv.register_living_vsb("vsb-w421a", "Clean Enterprise", domain="care") \
+        if hasattr(lv, "register_living_vsb") else None
+    d = lv._load()
+    d["vsb-w421a"] = {"vsb_id": "vsb-w421a", "name": "Clean Enterprise", "domain": "care",
+                      "entity_type": "waqf", "operating_cycles": 3, "registered_at": "2026-01-01"}
+    d["vsb-w421b"] = {"vsb_id": "vsb-w421b", "name": "Held Enterprise", "domain": "care",
+                      "entity_type": "waqf", "operating_cycles": 1, "registered_at": "2026-01-02",
+                      "last_hold": "compliance_fail_hold"}
+    d["vsb-w421c"] = {"vsb_id": "vsb-w421c", "name": "Never Screened", "domain": "care",
+                      "entity_type": "waqf", "operating_cycles": 0, "registered_at": "2026-01-03"}
+    lv._save(d)
+    atomic_write_json(data_path("vsb_compliance_history.json"), {
+        "vsb-w421a": {"overall": "pass", "screened_at": "2026-01-05T00:00:00Z",
+                      "verdicts": [{"framework": "ehs", "status": "pass"}]},
+        "vsb-w421b": {"overall": "fail", "screened_at": "2026-01-06T00:00:00Z",
+                      "verdicts": [{"framework": "sharia_halal", "status": "fail"}]},
+    })
+
+    rows = {r["vsb_id"]: r for r in lv.list_living()["living_vsbs"]}
+
+    ok = rows["vsb-w421a"]
+    assert ok["compliance"]["verdict"] == "pass" and ok["compliance"]["never_screened"] is False
+    assert ok["economy_held"]["held"] is False
+
+    held = rows["vsb-w421b"]
+    assert held["compliance"]["verdict"] == "fail"
+    assert held["economy_held"]["held"] is True
+    assert held["economy_held"]["reason"] == "compliance_fail_hold"
+    assert "distributions are held" in held["economy_held"]["consequence"], \
+        "the owner must be told the CONSEQUENCE, not just that a flag is set"
+
+    # NOT SCREENED must never render as clean — an entity established before auto_compliance was
+    # switched on has no verdict, and that is a different fact from a passing one.
+    fresh = rows["vsb-w421c"]
+    assert fresh["compliance"]["never_screened"] is True
+    assert fresh["compliance"]["verdict"] is None, "an unscreened entity must not report a verdict"
+
+
+def test_w423_domainshub_tool_counts_match_what_is_wired():
+    """§16 — DomainsHub's per-domain tool counts must match the tools actually wired.
+
+    They had drifted to 18 against 23 wired, understating FIVE of the six domains by exactly one —
+    the signature of tools added hub-by-hub while the front door's hardcoded numbers stayed put. A
+    hardcoded count with nothing checking it drifts again the next time a tool lands, so this guard
+    exists to make the next drift fail loudly rather than quietly undersell the product.
+    """
+    import re
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/domains"
+    hub_file = {"Religion": "ReligionHub", "Science": "ScienceHub", "Education": "EducationHub",
+                "Law": "LawHub", "Care": "CareHub", "Employment": "EmploymentHub"}
+
+    declared = dict(re.findall(r"name: '([A-Za-z]+)'.*?tools: (\d+)",
+                               (root / "DomainsHub.tsx").read_text(encoding="utf-8", errors="ignore")))
+    assert set(declared) == set(hub_file), "DomainsHub no longer lists exactly the six canonical domains"
+
+    for domain, stem in hub_file.items():
+        src = (root / (stem + ".tsx")).read_text(encoding="utf-8", errors="ignore")
+        wired = src.count("<DomainTool")
+        assert int(declared[domain]) == wired, (
+            "DomainsHub advertises %s tools for %s but %s wires %d"
+            % (declared[domain], domain, stem, wired))
+
+    assert sum(int(v) for v in declared.values()) == 23

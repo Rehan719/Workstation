@@ -40,6 +40,48 @@ def _score_candidate(text: str, sections: List[str]) -> Dict[str, float]:
     return {"coverage": coverage, "specificity": specificity, "structure": structure, "score": score}
 
 
+# §4.5 (W419) — the five criteria the spec names for candidate selection, and their honest status.
+# TWO are measurable today from one deterministic call (screen_compliance: regex rules + engines,
+# ~0.15 ms warm, zero model calls). THREE are not measurable at selection time and are DECLARED
+# rather than proxied — inventing a proxy for them is the exact failure §4.5 already committed.
+_CAND_MEASURED = {
+    "compliance": "screen_compliance frameworks sharia_halal · uk_legal · regulatory",
+    "safety": "screen_compliance frameworks ehs · ethical · sharia_halal",
+}
+_CAND_UNMEASURED = {
+    "effectiveness": "needs outcome data that does not exist at selection time",
+    "efficiency": "no in-house instrument",
+    "commercial viability": "no in-house instrument",
+}
+_VERDICT_SCORE = {"pass": 1.0, "review": 0.5, "fail": 0.0}
+# Reused verbatim from agentic_core.vbs.quality._measure_bar so §10 and §4.5 cannot drift apart.
+_SAFETY_FRAMEWORKS = ("ethical", "ehs", "sharia_halal")
+
+
+def _screen_candidate(text: str) -> Dict[str, Any]:
+    """§4.5 + §11 — run the deterministic compliance screen over ONE candidate and reduce it to the
+    two criteria the spec names that are genuinely measurable here. Never raises: a screen fault
+    leaves both criteria unmeasured and says so, rather than silently scoring the candidate 0 (which
+    would disqualify a good candidate for an infrastructure hiccup)."""
+    try:
+        from agentic_core.api.compliance import screen_compliance
+        s = screen_compliance(text or "")
+    except Exception as exc:  # noqa: BLE001 — a screen fault must not decide a ranking
+        return {"screen_error": str(exc), "compliance": None, "safety": None, "disqualified": False,
+                "verdicts": {}}
+    verdicts = {v.get("framework"): v.get("status") for v in (s.get("verdicts") or [])}
+    comp = [_VERDICT_SCORE.get(v, 0.5) for f, v in verdicts.items() if f not in _SAFETY_FRAMEWORKS]
+    safe = [_VERDICT_SCORE.get(verdicts[f], 0.5) for f in _SAFETY_FRAMEWORKS if f in verdicts]
+    return {
+        "verdicts": verdicts,
+        "overall": s.get("overall"),
+        "compliance": round(sum(comp) / len(comp), 3) if comp else None,
+        "safety": round(sum(safe) / len(safe), 3) if safe else None,
+        # VETO: a candidate the §11 screen fails cannot be selected, whatever its prose scores.
+        "disqualified": s.get("overall") == "fail",
+    }
+
+
 def _verify_stage(text: str, sections: List[str]) -> Dict[str, Any]:
     """§5 — verify/validate a single journey stage on REAL MEASURED proxies (section coverage · specificity ·
     structure). Honest: a measured quality check, never fabricated. `verified` = composite score ≥ 0.5 AND at
@@ -176,22 +218,62 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         c["simulation"] = sim[:1200]
         c["simulation_score"] = _sim_m["score"]
         c["modelled_score"] = c["score"]
-        c["score"] = round(0.6 * c["modelled_score"] + 0.4 * _sim_m["score"], 3)
+        # FORM score — coverage · specificity · structure, over both the candidate and its twin.
+        # Renamed from "score" deliberately: it measures how the text is SHAPED, not whether the
+        # solution is good, and calling it "score" is what let it stand in for evidence for so long.
+        c["form_score"] = round(0.6 * c["modelled_score"] + 0.4 * _sim_m["score"], 3)
+        # §4.5 (W419) — REAL criteria enter the ranking here. Until now the composite was form only,
+        # and form SATURATES: specificity = min(1, len/2800), so any candidate past ~2800 characters
+        # carrying the prompt's own headings scores exactly 1.000. All candidates then tied and the
+        # stable sort handed the win to whichever _cand_specs named first — always "pragmatic".
+        c.update({"screen": _screen_candidate(c["approach"])})
 
-    candidates.sort(key=lambda c: c["score"], reverse=True)
+    _screened = [c for c in candidates if c["screen"].get("compliance") is not None]
+    for c in candidates:
+        s = c["screen"]
+        if s.get("compliance") is None:          # screen unavailable — rank on form, and SAY so
+            c["score"] = c["form_score"]
+            c["score_basis"] = "form only — the §11 screen did not run for this candidate"
+        else:
+            c["score"] = round(0.40 * c["form_score"] + 0.35 * s["compliance"] + 0.25 * s["safety"], 3)
+            c["score_basis"] = (f"0.40 form {c['form_score']} · 0.35 compliance {s['compliance']} "
+                                f"· 0.25 safety {s['safety']}")
+
+    # VETO before ranking: a candidate the §11 screen FAILS cannot win, whatever its prose scores.
+    candidates.sort(key=lambda c: (not c["screen"].get("disqualified", False), c["score"]), reverse=True)
     for i, c in enumerate(candidates, 1):
         c["rank"] = i
-    winner = candidates[0]
+    _eligible = [c for c in candidates if not c["screen"].get("disqualified", False)]
+    _vetoed = [c["id"] for c in candidates if c["screen"].get("disqualified", False)]
+    winner = (_eligible or candidates)[0]
+
+    # Ties are DETECTED and DISCLOSED. Previously an exact tie was resolved silently by list
+    # position and the payload reported the winner as "selected on evidence" regardless.
+    _top = [c["id"] for c in _eligible if c["score"] == winner["score"]]
+    _tied = len(_top) > 1
+
     stage_5 = {
         "method": "candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern, "
-                  "ranked on OWNED evidence (declared weights: 60% modelled text — coverage · "
-                  "specificity · structure — + 40% simulated evidence) — real measured proxies, "
-                  "never fabricated; the best is carried into Design.",
+                  "then screened by the deterministic §11 compliance/safety screen. Declared "
+                  "weights: 0.40 FORM (coverage · specificity · structure, over candidate + twin) "
+                  "· 0.35 compliance · 0.25 safety. A candidate the screen FAILS is vetoed and "
+                  "cannot be selected. Real measured proxies, never fabricated.",
         "candidates": candidates,
         "selected": winner["id"],
-        "selection_basis": (f"highest combined evidence score ({winner['score']}: modelled "
-                            f"{winner['modelled_score']} · simulated {winner['simulation_score']}) "
-                            f"of {len(candidates)} modelled+simulated candidates"),
+        "vetoed": _vetoed,
+        "tie": {"detected": _tied, "tied_candidates": _top,
+                "resolved_by": "list order — NOT evidence" if _tied else None},
+        "criteria_measured": _CAND_MEASURED,
+        "criteria_not_measured": _CAND_UNMEASURED,
+        "honesty": ("Two of the five criteria §4.5 names are measured here (compliance, safety); "
+                    "three are NOT measured at selection time and are named in "
+                    "criteria_not_measured. FORM is a shape proxy, not solution quality — it "
+                    "saturates at 1.000 for any candidate past ~2800 characters."),
+        "selection_basis": (
+            (f"TIE at {winner['score']} across {len(_top)} candidates ({', '.join(_top)}) — resolved "
+             f"by list order, NOT by evidence. ") if _tied else "") + (
+            f"selected {winner['id']} on {winner['score_basis']}"
+            + (f"; vetoed for §11 failure: {', '.join(_vetoed)}" if _vetoed else "")),
     }
 
     # ── Phase 2 — Design & Development (the SELECTED best candidate → buildable solution) ──
@@ -248,16 +330,39 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # biomimetic organism — the same capability the cascade + deliverables deliver through.
     # §10 (W307) — the journey attests ONLY the bar criteria its own real process earned this run
     # (each basis names the actual step); the gate records them per-criterion, never as a bare list.
+    # §10 (W419) — every attestation below is DERIVED from this run and names its real output.
+    # Two of these were previously constant sentences ("stage 5 forward-simulated each candidate
+    # through the owned digital-twin pattern" / "best-of-candidates selection on combined
+    # modelled+simulated evidence") that would have been written identically had the twin returned a
+    # single empty line. An attestation that cannot be false is not evidence. The gate now records
+    # these as ATTESTED rather than measured, and they must at minimum be true of THIS run.
+    _sim_lengths = [len(c.get("simulation") or "") for c in candidates]
+    _simulated_ok = [n for n in _sim_lengths if n >= 200]
     _bar_evidence = {
-        "modelled": f"stage 5 modelled {len(candidates)} candidate approaches on real evidence proxies",
-        "simulated": "stage 5 forward-simulated each candidate through the owned digital-twin pattern",
+        "modelled": (f"stage 5 modelled {len(candidates)} candidates; form scores "
+                     + " · ".join(f"{c['id']}={c['modelled_score']}" for c in candidates)),
         "ranked": stage_5["selection_basis"],
-        "optimised": "best-of-candidates selection on combined modelled+simulated evidence",
         "categorised": f"realm '{req.realm}' × domain '{req.domain}' categorisation",
     }
+    # Attest "simulated" ONLY if the twin actually produced substantive output for every candidate.
+    if len(_simulated_ok) == len(candidates) and candidates:
+        _bar_evidence["simulated"] = (
+            f"digital-twin forward-simulation returned {min(_sim_lengths)}-{max(_sim_lengths)} chars "
+            f"per candidate; twin scores "
+            + " · ".join(f"{c['id']}={c['simulation_score']}" for c in candidates))
+    # Attest "optimised" ONLY when the selection actually discriminated — a tie means it did not.
+    if not stage_5["tie"]["detected"] and len(candidates) > 1:
+        _bar_evidence["optimised"] = (
+            f"selected {winner['id']} at {winner['score']} over "
+            + " · ".join(f"{c['id']}={c['score']}" for c in candidates if c["id"] != winner["id"])
+            + f" ({winner['score_basis']})")
     if stages_verified == len(stage_verifications):
-        _bar_evidence["tested"] = f"all {stages_verified} stages verified on measured proxies"
-        _bar_evidence["validated"] = "every stage validated against its declared section structure"
+        _bar_evidence["tested"] = (f"all {stages_verified}/{len(stage_verifications)} stages verified: "
+                                   + " · ".join(f"{k}={v['sections_present']}"
+                                                for k, v in stage_verifications.items()))
+        _bar_evidence["validated"] = ("every stage validated against its declared section structure: "
+                                      + " · ".join(f"{k}={v['score']}"
+                                                   for k, v in stage_verifications.items()))
     quality_assurance = await assure_delivery(
         f"{design}\n{commercial}",
         ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope",

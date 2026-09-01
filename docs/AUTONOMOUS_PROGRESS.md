@@ -2680,3 +2680,204 @@ a real one, so the fabrications would have started persisting convincingly.
 
 **Verification:** 175 GET + 157 POST + 42 parameterised routes → 0 5xx; tsc and production build
 clean; browser smoke 11 routes + 61 swept; full suite **312 passed / 15 skipped / 0 failed**.
+
+### W419 — §4.5 selected on length and §10 counted assertions as measurements. Both closed.
+
+The v9 prompt review named these TIER 1 and called them *one defect with two faces*. They are, and
+fixing either alone leaves the class open, so both are closed here.
+
+**§10 — the sealed quality record trusted its callers.** `agentic_core/vbs/quality.py`'s bar was
+built honestly by W307: sixteen criteria, each `met / basis / measured`, so "not measured" was
+representable rather than implied-pass. The hole was at the INPUT. `assure_delivery(evidence={...})`
+took a free-text string per criterion and recorded it `measured: True` — indistinguishable in the
+sealed record from a figure the gate computed itself. Executed before the fix:
+
+    _measure_bar(..., evidence={"best-in-class": "trust me"})
+      -> best-in-class: met=True, measured=True
+
+**Twelve of the sixteen were assertable that way.** Every criterion now carries `source`:
+`gate` (this function measured it), `caller` (attested — `measured=False`, because an attestation is
+a claim about a run, not a measurement), or `none`. Counts are reported separately —
+`"4 measured · 3 attested · 9 not measured"` — because a single conflated number is exactly what let
+four real measurements vouch for anything a caller wrote.
+
+**Genesis's attestations were constants.** `genesis.py` attested *"stage 5 forward-simulated each
+candidate through the owned digital-twin pattern"* and *"best-of-candidates selection on combined
+modelled+simulated evidence"* as hardcoded literals — sentences that would have been written
+identically had the twin returned one empty line. The steps do run (the earlier claim that they did
+not was wrong and is corrected in the prompt), but an attestation that cannot be false is not
+evidence. All six now derive from the run and name its real output; `simulated` is attested only if
+every twin returned ≥200 chars, and `optimised` only if the selection actually discriminated — a tie
+means it did not.
+
+**§4.5 — the selection was length, and worse, a constant.** `_score_candidate` is
+`0.30·coverage + 0.50·specificity + 0.20·structure` with `specificity = min(1, len/2800)`. The prompt
+dictates the headings, so coverage and structure saturate for every candidate — and then specificity
+saturates too. Measured on text that merely repeats a sentence under the four required headings:
+
+    1,585 chars -> 0.783    3,105 chars -> 1.000    15,265 chars -> 1.000
+
+Typical model output is far past 2,800, so **all candidates tied at 1.000**, Python's sort is stable,
+and the winner was whichever `_cand_specs` named first — always `pragmatic`. "The BEST is selected on
+evidence" was a constant dressed as a ranking.
+
+Two of the five criteria §4.5 names are measurable today from one deterministic call — compliance
+(`sharia_halal · uk_legal · regulatory`) and safety (`ehs · ethical · sharia_halal`, reusing
+`_measure_bar`'s own safety set so §10 and §4.5 cannot drift). It costs 380 ms on the first call,
+almost all a one-off engine import, and **0.15 ms warm** with zero model calls. Declared weights are
+now `0.40 form · 0.35 compliance · 0.25 safety`, the term formerly called `score` is renamed
+`form_score` because it measures how text is SHAPED rather than whether a solution is good, a
+candidate the §11 screen FAILS is **vetoed and cannot be selected**, ties are detected and disclosed
+as *"resolved by list order — NOT evidence"*, and the three criteria that are genuinely not
+measurable at selection time (effectiveness · efficiency · commercial viability) are named in
+`criteria_not_measured` rather than proxied.
+
+Measured on three real candidates: all three score `form = 1.000` — the defect, still visible — and
+the interest-bearing one is now vetoed (`sharia_halal=fail`) instead of winning on prose length.
+
+**What this does NOT fix, stated plainly.** When every candidate is equally compliant and equally
+safe — the common case — the real criteria cannot discriminate either, and the ranking falls back to
+form, which saturates. A live journey run confirms it:
+
+    TIE at 0.966 across 3 candidates (pragmatic, innovative, lean) — resolved by list order,
+    NOT by evidence. selected pragmatic on 0.40 form 0.915 · 0.35 compliance 1.0 · 0.25 safety 1.0
+
+That tie is the HONEST outcome for genuinely equivalent candidates. The defect was never the tie —
+it was resolving one silently by list position while reporting the winner as "selected on evidence".
+Ranking equally-compliant candidates on actual solution quality needs effectiveness, efficiency or
+commercial viability, and none of the three has an in-house instrument today. Inventing a proxy for
+them is the exact failure §4.5 already committed, so the payload declares them unmeasured instead.
+Item 1's DONE WHEN is met — veto, tie disclosure, honest declaration — but the deeper capability
+remains open and is now visible rather than hidden.
+
+**Reach, not just capability.** `Deliverables.tsx` showed a green gate badge beside a tooltip listing
+all sixteen criteria, which reads as sixteen satisfied when the gate computes four. It now renders
+the real breakdown as a badge plus a tooltip separating MEASURED from ATTESTED, and the organism
+tooltip no longer implies seven contributing layers when only Immune contributes.
+
+**Verification:** both guards were broken and watched fail — reverting the `source` split gives
+*"an unverified caller string was counted as a measurement"*, removing the veto gives *"an
+interest-bearing candidate must be vetoed"* — then restored and re-run clean. End-to-end through
+`/api/v1/deliverables/produce`: `4 measured · 0 attested · 12 not measured`. tsc 0 errors;
+production build clean.
+
+### W420 — the product's headline promise was one-fifth switchable, and forgot itself on restart
+
+§3/§4.10/§12: *"once established it runs, maintains, defends, improves and grows itself."* That
+behaviour is gated behind five heartbeat flags (`auto_evolve · auto_economy · auto_align ·
+auto_compliance · auto_ship`, heartbeat.py:131) which all default False. The machinery behind them is
+real and works when enabled. Two things stopped a user reaching it.
+
+**Only one of five had a control.** `auto_evolve` had a checkbox. `auto_economy` — which gates
+autonomous VSB operation, the actual "runs itself" — was declared in HeartbeatMonitor's TypeScript
+interface but never rendered or toggled. `auto_align`, `auto_compliance` and `auto_ship` appeared
+nowhere in frontend source at all. All five are now switchable, each with plain copy for what it
+does on the NEXT beat, an on/off state chip, and the count that is currently on.
+
+**And the settings did not survive a restart.** `configure()` wrote to instance attributes only, so
+every flag reverted to False whenever the process came up — silently. A user could switch on
+autonomy, watch it work, and find it off the next morning with nothing to explain why. Settings are
+now persisted through `atomic_write_json` and restored in `_load_autonomy()` at construction, which
+never raises: a missing or corrupt store leaves the safe defaults rather than failing the organism's
+construction. A FAILED save sets `autonomy_persisted=False`, `status()` reports it, and the surface
+says *"these settings could NOT be saved — they will revert when the backend restarts"* rather than
+implying the choice stuck.
+
+**Verification:** guard `test_w420_autonomy_settings_survive_a_restart` asserts a genuinely fresh
+instance (module reloaded) carries the flags — the assertion the old code could not pass — and that a
+flag never set does NOT come back on, and that switching one back OFF persists too (a one-way switch
+would be its own defect). Broken by removing the `_save_autonomy()` call and watched fail with *"auto_economy
+did not survive a restart"*, then restored; `git diff --stat` confirms additions only. tsc 0 errors;
+production build clean.
+
+### W421 — a held enterprise looked idle to the person who owns it
+
+§11 × §13, prompt ledger item 6. Continuous compliance re-screening became switchable in W420
+(`auto_compliance`). The other half of the gap was that its OUTPUT never reached the entity's owner.
+`_latest_screen()` was read by `operate_vsb()` to decide a hold, and a hold wrote
+`last_hold="compliance_fail_hold"` to the store, fired a reflex signal and logged to the UEG — real
+teeth, entirely invisible. An owner whose enterprise had stopped distributing saw an entity with no
+recent cycles and nothing to explain why.
+
+`list_living()` now carries, per entity, its live §11 standing (`verdict`, `screened_at`, the
+per-framework `verdicts`, and `never_screened`) and `economy_held` — whether it is held, the reason,
+and the CONSEQUENCE in words: *"distributions are held — no economy cycle runs until a re-screen
+clears it"*. `VSBEconomy` renders both on each roster row: a `held · compliance fail hold` chip and a
+§11 verdict chip whose tooltip lists the framework verdicts.
+
+**`never_screened` is not `pass`.** An entity established before `auto_compliance` was switched on
+has no verdict at all, and rendering that as clean would be the fabrication class this project spent
+63 entries removing. It shows as `not screened`, with a tooltip pointing at the Heartbeat toggle.
+
+**Verification:** guard `test_w421_compliance_verdict_and_hold_reach_the_entity_owner` covers a
+passing entity, a held one, and a never-screened one; broken by forcing `never_screened: False` and
+watched fail, then restored.
+
+### W422 — the delivery record named seven biomimetic layers and one of them showed up
+
+§8 · §17.2, prompt ledger item 5, both halves.
+
+**The record named all seven, always.** `quality.py` wrote `"layers": list(BIOMIMETIC_LAYERS)` on
+every delivery regardless of what participated. Only Immune ever contributed a value; three of the
+seven — Respiratory, Musculoskeletal, Endocrine — have no implementation anywhere in the system.
+`layers` now means what it says: the layers that actually contributed to THIS record. The spec's full
+set travels beside it as `layers_declared`, with `layers_not_contributing` and a note stating how
+many of how many contributed. Three existing assertions asserted `len(layers) == 7` — they enshrined
+the defect, and now assert the honest shape instead.
+
+**And 20% of composite health is simulated.** `composite_health = immune*0.4 + self_healing*0.4 +
+metabolic*0.2`, where `metabolic` is `ATPSimulator` driven by a CONSTANT `metabolic_load` (0.3) and
+the circadian phase — a function of time and constants, not a measurement of this platform. Measured
+live while making this change:
+
+    composite_health              0.872
+    composite_health_measured_only 1.0     (immune 1.0 · self-healing 1.0, both measured)
+    metabolic                     0.358    (weight 0.2, measured=False)
+
+A term nothing measures was pulling a real health score down 13 points — and that score gates Change
+Control, which auto-approves LOW-tier changes only at `>= 0.6`. The composite is left UNCHANGED so
+live thresholds keep their meaning, but it no longer travels alone: `composite_health_terms` names
+each term with its weight, value and `measured` flag, and `composite_health_measured_only` gives the
+score computed from measured terms alone.
+
+### W423 — the front door undersold the product by five tools, and nothing was watching
+
+§16 / §18-D. `DomainsHub` hardcodes a per-domain tool count; they summed to **18** while **23**
+`<DomainTool>` instances are wired. Five of the six were understated by exactly one — Religion 3/4,
+Science 2/3, Education 3/4, Care 3/4, Employment 5/6, with Law alone correct at 2. That signature is
+tools landing hub-by-hub while the front door's numbers stayed put.
+
+Correcting the numbers alone would drift again the next time a tool ships, so
+`test_w423_domainshub_tool_counts_match_what_is_wired` reads DomainsHub's declared counts and the
+actual `<DomainTool>` instances per hub and fails on any mismatch. Verified by breaking it: setting
+Religion back to 3 fails with *"DomainsHub advertises 3 tools for Religion but ReligionHub wires 4"*.
+
+**Two escape-mangling incidents while writing that guard**, recorded because the memory already warns
+about it and it still bit twice. A heredoc turned `\b` in a regex into a literal **backspace byte
+(0x08)** — `od -c` showed `< D o m a i n T o o l \b "` — so `re.findall` matched nothing and the guard
+reported "ReligionHub wires 0" while the same expression run standalone returned 4. The repair
+attempt then turned `\n` into a real newline and broke the module. Both were fixed by dropping
+escapes entirely (`src.count("<DomainTool")`) and building strings with `chr()`. The rule stands:
+never put an escape sequence through a heredoc.
+
+### W424 — two levers that reported one thing and meant another
+
+**`floor_active` answered the wrong question.** `/api/v1/native-ai/status` computed it from ONE row —
+the most recent recorded completion — and named it as though it described what is serving now. The
+value is unchanged; it now carries `floor_active_basis` naming the row and its timestamp, or saying
+plainly that nothing has been recorded yet and the value is predicted. History and a live probe are
+different claims and the payload now distinguishes them.
+
+**`evolution_auto_apply` had a real consumer and no UI.** It gates whether CCA-APPROVED evolution
+proposals are ever applied (heartbeat.py:306, W310/W346), so with it off, approved work simply waits
+— and no surface said so. It is now reported in `heartbeat.status()` and rendered in the Autonomy
+panel with its consumer, its effect when off, and its governance path.
+
+**Deliberately READ-ONLY.** This is not one of the five autonomy toggles: it is a lever set through
+Change Control, and putting a switch on it here would route around the arms-length approval it exists
+behind. The surface says where to request the change instead. Wiring a capability into the path a
+user walks does not mean handing them every switch — it means making the path visible.
+
+Also confirmed while doing this: `/api/v191/evolution/*` (propose · approve · reject) has real
+capability and **zero frontend callers** — direct evidence for the v9 correction that the non-v1
+namespaces are unreached, not dead, and must not be deleted.

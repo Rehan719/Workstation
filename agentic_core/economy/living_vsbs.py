@@ -68,8 +68,35 @@ def deregister(vsb_id: str) -> bool:
 
 
 def list_living() -> Dict[str, Any]:
+    """§11 × §13 (W421) — each row now carries the entity's LIVE compliance standing and any economic
+    hold it causes. Both existed only as side effects before: `_latest_screen` was read by
+    `operate_vsb` to decide a hold, and the hold was written to the store and the UEG — but the
+    entity's OWNER had no way to see either. A held enterprise looked simply idle."""
     d = _load()
     rows = sorted(d.values(), key=lambda v: v.get("registered_at", ""), reverse=True)
+    try:
+        from agentic_core.config import data_path, load_json_tolerant
+        hist = load_json_tolerant(data_path("vsb_compliance_history.json"), {}) or {}
+    except Exception:
+        hist = {}
+    for r in rows:
+        h = hist.get(r.get("vsb_id")) or {}
+        verdict = h.get("overall")
+        r["compliance"] = {
+            # None means NOT YET SCREENED — never rendered as a pass. An entity established before
+            # auto_compliance was switched on has no verdict, and that is different from a clean one.
+            "verdict": verdict,
+            "screened_at": h.get("screened_at") or h.get("at"),
+            "verdicts": h.get("verdicts") or [],
+            "never_screened": not bool(verdict),
+        }
+        r["economy_held"] = {
+            "held": bool(r.get("last_hold")),
+            "reason": r.get("last_hold"),
+            "consequence": ("distributions are held — no economy cycle runs until a re-screen clears it"
+                            if r.get("last_hold") == "compliance_fail_hold"
+                            else ("this entity's cycle is held by governance" if r.get("last_hold") else None)),
+        }
     return {"living_vsbs": rows, "total": len(rows),
             "note": "Established VSB enterprises the organism autonomously tends (paced virtual economy "
                     "cycles on the circadian heartbeat). Virtual/simulated — no real funds."}

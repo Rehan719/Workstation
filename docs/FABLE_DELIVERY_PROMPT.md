@@ -121,11 +121,17 @@ D — remains open by design: anything in §1–§17 that does not match the Own
 Work in this order. It is not effort order — it is "how much a real person is misled or blocked".
 
   TIER 1 — TRUTH DEFECTS. The system tells a user something untrue. Fix first, always.
-           Ledger items 1 and 3.
+           Ledger items 1 and 3 — both CLOSED in W419. VERIFY that before moving on (execute the
+           thing, do not read the diff), then TIER 2 is the top of the queue.
   TIER 2 — REACH GAPS. The capability EXISTS and works but no user can reach it. Cheap, high value,
-           low risk: wiring, not building. Ledger items 2 and 6.
+           low risk: wiring, not building. Item 2 CLOSED (W420); ITEM 6 IS THE TOP OF THE QUEUE.
+           Beyond the ledger, the same shape is the systemic backlog: ~89 genuine v1 reach gaps —
+           see <trajectory>, and read its decomposition before working any of them.
   TIER 3 — CAPABILITY GAPS. Genuinely unbuilt. Confirm scope with the Owner before starting.
-           Ledger items 4, 5, 7.
+           Item 5 CLOSED (W422). Items 4 and 7 are OWNER DECISIONS by their own acceptance criteria
+           — item 4 says "decide WITH the Owner; do not silently pick", item 7 says "scope is agreed
+           with the Owner". Do not close them unilaterally; put the evidence to the Owner.
+           Item 6 retains one open half: deliverable self-improvement (a capability gap).
 
 STOPPING RULE. 27 entries are PARTIAL. Most are honest scope boundaries, not defects — 5 languages
 covering chrome only, guidance covering 14 of 73 routes, uploads accepting text formats. Each is
@@ -188,9 +194,15 @@ not a task:
 Ship the route and its surface in the same workstream. This is why the ordering rule puts cheap
 reach-wiring above deep capability work: the capability is already paid for; only the reach is owed.
 
-THE CHEAP CLUSTER. Five of the six highest-value gaps the assessors independently named look SMALL to
-me — MY sizing; the ledger has no effort field. Two of them are already inside ledger items 5 and 6,
-so do not count them twice: wire the approved-evolution APPLY step into the path a user walks · surface the §11
+THE CHEAP CLUSTER — ALL FIVE NOW CLOSED (W421–W424). Kept as a worked example of the shape to look
+for: each removed something MISLEADING rather than merely missing, and none needed new capability.
+  · §11 entity verdict where its owner sees it .......... W421
+  · the §11 economic consequence, in words .............. W421
+  · the ATP/metabolic ratio it narrates ................. W422 (flagged simulated, not measured)
+  · native-ai/status floor_active vs what it labels ..... W424
+  · the approved-evolution APPLY step in a user's path .. W424 (read-only: it is CCA-governed)
+The sizing was MINE — the ledger has no effort field — and it held up: all five were small.
+Original wording follows for the pattern: wire the approved-evolution APPLY step into the path a user walks · surface the §11
 entity verdict where its owner sees it · fix native-ai/status computing floor_active from one row
 while labelling it another · measure the ATP/metabolic ratio it narrates · render the §11 economic
 consequence. Small, and each removes something currently MISLEADING rather than merely missing.
@@ -201,7 +213,21 @@ Prefer these over any new capability.
 Full evidence in docs/VISION_FIDELITY_LEDGER.md. Each item below carries a DEFINITION OF DONE,
 because naming a gap without acceptance criteria only moves the guesswork.
 
-1. §4.5 — THE SELECTION IS LENGTH.  [TIER 1]
+1. §4.5 — THE SELECTION WAS LENGTH.  [TIER 1 · CLOSED W419 — verify before trusting]
+   CLOSED: compliance + safety now enter the ranking from one deterministic call (declared weights
+   0.40 form · 0.35 compliance · 0.25 safety); a candidate the §11 screen FAILS is vetoed and cannot
+   be selected; ties are detected and disclosed as "resolved by list order — NOT evidence"; and the
+   three criteria that are not measurable at selection time are named in criteria_not_measured
+   rather than proxied. The term formerly called `score` is now `form_score`. Guard:
+   test_w419_compliance_failure_vetoes_a_candidate — broken and watched fail before it was trusted.
+   RESIDUAL, stated so nobody reads this as more than it is: when every candidate is equally
+   compliant and equally safe — the common case — the real criteria cannot discriminate either and
+   the ranking falls back to saturating form. A live run ties all three and SAYS so ("resolved by
+   list order, NOT by evidence"). That tie is the honest outcome for equivalent candidates; the
+   defect was resolving one silently while claiming evidence. Discriminating on actual solution
+   quality needs effectiveness / efficiency / commercial viability, none of which has an in-house
+   instrument — building one is real Tier 3 work, and inventing a proxy is the original failure.
+   The history below is kept because the FAILURE MODE is the lesson, not the fix.
    The spec's central claim: every candidate "modelled, simulated, optimised, ranked so the BEST is
    selected on evidence — effectiveness, safety, efficiency, commercial viability, compliance". NONE
    of those five is measured.
@@ -259,7 +285,14 @@ because naming a gap without acceptance criteria only moves the guesswork.
    anyway. Disclosure is not a consolation prize here — it is the difference between a ranked list
    and a false claim.
 
-2. §3 · §4.10 · §12 — THE HEADLINE PROMISE IS OFF BY DEFAULT AND UNREACHABLE.  [TIER 2]
+2. §3 · §4.10 · §12 — THE HEADLINE PROMISE WAS ONE-FIFTH SWITCHABLE.  [TIER 2 · CLOSED W420]
+   CLOSED: all five flags are switchable from HeartbeatMonitor with their real state, an on/off chip
+   per flag and plain copy for what each does on the NEXT beat; settings PERSIST through
+   atomic_write_json and are restored at construction; a failed save sets autonomy_persisted=False
+   and the surface says the choice will revert rather than implying it stuck. Guard:
+   test_w420_autonomy_settings_survive_a_restart (asserts a reloaded instance keeps them, that an
+   unset flag does not come back on, and that switching OFF persists too).
+   The history below is the lesson.
    "Once established it runs, maintains, defends, improves and grows itself" is gated behind five
    heartbeat flags that all default False (agentic_core/organism/heartbeat.py:131 — auto_evolve,
    auto_economy, auto_ship, auto_align, auto_compliance). Exactly ONE is switchable: auto_evolve has
@@ -272,7 +305,13 @@ because naming a gap without acceptance criteria only moves the guesswork.
    state shown; the setting SURVIVES A RESTART (configure() is currently in-memory only); and the
    copy states plainly what each one will do on the next beat.
 
-3. §10 — THE SEALED QUALITY RECORD TRUSTS ITS CALLERS.  [TIER 1]
+3. §10 — THE SEALED QUALITY RECORD TRUSTED ITS CALLERS.  [TIER 1 · CLOSED W419]
+   CLOSED: every criterion now carries `source` — `gate` (measured here), `caller` (ATTESTED, with
+   measured=False), or `none` — and the counts are reported separately as
+   "N measured · M attested · K not measured". Genesis's six attestations derive from the run and
+   name its real output; `simulated` is attested only when every twin returned >=200 chars, and
+   `optimised` only when the selection actually discriminated. Deliverables.tsx renders the split.
+   Guard: test_w419_attestation_is_not_counted_as_measurement. The history below is the lesson.
    The bar's honesty machinery is SOUND and already built (W307): agentic_core/vbs/quality.py records
    each of the 16 criteria as met / basis / measured, so "not measured" is representable rather than
    implied-pass. The defect is at the INPUT. assure_delivery(evidence={...}) takes a free-text string
@@ -313,10 +352,26 @@ because naming a gap without acceptance criteria only moves the guesswork.
    exactly ONE surface — CreatorStudio.tsx:38's stage selector — not nowhere, as an earlier revision
    claimed. Everywhere else disagrees: projects run 3 stages, VSB review-gates 8, Genesis a 6-stage
    rail, Synthesis Studio a 9-stage cascade. At least five mutually incompatible lifecycles.
+   MEASURED, so the decision has a number: 46 files reference `realm` (21 backend, 25 frontend). It
+   is validated against agentic_core.taxonomy.REALMS, stored, displayed and interpolated into two
+   prompts. ZERO branch on it — no `if realm ==`, no match, anywhere in the backend. The canon's four
+   realms (enterprise · learning · developing · scholarship) and six domains are otherwise correct.
+   So this is not a small gap to close quietly: a third of the product grid is threaded through
+   forty-six files and changes no decision.
    DONE WHEN: either Realm demonstrably changes behaviour (routing, prompt, resource selection) or
    the canon is corrected to drop it as a dimension — decide WITH the Owner; do not silently pick.
+   Both directions are real work and they point opposite ways, which is exactly why it is the
+   Owner's call and not yours.
 
-5. §8 · §17.2 — SIX OF SEVEN BIOMIMETIC LAYERS CONTRIBUTE NOTHING TO THE DELIVERY RECORD.  [TIER 3]
+5. §8 · §17.2 — THE RECORD NAMED SEVEN LAYERS AND ONE SHOWED UP.  [TIER 3 · CLOSED W422]
+   CLOSED: `layers` now names only what contributed (Immune), with `layers_declared`,
+   `layers_not_contributing` and a note stating how many of how many. Three tests that asserted
+   len(layers)==7 enshrined the defect and now assert the honest shape. composite_health is left
+   UNCHANGED so live thresholds keep their meaning (Change Control gates on >=0.6) but no longer
+   travels alone: `composite_health_terms` names each term's weight/value/measured, and
+   `composite_health_measured_only` gives the score from measured terms alone. Measured live: the
+   composite read 0.872 while BOTH measured terms were 1.0 — the simulated ATP term was pulling a
+   real gating score down 13 points. The history below is the lesson.
    Only Immune contributes; three (Respiratory, Musculoskeletal, Endocrine) have no implementation at
    all system-wide. Yet quality.py:199 writes `"layers": list(BIOMIMETIC_LAYERS)` — naming all seven
    on every delivery record, unconditionally, regardless of what participated. The metabolic/ATP term is 20% of composite_health and is a
@@ -324,7 +379,14 @@ because naming a gap without acceptance criteria only moves the guesswork.
    DONE WHEN: the record names only layers that actually participated, and any composite health score
    excludes or explicitly flags terms that are not measured.
 
-6. §11 · §13 — SELF-DEFENCE AND SELF-IMPROVEMENT ARE API_ONLY.  [TIER 2]
+6. §11 · §13 — SELF-DEFENCE WAS API_ONLY AND ITS TEETH WERE INVISIBLE.  [TIER 2 · CLOSED W420+W421]
+   CLOSED: re-screening is switchable (W420's auto_compliance toggle) and its verdict now reaches
+   the entity's owner (W421) — `list_living()` carries the §11 standing and `economy_held` with the
+   consequence in words, and VSBEconomy renders both per row. `never_screened` renders as "not
+   screened", never as a pass. Guard: test_w421_compliance_verdict_and_hold_reach_the_entity_owner.
+   STILL OPEN in this item: "every deliverable is ALIVE" still means a version record exists and the
+   user may press the button again — no research step, no improvement over the prior draft. That
+   half is a capability gap, not a reach gap. The history below is the lesson.
    Continuous compliance re-screening exists and cannot be switched on from any UI, so out of the box
    compliance is evaluated ONCE, at establishment. "Every deliverable is ALIVE" currently means a
    version record exists and the user may press the button again: no research step, no improvement
@@ -333,10 +395,19 @@ because naming a gap without acceptance criteria only moves the guesswork.
    it causes — is visible to the entity's owner, who currently cannot see either.
 
 7. §4.1 · §4.2 — THE FRONT DOOR IS NARROWER THAN THE SPEC.  [TIER 3]
-   Uploads accept text formats only, so a research report — the spec's own first example of "uploaded
-   data" — cannot be attached, because it is normally a PDF. And "understand the person" never
-   happens: no profile, history or capability context reaches any prompt, and there is no field for
-   constraints, goals or success criteria.
+   Uploads accept text formats only (AttachDocument.tsx:8 — .txt .md .csv .json .yaml .xml .html and
+   friends), so a research report — the spec's own first example of "uploaded data" — cannot be
+   attached, because it is normally a PDF. The read is entirely CLIENT-SIDE: the file never leaves
+   the browser and its text is inserted into the field the caller already posts, so PDF support means
+   a bundled in-browser extractor or a new server endpoint. That is a scope decision, not a bug fix.
+   And "understand the person" never happens at the front door: no profile, history or capability
+   context reaches any prompt, and there is no field for constraints, goals or success criteria.
+   ⚠ DO NOT "FIX" THIS BY FLIPPING `augment`. Genesis passes augment=False deliberately
+   (genesis.py:115, :147) under W332: "generation-class callers whose output SHIPS or PERSISTS pass
+   augment=False — copy generation has no legitimate use for cross-request recall, and RECALL WAS
+   THE LEAK VECTOR" (gateway.py:143). Turning it on would reintroduce a cross-tenant leak to buy a
+   worse version of the feature. Understanding the person needs an EXPLICIT, owner-scoped profile
+   passed deliberately — never opportunistic cross-request recall.
    DONE WHEN: scope is agreed with the Owner. The current refusal is HONEST ("Unsupported file type"),
    so this is a missing modality, not a lie — it is Tier 3 for that reason.
 </ledger>

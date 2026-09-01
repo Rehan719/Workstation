@@ -464,6 +464,29 @@ export const VSBEconomy: React.FC = () => {
                 <div className="text-right shrink-0">
                   <p className="text-sm font-black text-emerald-400">{v.operating_cycles} <span className="text-[9px] text-slate-500">cycles</span></p>
                   <p className="text-[8px] text-slate-600">{v.last_operated ? `last ${v.last_operated.slice(0, 10)}` : 'awaiting first tick'}</p>
+                  {/* §11 × §13 (W421) — the compliance verdict and the economic consequence it causes,
+                      where the entity's OWNER can see them. Both existed only as side effects: the
+                      hold was written to the store and the UEG, so a held enterprise looked idle. */}
+                  <div className="flex items-center gap-1 justify-end mt-1">
+                    {v.economy_held?.held && (
+                      <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital"
+                        title={v.economy_held.consequence || 'this entity is held'}>
+                        held · {String(v.economy_held.reason).replace(/_/g, ' ')}
+                      </span>
+                    )}
+                    {v.compliance?.never_screened ? (
+                      <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-500"
+                        title="§11 has not screened this entity yet. Switch on Self-defend (auto_compliance) on the Heartbeat surface to re-screen every entity each beat. Not screened is NOT the same as clean.">
+                        not screened
+                      </span>
+                    ) : (
+                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${v.compliance?.verdict === 'fail' ? 'bg-vital/15 text-vital' : v.compliance?.verdict === 'review' ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}
+                        title={`§11 — ${(v.compliance?.verdicts || []).map((x: any) => `${x.framework}:${x.status}`).join(' · ') || 'no framework detail recorded'}${v.compliance?.screened_at ? `
+screened ${v.compliance.screened_at}` : ''}`}>
+                        §11 {v.compliance?.verdict}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
