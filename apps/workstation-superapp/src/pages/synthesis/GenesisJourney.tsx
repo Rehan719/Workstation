@@ -207,7 +207,11 @@ export const GenesisJourney: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: kind, title: `Genesis: ${problem.slice(0, 60)}`, brief: problem.slice(0, 400),
-          domain, content, vsb_id: vsb?.vsb_id ?? (result as any)?.established_vsb?.vsb_id ?? undefined,
+          // §17.1 (W427) — the realm the user selected for this journey must govern the deliverable
+          // it produces too, and be STORED on it so a later regeneration keeps the same register.
+          // The journey POST above already sends realm; without this line the deliverable produced
+          // from that very journey silently reverted to "enterprise".
+          domain, realm, content, vsb_id: vsb?.vsb_id ?? (result as any)?.established_vsb?.vsb_id ?? undefined,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

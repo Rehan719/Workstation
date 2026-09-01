@@ -40,6 +40,7 @@ def _require_deliverable_access(d: Dict[str, Any], user: dict | None) -> None:
         raise HTTPException(status_code=404, detail=f"Deliverable {d.get('id')} not found.")
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.taxonomy import REALM_LABELS, normalise_realm, realm_directive
 from agentic_core.vbs.quality import assure_delivery
 
 router = APIRouter(prefix="/api/v1/deliverables", tags=["living-deliverables"])
@@ -94,11 +95,18 @@ def _weakest_sections(content: str, secs: List[str]) -> List[str]:
 
 async def _generate(d_type: str, title: str, brief: str, domain: str,
                     vsb_id: Optional[str], sections: List[str],
-                    prior: str = "") -> Dict[str, Any]:
+                    prior: str = "", realm: str = "enterprise") -> Dict[str, Any]:
     secs = sections or _TYPES.get(d_type, _TYPES["report"])
+    # §17.1 (W427) — the realm directive is IMPERATIVE, never a persona: engine.py:90 takes the
+    # first "You are/As a" match, so a persona sentence prepended here would replace this caller's
+    # own role. `Realm:` is its own Title-Case line because engine.py:81 reads a field to end of
+    # line — folding it onto the Domain line would fuse both into one unusable value.
+    _rd = (f"{realm_directive(realm)}\n"
+           f"Realm: {REALM_LABELS.get(normalise_realm(realm), 'Enterprise')}\n")
     prompt = (
-        f"Produce a {d_type} titled '{title or brief[:60]}'.\n"
-        f"Brief: {brief}\nDomain: {domain}{_grounding(vsb_id)}\n\n"
+        _rd
+        + f"Produce a {d_type} titled '{title or brief[:60]}'.\n"
+        + f"Brief: {brief}\nDomain: {domain}{_grounding(vsb_id)}\n\n"
         + "\n".join(f"## {s}" for s in secs)
     )
     # §13 (W425) — a regeneration used to be a fresh roll of the dice: the model never saw the draft
@@ -111,8 +119,9 @@ async def _generate(d_type: str, title: str, brief: str, domain: str,
                  + ", ".join(missing) + "\n\n") if missing else (
                  "Every declared section is present; deepen the weakest evidence and specificity.\n\n")
         prompt = (
-            f"IMPROVE the existing {d_type} below. Keep what is already strong; do not restart.\n"
-            f"Brief: {brief}\nDomain: {domain}{_grounding(vsb_id)}\n\n"
+            _rd
+            + f"IMPROVE the existing {d_type} below. Keep what is already strong; do not restart.\n"
+            + f"Brief: {brief}\nDomain: {domain}{_grounding(vsb_id)}\n\n"
             + focus
             + "Return the FULL improved document under these headings:\n"
             + "\n".join(f"## {s}" for s in secs)
@@ -143,6 +152,9 @@ class ProduceRequest(BaseModel):
     title: str = ""
     brief: str
     domain: str = "enterprise"
+    # §17.1 (W427) — realm reaches GENERATION, not just storage. Deliverables took no
+    # realm at all, so output was identical for a scholar and a commercial operator.
+    realm: str = "enterprise"
     vsb_id: Optional[str] = None
     sections: List[str] = []          # optional override (reconfigure the structure)
     content: str = ""                 # §4.9 (W306): verbatim ingest — already-produced work
@@ -222,7 +234,8 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
                "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
                                  "note": "content supplied verbatim by the caller — not regenerated"}}
     else:
-        gen = await _generate(req.type, req.title, req.brief, req.domain, req.vsb_id, req.sections)
+        gen = await _generate(req.type, req.title, req.brief, req.domain, req.vsb_id,
+                              req.sections, realm=req.realm)
     _dur = int((time.time() - _t0) * 1000)
     # Continual operational delivery within the LIVING QMS: every produced deliverable is gated by the
     # OWNED QMS (real, stateful), held to the §10 Solution-Quality Bar, recorded within the §8 organism.
@@ -244,6 +257,10 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
         "title": req.title or req.brief[:60],
         "brief": req.brief,
         "domain": req.domain,
+        # W427 — WITHOUT this line the regenerate path below reads a realm that was never
+        # stored and silently falls back to "enterprise" forever. The produce-only
+        # assertion passes while that bug is live; only produce-THEN-regenerate catches it.
+        "realm": req.realm,
         "vsb_id": req.vsb_id,
         "sections": gen["sections"],
         "content": gen["content"],
@@ -829,7 +846,7 @@ def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
     if fmt == "txt":
         return _strip_md(_to_markdown(d))
     if fmt == "json":
-        keep = ("id", "type", "title", "brief", "domain", "vsb_id", "sections", "content",
+        keep = ("id", "type", "title", "brief", "domain", "realm", "vsb_id", "sections", "content",
                 "ai_provenance", "created_at", "updated_at")
         return json.dumps({k: d.get(k) for k in keep}, indent=2, ensure_ascii=False)
     if fmt == "html":
@@ -901,7 +918,8 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest,
                 _reconfigured = (brief != d["brief"]) or (sections != d.get("sections", []))
                 _prior = "" if _reconfigured else (d.get("content") or "")
                 gen = await _generate(d["type"], d["title"], brief, d.get("domain", "enterprise"),
-                                      d.get("vsb_id"), sections, prior=_prior)
+                                      d.get("vsb_id"), sections, prior=_prior,
+                                      realm=d.get("realm", "enterprise"))
             qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable",
                                        owner_id=d.get("owner_id"))
             now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())

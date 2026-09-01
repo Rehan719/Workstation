@@ -143,6 +143,14 @@ class ModelGateway:
         # W332 — generation-class callers whose output SHIPS or PERSISTS pass augment=False: copy
         # generation has no legitimate use for cross-request recall, and recall was the leak vector.
         augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt
+        # §4.2 (W428) — the person's OWN explicit profile, applied INDEPENDENTLY of `augment`.
+        # That independence is the point: every generation-class caller sets augment=False (W332,
+        # recall was the leak vector), and those are exactly the surfaces where "understand the
+        # person" was missing. Recall is inference over other requests; this is the user's own
+        # words, which they wrote, can read back, and can delete. Different trust, different switch.
+        from agentic_core.ai.user_context import load_preamble
+        _preamble = load_preamble(owner_id)
+        augmented = _preamble + augmented
         served_by, is_external = "native", False
         try:
             from agentic_core.ai.native import orchestrator as native_orchestrator
@@ -167,7 +175,10 @@ class ModelGateway:
         interaction_logger.log_interaction(agent, prompt, response, owner_id=owner_id)
         memory.add_memory(f"User: {prompt} | AI: {response}",
                           metadata={"agent": agent}, owner_id=owner_id)   # W333 — tenant-stamped
-        return {"output": response, "served_by": served_by, "is_external": is_external}
+        # W428 — DISCLOSED, not silent. A profile that shapes output without the caller being able
+        # to tell is the same opacity §10 spent this cycle removing from the quality record.
+        return {"output": response, "served_by": served_by, "is_external": is_external,
+                "profile_applied": bool(_preamble)}
 
     async def _call(self, prompt: str, agent: str = "gateway") -> tuple[str, str]:
         """Try providers in priority order, return (response_text, provider_name)."""

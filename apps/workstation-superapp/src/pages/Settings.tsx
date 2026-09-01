@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../lib/taxonomy';
 import { Card, Button } from '@workstation/ui';
 import { Check, Trash2, User, Settings as SettingsIcon } from 'lucide-react';
 import { getPrefs, setPrefs, clearPrefs, LANGUAGES, type UserPrefs } from '../lib/userPrefs';
 import { coverageFor, applyDocumentDirection } from '../lib/i18n';
 import { clearWorkspaceEverywhere } from '../lib/outputHistory';
+import {
+  PROFILE_FIELDS, MAX_FIELD_CHARS, EMPTY_PROFILE,
+  getProfile, putProfile, clearProfile, type UserProfile,
+} from '../lib/userProfile';
 
 // §17.1 canonical realms × domains — kept consistent with Genesis.
 const REALMS = [...CANON_REALMS];   // §17.1 (W321)
@@ -16,6 +20,37 @@ const DOMAINS = [...CANON_DOMAINS];
 export const Settings: React.FC = () => {
   const [prefs, setLocal] = useState<UserPrefs>(() => getPrefs());
   const [saved, setSaved] = useState(false);
+
+  // §4.2 (W428) — the explicit profile. Server-stored under the caller's owner id, so unlike the
+  // browser-local prefs above it follows the person rather than the machine.
+  const [profile, setProfile] = useState<UserProfile>(EMPTY_PROFILE);
+  const [preamble, setPreamble] = useState('');
+  const [profBusy, setProfBusy] = useState(false);
+  const [profSaved, setProfSaved] = useState(false);
+  const [profErr, setProfErr] = useState('');
+
+  useEffect(() => {
+    getProfile().then(r => {
+      if (!r) return;                       // unreachable store: leave the form empty, say nothing false
+      setProfile({ ...EMPTY_PROFILE, ...r.profile });
+      setPreamble(r.preamble_preview || '');
+    });
+  }, []);
+
+  const saveProfile = async () => {
+    setProfBusy(true); setProfErr('');
+    try {
+      const r = await putProfile(profile);
+      // Show the preamble the SERVER built, not one recomputed here — the server trims and
+      // neutralises, so a locally-rendered preview could differ from what is actually sent.
+      setPreamble(r?.preamble_preview || '');
+      setProfSaved(true); setTimeout(() => setProfSaved(false), 1800);
+    } catch (e) {
+      setProfErr(String((e as Error).message));   // a failed save never renders as saved
+    } finally {
+      setProfBusy(false);
+    }
+  };
 
   const update = (patch: Partial<UserPrefs>) => { setLocal(p => ({ ...p, ...patch })); setSaved(false); };
   const save = () => { setPrefs(prefs); applyDocumentDirection(prefs.language); setSaved(true); setTimeout(() => setSaved(false), 1800); };
@@ -128,6 +163,57 @@ export const Settings: React.FC = () => {
           {/* W-tour — re-run the onboarding tour on demand (it auto-runs once for new visitors) */}
           <Button type="button" onClick={() => window.dispatchEvent(new CustomEvent('ws:start-tour'))}
             className="bg-slate-900 text-slate-300 text-xs">Take the tour</Button>
+        </div>
+      </Card>
+
+      {/* §4.2 (W428) — "understand the person". Nothing about the user reached any prompt, and
+          there was no field to enter anything. This is that field, and it is deliberately explicit:
+          the platform never infers a profile from your activity. */}
+      <Card className="p-8 space-y-4">
+        <div>
+          <h3 className="text-sm font-black text-white uppercase tracking-wide">About you</h3>
+          <p className="text-[11px] text-slate-500 leading-relaxed mt-1 max-w-3xl">
+            Used to shape what the platform generates for you. Only what you type here is used —
+            nothing is inferred from your activity, and it is never drawn from anyone else's.
+            You can see exactly what it sends below, and delete it at any time.
+          </p>
+        </div>
+        {PROFILE_FIELDS.map(f => (
+          <label key={f.key} className="flex flex-col gap-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{f.label}</span>
+            <textarea
+              value={profile[f.key]} rows={2} maxLength={MAX_FIELD_CHARS}
+              aria-label={f.label}
+              onChange={e => { setProfile({ ...profile, [f.key]: e.target.value }); setProfSaved(false); }}
+              placeholder={f.hint}
+              className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white resize-y" />
+          </label>
+        ))}
+        {profErr && <p role="alert" className="text-[11px] font-bold text-vital">{profErr}</p>}
+        {preamble
+          ? (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+                Exactly what is added to your prompts
+              </p>
+              <pre className="text-[10px] text-slate-400 bg-slate-950 border border-slate-900 rounded-xl p-3 whitespace-pre-wrap">{preamble}</pre>
+            </div>
+          )
+          : <p className="text-[10px] text-slate-600 font-semibold">Nothing saved — no profile is added to your prompts.</p>}
+        <div className="flex flex-wrap gap-3">
+          <Button type="button" onClick={saveProfile} disabled={profBusy}>
+            {profSaved ? <><Check size={14} /> Saved</> : 'Save profile'}
+          </Button>
+          <Button type="button" variant="outline" disabled={profBusy || !preamble}
+            onClick={async () => {
+              setProfBusy(true); setProfErr('');
+              try { await clearProfile(); setProfile(EMPTY_PROFILE); setPreamble(''); }
+              catch (e) { setProfErr(String((e as Error).message)); }
+              finally { setProfBusy(false); }
+            }}
+            className="text-[10px] border-slate-800 text-slate-400">
+            <Trash2 size={14} /> Delete profile
+          </Button>
         </div>
       </Card>
 

@@ -354,7 +354,16 @@ because naming a gap without acceptance criteria only moves the guesswork.
      (c) Proven by breaking it — assert a criterion nothing earned, watch the gate refuse to count it
          as measured, restore (rule 4).
 
-4. §17.1 — ONE AXIS OF THE GRID IS INERT; THE LIFECYCLE EXISTS NOWHERE.  [TIER 3]
+4. §17.1 — ONE AXIS OF THE GRID WAS INERT.  [TIER 3 · REALM CLOSED W427 · lifecycle OPEN]
+   OWNER DECIDED (2026-09-01): give realm teeth, NARROW scope — depth and register of output,
+   not structure. Delivered: taxonomy.REALM_REGISTER + realm_directive(), prefixed into the
+   Genesis _q closure (all 11 genesis_* stage prompts) and deliverables._generate (5 sites,
+   including the stored record so a regeneration keeps its register). Guards:
+   test_w427_realm_reaches_every_genesis_stage_prompt · test_w427_realm_survives_produce_then_regenerate.
+   Directives are IMPERATIVE, never persona — engine.py:92 takes the first "You are/As a"
+   match and would otherwise replace the caller's role (verified).
+   STILL OPEN in this item: the 5-stage lifecycle, which exists on exactly one surface
+   (CreatorStudio.tsx:38) while five others disagree. That half remains the Owner's call.
    Realm reaches generation PROMPTS (interpolated at synthesis_studio.py:286 and
    v290/ceo_generate.py:182) but nothing BRANCHES on it — no routing, no resource selection, no
    validation. One of three axes of the canon's 96-cell grid (§17.1: 4 realms × 6 domains × 4
@@ -411,7 +420,18 @@ because naming a gap without acceptance criteria only moves the guesswork.
    DONE WHEN: re-screening is switchable and its verdict — including a failure and any economic hold
    it causes — is visible to the entity's owner, who currently cannot see either.
 
-7. §4.1 · §4.2 — THE FRONT DOOR IS NARROWER THAN THE SPEC.  [TIER 3]
+7. §4.1 · §4.2 — THE FRONT DOOR.  [TIER 3 · PROFILE CLOSED W428 · PDF IN PROGRESS]
+   OWNER DECIDED (2026-09-01): explicit owner-scoped profile (never implicit recall), and a
+   BUNDLED browser-side PDF extractor (never a server upload — it preserves the
+   never-leaves-the-browser property the control already has).
+   §4.2 DELIVERED: five fields, three routes on the existing owner-scoped store, injected at
+   the gateway INDEPENDENTLY of `augment` (that independence is the design — augment=False
+   surfaces are exactly where it was missing), disclosed via `profile_applied`, with a
+   Settings card showing the exact preamble and a real delete. Guards: the tenancy branch
+   (auth-on + no identity => NO profile, never 'default'), role-hijack neutralisation, and
+   the round-trip. §4.1 PDF: pdfjs-dist is NOT installed and the bundle is already 2.0MB in
+   one chunk, so it must be a dynamic import() with the worker bundled locally — the Vite
+   worker pipeline is unproven in this repo (no ?worker/?url anywhere) and needs a spike first.
    Uploads accept text formats only (AttachDocument.tsx:8 — .txt .md .csv .json .yaml .xml .html and
    friends), so a research report — the spec's own first example of "uploaded data" — cannot be
    attached, because it is normally a PDF. The read is entirely CLIENT-SIDE: the file never leaves

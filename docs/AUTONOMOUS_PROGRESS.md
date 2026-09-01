@@ -2945,3 +2945,75 @@ moves with it.
 the superseded figure, and the check does not distinguish a comment from live copy. Rather than
 weaken it, the comment now refers to the figure instead of reproducing it. A guard that forbids a
 stale number everywhere in the file is more useful than one clever enough to allow exceptions.
+
+### W427 — Realm had teeth put in it (ledger item 4, the Owner's approved narrow scope)
+
+§17.1. Realm was validated, stored on the entity, echoed in responses and named in an evidence
+string across ~46 files while **nothing branched on it**. Measured before starting:
+`deliverables._generate` took no realm parameter at all, and not one of Genesis's eight stage prompts
+mentioned it — so a scholar and a commercial operator received identical output. One of three axes of
+the product grid changed no decision anywhere.
+
+The Owner approved the NARROW version: realm changes the DEPTH and REGISTER of generated output, not
+the structure. No per-realm routes, stores or forked journeys. `taxonomy.REALM_REGISTER` holds four
+directives; `realm_directive()` routes through the existing `normalise_realm`.
+
+Wired at the two seams that produce user-visible output: the Genesis `_q` closure (one edit reaching
+all 11 `genesis_*` stage prompts) and `deliverables._generate` (five sites). Measured: two realm runs
+produce genuinely different prompts, and the regenerate prompt now opens *"Write for a scholarly
+reader…"*.
+
+**Two constraints of the owned native floor, both verified rather than assumed.**
+`engine.py:92 _role` SEARCHES for `"You are|As" + article` and takes the FIRST match, and this text
+is PREPENDED — so a persona-style directive would silently replace the caller's own role. Proved it:
+a `"As a scholarly reviewer,"` prefix turns `IDBO Conceptualisation engine` into `scholarly reviewer`.
+Every directive is imperative instead. And `Realm:` is its own Title-Case line because `engine.py:81`
+reads a labelled value to end of line — folding it onto the `Domain:` line fuses both into one value.
+
+**Rejected on evidence:** adding `"Realm"` to `engine.py:113 _CONTENT_LABELS`. Sold as one line, it
+changes every native-floor completion platform-wide across ~12 realm-carrying call sites — and is
+unnecessary, because the guard captures PROMPTS, which happens before any engine runs.
+
+**Two guard failures worth recording.** The first Genesis guard was VACUOUS: hardcoding the directive
+to `enterprise` left the `Realm:` label still interpolated from `req.realm`, so the test passed while
+the feature was dead. It now asserts the directive text and that the developing run does NOT carry
+the scholarship directive. And a scripted line-index edit dropped `d.get("vsb_id")` from the
+regenerate call — produce kept working, regenerate raised TypeError. Second time this session a
+produce-only check would have missed a regenerate-path bug.
+
+Honest coverage: 11 of 13 captured prompts carry the directive. The two that do not are
+`cognitive_cascade_ai` and `mjm_orchestrator_ai`, shared helpers outside the journey's closure —
+asserted explicitly in the guard so the exemption stays narrow and visible.
+
+### W428 — "understand the person" now happens, explicitly (ledger item 7b)
+
+§4.2. No profile, goals, constraints or success criteria reached any prompt, and there was no field
+to enter them. Five fields now do, through `agentic_core/ai/user_context.py` and three routes on the
+store that already exists (`user_workspace.py` — extending it reuses owner-scoping that is already
+correct rather than writing a second implementation to keep correct).
+
+**This is NOT the recall path, and that distinction is the whole design.** `gateway._augment`
+retrieves prior interactions by token overlap; every generation-class caller disables it under W332
+because *"recall was the leak vector"*. The profile is applied INDEPENDENTLY of that flag — which is
+the point, since `augment=False` surfaces are exactly where understanding the person was missing.
+Recall is inference over other people's traffic; this is the person's own words, which they wrote,
+can read back verbatim, and can delete. `query_meta` returns `profile_applied` so nothing shapes
+output invisibly.
+
+**THE LINE THAT MAKES IT SAFE.** With auth off every record is written under `default`. Had
+`profile_owner` fallen back to `"default"` for an unidentified caller, flipping `AUTH_ENABLED` on
+would have injected the single-user owner's private profile into EVERY tenant's generation. The
+auth-on branch returns None. Guarded, and the guard fails with *"THE LEAK: an unidentified caller
+under auth must get NO profile, never 'default'"*.
+
+**A real injection hole, and a first fix that did not work.** Profile text is user input reaching a
+prompt, so it can reassign the engine's persona. The first sanitiser only checked the START of a
+value; `engine.py:92` SEARCHES, so it was defeated immediately — a profile reading *"As a busy
+founder…"* changed the role to `busy founder`. The trigger token is now rewritten wherever it appears
+(`"As a"` -> `"being a"`, `"You are"` -> `"they are"`), preserving meaning. Note honestly: the same
+shape already exists for `problem` and `brief`, which have always reached prompts unsanitised. It is
+self-inflicted (the user's own text shaping their own generation), not cross-tenant, and is filed
+rather than silently widened into this change.
+
+Reach: a Settings card with the five fields, the EXACT preamble the server will send rendered back
+to the user, and a delete that empties the key rather than flagging it inactive.

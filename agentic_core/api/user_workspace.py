@@ -50,7 +50,9 @@ def _path_for(owner_id: str):
 
 
 def _empty(owner_id: str) -> dict[str, Any]:
-    return {"owner_id": owner_id, "history": [], "prefs": {}, "updated_at": None}
+    # §4.2 (W428) — "profile" joins the document the user already owns. A separate store would
+    # mean a second owner-scoping implementation to keep correct; this one is already right.
+    return {"owner_id": owner_id, "history": [], "prefs": {}, "profile": {}, "updated_at": None}
 
 
 def _load(owner_id: str) -> dict[str, Any]:
@@ -61,6 +63,7 @@ def _load(owner_id: str) -> dict[str, Any]:
         return _empty(owner_id)
     doc.setdefault("history", [])
     doc.setdefault("prefs", {})
+    doc.setdefault("profile", {})
     return doc
 
 
@@ -145,4 +148,92 @@ async def clear_workspace(owner_id: str = "default", user: dict | None = Depends
             atomic_write_json(path, doc)
     except TimeoutError:
         raise HTTPException(status_code=503, detail="Workspace busy — please retry.") from None
+    return {"owner_id": resolved, "cleared": True, "updated_at": doc["updated_at"]}
+
+
+# ── §4.2 (W428) — the explicit user profile ────────────────────────────────────────────────────
+#
+# "Understand the person" never happened: no profile, goals, constraints or success criteria reached
+# any prompt, and there was no field to enter them. This is the field.
+#
+# It is NOT the recall path. gateway._augment retrieves prior interactions by token overlap and every
+# generation-class caller disables it (W332: "recall was the leak vector"). This is the opposite —
+# the person's own words, which they can read back and delete. See agentic_core/ai/user_context.py.
+
+
+class ProfilePut(BaseModel):
+    """The five §4.2 fields. Each capped server-side; the client cap is a courtesy, not the rule."""
+    about_you: str = ""
+    context: str = ""
+    goals: str = ""
+    constraints: str = ""
+    success_criteria: str = ""
+    owner_id: str = "default"
+
+
+@router.get("/profile")
+async def get_profile(owner_id: str = "default", user: dict | None = Depends(get_current_user)):
+    """The caller's own profile, plus the EXACT preamble it produces.
+
+    The preview is not decoration: a profile that silently shapes generation without the user being
+    able to see what it sends is the same opacity this codebase keeps removing elsewhere.
+    """
+    from agentic_core.ai.user_context import PROFILE_FIELDS, build_preamble
+
+    resolved = request_owner_id(user, owner_id)
+    if not user_can_access(user, resolved):
+        raise HTTPException(status_code=404, detail="No profile found.")
+    prof = (_load(resolved) or {}).get("profile") or {}
+    return {
+        "owner_id": resolved,
+        "profile": {k: prof.get(k, "") for k in PROFILE_FIELDS},
+        "preamble_preview": build_preamble(prof),
+        "applied_to": "generation prompts on this platform (never shared with other users)",
+        "is_recall": False,
+    }
+
+
+@router.put("/profile")
+async def put_profile(req: ProfilePut, user: dict | None = Depends(get_current_user)):
+    """Replace the caller's profile. Same lock + atomic write as the workspace it lives in."""
+    from agentic_core.ai.user_context import MAX_FIELD_CHARS, PROFILE_FIELDS, build_preamble
+
+    resolved = request_owner_id(user, req.owner_id)
+    if not user_can_access(user, resolved):
+        raise HTTPException(status_code=404, detail="No profile found.")
+    prof = {k: str(getattr(req, k, "") or "")[:MAX_FIELD_CHARS] for k in PROFILE_FIELDS}
+    path = _path_for(resolved)
+    try:
+        with store_lock(path):
+            doc = _load(resolved)
+            doc["owner_id"] = resolved
+            doc["profile"] = prof
+            doc["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            atomic_write_json(path, doc)
+    except TimeoutError:
+        raise HTTPException(status_code=503, detail="Profile busy — please retry.") from None
+    return {"owner_id": resolved, "profile": prof, "preamble_preview": build_preamble(prof),
+            "updated_at": doc["updated_at"]}
+
+
+@router.delete("/profile")
+async def clear_profile(owner_id: str = "default", user: dict | None = Depends(get_current_user)):
+    """Delete the caller's profile — the whole thing, not a soft flag.
+
+    Clearing must genuinely stop it reaching prompts, which is why this empties the key rather than
+    marking it inactive: an "inactive" profile still sitting in the store is exactly the kind of
+    almost-deleted state a user would reasonably call a lie.
+    """
+    resolved = request_owner_id(user, owner_id)
+    if not user_can_access(user, resolved):
+        raise HTTPException(status_code=404, detail="No profile found.")
+    path = _path_for(resolved)
+    try:
+        with store_lock(path):
+            doc = _load(resolved)
+            doc["profile"] = {}
+            doc["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            atomic_write_json(path, doc)
+    except TimeoutError:
+        raise HTTPException(status_code=503, detail="Profile busy — please retry.") from None
     return {"owner_id": resolved, "cleared": True, "updated_at": doc["updated_at"]}

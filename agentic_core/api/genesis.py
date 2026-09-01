@@ -23,6 +23,7 @@ from agentic_core.ai.gateway import gateway
 from agentic_core.auth.core import get_current_user, request_owner_id
 from agentic_core.api.intelligence import _ai_cognitive_prime, _ai_mjm_lifecycle
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
+from agentic_core.taxonomy import REALM_LABELS, normalise_realm, realm_directive
 from agentic_core.vbs.quality import assure_delivery
 
 router = APIRouter(prefix="/api/v1/genesis", tags=["genesis-journey"])
@@ -141,10 +142,20 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # served them (this local _q shadows the module helper for the journey's stages).
     provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
 
+    # §17.1 (W427) — REALM REACHES THE PROMPT. Until now `req.realm` was validated, stored on the
+    # entity, echoed in the response and named in an evidence string — and appeared in NONE of the
+    # eight stage prompts, so a scholar and a commercial operator received identical output. This
+    # closure is the single seam every stage passes through, so prefixing here reaches all of them.
+    # Imperative directive, never a persona: engine.py:90 takes the FIRST "You are/As a" match, so a
+    # persona sentence prepended here would REPLACE the caller's own role (verified: it rewrites
+    # "IDBO Conceptualisation engine" to "scholarly reviewer").
+    _realm_prefix = (f"{realm_directive(req.realm)}\n"
+                     f"Realm: {REALM_LABELS.get(normalise_realm(req.realm), 'Enterprise')}\n\n")
+
     async def _q(prompt: str, agent: str) -> str:  # noqa: F811 — local, provenance-aware
         try:
             # W332 — journey stages persist into the entity/plan and can ship: no cross-request recall
-            res = await gateway.query_meta(prompt, agent=agent, augment=False)
+            res = await gateway.query_meta(_realm_prefix + prompt, agent=agent, augment=False)
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
             provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
