@@ -1,4 +1,4 @@
-# Fable Delivery Prompt — Workstation IDBO (v7, final)
+# Fable Delivery Prompt — Workstation IDBO (v8)
 
 > Paste the block below into a Claude Fable 5 session pointed at this repository.
 >
@@ -8,11 +8,22 @@
 > own progress claim. That instruction earned its place: 5 entries came back `DOC_OVERCLAIM`. The
 > result is 80 evidenced verdicts in `docs/VISION_FIDELITY_LEDGER.md`.
 >
-> **What this final revision adds over the first v7 draft**, after critiquing it: a *definition of
-> done* per top gap (naming gaps without acceptance criteria just moves the guesswork), an explicit
-> ordering rule separating cheap reach-wiring from deep capability work, a stopping rule so 27 PARTIAL
-> entries do not become infinite churn, and evidence-based answers to three of the Owner's four open
-> questions in §18 — which were blocking scope decisions while sitting answerable.
+> **What v7 added:** a *definition of done* per top gap (naming gaps without acceptance criteria just
+> moves the guesswork), an ordering rule separating cheap reach-wiring from deep capability work, a
+> stopping rule so 27 PARTIAL entries do not become infinite churn, and evidence-based answers to three
+> of the Owner's four open questions in §18 — which were blocking scope decisions while answerable.
+>
+> **What v8 adds**, from digging past the symptom into the mechanism. (a) A `<trajectory>` section
+> mapping 418 workstreams of EFFORT against the ledger's FIDELITY: they do not line up. Effort built
+> MACHINERY (§5/§6, ~140 workstreams, now the strongest sections); the weakness is the JOURNEY through
+> it (§4) and the QUALITY GATE on its output (§10). It also names the reason the wiring backlog
+> regenerates — reach is not in anyone's definition of done — and the correcting rule. (b) Item 3 is
+> re-derived: §10's problem is not that a badge counts 4 of 16, it is that `assure_delivery(evidence=)`
+> lets a CALLER assert any criterion as measured, unverified. Executed: `{"best-in-class": "trust me"}`
+> returns met=True, measured=True. Genesis then attests three criteria whose steps never ran, so item
+> 1's broken scorer LAUNDERS into the sealed quality record as "modelled · simulated · optimised ·
+> ranked = met". Items 1 and 3 are one defect with two faces — that is why both are TIER 1, and why
+> fixing either alone leaves the class open.
 >
 > Companions: `WORKSTATION_IDBO_WHOLE_VISION.md` · `VISION_FIDELITY_LEDGER.md` (80 verdicts) ·
 > `FABRICATION_LEDGER.md` (63/63 closed) · `AUTONOMOUS_PROGRESS.md` (W1→W418) ·
@@ -91,6 +102,44 @@ leave it and say so. Do not manufacture work: inventing it is the exact failure 
 63-entry audit removing.
 </ordering>
 
+<trajectory>
+WHERE 418 WORKSTREAMS WENT vs WHERE THE VISION IS WEAK — read this before choosing work, because the
+two do not line up, and the mismatch is systemic rather than accidental.
+
+EFFORT, by theme across W1->W418: UI reach/wiring 107 · verification/guards 74 · native AI 69 ·
+cleanup 37 · honesty/fabrication 29 · economy 24 · tenancy 8 · durability 7.
+
+FIDELITY, by section (non-DELIVERED / total, from the 80-verdict ledger):
+    §10 Quality bar        3/3   <- NOTHING delivered
+    §17 Canon structure    6/9   <- holds the only MISSING
+    §4  Lifecycle          6/10  <- holds the §4.5 defect
+    §12 / §6 / §9          4 each
+    §11 / §13 / §8 / §10   3 each
+    §5  Living org         1/8   <- STRONGEST
+    §3A Two offerings      0/2   <- complete
+
+THE MISMATCH. Effort went into MACHINERY and the machinery is now strong: §5 (Chief -> AI CEO ->
+C-Suite -> CoE -> BTO) and §6 (native AI fabric) absorbed ~140 workstreams and are the two healthiest
+areas. What stayed weak is the JOURNEY THROUGH that machinery — §4, the lifecycle a real person walks
+— and §10, the quality gate on everything it emits. Build the spine, not more machinery. Concretely:
+W1 (native AI fabric) is NOT the right next build (see §18 answer C); items 1 and 3 are.
+
+THE REGENERATING BACKLOG. 447 backend routes, 215 (48%) reachable from the UI; 246 write-capable
+routes, 105 unreached — AFTER 107 wiring workstreams. That is not a backlog to clear, it is a backlog
+that REGENERATES, because reach is not part of anyone's definition of done. A twelfth wiring round
+returns it to ~48%. The efficient correction is a rule, not a task:
+    A CAPABILITY IS NOT DONE UNTIL A USER CAN REACH IT.
+Ship the route and its surface in the same workstream. This is why the ordering rule puts cheap
+reach-wiring above deep capability work: the capability is already paid for; only the reach is owed.
+
+THE CHEAP CLUSTER. Five of the six highest-value gaps the assessors independently named came back
+effort=SMALL: wire the approved-evolution APPLY step into the path a user walks · surface the §11
+entity verdict where its owner sees it · fix native-ai/status computing floor_active from one row
+while labelling it another · measure the ATP/metabolic ratio it narrates · render the §11 economic
+consequence. Small, and each removes something currently MISLEADING rather than merely missing.
+Prefer these over any new capability.
+</trajectory>
+
 <ledger>
 Full evidence in docs/VISION_FIDELITY_LEDGER.md. Each item below carries a DEFINITION OF DONE,
 because naming a gap without acceptance criteria only moves the guesswork.
@@ -106,13 +155,25 @@ because naming a gap without acceptance criteria only moves the guesswork.
    all three candidates tied and the winner was decided by list position, undisclosed.
    This is NOT a fabrication. It is an honest measurement of the wrong property, under a docstring
    reading "REAL MEASURED proxies" — subtler than anything in the fabrication ledger, and it decides
-   which solution a real person receives.
+   which solution a real person receives — and, via item 3's unverified evidence channel, it is
+   SEALED into the quality record as "modelled · simulated · optimised · ranked = met". Items 1 and 3
+   are one defect with two faces; fixing the scorer without closing the channel leaves the laundering
+   path open for the next caller.
    DONE WHEN:
-     (a) A candidate that FAILS the §11 compliance screen cannot win. Compliance is the one named
-         criterion measurable TODAY with no new infrastructure — verified: screen_compliance() scores
-         a benign candidate sharia_halal=pass and an interest-bearing one sharia_halal=fail. Wire it
-         in with veto power. This alone converts the ranking from pure format proxy to one real
-         criterion that can disqualify.
+     (a) A candidate that FAILS the §11 screen cannot win. TWO of the five named criteria are
+         measurable TODAY from ONE existing call, with no new infrastructure:
+             compliance <- screen_compliance() frameworks sharia_halal · uk_legal · regulatory
+             safety     <- frameworks ehs · ethical · sharia_halal  (this is already the exact
+                           safety-bearing set _measure_bar uses for §10 — reuse it, do not invent
+                           a second definition)
+         Measured, not asserted: 3 candidates screened in 598 ms TOTAL — 199 ms each, ZERO model
+         calls, because the screen is deterministic (regex rules + engines). Cost is not a reason to
+         skip this. It also DISCRIMINATES on real input — a benign community solution scored
+         overall=pass; an interest-bearing one sharia_halal=fail; one with unprotected chemical
+         handling ehs=review. Wire both in, with compliance holding VETO power.
+         The remaining three are genuinely NOT measurable at selection time — efficiency and
+         commercial viability have no in-house instrument, effectiveness needs outcome data that does
+         not exist yet. Say so under (c); do not invent proxies for them.
      (b) Identical scores are DETECTED and DISCLOSED rather than silently resolved by list position.
      (c) Whatever remains unmeasured is named in the response — if effectiveness and commercial
          viability are not assessed, the payload says so, and the UI does not present the winner as
@@ -131,12 +192,33 @@ because naming a gap without acceptance criteria only moves the guesswork.
    state shown; the setting SURVIVES A RESTART (configure() is currently in-memory only); and the
    copy states plainly what each one will do on the next beat.
 
-3. §10 — A GREEN QMS BADGE MEANS 4 OF 16.  [TIER 1]
-   The Solution-Quality Bar lists 16 criteria; 12 are never evaluated anywhere but Genesis. A user
-   hovering the green badge reads all 16 as satisfied. Same proximity-to-truth pattern the fabrication
-   audit removed elsewhere: real criteria lending credibility to unassessed ones.
-   DONE WHEN: the badge reports assessed-vs-total (e.g. "4 of 16 assessed"), unassessed criteria are
-   individually marked not_checked, and no surface implies a criterion passed that nothing evaluated.
+3. §10 — THE SEALED QUALITY RECORD TRUSTS ITS CALLERS.  [TIER 1]
+   The bar's honesty machinery is SOUND and already built (W307): agentic_core/vbs/quality.py records
+   each of the 16 criteria as met / basis / measured, so "not measured" is representable rather than
+   implied-pass. The defect is at the INPUT. assure_delivery(evidence={...}) takes a free-text string
+   per criterion and records it {"met": True, "measured": True, "basis": "caller evidence: <string>"}
+   with NO check that the named step ran. Executed:
+       _measure_bar(..., evidence={"best-in-class": "trust me"})
+       -> best-in-class: met=True, measured=True, basis="caller evidence: trust me"
+   The headline count then conflates the 4 criteria the gate genuinely computes (specifically designed
+   · verified · compliant · safe) with anything a caller asserted.
+   The one caller using the channel overstates on three. genesis.py:251 hardcodes
+     "simulated": "stage 5 forward-simulated each candidate through the owned digital-twin pattern"
+     "optimised": "best-of-candidates selection on combined modelled+simulated evidence"
+   Stage 5 forward-simulates nothing and optimises nothing — it generates candidate TEXTS and sorts
+   them with the item-1 scorer. So item 1's defect does not stay local: it launders into the sealed
+   quality record as modelled · simulated · optimised · ranked = MET, and the seal makes it look
+   verified. This is the fabrication class the ledger closed 63 times, re-entering through a channel
+   built to be honest. Fix the channel and the class dies; fix Genesis alone and the next caller
+   reopens it.
+   DONE WHEN:
+     (a) The record separates gate-MEASURED from caller-ATTESTED, and reports them separately — a
+         reader can tell "4 measured · 4 attested · 8 not measured" from "8 measured".
+     (b) Attestations are DERIVED from the run, never literals: a criterion is attested only when the
+         step earning it actually executed and can name its real output. If stage 5 runs no
+         simulation, nothing attests "simulated".
+     (c) Proven by breaking it — assert a criterion nothing earned, watch the gate refuse to count it
+         as measured, restore (rule 4).
 
 4. §17.1 — ONE AXIS OF THE GRID IS INERT; THE LIFECYCLE EXISTS NOWHERE.  [TIER 3]
    Realm is stored, echoed and displayed but changes nothing in the system — one of three axes of the
@@ -210,6 +292,18 @@ Also true, and cheaper to learn here than in production:
     times in one session; build strings with chr(10).
 11. Fixing one honesty defect can expose another it was hiding: repairing a stubbed meeting log would
     have started persisting the invented unanimous approvals it had been discarding.
+12. AN HONEST INSTRUMENT CAN BE DEFEATED AT ITS INPUT — audit the WRITE CHANNELS, not just the
+    mechanism. §10's quality gate is carefully built: per-criterion met/basis/measured, "not measured"
+    fully representable. It is still defeatable, because assure_delivery(evidence=) lets a caller
+    assert any criterion as measured with an unverified string. Reviewing the gate finds nothing
+    wrong; the defect is only visible from the caller side. Whenever you present a record as verified,
+    enumerate every path that can write into it and ask what each one had to EARN. A record is exactly
+    as trustworthy as its least-verified input, never as trustworthy as its best-written checker.
+13. TRUST-HOLE DEFECTS PROPAGATE UPWARD AND GET SEALED. Item 1's scorer is a local bug until it
+    reaches item 3's channel — then it becomes "modelled · simulated · optimised · ranked = met" in a
+    sealed record. Before fixing a measurement defect, follow its OUTPUT: if a downstream record
+    attests to it, the attestation is part of the defect, and fixing only the measurement leaves a
+    false claim standing with a seal on it.
 </method>
 
 <guards>
