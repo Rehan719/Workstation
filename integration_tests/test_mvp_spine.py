@@ -7333,3 +7333,133 @@ def test_w433_governance_tie_resolves_to_the_most_restrictive_and_says_so():
     assert '_RESTRICTIVENESS = {"rejected": 3' in src
     assert 'max(holds, key=lambda c: c.get("submitted_at", ""), default=None)' not in src, (
         "the list-order fallback is back")
+
+
+def test_w434_the_users_problem_survives_every_journey_stage(client):
+    """§4 — "one continuous workflow" means each stage is about the USER'S problem.
+
+    Measured before the fix, on a journey about beekeepers losing hives to varroa mites:
+
+        phase_1_conceptualisation          68 problem-term hits
+        stage_3_innovate_research          15
+        phase_2_design_development          0
+        stage_7_operational_intelligence    0
+        phase_3_commercialisation           0
+
+    THREE separate causes, each found only by re-measuring after fixing the previous one:
+      1. The owned floor prepends a provenance banner (engine.py:163) and engine.py:81 `_field`
+         takes the first line after a label as that field's SUBJECT. Stages chain as
+         "Concept: {previous}", so the banner became the subject of everything downstream.
+      2. Stage 7 receives `Design: {design[:800]}` and nothing else — the user's problem was never
+         restated after phase 1. Scrubbing removed the wrong subject without supplying the right one.
+      3. _ai_cognitive_prime / _ai_mjm_lifecycle bypass the `_q` closure entirely and are stored in
+         phase_1, so the banner still shipped in the response after every _q stage was clean.
+
+    This is not an API-field cosmetic: GenesisJourney.tsx builds the EXPORTED document out of
+    exactly these five strings.
+    """
+    r = client.post("/api/v1/genesis/journey", json={
+        "problem": "Beekeepers in Konya lose hives to varroa mites and cannot afford lab testing",
+        "domain": "science", "realm": "developing"})
+    assert r.status_code == 200, r.text
+    d = r.json()
+
+    terms = ["beekeep", "konya", "varroa", "mite", "hive"]
+    stages = ["phase_1_conceptualisation", "stage_3_innovate_research",
+              "phase_2_design_development", "stage_7_operational_intelligence",
+              "phase_3_commercialisation"]
+    for name in stages:
+        text = str(d.get(name) or "")
+        assert text, "%s is empty" % name
+        hits = sum(text.lower().count(t) for t in terms)
+        assert hits > 0, (
+            "%s contains NOTHING of the user's problem (%d chars) - the chain lost its subject"
+            % (name, len(text)))
+
+    # and no engine scaffolding anywhere in what ships
+    import json as _json
+    whole = _json.dumps(d)
+    assert "no external dependency" not in whole, "the provenance banner reached the response"
+    assert "_Acting as:" not in whole, "the engine's role line reached the response"
+
+
+def test_w434_a_published_vsb_website_carries_no_engine_scaffold(client):
+    """§13 — a founder's PUBLIC website must not show visitors the engine's internal scaffold.
+
+    The website had its OWN scrubber (W355) while `_public_prose` — the stronger one, written for
+    this exact defect on the app path — was wired only to app data. Two divergent scrubbers for one
+    problem, and the public surface got the weaker. Measured on a live entity before the fix:
+    "_Acting as: …_" 3x on /about and 2x on /solution, plus raw "## INKASHAF" cascade headings.
+    """
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": "Beekeepers in Konya lose hives to varroa mites", "domain": "science",
+        "realm": "developing", "establish": True, "ship_output": True}).json()
+    vid = (j.get("established_vsb") or {}).get("vsb_id")
+    assert vid, "the journey did not establish an entity"
+    client.post("/api/v1/vsb/%s/website" % vid)
+
+    for page in ("index", "about", "solution"):
+        r = client.get("/api/v1/vsb/%s/website/page/%s" % (vid, page))
+        assert r.status_code == 200, "%s did not render" % page
+        html = r.text
+        assert "Acting as" not in html, "%s publishes the engine's role line" % page
+        assert "native structured" not in html.lower(), "%s publishes floor narration" % page
+        md = [l for l in html.splitlines() if l.strip().startswith("#")]
+        assert not md, "%s publishes raw markdown headings: %r" % (page, md[:3])
+
+
+def test_w434_creator_studio_realm_changes_the_blueprint(client):
+    """§17.1 — realm reached NOTHING here: `system = _REALM_SYSTEMS.get(...)` was assigned and never
+    referenced again, so the whole persona table was dead code. Measured: the same intent at
+    realm=enterprise and realm=scholarship produced BYTE-IDENTICAL blueprints. This is the defect
+    W427 fixed for Genesis, left standing next door — so it takes the same remedy.
+    """
+    import hashlib
+
+    def blueprint(realm):
+        r = client.post("/api/v290/ceo/generate-blueprint", json={
+            "intent": "cold storage for smallholder mango farmers", "domain": "science",
+            "realm": realm, "stage": "concept"})
+        assert r.status_code == 200, r.text
+        return r.json()
+
+    a, b = blueprint("enterprise"), blueprint("scholarship")
+    ha = hashlib.md5(a["deliverable"].encode("utf-8")).hexdigest()
+    hb = hashlib.md5(b["deliverable"].encode("utf-8")).hexdigest()
+    assert ha != hb, "two realms produced a byte-identical blueprint - realm reaches nothing"
+
+    # the template-node fallback must declare itself rather than pose as extracted structure
+    for node in a.get("nodes", []):
+        assert node.get("source") in ("extracted", "template_fallback"), (
+            "a canvas node does not say where it came from: %r" % (node,))
+
+
+def test_w434_journey_says_when_the_candidates_are_not_alternatives(client):
+    """§4.5 — a ranking of three identical texts is not a comparison.
+
+    Measured live: all three stage-5 candidates returned byte-identical text (same md5, difflib
+    ratio 1.000, same score), because the differentiator sits in prose and the owned floor composes
+    from the labelled fields and the requested headings — identical across the three calls. Tested
+    before writing the fix: moving the framing into a LABELLED field does not help either (1 of 3
+    distinct both ways). The floor cannot act on an adjective, so this is not fixable by prompting
+    and the payload must say so rather than rank copies.
+    """
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": "Beekeepers in Konya lose hives to varroa mites", "domain": "science",
+        "realm": "developing"}).json()
+    s5 = j.get("stage_5_model_simulate_rank") or {}
+
+    assert "candidates_distinct" in s5, "the journey does not report whether the candidates differ"
+    assert isinstance(s5["candidates_distinct"], int)
+    assert s5["candidates_are_alternatives"] == (s5["candidates_distinct"] > 1)
+
+    # every candidate carries the digest the count was derived from, so the claim is checkable
+    digests = [c.get("approach_digest") for c in (s5.get("candidates") or [])]
+    assert all(digests), "candidates do not carry their digests"
+    assert len(set(digests)) == s5["candidates_distinct"], "the reported count contradicts the digests"
+
+    if s5["candidates_distinct"] == 1:
+        assert s5["comparison_note"], "identical candidates must be DISCLOSED, not ranked silently"
+        assert "no comparison was possible" in s5["comparison_note"]
+    else:
+        assert s5["comparison_note"] is None

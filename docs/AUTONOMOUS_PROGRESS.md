@@ -3199,3 +3199,82 @@ checking nothing.
 **A repeat trap:** my own explanatory comment quoted the very expression the guard forbids, exactly as
 in W426. Reworded the comment rather than weakening the check — a guard that forbids a dead pattern
 everywhere in the file, comments included, is more useful than one clever enough to allow exceptions.
+
+### W434 — the v10 re-assessment: the user's problem was not surviving its own journey
+
+v9's ledger was spent (6 of 7 closed), so building v10 meant re-assessing the vision against the
+CURRENT system rather than reasoning from `VISION_FIDELITY_LEDGER.md`, which was two days and fifteen
+workstreams stale. Six assessors ran against a HEAD-booted backend, explicitly barred from three
+sources — the vision's own §16, the stale ledger, and this progress log (a record of intent, not
+proof) — with every claimed gap attacked by an independent refuter. 74 verdicts; 32 gaps survived
+refutation; the ledger distils to SIX entries.
+
+**Entry 1 is the worst live defect found in this whole session.** Measured on a journey about
+beekeepers losing hives to varroa mites, counting the user's own terms:
+
+    phase_1_conceptualisation           68 hits
+    stage_3_innovate_research           15
+    phase_2_design_development           0
+    stage_7_operational_intelligence     0
+    phase_3_commercialisation            0
+
+Three of five stages contained NOTHING of the user's problem. This is not an API-field cosmetic:
+`GenesisJourney.tsx:198-204` builds the EXPORTED PDF/DOCX out of exactly those five strings, so the
+document a founder downloads and shows people had Design, Operations and Commercialisation sections
+about Workstation's own engine.
+
+**THREE causes, each found only by re-measuring after fixing the previous one:**
+
+1. *The banner became the subject.* The owned floor prepends a provenance marker (`engine.py:163`),
+   `engine.py:81 _field` takes the first line after a label as that field's SUBJECT, and stages chain
+   as `Concept: {previous}`. Scrubbing at the single point every stage passes through took design
+   0 -> 62 and commercialisation 0 -> 48.
+2. *The subject was never restated.* Operations stayed at ZERO, because stage 7 receives
+   `Design: {design[:800]}` and nothing else — the user's problem is never repeated after phase 1.
+   Scrubbing removed the wrong subject without supplying the right one. Carrying `Problem:` in the
+   shared prefix took operations 0 -> 77.
+3. *Two calls bypass the closure.* `_ai_cognitive_prime` / `_ai_mjm_lifecycle` are shared helpers, so
+   they got neither prefix nor scrub — and they are stored in phase_1, which ships. The marker
+   survived in the response after every `_q` stage was clean.
+
+Final: 148 / 69 / 68 / 77 / 83, and no marker anywhere in the response.
+
+**The fix already existed and had never been applied here.** `_public_prose` was written in W376 for
+this exact defect on the app path, found — per its own docstring — "by opening a generated app and
+LOOKING at it: every automated check passed, because the files served 200 with real bytes". It had
+two call sites. It needed three more.
+
+**Entry 3, the same helper, the same story.** A founder's PUBLIC website was publishing the engine's
+scaffold: `_Acting as: IDBO Design & Development engine._` 3x on /about, 2x on /solution, plus raw
+`## INKASHAF` headings. The website had its OWN weaker scrubber (W355) while `_public_prose` sat
+wired only to app data — two divergent scrubbers for one problem, and the public surface got the
+weaker. Now runs the stronger one rather than teaching the weaker the same patterns twice, because
+two scrubbers kept in sync will drift again. Verified on a live entity: 0/0/0 across three pages.
+
+**Entry 5 — realm reached nothing in Creator Studio.** `system = _REALM_SYSTEMS.get(...)` was
+assigned and never referenced; the whole persona table was dead code. Two realms produced
+BYTE-IDENTICAL blueprints. This is the defect W427 fixed for Genesis, standing untouched next door,
+so it took the same remedy (`taxonomy.realm_directive`) rather than a second parallel mechanism. The
+retired table is renamed so no future reader mistakes it for live config. `_extract_nodes` silently
+fell back to template nodes rendered under the comment "the pipeline nodes from the AI response" —
+each node now carries `source: extracted | template_fallback`.
+
+**Entry 4 — three "alternatives" were one text.** All three stage-5 candidates returned byte-identical
+output. The assessors proposed moving the framing into a labelled field; TESTED BEFORE WRITING IT,
+and it does not work — 1 of 3 distinct either way. The floor composes from the concept and the
+requested headings; an adjective is prose it cannot act on. So this is not fixable by prompting, and
+ranking three copies would be the §4.5 defect at its purest. The payload now reports
+`candidates_distinct`, `candidates_are_alternatives` and a note saying no comparison was possible.
+
+**A NEW failure mode: the vacuous BREAK TEST.** The first attempt to prove the entry-1 guard reported
+"1 passed" — because the break's anchor failed on escaping, the script exited before modifying
+anything, and the test ran against unbroken code. Distinct from a vacuous guard (a test that cannot
+fail); this was a VERIFICATION PROCEDURE that could not break, handing a good guard a meaningless
+certificate. Redone by asserting the line's content, replacing it by index, and printing what was
+broken. It then failed with exactly the right message, naming stage_7 — the stage cause 2 affected.
+
+**Escaping is now this session's most expensive mechanical failure: SIX occurrences** — five heredoc
+`\n` manglings, one regex `\b` that became a literal backspace byte (a guard silently matched
+nothing and reported "0 tools wired"), and a break-test line that became a syntax error. One root
+cause: passing escape sequences through a shell heredoc into Python source. The reliable pattern is
+line-index edits with asserted content and strings built via `chr()`.

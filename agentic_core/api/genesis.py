@@ -23,6 +23,7 @@ from agentic_core.ai.gateway import gateway
 from agentic_core.auth.core import get_current_user, request_owner_id
 from agentic_core.api.intelligence import _ai_cognitive_prime, _ai_mjm_lifecycle
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
+from agentic_core.api.vsb import _public_prose
 from agentic_core.taxonomy import REALM_LABELS, normalise_realm, realm_directive
 from agentic_core.vbs.quality import assure_delivery
 
@@ -149,8 +150,15 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # Imperative directive, never a persona: engine.py:90 takes the FIRST "You are/As a" match, so a
     # persona sentence prepended here would REPLACE the caller's own role (verified: it rewrites
     # "IDBO Conceptualisation engine" to "scholarly reviewer").
+    # §4 (W434) — THE PROBLEM TRAVELS WITH EVERY STAGE, not just the first. Each stage was chained
+    # only the PREVIOUS stage's text, truncated: stage 7 receives `Design: {design[:800]}` and
+    # nothing else, so the user's actual subject was never restated after phase 1. Measured after
+    # the scrub fix alone, operations still carried ZERO terms from the user's problem — scrubbing
+    # stopped the engine's banner becoming the subject, but nothing put the real subject back.
+    # Stated as a labelled field so the owned floor reads it as one (engine.py:81).
     _realm_prefix = (f"{realm_directive(req.realm)}\n"
-                     f"Realm: {REALM_LABELS.get(normalise_realm(req.realm), 'Enterprise')}\n\n")
+                     f"Realm: {REALM_LABELS.get(normalise_realm(req.realm), 'Enterprise')}\n"
+                     f"Problem: {(req.problem or '').strip()[:400]}\n\n")
 
     async def _q(prompt: str, agent: str) -> str:  # noqa: F811 — local, provenance-aware
         try:
@@ -159,17 +167,36 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
             provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
-            return res.get("output", "")
+            # §4 (W434) — SCRUB BEFORE CHAINING. The owned floor prepends its provenance banner to
+            # every completion (engine.py:163), and engine.py:81 `_field` takes the first line after
+            # a label as that field's subject. Each stage is interpolated into the next as
+            # "Concept: …" / "Design: …", so the banner became the SUBJECT of everything downstream:
+            # measured on a live journey, stages 2, 4 and 5 contained ZERO terms from the user's own
+            # problem while stage 1 contained 68. A beekeeper asking about varroa mites received a
+            # Design, Operations and Commercialisation plan about Workstation's own engine — and
+            # GenesisJourney.tsx:198-204 builds the EXPORTED document out of exactly these strings.
+            #
+            # `_public_prose` already existed for this defect (W376 found it on the app path, "by
+            # opening a generated app and LOOKING at it: every automated check passed, because the
+            # files served 200 with real bytes"). It was simply never applied here. Scrubbing at the
+            # single point every stage passes through fixes the chaining, the response and the
+            # export together. Provenance is not lost: it is reported in `ai_provenance`/`served_by`,
+            # which is where a machine-readable claim belongs rather than inside shipped prose.
+            return _public_prose(res.get("output", ""))
         except Exception as e:
             return f"[{agent} unavailable: {e}]"
 
     # ── Phase 1 — Conceptualisation (understand → analyse → optimal concept) ──
     try:
-        cognitive = await _ai_cognitive_prime(req.problem, req.domain)
+        # W434 — these two bypass the local `_q` closure (they are shared helpers in
+        # api/intelligence.py), so they get neither the realm/problem prefix nor the scrub. They are
+        # stored in phase_1_conceptualisation and therefore SHIP, so the banner reached the response
+        # through them even after every _q stage was clean. Scrub at the point they are captured.
+        cognitive = _public_prose(await _ai_cognitive_prime(req.problem, req.domain))
     except Exception as e:
         cognitive = f"[cognitive unavailable: {e}]"
     try:
-        mjm = await _ai_mjm_lifecycle(req.problem, req.domain, cognitive)
+        mjm = _public_prose(await _ai_mjm_lifecycle(req.problem, req.domain, cognitive))
     except Exception as e:
         mjm = f"[mjm unavailable: {e}]"
     concept = await _q(
@@ -210,6 +237,22 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
             f"Domain: {req.domain}\n\n"
             "## Approach\n## Key Steps\n## Effectiveness\n## Risks & Mitigations", f"genesis_candidate_{cid}")
         candidates.append({"id": cid, "framing": framing, "approach": ctext, **_score_candidate(ctext, _cand_sections)})
+
+    # §4.5 (W434) — ARE THE THREE ALTERNATIVES ACTUALLY DIFFERENT? Measured on live journeys: all
+    # three candidates came back BYTE-IDENTICAL (same md5, difflib ratio 1.000, same score), because
+    # the differentiator sits in prose — "Propose {framing} …" — and the owned floor composes its
+    # answer from the labelled fields and the requested headings, which are identical across the
+    # three calls. Tested before writing this: moving the framing into a labelled field does NOT
+    # help — 1 of 3 distinct either way. The floor cannot act on an adjective.
+    #
+    # So this is not fixable by better prompting here, and ranking three copies of one text as
+    # "alternatives" would be the §4.5 defect in its purest form. Detect it and say so; the UI can
+    # then show one answer instead of three ranked cards implying a comparison that never happened.
+    import hashlib as _hl
+    _digests = [_hl.md5((c["approach"] or "").encode("utf-8")).hexdigest() for c in candidates]
+    _distinct = len(set(_digests))
+    for c, _d in zip(candidates, _digests):
+        c["approach_digest"] = _d[:10]
 
     # §4.5 (W305) — "modelled, SIMULATED": each candidate is forward-simulated through the owned
     # MODEL-FREE digital-twin pattern (system = the concept; scenario = the candidate's approach),
@@ -274,6 +317,19 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "vetoed": _vetoed,
         "tie": {"detected": _tied, "tied_candidates": _top,
                 "resolved_by": "list order — NOT evidence" if _tied else None},
+        # §4.5 (W434) — the candidates must actually BE alternatives before a ranking of them means
+        # anything. Measured live: all three came back byte-identical. Ranking three copies of one
+        # text and reporting a winner is this defect class in its purest form, so the payload says
+        # plainly when no comparison was possible.
+        "candidates_distinct": _distinct,
+        "candidates_are_alternatives": _distinct > 1,
+        "comparison_note": (None if _distinct > 1 else
+                            "All " + str(len(candidates)) + " candidates returned IDENTICAL text, so "
+                            "no comparison was possible and the ranking below carries no information. "
+                            "The owned floor composes from the concept and the requested headings; "
+                            "the framing that was meant to differentiate them ('pragmatic' / "
+                            "'innovative' / 'lean') is prose it cannot act on. Show one answer, not "
+                            "three ranked cards."),
         "criteria_measured": _CAND_MEASURED,
         "criteria_not_measured": _CAND_UNMEASURED,
         "honesty": ("Two of the five criteria §4.5 names are measured here (compliance, safety); "

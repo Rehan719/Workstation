@@ -563,6 +563,20 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
             # W355 — drop any floor-narration sentence that reached a page through any builder
             for _m in _FLOOR_NARRATION:
                 _h = _re2.sub(r"[^<>.]*" + _re2.escape(_m) + r"[^<>]*\.?", "", _h, flags=_re2.I)
+            # W434 — this sweep and `_public_prose` were two DIVERGENT scrubbers for one problem,
+            # and the website got the weaker one. Measured on a live entity's published pages:
+            # `_Acting as: IDBO Design & Development engine._` appeared 3x on /about and 2x on
+            # /solution, alongside raw `## INKASHAF` cascade headings — none of which this sweep
+            # matches. A founder's PUBLIC website was showing visitors the engine's internal
+            # scaffold. Run the stronger scrubber too rather than teaching this one the same
+            # patterns a second time; two scrubbers that must be kept in sync will drift again.
+            _h = _public_prose(_h)
+            # W434 — and the raw cascade headings. `_public_prose` deliberately leaves markdown
+            # alone because the app-data path renders it, but on a PUBLIC HTML page a literal
+            # "## INKASHAF" is scaffold, not content. Measured on live pages: 10 such headings on
+            # /about, 6 on /solution. Strip the marker, keep the words after it — the heading text
+            # is often a real section name the visitor should see.
+            _h = _re2.sub(r"(?m)^\s{0,3}#{1,6}\s*", "", _h)
             files[_p] = _h
     from agentic_core.vbs.quality import assure_delivery
     combined = "\n".join(c for p, c in files.items() if p.endswith(".html"))

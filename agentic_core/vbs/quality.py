@@ -218,11 +218,22 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
             except Exception:
                 pass
 
-    # §8 · §17.2 (W422) — the record used to write `"layers": list(BIOMIMETIC_LAYERS)`, naming all
-    # seven on EVERY delivery regardless of what participated. Only Immune ever contributed a value
-    # here; three of the seven (Respiratory, Musculoskeletal, Endocrine) have no implementation at
-    # all system-wide. `layers` now means what it says — the layers that actually contributed to
-    # THIS record — and the spec's full set is kept alongside it, clearly labelled.
+    # §8 · §17.2 (W422, corrected W434) — the record used to write `"layers": list(BIOMIMETIC_LAYERS)`,
+    # naming all seven on EVERY delivery regardless of what participated. `layers` now means what it
+    # says: the layers that contributed a value to THIS record. The spec's full set is kept beside it.
+    #
+    # W434 CORRECTION. The W422 comment claimed three of the seven "have no implementation at all
+    # system-wide". That was taken from an audit summary and written here as fact without being
+    # checked, and it is FALSE — the exact failure this module exists to prevent. Verified:
+    #   Endocrine        biomimicry/geospheric/regulator.py — a real PID regulator modulating
+    #                    metabolic parameters. Not a stub.
+    #   Musculoskeletal  resource_fabric.py:799 names composable facilities that run real engines.
+    #   Respiratory      molecular/triad_integration.py — the metabolic-respiratory core.
+    #   Nervous          IS engaged on THIS path: the fire_signal below routes into the
+    #                    NervousSystem. It contributes no value to the record, which is a different
+    #                    statement from doing nothing.
+    # So `layers_not_contributing` means exactly "contributed nothing to THIS record" — never
+    # "unimplemented", and never "did nothing".
     biomimetic: Dict[str, Any] = {"layers": [],
                                   "layers_declared": list(BIOMIMETIC_LAYERS),
                                   "self": "self-managing · improving · healing"}
@@ -244,7 +255,9 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
                                              if l not in biomimetic["layers"]]
     biomimetic["layers_note"] = (
         f"{len(biomimetic['layers'])} of {len(BIOMIMETIC_LAYERS)} declared biomimetic layers "
-        f"contributed a value to this record. The rest are named by §8/§17.2 but contribute "
-        f"nothing here; Respiratory, Musculoskeletal and Endocrine have no implementation at all.")
+        f"contributed a value to this record. The rest are named by §8/§17.2 and contributed "
+        f"nothing HERE — a statement about this record, not about whether they are implemented. "
+        f"(W434: Endocrine, Musculoskeletal and Respiratory all have real implementations "
+        f"elsewhere, and Nervous is engaged on this path without contributing a value.)")
 
     return {"quality": quality, "biomimetic": biomimetic}

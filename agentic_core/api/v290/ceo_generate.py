@@ -24,7 +24,12 @@ router = APIRouter(prefix="/ceo", tags=["AI Co-Creator"])
 
 # ── Stage-aware system prompts ────────────────────────────────────────────────
 
-_REALM_SYSTEMS: dict[str, str] = {
+# W434 — RETIRED, kept only as the record of what was here. Every entry is a persona string
+# ("You are a ..."), which the owned floor's `_role` would take as the caller's identity, and
+# the table was never read: `system = _REALM_SYSTEMS.get(...)` was assigned and dropped. Realm
+# now reaches the prompt through taxonomy.realm_directive, the same mechanism Genesis uses, so
+# there is one definition of what a realm means rather than two that can drift apart.
+_RETIRED_REALM_SYSTEMS: dict[str, str] = {
     "technology":  "You are a senior technology architect and product strategist.",
     "enterprise":  "You are a Chief Strategy Officer and enterprise transformation expert.",
     "education":   "You are an expert curriculum designer and EdTech product strategist.",
@@ -119,8 +124,14 @@ def _extract_nodes(deliverable_text: str, intent: str) -> list[dict]:
             elif len(nodes) >= 6:
                 break
 
+    source = "extracted"
     if not nodes:
-        # Fallback: generate meaningful defaults from intent words
+        # W434 — this fallback was SILENT, and the canvas renders it under the comment "Populate
+        # canvas with the pipeline nodes from the AI response". Measured: four blueprints across two
+        # stages and two realms produced byte-identical node sets, because the deliverable contained
+        # no "Pipeline Components" section and every one fell through to here. A template is a
+        # reasonable default; presenting it as extracted structure is the defect. Each node now
+        # carries its source so the surface can say which it is.
         words = intent.title().split()[:3]
         base = " ".join(words)
         nodes = [
@@ -129,6 +140,7 @@ def _extract_nodes(deliverable_text: str, intent: str) -> list[dict]:
             f"{base} Processor",
             f"Output Synthesiser",
         ]
+        source = "template_fallback"
 
     return [
         {
@@ -136,6 +148,7 @@ def _extract_nodes(deliverable_text: str, intent: str) -> list[dict]:
             "type": "default",
             "label": name,
             "position": {"x": 120 + i * 220, "y": 180},
+            "source": source,
         }
         for i, name in enumerate(nodes)
     ]
@@ -172,14 +185,29 @@ async def generate_blueprint(req: BlueprintRequest) -> BlueprintResponse:
     realm, domain, and lifecycle stage.
     Optionally stores the deliverable on an existing project.
     """
-    system = _REALM_SYSTEMS.get(req.realm.lower(), _REALM_SYSTEMS["general"])
+    # §17.1 (W434) — REALM REACHED NOTHING HERE. `system` was assigned from _REALM_SYSTEMS and then
+    # never referenced again: the whole persona table was dead code, and the only other mention of
+    # the name in this file is a comment. Measured before the fix: the same intent at
+    # realm=enterprise and realm=scholarship produced BYTE-IDENTICAL blueprints. This is the exact
+    # defect W427 fixed for the Genesis journey, left standing next door — so it takes the same
+    # remedy, `taxonomy.realm_directive`, rather than a second parallel mechanism.
+    #
+    # IMPERATIVE, never persona: engine.py:92 `_role` takes the FIRST "You are|As a" match, and this
+    # text is prepended, so a persona sentence here would replace the caller's own role. The old
+    # _REALM_SYSTEMS entries are persona strings ("You are a..."), which is a second reason not to
+    # simply concatenate them.
+    from agentic_core.taxonomy import REALM_LABELS, normalise_realm, realm_directive
+
     stage_key = req.stage.lower() if req.stage.lower() in _STAGE_INSTRUCTIONS else "concept"
     stage_instr = _STAGE_INSTRUCTIONS[stage_key]
+    _realm = normalise_realm(req.realm)
 
     prompt = (
+        f"{realm_directive(_realm)}\n"
+        f"Realm: {REALM_LABELS.get(_realm, 'Enterprise')}\n\n"
         f"{stage_instr}\n\n"
         f"Intent / goal: {req.intent}\n"
-        f"Realm: {req.realm}  |  Domain: {req.domain}  |  Stage: {stage_key}\n\n"
+        f"Domain: {req.domain}  |  Stage: {stage_key}\n\n"
         "Produce the blueprint document now. Be detailed, specific, and commercially complete."
     )
 
