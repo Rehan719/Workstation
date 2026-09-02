@@ -4301,7 +4301,20 @@ def test_fabric_genome_runs_real(client):
     g = next((x for x in (run.get("real_resource_runs") or []) if x["resource"] == "genome"), None)
     assert g is not None
     assert str(g.get("genome_id", "")).startswith("genome-")
-    assert g.get("dominant_trait")   # a real trait vector was produced
+    # W433 — this asserted `dominant_trait` as a PROXY for "a real trait vector was produced", and
+    # that proxy was the defect: `max(traits.items(), key=...)` took the first maximal axis in
+    # insertion order, and the encoder fills every missing axis with a neutral 0.5 in a fixed order.
+    # Measured under the deterministic floor: all ten axes come back at exactly 0.5, so the old code
+    # crowned "innovation" as the dominant trait of a completely undifferentiated genome. Assert the
+    # vector the test actually wanted, and accept that a flat vector HAS no dominant trait.
+    traits = g.get("traits") or {}
+    assert len(traits) == 10 and all(isinstance(v, (int, float)) for v in traits.values()), (
+        "a real trait vector was produced: %r" % (traits,))
+    if len(set(traits.values())) == 1:
+        assert g.get("dominant_trait") is None, "a flat trait vector has no dominant axis"
+        assert len(g.get("dominant_trait_tied") or []) == 10
+    else:
+        assert g.get("dominant_trait") in traits
 
 
 def test_fabric_native_ai_resources_run_real(client):
@@ -7187,3 +7200,136 @@ def test_w432_validate_reports_no_confidence_where_none_is_computed():
 
     # the aggregate still works with confidence absent
     assert 0.0 <= v.get_aggregate_accuracy() <= 1.0
+
+
+def test_w433_studio_discloses_a_tied_max_instead_of_naming_one(client):
+    """§4.5 class — `max(pts, key=...)` named an arbitrary winner on a tie, and that label was BOTH
+    shown to the user as the top performer AND injected into the prompt that asks the model for a
+    "Recommended Action". Reproduced live before the fix: [Q1=240, Q2=180, Q3=240] reported max
+    "Q1"; the same three points reordered reported "Q3". With an all-zero series — which the page
+    manufactures itself, since its parseSeries coerces any unparseable field to 0 — BOTH min and max
+    reported the same label.
+    """
+    def studio(series):
+        r = client.post("/api/v1/reactor/studio", json={
+            "title": "t", "domain": "enterprise", "chart_type": "bar",
+            "series": series, "insight": False})
+        assert r.status_code == 200, r.text
+        return r.json()["analytics"]
+
+    a = studio([{"label": "Q1", "value": 240}, {"label": "Q2", "value": 180}, {"label": "Q3", "value": 240}])
+    b = studio([{"label": "Q3", "value": 240}, {"label": "Q2", "value": 180}, {"label": "Q1", "value": 240}])
+
+    assert a["max"]["value"] == b["max"]["value"] == 240.0
+    assert a["max"]["tied_with"] == ["Q3"] and b["max"]["tied_with"] == ["Q1"], (
+        "a tied maximum must name the other leaders, whichever order the caller listed them in")
+    # the SET of leaders is order-independent even though the displayed label is not
+    assert ({a["max"]["label"], *a["max"]["tied_with"]}
+            == {b["max"]["label"], *b["max"]["tied_with"]} == {"Q1", "Q3"})
+
+    # the degenerate case the UI can produce on a bad paste
+    z = studio([{"label": "North", "value": 0}, {"label": "South", "value": 0}, {"label": "East", "value": 0}])
+    assert set(z["max"]["tied_with"]) == {"South", "East"}
+    assert set(z["min"]["tied_with"]) == {"South", "East"}
+
+    # NOT vacuous: a genuine winner still reads as a winner, with nothing to disclose.
+    w = studio([{"label": "A", "value": 10}, {"label": "B", "value": 5}])
+    assert w["max"]["label"] == "A" and w["max"]["tied_with"] == []
+    assert w["min"]["label"] == "B" and w["min"]["tied_with"] == []
+
+
+def test_w433_cascade_quality_is_credited_to_every_model_that_led():
+    """§4.5 class with TEETH — this attribution feeds an automated decision, not a display.
+
+    `max(served_by.items(), key=count)[0]` returned the first maximal entry in dict order, so on a
+    tie one model was arbitrarily credited or blamed for the whole cascade's QMS verdict. That
+    outcome folds into `model_health()`, whose success_rate `_reorder_by_health()` uses to order
+    model selection and to deprioritise a model below the native floor — so an arbitrary attribution
+    moved routing. When several models served equally, none predominated, and the verdict is theirs
+    jointly.
+    """
+    import re
+    import pathlib
+
+    src = pathlib.Path("agentic_core/api/swarm.py").read_text(encoding="utf-8", errors="ignore")
+
+    assert 'max(provenance["served_by"].items()' not in src, (
+        "the first-in-dict-order attribution is back")
+    assert "_top_models = sorted(m for m, n in _counts.items() if n == _top_n)" in src, (
+        "every model tied for the lead must be credited, not whichever the dict listed first")
+    # the record call must sit INSIDE the loop over the tied leaders
+    loop = src.split("for _m in _top_models:", 1)
+    assert len(loop) == 2 and "served_by=_m" in loop[1][:400], (
+        "the outcome must be recorded per tied model")
+    # and the comment that claimed one model "predominantly served" must not survive unqualified
+    assert "recorded against the model that predominantly served" not in src
+
+
+def test_w433_superlatives_disclose_ties_and_carry_their_magnitude():
+    """§4.5 class — four "top X" fields that named a winner when nothing discriminated.
+
+    All four rank INTEGER counts or fixed-order dict keys, so ties are the NORMAL case rather than
+    an edge case, and `max(d, key=d.get)` returns the first maximal key in insertion order. Two of
+    them additionally reported a superlative with NO magnitude, so a single stray error read exactly
+    like a genuinely hot endpoint.
+    """
+    # ── immune.hot_endpoint: integer error counts in a 5-minute window ──
+    from agentic_core.organism.immune import immune
+    s = immune.status()
+    for k in ("hot_endpoint", "hot_endpoint_errors", "hot_endpoint_tied"):
+        assert k in s, "%s missing - the superlative must carry its count and its ties" % k
+
+    # ── the "top realm" phrase: a tie must not crown the first-created realm ──
+    def phrase(by_realm):
+        _rmax = max(by_realm.values()) if by_realm else 0
+        _rtop = sorted(r for r, n in by_realm.items() if n == _rmax)
+        top = (_rtop[0] if len(_rtop) == 1 else " and ".join(_rtop) if by_realm else "none")
+        return ("no projects yet" if not by_realm else
+                f"Top realm: {top} ({_rmax} project{'' if _rmax == 1 else 's'})" if len(_rtop) == 1
+                else f"{len(_rtop)} realms tied at the top - {top} "
+                     f"({_rmax} project{'' if _rmax == 1 else 's'} each)")
+
+    assert "tied at the top" in phrase({"science": 2, "law": 2, "care": 1})
+    assert phrase({"science": 3, "law": 1}).startswith("Top realm: science (3 projects)")
+    assert phrase({}) == "no projects yet"
+
+    # ── the source shape of both dominant_trait sites ──
+    import pathlib
+    for f, marker in (("agentic_core/api/organism_status.py", "dominant_trait_tied"),
+                      ("agentic_core/api/resource_fabric.py", "dominant_trait_tied")):
+        src = pathlib.Path(f).read_text(encoding="utf-8", errors="ignore")
+        assert marker in src, "%s no longer discloses a tied dominant trait" % f
+    stat = pathlib.Path("agentic_core/api/organism_status.py").read_text(encoding="utf-8", errors="ignore")
+    assert "max(means, key=means.get)" not in stat, "the first-in-dict-order pick is back"
+
+
+def test_w433_governance_tie_resolves_to_the_most_restrictive_and_says_so():
+    """§4.5 class WITH CONSEQUENCE — the two verdicts imply opposite actions.
+
+    `max(holds, key=submitted_at)` over SECOND-resolution timestamps let list order decide between
+    "rejected_by_change_control" (submit a fresh request) and "held_for_change_control" (wait).
+    This codebase has already been bitten by sub-second ties (W340), so it is a known-live hazard.
+    A tie now resolves to the most restrictive status — refusing to distribute on an ambiguous
+    governance record is recoverable; distributing on one is not — and the ambiguity is REPORTED.
+    """
+    from agentic_core.economy.governance import _tie_note
+
+    # silent when there is nothing to disclose, so ordinary verdicts are untouched
+    assert _tie_note([]) == {}
+    assert _tie_note([{"cca_id": "a", "status": "rejected"}]) == {}
+    assert _tie_note([{"cca_id": "a", "status": "rejected"},
+                      {"cca_id": "b", "status": "rejected"}]) == {}, (
+        "co-timestamped records that AGREE are not ambiguous")
+
+    amb = _tie_note([{"cca_id": "a", "status": "rejected"},
+                     {"cca_id": "b", "status": "under_review"}])
+    assert amb["governance_ambiguous"] is True
+    assert {c["cca_id"] for c in amb["co_timestamped"]} == {"a", "b"}
+    assert "most restrictive" in amb["ambiguity_note"]
+
+    # and the resolution order itself: rejected outranks under_review outranks approved
+    import pathlib
+    src = pathlib.Path("agentic_core/economy/governance.py").read_text(encoding="utf-8", errors="ignore")
+    assert '_RESTRICTIVENESS = {"rejected": 3' in src
+    assert 'max(holds, key=lambda c: c.get("submitted_at", ""), default=None)' not in src, (
+        "the list-order fallback is back")

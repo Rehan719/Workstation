@@ -30,6 +30,22 @@ def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
+def _tie_note(tied: list) -> dict:
+    """W433 — when several governance records share the newest SECOND-resolution timestamp and do
+    not agree, the verdict was resolved by list order. It is now resolved by restrictiveness, and
+    the ambiguity is REPORTED: a caller told "rejected" deserves to know a co-timestamped record
+    said something else, because the two verdicts imply opposite actions."""
+    if len(tied) < 2:
+        return {}
+    statuses = sorted({str(c.get("status")) for c in tied})
+    if len(statuses) < 2:
+        return {}
+    return {"governance_ambiguous": True,
+            "co_timestamped": [{"cca_id": c.get("cca_id"), "status": c.get("status")} for c in tied],
+            "ambiguity_note": ("Several change records share the newest timestamp and disagree "
+                               f"({', '.join(statuses)}). The most restrictive was applied.")}
+
+
 def _ueg_log(event: Dict[str, Any]) -> Optional[str]:
     try:
         from agentic_core.gaas.v5 import UEGLogger
@@ -77,8 +93,25 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str) -> Opt
         # one material cycle, full stop — so an approved hold is searched for FIRST; only when
         # none exists does the latest record's status govern.
         approved = [c for c in holds if c.get("status") == "approved"]
-        latest = (max(approved, key=lambda c: c.get("submitted_at", ""), default=None)
-                  or max(holds, key=lambda c: c.get("submitted_at", ""), default=None))
+        # §4.5 class (W433) — `max(holds, key=submitted_at)` returns the FIRST maximal record in
+        # list order, and these timestamps are SECOND-resolution. Two holds filed in the same second
+        # with DIFFERENT statuses made the reported verdict depend on list order — and the two
+        # verdicts are not interchangeable: "rejected_by_change_control" tells the entity's owner to
+        # submit a fresh request, "held_for_change_control" tells them to wait. This codebase has
+        # already been bitten by sub-second ties once (W340, where they caused 23x/8x/7x starvation
+        # in a round-robin), so this is a known-live hazard rather than a theoretical one.
+        #
+        # Any approval authorises one cycle, so which approved record is consumed does not matter.
+        # For the fallback, a tie resolves to the MOST RESTRICTIVE status present: refusing to
+        # distribute on an ambiguous governance record is recoverable, distributing on one is not.
+        _RESTRICTIVENESS = {"rejected": 3, "under_review": 2, "submitted": 2, "approved": 1}
+        latest = max(approved, key=lambda c: c.get("submitted_at", ""), default=None)
+        _tied_latest = []
+        if latest is None and holds:
+            _newest = max(c.get("submitted_at", "") for c in holds)
+            _tied_latest = [c for c in holds if c.get("submitted_at", "") == _newest]
+            latest = max(_tied_latest,
+                         key=lambda c: _RESTRICTIVENESS.get(str(c.get("status")), 0))
         if latest and latest.get("status") == "approved":
             # consume the approval — one approval authorises one material cycle
             latest["status"] = "implemented"
@@ -96,12 +129,14 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str) -> Opt
                     "est_distributable_wst": est_distributable,
                     "materiality_threshold_wst": MATERIALITY_WST,
                     "note": "Material distribution — awaiting Change Control approval "
-                            f"(POST /api/v1/cca/{latest['cca_id']}/review)."}
+                            f"(POST /api/v1/cca/{latest['cca_id']}/review).",
+                    **_tie_note(_tied_latest)}
         if latest and latest.get("status") == "rejected":
             return {"status": "rejected_by_change_control", "cca_id": latest["cca_id"],
                     "est_distributable_wst": est_distributable,
                     "note": "The Change Control Agency rejected this material distribution; "
-                            "submit a fresh request to re-seek approval."}
+                            "submit a fresh request to re-seek approval.",
+                    **_tie_note(_tied_latest)}
         # no open hold → file one through the real CCA machinery (same store the CCA UI reviews)
         now = _now()
         cca_id = f"cca-{uuid.uuid4().hex[:10]}"

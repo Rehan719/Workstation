@@ -143,12 +143,26 @@ def _genome_state() -> dict:
                     trait_sums[axis] = trait_sums.get(axis, 0.0) + float(val)
                     trait_counts[axis] = trait_counts.get(axis, 0) + 1
         mean_fitness = round(sum(fitnesses) / len(fitnesses), 3) if fitnesses else None
-        dominant = None
+        # §4.5 class (W433) — this took the first maximal key in dict order (the guard forbids that
+        # expression appearing anywhere in this file, comments included, which is why it is described
+        # rather than reproduced), and the trait axes insert in a fixed order, so a tie always crowned the same
+        # axis. This surface's own docstring calls it "the single authoritative surface for the
+        # organism's complete health", and this field claims the population's DOMINANT trait, so an
+        # arbitrary pick is a claim about genetics that nothing measured.
+        dominant, tied = None, []
         if trait_sums:
             means = {a: trait_sums[a] / trait_counts[a] for a in trait_sums}
-            dominant = max(means, key=means.get)
+            _top = max(means.values())
+            tied = sorted(a for a, v in means.items() if v == _top)
+            # With every axis equal there is no dominant trait at all — a flat population is a real
+            # finding, not an occasion to name the alphabetically-first axis.
+            dominant = tied[0] if len(tied) == 1 else None
         return {"total_genomes": len(files), "mean_fitness": mean_fitness,
-                "max_generation": max_gen, "dominant_trait": dominant}
+                "max_generation": max_gen, "dominant_trait": dominant,
+                "dominant_trait_tied": tied if len(tied) > 1 else [],
+                "dominant_trait_basis": ("no genomes stored" if not trait_sums else
+                                         f"{len(tied)} trait axes tie at the top - none dominates"
+                                         if len(tied) > 1 else f"highest mean of {len(means)} axes")}
     except Exception:
         return {"total_genomes": 0, "mean_fitness": None, "max_generation": 0, "dominant_trait": None}
 

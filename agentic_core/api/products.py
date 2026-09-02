@@ -590,15 +590,32 @@ async def reactor_studio(req: StudioRequest) -> StudioResult:
     values = [p.value for p in pts]
     total = round(sum(values), 4)
     mean = round(total / len(values), 4)
-    pmin = min(pts, key=lambda p: p.value)
-    pmax = max(pts, key=lambda p: p.value)
+    # §4.5 class (W433) — `max(pts, key=...)` returns the FIRST maximal point in the caller's list
+    # order, so a tie named an arbitrary winner and the SAME data reordered named a different one.
+    # Reproduced live: [Q1=240, Q2=180, Q3=240] reported max "Q1"; the same three reordered reported
+    # "Q3". With an all-zero series (which this page manufactures itself — its parseSeries coerces
+    # any unparseable field to 0) BOTH min and max reported "North". That label is printed to the
+    # user as the top performer AND injected into the insight prompt below, which asks the model for
+    # a "Recommended Action" — so an arbitrary pick seeded a recommendation.
+    _vmax = max(values)
+    _vmin = min(values)
+    _maxes = [p for p in pts if p.value == _vmax]
+    _mins = [p for p in pts if p.value == _vmin]
+    pmax, pmin = _maxes[0], _mins[0]
     dimensions = 3 if any(p.z is not None for p in pts) else 2
     analytics = {
         "count": len(pts), "total": total, "mean": mean,
-        "min": {"label": pmin.label, "value": pmin.value},
-        "max": {"label": pmax.label, "value": pmax.value},
-        "range": round(pmax.value - pmin.value, 4),
+        # `tied_with` is empty in the ordinary case, so a real winner still reads as a winner.
+        "min": {"label": pmin.label, "value": _vmin, "tied_with": [p.label for p in _mins[1:]]},
+        "max": {"label": pmax.label, "value": _vmax, "tied_with": [p.label for p in _maxes[1:]]},
+        "range": round(_vmax - _vmin, 4),
     }
+    # What the narrative is told. A tie must not be handed to the model as a single named leader,
+    # or the disclosure in the payload is undone by the prose next to it.
+    _max_stat = (f"max {_vmax} (tied across {', '.join(p.label for p in _maxes)})"
+                 if len(_maxes) > 1 else f"max {pmax.label} ({_vmax})")
+    _min_stat = (f"min {_vmin} (tied across {', '.join(p.label for p in _mins)})"
+                 if len(_mins) > 1 else f"min {pmin.label} ({_vmin})")
 
     prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
     insight = ""
@@ -607,7 +624,7 @@ async def reactor_studio(req: StudioRequest) -> StudioResult:
             f"You are the §7 Reactor's Studio analyst. Title: {req.title} (domain: {req.domain}, {dimensions}D "
             f"{chart_type} chart). Interpret ONLY these real data points (do not invent any numbers):\n"
             + "; ".join(f"{p.label}={p.value}" + (f"/z{p.z}" if p.z is not None else "") for p in pts)
-            + f"\nStats: total {total}, mean {mean}, max {pmax.label} ({pmax.value}), min {pmin.label} ({pmin.value}).\n\n"
+            + f"\nStats: total {total}, mean {mean}, {_max_stat}, {_min_stat}.\n\n"
             "## Insight (3-4 sentences)\n## Notable Pattern\n## Recommended Action",
             agent="reactor-studio")
         insight = meta.get("output", "") or ""
@@ -643,14 +660,26 @@ async def intelligence_insights() -> dict:
             by_realm[p.realm] = by_realm.get(p.realm, 0) + 1
             total_outputs += len(p.outputs)
 
-        top_realm = max(by_realm, key=by_realm.get) if by_realm else "none"
+        # §4.5 class (W433) — `max(by_realm, key=...)` returns the FIRST maximal key in insertion
+        # order over INTEGER project counts, so two realms with one project each named whichever was
+        # created first as the portfolio leader. With a handful of projects a tie is the normal case,
+        # not the edge case, and "Top realm: X" is a bare superlative with no count behind it.
+        _rmax = max(by_realm.values()) if by_realm else 0
+        _rtop = sorted(r for r, n in by_realm.items() if n == _rmax)
+        top_realm = (_rtop[0] if len(_rtop) == 1 else
+                     " and ".join(_rtop) if by_realm else "none")
+        _realm_phrase = ("no projects yet" if not by_realm else
+                         f"Top realm: {top_realm} ({_rmax} project{'' if _rmax == 1 else 's'})"
+                         if len(_rtop) == 1 else
+                         f"{len(_rtop)} realms tied at the top — {top_realm} "
+                         f"({_rmax} project{'' if _rmax == 1 else 's'} each)")
         insights = []
         if projects:
             insights.append({
                 "id": "i-1",
                 "type": "Portfolio",
                 "title": f"{len(projects)} active projects across {len(by_realm)} realm(s)",
-                "detail": f"Top realm: {top_realm}. {total_outputs} deliverables generated.",
+                "detail": f"{_realm_phrase}. {total_outputs} deliverables generated.",
                 "score": min(1.0, 0.5 + len(projects) * 0.05),
             })
         if by_stage["concept"] > 0:

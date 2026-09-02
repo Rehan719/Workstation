@@ -3134,3 +3134,68 @@ ranking, §10's caller-attested criteria, `intent`, `entailment`, `consensus`, `
 discriminated* — and in five of the seven the tie-break was LIST OR DICT ORDER presented as a
 determination. It is worth grepping for `max(` over a dict, a bare `sort` followed by `[0]`, and any
 loop that `return`s the first item clearing a threshold.
+
+### W433 — the class outside the native-AI primitives: 7 live defects, all "the top X"
+
+Rule 13 says to grep the class shapes before trusting any ranked output. Doing that across
+`agentic_core` found 25 candidate sites; 9 were reachable; **7 carried a live defect**, each attacked
+by an independent refuter before being accepted.
+
+Every one is the same sentence: *"the top X"* computed with `max(d, key=d.get)` or `max(items,
+key=...)`, which returns the FIRST maximal entry in insertion order. And in every case ties are the
+NORMAL condition, not an edge case — they rank small integer counts, or dict keys inserted in a
+fixed order.
+
+| site | the claim | why ties are normal |
+|---|---|---|
+| Reactor Studio `max`/`min` | named top performer, AND fed to the "Recommended Action" prompt | user-typed data; the page coerces bad input to 0 |
+| `swarm` served_by | model credited for a cascade's QMS verdict — **moves routing** | small integer call counts |
+| `organism_status.dominant_trait` | the population's dominant genetic trait | fixed axis insertion order |
+| `resource_fabric.dominant_trait` | same field | missing axes filled with 0.5 in fixed order |
+| `immune.hot_endpoint` | the most affected endpoint | integer errors in a 5-minute window |
+| `governance` verdict | **rejected vs held — opposite instructions** | second-resolution timestamps |
+| `products` top realm | the portfolio leader | integer project counts |
+
+**Two were more than cosmetic.**
+
+`swarm` fed an AUTOMATED decision, not a display: the attribution folds into `model_health()`, whose
+success_rate `_reorder_by_health()` uses to order model selection and to deprioritise a model below
+the native floor. A coin-flip credit shifted which model the platform reached for next. The code's
+own comment claimed the verdict was "recorded against the model that predominantly served this
+cascade" — on a tie none did. Every model tied for the lead is now credited, which reduces to the
+previous behaviour whenever there is a clear leader.
+
+`governance` decided between "rejected_by_change_control" (submit a fresh request) and
+"held_for_change_control" (wait) — opposite instructions to an entity's owner — using
+SECOND-resolution timestamps, on which this codebase has already been bitten (W340: sub-second ties
+caused 23x/8x/7x starvation in a round-robin). A tie now resolves to the MOST RESTRICTIVE status,
+because refusing to distribute on an ambiguous governance record is recoverable and distributing on
+one is not, and the ambiguity is reported rather than hidden.
+
+**`immune` showed the tie-break was only half the problem.** `hot_endpoint` was a bare string with no
+count, so a single stray error read exactly like a genuinely hot endpoint. A superlative with no
+magnitude misleads even when the pick is right. It now carries `hot_endpoint_errors`.
+
+**Reachability first, then severity — learned the wrong way round.** `GenomeEvolutionEngine`'s fitness
+selection was audited in depth (measured: the random term spans 0.30 against a 0.20 signal, so noise
+outweighs the only real criterion 1.5:1, and among mutants sharing gene types fitness is 100% noise)
+BEFORE anyone asked whether it runs. It does not — every genuine import is under `_archive/`, and the
+three live references are strings: a config flag name, a gateway agent label, and a registry `rtype`
+whose real endpoint points elsewhere. It is now a LATENT entry in the ledger. Checking severity
+before reachability wastes exactly the attention the live defects need; this is the second time this
+session (the first was 21 phantom reach-gaps from template-built URLs).
+
+**A test asserted the defect, and the defect was worse than the audit knew.**
+`test_fabric_genome_runs_real` checked `assert g.get("dominant_trait")` as a PROXY for "a real trait
+vector was produced". Measured what the encoder actually returns under the deterministic floor: all
+ten axes at exactly 0.5 — a completely flat vector. So the old code was not occasionally crowning
+`innovation`; it did so on EVERY genome the floor encoded, because the fill loop guarantees a tie.
+The proxy is what made the arbitrary pick load-bearing: a caller wanting evidence of a real vector
+had no way to ask for the vector, so it asked for the label. The response now carries `traits`
+directly and the test asserts ten real numeric axes AND that the dominant-trait claim matches them —
+stronger than before, not weaker. Relaxing the assertion to allow None would have made it pass while
+checking nothing.
+
+**A repeat trap:** my own explanatory comment quoted the very expression the guard forbids, exactly as
+in W426. Reworded the comment rather than weakening the check — a guard that forbids a dead pattern
+everywhere in the file, comments included, is more useful than one clever enough to allow exceptions.

@@ -658,15 +658,30 @@ async def cascade_orchestration(req: CascadeRequest):
     except Exception:
         _fabric_catalogue_n = 0
     # §5×§6 (W275) — measured QUALITY feeds the learning loop: the run's REAL QMS verdict is
-    # recorded against the model that predominantly served this cascade, so routing positively
-    # selects models whose work passes the gate — not merely models that return non-empty text.
+    # recorded against the model(s) that served this cascade most, so routing positively selects
+    # models whose work passes the gate — not merely models that return non-empty text.
+    # (W433 corrected "the model that predominantly served" — on a tie, none did.)
     try:
         from agentic_core.api.operational_excellence import record_outcome as _rq
         if provenance.get("served_by"):
-            _top_model = max(provenance["served_by"].items(), key=lambda kv: kv[1])[0]
-            _rq("model_quality", "cascade_qms_verdict", served_by=_top_model,
-                is_external=bool(provenance.get("any_external")),
-                success=bool(quality.get("qms_gate_passed")), ref=run_id)
+            # §4.5 class (W433) — this was `max(..., key=count)[0]`, which returns the FIRST maximal
+            # entry in dict order. On a tie ({ollama: 3, native: 3}) one model was arbitrarily
+            # credited or blamed for the WHOLE cascade's QMS verdict — and unlike the other sites in
+            # this class, that is not merely displayed: the outcome feeds model_health(), whose
+            # success_rate `orchestrator._reorder_by_health()` uses to ORDER model selection and to
+            # deprioritise a model below the native floor. An arbitrary attribution moved routing.
+            #
+            # When several models served equally, none PREDOMINATED — the comment above claimed one
+            # did. The verdict is theirs jointly, so it is recorded against each of them rather than
+            # against whichever the dict happened to list first. With a clear leader this reduces to
+            # exactly the previous behaviour.
+            _counts = provenance["served_by"]
+            _top_n = max(_counts.values())
+            _top_models = sorted(m for m, n in _counts.items() if n == _top_n)
+            for _m in _top_models:
+                _rq("model_quality", "cascade_qms_verdict", served_by=_m,
+                    is_external=bool(provenance.get("any_external")),
+                    success=bool(quality.get("qms_gate_passed")), ref=run_id)
     except Exception:
         pass
     measured_block = (

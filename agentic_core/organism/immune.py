@@ -76,12 +76,24 @@ class ImmuneSystem:
         else:
             threat_level = "CRITICAL"
 
-        # Most affected endpoint
-        hot_endpoint = max(by_endpoint, key=by_endpoint.get) if by_endpoint else None
+        # Most affected endpoint.
+        # §4.5 class (W433) — `max(by_endpoint, key=...)` returns the FIRST maximal key in dict
+        # order, and these are INTEGER error counts in a 5-minute window, so ties are the norm
+        # rather than the exception: two endpoints with one error each made the earlier-inserted one
+        # "the most affected". The count was never reported either, so a single stray error read
+        # exactly like a genuinely hot endpoint.
+        hot_endpoint, hot_errors, hot_tied = None, 0, []
+        if by_endpoint:
+            hot_errors = max(by_endpoint.values())
+            hot_tied = sorted(e for e, n in by_endpoint.items() if n == hot_errors)
+            hot_endpoint = hot_tied[0] if len(hot_tied) == 1 else None
 
         return {
             "health": round(health, 3),
             "threat_level": threat_level,
+            # the count travels with the name: one stray error is not a hot endpoint
+            "hot_endpoint_errors": hot_errors,
+            "hot_endpoint_tied": hot_tied if len(hot_tied) > 1 else [],
             "errors_in_window": total,
             "window_seconds": self.WINDOW_SECONDS,
             "by_type": by_type,

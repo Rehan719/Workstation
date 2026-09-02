@@ -584,10 +584,24 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
             from agentic_core.organism.genome import encode_genome, EncodeRequest
             g = await encode_genome(EncodeRequest(entity_name=str(cfg.get("entity_name") or objective)[:80],
                                                   domain=domain, description=str(objective)[:500]))
-            top = max((g.get("traits") or {}).items(), key=lambda kv: kv[1], default=(None, None))[0]
+            # §4.5 class (W433) — `max(...)` took the FIRST maximal axis in insertion order, and
+            # genome.py fills every missing axis with 0.5 in a fixed order, so a freshly-encoded
+            # genome with no differentiation always crowned the same axis. `default` never fired.
+            _traits = (g.get("traits") or {})
+            _tv = max(_traits.values()) if _traits else None
+            _tied = sorted(k for k, v in _traits.items() if v == _tv) if _traits else []
+            top = _tied[0] if len(_tied) == 1 else None
             return {"resource": "genome", "ran": "/api/v1/organism/genome/encode",
                     "genome_id": g.get("genome_id"), "fitness": g.get("fitness_score"),
-                    "dominant_trait": top, "output": (str(g.get("expression") or "") or f"genome {g.get('genome_id')}")[:400]}
+                    "dominant_trait": top,
+                    "dominant_trait_tied": _tied if len(_tied) > 1 else [],
+                    # W433 — the VECTOR travels with the label. A caller checking "was a real trait
+                    # vector produced?" was previously forced to use `dominant_trait` as a proxy,
+                    # which is exactly what made the arbitrary pick load-bearing. Note honestly:
+                    # under the deterministic native floor the encoder fills every axis with 0.5, so
+                    # all ten tie and there is genuinely no dominant trait to name.
+                    "traits": _traits,
+                    "output": (str(g.get("expression") or "") or f"genome {g.get('genome_id')}")[:400]}
         # §8 organism systems — when composed, each runs its REAL engine/reading (the living biomimetic
         #   substrate the composition runs ON), not a prompt approximation: constitutional gate · live
         #   immune/self-healing health · ATP metabolism · circadian phase · a real nervous signal · the

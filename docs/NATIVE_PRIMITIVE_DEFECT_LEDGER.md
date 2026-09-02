@@ -215,3 +215,59 @@ Supporting: the trajectory is exactly symmetric about zero (min = -max, 49/100 p
 
 **Why it is not wired.** Answering the question as asked — could this return anything other than what I saw in THIS deployment? Per branch: SEMANTIC yes, it genuinely varies with the input (difflib is real and discriminating, 0.2449 vs 1.0 on my two calls). But the `confidence` field on GENERIC and on every unrecognised task_type can only ever be 1.0, no input can move it; on APP_CODE it can only ever be 0.85 or 0.2, and no value of `actual` can move it at all because `actual` is never read. So three of the four documented task types report a `confidence` that nothing discriminated, and the `method` string is a constant on all four. Not do_not_wire: the SEMANTIC path is a real reference comparison and is the one genuinely useful capability here, so the endpoint is worth keeping. Not wire_as_is: the surface is labelled "validation" with a `confidence` score and an explicit "(difflib, real)" provenance claim, and a caller gating on `is_accurate`/`confidence` would be actively misled — most sharply by APP_CODE stamping a failure message as accurate at 0.85. Minimum fixes before wiring: (1) make `task_type` a validated enum so an unknown value 422s instead of silently becoming `==`; (2) compute `method` from the branch actually taken rather than hardcoding it at native_ai.py:558; (3) on GENERIC either compute a real confidence or drop the field / return `null` and say it is unmeasured; (4) on APP_CODE either compare against `actual` or rename the branch to what it is (a syntax-token presence heuristic) and drop the fabricated 0.85 — presence/absence is a boolean, not a confidence; (5) NUMERICAL: use `abs(0.01 * actual)` for the tolerance, and let the `except` return an explicit error rather than a `false`/`0.0` verdict.
 
+
+---
+
+# §4.5-class defects OUTSIDE the native-AI primitives
+
+**W433 — swept, 7 live defects found and ALL FIXED.** Grepping the shapes rule 13 names across
+`agentic_core` gave 25 candidate sites; 9 were reachable; 7 carried a live defect. Every one was the
+same sentence — *"the top X"* resolved by insertion order — over data where ties are the NORMAL
+condition (small integer counts, or dict keys inserted in fixed order).
+
+| site | claim | status |
+|---|---|---|
+| `products.py` Studio max/min | top performer, fed to "Recommended Action" | FIXED — `tied_with` + the prompt stat |
+| `swarm.py` served_by | model credited for a cascade verdict — **moves routing** | FIXED — every tied leader credited |
+| `organism_status.py` dominant_trait | population's dominant trait | FIXED — null + `dominant_trait_tied` |
+| `resource_fabric.py` dominant_trait | same field | FIXED — null + `dominant_trait_tied` |
+| `immune.py` hot_endpoint | most affected endpoint | FIXED — + `hot_endpoint_errors` |
+| `governance.py` verdict | **rejected vs held** | FIXED — most restrictive + `governance_ambiguous` |
+| `products.py` top realm | portfolio leader | FIXED — count + tie phrase |
+
+Guards: `test_w433_studio_discloses_a_tied_max_instead_of_naming_one` ·
+`test_w433_cascade_quality_is_credited_to_every_model_that_led` ·
+`test_w433_superlatives_disclose_ties_and_carry_their_magnitude` ·
+`test_w433_governance_tie_resolves_to_the_most_restrictive_and_says_so`.
+
+The remaining entry below is LATENT — unreached code.
+
+The class was named after nine instances in one subsystem. These are the sites found by grepping
+the shapes rule 13 names — `max(` over a mapping, a `sort` then `[0]`, a loop returning the first
+item clearing a threshold — across the rest of `agentic_core`.
+
+**Reachability is checked FIRST here, and that ordering is the lesson.** The entry below was
+audited in depth — including measuring how badly noise outweighed the real signal — before anyone
+asked whether it runs. It does not. A defect in unreached code is a ledger entry, not an incident,
+and inflating one into the other wastes exactly the attention the real ones need.
+
+## `GenomeEvolutionEngine.run_evolution_cycle` — fitness is mostly a random number
+
+- **file:** `agentic_core/evolution/evolution_engine.py:98` — `max(fitness_scores, key=fitness_scores.get)`
+- **status:** OPEN · **LATENT — no live caller**
+- **reachability:** ZERO imports in live code. The three references to the name are STRINGS: a
+  reconfiguration flag (`reconfiguration.py:60`), a gateway agent label
+  (`v191/evolution.py:138`), and a resource-registry `rtype` whose real endpoint is
+  `/api/v1/sovereign-evolution/cycle` (`resource_fabric.py:180`). Every genuine import is under
+  `_archive/`. The heartbeat's `auto_evolve` calls `sovereign_evolution.run_cycle`, NOT this.
+
+**The defect.** `fitness_scores[id] = 0.5 + (0.2 if any gene is COMMERCIAL else 0) + 0.3 * random()`.
+The only criterion carrying meaning — mission alignment — is worth 0.20, while the random term spans
+0.30. Measured over 200,000 head-to-head pairs, a NON-commercial mutant out-scores a commercial one
+**5.6%** of the time purely on the roll. Worse, among mutants sharing gene types — the common case —
+fitness is **100% noise**, so "Identify Optimal Offspring" selects the luckiest, not the fittest,
+and the log reports `Best fitness: X` as though something was measured.
+
+**Minimal fix, if it is ever revived:** derive fitness from something the mutant actually differs
+on, or drop the random term and DISCLOSE that selection within a cohort is arbitrary. Do not keep a
+field named `fitness` whose dominant component is `random()`.
