@@ -53,7 +53,7 @@ You have sharpened and expanded the vision across this session. As I understand 
 ## 5. The Current State (grounded — what is real today)
 
 Verified by direct build and test (full detail in `WORKSTATION_IDBO_LIVING_PLAN.md` §4, auto-checkable via `GET /api/v1/plan/state`):
-- Frontend **tsc 0 errors**; integration tests **219 pass / 0 fail** (15 skip need a live external key); Spine + Doc-Sync CI green on `main`.
+- Frontend **tsc 0 errors**; integration tests **337 pass / 0 fail** (15 skip need a live external key; measured 2026-09-02); Spine + Doc-Sync CI green on `main`. Figures here WILL drift — the living plan §4 and `GET /api/v1/plan/state` are the maintained copies; the section-by-section fidelity verdict is `docs/VISION_FIDELITY_LEDGER.md` (adversarially refuted, 2026-09-02).
 - **AI is IN-HOUSE-FIRST** (native fabric, not external API calls): owned model discovery/routing/tiers + parallel multi-model **ensemble** + the autonomous **workflow-TREE** orchestrator + 12 real owned capabilities, catalogued + self-checked + surfaced on `/native-ai`; the memory store is corruption-tolerant with atomic writes. Real-vs-mock record in `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`.
 - **Live process-intelligence engines:** BDP, SPI, APIE, DDPIE, Cognitive Cascade+MJM, Synthesis Nexus, **Genesis** — and ALL EIGHT run their **real staged pipeline when composed** in the Resource Fabric.
 - **The deliverable works:** `Genesis /establish` instantiates a real, persisted, governed, operational **VSB IDBO entity** — and (W248) **every** generation path (establish · SSE spawn · Studio) attaches its own Board + Chief-of-its-owner, a living economy in its selected legal form, living-entity registration (heartbeat-tended), and a seeded business plan.

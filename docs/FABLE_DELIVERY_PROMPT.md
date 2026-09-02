@@ -21,9 +21,12 @@
 > five subsystems. In most, the tie-break was list or dict order presented as a determination. It is
 > method rule 13, and it is the first thing to grep for.
 >
-> Companions: `WORKSTATION_IDBO_WHOLE_VISION.md` · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (12 fixed,
-> 5 latent) · `AUTONOMOUS_PROGRESS.md` (W1→W434) · `VISION_FIDELITY_LEDGER.md` (**stale — do not
-> trust; superseded by the ledger below**) · `GET /api/v1/plan`.
+> Companions: `WORKSTATION_IDBO_WHOLE_VISION.md` (§16 rewritten 2026-09-02 as a short pointer
+> section; §18's four questions recorded as settled) · `VISION_FIDELITY_LEDGER.md` (**v2,
+> 2026-09-02 — regenerated from this assessment, adversarially refuted; the evidence base behind
+> the ledger below**) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (12 fixed, 5 latent) ·
+> `AUTONOMOUS_PROGRESS.md` (W1→W434) · `WORKSTATION_IDBO_LIVING_PLAN.md` (reconciled W434) ·
+> `GET /api/v1/plan`.
 
 ---
 

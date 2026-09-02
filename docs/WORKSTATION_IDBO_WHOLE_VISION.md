@@ -6,11 +6,12 @@
   "what the Owner actually wants" reference. It deliberately reflects the Owner's own words and
   intent rather than a sampled or assumed subset.
   Companions: WORKSTATION_IDBO_UNDERSTANDING.md (same-page summary), WORKSTATION_IDBO_LIVING_PLAN.md
-  (vision↔state↔action), ACTION_PLAN.md (timed plan), VSB_ECONOMIC_LEGAL_MODEL.md.
-  Status: LIVING · authored 2026-06-21 from the Owner's "whole platform" directive ·
-  execution progress updated 2026-06-24 (see §16 — the §6 native-AI mandate is DELIVERED and the
-  in-house integration sweep is complete; full cycle log in docs/AUTONOMOUS_PROGRESS.md, W1–W90;
-  real-vs-mock ledger in docs/AGENTIC_CORE_INTEGRATION_AUDIT.md).
+  (vision↔state↔action), VSB_ECONOMIC_LEGAL_MODEL.md.
+  Status: LIVING · authored 2026-06-21 from the Owner's "whole platform" directive.
+  §16 rewritten 2026-09-02 as a short pointer section (its progress accretion had become the source
+  of documented overclaims); §18's four certainty questions recorded as settled the same day. The
+  fidelity verdict lives in docs/VISION_FIDELITY_LEDGER.md; the cycle log in
+  docs/AUTONOMOUS_PROGRESS.md (W1→W434).
   2026-06-24 clarification (Owner): added §3A — the TWO distinct, in-house-AI-first ways IDBO serves a
   user (1: Domains = domain-specific AI-mediated tools/resources for working in all domains/realms;
   2: end-to-end Concept→Commercialisation → a living VSB IDBO Enterprise entity) — and the Chief-owned
@@ -329,207 +330,39 @@ individually and collectively.
 
 ## 16. Fidelity Check & Execution Progress — vision vs. live system
 
-**Update — 2026-06-24.** At authoring (2026-06-21) the principal divergence from this vision was §6:
-*the AI was external API calls, not Workstation's own native swarm/models/orchestration.* **That gap
-is now closed** — the platform runs its OWN native AI fabric, in-house-first; external providers are
-optional and never a dependency. Since then a **systematic in-house-integration sweep** (W58–W76) has
-pulled the genuinely-real `agentic_core`/`core` capabilities INTO that fabric, and a **living-organism
-workflow-tree orchestrator** now runs goals end-to-end through them. Full cycle-by-cycle execution log:
-`docs/AUTONOMOUS_PROGRESS.md` (workstreams W1–W331, audit Rounds 1–7); real-vs-mock integration ledger:
-`docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` (~44 areas scanned). Verified state: integration suite green
-(**~177 cases**), Spine CI green on `main`.
+**Rewritten 2026-09-02, and deliberately SHORT.** The previous §16 was ~200 lines of dated progress
+claims appended over ten weeks. It rotted the way appended claims always rot — by 2026-09-01 the
+fidelity assessors had to be *explicitly barred from trusting this section*, and it was the source
+of several DOC_OVERCLAIM verdicts. A progress narrative duplicated inside the canon is a second copy
+of the truth that must be kept in sync, and it was not. So this section no longer carries claims; it
+carries pointers to the places that do, each of which is verified rather than asserted. The old
+text remains in git history.
 
-**Delivered since (W77–W104, 2026-06-24/25):**
-- ✅ **§5 fully delivered + integrated with §6 — the living organisation, apex → operational delivery, on
-  the native fabric.** `POST /api/v1/swarm/cascade` runs the COMPLETE chain in-house: **Chief** (founder's
-  digital twin — strategy + a living roadmap) → **Board** (action plan: timelined, resourced tasks, PM) →
-  **AI CEO** — who now *actually* **integrates the living management systems (BMS·QMS·DCS·EMS)** by
-  document-controlling the org's decisions through the OWNED **DCMS** (real SHA3-512 versioned artifacts,
-  no fabricated telemetry) → the **full specialist C-Suite** (CSO·CFO·CTO·CPO·COO·CIO·CLO·Forecasting·
-  Policy — **user-reconfigurable** per `csuite_roles`, realising "reconfigurable with user design
-  control"), **each officer driving its own Centre of Excellence** → **Business Transformation Office →
-  Build-to-Order → Products/Services catalogue**. And **each tier manages, appraises and develops the
-  tier below** — after the top-down delegation, an arms-length upward **appraisal & development pass**
-  (Chief→Board, Board→AI CEO, AI CEO→C-Suite, BTO→Build-to-Order) realises the §5 management relationship
-  + continual improvement. The **operational delivery is gated by the living QMS** (real, stateful — the
-  OWNED `QualityManagementSystem` gates on delivery coverage + zero-stub, accumulating defects + a
-  non-conformance rate) — **continual operational delivery within the living QMS** — and is held to the
-  **§10 Solution-Quality Bar** (designed·modelled·simulated·optimised·categorised·ranked · best-in-class·
-  effective·safe·compliant · verified·tested·validated). It runs **within the §8 biomimetic
-  living-organism** (the result carries the live immune health + circadian state + the 7 layers it
-  operates in), so the whole cascade is self-managing, governed, quality-gated and provenance-sealed. The whole delivery is **governed at arm's length** by
-  the gaas.v5 constitutional interceptor (Change Control) and **sealed into the UEG hash-chained
-  provenance ledger** (§6), every tier served by Workstation's OWN fabric (zero external). Walkable on the
-  **Swarm Intelligence** page (each tier + governance + management-systems + UEG seal rendered).
-- ✅ **Pervasive living-QMS quality assurance (one capability, every surface).** The QMS-gate / §10-bar /
-  §8-organism logic is now a single reusable capability — `agentic_core.vbs.quality.assure_delivery` — that
-  the org cascade AND the **living deliverables pipeline** both deliver through: every `produce` /
-  `regenerate` is gated by the OWNED QMS (real, stateful — defects accumulate, a non-conformance rate is
-  tracked), held to the **§10 Solution-Quality Bar**, and recorded within the **§8 biomimetic organism**
-  (live immune + circadian), surfaced on the **Deliverables** page (per-item QMS-gate + organism badges).
-  So **continual operational delivery within the living QMS** now holds across every surface where users
-  actually receive products — not just the cascade. This now also covers the **§3A offering #2 — the
-  Genesis Concept→Commercialisation journey**: its buildable + go-to-market delivery (design +
-  commercialisation phases) is QMS-gated, held to the §10 bar, recorded within the §8 organism, and the
-  gate + organism are surfaced on the Genesis page. **Both core offerings (#1 domain deliverables, #2 the
-  end-to-end journey) and the living-organisation cascade now deliver through the one living QMS.**
-- ✅ **The QMS OWNS document control (ISO 9001 §7.5).** Document control is now a function *of* the QMS,
-  not a sibling system: the `QualityManagementSystem` owns the `DocumentControlManagementSystem`
-  (`qms.dcms`; the registry's `dcms` is the same single instance), and exposes `control_document(...)` +
-  `document_control_status()` (live at `GET /api/v1/vbs/qms/document-control`). Every quality assurance now
-  **document-controls its quality record** through the QMS-owned DCMS — the gate verdict becomes a
-  versioned, SHA3-512-sealed controlled document (`quality_record_hash`), surfaced as a **doc-controlled**
-  marker on every QMS-gate badge. So the QMS and DCMS are integrated: quality gating and document control
-  are one act, under one owner.
-- ✅ **§7 model & simulate a configuration BEFORE commit (user design control) + §9 reconfigurable UX.**
-  The Resource Fabric now does the §7 *"modelling and simulating the configuration before commit"*:
-  `POST /api/v1/resources/compose/simulate` MODELS a proposed configuration (pipeline, combined
-  capabilities, class/biomimetic mix, shared usage areas, params still to set, usage-area
-  incompatibilities) and SIMULATES it through the living QMS (gate + §10 bar + §8 organism) — returning
-  `commit_ready` — **without saving**; `compose` (commit) then models + QMS-gates + **document-controls**
-  the saved configuration (carries its `model` + quality record). The **Resource Fabric** page gained a
-  **Model & Simulate** step (the §9 reconfigurable interface): select resources → model & simulate →
-  see the pipeline, QMS-gate projection, organism, incompatibility warnings + unset params → then commit.
-  The page also has a **per-resource parameter editor** (a "Configure parameters" panel): users set each
-  selected resource's reconfigurable parameter VALUES, which flow into the model/simulate/compose `config`
-  — so reconfiguring the digital resources' parameters (not just their selection) is fully user-reachable,
-  and the model's `unset_params` shrinks live as values are set. This completes §7 **user design control**.
-- ✅ **§7 compositions are RERUNNABLE on §6 native resources (integrating §5).** `POST
-  /api/v1/resources/compositions/{cid}/run` executes a committed configuration end-to-end on Workstation's
-  OWN native swarm (§6): each composed resource becomes a pipeline stage (the **org-cascade resource is a
-  §5 stage**), the user's reconfigured parameters feed in, each stage completes in-house-first and feeds
-  the next, and the combined run is **QMS-gated + document-controlled** (§10/§8) — reported with per-stage
-  `served_by` provenance. The **Resource Fabric** page gained a **Run** control on each saved composition
-  (enter an objective → run → see the per-stage trace + in-house + QMS-gate badges). So a configuration
-  the user designs (§7/§9) is not just modelled and committed but **runs on the owned AI fabric (§6),
-  composing the living organisation (§5)** — the four sections integrated in one flow.
-- ✅ **§5 org structure designable through the §7 fabric.** The org-cascade resource now exposes
-  **`csuite_roles`** (and `coe_specialisms`) as reconfigurable parameters — so a user composing a
-  configuration can **design the §5 living-organisation's C-Suite** through the fabric's parameter editor
-  (§7/§9 user design control), the model/simulate honours it, and the composition run delivers the
-  fine-resolution Chief→Build-to-Order tiers (AI CEO directive → each chosen officer's plan → CoE →
-  Build-to-Order) with the user-designed structure, on the native swarm (§6). §5's reconfigurable org
-  (W104–105) is now reachable from §7.
-- ✅ **§7 Reactor — the Incubator's parameterised Temperature/Mutation/Iteration loop.** The vision's
-  Reactor = "Incubator (generation/evolution: parameterised Temperature/Mutation/Iteration loops)". The
-  Incubator (`/api/v1/incubator/evolve`) now runs a real **multi-generation** evolution loop: each
-  generation produces N variants at a **Temperature** (diversity), scores + ranks them, and across
-  **Iterations** generations the winner is **Mutation**-evolved into the next generation's base — reported
-  with `generations_run`. The `incubator` fabric resource exposes `{base_prompt, variants, temperature,
-  mutation, iterations}` so the loop is **user-reconfigurable** via the §7 design surface (param editor +
-  model/simulate + composition run).
-- ✅ **§7 Reactor — Experimentation ("what-if" scenarios).** The Reactor's second sub-part: `POST
-  /api/v1/reactor/experiment` projects the outcome of each user-defined **what-if scenario** against a
-  subject (## Projected Outcome · Risks · Opportunities · Net Assessment), then **compares + ranks** them
-  against fitness criteria (## Ranking · Key Differences · Recommendation) — on Workstation's OWN fabric
-  (in-house provenance), **QMS-gated + document-controlled** (§10/§8). Surfaced as the `experimentation`
-  fabric resource with an inline **Run experiment** panel on the Resource Fabric page (subject + scenarios
-  list, §9).
-- ✅ **§7 Reactor — Studio (2D/3D visual analytics & insight).** The Reactor's third sub-part completes the
-  trilogy (Incubator + Experimentation + Studio): `POST /api/v1/reactor/studio` computes **deterministic
-  statistics** (count/total/mean/min/max/range) from a **real** provided data series — it never invents
-  numbers — plus an in-house **insight** narrative interpreting them, **QMS-gated + document-controlled**.
-  A dedicated **Studio** page (route `/reactor-studio`, in the Resource Fabric nav) renders real **SVG
-  bar/line/scatter charts** (scatter carries an optional **z** magnitude → 3D), the analytics cards, and
-  the insight. **The §7 Reactor is now fully delivered: Incubator · Experimentation · Studio.**
-- ✅ **§11 live compliance woven into the universal delivery gate.** `assure_delivery` now also runs `screen_compliance` (Sharia/Halal · UK Legal · Regulatory · EHS · Ethical) on **every** delivery (cascade · Deliverables · Genesis · composition-run · experiment · studio) — `quality.compliance = {overall, compliant, verdicts}`, continuously monitored + flagged (not bolted on, §11). Surfaced as a `compliance: pass|review|fail` badge on the Deliverables panel. A prioritised/ranked/categorised gap plan vs the whole vision is in `docs/WORKSTATION_IDBO_GAP_PLAN.md`.
-- ✅ **§13 D1 increment 1 — VSB IDBO Entity Repository generator.** `POST /api/v1/vsb/{id}/repo` scaffolds a real, on-disk, version-controlled repo from an established VSB's own data (README · identity/genome · business plan · organisation · resources/cascades · compliance+quality record · web/webapp/mobile scaffolds · manifest), QMS-gated + §11-compliance-screened + document-controlled; `GET …/repo` retrieves it; a **Generate VSB Repository** action on the Genesis page renders the tree + badges. HONEST: the integrated Website/Web-app/Phone-app are clearly-labelled scaffolds for increments 2–4, never built/compiled apps.
-- ✅ **§13 D1 increment 2 — integrated Website generator.** `POST /api/v1/vsb/{id}/website` generates a real multi-page static HTML/CSS site (index·about·solution + styles) from the entity + in-house copy, into the repo's `web/`, QMS-gated + §11-compliance-screened + document-controlled; served viewable at `…/website/page/{name}` (known pages only). A **Generate integrated Website** action on the Genesis page renders it + an Open-the-live-site link. - ✅ **§13 D1 increment 3 — interactive Web app generator.** `POST /api/v1/vsb/{id}/webapp` generates a real client-side app (HTML + CSS + vanilla JS + data.json) data-driven from the entity, into the repo's `webapp/`, QMS-gated + §11-compliance-screened + document-controlled; served + runnable in-browser at `…/webapp/page/{name}` (tabbed nav + live resource filter). A **Generate interactive Web app** action on the Genesis page opens it. - ✅ **§13 D1 COMPLETE — VSB IDBO Entity Repository with integrated Website · Web app · Phone app.** Increment 4 (W124): `POST /api/v1/vsb/{id}/mobile` generates a real installable **PWA** (manifest + service worker + icon + mobile-first interactive app) into the repo's `mobile/`, QMS-gated + §11-compliance-screened + document-controlled; served + runnable at `…/mobile/page/{name}` (installable + offline-capable when hosted; honest PWA, not a native app). With the Repo (W121) · Website (W122) · Web app (W123), the §13 canonical output now ships as a coherent repo with three real, runnable integrated surfaces — each with a Generate-* action on the Genesis page.
-- ✅ **Whole-frontend convergence to the vision IA.** 145 routes / 138 pages → **8 vision sections**
-  (Home · Native AI Fabric · Domains · VSB Enterprises · Resource Fabric · Transformation & Economy ·
-  Governance & Ops · Developer & System) + an Explore group; ~55 not-wired aspirational pages + 19 orphan
-  components archived (restorable); every remaining page backend-wired or a real launcher.
-- ✅ **§3A — the two offerings are now connected + walkable in the product.** A `/domains` overview
-  front-door (offering 1); every domain tool result has a **"Commercialise via Genesis"** bridge
-  (seeded `?problem=&domain=`); the **Genesis Concept→Commercialisation** journey prefills from the seed,
-  establishes a VSB, and **seeds that VSB's Chief Business Plan opening (Executive Summary · Concept ·
-  Vision) FROM the journey** — visible on the scope-aware `/business-plan?scope=vsb-…` AND in the VSB
-  Cockpit's plan tab.
-- ✅ **§4.9 / §13 — selectable in-house output formats.** Living deliverables export end-to-end as
-  **md · html (document/website) · slides (HTML deck) · txt · json · pdf · docx (editable Word) · pptx
-  (editable PowerPoint) · xlsx (editable Excel)** — **9 real in-house formats**, each a deterministic
-  render via `/api/v1/deliverables/{id}/export?format=` (PDF=`fpdf2`, DOCX=`python-docx`, PPTX=
-  `python-pptx`, XLSX=`openpyxl` — all pure-python, in-house, no external service; each guarded so it
-  degrades gracefully if absent; the UI selector is populated from real backend capability). **Every
-  document/presentation/spreadsheet format is now genuinely produced**; only AV/image (mp4/mp3/png/svg)
-  remain in the catalogue — honestly *not yet produced* (they need real media generation), never faked.
-- ✅ **Launch-readiness (cost-free).** Production `Dockerfile`/compose/`.env.example`/`render.yaml`;
-  **`DATA_DIR` honoured by every store** (data survives redeploys); the backend optionally **serves the
-  built SPA** single-service; **fixed a real prod-mount bug** (a bad `manualChunks` chunk-split that left
-  React unmounted on every static build, incl. Vercel). All cost-incurring switches stay Owner-gated.
+**State as of 2026-09-02** (measured against a backend booted from HEAD `d937dd37`; re-verify before
+relying — a long-running dev process serves the code it booted with):
+- Integration suite **337 passed / 15 skipped / 0 failed**; Spine CI green; import integrity clean;
+  browser smoke 11 deep routes + 61 swept, including the in-browser PDF-extraction guard.
+- 442 API paths · 466 method+path operations · 72 concrete frontend routes, all rendering.
+- The fabrication audit is closed (63/63) and a defect *class* — a value selected or reported as a
+  result when nothing discriminated — has been closed in sixteen places across five subsystems.
 
-**Delivered / closed (earlier):**
-- ✅ **§6 — Native AI fabric.** `agentic_core/ai/native/`: a `NativeReasoningEngine` honest
-  structured-reasoning floor (`is_model=False`, never fabricates), a `ModelResourceRegistry` owning
-  local inference (Ollama), and a `NativeOrchestrator` (`complete()`/`swarm()`, health-reordering).
-  In-house-first gateway `query_meta()` reports `served_by` + `is_external`; the shared
-  `agentic_core/api/_ai_provenance.ai_text` makes **every** AI-mediated response prove it ran in-house.
-- ✅ **Bespoke, reconfigurable swarm + the FULL org cascade.** Native swarm cascades are first-class,
-  user-definable, reusable, re-runnable Resource-Fabric resources (`/api/v1/resources/swarm/*`); every
-  established VSB is given its OWN native swarm; and the **complete organisational cascade runs in-house
-  with proven provenance, apex → operational delivery**: Chief of the Board of Directors (the founder's
-  digital twin) → Board of Directors → AI CEO → C-Suite → Centres of Excellence → Business
-  Transformation Office → Build-to-Order (operational delivery resources) → **Products/Services
-  catalogue** (`POST /api/v1/swarm/cascade`).
-- ✅ **18 user-reachable domain AI tools across all 6 domains** (Law · Science · Care · Education ·
-  Religion · Employment) — each on the native fabric with honest provenance, CI-locked, edge-audited
-  (no 500s on malformed input), **runnable → iteratively refinable** (`/api/v1/refine`) → **exportable**
-  (Copy / Download .md), and discoverable via the unified `/ai-tools` launcher with `?tab=` deep-linking.
-- ✅ **Self-observing.** Every in-house AI call is recorded into the operational-excellence learning
-  loop; the orchestrator reorders resources by recorded health — real (never fabricated) feedback.
-  Real **performance-degradation detection** runs over that telemetry (`/api/v1/operations/degradation`).
-- ✅ **Autonomous workflow-TREE orchestration (the living-organism cascade).** Beyond the linear swarm,
-  `orchestrate_tree` (`POST /api/v1/native-ai/tree`) decomposes a goal into a dependency **DAG**, runs it
-  **in-house-first with parallel branches**, and threads it through owned capabilities end-to-end:
-  immune-throttled parallelism + biobus nervous signals + learning loop → **VBS QMS/DCMS governance** →
-  **difflib validation** → **minimax decision** → **swarm consensus** → **biomimetic Hill-cascade signal**
-  → **UEG hash-chained provenance**. Visualised on `/native-ai`.
-- ✅ **The Chief delivers a business-plan OBJECTIVE via the tree** (`POST /api/v1/business-plan/
-  objective/{oid}/orchestrate`; one-click on the Business Plan page) — grounded in the VSB + plan,
-  governed, and recorded as an auditable review (decision · consensus · QMS · UEG hash).
-- ✅ **Full multimodal avatar interaction** (was "remaining"): the avatar is always-online in-house and
-  VSB-grounded, now **text + voice (browser-native STT/TTS) + image (local Ollama vision, honest
-  provenance) + all-language** — every mode in-house, never fabricating what it can't do.
-- ✅ **In-house integration sweep — 12 real `agentic_core` modules pulled INTO the fabric** (W58–W76),
-  each catalogued (`GET /api/v1/native-ai/capabilities`) + import-self-checked (`/native-ai/selfcheck`)
-  + surfaced on `/native-ai`: cognition **minimax** decision, **difflib validation**, **scipy** statistical
-  rigor, swarm **consensus**, biomimetic **Hill-cascade signal transduction**, bacterial **quorum sensing**,
-  **NLI** intent/entailment, **SHA3 entropy** pool, graph **topology** (Betti numbers), the **VBS** living
-  systems (QMS/DCMS/BMS/EMS/backbone), the **UEG** hash-chained audit ledger, and **degradation** detection.
-  Honestly: 3 real correctness bugs were fixed along the way; every mock and **two fabrication-claiming
-  modules** (a fake "Halo2 zk" proof, a fake "Pearl-do" causal proof) were skipped and documented so they
-  are **never surfaced as real** (`docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`).
-- ✅ **Earlier integrations still live** — omnimedia, federation mesh, `mega_project` (redone honestly
-  after stripping fabricated figures), `resource_optimizer`, `truth_consensus` — surfaced into the fabric
-  with mock/fabricated Jules modules quarantined and documented.
-- ✅ **(pre-existing, still live)** process-intelligence engines, Genesis Concept→Commercialisation,
-  the VSB with Board/Chief/Economy/Plan, the resource fabric, end-to-end transformation orchestration
-  through the org, biomimetic systems, gaas governance, the living plan, digital-twin
-  generation/simulation, real CI.
+**Where the truth lives:**
+- `docs/VISION_FIDELITY_LEDGER.md` — **the fidelity verdict, section by section** (74 findings,
+  adversarially refuted, dated). This is the document §16 used to pretend to be.
+- `docs/FABLE_DELIVERY_PROMPT.md` — the working ledger: what remains open, tiered by how much a
+  real person is misled or blocked, with acceptance criteria.
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W434). A record of intent
+  and account, not proof.
+- `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` and `docs/FABRICATION_LEDGER.md` — the two defect
+  ledgers (the first partially open, the second closed).
 
-**Remaining scope — the genuine work still ahead (priority order, on the native-first foundation):**
-- ◻ **AV / image output formats** — deliverable export is live for **9** real in-house formats (md · html
-  · slides · txt · json · pdf · docx · pptx · xlsx); every document/presentation/spreadsheet format is now
-  genuinely produced. Only **mp4 · mp3 · png · svg** remain in the catalogue — they need *real* media
-  generation (audio/video/image), so they stay honestly listed and are **never faked**.
-- ◻ **Local-model depth** — the native floor is honest structured reasoning; richer local inference
-  (larger Ollama models / fine-tunes, incl. a pulled vision model for the avatar) deepens output quality
-  without changing the in-house guarantee.
-- ◻ **Deeper user design-control from the UI** — much is now reachable (the VSB Cockpit, the workflow-tree
-  visualiser, bespoke saved swarm cascades, the capabilities catalogue, one-click Chief delivery, the
-  Domains↔Genesis bridge); richer drag-to-reconfigure UX over org/resource/swarm remains.
-- ◻ **Owner-gated (designed, not switched on) — the W6 launch items:** the VSB economic model with *real*
-  money (virtual WST only today — live charging is TRIPLE-gated: REAL_MONEY_ENABLED=True in code — a
-  reviewed code change, currently False — plus a live key plus STRIPE_LIVE_ENABLED; structurally
-  unreachable today, W331), persistence hardening
-  (file → Postgres: stores remain JSON under `DATA_DIR`; an unused `config/database.py`
-  SQLModel/DATABASE_URL seam and the psycopg2 dependency are already in place), production-deployment,
-  and an optional live external AI key.
-
-The integration sweep is **complete** — the genuinely-real `agentic_core`/`core` capabilities are now
-in-house (the ledger documents what was real vs. mock). The vision is **not** redefined down to current
-capability — the ◻ items above are the work that remains, with the W6 launch items gated on the Owner.
-(Companion plan: archived at `_archive/docs/ACTION_PLAN.md`; the live plan is `docs/WORKSTATION_IDBO_LIVING_PLAN.md`.)
+**Open against this vision, in one paragraph:** the journey UI still certifies floor-served output
+without disclosing the floor (prompt ledger item 1 — Tier 1, small); the canon's single 5-stage
+lifecycle does not exist in the product, which runs several vocabularies, and every established VSB
+currently holds `stage: "commercialise"` from a constant (item 2 — an Owner decision); ~71–93 of 217
+write-capable v1 routes are unreached from any UI; and four native-AI primitives remain recorded as
+defective and deliberately unwired. Everything else materially claimed by §1–§15 is either delivered
+or honestly disclosed as partial at the surface where a user would meet it.
 
 ---
 
@@ -650,94 +483,38 @@ updates (each verified in code, file:line evidence in the Round-7 audit journal)
 8. Interaction via a **multimodal, enterprise-aware avatar** (Chief / AI CEO), with a reconfigurable,
    all-language, personalised UI.
 
-**Points where I want your word to reach *certainty* (not assumption):**
-- **A — "Own models" scope** (W1): own the orchestration + swarm control plane with **local-first model
-  serving** (external = optional accelerant) as the pragmatic realisation? Or a heavier self-hosted /
-  trained-model programme? *(My recommended default: control plane + local-first.)*
-- **B — Realm naming:** the canon lists Realms as Enterprise / Learning / Developing / Scholarship — is
-  that still the intended set, or has it evolved (e.g. the live sidebar's Learner/Developer/Enterprise/
-  Scholar/Genome/Unified)? Confirm the canonical Realm set.
-- **C — Scope priority:** is **W1 (native AI fabric)** the right next thing to *build*, or do you want the
-  understanding ratified first and a different workstream started?
-- **D — Anything in §1–§17 that does not match what you mean** — name it and I will correct the canon.
+**Points where certainty was sought — and reached. All four are recorded here so they are never
+re-opened**
+(evidence: prompt v10 `<answers_to_the_owner>`; decisions dated below):
 
-**16.3 Reconciliation addendum — Rounds 11–12 (W363–W370), reconciled 2026-08-30.**
+- **A — "Own models" scope — SETTLED (in practice, ratified by use).** Control plane + local-first is
+  the realisation: `GET /api/v1/native-ai/models` serves llama2 / llama3.2 / llama3.2:1b through the
+  owned orchestration control plane, with a deterministic native floor always available; external
+  providers are opt-in accelerants (`AI_ALLOW_EXTERNAL`), never a dependency. The heavier
+  self-hosted/trained-model programme remains open as a future ambition, not a gap.
+- **B — Realm set — CONFIRMED.** The canon's four user-type Realms stand (Enterprise · Learning ·
+  Developing · Scholarship). Where live configuration disagreed, the CONFIG was wrong, not the canon
+  (`configs/realms.yaml` encodes domain-shaped entries). The sidebar variants were drift.
+- **C — Scope priority — ANSWERED ON EVIDENCE.** W1 (native AI fabric) was NOT the right next build —
+  it was substantially delivered, and its remaining gaps were reach and reporting. The right next
+  work was, and is, whatever the current delivery-prompt ledger ranks first by how much a real
+  person is misled or blocked.
+- **D — Canon corrections — DECIDED BY THE OWNER 2026-09-01, and DELIVERED:** Realm gets teeth at
+  NARROW scope (depth and register of generated output, never structure) — W427/W434; an EXPLICIT
+  owner-scoped user profile, never implicit recall — W428; a BUNDLED in-browser PDF extractor, never
+  a server upload — W429. One §17.1 question remains genuinely open and sits with the Owner: the
+  single 5-stage lifecycle does not exist in the product (several vocabularies run, and every
+  established VSB holds `stage: "commercialise"` from a constant) — see the delivery prompt's
+  ledger item 2 for the measured options.
 
-*Round 11 — the frontend was fixed for real.* A 5-agent scan plus a method-aware endpoint diff seeded
-a 47-finding ledger (`docs/FRONTEND_DEFECT_LEDGER.md`); all five clusters are closed and browser-verified:
-the Change Control page was dead end-to-end (it read keys the backend never returned, so the governance
-surface rendered permanently empty — economy materiality holds queued where the Owner could not see
-them); HTTP-status blindness was class-killed with a shared `apiJson` across 11 pages; every fabricated
-handler was deleted (the "Run Manual Audit" that invented PASSED rows with random hashes, fake
-infrastructure provisioning, a scripted "Mission is LIVE" log, mock results on 7 hub pages, 13
-fabricated flagship cards) — verified by ZERO fabricated strings in the shipped bundle; the invisible
-Owner-approval hold became visible; and five bearer-bypassing links were fixed.
+*(The progress addenda formerly numbered §16.3 and §16.4 — the Rounds 11–12 reconciliation and the
+§6 architecture-vs-practice correction, W363–W380 — are preserved verbatim in git history and in
+`docs/AUTONOMOUS_PROGRESS.md`. §16.4's lesson is now §16's operating rule: record what was
+OBSERVED, never what the system reports about itself.)*
 
-*Round 12 — §9 personalisation, and three real data-loss defects found by mechanical checks.*
-- **§9 is real (W363):** a per-USER server-side workspace (`/api/v1/user/workspace`) — history and
-  preferences follow the authenticated user across devices, tenancy-scoped and lock-serialised;
-  localStorage remains the honest auth-off fallback.
-- **A cross-tenant defect existed and is closed (W364).** The mechanical tenancy matrix found the
-  projects module had NO ownership concept at all: under `AUTH_ENABLED` one user could list, read and
-  **permanently delete** another's project. It survived because every other surface had been secured
-  by hand, one audit at a time — the one nobody audited stayed open. Also caught two unscoped reads of
-  VSB board packs (financial/strategic content).
-- **Durability proven, not assumed (W365/W366):** `store_lock` is now proven across real PROCESSES
-  (100/100 writes survive; 54 of 100 lost without it), and CI now exercises AUTH-ON isolation, which it
-  never did before — the whole suite runs auth-off, where surfaces are unguarded by design, so no
-  tenancy regression could ever have been caught.
-- **Three silent data-loss bugs, each measured (W367–W369):** the constitutional UEG ledger erased
-  events on concurrent first-touch construction (18 of 60 trials → 0); the AI memory store lost
-  **107 of 120** memories and raised 93 errors under concurrent writes, on the live request path
-  (→ 0 and 0); and the ACCOUNT store could be left unreadable by concurrent registration — and because
-  a decode error is tolerated by returning `{}`, that presented as **every account silently vanishing**
-  (→ 21 of 21 intact). All three shared one root: the fixes already existed in this codebase and had
-  simply never been applied to those stores.
-- **Right-to-left is real (W370):** `isRTL` existed but nothing ever set `dir` on the document, so
-  Arabic and Urdu rendered as left-to-right pages with Arabic glyphs. Now applied at boot and on change.
-  The Settings claim that interface translation "depends on the external AI accelerant" was inaccurate
-  and is corrected — Arabic, French, Spanish and Urdu are translated in-house today (chrome only; AI
-  output is still English).
+---
 
-*Honest frontier after Round 12:* full-interface i18n beyond chrome; binary omnimedia (mp4/mp3/png/svg
-remain catalogue-only); cross-INSTANCE federation; a scripted real-browser regression pass in CI. The
-Stripe key exposed in git history **still requires Owner rotation**, and `AUTH_ENABLED` remains an
-Owner policy decision — now materially safer, since the cross-tenant projects gap would have gone live
-the moment it was switched on.
 
-**16.4 The §6 claim, corrected — architecture vs practice (2026-08-30).**
-
-§16 has stated since 2026-06-24 that the §6 gap "is now closed" because the platform runs its own
-native AI fabric. That was true of the ARCHITECTURE and false of the PRACTICE, and the distinction
-matters more than the claim: the fabric existed, `/api/v1/native-ai/status` reported
-`active_model: ollama (llama3.2), is_real_model: true, floor_active: false` — and the owned model was
-serving **nothing**. Every domain tool and every stage of the flagship journey was answered by the
-deterministic floor with template text. The full Concept → Commercialisation journey returned
-`served_by: {"native": 11}` in **2 seconds**.
-
-Twelve audit rounds, adversarial verification and a green CI never caught it, because every one of
-those checks asked whether the system reported itself healthy. Using the product as a person would —
-running a domain tool and reading the answer — found it immediately.
-
-Four independent gates were each individually sufficient to prevent the owned model from ever
-serving:
-- **W375** — the time budget was `2 × avg-of-ALL-recorded-runs`, so the model's own forced timeouts
-  shrank the budget that caused them. Measured: a 35s budget against a ~98s real generation.
-- **W378** — fixing the budget did not clear the damage; the 14.8% success rate that the defect had
-  produced kept the model demoted. Now correctable by an auditable, reason-required re-baseline that
-  preserves every row.
-- **W379** — the per-chunk read timeout killed a cold model load at 66s while the budget was
-  correctly 180s.
-- **W380** — demotion at `<0.6` exiled a model measured at 58.8%. The native floor is a FALLBACK,
-  not a rival: ordering a model behind it means it is never attempted at all.
-
-**Now measured true:** `served_by: {"ollama": 11}` — all eleven stages on the owned model, no
-scaffolding, real reasoning ("**Concept Name:** HalalConnect — A Zero-Waste Community Meal Service
-for Elderly Londoners"). The honest cost is **1,309 seconds (~22 minutes)** for the full journey.
-
-The lesson for this document: a §16 row should say what was OBSERVED, not what the system reports
-about itself. "The native fabric exists" and "the owned model serves users" are different claims, and
-only the second one is the promise §6 actually makes.
 
 ---
 

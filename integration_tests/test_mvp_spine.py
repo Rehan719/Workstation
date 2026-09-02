@@ -7463,3 +7463,49 @@ def test_w434_journey_says_when_the_candidates_are_not_alternatives(client):
         assert "no comparison was possible" in s5["comparison_note"]
     else:
         assert s5["comparison_note"] is None
+
+
+def test_w435_plan_api_mirrors_the_doc_scorecard():
+    """Rule 14, enforced — the /api/v1/plan pillar statuses and the living plan's §7 scorecard are
+    two copies of one truth, and a comment asking to "keep in lockstep" kept nothing: the doc's
+    pillar 1 moved to partial (W434) and the API mirror sat at "strong" until this guard existed.
+
+    Mapping is by distinctive keyword because the two lists phrase pillars differently and the API
+    carries one pillar (the Chief) the doc folds into its org row — the SHARED pillars must agree.
+    """
+    import pathlib
+    import re
+
+    from agentic_core.api.living_plan import _PILLARS
+
+    doc = pathlib.Path("docs/WORKSTATION_IDBO_LIVING_PLAN.md").read_text(
+        encoding="utf-8", errors="ignore")
+    sec7 = doc.split("## 7.")[1].split("## 8.")[0]
+    glyph_to_status = {"●": "strong", "◐": "partial", "○": "not_yet"}
+
+    doc_rows = {}
+    for line in sec7.splitlines():
+        m = re.match(r"\|\s*\d+\s*\|\s*(.+?)\s*\|\s*([●◐○])\s*\|", line)
+        if m:
+            doc_rows[m.group(1)] = glyph_to_status[m.group(2)]
+    assert len(doc_rows) >= 9, "the doc's §7 table shape changed - update this parser WITH it"
+
+    # one distinctive keyword per shared pillar, present in both phrasings
+    keywords = ["end-to-end", "living Enterprise", "curates", "resource fabric",
+                "self-running", "Synthesis Lab", "Constitutional governance",
+                "Biomimetic", "Foundational values"]
+    api_by_kw = {}
+    for kw in keywords:
+        hits = [p for p in _PILLARS if kw.lower() in p["pillar"].lower()]
+        assert len(hits) == 1, "keyword %r matched %d API pillars" % (kw, len(hits))
+        api_by_kw[kw] = hits[0]["status"]
+
+    mismatches = []
+    for kw in keywords:
+        doc_hits = [(title, st) for title, st in doc_rows.items() if kw.lower() in title.lower()]
+        assert len(doc_hits) == 1, "keyword %r matched %d doc rows" % (kw, len(doc_hits))
+        title, doc_status = doc_hits[0]
+        if doc_status != api_by_kw[kw]:
+            mismatches.append("%s: doc=%s api=%s" % (kw, doc_status, api_by_kw[kw]))
+    assert not mismatches, (
+        "the /api/v1/plan mirror has drifted from the doc's §7 scorecard: %s" % "; ".join(mismatches))

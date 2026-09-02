@@ -3278,3 +3278,53 @@ broken. It then failed with exactly the right message, naming stage_7 — the st
 nothing and reported "0 tools wired"), and a break-test line that became a syntax error. One root
 cause: passing escape sequences through a shell heredoc into Python source. The reliable pattern is
 line-index edits with asserted content and strings built via `chr()`.
+
+### W435 — the documentation set regenerated, and a lockstep comment became a lockstep guard
+
+The Owner asked for a review of how `FABLE_DELIVERY_PROMPT.md`, `WORKSTATION_IDBO_WHOLE_VISION.md`
+and their companions were generated, and regenerated current versions. Provenance reviewed first:
+the vision is the Owner's canon (authored 2026-06-21 from their own words — §1–§15/§17 are not an
+agent's to rewrite), but its §16 was a ~203-line accretion of dated progress claims appended over
+ten weeks — the very section the fidelity assessors had to be BARRED from trusting, and the source
+of DOC_OVERCLAIM verdicts. Its §16.3/§16.4 addenda had physically overflowed into §18's territory.
+
+**Regenerated / amended, each per its own nature:**
+- `VISION_FIDELITY_LEDGER.md` → **v2**: rebuilt from the 74-verdict HEAD assessment already on disk
+  (no assessors re-run — the data existed). Carries its own method and reading rules: DELIVERED is
+  understated by construction; 32 gaps survived refutation, 27 were never individually refuted and
+  are labelled as leads; 7 findings carry a post-assessment status tied to a specific W434 fix.
+- Vision **§16**: 203 lines → a 37-line pointer section. Its operating rule is §16.4's own lesson —
+  record what was OBSERVED, never what the system reports about itself — and it now points at the
+  documents that carry verified claims instead of duplicating figures that drift.
+- Vision **§18**: the four certainty questions recorded as SETTLED with dates and evidence
+  (A control-plane+local-first · B canon realms confirmed, config wrong · C not-W1 · D the Owner's
+  three 2026-09-01 decisions, delivered W427–W429). The misfiled §16.3/§16.4 addenda moved to git
+  history + AUTONOMOUS_PROGRESS with an explicit pointer.
+- `WORKSTATION_IDBO_LIVING_PLAN.md`: amended per its own append+amend protocol — figures to
+  HEAD-measured (466 ops / 441 paths / 337✓), a W355–W434 delivery paragraph, the §7 scorecard
+  re-scored honestly (pillar 1 ● → ◐: the journey works, but the UI certifies floor output without
+  disclosing the floor), changelog appended.
+- `WORKSTATION_IDBO_UNDERSTANDING.md`: 219→337 with a drift warning naming the maintained copies.
+- Prompt v10's companions line: the "stale — do not trust" warning on the fidelity ledger became
+  false the moment v2 landed, and now says so.
+
+**Rule 14, caught live.** `/api/v1/plan` does not parse the living plan — `living_plan.py` hardcodes
+a `_PILLARS` mirror of §7 under a comment saying "keep in lockstep with the doc's §7 scorecard".
+The comment kept nothing: the scorecard edit desynchronised it within the hour (doc ◐, API
+"strong"). The mirror is reconciled and the lockstep is now ENFORCED —
+`test_w435_plan_api_mirrors_the_doc_scorecard` reads the doc's §7 glyphs and compares them to
+`_PILLARS` by distinctive keyword; broken by drifting the mirror back, it fails naming the exact
+divergence, restored clean.
+
+**Rule 16, applied to myself.** The ledger's first post-assessment classification pass was
+keyword-matched, and hand-review against each finding's evidence showed it misfiled SEVEN of twelve
+assignments — including marking the OPEN floor-certification finding as "disclosed" and stamping
+FIXED-W434 on a MISSING develop stage that W434 never built. The keyword pass was thrown away and
+every surviving status is now tied to a named `test_w434_*` guard or fix by per-finding review. The
+ledger says so in its own reading rules, because a status that was inferred is worth less than one
+that was checked — and the difference must be visible to the reader.
+
+(The adversarial doc-verification workflow burned on a session usage limit with zero agents
+completing; its assigned checks — arithmetic recounts, figure cross-checks, §18↔prompt agreement,
+the 47/47 frontend-ledger claim, the W434 status assignments — were all performed inline instead,
+and the seven-misfiling catch above is the evidence the inline pass had teeth.)

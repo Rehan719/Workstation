@@ -23,9 +23,14 @@ _DOC = "docs/WORKSTATION_IDBO_LIVING_PLAN.md"
 
 # Vision pillars + adherence (mirrors §7 of the living plan; the doc is source-of-truth,
 # this exposes it queryably). status: strong | partial | not_yet
-# Reconciled 2026-08-12 (W251) — keep in lockstep with the doc's §7 scorecard.
+# Reconciled 2026-09-02 (W435). "Keep in lockstep" is no longer a comment asking nicely — the
+# lockstep is ENFORCED by test_w435_plan_api_mirrors_the_doc_scorecard, which reads the doc's §7
+# glyphs and fails on divergence. This mirror sat wrong for a day the moment the doc moved.
 _PILLARS: List[Dict[str, str]] = [
-    {"pillar": "AI-mediated end-to-end Concept→Design→Delivery", "status": "strong"},
+    # W434/W435 — ◐ in the doc: the journey runs end-to-end and the user's problem provably
+    # survives every stage, but the UI still certifies floor-served output without disclosing the
+    # floor (prompt v10 item 1). Partial until a user can SEE what served them.
+    {"pillar": "AI-mediated end-to-end Concept→Design→Delivery", "status": "partial"},
     {"pillar": "Generate a living Enterprise IDBO (VSB) for the user", "status": "strong"},
     {"pillar": "VSB org (Board→AI CEO→C-Suite→CoE→BTO) curates work", "status": "strong"},
     {"pillar": "Chief = Owner's digital twin (apex, arms-length)", "status": "strong"},
