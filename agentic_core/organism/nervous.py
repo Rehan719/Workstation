@@ -21,7 +21,7 @@ import time
 import threading
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Deque, Callable
+from typing import Deque, Callable, Literal
 
 from fastapi import APIRouter
 
@@ -49,9 +49,11 @@ class NervousSystem:
         self._signals: Deque[Signal] = deque(maxlen=self.SIGNAL_WINDOW)
         self._lock = threading.Lock()
         self._reflex_arcs: list[dict] = []  # {trigger_type, threshold, callback, name}
-        self._total_sensory = 0
-        self._total_motor = 0
-        self._total_reflex = 0
+        # W438 — totals count EVERY type dynamically: the old three named counters silently
+        # omitted the whole "cognitive" class (fired by 12+ live sites), so a field named
+        # total_signals claimed a totality it did not have
+        self._totals: dict[str, int] = {}
+        self._process_started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     def fire(self, signal_type: str, source: str, payload: str = "", intensity: float = 0.5) -> None:
         sig = Signal(
@@ -63,12 +65,7 @@ class NervousSystem:
         )
         with self._lock:
             self._signals.append(sig)
-            if signal_type == "sensory":
-                self._total_sensory += 1
-            elif signal_type == "motor":
-                self._total_motor += 1
-            elif signal_type == "reflex":
-                self._total_reflex += 1
+            self._totals[signal_type] = self._totals.get(signal_type, 0) + 1
 
         # Check reflex arcs (outside lock to avoid deadlock in callbacks)
         self._check_reflexes(sig)
@@ -147,16 +144,18 @@ class NervousSystem:
 
         return {
             "arousal_state": arousal,
+            # the thresholds behind the arousal label, so the verdict is re-derivable
+            "arousal_thresholds": {"HYPERACTIVE": "> 2.0/s", "ALERT": "> 0.5/s",
+                                   "RESTING": "> 0.1/s", "DORMANT": "<= 0.1/s"},
             "signal_rate_per_second": round(signal_rate, 3),
             "signals_last_60s": len(recent_60s),
             "by_type_last_60s": recent_by_type,
-            "total_signals": {
-                "sensory": self._total_sensory,
-                "motor": self._total_motor,
-                "reflex": self._total_reflex,
-            },
+            "total_signals": dict(self._totals),
             "reflex_arcs_registered": len(self._reflex_arcs),
             "buffer_size": len(signals),
+            "buffer_capacity": self.SIGNAL_WINDOW,
+            "scope": "in-memory, this server process since start",
+            "process_started_at": self._process_started_at,
         }
 
 
@@ -173,20 +172,31 @@ async def nervous_status():
 
 @router.get("/nervous/signals")
 async def nervous_signals(n: int = 50):
-    return {"signals": nervous.recent_signals(min(n, 200)), "count": min(n, 200)}
+    # W438 — `count` used to echo the REQUESTED cap (7 stored signals, n=50 -> count 50), and
+    # n=0 / negative n produced absurd slices; count is now what was actually returned
+    requested = n
+    n = max(1, min(n, 200))
+    sigs = nervous.recent_signals(n)
+    # `requested` carries the caller's RAW value (a field named requested holding the post-clamp
+    # value was the name-vs-content cousin); `limit` is what was actually applied
+    return {"signals": sigs, "count": len(sigs), "requested": requested, "limit": n}
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class StimulateRequest(BaseModel):
-    signal_type: str = "sensory"
+    signal_type: Literal["sensory", "motor", "reflex", "cognitive"] = "sensory"
     source: str = "manual"
     payload: str = ""
-    intensity: float = 0.5
+    intensity: float = Field(default=0.5, ge=0.0, le=1.0)
 
 
 @router.post("/nervous/stimulate")
 async def stimulate(req: StimulateRequest):
-    """Manually inject a signal — useful for testing and demonstration."""
-    nervous.fire(req.signal_type, req.source, req.payload, req.intensity)
-    return {"fired": True, "signal_type": req.signal_type, "source": req.source}
+    """Manually inject a signal — testing/demonstration. The injection is honest about itself:
+    the recorded source is always prefixed `manual:` so an injected signal can never masquerade
+    as an organic one in the feed, and the type is validated against the four real classes."""
+    source = req.source if req.source.startswith("manual") else f"manual:{req.source}"
+    nervous.fire(req.signal_type, source, req.payload, req.intensity)
+    return {"fired": True, "signal_type": req.signal_type, "source": source,
+            "note": "manually injected — the recorded source always begins with 'manual'"}

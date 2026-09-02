@@ -54,7 +54,8 @@ class HomeostaticController:
         rec = ctx.get("recommended", {}) or {}
         immune_threat = (ctx.get("immune", {}) or {}).get("threat_level", "NOMINAL")
         cycle = (ctx.get("circadian", {}) or {}).get("cycle", "")
-        atp = float((ctx.get("metabolic", {}) or {}).get("atp_ratio", 1.0))
+        _atp_raw = (ctx.get("metabolic", {}) or {}).get("atp_ratio")
+        atp = float(_atp_raw) if _atp_raw is not None else 1.0   # W438: the biobus fallback carries None
 
         # Cap concurrency by the WHOLE-organism recommendation (composite health: immune·self-healing·
         # metabolic), then apply the survival-instinct immune floor (preserves prior protective behaviour).

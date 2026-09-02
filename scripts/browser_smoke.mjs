@@ -48,6 +48,8 @@ const ROUTES = [
   ['/ceo?tab=board',    ['Board of Directors', 'Apex Governance']],
   // W437 — the native fabric page gained the primitive console + fabric integrity strip
   ['/native-ai',        ['In-House AI Resources']],
+  // W438 — the organism's Anatomy tab: 18 audited-then-wired routes
+  ['/organism?tab=anatomy', ['Anatomy', 'Organism']],
 ];
 
 // The landmark check above passes if ANY landmark is present, which proves the route did not crash
@@ -61,6 +63,8 @@ const REQUIRED_SECTIONS = {
   '/marketplace': ['Listings'],
   // W437 — the console that finally makes the 10 audited primitives reachable, and the integrity strip
   '/native-ai': ['Primitive console', 'Fabric integrity'],
+  // W438 — the anatomy surfaces must ALL render: health disclosure, genome lab, wiring truth
+  '/organism?tab=anatomy': ['measured only', 'Genome lab', 'wiring truth'],
 };
 
 const failures = [];

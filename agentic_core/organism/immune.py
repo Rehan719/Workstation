@@ -98,19 +98,26 @@ class ImmuneSystem:
             "window_seconds": self.WINDOW_SECONDS,
             "by_type": by_type,
             "hot_endpoint": hot_endpoint,
-            "active_responses": _describe_responses(threat_level),
+            "response_playbook": _response_playbook(threat_level),
         }
 
 
-def _describe_responses(threat_level: str) -> list[str]:
-    """Biomimetic language for immune responses being activated."""
-    responses = {
-        "NOMINAL": ["Passive surveillance active"],
-        "ELEVATED": ["Increased monitoring", "Error pattern analysis initiated"],
-        "HIGH": ["Adaptive routing engaged", "Fallback providers activated", "Alert signals elevated"],
-        "CRITICAL": ["Emergency quarantine mode", "All fallback paths exhausted", "Manual intervention required"],
+def _response_playbook(threat_level: str) -> list[str]:
+    """W438 — the old field `active_responses` returned constant strings claiming "Adaptive routing
+    engaged" / "Fallback providers activated" / "Emergency quarantine mode" when nothing engages,
+    activates, or checks any of those — advertising presented as live action. The rename + phrasing
+    say what a threat-level lookup can honestly say: the RECOMMENDED posture. The one real response
+    that exists (immune_quarantine containment) is CCA-governed and reported by self-healing, not
+    invented here."""
+    playbook = {
+        "NOMINAL": ["recommended: passive surveillance"],
+        "ELEVATED": ["recommended: increased monitoring", "recommended: review recent error patterns"],
+        "HIGH": ["recommended: throttle metabolic load (CCA immune-reconfigure)",
+                 "recommended: review failing endpoints before they trip breakers"],
+        "CRITICAL": ["recommended: engage immune_quarantine via POST /api/v1/cca/immune-reconfigure",
+                     "recommended: owner review — the organism is under sustained threat"],
     }
-    return responses.get(threat_level, [])
+    return playbook.get(threat_level, [])
 
 
 # Singleton — imported by gateway and middleware

@@ -3498,3 +3498,85 @@ by hand (an agent's finding is a lead, rule 16) and fixed:
   1.0, planetary.py's 102400 nodes) and two one-line lies fixed in place (resolve()'s "arbitration"
   log, get_intent_confidence's "historical" docstring).
 
+
+### W438 — the organism cluster: audited (5 verdicts, ~30 findings), fixed, governed, then wired
+
+**The second Tier-2 cluster, worked the proven way: audit → fix → refute-my-own-fixes → wire.**
+18 unreached routes across five sub-areas (genome · config · nervous · self-healing ·
+health/lifecycle trio). Five audit agents returned five FIX_THEN_WIRE verdicts; nothing was wired
+until every load-bearing finding was closed.
+
+**What the audit found (the majors):**
+- **Genome fitness was fabricated three ways.** Crossover children earned a flat +0.05 "bonus"
+  that ratcheted ANY lineage to fitness 1.0 in ten generations with nothing evaluated; a
+  floor-served encode persisted ALL TEN axes and the fitness at the constant 0.5 presented as "the
+  AI analyses the entity"; mutants inherited parent fitness under a comment claiming "re-evaluated
+  by selection" when no selection step exists. Now: the bonus is deleted, every fitness carries
+  fitness_provenance, every encode carries served_by + trait_provenance + encoded, and an
+  unencoded genome says so in plain text.
+- **The config surface was a governance bypass.** `POST /config/update` flipped live organism
+  levers (immune_quarantine — MEDIUM-tier, Board-ratification-flagged on the CCA's own path) with
+  no CCA record, no UEG entry, and `updated_by: "system"` forever. Worse: the CCA↔reconfiguration
+  wiring was INVERTED — Change Control's /implement only MARKED changes implemented while applying
+  nothing, and the ungoverned raw route did the applying. W438 fused them: the four wired live
+  levers 409 to the CCA; /cca/submit accepts a validated, type-coerced config_change payload;
+  /implement genuinely APPLIES it through the audited core under the W318 consumer-honesty rule.
+- **Three proven config bugs:** shallow-copy aliasing let updates MUTATE the defaults template
+  (reset then restored the mutation while labelling it "defaults"); `value: Any` stored the
+  AI-suggest string 'false' for immune_quarantine — and bool('false') is True, so applying the
+  suggestion to DISABLE quarantine ENGAGED it; both stores were bare write_text in the documented
+  corruption class (now store_lock + atomic).
+- **Self-healing counted health from DECORATED display strings**: "QUARANTINED (immune
+  containment)" lost the OPEN substring, so engaging containment on failing endpoints RAISED
+  reported health, while "HALF_OPEN (pending test)" counted as broken. HALF_OPEN also admitted
+  unlimited concurrent probes against the documented single-probe semantics — N parallel 180s
+  model budgets against a known-broken backend. And a fresh process asserted overall_health 1.0
+  having measured nothing.
+- **The status trio misreported at the projection layer**: `_vsb_state` counted status=="active"
+  but the only writer persists "operational" — the count was structurally ZERO forever, silently
+  HALVING commercialisation_readiness for any org with VSBs (spawning VSBs lowered reported
+  readiness); the W422 measured-vs-simulated health disclosure existed ONLY inside biobus, reaching
+  no HTTP surface; `farthest_stage` was a fixed append order that reported "vsb_spawn" as farther
+  than any project had ever gone (a 9th lifecycle vocabulary); immune's `active_responses` returned
+  constant strings claiming "Adaptive routing engaged" when nothing engages anything; and
+  `/health-summary` 500'd (KeyError) on biobus's degraded fallback — at exactly the moment the
+  organism was least healthy.
+
+**THE REFUTER PASS ON MY OWN FIXES FOUND 20 MORE, including three highs:**
+- **The floor-echo parse survived my first fix**: the floor composes output FROM the prompt, so a
+  digit-bearing domain ("web3") or a numeric line in the caller's own description could still
+  become a "parsed" trait (72/240 swept inputs fabricated one — clamped to 1.0, crowned
+  dominant_trait downstream). A floor serve now NEVER parses: the floor cannot declare traits, by
+  construction.
+- **A second missed consumer of the governed route** — the W318 quarantine test released the lever
+  via the direct call my gate now 409s, which would have left quarantine ENGAGED for the whole
+  suite (the exact W437 rename-miss class, second occurrence).
+- **My single-probe fix created a permanent block**: a probe whose caller never reports back held
+  the slot FOREVER while status() reported the blocked circuit healthy. The slot is now a LEASE.
+- Plus: my "measured only" health folded an admitted default in at 50% weight (a fresh process
+  read 100% measured); my health_basis was a CONSTANT asserted even when its own terms
+  contradicted it; my GROWING rule was structurally dead (parsed ISO, the store holds epoch
+  floats); my vsb rename broke OrganismDashboard's headline stat (caught THIS time, by the pass
+  built for it); my TTL quarantine cache admitted probes for 2s after containment engaged (the
+  single write path now PUSHES the lever into the breaker); a consult-minted circuit with zero
+  calls read as measured health; and the Anatomy panel itself carried the repo's class-killed
+  HTTP-status blindness in all seven initial fetches, defaulted pre-W438 genomes to an
+  "ai-declared" provenance chip, and hid 15 of 23 config wiring rows behind a filter while its
+  copy said no dead switch could hide.
+
+**Wired:** OrganismHub gained the **Anatomy** tab — measured-vs-blended health with per-term
+simulated flags · lifecycle with the readiness formula and the ledger-item-2 vocabulary caveat ·
+the three biomimetic systems with signal feed, healing log (events-ever vs capacity), and
+validated stimulation (manual: source prefix — injections cannot masquerade) · a Genome Lab
+rendering provenance (defaulted axes greyed, unencoded stated, mutations before→after) · a config
+panel that is an honest lever panel, not a settings form: every key badged wired/stored-only/
+governed with its named consumer, AI suggestions with serving provenance and validity, and
+governed proposals submitted to the CCA (arms-length: decisions happen on the governance surface).
+
+**Guards:** `test_w438_organism_cluster_audited_fixes_hold` (broken — the +0.05 ratchet restored —
+failed with "the fabricated crossover fitness bonus is back") and
+`test_w438_refuter_pass_findings_stay_fixed` (broken — infinite probe lease — failed with "an
+abandoned probe blocks the circuit forever again"); both restored green. Browser smoke deep-checks
+/organism?tab=anatomy; the live UI probe (scripts/_w438_probe.mjs) drives encode + a governed
+proposal end-to-end. Two consumer breaks were caught by refuters BEFORE shipping this time — the
+practice the W437 memory mandated is doing exactly what it was written to do.

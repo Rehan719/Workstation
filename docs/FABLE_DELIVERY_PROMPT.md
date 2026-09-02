@@ -41,7 +41,7 @@ THE SURFACE, measured 2026-09-02 against a backend booted from HEAD:
   442 paths (441 under /api) carrying 466 method+path operations
   270 frontend call sites resolving to 164 distinct /api literals + 18 template prefixes
   73 <Route> declarations in App.tsx — 72 concrete paths (the 73rd is the catch-all), all 72 render
-  suite 341 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 12 deep + 61 swept
+  suite 343 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 13 deep + 61 swept
 
 CAVEAT THAT HAS COST THIS PROJECT TIME THREE TIMES: a long-running dev process serves the code it
 booted with. Restart the backend before measuring BEHAVIOUR, and check its start time against the
@@ -147,11 +147,15 @@ W437 STATE OF THIS BACKLOG. The measurement is now a committed tool — `python 
 frontend /api fragments with template holes matched by segment, and reports exact vs
 template-prefix reach separately because the two biases differ). At W437 HEAD it reported: 465 /api
 ops · 253 reached (204 exact + 49 template-prefix) · 64 legacy non-v1 · 148 genuine-unreached ops
-in 43 clusters. The native-ai cluster (12 ops) is DONE — audited (five primitives fixed, two
-handler-level leaks found on "already-fixed" ones), then wired via the /native-ai Primitive
-Console. The next-largest clusters by ops: organism 18 · qep 17 · vbs 11 · frontier 10 · economy 8.
-Audit before wiring, every time — W437's validate handler (float(None) → 500 on the branches the
-W432 engine fix made honest) is proof the class also lives ONE LAYER UP from a fixed engine.
+in 43 clusters. DONE so far: native-ai (12 ops, W437 — Primitive Console) and organism (18 ops,
+W438 — the Anatomy tab: genome provenance, the config surface FUSED with the CCA so live levers
+are governed instead of raw-writable, self-healing counted from raw states, the W422 health
+disclosure finally reaching HTTP). Next-largest: qep 17 · vbs 11 · frontier 10 · economy 8.
+Audit before wiring, every time — and REFUTE YOUR OWN FIXES before shipping: W437's validate
+handler (float(None) → 500 on the branches the W432 engine fix made honest) proved the class lives
+ONE LAYER UP from a fixed engine, and W438's refuter pass caught two consumer breaks + a
+permanent-block probe lease + a floor-echo parse INSIDE the fixes themselves, before any user saw
+them.
 </trajectory>
 
 <ledger>
@@ -329,14 +333,14 @@ Learned by being wrong, repeatedly, in ways a green suite hid. The first five ar
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 317 tests. 29 were added this session (W419–W437), each
+- integration_tests/test_mvp_spine.py — 319 tests. 31 were added this session (W419–W438), each
   broken and watched fail with its ORIGINAL symptom before being trusted.
 - scripts/check_import_integrity.py — CI job; fails when a live module imports a first-party module
   with no file behind it. Baseline scripts/import_integrity_baseline.txt (13 pre-existing, kept by a
   negation at .gitignore:21 because :17 is a blanket *.txt). Run before AND after any file move.
-- scripts/browser_smoke.mjs — 12 deep routes + every other route swept, list PARSED from App.tsx.
-  REQUIRED_SECTIONS demands named sections ALL render (W437 added /native-ai: the Primitive console
-  + Fabric integrity strip). Waits on #root painting, not networkidle. NOTE: needles must be
+- scripts/browser_smoke.mjs — 13 deep routes + every other route swept, list PARSED from App.tsx.
+  REQUIRED_SECTIONS demands named sections ALL render (W437 added /native-ai; W438 added
+  /organism?tab=anatomy: health disclosure, Genome lab, wiring truth). Waits on #root painting, not networkidle. NOTE: needles must be
   compared LOWERCASED — CSS text-transform: uppercase reaches innerText, and a case-sensitive
   needle silently never matches (it cost the W437 probe two rounds).
   Also carries the W429 PDF guard: fixture generated INLINE (no binary to rot), asserting extraction,

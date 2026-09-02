@@ -302,3 +302,14 @@ Two cousins from the same pass were fixed in place rather than ledgered, because
 each and sit in files W437 already touched: `ConflictResolution.resolve` no longer logs
 first-by-position as "arbitration" (it now warns exactly what it does), and
 `NLIEngine.get_intent_confidence`'s docstring no longer claims its hardcoded 0.85 is historical.
+
+## Latent entries added by the W438 refuter pass
+
+- **CCA change-record read-modify-write races** (`agentic_core/api/change_control.py`) — W438 made
+  `_save_change` atomic, but concurrent review/twin-prevalidate/implement on ONE cca_id still
+  load-modify-save without a lock and can lose audit-trail entries. Low contention today (one
+  owner); serialise with store_lock if the CCA ever serves concurrent reviewers.
+- **`requires_ratification` has no consumer** (`change_control.py` immune path) — the MEDIUM
+  containment defence flags itself "for Board ratification" and no Board surface reads the flag;
+  the change reports implemented immediately. Either wire a Board queue for flagged changes or
+  stop flagging. (The W318 rule's own lesson, one field over.)

@@ -1,14 +1,18 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Activity, HeartPulse, Network } from 'lucide-react';
+import { Activity, Dna, HeartPulse, Network } from 'lucide-react';
 import { OrganismDashboard } from './OrganismDashboard';
 import { HeartbeatMonitor } from './HeartbeatMonitor';
 import { CognitionIntegration } from '../CognitionIntegration';
+import { OrganismAnatomy } from './OrganismAnatomy';
 
 // Consolidated Organism hub (§8 biomimetic living organism) — folds the former standalone
 // Organism · Heartbeat · Cognition pages into one tabbed surface (deep-linkable via ?tab=).
+// W438 added Anatomy: 18 organism routes (config · genome · nervous · self-healing ·
+// health/lifecycle) that existed server-side with no page — audited, fixed, then wired.
 const TABS = [
   { id: 'overview',  name: 'Organism',  icon: Activity,   El: OrganismDashboard },
+  { id: 'anatomy',   name: 'Anatomy',   icon: Dna,        El: OrganismAnatomy },
   { id: 'heartbeat', name: 'Heartbeat', icon: HeartPulse, El: HeartbeatMonitor },
   { id: 'cognition', name: 'Cognition', icon: Network,    El: CognitionIntegration },
 ] as const;

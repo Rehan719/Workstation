@@ -58,15 +58,44 @@ def _lifecycle_state() -> dict:
         total = len(projects)
         commercialised = stage_counts.get("commercialise", 0)
         completion_rate = round(commercialised / total, 3) if total else 0.0
+        # W438 — "GROWING" used to be earned by mere existence (4 idle projects, nothing running,
+        # nothing ever advanced -> GROWING). Growth now requires recent activity, and the rule ships
+        # with the verdict.
+        import time as _time
+        recent_cutoff = _time.time() - 30 * 86400
+        def _ts(p):
+            # W438 refuter catch: the Project model stores created_at/updated_at as EPOCH FLOATS;
+            # the first version parsed only ISO strings, so recently_touched was structurally zero
+            # and GROWING was unreachable while its basis claimed a measurement
+            for attr in ("updated_at", "created_at"):
+                v = getattr(p, attr, None)
+                if v:
+                    try:
+                        return float(v)
+                    except (TypeError, ValueError):
+                        pass
+                    try:
+                        return _time.mktime(_time.strptime(str(v)[:19], "%Y-%m-%dT%H:%M:%S"))
+                    except ValueError:
+                        pass
+            return 0.0
+        recently_touched = sum(1 for p in projects if _ts(p) > recent_cutoff)
+        health = ("FLOURISHING" if completion_rate > 0.3 else
+                  "GROWING" if recently_touched > 0 else
+                  "STATIC" if total > 0 else "DORMANT")
         return {
             "total_projects": total,
             "by_stage": stage_counts,
             "running": running,
             "commercialisation_rate": completion_rate,
-            "pipeline_health": "FLOURISHING" if completion_rate > 0.3 else "GROWING" if total > 0 else "DORMANT",
+            "pipeline_health": health,
+            "pipeline_health_basis": (f"FLOURISHING: >30% commercialised · GROWING: any project "
+                                      f"touched in 30 days ({recently_touched} were) · STATIC: "
+                                      f"projects exist but idle · DORMANT: none"),
         }
     except Exception:
-        return {"total_projects": 0, "by_stage": {}, "running": 0, "commercialisation_rate": 0.0, "pipeline_health": "UNKNOWN"}
+        return {"total_projects": 0, "by_stage": {}, "running": 0, "commercialisation_rate": 0.0,
+                "pipeline_health": "UNKNOWN", "pipeline_health_basis": "lifecycle state unreadable"}
 
 
 def _vsb_state() -> dict:
@@ -82,11 +111,19 @@ def _vsb_state() -> dict:
                 entities.append(v)
             except Exception:
                 pass
-        active = sum(1 for v in entities if v.get("status") == "active")
-        domains = list({v.get("domain", "") for v in entities if v.get("domain")})
-        return {"total": len(entities), "active": active, "domains": domains[:10]}
+        # W438 — the only status the VSB writer persists is "operational"; this counted "active",
+        # so the figure was structurally ZERO forever and silently HALVED commercialisation_readiness
+        # for any org with VSBs (spawning VSBs lowered reported readiness)
+        by_status: dict[str, int] = {}
+        for v in entities:
+            s = str(v.get("status") or "unknown")
+            by_status[s] = by_status.get(s, 0) + 1
+        operational = sum(n for s, n in by_status.items() if s in ("operational", "active"))
+        domains = sorted({v.get("domain", "") for v in entities if v.get("domain")})
+        return {"total": len(entities), "operational": operational, "by_status": by_status,
+                "domains": domains[:10], "domains_total": len(domains)}
     except Exception:
-        return {"total": 0, "active": 0, "domains": []}
+        return {"total": 0, "operational": 0, "by_status": {}, "domains": [], "domains_total": 0}
 
 
 def _cca_state() -> dict:
@@ -160,11 +197,12 @@ def _genome_state() -> dict:
         return {"total_genomes": len(files), "mean_fitness": mean_fitness,
                 "max_generation": max_gen, "dominant_trait": dominant,
                 "dominant_trait_tied": tied if len(tied) > 1 else [],
-                "dominant_trait_basis": ("no genomes stored" if not trait_sums else
+                "dominant_trait_basis": ("no numeric traits stored" if not trait_sums else
                                          f"{len(tied)} trait axes tie at the top - none dominates"
                                          if len(tied) > 1 else f"highest mean of {len(means)} axes")}
     except Exception:
-        return {"total_genomes": 0, "mean_fitness": None, "max_generation": 0, "dominant_trait": None}
+        return {"total_genomes": 0, "mean_fitness": None, "max_generation": 0, "dominant_trait": None,
+                "dominant_trait_tied": [], "dominant_trait_basis": "unavailable (read error)"}
 
 
 # ── Main status endpoint ──────────────────────────────────────────────────────
@@ -199,10 +237,14 @@ async def organism_status():
         "version": "1.0.0",
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
 
-        # ── Composite health ──────────────────────────────────────────────────
+        # ── Composite health — with the W438 disclosure passthrough: the W422 measured-only
+        # score and per-term breakdown existed ONLY inside biobus; no HTTP surface carried them ──
         "composite_health": ctx["composite_health"],
+        "composite_health_measured_only": ctx.get("composite_health_measured_only"),
+        "composite_health_terms": ctx.get("composite_health_terms"),
         "mode": ctx["mode"],
         "health_summary": ctx["health_summary"],
+        **({"context_error": ctx["error"]} if ctx.get("error") else {}),
 
         # ── Biomimetic systems ────────────────────────────────────────────────
         "systems": {
@@ -210,8 +252,12 @@ async def organism_status():
                 "health": imm["health"],
                 "threat_level": imm["threat_level"],
                 "errors_in_window": imm["errors_in_window"],
-                "active_responses": imm["active_responses"],
+                "response_playbook": imm["response_playbook"],
+                # W438 — the projection used to drop the W433 companion fields, so at THIS surface
+                # a null was ambiguous (no errors vs tie) and one stray error read as genuinely hot
                 "hot_endpoint": imm.get("hot_endpoint"),
+                "hot_endpoint_errors": imm.get("hot_endpoint_errors"),
+                "hot_endpoint_tied": imm.get("hot_endpoint_tied"),
             },
             "nervous": {
                 "arousal_state": ns["arousal_state"],
@@ -249,35 +295,64 @@ async def organism_status():
     }
 
 
+def _health_basis(ctx: dict) -> str:
+    """Derive the basis from the terms' ACTUAL measured flags — never a constant assertion."""
+    terms = ctx.get("composite_health_terms")
+    if not terms:
+        return ctx.get("composite_health_basis") or "basis unavailable (organism context degraded)"
+    measured_w = sum(t.get("weight", 0) for t in terms.values() if t.get("measured"))
+    unmeasured = [f"{k} ({t.get('basis', 'not a measurement')})"
+                  for k, t in terms.items() if not t.get("measured")]
+    return (f"{round(measured_w * 100)}% measured"
+            + (f"; not measured: {'; '.join(unmeasured)}" if unmeasured else ""))
+
+
 @router.get("/health-summary")
 async def health_summary():
-    """Compact health check for operational decision-making."""
+    """Compact health check for operational decision-making — carrying the W422 disclosure.
+
+    W438 — composite_health is 20% SIMULATED (ATP on a constant load); biobus computed the
+    measured-only companion score and per-term breakdown, but NO HTTP surface passed them through,
+    so this route pitched the undisclosed blend "for operational decision-making". It also 500'd
+    (KeyError) on biobus's degraded fallback — at exactly the moment the organism was least
+    healthy."""
     ctx = biobus.organism_context()
+    rec = ctx.get("recommended") or {}
+    circ = ctx.get("circadian") or {}
     return {
         "composite_health": ctx["composite_health"],
+        "composite_health_measured_only": ctx.get("composite_health_measured_only"),
+        "composite_health_terms": ctx.get("composite_health_terms"),
+        # W438 refuter catch: this basis was a CONSTANT asserted even when the terms said the
+        # self-healing half was defaulted (fresh process) or the whole score was a fallback constant
+        "health_basis": _health_basis(ctx),
         "mode": ctx["mode"],
-        "should_throttle": ctx["recommended"]["should_throttle"],
-        "max_parallel_agents": ctx["recommended"]["max_parallel_agents"],
-        "circadian_cycle": ctx["circadian"]["cycle"],
-        "is_peak_focus": ctx["circadian"]["is_peak_focus"],
+        "should_throttle": rec.get("should_throttle", False),
+        "max_parallel_agents": rec.get("max_parallel_agents", 2),
+        "circadian_cycle": circ.get("cycle", "UNKNOWN"),
+        "is_peak_focus": circ.get("is_peak_focus", False),
         "summary": ctx["health_summary"],
+        **({"context_error": ctx["error"]} if ctx.get("error") else {}),
     }
 
 
 @router.get("/systems")
 async def individual_systems():
-    """Individual system statuses without aggregation."""
+    """Individual system statuses without aggregation — with the honest scope stated: these are
+    in-memory, per-process readings that zero on every restart (and under multi-worker serving
+    reflect only the worker that answered)."""
     return {
         "immune": immune.status(),
         "nervous": nervous.status(),
         "self_healing": self_healer.status(),
+        "scope": "in-memory, this server process since start",
     }
 
 
 @router.get("/signals")
 async def signal_feed(n: int = 100):
     """Recent nervous system signal feed — the organism's activity log."""
-    signals = nervous.recent_signals(min(n, 200))
+    signals = nervous.recent_signals(max(1, min(n, 200)))
     ns = nervous.status()
     return {
         "arousal_state": ns["arousal_state"],
@@ -294,30 +369,37 @@ async def lifecycle_status():
     vsb = _vsb_state()
     ctx = biobus.organism_context()
 
-    # Calculate how far along the org is
-    stages_reached = []
-    if lifecycle["total_projects"] > 0:
-        stages_reached.append("concept")
-    if lifecycle["by_stage"].get("prototype", 0) > 0:
-        stages_reached.append("prototype")
-    if lifecycle["by_stage"].get("commercialise", 0) > 0:
-        stages_reached.append("commercialise")
-    if vsb["total"] > 0:
-        stages_reached.append("vsb_spawn")
-    if vsb["active"] > 0:
-        stages_reached.append("vsb_active")
+    # W438 — the old "farthest_stage" was a fixed append order presented as a pipeline position:
+    # it minted a 9th lifecycle vocabulary (folding VSB existence into the project pipeline), so an
+    # org whose projects had ALL sat at concept forever reported farthest_stage "vsb_spawn". The
+    # project pipeline is now cumulative over its own 3-stage order, VSB state is separate booleans,
+    # and the readiness formula ships with the verdict.
+    order = ["concept", "prototype", "commercialise"]
+    occupied = [s for s in order if lifecycle["by_stage"].get(s, 0) > 0]
+    farthest = occupied[-1] if occupied else "none"
+    stages_reached = order[: order.index(farthest) + 1] if farthest != "none" else []
 
+    operational = vsb.get("operational", 0)
+    readiness = (min(1.0, (lifecycle["commercialisation_rate"] * 0.5) +
+                 (operational / max(vsb["total"], 1) * 0.5))
+                 if vsb["total"] > 0 else lifecycle["commercialisation_rate"])
     return {
         "lifecycle_stages_reached": stages_reached,
-        "farthest_stage": stages_reached[-1] if stages_reached else "none",
+        "farthest_stage": farthest,
+        "stages_note": ("project stages are cumulative over concept-prototype-commercialise; NOTE "
+                        "the known vocabulary issue (ledger item 2, Owner decision pending): project "
+                        "stage advances only when set, and VSB records hold their own status"),
+        "vsb_spawned": vsb["total"] > 0,
+        "vsb_operational": operational > 0,
         "projects": lifecycle,
         "vsb_entities": vsb,
         "organism_mode": ctx["mode"],
-        "commercialisation_readiness": min(
-            1.0,
-            (lifecycle["commercialisation_rate"] * 0.5) +
-            (vsb["active"] / max(vsb["total"], 1) * 0.5)
-        ) if vsb["total"] > 0 else lifecycle["commercialisation_rate"],
+        "commercialisation_readiness": readiness,
+        "commercialisation_readiness_basis": (
+            f"0.5 x project commercialisation_rate ({lifecycle['commercialisation_rate']}) + "
+            f"0.5 x VSB operational share ({operational}/{max(vsb['total'], 1)})"
+            if vsb["total"] > 0 else
+            f"project commercialisation_rate alone ({lifecycle['commercialisation_rate']}) - no VSBs"),
     }
 
 
@@ -340,8 +422,9 @@ async def trigger_homeostasis(req: HomeostasisRequest):
     ctx = biobus.organism_context()
     adjustments = []
 
-    # Metabolic adjustment — slow down if ATP depleted
-    if ctx["metabolic"]["atp_ratio"] < 0.3:
+    # Metabolic adjustment — slow down if ATP depleted (the biobus fallback carries None — W438)
+    _atp = ctx.get("metabolic", {}).get("atp_ratio")
+    if _atp is not None and _atp < 0.3:
         adjustments.append({
             "system": "gateway",
             "action": "reduce_rpm",

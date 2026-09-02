@@ -19,9 +19,9 @@ interface OrganismStatus {
   mode: 'FULL_POWER' | 'NOMINAL' | 'DEGRADED' | 'EMERGENCY';
   health_summary: string;
   systems: {
-    immune:        { health: number; threat_level: string; errors_in_window: number; active_responses: number; hot_endpoint?: string };
+    immune:        { health: number; threat_level: string; errors_in_window: number; response_playbook?: string[]; hot_endpoint?: string };
     nervous:       { arousal_state: string; signal_rate_per_second: number; signals_last_60s: number; by_type: Record<string,number>; total_signals: Record<string,number>; reflex_arcs: number };
-    self_healing:  { overall_health: number; open_circuits: number; recent_events: unknown[] };
+    self_healing:  { overall_health: number | null; open_circuits: number; recent_events: unknown[] };
     metabolic:     { atp_ratio: number };
     circadian:     { cycle: string; is_peak_focus: boolean };
     genome:        { total_genomes: number };
@@ -29,7 +29,7 @@ interface OrganismStatus {
   };
   operations: {
     lifecycle:     { total_projects: number; by_stage: Record<string,number>; running: number; commercialisation_rate: number; pipeline_health: string };
-    vsb:           { total: number; active: number; domains: string[] };
+    vsb:           { total: number; operational: number; domains: string[] };
     change_control: { pending: number; approved: number; implemented: number };
   };
   recommended: { temperature: string; should_throttle: boolean; max_parallel_agents: number; priority: string };
@@ -332,8 +332,12 @@ export const OrganismDashboard: React.FC = () => {
 
           {/* Self-Healing */}
           <SystemCard icon={Heart} title="Self-Healing" accent={systems.self_healing.open_circuits > 0 ? 'border-yellow-500/30' : 'border-white/10'}>
-            <div className="text-2xl font-black text-white">{Math.round(systems.self_healing.overall_health * 100)}%</div>
-            <HealthBar value={systems.self_healing.overall_health} />
+            {systems.self_healing.overall_health === null ? (
+              <div className="text-lg font-black text-white/40">no data yet</div>
+            ) : (<>
+              <div className="text-2xl font-black text-white">{Math.round(systems.self_healing.overall_health * 100)}%</div>
+              <HealthBar value={systems.self_healing.overall_health} />
+            </>)}
             <div className="text-xs font-mono text-white/40">
               {systems.self_healing.open_circuits === 0
                 ? <span className="text-green-400">All circuits closed</span>
@@ -448,8 +452,8 @@ export const OrganismDashboard: React.FC = () => {
                 <div className="text-xs text-white/40">total</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-black text-green-400">{operations.vsb.active}</div>
-                <div className="text-xs text-white/40">active</div>
+                <div className="text-3xl font-black text-green-400">{operations.vsb.operational}</div>
+                <div className="text-xs text-white/40">operational</div>
               </div>
             </div>
             {operations.vsb.domains.length > 0 && (

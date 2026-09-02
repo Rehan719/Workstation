@@ -189,7 +189,12 @@ class BiomimeticBus:
             reconfig = _get_reconfig()
 
             immune_health = imm["health"]
-            sh_health = sh["overall_health"]
+            # W438 — self-healing honestly reports health None when ZERO circuits are tracked (a
+            # fresh process has measured nothing). For the composite, an untracked breaker registry
+            # contributes no evidence of harm: treat as 1.0 here, but the terms below disclose it.
+            _sh_raw = sh["overall_health"]
+            sh_untracked = _sh_raw is None
+            sh_health = 1.0 if sh_untracked else _sh_raw
             metabolic = atp_ratio
             composite_health = round((immune_health * 0.4 + sh_health * 0.4 + metabolic * 0.2), 3)
             # §8 · §17.2 (W422) — the metabolic term is 20% of this score and is SIMULATED, not
@@ -199,7 +204,11 @@ class BiomimeticBus:
             # unchanged because live thresholds read it (change_control gates on >= 0.6), but it must
             # never again be presented as wholly measured — so the measured-only score travels beside
             # it, and the simulated term is named.
-            _measured_only = round((immune_health * 0.5 + sh_health * 0.5), 3)
+            # W438 refuter catch: with the breaker registry untracked, sh_health is a DEFAULT, so
+            # folding it into a score named "measured only" at 50% weight made a fresh process read
+            # 100% measured health; measured-only is immune-alone until self-healing has evidence
+            _measured_only = round(immune_health, 3) if sh_untracked else round(
+                (immune_health * 0.5 + sh_health * 0.5), 3)
 
             # Recommended behaviour
             if composite_health >= 0.8 and cycle == "ACTIVE_FOCUS":
@@ -220,7 +229,10 @@ class BiomimeticBus:
                 "composite_health_measured_only": _measured_only,
                 "composite_health_terms": {
                     "immune_health": {"weight": 0.4, "value": immune_health, "measured": True},
-                    "self_healing_health": {"weight": 0.4, "value": sh_health, "measured": True},
+                    "self_healing_health": {"weight": 0.4, "value": sh_health,
+                                            "measured": not sh_untracked,
+                                            **({"basis": "no circuits tracked yet — defaulted to 1.0, "
+                                                         "not a measurement"} if sh_untracked else {})},
                     "metabolic": {"weight": 0.2, "value": metabolic, "measured": False,
                                   "basis": "ATPSimulator on a constant metabolic_load — simulated, "
                                            "not a measurement of this platform"},
@@ -261,11 +273,25 @@ class BiomimeticBus:
                 "health_summary": self._health_summary(composite_health, mode, cycle),
             }
         except Exception as e:
+            # W438 — this fallback used to omit "recommended"/"circadian", so /health-summary
+            # 500'd (KeyError) at exactly the moment the organism was least healthy, and its
+            # constant 0.9 travelled undisclosed. The dict is now shape-complete and the constant
+            # carries its basis; live threshold consumers keep working (0.9 >= their gates).
             return {
                 "composite_health": 0.9,
+                "composite_health_basis": ("FALLBACK CONSTANT — the organism context errored; "
+                                           "0.9 is not a measurement"),
+                "composite_health_measured_only": None,
+                "composite_health_terms": None,
                 "mode": "NOMINAL",
                 "error": str(e),
-                "health_summary": "Organism context unavailable — running at nominal.",
+                "immune": {"health": None, "threat_level": "UNKNOWN"},
+                "circadian": {"cycle": "UNKNOWN", "is_peak_focus": False},
+                "metabolic": {"atp_ratio": None},
+                "recommended": {"should_throttle": False, "max_parallel_agents": 2,
+                                "temperature": "neutral", "priority": "normal"},
+                "runtime_config": {"rpm_limit": 20, "preferred_provider": "auto", "features": {}},
+                "health_summary": "Organism context unavailable — running at nominal (fallback).",
             }
 
     def _health_summary(self, health: float, mode: str, cycle: str) -> str:

@@ -32,7 +32,7 @@ import time
 import uuid
 from pathlib import Path
 from agentic_core.config import data_path
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -59,7 +59,11 @@ def _load_change(cca_id: str) -> dict | None:
 
 
 def _save_change(change: dict) -> None:
-    _cca_path(change["cca_id"]).write_text(json.dumps(change, indent=2))
+    # W438 — atomic per the store convention (a torn change file poisons the audit record); the
+    # remaining read-modify-write races across concurrent review/implement on ONE cca_id are
+    # recorded as a latent in NATIVE_PRIMITIVE_DEFECT_LEDGER.md rather than silently left
+    from agentic_core.config import atomic_write_json
+    atomic_write_json(_cca_path(change["cca_id"]), change)
 
 
 def _list_changes(status_filter: str | None = None) -> list[dict]:
@@ -116,6 +120,16 @@ def _determine_tier(change_type: str, description: str) -> ImpactTier:
 
 # ── Request models ────────────────────────────────────────────────────────────
 
+class ConfigChangeSpec(BaseModel):
+    # W438 — the CCA's execution arm for organism configuration. Either one (section, key, value)
+    # change or reset: true. Validated/coerced at SUBMIT time so an unappliable change can never
+    # be approved, and APPLIED by /implement (which used to only mark, never execute).
+    section: str | None = None
+    key: str | None = None
+    value: Any = None
+    reset: bool = False
+
+
 class SubmitChangeRequest(BaseModel):
     title: str
     change_type: str = "config_minor"
@@ -125,6 +139,7 @@ class SubmitChangeRequest(BaseModel):
     submitted_by: str = "system"
     vsb_id: str | None = None
     rollback_plan: str = ""
+    config_change: ConfigChangeSpec | None = None
 
 
 class ReviewDecision(BaseModel):
@@ -151,10 +166,16 @@ def _immune_threat() -> str:
 # to it. Every lever names its consumer here; setting a lever with no wired consumer records
 # 'lever_set_no_consumer' instead — no future lever ships decorative.
 _LEVER_CONSUMERS: dict[str, str] = {
-    "temperature_bias": "ai.gateway generation parameters (per-call)",
+    # W438 refactor of this map against a grep of actual readers: temperature_bias was listed here
+    # with "ai.gateway generation parameters (per-call)" — but its only behavioural read sits in
+    # gateway._call, which nothing invokes (the native orchestrator superseded it and never reads
+    # reconfig). Recording the ELEVATED defence as "implemented" against a consumer that does not
+    # exist violated this map's own W318 rule; that defence now honestly records
+    # lever_set_no_consumer until a real consumer is wired.
     "metabolic_throttle": "organism.heartbeat evolve tick (suppressed at low ATP) — W310",
     "immune_quarantine": "self_healing.is_open strict containment + attempt_heal hold — W318",
     "evolution_auto_apply": "organism.heartbeat post-approval auto-apply — W310",
+    "rpm_limit": "ai.gateway rate limiter (re-synced ~30s via _sync_reconfig)",
 }
 
 _IMMUNE_DEFENCE: dict[str, dict] = {
@@ -169,15 +190,43 @@ _IMMUNE_DEFENCE: dict[str, dict] = {
 
 @router.post("/submit")
 async def submit_change(req: SubmitChangeRequest):
-    """Submit a change request to the Change Control Agency."""
+    """Submit a change request to the Change Control Agency.
+
+    W438 — a change may carry a structured `config_change` payload; it is validated and coerced
+    HERE (so nothing unappliable can be approved), and /implement APPLIES it through the
+    reconfiguration engine's audited core. Governed live levers are forced to config_major
+    (MEDIUM — never auto-approved as a minor tweak)."""
     cca_id = f"cca-{uuid.uuid4().hex[:10]}"
-    tier = _determine_tier(req.change_type, req.description)
+    change_type = req.change_type
+    cc = req.config_change
+    if cc is not None:
+        from agentic_core.organism.reconfiguration import (coerce_value, _GOVERNED_KEYS,
+                                                           _DEFAULT_CONFIG, wiring_for)
+        if cc.reset:
+            if cc.section or cc.key:
+                raise HTTPException(status_code=422,
+                                    detail="config_change: pass either reset:true OR section/key/value, not both")
+            change_type = "config_major"
+        else:
+            if not cc.section or not cc.key:
+                raise HTTPException(status_code=422,
+                                    detail="config_change needs section and key (or reset: true)")
+            if cc.section not in _DEFAULT_CONFIG or not isinstance(_DEFAULT_CONFIG.get(cc.section), dict):
+                raise HTTPException(status_code=422, detail=f"Unknown config section: {cc.section}")
+            try:
+                cc.value = coerce_value(cc.section, cc.key, cc.value)
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+            if (cc.section, cc.key) in _GOVERNED_KEYS:
+                change_type = "config_major"   # a live lever is never a minor tweak
+    tier = _determine_tier(change_type, req.description)
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     change = {
         "cca_id": cca_id,
         "title": req.title,
-        "change_type": req.change_type,
+        "change_type": change_type,
+        "config_change": (cc.model_dump() if cc is not None else None),
         "description": req.description,
         "rationale": req.rationale,
         "affected_systems": req.affected_systems,
@@ -278,11 +327,14 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
 
     applied = None
     try:
-        from agentic_core.organism.reconfiguration import update_config, ConfigUpdateRequest
-        res = await update_config(ConfigUpdateRequest(
-            section=plan["section"], key=plan["key"], value=plan["value"],
-            reason=f"Immune reconfigurator (threat={threat}, cca={cca_id})"))
-        applied = res.get("change")
+        # W438: the CCA's execution arm is the ungated core, not the HTTP route — the route now
+        # refuses governed levers (that refusal exists precisely so THIS audited path is the only
+        # way they change)
+        from agentic_core.organism.reconfiguration import apply_config_change
+        applied = apply_config_change(
+            plan["section"], plan["key"], plan["value"],
+            reason=f"Immune reconfigurator (threat={threat}, cca={cca_id})",
+            updated_by="cca-immune")
         _consumer = _LEVER_CONSUMERS.get(plan["key"])
         if _consumer:
             change["status"] = "implemented"
@@ -526,13 +578,50 @@ async def implement_change(cca_id: str, force: bool = False):
         if tp.get("verdict") != "pass" and force:
             c["audit_trail"].append({"event": "twin_fail_overridden_by_owner", "ts": now})
 
+    # W438 — the CCA gains its EXECUTION ARM: /implement used to only MARK a change implemented
+    # while applying nothing (the raw ungoverned config route did the applying — that inversion was
+    # the governance bypass). A change carrying a config_change payload is now genuinely applied
+    # here, through the reconfiguration engine's audited core, under the W318 consumer-honesty rule.
+    applied = None
+    spec = c.get("config_change")
+    if spec:
+        from agentic_core.organism.reconfiguration import (apply_config_change, apply_config_reset,
+                                                           wiring_for)
+        try:
+            if spec.get("reset"):
+                applied = apply_config_reset(reason=f"CCA {cca_id}: {c['title']}",
+                                             updated_by=f"cca:{cca_id}")["change"]
+                wired = True   # a reset flips wired levers back to defaults
+                consumer = "reset — includes every wired lever (rpm_limit, metabolic_throttle, immune_quarantine, evolution_auto_apply)"
+            else:
+                applied = apply_config_change(spec["section"], spec["key"], spec.get("value"),
+                                              reason=f"CCA {cca_id}: {c['title']}",
+                                              updated_by=f"cca:{cca_id}")
+                w = wiring_for(spec["section"], spec["key"])
+                wired, consumer = w["wired"], w["consumer"]
+        except ValueError as e:
+            c["audit_trail"].append({"event": "apply_failed", "ts": now, "error": str(e)})
+            _save_change(c)
+            raise HTTPException(status_code=422, detail=f"config change could not be applied: {e}")
+        if not wired:
+            # W318 — the value was set but nothing consumes it: never claim 'implemented'
+            c["audit_trail"].append({"event": "config_set_no_consumer", "ts": now, "applied": applied,
+                                     "note": "config value set; stored-only key — no live behaviour changed"})
+            _save_change(c)
+            biobus.fire_signal("motor", "cca.implement", f"Config set (no consumer): {c['title']}", 0.5)
+            return {"cca_id": cca_id, "status": c["status"], "applied": applied,
+                    "note": ("the value was stored, but this key has no wired consumer — no live "
+                             "behaviour changed, so the change is NOT marked implemented (W318)")}
+        c["audit_trail"].append({"event": "config_applied", "ts": now, "applied": applied,
+                                 "consumer": consumer})
+
     c["status"] = "implemented"
     c["implemented_at"] = now
     c["audit_trail"].append({"event": "implemented", "ts": now})
     _save_change(c)
 
     biobus.fire_signal("motor", "cca.implement", f"Implemented: {c['title']}", 0.7)
-    return {"cca_id": cca_id, "status": "implemented", "implemented_at": now,
+    return {"cca_id": cca_id, "status": "implemented", "implemented_at": now, "applied": applied,
             "twin_prevalidation": (c.get("twin_prevalidation") or {}).get("verdict")}
 
 
