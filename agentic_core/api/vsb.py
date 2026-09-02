@@ -154,7 +154,13 @@ def _build_repo_files(vsb: dict) -> dict:
         _ev_lines += [""]
     if _sv:
         _ev_lines += ["## Stage Verifications (§5 measured)"]
-        _ev_lines += [f"- {k}: verified={v.get('verified')} · score={v.get('score')} · sections {v.get('sections_present')}"
+        # W436 — `verified: None` means NOT ASSESSABLE (floor-served: the proxies cannot fail on
+        # floor output). Rendering the raw None into a shipped evidence file would leave the reader
+        # to guess; say what it means instead.
+        _ev_lines += [f"- {k}: verified="
+                      + ("not assessable (floor-served)" if v.get("verified") is None
+                         else str(v.get("verified")))
+                      + f" · score={v.get('score')} · sections {v.get('sections_present')}"
                       for k, v in _sv.items() if isinstance(v, dict)]
     if not _cand and not _sv:
         _ev_lines += ["_Not provided at establishment — the journey's ranked candidates and stage "
@@ -1698,7 +1704,12 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
     if not proposals:
         _gj2 = vsb.get("genesis_journey") if isinstance(vsb.get("genesis_journey"), dict) else {}
         for _stage, _v in list((_gj2.get("stage_verifications") or {}).items()):
-            if isinstance(_v, dict) and not _v.get("verified") and len(proposals) < 2:
+            # W436 — propose ONLY on a MEASURED failure (verified is False). `verified: None` means
+            # not assessable (floor-served: the check cannot fail there, so nothing is known). The
+            # old `not _v.get("verified")` truthiness collapsed the two, which would have generated
+            # "strengthen this stage" proposals from a verification that never ran — an
+            # evidence-based proposal whose evidence did not exist.
+            if isinstance(_v, dict) and _v.get("verified") is False and len(proposals) < 2:
                 proposals.append({
                     "trait": f"{_stage}_strength",
                     "proposed_change": (f"strengthen the {_stage} stage to a verified state "

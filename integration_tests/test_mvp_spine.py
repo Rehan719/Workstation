@@ -7509,3 +7509,44 @@ def test_w435_plan_api_mirrors_the_doc_scorecard():
             mismatches.append("%s: doc=%s api=%s" % (kw, doc_status, api_by_kw[kw]))
     assert not mismatches, (
         "the /api/v1/plan mirror has drifted from the doc's §7 scorecard: %s" % "; ".join(mismatches))
+
+
+def test_w436_floor_served_stages_are_not_certified(client):
+    """§4/§5/§10 (v10 ledger item 1c) — a check that cannot fail must not certify.
+
+    The journey reported `stages_verified: "5/5"` with every stage `verified: true` on runs where
+    the deterministic floor served every stage — and the verification proxies cannot fail on floor
+    output: the floor emits the caller's OWN requested headings, so coverage is always 1.0 and
+    structure always >= 1.0, putting the composite at exactly the 0.5 verification threshold. Only a
+    gateway exception could flip it false. Under AI_DISABLE_LOCAL (this suite, and CI) that "5/5"
+    was a certification nothing earned.
+    """
+    r = client.post("/api/v1/genesis/journey", json={
+        "problem": "reduce heat loss in social housing", "domain": "enterprise"})
+    assert r.status_code == 200, r.text
+    d = r.json()
+
+    served = (d.get("ai_provenance") or {}).get("served_by") or {}
+    assert served.get("native", 0) > 0, (
+        "fixture assumption broken: this suite runs on the floor (AI_DISABLE_LOCAL); served_by=%r"
+        % (served,))
+
+    sv = d.get("stage_verifications") or {}
+    assert len(sv) == 5
+    for stage, v in sv.items():
+        assert v["verified"] is None, (
+            "%s claims verified=%r on floor-served output, where the check cannot fail" % (stage, v["verified"]))
+        assert "not assessable" in (v.get("basis") or ""), "the absence must carry its reason"
+        # the proxy scores remain — they are real measurements of the text, just not evidence
+        assert "score" in v and "sections_present" in v
+
+    # the headline arithmetic counts only what was assessable, and the floor count is disclosed
+    assert d.get("stages_verified") == "0/0"
+    assert d.get("stages_floor_served") == 5
+    assert "not assessable" in (d.get("stages_note") or "")
+
+    # and the §10 record must NOT attest tested/validated for a run whose verification never ran
+    bar = ((d.get("quality_assurance") or {}).get("quality") or {}).get("bar_measured") or {}
+    attested = set(bar.get("attested_criteria") or [])
+    assert "tested" not in attested and "validated" not in attested, (
+        "a floor run attested verification it could not perform: %r" % (attested,))

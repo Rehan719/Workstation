@@ -25,16 +25,30 @@ interface JourneyResult {
     method: string; selected: string; selection_basis: string;
     candidates: { id: string; framing: string; rank: number; score: number; coverage: number;
       specificity: number; structure: number; approach: string }[];
+    // W434/W436 — whether the "alternatives" genuinely differ. When they do not, ranking them is a
+    // comparison that never happened, and the note replaces the ranked cards.
+    candidates_are_alternatives?: boolean;
+    comparison_note?: string | null;
+    honesty?: string;
+    criteria_not_measured?: Record<string, string>;
   };
   phase_2_design_development: string;
   stage_7_operational_intelligence?: string;   // §4.7 — deliverable · compliant · operable
   phase_3_commercialisation: string;
   governance: { status: string; checkpoint: string | null; node: string };
-  // §5 — each stage verified/tested/validated on real measured proxies
-  stage_verifications?: Record<string, { verified: boolean; score: number; sections_present: string }>;
+  // §5 — each stage verified/tested/validated on real measured proxies.
+  // W436 — `verified: null` means NOT ASSESSABLE (floor-served): the proxies cannot fail on floor
+  // output, so no verdict is claimed. Null is a third state, never rendered as pass OR fail.
+  stage_verifications?: Record<string, { verified: boolean | null; score: number; sections_present: string; basis?: string }>;
   stages_verified?: string;
+  stages_floor_served?: number;
+  stages_note?: string | null;
+  ai_provenance?: { posture?: string; served_by?: Record<string, number>; any_external?: boolean };
   quality_assurance?: {
     quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[];
+      // §10 (W419/W436) — the bar's real shape: measured by the gate vs merely attested by a caller.
+      bar_measured?: { measured: number; attested: number; not_measured: number; summary?: string;
+        measured_criteria?: string[]; attested_criteria?: string[] };
       quality_record_hash?: string; document_controlled?: boolean;
       compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } };
     biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
@@ -556,18 +570,52 @@ export const GenesisJourney: React.FC = () => {
               </Button>
             </div>
           </Card>
-          {/* §5 — each stage verified/tested/validated (real measured proxies) */}
+          {/* §6 × §10 (W436, v10 item 1a) — WHO SERVED THIS, above the results. The floor was
+              disclosed on exactly one developer page while this journey showed a green "5/5
+              verified" over floor-served output. The user must see what produced their result
+              BEFORE they read the verification chips below it. */}
+          {result.ai_provenance?.served_by && (
+            <Card className={`p-4 ${(result.ai_provenance.served_by['native'] || 0) > 0 ? 'border-amber-500/30 bg-amber-500/5' : 'border-emerald-500/20'}`}>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">What served this journey</h3>
+                <span className="text-[9px] font-mono text-slate-400">
+                  {Object.entries(result.ai_provenance.served_by).map(([k, n]) => `${k} ×${n}`).join(' · ')}
+                  {result.ai_provenance.any_external ? ' · external used' : ' · no external'}
+                </span>
+              </div>
+              {(result.ai_provenance.served_by['native'] || 0) > 0 && (
+                <p className="text-[10px] text-amber-400/90 font-semibold mt-1.5 leading-relaxed">
+                  The deterministic native floor served {result.ai_provenance.served_by['native']} of
+                  these calls — honest structured composition from your inputs, not generative model
+                  reasoning. Run a local model (see /native-ai) for generative output.
+                </p>
+              )}
+              {result.stages_note && (
+                <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-relaxed">{result.stages_note}</p>
+              )}
+            </Card>
+          )}
+          {/* §5 — each stage verified/tested/validated (real measured proxies).
+              W436 — three states, honestly: verified (green) · not verified (amber) · NOT ASSESSABLE
+              (slate — floor-served, where the proxies cannot fail and so prove nothing). */}
           {result.stage_verifications && (
             <Card className="p-4 border-emerald-500/20">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><ShieldCheck size={13} className="text-emerald-400" /> Stage verification — each stage tested &amp; validated (§5)</h3>
-                {result.stages_verified && <span className="text-[9px] font-black uppercase text-emerald-400">{result.stages_verified} verified</span>}
+                {result.stages_verified && (
+                  <span className="text-[9px] font-black uppercase text-emerald-400">
+                    {result.stages_verified} verified
+                    {(result.stages_floor_served || 0) > 0 && (
+                      <span className="text-slate-500"> · {result.stages_floor_served} floor-served, not assessable</span>
+                    )}
+                  </span>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(result.stage_verifications).map(([stage, v]) => (
-                  <span key={stage} title={`score ${v.score} · sections ${v.sections_present}`}
-                    className={`text-[9px] font-black uppercase px-2 py-1 rounded ${v.verified ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                    {v.verified ? '✓' : '⚠'} {stage} · {Math.round(v.score * 100)}%
+                  <span key={stage} title={v.verified === null ? (v.basis || 'not assessable — floor-served') : `score ${v.score} · sections ${v.sections_present}`}
+                    className={`text-[9px] font-black uppercase px-2 py-1 rounded ${v.verified === null ? 'bg-slate-800 text-slate-500' : v.verified ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                    {v.verified === null ? '—' : v.verified ? '✓' : '⚠'} {stage} · {Math.round(v.score * 100)}%
                   </span>
                 ))}
               </div>
@@ -610,6 +658,18 @@ export const GenesisJourney: React.FC = () => {
                 <h3 className="text-xs font-black uppercase tracking-widest text-aura">Model · Simulate · Optimise · Rank (§4.5)</h3>
               </div>
               <p className="text-[10px] text-slate-500 mb-3">{result.stage_5_model_simulate_rank.method}</p>
+              {/* W436 (v10 item 1d) — when the three "alternatives" came back IDENTICAL, ranking
+                  them is a comparison that never happened. W434 put the disclosure in the payload;
+                  this renders it IN PLACE OF the ranked cards, which would otherwise imply three
+                  distinct options were weighed. */}
+              {result.stage_5_model_simulate_rank.candidates_are_alternatives === false ? (
+                <div role="status" className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 mb-2">
+                  <p className="text-[10px] font-bold text-amber-400 leading-relaxed">
+                    {result.stage_5_model_simulate_rank.comparison_note ||
+                      'All candidates returned identical text — no comparison was possible, so no ranking is shown.'}
+                  </p>
+                </div>
+              ) : (
               <div className="space-y-2">
                 {result.stage_5_model_simulate_rank.candidates.map(c => {
                   const isWin = c.id === result.stage_5_model_simulate_rank!.selected;
@@ -634,7 +694,20 @@ export const GenesisJourney: React.FC = () => {
                   );
                 })}
               </div>
+              )}
               <p className="text-[9px] text-slate-600 mt-2">{result.stage_5_model_simulate_rank.selection_basis} — the winner is carried into Design.</p>
+              {/* W436 (v10 item 1b) — what this ranking measured and what it honestly could not,
+                  rendered beside the scores rather than left in the payload. */}
+              {result.stage_5_model_simulate_rank.honesty && (
+                <p className="text-[9px] text-slate-500 mt-1.5 leading-relaxed">{result.stage_5_model_simulate_rank.honesty}</p>
+              )}
+              {result.stage_5_model_simulate_rank.criteria_not_measured && (
+                <p className="text-[9px] text-slate-600 mt-1 leading-relaxed">
+                  Not measured at selection time:{' '}
+                  {Object.entries(result.stage_5_model_simulate_rank.criteria_not_measured)
+                    .map(([k, why]) => `${k} (${why})`).join(' · ')}.
+                </p>
+              )}
             </Card>
           )}
 
@@ -667,10 +740,24 @@ export const GenesisJourney: React.FC = () => {
             {/* Continual operational delivery within the living QMS — §10 bar + §8 organism */}
             {result.quality_assurance?.quality && (
               <div className="flex flex-wrap items-center gap-2 mt-2">
+                {/* §10 (W436, v10 item 1b) — the OLD tooltip listed all 16 bar names under a green
+                    PASS badge, beside a payload recording six of them as met:null. Now mirrors
+                    Deliverables.tsx exactly: measured vs attested vs not-measured, stated apart. */}
                 {typeof result.quality_assurance.quality.qms_gate_passed === 'boolean' && (
                   <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${result.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
-                    title={`§10 Solution-Quality Bar: ${(result.quality_assurance.quality.bar || []).join(' · ')}${result.quality_assurance.quality.quality_record_hash ? `\nDocument-controlled under the QMS (DCMS) · record ${result.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>
+                    title={`§10 Solution-Quality Bar — ${result.quality_assurance.quality.bar_measured?.summary ?? 'per-criterion breakdown unavailable'}
+MEASURED by this gate: ${(result.quality_assurance.quality.bar_measured?.measured_criteria || []).join(' · ') || 'none'}
+ATTESTED by the journey (a claim about a run, not a measurement): ${(result.quality_assurance.quality.bar_measured?.attested_criteria || []).join(' · ') || 'none'}
+The full 16: ${(result.quality_assurance.quality.bar || []).join(' · ')}${result.quality_assurance.quality.quality_record_hash ? `
+Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>
                     Living-QMS gate: {result.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((result.quality_assurance.quality.delivery_coverage || 0) * 100)}%{result.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                  </span>
+                )}
+                {result.quality_assurance.quality.bar_measured && (
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-700/40 text-slate-300"
+                    title="§10 — measured: this gate computed it. attested: the journey asserted it from its own run. not measured: nothing established it.">
+                    §10 bar: {result.quality_assurance.quality.bar_measured.summary
+                      ?? `${result.quality_assurance.quality.bar_measured.measured} of 16 measured`}
                   </span>
                 )}
                 {result.quality_assurance.biomimetic?.immune && (

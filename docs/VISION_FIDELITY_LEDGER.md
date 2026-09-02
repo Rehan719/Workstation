@@ -39,7 +39,7 @@ Three reading rules follow from that method:
 | MISSING | 4 |
 | **total** | **74** |
 
-Post-assessment status: FIXED-W434: 3 · OWNER-DECISION-v10-item-2: 2 · OPEN-v10-item-1: 1 · DISCLOSED-W434: 1
+Post-assessment status: FIXED-W434: 3 · FIXED-W436: 2 · OWNER-DECISION-v10-item-2: 2
 
 The distilled, actionable form of the surviving gaps is **prompt v10's two-entry ledger**
 (`docs/FABLE_DELIVERY_PROMPT.md`). This document is the evidence base behind it.
@@ -153,7 +153,7 @@ The distilled, actionable form of the surviving gaps is **prompt v10's two-entry
 - **evidence:** The same journey run returned "stages_verified": "5/5", every stage_verifications entry verified:true (coverage 1.0, structure 1.0 across all five), qms_gate_passed:true, delivery_coverage:1.0, stub_found:false, and bar_measured criteria 'specifically designed' and 'verified' both met:true, measured:true — on the content in finding 1, which had lost the user's problem entirely and repeats one iden
 - **user impact:** On the shipped default configuration (no Ollama, no external key — exactly what this HEAD boot reports) a person is told their lifecycle was verified 5/5, quality-gated and complete while looking at keyword salad. Nothing on the journey surface tells
 - **refutation: SURVIVED** an independent refuter instructed to default to refuted
-- **status now:** **OPEN — v10 ledger item 1** (the journey certifies floor-served output the user is never told is floor-served; Tier 1, small)
+- **status now:** **FIXED in W436** — floor state rendered above the results, bar_measured mirrored on Genesis, floor-served stages return verified: null ("not assessable"), and the identical-candidates note renders in place of ranked cards. Verified in a real browser; guard test_w436_floor_served_stages_are_not_certified
 
 ### §4.5 — PARTIAL
 
@@ -161,7 +161,7 @@ The distilled, actionable form of the surviving gaps is **prompt v10's two-entry
 - **evidence:** In the journey response the three candidates (pragmatic / innovative / lean) are BYTE-IDENTICAL: md5 of each `approach` = 5792636d6b, length 1738 each, difflib SequenceMatcher ratio 1.000 for all three pairs; identical modelled_score 0.81, simulation_score 0.976, score 0.909. Cause: the framing ('the fastest, lowest-risk...' vs 'the most innovative...') is prose in the prompt body, not a labelled 
 - **user impact:** The user sees three ranked alternatives with distinct descriptions and believes a comparison happened; three copies of one text were compared to themselves. They are also never told that three of the five criteria the section names (effectiveness, ef
 - **refutation: SURVIVED** an independent refuter instructed to default to refuted
-- **status now:** **DISCLOSED in W434** — the payload now reports `candidates_distinct` and a plain comparison note; rendering that in the UI is v10 item 1(d)
+- **status now:** **FIXED in W436** — the payload reports `candidates_distinct` + a plain comparison note (W434), and GenesisJourney now renders that note IN PLACE OF the ranked cards when the candidates are not real alternatives (W436, browser-verified)
 
 ### §4.9 — DELIVERED
 

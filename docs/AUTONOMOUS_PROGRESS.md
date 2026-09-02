@@ -3328,3 +3328,46 @@ that was checked — and the difference must be visible to the reader.
 completing; its assigned checks — arithmetic recounts, figure cross-checks, §18↔prompt agreement,
 the 47/47 frontend-ledger claim, the W434 status assignments — were all performed inline instead,
 and the seven-misfiling catch above is the evidence the inline pass had teeth.)
+
+### W436 — the journey no longer certifies floor-served output (v10 ledger item 1 closed)
+
+**What was WRONG (the last Tier 1 truth defect):** on a floor-served run, `/api/v1/genesis/journey`
+reported `stages_verified: "5/5"` with every stage `verified: true` — but the deterministic floor
+composes each stage FROM THE CALLER'S OWN REQUESTED HEADINGS, so the coverage proxy is 1.0 and the
+structure proxy ≥1.0 by construction. The composite lands exactly on the 0.5 threshold: the
+"verification" CANNOT FAIL, and the user reading ✓ ✓ ✓ ✓ ✓ had no way to know. The §10 chip
+attested `tested` and `validated` on the same output, and identical §4.5 candidates still rendered
+as a ranked list. Four halves, all closed, verified in a real browser driving a live journey.
+
+**(c) — the honest core.** `_verify_stage` now takes `floor_served` (from a NEW per-agent
+`served_by_agent` map in provenance — the aggregate counts could never answer "was THIS stage
+floor-served"). Floor-served stages return `verified: null` with basis "not assessable —
+floor-served: the deterministic floor emits the requested headings, so the coverage/structure
+proxies cannot fail by construction". Headline becomes `stages_verified: "0/0"` +
+`stages_floor_served: 5` + a plain-language `stages_note`. On a floor run the §10 record no longer
+attests `tested`/`validated` (measured live: attested = categorised, modelled, ranked, simulated).
+
+**(a) — the user is TOLD.** GenesisJourney renders a "What served this journey" card above the
+results: per-model serving counts, amber when the floor served anything, the floor described as
+what it is ("a deterministic native floor — structured composition, not model inference"), plus the
+stages_note. Stage chips are three-state: ✓ verified · ⚠ failed · — not assessable (grey).
+
+**(b) — the §10 chip stopped overclaiming.** It mirrored the flat 16-name criteria list; now it
+mirrors Deliverables' measured/attested split from `bar_measured` + `honesty` +
+`criteria_not_measured`, with a separate bar chip summarising measured/attested/not-measured.
+
+**(d) — ranked cards yield to the truth.** When W434's `candidates_are_alternatives` is false, the
+comparison note renders IN PLACE OF the ranked §4.5 cards (browser-verified: note shown, cards gone).
+
+**Two consumers of the old truthiness were leaks-in-waiting.** `vsb.py`'s evolution proposals used
+`not verified` — under tri-state that would manufacture "strengthen this stage" proposals from
+verifications that never ran; now only `verified is False` proposes. And the shipped EVIDENCE.md
+would have printed a bare `verified=None`; it now prints "not assessable (floor-served)".
+
+**Guard:** `test_w436_floor_served_stages_are_not_certified` — asserts native-served > 0, all five
+stages `verified: null` with the basis string, headline "0/0" with `stages_floor_served: 5`, and
+`tested`/`validated` absent from attested_criteria. Broken (floor path disabled → the old certifying
+behaviour) it fails with "concept claims verified=True on floor-served output, where the check
+cannot fail"; restored, passes. Browser probe committed as `scripts/_w436_probe.mjs` (drives a full
+journey through the real UI, dismisses the onboarding tour, asserts all four surfaces).
+

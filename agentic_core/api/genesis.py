@@ -84,14 +84,30 @@ def _screen_candidate(text: str) -> Dict[str, Any]:
     }
 
 
-def _verify_stage(text: str, sections: List[str]) -> Dict[str, Any]:
+def _verify_stage(text: str, sections: List[str], floor_served: bool = False) -> Dict[str, Any]:
     """§5 — verify/validate a single journey stage on REAL MEASURED proxies (section coverage · specificity ·
     structure). Honest: a measured quality check, never fabricated. `verified` = composite score ≥ 0.5 AND at
-    least two-thirds of the stage's expected sections present."""
+    least two-thirds of the stage's expected sections present.
+
+    §10 (W436, v10 item 1c) — a FLOOR-SERVED stage returns `verified: None`, not True. The v10
+    assessment proved these instruments cannot fail on floor output: engine.py:153 builds the reply
+    out of the caller's OWN requested headings, and this function then measures coverage as the
+    fraction of those same headings present (always 1.0) and structure as count('##')/len(sections)
+    (always ≥1.0) — with both at 1.0 the composite floor is 0.50, exactly the `verified` threshold.
+    Only a gateway exception could flip it false. Reporting `verified: true` on a check that cannot
+    fail is a certification nothing earned. The proxy scores are still returned — they are real
+    measurements of the text — but they are not evidence of quality, and the record says so.
+    """
     m = _score_candidate(text or "", sections)
     present = sum(1 for s in sections if s.lower() in (text or "").lower())
     m["sections_present"] = f"{present}/{len(sections)}"
-    m["verified"] = bool(m["score"] >= 0.5 and present * 3 >= len(sections) * 2)
+    if floor_served:
+        m["verified"] = None
+        m["basis"] = ("not assessable — floor-served: the deterministic floor emits the requested "
+                      "headings, so the coverage/structure proxies cannot fail by construction")
+    else:
+        m["verified"] = bool(m["score"] >= 0.5 and present * 3 >= len(sections) * 2)
+        m["basis"] = "coverage/specificity/structure proxies over model-served text"
     return m
 
 # Shares the same UEG audit log as the constitutional engine, so journeys are
@@ -166,6 +182,12 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
             res = await gateway.query_meta(_realm_prefix + prompt, agent=agent, augment=False)
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
+            # §5 × §10 (W436, v10 item 1c) — WHO served each stage is recorded BY AGENT, because the
+            # verification step needs it: a floor-served stage cannot be honestly "verified" (the
+            # floor emits the caller's own requested headings, so the coverage/structure proxies
+            # cannot fail by construction). Aggregate counts cannot answer "was THIS stage floor-
+            # served"; this map can.
+            provenance.setdefault("served_by_agent", {})[agent] = sb
             provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
             # §4 (W434) — SCRUB BEFORE CHAINING. The owned floor prepends its provenance banner to
             # every completion (engine.py:163), and engine.py:81 `_field` takes the first line after
@@ -383,14 +405,20 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
 
     # ── §5 — verify/validate EACH stage (real measured proxies: coverage · specificity · structure), so the
     #    whole cascade is verified, tested and validated stage-by-stage, not only at the final QMS gate. ──
+    # W436 — a stage is assessable only if a real model served it (see _verify_stage's docstring).
+    _sba = provenance.get("served_by_agent", {})
+    def _floor(agent: str) -> bool:
+        return _sba.get(agent, "native") == "native"
+
     stage_verifications = {
-        "concept": _verify_stage(concept, ["Problem Understanding", "Optimal Solution Concept", "Why This Concept Wins"]),
-        "research": _verify_stage(research, ["Best & Latest Approaches", "Innovative Options", "Recommended Direction"]),
-        "design": _verify_stage(design, ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope"]),
-        "operations": _verify_stage(operations, ["Operations Delivery", "Compliance", "Operational Excellence"]),
-        "commercialisation": _verify_stage(commercial, ["Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"]),
+        "concept": _verify_stage(concept, ["Problem Understanding", "Optimal Solution Concept", "Why This Concept Wins"], floor_served=_floor("genesis_concept")),
+        "research": _verify_stage(research, ["Best & Latest Approaches", "Innovative Options", "Recommended Direction"], floor_served=_floor("genesis_research")),
+        "design": _verify_stage(design, ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope"], floor_served=_floor("genesis_design")),
+        "operations": _verify_stage(operations, ["Operations Delivery", "Compliance", "Operational Excellence"], floor_served=_floor("genesis_operations")),
+        "commercialisation": _verify_stage(commercial, ["Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"], floor_served=_floor("genesis_commercial")),
     }
     stages_verified = sum(1 for v in stage_verifications.values() if v["verified"])
+    stages_assessable = sum(1 for v in stage_verifications.values() if v["verified"] is not None)
 
     # ── Continual operational delivery within the LIVING QMS: the journey's buildable + go-to-market
     # delivery is gated by the OWNED QMS, held to the §10 Solution-Quality Bar, recorded within the §8
@@ -466,7 +494,16 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "phase_3_commercialisation": commercial,
         "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id, "node": gov.node},
         "stage_verifications": stage_verifications,       # §5 — each stage verified/tested/validated (measured)
-        "stages_verified": f"{stages_verified}/{len(stage_verifications)}",
+        # W436 (v10 item 1) — the denominator is what was ASSESSABLE, not what exists. "5/5" on a
+        # fully floor-served run certified checks that cannot fail by construction; "0/0 assessable"
+        # with the floor-served count beside it is the honest reading, and the note says why.
+        "stages_verified": f"{stages_verified}/{stages_assessable}",
+        "stages_floor_served": len(stage_verifications) - stages_assessable,
+        "stages_note": (None if stages_assessable == len(stage_verifications) else
+                        f"{len(stage_verifications) - stages_assessable} of "
+                        f"{len(stage_verifications)} stages were served by the deterministic floor "
+                        "and are not assessable — the verification proxies cannot fail on floor "
+                        "output, so no verdict is claimed for them"),
         "quality_assurance": quality_assurance,
         "ai_provenance": provenance,
         "engines_used": [

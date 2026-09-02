@@ -40,7 +40,7 @@ THE SURFACE, measured 2026-09-02 against a backend booted from HEAD:
   442 paths (441 under /api) carrying 466 method+path operations
   270 frontend call sites resolving to 164 distinct /api literals + 18 template prefixes
   73 <Route> declarations in App.tsx — 72 concrete paths (the 73rd is the catch-all), all 72 render
-  suite 337 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 11 deep + 61 swept
+  suite 339 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 11 deep + 61 swept
 
 CAVEAT THAT HAS COST THIS PROJECT TIME THREE TIMES: a long-running dev process serves the code it
 booted with. Restart the backend before measuring BEHAVIOUR, and check its start time against the
@@ -89,9 +89,12 @@ D — DECIDED BY THE OWNER 2026-09-01, and DELIVERED:
 <ordering>
 Work in this order. It is not effort order — it is "how much a real person is misled or blocked".
 
-  TIER 1 — TRUTH DEFECTS. The system tells a user something untrue. Ledger item 1.
-  TIER 2 — REACH GAPS. The capability EXISTS and works but nobody can reach it. The systemic backlog
-           in <trajectory>; no single ledger entry remains at this tier.
+  TIER 1 — TRUTH DEFECTS. The system tells a user something untrue. Item 1 CLOSED (W436) — no
+           known TIER 1 entry remains. VERIFY that before trusting it: run a journey and read what
+           a user reads.
+  TIER 2 — REACH GAPS. The capability EXISTS and works but nobody can reach it. THE TOP OF THE
+           QUEUE is now the systemic backlog in <trajectory> — decompose it first, audit each
+           cluster before wiring it.
   TIER 3 — CAPABILITY GAPS. Genuinely unbuilt. Ledger item 2 is an OWNER DECISION, not your call.
 
 STOPPING RULE. Most remaining PARTIALs are honest scope boundaries, not defects, and each is
@@ -144,8 +147,22 @@ TWO entries. After sixteen workstreams of closure that is a real result, not a f
 enough — the audit behind it returned 74 verdicts and had 32 gaps survive refutation before merging
 and de-duplication. Full evidence in the W434 entry of AUTONOMOUS_PROGRESS.md.
 
-1. §4 · §5 · §10 — THE JOURNEY CERTIFIES ITSELF ON OUTPUT THE USER IS NEVER TOLD IS FLOOR-SERVED.
-   [TIER 1]
+1. §4 · §5 · §10 — THE JOURNEY CERTIFIED ITSELF ON OUTPUT THE USER WAS NEVER TOLD IS FLOOR-SERVED.
+   [TIER 1 · CLOSED W436 — verify by running a journey, not by reading the diff]
+   CLOSED, all four halves, verified in a REAL BROWSER driving a live journey (probe:
+   scripts/_w436_probe.mjs): (a) a provenance banner above the results names what served, with
+   plain floor wording; (b) the §10 chip mirrors Deliverables' measured/attested split — the flat
+   16-name tooltip is gone; (c) a floor-served stage returns verified: null with basis "not
+   assessable — floor-served", the headline is "0/0" with stages_floor_served disclosed, and the
+   §10 record no longer attests tested/validated on a floor run; (d) identical candidates render
+   the comparison note IN PLACE OF ranked cards. Guard:
+   test_w436_floor_served_stages_are_not_certified — broken (floor path disabled) and watched fail
+   with "concept claims verified=True on floor-served output, where the check cannot fail".
+   TWO CONSUMERS OF THE OLD TRUTHINESS WERE LEAKS-IN-WAITING: vsb.py's evolution proposals used
+   `not verified`, which would have proposed "strengthen this stage" from a verification that never
+   ran (None now means not-assessable, only False proposes); and the shipped EVIDENCE.md would have
+   printed a bare "verified=None" for the reader to guess at. Both fixed with the reason stated.
+   The history below is the lesson.
    The journey reports `stages_verified: "5/5"`, every stage `verified: true`, `qms_gate_passed:
    true`, `delivery_coverage: 1.0`. THE INSTRUMENTS CANNOT FAIL BY CONSTRUCTION: engine.py:153 builds
    the reply out of the caller's OWN requested headings, and genesis.py:31-40 then measures coverage
@@ -300,7 +317,7 @@ Learned by being wrong, repeatedly, in ways a green suite hid. The first five ar
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 313 tests. 25 were added this session (W419–W434), each
+- integration_tests/test_mvp_spine.py — 315 tests. 27 were added this session (W419–W436), each
   broken and watched fail with its ORIGINAL symptom before being trusted.
 - scripts/check_import_integrity.py — CI job; fails when a live module imports a first-party module
   with no file behind it. Baseline scripts/import_integrity_baseline.txt (13 pre-existing, kept by a
