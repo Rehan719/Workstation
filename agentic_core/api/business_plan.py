@@ -269,7 +269,11 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest):
 
     decision = (tree.get("decision") or {}).get("recommendation")
     consensus = (tree.get("consensus") or {}).get("choice")
-    propagated = bool((tree.get("signal_response") or {}).get("propagated"))
+    # W437: the signal payload's key is supra_threshold (the old `propagated` was deleted with the
+    # fabricated latency it travelled with) — and a MISSING signal_response must record null, not a
+    # confident False (a determination nothing computed)
+    _signal = tree.get("signal_response") or {}
+    supra = bool(_signal["supra_threshold"]) if "supra_threshold" in _signal else None
 
     # §5 loop closure (W266) — delivery MOVES the living plan: a GENUINELY governed successful run
     # (the real QMS gate passed) advances a 'planned' objective to 'in_progress'. Never auto-'done'
@@ -284,11 +288,12 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest):
         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "progress_pct": obj.get("progress_pct", 0), "status": obj.get("status", "in_progress"),
         "note": (f"Chief workflow-tree delivery — decision={decision}, consensus={consensus}, "
-                 f"signal={'propagated' if propagated else 'sub-threshold'}, nodes={tree.get('node_count')}"),
+                 f"signal={'not computed' if supra is None else 'supra-threshold' if supra else 'sub-threshold'}, "
+                 f"nodes={tree.get('node_count')}"),
         "orchestration": {
             "decision": decision, "consensus": consensus,
             "qms_passed": (tree.get("governance") or {}).get("qms_passed"),
-            "signal_propagated": propagated, "node_count": tree.get("node_count"),
+            "signal_supra_threshold": supra, "node_count": tree.get("node_count"),
             "ueg_hash": tree.get("ueg_hash"),
         },
     }

@@ -13,11 +13,13 @@ class ConflictResolution:
         self.agent_id = agent_id
 
     def resolve(self, conflict_id: str, options: List[Any]) -> Any:
-        logger.warning(f"GOVERNANCE: Resolving conflict {conflict_id} via arbitration.")
-        # Simplified arbitration: pick the most robust option
-        # In a real swarm, this would involve voting or human oversight.
+        # W437: this is the §4.5 archetype and must not be wired as-is — it returns options[0] by
+        # POSITION with zero discrimination. The old comment said "pick the most robust option" and
+        # the log claimed arbitration; nothing computes robustness. Zero live callers exist. If this
+        # is ever revived, route through ConsensusEngine.consensus_detail or an actual criterion.
         resolved_option = options[0]
-        logger.info(f"GOVERNANCE: Conflict {conflict_id} resolved. Selected: {resolved_option}")
+        logger.warning("GOVERNANCE: conflict %s — returning the FIRST option by position "
+                       "(no discrimination performed): %s", conflict_id, resolved_option)
         return resolved_option
 
 class ConsensusEngine:

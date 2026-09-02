@@ -3371,3 +3371,130 @@ behaviour) it fails with "concept claims verified=True on floor-served output, w
 cannot fail"; restored, passes. Browser probe committed as `scripts/_w436_probe.mjs` (drives a full
 journey through the real UI, dismisses the onboarding tour, asserts all four surfaces).
 
+
+### W437 — the native-ai cluster: audited, five primitives fixed, the whole cluster wired
+
+**The round opened the Tier 2 reach backlog with a durable measure.** `scripts/reach_audit.py` is
+now committed: it imports the app at HEAD (never a stale process), walks the route table, extracts
+every frontend /api fragment with template holes matched segment-by-segment, and reports exact vs
+template-prefix reach SEPARATELY — because the two matchers bias in opposite directions and the
+range is the honest answer. At HEAD: **465 /api ops · 253 reached (204 exact + 49 template-prefix)
+· 64 legacy non-v1 · 148 genuine-unreached ops in 43 clusters.** First cluster: native-ai (12 ops),
+because five of its primitives were already fixed (W430–432) and the other five had recorded,
+prescription-carrying defects in NATIVE_PRIMITIVE_DEFECT_LEDGER.md.
+
+**The ledger's own status section miscounted.** It said "5 fixed + 4 open" over a table of 9 —
+`entropy` was in NEITHER list. It was still defective, exactly as its body entry described. A
+status section that miscounts its own table is the defect class this ledger documents; the ledger
+now says so.
+
+**Five primitives fixed, each BOTH ways (still discriminates on real signal):**
+- `transduce` — `latency_s` (a constant formula wearing a unit; nothing timed) and `frequency`
+  (provably never entered the result) DELETED, not renamed. What remains is what the math earns:
+  activation = s^h/(K50^h+s^h), K50 exposed, supra_threshold stated as input ≥ K50, an honest
+  dose-response curve, 422 on negative input (it used to silently take the real part of a complex
+  power). The defect's SECOND surface was LIVE: the /tree signal_response — fixed in the same
+  change, and the false "pulsatile decoding / latency kinetics" certification in
+  AGENTIC_CORE_INTEGRATION_AUDIT.md corrected.
+- `topology` — β₁ counted RAW request edges while union-find silently discarded malformed ones:
+  edges=["junk",42,null] reported 3 "structural holes" on a graph with no usable edges. β₁ now
+  counts APPLIED edges with the discard disclosed; the undisclosed SPIKE_DETECTED verdict (no
+  baseline ever existed) became fragmented + beta1_over_threshold with the threshold in the payload.
+- `entropy` — `bits_harvested` (a fixed +128 that never examined a byte; five empty dicts
+  "harvested" 640 bits into a 512-bit register) renamed to what it always was, mixing_rounds; the
+  pool-integrity digest was byte-identical to the seed (same 8 bytes of the same hash — it could
+  never disagree with what it attested) and is now a disjoint slice; the response states plainly:
+  no system entropy, never for keys/nonces/tokens, and the empty call is the fixed genesis constant.
+- `quorum` — "sensing"/"shared field"/"kinetics" claims removed from a handler that computed
+  agents × secretion > threshold over typed-in numbers. The population now DEFAULTS to the live
+  swarm roster with population_source disclosed (caller override echoed as caller_supplied);
+  secretion/threshold validated; the reported concentration is the exact value the verdict derives
+  from (the old response rounded the display but compared unrounded — 50.0 > 50.0 could show true).
+- `rigor` — `power` DELETED: it was n/100 + 0.5, a call counter wearing a statistics label, and its
+  gate froze `significant` at false for 29 calls regardless of evidence (a real p of 1.5e-24
+  reported "not significant"). p_value/ci_95/significant are now null-with-reason when the test
+  could not run; zero variance returns an honest 200 instead of sealing a NaN into the UEG chain
+  and then 500ing.
+
+**The class lives ONE LAYER UP too — two "already fixed" primitives leaked at the handler.** The
+W431 consensus engine fix (strongest-clearing choice, tie disclosure, distinct_voters) was real,
+but the handler still called the old single-value path — dropping the tally/tie/basis and counting
+raw ballots as voters; threshold accepted -1.0 and returned a "reached" consensus. And the W432
+validate engine fix (confidence null where nothing computes one) was real, but the handler still
+cast `float(confidence)` — EVERY GENERIC/APP_CODE call 500'd on the exact branches the engine had
+made honest, under one hardcoded "(difflib, real)" method stamped on all four branches. Both
+handlers now surface the engine's honesty; task_type is a validated enum. Rule 14, verbatim: a fix
+at one call site is a local repair — re-verify the surface a user actually reaches.
+
+**The wiring (the actual reach):** /native-ai gained the Primitive Console — all 10 primitives
+runnable with sensible inputs, the WHOLE payload rendered (nulls as "not measured" chips, basis
+strings prominent, booleans as chips) — and a Fabric-integrity strip (the real selfcheck import
+probe + live selection order; both existed server-side with zero callers). The catalog entries and
+handler docstrings were rewritten to claim only what the code earns. TreeView's signal chip updated
+off the deleted fields.
+
+**Guards:** `test_w437_native_primitives_no_longer_fabricate` (broken — β₁ reverted to raw edges —
+watched fail with "discarded edges were counted as cycles again", restored); three existing
+primitive tests updated to the honest shapes and STRENGTHENED (rigor now asserts significant is
+True on real evidence — impossible under the old power gate); browser smoke deep-checks /native-ai
+with REQUIRED_SECTIONS. Verified live on a fresh HEAD backend (:8012) and in a REAL browser
+(scripts/_w437_probe.mjs): console runs consensus/quorum/rigor through the UI, live_roster
+disclosed, null-with-reason rendered.
+
+**Two instrument lessons, banked in the prompt:** CSS text-transform: uppercase reaches
+document.body.innerText, so probe/smoke needles must compare LOWERCASED (case-sensitive needles
+silently never match); and a probe check that splits on a needle absent from the (lowercased) text
+tests an empty string — a VACUOUS pass, caught in this round's own probe and made throwing.
+
+
+**THE ADVERSARIAL PASS EARNED ITS COST — a 7-agent refuter workflow attacked the fixes above and
+found defects IN them, including one LIVE break they caused.** Everything below was then verified
+by hand (an agent's finding is a lead, rule 16) and fixed:
+
+- **The rename broke a consumer the sweep missed.** `business_plan.py` read the deleted
+  `propagated` key, so every objective orchestration recorded a constant
+  `signal_propagated: False` while embedding the real (usually supra-threshold) signal in the same
+  response — internally contradictory, and invisible because the existing test asserted nothing
+  about the signal fields. Fixed tri-state (`signal_supra_threshold`, null when no signal was
+  computed); guarded by `test_w437_refuter_pass_findings_stay_fixed` (broken → "the dead key is
+  back" → restored).
+- **The orchestrator fabricated the transduction input.** On consensus failure,
+  `(consensus or {}).get("proceed_fraction", 0.5)` fed the hardcoded 0.5 — which is ≥ K50 — so a
+  run whose consensus never computed reported "supra-threshold". No consensus → no signal_response.
+- **My own fix committed the defect class it was fixing.** The quorum default called `_AGENTS`
+  "live_roster" — but it is a static module-level dict literal, identical in every deployment: a
+  CONSTANT wearing the name of an observation. Renamed `agent_catalog`, basis says "a static
+  definition, not a runtime observation". The loop also became a single multiplication (the basis
+  advertised × while the code float-summed) and the population gained a bound.
+- **The console's parsers fabricated requests.** A vote typed without a colon was silently
+  defaulted to choice "go" — DISSENT CONVERTED TO ASSENT by a constant; a mistyped population
+  became NaN → null → the server default; hyphenated node names were mangled by the edge splitter
+  into dangling pairs the backend then honestly discarded (a wrong measurement manufactured by the
+  UI from well-formed intent). All three now REFUSE with the offending entry named; edges use u>v.
+- **Topology's V was the raw node-list length** while union-find deduped — a triangle with one
+  repeated node id reported β₁=0, a real cycle ERASED (the fix had introduced a false negative).
+  Nodes now dedupe explicitly (disclosed); None/unhashable ids and endpoints discard, not 500.
+- **Entropy still injected wall-clock.** The timestamp fallback was `time.time()` — the one input
+  shape with no disclosure was the one that made a "deterministic" derivation nondeterministic.
+  Default is now a fixed 0, counted and disclosed in the basis.
+- **Rigor's degeneracy gate tested the wrong predicate.** Set-equality missed variance underflow,
+  and a NaN observation was sealed into the UEG chain as "not significant" before the response
+  500'd. Non-finite inputs 422 at the door; the gate is now sem==0 + isfinite(p). And the 422
+  itself 500'd: FastAPI's validation-error body echoes the offending input and NaN is not
+  JSON-compliant — an app-level handler now stringifies non-finite floats so the honest refusal
+  survives its own cause.
+- **Decide was a permanent refusal advertised as a decision.** The W431 tie-disclosure was honest,
+  but no reachable input could EVER discriminate (the default utility ignores the action) while the
+  docstring advertised a "custom utility" parameter that did not exist. `action_utilities` now
+  exists (a partial table 422s rather than silently defaulting); without it the all-tie refusal
+  stands, stated as such; the inert-stressors fact is disclosed.
+- **Smaller findings, all applied:** transduce overflow-stable (extreme (s,hill) returns the
+  mathematical limit, hill bounded), curve domain disclosed, `simulate_cascade` renamed
+  `transform`; entailment's CONTRADICTION basis softened to evidence-not-fact with negation named
+  in `limits` (the "completed without errors" → "completed" misfire); the null chip says "see
+  basis" (one constant label cannot carry both "measured, nothing cleared" and "not measured");
+  stale audit-doc certifications for rigor ("power-gated") and entropy ("pool-integrity digest")
+  corrected; three latent fabrications ledgered (simplicial_repair, get_aggregate_accuracy's empty
+  1.0, planetary.py's 102400 nodes) and two one-line lies fixed in place (resolve()'s "arbitration"
+  log, get_intent_confidence's "historical" docstring).
+

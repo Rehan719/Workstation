@@ -24,7 +24,8 @@
 > Companions: `WORKSTATION_IDBO_WHOLE_VISION.md` (§16 rewritten 2026-09-02 as a short pointer
 > section; §18's four questions recorded as settled) · `VISION_FIDELITY_LEDGER.md` (**v2,
 > 2026-09-02 — regenerated from this assessment, adversarially refuted; the evidence base behind
-> the ledger below**) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (12 fixed, 5 latent) ·
+> the ledger below**) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all primitives FIXED + WIRED as of
+> W437; 1 latent entry remains — the unreached evolution engine) ·
 > `AUTONOMOUS_PROGRESS.md` (W1→W434) · `WORKSTATION_IDBO_LIVING_PLAN.md` (reconciled W434) ·
 > `GET /api/v1/plan`.
 
@@ -40,7 +41,7 @@ THE SURFACE, measured 2026-09-02 against a backend booted from HEAD:
   442 paths (441 under /api) carrying 466 method+path operations
   270 frontend call sites resolving to 164 distinct /api literals + 18 template prefixes
   73 <Route> declarations in App.tsx — 72 concrete paths (the 73rd is the catch-all), all 72 render
-  suite 339 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 11 deep + 61 swept
+  suite 341 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 12 deep + 61 swept
 
 CAVEAT THAT HAS COST THIS PROJECT TIME THREE TIMES: a long-running dev process serves the code it
 booted with. Restart the backend before measuring BEHAVIOUR, and check its start time against the
@@ -140,6 +141,17 @@ DECOMPOSE BEFORE WORKING IT — the raw number overstates the debt, and part of 
 AND AUDIT A CLUSTER BEFORE WIRING IT. "10 unreached routes" is not 10 units of value. Nine of nine
 native-AI primitives carried a §4.5-class defect; wiring that cluster would have shipped nine
 misleading surfaces in one change. Unreached is not the same as harmless, and not the same as ready.
+
+W437 STATE OF THIS BACKLOG. The measurement is now a committed tool — `python scripts/reach_audit.py`
+— run it FRESH rather than trusting any figure written here (it imports the app at HEAD, extracts
+frontend /api fragments with template holes matched by segment, and reports exact vs
+template-prefix reach separately because the two biases differ). At W437 HEAD it reported: 465 /api
+ops · 253 reached (204 exact + 49 template-prefix) · 64 legacy non-v1 · 148 genuine-unreached ops
+in 43 clusters. The native-ai cluster (12 ops) is DONE — audited (five primitives fixed, two
+handler-level leaks found on "already-fixed" ones), then wired via the /native-ai Primitive
+Console. The next-largest clusters by ops: organism 18 · qep 17 · vbs 11 · frontier 10 · economy 8.
+Audit before wiring, every time — W437's validate handler (float(None) → 500 on the branches the
+W432 engine fix made honest) is proof the class also lives ONE LAYER UP from a fixed engine.
 </trajectory>
 
 <ledger>
@@ -317,15 +329,22 @@ Learned by being wrong, repeatedly, in ways a green suite hid. The first five ar
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 315 tests. 27 were added this session (W419–W436), each
+- integration_tests/test_mvp_spine.py — 317 tests. 29 were added this session (W419–W437), each
   broken and watched fail with its ORIGINAL symptom before being trusted.
 - scripts/check_import_integrity.py — CI job; fails when a live module imports a first-party module
   with no file behind it. Baseline scripts/import_integrity_baseline.txt (13 pre-existing, kept by a
   negation at .gitignore:21 because :17 is a blanket *.txt). Run before AND after any file move.
-- scripts/browser_smoke.mjs — 11 deep routes + every other route swept, list PARSED from App.tsx.
-  REQUIRED_SECTIONS demands named sections ALL render. Waits on #root painting, not networkidle.
+- scripts/browser_smoke.mjs — 12 deep routes + every other route swept, list PARSED from App.tsx.
+  REQUIRED_SECTIONS demands named sections ALL render (W437 added /native-ai: the Primitive console
+  + Fabric integrity strip). Waits on #root painting, not networkidle. NOTE: needles must be
+  compared LOWERCASED — CSS text-transform: uppercase reaches innerText, and a case-sensitive
+  needle silently never matches (it cost the W437 probe two rounds).
   Also carries the W429 PDF guard: fixture generated INLINE (no binary to rot), asserting extraction,
   the honest refusal of an image-only PDF, and ZERO external requests.
+- scripts/reach_audit.py — THE reach measure (W437): imports the app at HEAD, walks the route table,
+  extracts every frontend /api fragment (template holes matched by segment), reports exact vs
+  template-prefix reach SEPARATELY, and clusters the genuine-unreached ops. Run it fresh; never
+  trust a written-down reach figure.
 - integration_tests/conftest.py — isolates DATA_DIR AND corrects an already-imported config via
   object.__setattr__ (Settings is a frozen dataclass). A session fixture FAILS the run if the store
   is not isolated.

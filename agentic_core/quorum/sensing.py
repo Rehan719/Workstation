@@ -4,9 +4,12 @@ import time
 logger = logging.getLogger(__name__)
 
 class QuorumSensing:
-    """
-    Communication via "heartbeats" (AI-2 analogs) to sense population density.
-    Kinetics: t1/2 ~ 2 hours.
+    """AI-2-analog concentration accumulator with a threshold check.
+
+    W437 — the old docstring claimed heartbeat communication, population sensing, and t1/2 ~ 2h
+    kinetics. As used, none of that happens: instances are built per request and discarded, nothing
+    communicates, and update_concentration (the only decay code) has no live caller. The class is
+    an accumulator plus one comparison; the docstring now says so.
     """
     def __init__(self, agent_id: str, threshold: float = 50.0):
         self.agent_id = agent_id

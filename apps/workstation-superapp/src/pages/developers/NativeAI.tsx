@@ -22,7 +22,7 @@ interface TreeGovernance { governed_by: string; qms_passed: boolean; qms_coverag
 interface TreeDecision { recommendation: string; consistency: number; worst_case_utility: number; method: string; stressors: string[] }
 interface TreeValidation { max_branch_overlap: number; integrated: boolean; branches_checked: number; method: string }
 interface TreeConsensus { reached: boolean; choice: string | null; threshold: number; votes: Record<string, string>; proceed_fraction: number; method: string }
-interface TreeSignal { input_strength: number; peak_intensity: number; latency_s: number; propagated: boolean; hill: number; method: string }
+interface TreeSignal { input_strength: number; activation: number; supra_threshold: boolean; k50: number; hill: number; basis: string; method: string }
 interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
   node_count: number; parallel_levels: number; max_parallel: number; immune_threat: string;
@@ -139,10 +139,11 @@ function TreeView({ run }: { run: TreeRun }) {
         </div>
       )}
       {run.signal_response && (
-        <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2">
+        <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2" title={run.signal_response.basis}>
           <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Biomimetic signal</span>
-          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.signal_response.propagated ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}>{run.signal_response.propagated ? 'propagated' : 'sub-threshold'}</span>
-          <span className="text-[8px] font-bold uppercase text-slate-500">peak {Math.round(run.signal_response.peak_intensity * 100)}% · latency {run.signal_response.latency_s}s · Hill {run.signal_response.hill}</span>
+          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.signal_response.supra_threshold ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}>{run.signal_response.supra_threshold ? 'supra-threshold' : 'sub-threshold'}</span>
+          <span className="text-[8px] font-bold uppercase text-slate-500">activation {Math.round(run.signal_response.activation * 100)}% · K50 {run.signal_response.k50} · Hill {run.signal_response.hill}</span>
+          <span className="text-[8px] text-slate-600">Hill transform of consensus strength — nothing timed</span>
         </div>
       )}
       {run.ueg_hash && (
@@ -163,6 +164,183 @@ function TreeView({ run }: { run: TreeRun }) {
   );
 }
 
+// ── W437 — the Primitive Console: every owned primitive RUNNABLE, honest payload rendered whole ──
+// The catalog above this described 10 primitives no page could reach; each was audited (and five
+// were FIXED) before this console shipped — see docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md. The
+// renderer is deliberately generic: it shows the FULL response, because the honesty fields
+// (basis · tied · population_source · nulls-with-reasons) are the product, not decoration.
+interface PrimField { key: string; label: string; kind: 'text' | 'number' | 'select' | 'check'; def: string | number | boolean; options?: string[]; wide?: boolean }
+interface PrimDef { id: string; label: string; hint: string; fields: PrimField[]; build: (v: Record<string, string | number | boolean>) => Record<string, unknown> }
+
+const parsePairs = (s: string) => String(s).split(',').map(x => x.trim()).filter(Boolean);
+// W437 refuter catches on this console's own parsers: a vote without a colon used to be silently
+// DEFAULTED to choice "go" (dissent converted to assent by a constant); a mis-typed population
+// silently became NaN → null → the server default. Malformed input is now REFUSED with the entry
+// named — the backend's honesty is worthless if the frontend fabricates the request.
+const parseVotes = (s: string) => parsePairs(s).map(p => {
+  const i = p.indexOf(':');
+  const voter = i < 0 ? p.trim() : p.slice(0, i).trim();
+  const choice = i < 0 ? '' : p.slice(i + 1).trim();
+  if (!voter || !choice) throw new Error(`vote "${p}" is not voter:choice — refusing to guess a ballot`);
+  return { voter, choice };
+});
+const parseCount = (s: string, what: string) => {
+  const n = Number(String(s).trim());
+  if (!Number.isInteger(n) || n < 0) throw new Error(`${what} "${s}" is not a whole number ≥ 0 — refusing to substitute a default`);
+  return n;
+};
+const parseUtilities = (s: string) => Object.fromEntries(parsePairs(s).map(p => {
+  const i = p.indexOf(':');
+  const action = i < 0 ? '' : p.slice(0, i).trim();
+  const u = Number(p.slice(i + 1).trim());
+  if (!action || !Number.isFinite(u)) throw new Error(`utility "${p}" is not action:number`);
+  return [action, u];
+}));
+
+const PRIMITIVES: PrimDef[] = [
+  { id: 'consensus', label: 'Consensus', hint: 'Threshold vote-tally — the strongest clearing choice wins; ties are disclosed, never resolved by input order.',
+    fields: [{ key: 'votes', label: 'votes (voter:choice, …)', kind: 'text', def: 'ceo:go, cfo:go, cto:go, cmo:hold', wide: true },
+             { key: 'threshold', label: 'threshold (0–1]', kind: 'number', def: 0.66 }],
+    build: v => ({ threshold: Number(v.threshold), votes: parseVotes(String(v.votes)) }) },
+  { id: 'quorum', label: 'Quorum', hint: 'Density × threshold over the platform\'s defined agent catalog by default (a static definition, not a live observation) — the payload says which population was used.',
+    fields: [{ key: 'agents', label: 'population (blank = agent catalog)', kind: 'text', def: '' },
+             { key: 'secretion', label: 'secretion / agent', kind: 'number', def: 10 },
+             { key: 'threshold', label: 'threshold', kind: 'number', def: 50 }],
+    build: v => ({ ...(String(v.agents).trim() === '' ? {} : { agents: parseCount(String(v.agents), 'population') }), secretion: Number(v.secretion), threshold: Number(v.threshold) }) },
+  { id: 'decide', label: 'Decide', hint: 'Maximin over per-action utilities you supply. Leave utilities blank and every action ties — NO winner is invented (the default utility cannot tell actions apart).',
+    fields: [{ key: 'actions', label: 'actions (comma-separated)', kind: 'text', def: 'proceed, refine, hold', wide: true },
+             { key: 'utilities', label: 'per-action utilities (action:u, … — blank = all tie)', kind: 'text', def: 'proceed:0.9, refine:0.8, hold:0.6', wide: true },
+             { key: 'base_stability', label: 'base stability', kind: 'number', def: 0.9 }],
+    build: v => ({ actions: parsePairs(String(v.actions)), state: { base_stability: Number(v.base_stability) },
+                   ...(String(v.utilities).trim() === '' ? {} : { action_utilities: parseUtilities(String(v.utilities)) }) }) },
+  { id: 'intent', label: 'Intent', hint: 'Deterministic regex intent classification — all per-intent scores returned.',
+    fields: [{ key: 'text', label: 'text', kind: 'text', def: 'build and deploy a halal marketplace app', wide: true }],
+    build: v => ({ text: v.text }) },
+  { id: 'entailment', label: 'Entailment', hint: 'LEXICAL overlap with the deciding ratio in the payload — a one-sided negation marker with high overlap yields CONTRADICTION (a heuristic; the limits field says what it cannot tell).',
+    fields: [{ key: 'premise', label: 'premise', kind: 'text', def: 'the sky is not blue', wide: true },
+             { key: 'hypothesis', label: 'hypothesis', kind: 'text', def: 'the sky is blue', wide: true }],
+    build: v => ({ premise: v.premise, hypothesis: v.hypothesis }) },
+  { id: 'validate', label: 'Validate', hint: 'Reference comparison (difflib / numerical tolerance) — not LLM self-grading.',
+    fields: [{ key: 'prediction', label: 'prediction', kind: 'text', def: 'the quick brown fox', wide: true },
+             { key: 'actual', label: 'reference', kind: 'text', def: 'the quick brown fox jumps', wide: true },
+             { key: 'task_type', label: 'task type', kind: 'select', def: 'SEMANTIC', options: ['SEMANTIC', 'NUMERICAL', 'APP_CODE', 'GENERIC'] }],
+    build: v => ({ prediction: v.prediction, actual: v.actual, task_type: v.task_type }) },
+  { id: 'rigor', label: 'Rigor', hint: 'Real scipy CI + t-test over the accumulated series — unmeasured stays null with the reason (no fabricated p-values).',
+    fields: [{ key: 'metric_name', label: 'metric name', kind: 'text', def: 'console_rate' },
+             { key: 'value', label: 'observation', kind: 'number', def: 0.83 },
+             { key: 'baseline', label: 'baseline', kind: 'number', def: 0.6 }],
+    build: v => ({ metric_name: v.metric_name, value: Number(v.value), baseline: Number(v.baseline) }) },
+  { id: 'transduce', label: 'Transduce', hint: 'Hill saturation transform — where the signal sits on the dose-response curve. Nothing is timed.',
+    fields: [{ key: 'input_signal', label: 'input signal (≥0)', kind: 'number', def: 0.7 },
+             { key: 'hill', label: 'Hill coefficient', kind: 'number', def: 4.5 }],
+    build: v => ({ input_signal: Number(v.input_signal), hill: Number(v.hill) }) },
+  // edges split on '>' — the first version used '-', which MANGLED any hyphenated node name
+  // ('web-server' became a dangling ['web','server'] the backend then honestly discarded: a wrong
+  // measurement of the graph the user described, manufactured by the console itself)
+  { id: 'topology', label: 'Topology', hint: 'Betti numbers over APPLIED edges — malformed/dangling edges are discarded AND disclosed, never counted as cycles.',
+    fields: [{ key: 'nodes', label: 'nodes (comma-separated)', kind: 'text', def: 'a, b, c', wide: true },
+             { key: 'edges', label: 'edges (u>v, …)', kind: 'text', def: 'a>b, b>c, c>a', wide: true }],
+    build: v => ({ nodes: parsePairs(String(v.nodes)), edges: parsePairs(String(v.edges)).map(e => {
+      const i = e.indexOf('>');
+      if (i < 0) throw new Error(`edge "${e}" is not u>v`);
+      return [e.slice(0, i).trim(), e.slice(i + 1).trim()];
+    }) }) },
+  { id: 'entropy', label: 'Seed', hint: 'Deterministic SHA3-512 seed derivation over your source labels — reproducible, reads NO system entropy, never for keys.',
+    fields: [{ key: 'sources', label: 'source labels (comma-separated)', kind: 'text', def: 'alpha, beta', wide: true }],
+    build: v => ({ sources: parsePairs(String(v.sources)).map((s, i) => ({ source: s, timestamp: i + 1, size: 0, content_hash: s })) }) },
+];
+
+function PrimValue({ k, v }: { k: string; v: unknown }) {
+  // W437 refuter catch: one constant label cannot carry the null's meaning — consensus.choice null
+  // means "measured, nothing cleared", rigor.p_value null means "not measured". The basis line says
+  // which; the chip only points there.
+  if (v === null) return <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-500">null — see basis</span>;
+  if (typeof v === 'boolean') return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${v ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>{String(v)}</span>;
+  if (Array.isArray(v) && v.length > 12) return <span className="text-[9px] font-mono text-slate-400">[{v.length} points]</span>;
+  if (typeof v === 'object') return <span className="text-[9px] font-mono text-slate-400 break-all">{JSON.stringify(v)}</span>;
+  return <span className={`text-[10px] font-bold ${k === 'seed' ? 'font-mono' : ''} text-slate-300 break-all`}>{String(v)}</span>;
+}
+
+function PrimitiveConsole() {
+  const [sel, setSel] = useState<string>('consensus');
+  const [vals, setVals] = useState<Record<string, Record<string, string | number | boolean>>>(
+    () => Object.fromEntries(PRIMITIVES.map(p => [p.id, Object.fromEntries(p.fields.map(f => [f.key, f.def]))])));
+  const [res, setRes] = useState<Record<string, unknown> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const prim = PRIMITIVES.find(p => p.id === sel)!;
+
+  const run = async () => {
+    setBusy(true); setRes(null); setErr('');
+    try {
+      setRes(await apiJson(`/api/v1/native-ai/${prim.id}`, { method: 'POST', body: prim.build(vals[prim.id]) }));
+    } catch (e) { setErr(errorMessage(e)); }   // a 422 here is the honesty working (bad input REFUSED)
+    setBusy(false);
+  };
+
+  const basis = res && typeof res.basis === 'string' ? res.basis : null;
+  const method = res && typeof res.method === 'string' ? res.method : null;
+  const rows = res ? Object.entries(res).filter(([k]) => k !== 'basis' && k !== 'method') : [];
+
+  return (
+    <Card className="p-6 border-aura/30">
+      <h3 className="text-[10px] font-black uppercase tracking-widest text-aura mb-1 flex items-center gap-2"><Play size={14} /> Primitive console — run every owned capability live</h3>
+      <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+        Each primitive below runs the REAL integrated module and renders its <span className="text-aura">whole</span> payload —
+        including the parts that say what was <span className="text-aura">not</span> measured. Every one was audited (five fixed, W437)
+        before this console made them reachable.
+      </p>
+      <div className="flex gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800 flex-wrap mb-3">
+        {PRIMITIVES.map(p => (
+          <button key={p.id} type="button" onClick={() => { setSel(p.id); setRes(null); setErr(''); }}
+            className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${sel === p.id ? 'bg-aura text-sovereign' : 'text-slate-500 hover:text-white'}`}>{p.label}</button>
+        ))}
+      </div>
+      <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">{prim.hint}</p>
+      <div className="grid grid-cols-1 @[640px]:grid-cols-2 gap-2 mb-3">
+        {prim.fields.map(f => (
+          <label key={f.key} className={`block ${f.wide ? '@[640px]:col-span-2' : ''}`}>
+            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">{f.label}</span>
+            {f.kind === 'select' ? (
+              <select value={String(vals[prim.id][f.key])}
+                onChange={e => setVals(s => ({ ...s, [prim.id]: { ...s[prim.id], [f.key]: e.target.value } }))}
+                className="w-full text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300 mt-0.5">
+                {f.options!.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            ) : (
+              <input value={String(vals[prim.id][f.key])} type={f.kind === 'number' ? 'number' : 'text'} step="any"
+                onChange={e => setVals(s => ({ ...s, [prim.id]: { ...s[prim.id], [f.key]: e.target.value } }))}
+                className="w-full text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300 mt-0.5" />
+            )}
+          </label>
+        ))}
+      </div>
+      <Button onClick={run} disabled={busy} className="flex items-center gap-2 bg-aura text-sovereign text-xs">
+        {busy ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Run {prim.label.toLowerCase()}
+      </Button>
+      {err && <p className="text-vital text-[11px] font-bold mt-3">{err}</p>}
+      {res && (
+        <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-slate-900">
+          <div className="grid grid-cols-1 @[640px]:grid-cols-2 gap-x-4 gap-y-1.5">
+            {rows.map(([k, v]) => (
+              <div key={k} className="flex items-baseline justify-between gap-2 min-w-0">
+                <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 shrink-0">{k}</span>
+                <PrimValue k={k} v={v} />
+              </div>
+            ))}
+          </div>
+          {basis && (
+            <p className="text-[10px] text-amber-200/80 italic leading-relaxed mt-2 pt-2 border-t border-slate-900">
+              <span className="not-italic font-black uppercase text-[8px] tracking-widest text-amber-400/80 mr-1.5">basis</span>{basis}
+            </p>
+          )}
+          {method && <p className="text-[8px] font-mono text-slate-600 mt-1.5">{method}</p>}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export const NativeAI: React.FC = () => {
   const [status, setStatus] = useState<Status | null>(null);
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
@@ -175,6 +353,10 @@ export const NativeAI: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [homeo, setHomeo] = useState<any>(null);   // §8→§6 live homeostatic posture
+  // W437 — fabric integrity: a REAL import probe of every capability's backing module, plus the
+  // live resource selection order (both were server-side only; no page ever called them)
+  const [selfcheck, setSelfcheck] = useState<{ total: number; live: number; all_live: boolean; modules: { source: string; live: boolean; error?: string }[] } | null>(null);
+  const [fabricRes, setFabricRes] = useState<{ resources: string[]; selection_order: string[] } | null>(null);
 
   // ── bespoke cascade design (user design control) ──
   const [name, setName] = useState('Concept Validator');
@@ -216,6 +398,8 @@ export const NativeAI: React.FC = () => {
       .finally(() => setLoading(false));
     fetch('/api/v1/native-ai/capabilities').then(r => r.json()).then(d => setCapabilities(d.capabilities || [])).catch(() => {});
     fetch('/api/v1/native-ai/homeostasis').then(r => r.json()).then(setHomeo).catch(() => {});
+    fetch('/api/v1/native-ai/selfcheck').then(r => r.json()).then(setSelfcheck).catch(() => {});
+    fetch('/api/v1/native-ai/resources').then(r => r.json()).then(setFabricRes).catch(() => {});
     fetch('/api/v1/native-ai/models').then(r => r.json())
       .then(d => setModelTiers(d.tiers || [])).catch(() => {});
     loadCascades();
@@ -418,6 +602,28 @@ export const NativeAI: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* W437 — fabric integrity: the real import probe + live selection order, finally on a page */}
+          {selfcheck && (
+            <Card className={`p-4 ${selfcheck.all_live ? 'border-emerald-500/30' : 'border-amber-500/40 bg-amber-500/5'}`}>
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><ShieldCheck size={14} className={selfcheck.all_live ? 'text-emerald-400' : 'text-amber-400'} /> Fabric integrity</h3>
+                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${selfcheck.all_live ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                  {selfcheck.live}/{selfcheck.total} backing modules import live
+                </span>
+                {fabricRes && <span className="text-[9px] font-bold uppercase text-slate-500">selection: {fabricRes.selection_order.join(' → ')}</span>}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {selfcheck.modules.map(m => (
+                  <span key={m.source} title={m.error || 'imports cleanly'}
+                    className={`text-[8px] font-mono px-1.5 py-0.5 rounded ${m.live ? 'bg-slate-900 text-slate-500' : 'bg-vital/15 text-vital'}`}>{m.source}{m.live ? '' : ' ✗'}</span>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* W437 — the 10 primitives were catalogued above but NO page could run them */}
+          <PrimitiveConsole />
 
           {/* Resources */}
           <div>

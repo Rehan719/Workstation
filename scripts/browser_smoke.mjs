@@ -46,6 +46,8 @@ const ROUTES = [
   ['/marketplace',      ['Living Marketplace']],
   ['/vsb-cockpit',      ['VSB Cockpit']],
   ['/ceo?tab=board',    ['Board of Directors', 'Apex Governance']],
+  // W437 — the native fabric page gained the primitive console + fabric integrity strip
+  ['/native-ai',        ['In-House AI Resources']],
 ];
 
 // The landmark check above passes if ANY landmark is present, which proves the route did not crash
@@ -57,6 +59,8 @@ const REQUIRED_SECTIONS = {
   '/economy': ['Service contracts', 'Charity directives'],
   '/ceo?tab=board': ['cannot instruct the board'],
   '/marketplace': ['Listings'],
+  // W437 — the console that finally makes the 10 audited primitives reachable, and the integrity strip
+  '/native-ai': ['Primitive console', 'Fabric integrity'],
 };
 
 const failures = [];

@@ -100,15 +100,20 @@ class NLIEngine:
         intersection = premise_words & hypothesis_words
         overlap_ratio = round(len(intersection) / len(hypothesis_words), 3)
 
-        # A negator on exactly ONE side reverses the claim, whatever the tokens agree on.
+        # A negator on exactly ONE side is treated as reversing the claim. W437 refuter catch on
+        # this W431 rule: it is a HEURISTIC and misfires when the negator does not negate the
+        # hypothesis's content ("completed without errors" ENTAILS "completed", yet lands here) —
+        # so the basis states the evidence, not a fact about the claim, and `limits` names it.
         p_neg = bool(premise_words & self._NEGATORS)
         h_neg = bool(hypothesis_words & self._NEGATORS)
         negation_conflict = (p_neg != h_neg)
 
         if negation_conflict and overlap_ratio >= 0.5:
             label = "CONTRADICTION"
-            basis = (f"token overlap {overlap_ratio} but negation appears on one side only "
-                     f"({'premise' if p_neg else 'hypothesis'}) - the claim is reversed")
+            basis = (f"token overlap {overlap_ratio} but a negation marker appears on one side only "
+                     f"({'premise' if p_neg else 'hypothesis'}) - lexically this often reverses the "
+                     f"claim, but token-level negation cannot tell reversal from idiom "
+                     f"('without errors' does not negate 'completed')")
         elif overlap_ratio >= 0.9:
             label, basis = "ENTAILED", f"token overlap {overlap_ratio} >= 0.9"
         elif overlap_ratio < 0.2:
@@ -120,10 +125,11 @@ class NLIEngine:
                 "negation_conflict": negation_conflict,
                 "method": "word-overlap NLI (owned nlp)",
                 "basis": basis,
-                "limits": "lexical only - does not read word order, quantifiers or role inversion"}
+                "limits": ("lexical only - does not read word order, quantifiers or role inversion; "
+                           "negation detection is token-based and cannot tell a reversing negator "
+                           "from an idiomatic one")}
 
     def get_intent_confidence(self, intent_id: str) -> float:
-        """
-        Returns the confidence score for a specific intent ID based on historical results.
-        """
-        return 0.85 # Placeholder for historical confidence tracking
+        """W437: a hardcoded placeholder — NOT historical, NOT a measurement. Zero callers exist;
+        do not wire this anywhere while it returns a constant."""
+        return 0.85 # Placeholder — a constant, not confidence tracking

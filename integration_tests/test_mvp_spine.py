@@ -3848,13 +3848,14 @@ def test_native_topology_betti_in_house(client):
 
 
 def test_native_entropy_pool_in_house(client):
-    # Owned entropy pool (agentic_core/crypto.EntropyPool): REAL SHA3-512 + XOR entropy mixing — a
-    # deterministic seed for fixed sources (reproducible in-house seeding), not a PRNG call.
+    # Owned deterministic seed derivation (agentic_core/crypto.EntropyPool): REAL SHA3-512 + XOR
+    # mixing — a deterministic seed for fixed sources (reproducible in-house seeding), honestly
+    # labelled (W437: no more "bits harvested" that nothing measured).
     src = [{"size": 100, "source": "a", "content_hash": "h1", "timestamp": 1},
            {"size": 200, "source": "b", "content_hash": "h2", "timestamp": 2}]
     r = client.post("/api/v1/native-ai/entropy", json={"sources": src}).json()
-    assert isinstance(r["seed"], int) and r["bits_harvested"] == 256 and r["sources_mixed"] == 2
-    assert len(r["pool_integrity"]) == 16 and "sha3" in r["algo"]
+    assert isinstance(r["seed"], int) and r["mixing_rounds"] == 2 and r["sources_mixed"] == 2
+    assert len(r["pool_digest"]) == 16 and "sha3" in r["algo"]
     # deterministic for the same fixed-timestamp sources; different sources -> different seed
     assert client.post("/api/v1/native-ai/entropy", json={"sources": src}).json()["seed"] == r["seed"]
     other = client.post("/api/v1/native-ai/entropy",
@@ -3926,18 +3927,18 @@ def test_chief_orchestrates_objective_in_house(client):
 
 
 def test_native_biomimetic_signaling_in_house(client):
-    # Owned biomimetic signal transduction (agentic_core/signaling.EmpiricalSignalTransduction): a REAL
-    # Hill-equation sigmoidal cascade — strong signals propagate (peak>=0.5), weak ones stay
-    # sub-threshold; latency decreases as the signal strengthens (real kinetics, not a constant).
+    # Owned Hill saturation transform (agentic_core/signaling.EmpiricalSignalTransduction): strong
+    # signals land supra-threshold, weak ones below, and the activation genuinely tracks the input.
+    # (W437: the fabricated latency_s and inert frequency are gone — see the W437 guard.)
     strong = client.post("/api/v1/native-ai/transduce", json={"input_signal": 0.8}).json()
     weak = client.post("/api/v1/native-ai/transduce", json={"input_signal": 0.2}).json()
-    assert strong["propagated"] is True and weak["propagated"] is False
-    assert strong["peak_intensity"] > weak["peak_intensity"] and "Hill" in strong["method"]
-    assert strong["latency_s"] < weak["latency_s"]
-    # the workflow tree carries a real biomimetic signal_response over its consensus strength
+    assert strong["supra_threshold"] is True and weak["supra_threshold"] is False
+    assert strong["activation"] > weak["activation"] and "Hill" in strong["method"]
+    # the workflow tree carries the same honest transform over its consensus strength
     t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
     sr = t.get("signal_response")
-    assert sr and 0.0 <= sr["peak_intensity"] <= 1.0 and isinstance(sr["propagated"], bool) and "Hill" in sr["method"]
+    assert sr and 0.0 <= sr["activation"] <= 1.0 and isinstance(sr["supra_threshold"], bool) and "Hill" in sr["method"]
+    assert "latency_s" not in sr and sr["k50"] == 0.5 and sr["basis"]
 
 
 def test_native_swarm_consensus_in_house(client):
@@ -3969,10 +3970,11 @@ def test_native_statistical_rigor_in_house(client):
         last = client.post("/api/v1/native-ai/rigor",
                            json={"metric_name": "rate_x", "value": v, "baseline": 0.6}).json()
     assert last["ci_95"][0] <= last["ci_95"][1] and "scipy" in last["method"]
-    assert 0.0 <= last["p_value"] <= 1.0 and isinstance(last["significant"], bool)
-    # a series clearly above baseline 0.6 yields a tiny p-value (real t-test, not fabricated)
-    assert last["p_value"] < 0.05
-    # a non-significant metric produces a numpy bool internally — the owned UEG chain must STILL
+    assert 0.0 <= last["p_value"] <= 1.0
+    # a series clearly above baseline 0.6 yields a tiny p-value AND is CALLED significant — under the
+    # old power gate (W437) this was impossible before the 30th call, whatever the evidence said
+    assert last["p_value"] < 0.05 and last["significant"] is True
+    # a single flat observation is honestly unmeasured — and the owned UEG chain must STILL
     # serialise it and stay cryptographically valid (regression for the numpy-serialisation fix)
     client.post("/api/v1/native-ai/rigor", json={"metric_name": "flat_y", "value": 0.6, "baseline": 0.6})
     assert client.get("/api/v1/ueg/verify").json()["chain_valid"] is True
@@ -7550,3 +7552,195 @@ def test_w436_floor_served_stages_are_not_certified(client):
     attested = set(bar.get("attested_criteria") or [])
     assert "tested" not in attested and "validated" not in attested, (
         "a floor run attested verification it could not perform: %r" % (attested,))
+
+
+def test_w437_native_primitives_no_longer_fabricate(client):
+    # W437 — the five remaining defective primitives from NATIVE_PRIMITIVE_DEFECT_LEDGER.md fixed
+    # BOTH ways: each stops fabricating on the degenerate case AND still discriminates on real
+    # signal. Plus the consensus handler now surfaces the W431 engine detail it used to drop.
+    import struct as _struct
+
+    # ── transduce: latency_s / frequency / propagated DELETED, not renamed ──────────────────────
+    t = client.post("/api/v1/native-ai/transduce", json={"input_signal": 0.8}).json()
+    for gone in ("latency_s", "frequency", "propagated", "peak_intensity"):
+        assert gone not in t, f"transduce still carries the fabricated field {gone}"
+    assert t["supra_threshold"] is True and t["k50"] == 0.5 and "not a timed" in t["basis"]
+    # a negative concentration is refused, not silently complex-truncated
+    assert client.post("/api/v1/native-ai/transduce", json={"input_signal": -0.5}).status_code == 422
+    # hill STILL discriminates (the fix must not flatten the real math): steeper h -> lower
+    # activation below K50
+    a_shallow = client.post("/api/v1/native-ai/transduce",
+                            json={"input_signal": 0.4, "hill": 1.0}).json()["activation"]
+    a_steep = client.post("/api/v1/native-ai/transduce",
+                          json={"input_signal": 0.4, "hill": 8.0}).json()["activation"]
+    assert a_steep < a_shallow
+    curve = client.post("/api/v1/native-ai/transduce",
+                        json={"input_signal": 0.4, "include_curve": True}).json()["dose_response"]
+    assert len(curve) == 101 and curve[0] == 0.0 and curve[-1] > 0.9 and all(x >= 0 for x in curve)
+
+    # ── topology: junk edges no longer fabricate "structural holes" ─────────────────────────────
+    junk = client.post("/api/v1/native-ai/topology",
+                       json={"nodes": ["a", "b"], "edges": ["junk", 42, None, {"nope": 1}]}).json()
+    assert junk["beta1_cycles"] == 0, "discarded edges were counted as cycles again"
+    assert junk["edges_applied"] == 0 and junk["edges_discarded"] == 4 and junk["edges_submitted"] == 4
+    assert junk["beta1_threshold"] == 3.0 and junk["beta1_over_threshold"] is False
+    assert "status" not in junk, "the undisclosed SPIKE_DETECTED verdict is back"
+    # still discriminates: a real triangle has exactly one independent cycle
+    tri = client.post("/api/v1/native-ai/topology",
+                      json={"nodes": ["a", "b", "c"], "edges": [["a", "b"], ["b", "c"], ["c", "a"]]}).json()
+    assert tri["beta1_cycles"] == 1 and tri["fragmented"] is False
+    frag = client.post("/api/v1/native-ai/topology", json={"nodes": ["a", "b", "c"], "edges": []}).json()
+    assert frag["fragmented"] is True and frag["beta0_components"] == 3
+
+    # ── entropy: the counter and the self-attesting digest are gone ─────────────────────────────
+    e = client.post("/api/v1/native-ai/entropy", json={"sources": []}).json()
+    assert "bits_harvested" not in e and "pool_integrity" not in e
+    # the digest is no longer a re-encoding of the seed (the old identity: hex(seed LE bytes))
+    assert e["pool_digest"] != _struct.pack("<Q", e["seed"]).hex()
+    assert "do NOT use this seed as a key" in e["basis"] and "genesis-constant" in e["basis"]
+
+    # ── quorum: the default population is the agent CATALOG, named for what it is ───────────────
+    # (the refuter pass corrected this fix's own first version, which called the static _AGENTS
+    # dict "live_roster" — a constant wearing the name of an observation)
+    live = client.post("/api/v1/native-ai/quorum", json={}).json()
+    assert live["population_source"] == "agent_catalog" and live["agents"] >= 1
+    assert "static definition" in live["basis"] and "live_roster" not in str(live)
+    sup = client.post("/api/v1/native-ai/quorum", json={"agents": 6}).json()
+    assert sup["population_source"] == "caller_supplied" and sup["agents"] == 6
+    # the verdict is re-derivable from the exact numbers in the payload (the old response rounded
+    # the reported concentration but compared the unrounded one; it is now a single product, so
+    # the basis's "×" is the literal operation)
+    for resp in (live, sup):
+        assert (resp["concentration"] > resp["threshold"]) == resp["cooperative"]
+        assert resp["concentration"] == resp["agents"] * 10.0
+    assert client.post("/api/v1/native-ai/quorum", json={"secretion": -100}).status_code == 422
+    # still discriminates: a large enough population flips COOPERATIVE
+    big = client.post("/api/v1/native-ai/quorum", json={"agents": 60, "secretion": 10}).json()
+    assert big["cooperative"] is True
+
+    # ── rigor: unmeasured is unmeasured; the call-counter "power" is dead ───────────────────────
+    r1 = client.post("/api/v1/native-ai/rigor",
+                     json={"metric_name": "w437_fresh", "value": 5.0, "baseline": 0.0}).json()
+    assert "power" not in r1, "the call-counter wearing a statistics label is back"
+    assert r1["n"] == 1 and r1["p_value"] is None and r1["significant"] is None and r1["ci_95"] is None
+    assert "nothing was tested" in r1["basis"]
+    # zero variance: honest reason, HTTP 200 — the old code sealed a NaN into the UEG chain then 500d
+    zv = None
+    for _ in range(3):
+        rz = client.post("/api/v1/native-ai/rigor",
+                         json={"metric_name": "w437_flat", "value": 2.5, "baseline": 2.5})
+        assert rz.status_code == 200, rz.text
+        zv = rz.json()
+    assert zv["p_value"] is None and zv["significant"] is None and "zero variance" in zv["basis"]
+    assert client.get("/api/v1/ueg/verify").json()["chain_valid"] is True
+
+    # ── consensus: the handler surfaces the W431 detail it used to drop ─────────────────────────
+    # the ledger's proven case (c): ALPHA 2 votes vs BETA 3, threshold 0.4 — the old path returned
+    # the LOSER (first past the threshold in insertion order); the strongest must win
+    c = client.post("/api/v1/native-ai/consensus", json={"threshold": 0.4, "votes": [
+        {"voter": "a1", "choice": "ALPHA"}, {"voter": "a2", "choice": "ALPHA"},
+        {"voter": "b1", "choice": "BETA"}, {"voter": "b2", "choice": "BETA"},
+        {"voter": "b3", "choice": "BETA"}]}).json()
+    assert c["choice"] == "BETA" and c["reached"] is True and c["tally"] == {"ALPHA": 2, "BETA": 3}
+    # a voter voting three times is ONE distinct voter, and the payload says so
+    dup = client.post("/api/v1/native-ai/consensus", json={"votes": [
+        {"voter": "n1", "choice": "GO"}, {"voter": "n1", "choice": "GO"},
+        {"voter": "n1", "choice": "GO"}]}).json()
+    assert dup["ballots_submitted"] == 3 and dup["distinct_voters"] == 1
+    # a meaningless threshold is refused, not "reached" (the old handler accepted -1.0)
+    assert client.post("/api/v1/native-ai/consensus",
+                       json={"threshold": -1.0, "votes": [{"voter": "x", "choice": "GO"}]}).status_code == 422
+
+    # ── validate: the handler stops crashing on (and hiding) the W432 engine honesty ────────────
+    # the engine returns confidence None for GENERIC/APP_CODE (W432); the old handler cast
+    # float(None) → every such call 500'd, and one hardcoded "(difflib, real)" method string was
+    # stamped on all four branches
+    g = client.post("/api/v1/native-ai/validate",
+                    json={"prediction": "alpha", "actual": "omega", "task_type": "GENERIC"})
+    assert g.status_code == 200, g.text
+    gb = g.json()
+    assert gb["is_accurate"] is False and gb["confidence"] is None and "no confidence gradient" in gb["confidence_basis"]
+    assert "difflib" not in gb["method"] and "equality" in gb["method"]
+    # an unknown task_type is refused — it used to fall silently into the equality branch while
+    # the method string claimed difflib ran
+    assert client.post("/api/v1/native-ai/validate",
+                       json={"prediction": "a", "actual": "a", "task_type": "semantic"}).status_code == 422
+
+
+def test_w437_refuter_pass_findings_stay_fixed(client):
+    # W437's adversarial verification found defects IN the first version of the fixes (and one live
+    # break they caused). Each stays fixed:
+
+    # 1. business_plan's orchestration review reads the NEW signal key — the W437 rename broke it
+    #    silently (it read the deleted `propagated` → constant False). The review must agree with
+    #    the tree's own signal_response, and record null (not False) when no signal was computed.
+    scope = "test-w437-signal"
+    obj = client.post("/api/v1/business-plan/objective",
+                      json={"scope": scope, "title": "Signal consistency check",
+                            "kpi": "1", "timeline": "Q4 2026"}).json()
+    b = client.post(f"/api/v1/business-plan/objective/{obj['id']}/orchestrate",
+                    json={"scope": scope}).json()
+    sr = (b["tree"] or {}).get("signal_response")
+    plan = client.get("/api/v1/business-plan", params={"scope": scope}).json()
+    o = next(x for x in plan["objectives"] if x["id"] == obj["id"])
+    orch = next(rv["orchestration"] for rv in o["reviews"] if "orchestration" in rv)
+    assert "signal_propagated" not in orch, "the dead key is back"
+    if sr is None:
+        assert orch["signal_supra_threshold"] is None, "a missing signal was recorded as a verdict"
+    else:
+        assert orch["signal_supra_threshold"] == sr["supra_threshold"], (
+            "the review disagrees with the tree's own signal: %r vs %r" % (orch, sr))
+
+    # 2. decide can now genuinely discriminate — via caller-supplied utilities — and still refuses
+    #    to invent a winner without them
+    ranked = client.post("/api/v1/native-ai/decide", json={
+        "actions": ["proceed", "refine", "hold"],
+        "action_utilities": {"proceed": 0.9, "refine": 0.8, "hold": 0.6}}).json()
+    assert ranked["selected_action"] == "proceed" and ranked["discriminated"] is True
+    tied = client.post("/api/v1/native-ai/decide", json={"actions": ["a", "b"]}).json()
+    assert tied["selected_action"] is None and tied["tied_actions"] == ["a", "b"]
+    assert "does NOT read the action" in tied["utility_source"]
+    # a partial utility table is refused, not silently defaulted
+    assert client.post("/api/v1/native-ai/decide", json={
+        "actions": ["a", "b"], "action_utilities": {"a": 0.9}}).status_code == 422
+
+    # 3. rigor refuses non-finite observations at the door (a NaN used to be sealed into the UEG
+    #    chain as "not significant" and then 500 the response)
+    import json as _json
+    r = client.post("/api/v1/native-ai/rigor",
+                    content=_json.dumps({"metric_name": "w437_nan", "value": float("nan")}),
+                    headers={"Content-Type": "application/json"})
+    assert r.status_code == 422, r.text
+
+    # 4. transduce is overflow-stable: an extreme (signal, hill) returns the mathematical limit,
+    #    not a 500 (hill itself is now bounded at 100)
+    ext = client.post("/api/v1/native-ai/transduce", json={"input_signal": 10.0, "hill": 100.0})
+    assert ext.status_code == 200 and ext.json()["activation"] == 1.0
+    assert client.post("/api/v1/native-ai/transduce",
+                       json={"input_signal": 1.0, "hill": 400.0}).status_code == 422
+
+    # 5. topology: V is DISTINCT nodes — a triangle with one repeated node id still has its cycle
+    #    (the first fix's raw-length V erased it), and a None node id cannot legitimise a
+    #    malformed dict edge
+    tri = client.post("/api/v1/native-ai/topology",
+                      json={"nodes": ["a", "b", "c", "a"],
+                            "edges": [["a", "b"], ["b", "c"], ["c", "a"]]}).json()
+    assert tri["beta1_cycles"] == 1 and tri["nodes_distinct"] == 3 and tri["nodes_submitted"] == 4
+    nul = client.post("/api/v1/native-ai/topology",
+                      json={"nodes": [None, "b"], "edges": [{"target": "b"}]}).json()
+    assert nul["edges_applied"] == 0 and nul["nodes_discarded"] == 1
+
+    # 6. entropy is deterministic BY CONSTRUCTION: a source with no timestamp gets a fixed 0 (the
+    #    old fallback silently injected wall-clock while the basis said "deterministic"), disclosed
+    e1 = client.post("/api/v1/native-ai/entropy",
+                     json={"sources": [{"source": "x", "size": 1, "content_hash": "h"}]}).json()
+    e2 = client.post("/api/v1/native-ai/entropy",
+                     json={"sources": [{"source": "x", "size": 1, "content_hash": "h"}]}).json()
+    assert e1["seed"] == e2["seed"], "wall-clock is back in the derivation"
+    assert "no timestamp" in e1["basis"]
+
+    # 7. the orchestrator does not fabricate a signal when consensus failed: whenever the tree has
+    #    no consensus it must have no signal_response (0.5 was the old invented input)
+    t = client.post("/api/v1/native-ai/tree", json={"goal": "Check signal honesty"}).json()
+    if t.get("consensus") is None:
+        assert t.get("signal_response") is None

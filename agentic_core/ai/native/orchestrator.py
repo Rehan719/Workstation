@@ -653,19 +653,26 @@ class NativeOrchestrator:
         except Exception:
             consensus = None
 
-        # BIOMIMETIC SIGNAL TRANSDUCTION (owned): model whether the run's signal is strong enough to
-        # PROPAGATE through the organism's biochemical cascade — a REAL Hill-equation (sigmoidal)
-        # response to the run's consensus strength. peak >= 0.5 ⇒ supra-threshold (the signal fires).
+        # BIOMIMETIC SIGNAL TRANSDUCTION (owned): a Hill saturation transform of the run's consensus
+        # strength. W437 — the old surface reported `latency_s` (nothing was timed; a constant formula
+        # wearing a unit) and a `frequency` that provably never entered the result; both deleted, and
+        # supra_threshold is stated for what it is: proceed_fraction >= K50.
         signal_response: Dict[str, Any] = None
         try:
             from agentic_core.signaling.empirical_transduction import EmpiricalSignalTransduction
-            strength = float((consensus or {}).get("proceed_fraction", 0.5))
-            casc = EmpiricalSignalTransduction(frequency=0.5, hill=4.5).simulate_cascade(strength)
-            peak = float(casc["peak_intensity"])
-            signal_response = {"input_strength": round(strength, 3), "peak_intensity": round(peak, 4),
-                               "latency_s": round(float(casc["latency"]), 2), "propagated": bool(peak >= 0.5),
-                               "hill": 4.5, "method": "Hill-equation cascade (owned signaling)"}
-            _fire("sensory", "native.tree", f"signal transduction peak={peak:.2f}", 0.4)
+            # W437 refuter catch: the old `(consensus or {}).get(..., 0.5)` fabricated the input when
+            # consensus failed — 0.5 >= K50 reported "supra-threshold" for a run whose consensus was
+            # never computed. No consensus → no signal_response, honestly absent.
+            if consensus is None:
+                raise ValueError("consensus unavailable — signal transduction has no input")
+            strength = float(consensus["proceed_fraction"])
+            casc = EmpiricalSignalTransduction(hill=4.5).transform(strength)
+            act = float(casc["activation"])
+            signal_response = {"input_strength": round(strength, 3), "activation": round(act, 4),
+                               "supra_threshold": bool(casc["supra_threshold"]), "k50": casc["k50"],
+                               "hill": casc["hill"], "basis": casc["basis"],
+                               "method": "Hill saturation transform (owned signaling)"}
+            _fire("sensory", "native.tree", f"signal transduction activation={act:.2f}", 0.4)
         except Exception:
             signal_response = None
 

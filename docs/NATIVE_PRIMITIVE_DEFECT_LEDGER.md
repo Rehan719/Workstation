@@ -1,6 +1,6 @@
 # Native-AI Primitive Defect Ledger — 2026-09-01
 
-**9 of 9 audited primitives carry a §4.5-class defect that survived adversarial refutation.**
+**9 of 9 audited primitives carried a §4.5-class defect that survived adversarial refutation — all now FIXED and WIRED (W437; see Status).**
 
 The §4.5 class, named for the candidate-ranking defect that started this: *a value SELECTED or
 REPORTED as a result when nothing actually discriminated* — plus its cousins, a constant
@@ -16,12 +16,21 @@ Each entry was produced by an agent that CALLED the endpoint and READ the implem
 attacked by an independent refuter instructed to default to "refuted". Three were additionally
 re-verified by hand against the running backend — noted inline.
 
-## Status — 2026-09-01
+## Status — 2026-09-02 (W437): ALL 10 FIXED · ALL 10 WIRED
 
-**FIXED and guarded (5):** `intent` (W430) · `entailment` · `consensus` · `decide` (W431) ·
-`validate` (W432). Each guard was broken, watched fail with the original symptom, and restored.
-**OPEN (4):** `rigor` · `quorum` · `topology` · `transduce`. None is wired, so none misleads a user
-today — but "unreached" is not "ready", which is the whole point of this ledger.
+**Every primitive is fixed and reachable** — the Primitive Console on /native-ai runs each one live
+and renders the whole honest payload (guarded by `test_w437_native_primitives_no_longer_fabricate`,
+broken and watched fail with the original symptom, and by browser smoke's REQUIRED_SECTIONS).
+
+Accounting correction: the 2026-09-01 status section said "5 fixed + 4 open" over a table of 9 —
+`entropy` was in NEITHER list. It was still open, and W437 confirmed and fixed it. A status section
+that miscounts its own table is the same defect class this ledger documents.
+
+W437 also found the CLASS ONE LAYER UP: for `consensus` and `validate` the W431/W432 ENGINE fixes
+were real, but the HANDLERS kept calling the old paths — consensus dropped the tally/tie/basis it
+computed, and validate crashed (float(None) → 500) on the very branches the engine had made honest.
+A fix at one call site is a local repair (rule 14): the surface a user reaches must be re-verified
+after the engine is fixed, or the honesty never leaves the module.
 
 | primitive | user value today | verdict |
 |---|---|---|
@@ -37,7 +46,7 @@ today — but "unreached" is not "ready", which is the whole point of this ledge
 
 ## `POST /api/v1/native-ai/consensus`
 
-- **status:** OPEN · fix_then_wire · not reachable from any UI
+- **status:** FIXED — engine W431 (strongest-clearing choice, top-tie disclosed, distinct_voters); handler W437 (the detail is finally SURFACED — the handler had kept calling the old single-value path; threshold bounded (0,1]; ballot-overwrite disclosed). WIRED W437 (Primitive console)
 - **implementation:** Handler: agentic_core/api/native_ai.py:499-511 (native_consensus), request model ConsensusRequest at :492 (proposal_id, votes[{voter,choice}], total_nodes=0, threshold=0.66 — threshold is an UNVALIDATED free float, no Field bounds). Dispatches to agentic_core/swarm/conflict_resolution.py:34-45, ConsensusEngine.check_consensus. It tallies counts per choice into a plain dict, then: for choice, count
 - **sample output:** `(a) honest case — 2xALPHA 1xBETA, thr 0.66: {"reached":true,"choice":"ALPHA","threshold":0.66,"total_nodes":3,"votes_cast":3,"method":"threshold consensus (owned swarm)"} (c) LOSER RETURNED — ALPHA 2 votes, BETA 3 votes, thr 0.4: {"reached":true,"choice":"ALPH`
 - **only one possible value in this deployment:** False
@@ -59,7 +68,7 @@ NOT counted as defects: the empty case (d) returns reached:false with total_node
 
 ## `POST /api/v1/native-ai/decide`
 
-- **status:** OPEN · fix_then_wire · not reachable from any UI
+- **status:** FIXED W431 (all-way tie → selected_action null + tied_actions + basis; the engine discloses when the utility did not discriminate). WIRED W437 (Primitive console)
 - **implementation:** agentic_core/api/native_ai.py:566-576 (handler `native_decide`, model `DecideRequest` at :561 — fields are only `state` and `actions`). It dispatches to agentic_core/cognition/minimax_optimizer.py:16 `MinimaxOptimizer.evaluate_strategy(state, actions, default_utility_func)`, with the utility hardcoded at the call site — the caller CANNOT supply one. What it really computes: agentic_core/cognition/
 - **sample output:** `Two calls, IDENTICAL action set, only the ORDER differs: A) payload {"state":{"base_stability":0.9},"actions":["detonate_reactor","evacuate_safely","do_nothing"]} {"posture":"in-house","method":"minimax adversarial (owned cognition)","actions":["detonate_react`
 - **only one possible value in this deployment:** True
@@ -80,7 +89,7 @@ Notably, the engine itself is NOT the bug. agentic_core/ai/native/orchestrator.p
 
 ## `POST /api/v1/native-ai/entailment`
 
-- **status:** OPEN · fix_then_wire · not reachable from any UI
+- **status:** FIXED W431 (overlap ratio + limits travel with the verdict; asymmetric negation → CONTRADICTION). WIRED W437 (Primitive console)
 - **implementation:** C:\Users\rehan\Workstation\agentic_core\api\native_ai.py:477-484 (EntailmentRequest at :472, fields premise/hypothesis) dispatches to NLIEngine().verify_premise_entailment at C:\Users\rehan\Workstation\agentic_core\nlp\nli_engine.py:62-82. What it really computes, in full — there is nothing else in the method: premise_words = set(premise.lower().split()); hypothesis_words = set(hypothesis.lower().
 - **sample output:** `Valid call (premise/hypothesis, 422 correctly on a missing field): $ curl -X POST /api/v1/native-ai/entailment -d '{"premise":"The quarterly revenue grew by 12 percent in Q3","hypothesis":"revenue grew in Q3"}' {"premise":"...","hypothesis":"revenue grew in Q3`
 - **only one possible value in this deployment:** False
@@ -103,7 +112,7 @@ Aggravating: infer_intent, thirty lines above in the SAME class, was already rep
 
 ## `POST /api/v1/native-ai/entropy`
 
-- **status:** OPEN · fix_then_wire · not reachable from any UI
+- **status:** FIXED W437 (bits_harvested → mixing_rounds — a count of mixing operations, which is all it measured; pool_digest is now a DISJOINT slice of the pool hash, no longer a re-encoding of the seed; the response states plainly: no system entropy, never for keys/nonces/tokens, and the empty call is the fixed genesis constant). WIRED W437 (Primitive console)
 - **implementation:** Route: C:\Users\rehan\Workstation\agentic_core\api\native_ai.py:425-437 (`native_entropy`, request model `EntropyRequest` at :421 — one field, `sources: List[Dict[str, Any]] = []`). Dispatches to: C:\Users\rehan\Workstation\agentic_core\crypto\entropy_pool.py:6-34 (`EntropyPool`). What it really computes: - `__init__` seeds the pool with the literal `b"v-infinity-genesis-seed"` (:8). - `add_entrop
 - **sample output:** `Live calls against 127.0.0.1:8010 (HTTP 200, real payload every time): A. `{"sources":[]}` — repeated 3x, and `{}` with no field at all: {"seed":9392136076795838001,"bits_harvested":0,"pool_integrity":"31fe8b0b00925782","sources_mixed":0,"algo":"sha3_512 + XOR`
 - **only one possible value in this deployment:** False
@@ -122,7 +131,7 @@ What is NOT a defect, to be fair: the `algo` field ("sha3_512 + XOR mixing") is 
 
 ## `POST /api/v1/native-ai/quorum`
 
-- **status:** OPEN · fix_then_wire · not reachable from any UI
+- **status:** FIXED W437 (population defaults to the LIVE swarm roster with population_source disclosed; caller override echoed as caller_supplied; secretion ≥ 0 and threshold > 0 enforced; the reported concentration is the exact value the verdict derives from — the round-vs-compare mismatch is gone; no wording claims sensing/kinetics/shared-field). WIRED W437 (Primitive console)
 - **implementation:** C:\Users\rehan\Workstation\agentic_core\api\native_ai.py:445-457 (handler native_quorum, request model QuorumRequest at :439) dispatches to C:\Users\rehan\Workstation\agentic_core\quorum\sensing.py:6 (class QuorumSensing). What it really computes: concentration = agents x secretion (a loop calling secrete_ai2 which does `self.ai2_concentration += amount`), then get_behavior_mode() returns "COOPERA
 - **sample output:** `Default body {} -> {"agents":1,"concentration":10.0,"threshold":50.0,"behavior_mode":"INDEPENDENT","cooperative":false,"method":"quorum sensing (owned biomimetic swarm)"} {"agents":6,"secretion":10.0,"threshold":50.0} -> {"agents":6,"concentration":60.0,"thres`
 - **only one possible value in this deployment:** False
@@ -143,7 +152,7 @@ What is NOT a defect, to be fair: the `algo` field ("sha3_512 + XOR mixing") is 
 
 ## `POST /api/v1/native-ai/rigor`
 
-- **status:** OPEN · fix_then_wire · not reachable from any UI
+- **status:** FIXED W437 (`power` DELETED — it was n/100+0.5, a call counter wearing a statistics label, and its gate froze `significant` at false for 29 calls regardless of evidence; p_value/ci_95/significant are now null with the reason when the test could not run; zero variance returns an honest 200 instead of sealing a NaN into the UEG chain then 500ing). WIRED W437 (Primitive console)
 - **implementation:** agentic_core/api/native_ai.py:533-543 (`native_rigor`) → process-global `_RIGOR` built at native_ai.py:522-530 → `LiveRigorMonitor.validate_metric` at agentic_core/statistics/live_rigor_monitor.py:20-52. What it really computes: - It keeps `self.metric_history[metric_name]` in memory and appends whatever number the caller POSTs. There is no "live metric series" — the series IS the caller's own sub
 - **sample output:** `First call for any new metric name (payload {"metric_name":"zzz_new2","value":999999.0,"baseline":0.0}): {"metric":"zzz_new2","value":999999.0,"baseline":0.0,"ci_95":[999999.0,999999.0],"p_value":1.0,"power":0.51,"significant":false,"method":"scipy CI + one-sa`
 - **only one possible value in this deployment:** False
@@ -164,7 +173,7 @@ Secondary: code comment at line 27 and the `_compute_ci` docstring both say "Boo
 
 ## `POST /api/v1/native-ai/topology`
 
-- **status:** OPEN · fix_then_wire · not reachable from any UI
+- **status:** FIXED W437 (β₁ counts only APPLIED edges — junk/dangling edges are discarded AND disclosed via edges_submitted/applied/discarded; the undisclosed SPIKE_DETECTED verdict replaced by fragmented + beta1_over_threshold with the 3.0 threshold in the payload; multigraph semantics stated). WIRED W437 (Primitive console)
 - **implementation:** agentic_core/api/native_ai.py:409-419 (TopologyRequest at :404) dispatches to agentic_core/topology/defense.py:21 TopologyDefense.compute_persistent_homology, constructed fresh per request. What it really computes: - defense.py:55 beta0 = len({_find(n) for n in node_ids}) — real union-find, and it only unions edges that pass validation (`if a in parent and b in parent`); malformed/dangling edges a
 - **sample output:** `Well-formed input — correct, and it discriminates: tree {"nodes":["a","b","c"],"edges":[["a","b"],["b","c"]]} -> {"beta0_components":1,"beta1_cycles":0,"status":"STABLE","nodes":3,"edges":2,"method":"graph Betti numbers via Euler characteristic (owned topology`
 - **only one possible value in this deployment:** False
@@ -179,7 +188,7 @@ Secondary: code comment at line 27 and the `_compute_ci` docstring both say "Boo
 
 ## `POST /api/v1/native-ai/transduce`
 
-- **status:** OPEN · fix_then_wire · not reachable from any UI
+- **status:** FIXED W437 (`latency_s` and `frequency` DELETED, not renamed — nothing was timed and the sine never entered the result; activation + supra_threshold (= input ≥ K50, stated as such) + K50 exposed + honest dose-response curve; negative input 422s instead of silently taking the real part of a complex power; the orchestrator's /tree signal_response — the defect's second, LIVE surface — fixed in the same change; the false certification in AGENTIC_CORE_INTEGRATION_AUDIT.md corrected). WIRED W437 (Primitive console)
 - **implementation:** Handler: C:\Users\rehan\Workstation\agentic_core\api\native_ai.py:388-401. Line 394 dispatches to EmpiricalSignalTransduction(frequency, hill).simulate_cascade(input_signal); lines 395-398 build the response. Impl: C:\Users\rehan\Workstation\agentic_core\signaling\empirical_transduction.py:17-33. The whole "ODE-inspired phosphorylation kinetics" is four lines: line 15: self.base_latency = 45.0 # S
 - **sample output:** `POST {"input_signal": 0.55, "frequency": 0.5} -> {"input_signal":0.55,"peak_intensity":0.6055337375087939,"latency_s":29.032258064516128,"hill":4.5,"frequency":0.5,"propagated":true,"trajectory_points":100,"method":"Hill-equation pulsatile cascade (owned signa`
 - **only one possible value in this deployment:** False
@@ -198,7 +207,7 @@ Supporting: the trajectory is exactly symmetric about zero (min = -max, 49/100 p
 
 ## `POST /api/v1/native-ai/validate`
 
-- **status:** OPEN · fix_then_wire · not reachable from any UI
+- **status:** FIXED — engine W432 (confidence null where nothing computes one, with confidence_basis); handler W437 (it had still cast float(None) — every GENERIC/APP_CODE call 500'd — and stamped one hardcoded "(difflib, real)" method on all four branches; task_type is now a validated enum, method names the branch that ran). WIRED W437 (Primitive console)
 - **implementation:** Route: agentic_core/api/native_ai.py:551-558 (`native_validate`, model `ValidateRequest` at :545). It dispatches to `AccuracyValidator().validate_output(...)` at agentic_core/validation/accuracy_validator.py:17-54, constructed fresh per request (so `validation_history` / `get_aggregate_accuracy` / `check_compliance` are dead here). What each branch really computes: - accuracy_validator.py:22 — `co
 - **sample output:** `All returned HTTP 200 with a real payload. Real calls against 127.0.0.1:8010: SEMANTIC (genuinely discriminates — this branch is fine): {"prediction":"totally unrelated gibberish","actual":"the cat sat on the mat","task_type":"SEMANTIC"} -> {"is_accurate":fals`
 - **only one possible value in this deployment:** False
@@ -271,3 +280,25 @@ and the log reports `Best fitness: X` as though something was measured.
 **Minimal fix, if it is ever revived:** derive fitness from something the mutant actually differs
 on, or drop the random term and DISCLOSE that selection within a cohort is arbitrary. Do not keep a
 field named `fitness` whose dominant component is `random()`.
+
+## Latent entries added by the W437 adversarial verification pass
+
+Found while refuting the W437 fixes; each is UNREACHED code, recorded here rather than inflated
+into an incident (and rather than silently fixed, which would hide that the class keeps recurring).
+
+- **`TopologyDefense.simplicial_repair`** (`agentic_core/topology/defense.py`) — returns the
+  constants `success: True, simplices_added: 2, status: "HEALED"` with no repair performed, and
+  seals "simplicial_repair_complete" into the UEG ledger if called. Only caller is under
+  `_archive/`. If revived: perform or delete, never report.
+- **`AccuracyValidator.get_aggregate_accuracy`** (`agentic_core/validation/accuracy_validator.py`)
+  — returns the constant `1.0` as "aggregate accuracy" over an EMPTY history, and
+  `check_compliance` therefore certifies a fresh validator compliant having measured nothing. No
+  production caller (the /validate handler builds a fresh instance and never calls it).
+- **`agentic_core/network/planetary.py`** — returns
+  `{"status": "propagated", "nodes_notified": 102400}` unconditionally; no importer exists
+  anywhere in live code. A fabricated planetary broadcast, fully dead.
+
+Two cousins from the same pass were fixed in place rather than ledgered, because they are one line
+each and sit in files W437 already touched: `ConflictResolution.resolve` no longer logs
+first-by-position as "arbitration" (it now warns exactly what it does), and
+`NLIEngine.get_intent_confidence`'s docstring no longer claims its hardcoded 0.85 is historical.

@@ -41,6 +41,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# W437 — a 422 must SURVIVE the input that caused it. FastAPI's default validation-error body
+# echoes the offending input, and a NaN/inf input (rejected by an allow_inf_nan=False field —
+# rigor/transduce/quorum) is not JSON-compliant, so the honest refusal itself 500'd in
+# serialization. Non-finite floats (and anything else exotic) are stringified in the error body.
+from fastapi.exceptions import RequestValidationError  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
+import math as _math  # noqa: E402
+
+
+def _json_safe(o):
+    if isinstance(o, float) and not _math.isfinite(o):
+        return repr(o)
+    if isinstance(o, dict):
+        return {k: _json_safe(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_json_safe(x) for x in o]
+    if isinstance(o, (str, int, bool)) or o is None:
+        return o
+    return repr(o)
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error_survives_its_input(request, exc):
+    return JSONResponse(status_code=422, content={"detail": _json_safe(exc.errors())})
+
 # ── MVP spine routers ─────────────────────────────────────────────────────────
 
 # 1. Projects (concept → commercialise lifecycle, SSE streaming, governance)
