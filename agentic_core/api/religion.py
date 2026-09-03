@@ -168,19 +168,52 @@ async def quran_tafsir(req: QuranTafsirRequest):
         "linguistic": "Apply linguistic analysis: root words (Arabic root letters), grammatical structures, and rhetorical devices.",
     }.get(req.tafsir_approach, "Apply classical tafsir methodology.")
 
+    # W439 audit catch (HIGH — constitutional): the old prompt structure asked the model for
+    # "## {reference} — Arabic Text", instructing whatever model served to EMIT Quranic Arabic
+    # from its weights — a direct violation of the immovable constraint (never AI-generate Quran
+    # Arabic; authoritative sources only). The authentic text is now FETCHED and injected as
+    # given material; the model is explicitly forbidden to produce Arabic beyond quoting it.
+    from agentic_core.religious_domain.api import fetch_ayah_arabic, _AYAH_COUNTS
+    # refuter catches, round 2: (a) nonexistent ayaat used to get AI exegesis under a note blaming
+    # the network — validate against the real counts and refuse; (b) the 10-ayah cap was SILENT
+    # while the reference claimed the full range — the covered range is now the reported range.
+    if not 1 <= ayah_start <= _AYAH_COUNTS[surah]:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422,
+                            detail=f"surah {surah} has {_AYAH_COUNTS[surah]} ayaat — "
+                                   f"ayah {ayah_start} does not exist")
+    ayah_end = min(ayah_end, _AYAH_COUNTS[surah])
+    covered_end = min(ayah_end, ayah_start + 9)
+    range_note = (f"range capped at 10 ayaat per request — this tafsir covers "
+                  f"{surah}:{ayah_start}-{covered_end}, not the requested end {ayah_end}"
+                  if covered_end < ayah_end else None)
+    ayah_end = covered_end
+    reference = f"Surah {surah}:{ayah_start}" + (f"-{ayah_end}" if ayah_end > ayah_start else "")
+
+    sourced: list[str] = []
+    for _a in range(ayah_start, ayah_end + 1):
+        _txt = await fetch_ayah_arabic(surah, _a)
+        if _txt is None:
+            break   # source down — do not stall through the remaining fetch timeouts
+        sourced.append(f"({_a}) {_txt}")
+    arabic_text = "\n".join(sourced) if sourced else None
+
     prompt = (
         f"You are an Islamic scholar and Quranic exegete. "
         f"Provide a scholarly tafsir (exegesis) of {reference}.\n\n"
-        f"Approach: {req.tafsir_approach}\n"
+        + (f"THE AUTHENTIC ARABIC TEXT (sourced from alquran.cloud — quote ONLY this; never "
+           f"produce Quranic Arabic from memory):\n{arabic_text}\n\n" if arabic_text else
+           "NOTE: the authoritative text source is unreachable. Do NOT reproduce the Arabic text "
+           "from memory — write the tafsir ABOUT the referenced passage without quoting Arabic.\n\n")
+        + f"Approach: {req.tafsir_approach}\n"
         f"{approach_instructions}\n\n"
         "Structure as:\n"
-        f"## {reference} — Arabic Text\n"
-        "## Transliteration\n"
-        "## Translation (provide your own scholarly translation)\n"
+        "## Transliteration (of the provided text only)\n"
+        "## Translation (AI-assisted, working from the provided text; note that scholarly translations differ)\n"
         "## Context of Revelation (Asbab al-Nuzul) if applicable\n"
         "## Linguistic Analysis (key Arabic terms, root words)\n"
         "## Exegesis (detailed explanation)\n"
-        "## Related Verses (cross-references)\n"
+        "## Related Verses (cross-references by NAME and number — do not quote their Arabic)\n"
         "## Key Lessons and Guidance\n\n"
         "Be rigorous. Cite classical scholars where relevant. "
         "Acknowledge differing scholarly interpretations where they exist."
@@ -191,6 +224,11 @@ async def quran_tafsir(req: QuranTafsirRequest):
     return {
         "tafsir_id": uuid.uuid4().hex[:10],
         "reference": reference,
+        "arabic_text": arabic_text,
+        "arabic_source": ("alquran.cloud — authentic sourced text, never AI-generated" if arabic_text
+                          else "unavailable — source unreachable; the Arabic is never AI-generated, "
+                               "so none is shown"),
+        **({"range_note": range_note} if range_note else {}),
         "surah": surah,
         "ayah_start": ayah_start,
         "ayah_end": ayah_end,

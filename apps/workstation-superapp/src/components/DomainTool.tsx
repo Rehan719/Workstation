@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { provenanceBadge } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
@@ -220,11 +221,13 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
               {refineCount > 0 && (
                 <span className="text-[8px] font-black uppercase px-2 py-1 rounded bg-aura/15 text-aura">refined ×{refineCount}</span>
               )}
-              {effectiveProv && (
-                <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${effectiveProv.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                  {effectiveProv.is_external ? `via ${effectiveProv.served_by}` : `in-house · ${effectiveProv.served_by ?? 'native'}`}
-                </span>
-              )}
+              {effectiveProv && (() => {
+                /* W439 audit catch: floor-served output wore the same GREEN badge as a real model,
+                   so a deterministic scaffold read as scholarship. provenanceBadge is the
+                   class-kill — every badge in the app routes through it. */
+                const b = provenanceBadge(effectiveProv.served_by, effectiveProv.is_external);
+                return <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${b.cls}`} title={b.title}>{b.label}</span>;
+              })()}
               {/* §10×§11 (W308) — every Offering-1 response carries its real QMS + compliance posture */}
               {effectiveProv?.quality_assurance && (
                 <span title={`coverage ${effectiveProv.quality_assurance.delivery_coverage} · compliance ${effectiveProv.quality_assurance.compliance_overall ?? 'n/a'}`}

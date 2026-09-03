@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
-import { apiJson, errorMessage } from '../lib/api';
+import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
@@ -202,7 +202,7 @@ export const Deliverables: React.FC = () => {
                   <h3 className="text-lg font-black text-white">{selected.title}</h3>
                 </div>
                 <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${selected.ai_provenance.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                  {selected.ai_provenance.is_external ? `via ${selected.ai_provenance.served_by}` : `in-house · ${selected.ai_provenance.served_by}`}
+                  {provenanceBadge(selected.ai_provenance.served_by, selected.ai_provenance.is_external).label}
                 </span>
               </div>
               {/* Continual operational delivery within the living QMS — §10 bar + §8 organism */}

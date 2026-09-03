@@ -3580,3 +3580,83 @@ abandoned probe blocks the circuit forever again"); both restored green. Browser
 /organism?tab=anatomy; the live UI probe (scripts/_w438_probe.mjs) drives encode + a governed
 proposal end-to-end. Two consumer breaks were caught by refuters BEFORE shipping this time — the
 practice the W437 memory mandated is doing exactly what it was written to do.
+
+### W439 — the QEP cluster: faith content at the highest bar, wired into the Religion domain
+
+**The Owner's directive delivered:** the Quranic Education Platform lives in the Religion domain.
+`/religion?tab=qep` now opens on the REAL platform (the new QEPStudio), and `/qep`'s Memorization
+tab renders the same studio. 17 routes audited by four agents (all FIX_THEN_WIRE), fixed, refuted,
+re-fixed, then wired.
+
+**The sacred-text constitution held where it mattered and was violated where nobody looked:**
+- The core Qur'an routes were SOUND: Arabic text only from alquran.cloud, never AI-generated,
+  labelled at source. The SM-2 memorisation engine is textbook-exact.
+- But the TAFSIR route (a different module) was instructing the model to emit
+  "## {reference} — Arabic Text" — asking whatever model served to GENERATE Quranic Arabic from
+  its weights, in direct violation of the immovable constraint. The authentic text is now FETCHED
+  and injected as given material, with an explicit do-not-reproduce instruction, and the response
+  carries `arabic_source`. The refuter round then caught two more layers: nonexistent ayaat were
+  getting AI exegesis under a note blaming the network (422 now, validated against the real
+  ayah-count table — 115 entries, sum 6236, spot-checked), and the 10-ayah cap was silently
+  truncating while the reference claimed the full range (the covered range is now the reported
+  range, with a range_note).
+
+**The audit's worst finds, all fixed:**
+- **TajwidCoach fabricated recitation judgement** — it Levenshtein-compared the Arabic ayah
+  against ENGLISH educator notes (or the literal default string "No audio — text-based analysis
+  only."), then returned the garbage ratio as recitation "accuracy" with a HARDCODED confidence
+  of 0.95 and a "makharij" verdict a text diff cannot make — the W403 "false witness" case, alive
+  on the backend after the frontend was scrubbed. Rewritten as a WRITTEN-RECALL check: real
+  normalised Levenshtein between the typed Arabic attempt and the authoritative text, refusing
+  non-Arabic input, claiming NOTHING about pronunciation anywhere in the payload. ("10 Qira'at"
+  was 2 dict entries and a comment; the ghunnah marker required a space-wrapped token that never
+  occurs in real Quran text — a blind instrument that could never fire.)
+- **Gamification was fabricated success end to end** — the engine lacked the methods the API
+  probed for, so every award fell to a fallback claiming "Achievement recorded" while persisting
+  NOTHING, every learner read zeros forever, and `get_badges` returned three hardcoded
+  achievements for any user. Awards now persist under lock; every derived figure (level, streak)
+  carries its formula; a real hifz review auto-awards real XP.
+- **uid was a filename** — `"../../organism_config"` in a POST body resolved OUTSIDE the store
+  and atomic_write_json would clobber governance files. One `_safe_uid` choke point covers every
+  route.
+- **Floor output as scholarship** — all four Religion DomainTools (tafsir/fiqh/hadith/halal)
+  rendered deterministic-floor scaffolds under a GREEN "in-house · native" badge. The refuter
+  round found SEVEN more renderers with the same green badge — the class was killed with one
+  shared `provenanceBadge` helper: floor-served output is now amber and labelled "structured
+  floor — not model analysis" everywhere in the app.
+- **Translation of sacred text refuses rather than fabricates** — a floor-served "translation"
+  was scaffold stamped `status: "translated"`. The route now checks model availability FIRST
+  (the refuter caught that refusing AFTER the gateway call had already persisted the scaffold to
+  the interaction log and AI memory) and 503s with the reason; `translation/status` computes
+  availability instead of asserting `pipeline: "online"` with an engine string describing a
+  routing order that no longer exists.
+- **The W409 fabricated fidelities were still IN THE LIVE STORE** (0.94/0.89, status "active") —
+  and my first compliance-audit fix would have relabelled those code literals "model-self-declared".
+  A read-time migration nulls unprovenanced figures with the reason and grades only entries that
+  carry serving provenance; audits treat self-declared figures as un-checkable, never as passes.
+- Plus: schedules/reviews validated against the real per-surah ayah counts (an ayah outside the
+  Qur'an can no longer be carded, reviewed, or counted "memorised" — and `total_ayaat_memorised`
+  now carries its basis: a review count, not a hifz certification); the unbounded O(n·m)
+  Levenshtein that could block the event loop for minutes is bounded and threadpooled; corrupt
+  learner records are quarantined with an honesty note that tells the truth even when
+  preservation FAILS; immutable sacred text is disk-cached so availability does not depend on a
+  third party per request; XAI explains scheduling with the REAL engine's arithmetic (the old
+  parallel approximation disagreed on 66 of 135 tested combinations).
+
+**Frontend fabrications scrubbed:** ReligionHub's literal "Alignment Score OPTIMAL / 98%" bar
+(rendered under copy claiming the real §11 engines), the "Spiritual Markers (Methylation)"
+SET/ACTIVE badges, "Interfaith Mesh — 142 Global Nodes Synchronized", LearnTeachModule's
+"Total Students: 42 / Avg. Mastery: 88%" tiles (its own W403 comment had already called them
+invented) and its hardcoded "Personalized Learning Path" rows whose Resume button asserted
+progress nothing recorded, QEPImmersiveTools' green-check "Data Sovereignty Verified",
+QEPFlagshipFeatures' present-tense capability copy on 13 unbuilt modules (now PLANNED-badged,
+with the one genuinely LIVE module — memorization — saying so truthfully in both card and panel),
+and two broken `/qep-religion` navigations.
+
+**Guards:** `test_w439_qep_cluster_audited_fixes_hold` (broken — the translate floor-refusal
+disabled — failed with "a floor-served scaffold was returned as a 'translation' of sacred text")
+and `test_w439_refuter_pass_findings_stay_fixed` (broken — the legacy-fidelity migration made a
+passthrough — failed with "a legacy invented figure is being served as a declared fidelity
+again"); both restored green. Browser smoke deep-checks `/religion?tab=qep` and `/qep`; the live
+probe (scripts/_w439_probe.mjs) drives scheduling, a real SM-2 review, and the translation
+refusal through the UI.

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Button, Badge, toast } from '@workstation/ui';
+import { QEPStudio } from '../../components/QEPStudio';
 import { Mic, MicOff, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity } from 'lucide-react';
 
 export const QEPReligionHub: React.FC = () => {
@@ -44,8 +45,8 @@ export const QEPReligionHub: React.FC = () => {
 // the score and the "errors" were literals. It told a user their recitation of the Qur'an was
 // assessed, and named mistakes they did not make.
 //
-// The backend is no better — qep_flagship.tajwid_coach() ignores its audio argument and returns
-// 0.98 + random()*0.015 — so there is no assessment capability anywhere to wire this to.
+// The backend HAS since been fixed (qep_flagship.tajwid_coach now honestly returns
+// status UNAVAILABLE with score None) — the capability itself still does not exist.
 //
 // Assessing recitation needs a phonetic/audio model that is not provisioned. Precedent is already
 // set in this repo (W148: image input was left unbuilt because the native floor has no vision
@@ -90,6 +91,11 @@ const TajwidCoach = () => {
                 to coach from, so nothing is shown. Previously this panel listed specific rule
                 violations that were written into the page as literals.
              </p>
+             <p className="text-xs text-aura font-semibold leading-relaxed mt-4">
+                What IS live (W439): written-text tools in the Memorization tab — a written-recall
+                check against the authentic text, and AI-assisted lesson outlines with their
+                serving provenance labelled. Neither claims anything about your recitation.
+             </p>
           </Card>
        </div>
     </div>
@@ -97,54 +103,9 @@ const TajwidCoach = () => {
 };
 
 const MemorizationSuite = () => (
-   <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in duration-700">
-      <Card className="p-10 col-span-2 border-slate-900 bg-slate-950/20">
-         <h3 className="text-xl font-black text-white uppercase tracking-tight mb-8">Retention Heatmap</h3>
-         {/* W412 — this drew 60 cells coloured from the LOOP INDEX (i % 7, i % 3) with titles
-             reading "Level {i % 5}". It is a picture of the modulo operator presented as a
-             retention history: it looked identical for every user, on every visit, forever, and
-             nobody had a retention record behind it. */}
-         <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-            No retention history is recorded for this user yet. Review ayat with the SM-2 scheduler
-            below and the heatmap will show real intervals once there is something to show.
-         </p>
-         <div className="mt-8 flex justify-between items-center text-[9px] font-black uppercase text-slate-500">
-            <span>Last 60 Days Intensity</span>
-            <div className="flex gap-1">
-               <span>Less</span>
-               <div className="w-2 h-2 bg-slate-900 rounded-sm" />
-               <div className="w-2 h-2 bg-aura/20 rounded-sm" />
-               <div className="w-2 h-2 bg-aura/60 rounded-sm" />
-               <div className="w-2 h-2 bg-aura rounded-sm" />
-               <span>More</span>
-            </div>
-         </div>
-      </Card>
-      <Card className="p-10 bg-aura/5 border-aura/20">
-         <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6">SM-2 Algorithm</h3>
-         <div className="space-y-6">
-            <VitalRow label="Ease Factor" value="2.5 (SM-2 default)" />
-            <VitalRow label="Interval" value="4 Days" />
-            <VitalRow label="Repetitions" value="— (no history yet)" />
-            {/* W339/W329 — the REAL SM-2 review endpoint; success claimed only from the server's
-                actual computed interval, failure surfaced honestly. (The old code posted to a
-                nonexistent path and toasted a fabricated success regardless.) */}
-            <Button onClick={async () => {
-               try {
-                  const r = await fetch('/api/v1/qep/hifz/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: 'local', ayah_ref: '2:255', quality: 5 }) });
-                  if (r.ok) {
-                     const d = await r.json();
-                     toast(`Review recorded — SM-2 next interval: ${d?.new_interval_days ?? '?'} day(s), next review ${d?.next_review_date ?? '?'}`);
-                  } else {
-                     toast(`Could not record the review (HTTP ${r.status}) — nothing was saved`);
-                  }
-               } catch {
-                  toast('Backend unreachable — nothing was saved');
-               }
-            }} className="w-full bg-aura text-sovereign mt-4 font-black uppercase text-[10px]">Mark as Mastered</Button>
-         </div>
-      </Card>
-   </div>
+   // W439 — the empty-state suite below became the REAL wired studio: authentic Qur'an text,
+   // SM-2 scheduling + reviews, written-recall, provenance-labelled lessons, persisted awards.
+   <div className="animate-in fade-in duration-700"><QEPStudio /></div>
 );
 
 const QuranCompetitions = () => (
@@ -164,9 +125,10 @@ const ARVRLab = () => (
          <Glasses size={48} />
       </div>
       <div>
-         <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Immersive Lab Ready</h3>
+         <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Immersive Lab — planned (Phase 4)</h3>
          <p className="text-slate-500 font-bold max-w-md mx-auto mt-2">
-            Initialize Three.js articulation overlays or A-Frame virtual mosque environments.
+            AR articulation overlays and VR environments are planned; no WebXR code exists yet,
+            so nothing here claims readiness.
          </p>
       </div>
       <div className="flex gap-4 justify-center">
@@ -174,13 +136,6 @@ const ARVRLab = () => (
          <Button onClick={() => toast('VR Mosque requires a WebXR headset — coming in Phase 4')} className="bg-white text-sovereign">Enter VR Mosque</Button>
       </div>
    </Card>
-);
-
-const VitalRow = ({ label, value }: any) => (
-  <div className="flex justify-between items-center text-[10px] font-black uppercase">
-     <span className="text-slate-500 tracking-widest">{label}</span>
-     <span className="text-white tracking-widest">{value}</span>
-  </div>
 );
 
 const TournamentCard = ({ title, tier, players, status }: any) => (

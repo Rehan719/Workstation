@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { provenanceBadge } from '../lib/api';
 import { Card } from '@workstation/ui';
 import { Gauge, TrendingUp, Cpu, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -157,7 +158,7 @@ export const OperationalExcellence: React.FC = () => {
               <span className="font-bold text-white">{o.resource}</span>
               <span className="text-slate-600 uppercase">{o.kind}</span>
               <span className={`ml-auto text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${o.is_external ? 'bg-amber-500/10 text-amber-400' : 'bg-aura/10 text-aura'}`}>
-                {o.is_external ? `ext · ${o.served_by}` : `in-house · ${o.served_by}`}
+                {provenanceBadge(o.served_by, o.is_external).label}
               </span>
               <span className="text-slate-600">{o.duration_ms}ms</span>
             </div>

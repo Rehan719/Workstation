@@ -58,3 +58,15 @@ export function errorMessage(e: unknown): string {
   if (e instanceof Error && e.name === 'AbortError') return 'Cancelled.';
   return 'Failed — backend unreachable.';
 }
+
+// W439 — the deterministic floor must never wear the green in-house badge: it composes structured
+// output from the REQUEST (not model inference), and eight separate renderers were labelling it
+// "in-house · native" in green. One helper, every badge; the class dies here.
+export const provenanceBadge = (servedBy: string | null | undefined, isExternal?: boolean) => {
+  const sb = servedBy ?? 'native';
+  if (isExternal) return { label: `via ${sb}`, cls: 'bg-amber-500/20 text-amber-400',
+    title: 'served by an external accelerant (opt-in)' };
+  if (sb === 'native') return { label: 'structured floor — not model analysis', cls: 'bg-amber-500/20 text-amber-400',
+    title: 'the deterministic native floor composes structured output from the request — it is not model inference' };
+  return { label: `in-house · ${sb}`, cls: 'bg-emerald-500/20 text-emerald-400', title: undefined };
+};

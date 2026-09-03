@@ -28,7 +28,7 @@ export const QEPImmersiveTools: React.FC<QEPImmersiveProps> = ({ domain = 'relig
             </div>
             <div>
                <h3 className="text-2xl font-black text-white uppercase">{config.label}</h3>
-               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{config.sub}</p>
+               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{config.sub} · <span className="text-amber-400">planned</span></p>
             </div>
           </div>
           <div className="space-y-4">
@@ -54,14 +54,13 @@ export const QEPImmersiveTools: React.FC<QEPImmersiveProps> = ({ domain = 'relig
             </div>
           </div>
           <div className="space-y-6">
-             <div className="flex items-center gap-4 text-xs font-bold text-slate-300">
-                <CheckCircle size={16} className="text-emerald-500" />
-                Data Sovereignty Verified
-             </div>
-             <div className="flex items-center gap-4 text-xs font-bold text-slate-300">
-                <CheckCircle size={16} className="text-emerald-500" />
-                Context: {domain.toUpperCase()} Domain Profile
-             </div>
+             {/* W439 — a green-check "Data Sovereignty Verified" row sat here on all six domain
+                 hubs. Nothing ran any verification: the W412 "GaaS Verified" defect re-instantiated
+                 one component over. Removed — a checkmark is a claim. */}
+             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                Governance checks run per-entity in the real §11 compliance engines — no blanket
+                verification is claimed here.
+             </p>
              <Button onClick={() => notImplemented('Audit Framework')} variant="outline" className="w-full text-[10px] py-4 uppercase font-black">Audit Framework</Button>
           </div>
         </Card>

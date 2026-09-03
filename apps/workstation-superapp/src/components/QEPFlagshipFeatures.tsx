@@ -25,17 +25,17 @@ export const QEPFlagshipFeatures: React.FC = () => {
   const [data, setData] = useState<any>(null);
 
   const features = [
-    { id: 'tajwid', name: 'AI Tajwīd Coach', icon: Mic, color: 'text-aura', desc: 'Real-time recitation analysis and feedback.' },
-    { id: 'memorization', name: 'Memorization Suite', icon: Book, color: 'text-highlight', desc: 'Spaced-repetition with SM-2 algorithms.' },
-    { id: 'competitions', name: 'Competitions', icon: Trophy, color: 'text-aura', desc: 'Global tournaments and leaderboards.' },
+    { id: 'tajwid', name: 'AI Tajwīd Coach', icon: Mic, color: 'text-aura', desc: 'Planned: recitation analysis needs a phonetic model none is provisioned. Written-text tools ARE live in QEP.' },
+    { id: 'memorization', name: 'Memorization Suite', icon: Book, color: 'text-highlight', desc: 'LIVE (W439): real SM-2 scheduling, reviews and progress — in the QEP studio above.' },
+    { id: 'competitions', name: 'Competitions', icon: Trophy, color: 'text-aura', desc: 'Planned: tournaments and leaderboards — no backend exists yet.' },
     { id: 'ar_vr', name: 'AI/AR Immersion', icon: Glasses, color: 'text-vital', desc: '360° history and Tajwīd overlays.' },
     { id: 'education', name: 'Learn-Teach', icon: GraduationCap, color: 'text-aura', desc: 'Guided playlists and student analytics.' },
     { id: 'adaptive_ui', name: 'Adaptive UI', icon: Palette, color: 'text-highlight', desc: 'Interface adjusts to age and emotion.' },
     { id: 'community', name: 'Community', icon: Users, color: 'text-aura', desc: 'Forums and virtual study circles.' },
     { id: 'analytics', name: 'Growth Analytics', icon: LineChart, color: 'text-vital', desc: 'Personal mastery dashboards.' },
-    { id: 'credentials', name: 'Certifications', icon: Award, color: 'text-aura', desc: 'GaaS-verified digital credentials.' },
+    { id: 'credentials', name: 'Certifications', icon: Award, color: 'text-aura', desc: 'Planned: verified digital credentials — no issuing mechanism exists yet.' },
     { id: 'offline', name: 'Offline Access', icon: WifiOff, color: 'text-highlight', desc: 'Learn without connectivity.' },
-    { id: 'finance', name: 'Islamic Finance', icon: CreditCard, color: 'text-aura', desc: 'Zakat-eligible secure donations.' },
+    { id: 'finance', name: 'Islamic Finance', icon: CreditCard, color: 'text-aura', desc: 'Planned: zakat-eligible donations — no payment rails are enabled (Owner-gated).' },
     { id: 'assistant', name: 'AI Assistant', icon: MessageCircle, color: 'text-vital', desc: 'Conversational guidance bots.' },
     { id: 'swarm', name: 'Swarm Learning', icon: Share2, color: 'text-aura', desc: 'AI-coordinated group pacing.' },
   ];
@@ -46,7 +46,9 @@ export const QEPFlagshipFeatures: React.FC = () => {
   // an endpoint yet, so selecting a card now says so honestly instead of inventing an outcome.
   const launchFeature = (id: string) => {
     setActiveFeature(id);
-    setData({ status: 'not yet built' });
+    // W439 refuter catch: the one LIVE module (memorization) opened a panel claiming
+    // "not yet built" — the panel now matches the card's truth
+    setData({ status: id === 'memorization' ? 'live (W439)' : 'not yet built' });
   };
 
   return (
@@ -62,7 +64,9 @@ export const QEPFlagshipFeatures: React.FC = () => {
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${activeFeature === f.id ? 'bg-aura text-sovereign shadow-xl shadow-aura/20' : 'bg-slate-900 text-aura group-hover:bg-aura/10'}`}>
                 <f.icon size={24} />
               </div>
-              {activeFeature === f.id && !loading && <CheckCircle size={16} className="text-aura animate-pulse" />}
+              {/* W439 — the CheckCircle success tick on selection signalled completion for
+                  unbuilt modules; a selection is not a success */}
+              <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">{f.id === 'memorization' ? 'live' : 'planned'}</span>
             </div>
             <h3 className="text-lg font-black text-white mb-2">{f.name}</h3>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">{f.desc}</p>
@@ -90,15 +94,16 @@ export const QEPFlagshipFeatures: React.FC = () => {
                       <h3 className="text-3xl font-black text-white uppercase tracking-tighter">
                         {features.find(f => f.id === activeFeature)?.name} Module
                       </h3>
-                      <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Not yet built — nothing was run</p>
+                      <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">{activeFeature === 'memorization' ? 'LIVE — use the QEP studio above' : 'Not yet built — nothing was run'}</p>
                     </div>
                   </div>
                   <Button variant="outline" onClick={() => setActiveFeature(null)}>Minimize</Button>
                 </div>
 
                 <p className="text-sm text-slate-400 font-bold leading-relaxed mb-8 max-w-2xl">
-                  This module is described in the platform plan but has no backend yet, so no result can be
-                  shown — a fabricated one would be worse than none. The capabilities that ARE live for this
+                  {activeFeature === 'memorization'
+                    ? 'This module IS live: real SM-2 scheduling, reviews, written-recall and persisted awards run in the QEP studio rendered above this roadmap. '
+                    : 'This module is described in the platform plan but has no backend yet, so no result can be shown — a fabricated one would be worse than none. '} The capabilities that ARE live for this
                   domain are the AI-mediated domain tools on this page, the{' '}
                   <a href="/native-ai" className="text-aura underline underline-offset-2">Native AI fabric</a>, and{' '}
                   <a href="/genesis" className="text-aura underline underline-offset-2">Genesis</a> for establishing a living enterprise.

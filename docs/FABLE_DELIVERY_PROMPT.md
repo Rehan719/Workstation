@@ -41,7 +41,7 @@ THE SURFACE, measured 2026-09-02 against a backend booted from HEAD:
   442 paths (441 under /api) carrying 466 method+path operations
   270 frontend call sites resolving to 164 distinct /api literals + 18 template prefixes
   73 <Route> declarations in App.tsx — 72 concrete paths (the 73rd is the catch-all), all 72 render
-  suite 343 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 13 deep + 61 swept
+  suite 345 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 15 deep + 61 swept
 
 CAVEAT THAT HAS COST THIS PROJECT TIME THREE TIMES: a long-running dev process serves the code it
 booted with. Restart the backend before measuring BEHAVIOUR, and check its start time against the
@@ -147,10 +147,12 @@ W437 STATE OF THIS BACKLOG. The measurement is now a committed tool — `python 
 frontend /api fragments with template holes matched by segment, and reports exact vs
 template-prefix reach separately because the two biases differ). At W437 HEAD it reported: 465 /api
 ops · 253 reached (204 exact + 49 template-prefix) · 64 legacy non-v1 · 148 genuine-unreached ops
-in 43 clusters. DONE so far: native-ai (12 ops, W437 — Primitive Console) and organism (18 ops,
-W438 — the Anatomy tab: genome provenance, the config surface FUSED with the CCA so live levers
-are governed instead of raw-writable, self-healing counted from raw states, the W422 health
-disclosure finally reaching HTTP). Next-largest: qep 17 · vbs 11 · frontier 10 · economy 8.
+in 43 clusters. DONE so far: native-ai (12 ops, W437 — Primitive Console), organism (18 ops,
+W438 — the Anatomy tab; config FUSED with the CCA), and qep (17 ops, W439 — the Quran Education
+Platform wired into the Religion domain per the Owner's directive: authentic sourced text, real
+SM-2 hifz, a written-recall check that never judges recitation, persisted awards, floor-refusing
+translation, and the tafsir route's constitutional fix — it was asking models to GENERATE Quran
+Arabic). Next-largest: vbs 11 · frontier 10 · economy 8.
 Audit before wiring, every time — and REFUTE YOUR OWN FIXES before shipping: W437's validate
 handler (float(None) → 500 on the branches the W432 engine fix made honest) proved the class lives
 ONE LAYER UP from a fixed engine, and W438's refuter pass caught two consumer breaks + a
@@ -333,14 +335,14 @@ Learned by being wrong, repeatedly, in ways a green suite hid. The first five ar
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 319 tests. 31 were added this session (W419–W438), each
+- integration_tests/test_mvp_spine.py — 321 tests. 33 were added this session (W419–W439), each
   broken and watched fail with its ORIGINAL symptom before being trusted.
 - scripts/check_import_integrity.py — CI job; fails when a live module imports a first-party module
   with no file behind it. Baseline scripts/import_integrity_baseline.txt (13 pre-existing, kept by a
   negation at .gitignore:21 because :17 is a blanket *.txt). Run before AND after any file move.
-- scripts/browser_smoke.mjs — 13 deep routes + every other route swept, list PARSED from App.tsx.
-  REQUIRED_SECTIONS demands named sections ALL render (W437 added /native-ai; W438 added
-  /organism?tab=anatomy: health disclosure, Genome lab, wiring truth). Waits on #root painting, not networkidle. NOTE: needles must be
+- scripts/browser_smoke.mjs — 15 deep routes + every other route swept, list PARSED from App.tsx.
+  REQUIRED_SECTIONS demands named sections ALL render (W437 /native-ai; W438 /organism?tab=anatomy;
+  W439 /religion?tab=qep + /qep: the studio, honestly framed, in the Religion domain). Waits on #root painting, not networkidle. NOTE: needles must be
   compared LOWERCASED — CSS text-transform: uppercase reaches innerText, and a case-sensitive
   needle silently never matches (it cost the W437 probe two rounds).
   Also carries the W429 PDF guard: fixture generated INLINE (no binary to rot), asserting extraction,

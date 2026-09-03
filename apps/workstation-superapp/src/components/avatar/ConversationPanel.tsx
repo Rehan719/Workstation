@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { provenanceBadge } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp, Compass, ImagePlus, Loader2, Trash2, Volume2, VolumeX } from 'lucide-react';
 import type { UseAvatarSessionReturn } from '../../hooks/useAvatarSession';
@@ -92,7 +93,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
               </div>
               {m.role === 'assistant' && m.servedBy && (
                 <span className={`text-[8px] font-black uppercase tracking-widest px-1 ${m.isExternal ? 'text-amber-500/70' : 'text-emerald-500/70'}`}>
-                  {m.isExternal ? `via ${m.servedBy} (external)` : `in-house · ${m.servedBy}`}
+                  {provenanceBadge(m.servedBy, m.isExternal).label}
                 </span>
               )}
               {m.role === 'assistant' && (m.suggestedAreas?.length ?? 0) > 0 && (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { provenanceBadge } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -687,7 +688,7 @@ export const ResourceFabric: React.FC = () => {
                                 {rr.served_by && (
                                   <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${rr.is_external ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}
                                     title="Which OWNED resource served (native floor · local Ollama model · opt-in external)">
-                                    {rr.is_external ? `via ${rr.served_by}` : `in-house · ${rr.served_by}`}
+                                    {provenanceBadge(rr.served_by, rr.is_external).label}
                                   </span>
                                 )}
                               </div>

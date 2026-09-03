@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save, Activity } from 'lucide-react';
-import { apiJson, errorMessage } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge } from '../../lib/api';
 
 interface ModelResource {
   name: string; kind: string; available: boolean; is_external: boolean; model?: string; note?: string;
@@ -694,7 +694,7 @@ export const NativeAI: React.FC = () => {
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${cRes.is_external ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
-                    {cRes.is_external ? `via ${cRes.served_by}` : `in-house · ${cRes.served_by}`}
+                    {provenanceBadge(cRes.served_by, cRes.is_external).label}
                   </span>
                   {cRes.resources_tried && <span className="text-[8px] font-mono text-slate-600">tried: {cRes.resources_tried.join(' → ')}</span>}
                 </div>

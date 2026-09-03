@@ -57,15 +57,17 @@ export const LearnTeachModule: React.FC = () => {
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Personalized Learning Path</p>
             </div>
           </div>
-          <div className="space-y-4">
-             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex justify-between items-center">
-                <span className="text-sm font-bold text-white">Surah Al-Baqarah (1-5)</span>
-                <Button onClick={() => navigate('/qep-religion')} variant="outline" className="text-[10px]">Resume</Button>
-             </div>
-             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex justify-between items-center">
-                <span className="text-sm font-bold text-white">Introduction to Tajwid Rules</span>
-                <Button onClick={() => navigate('/qep-religion')} variant="outline" className="text-[10px]">Start</Button>
-             </div>
+          {/* W439 refuter catch: two hardcoded rows ("Surah Al-Baqarah (1-5)" with Resume,
+              "Introduction to Tajwid Rules" with Start) posed as the learner's own recorded path —
+              constants presented as state; "Resume" asserted progress nothing recorded. The real
+              per-learner record lives in the QEP hifz store; this card points there instead of
+              inventing a path. (The navs also targeted /qep-religion, which is not a route.) */}
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+             <p className="text-xs text-slate-400 font-semibold leading-relaxed mb-4">
+                Your real learning path is your hifz schedule — the ayaat you scheduled, what is
+                due today, and your recorded reviews live in the QEP studio.
+             </p>
+             <Button onClick={() => navigate('/qep')} variant="outline" className="text-[10px]">Open QEP studio</Button>
           </div>
         </Card>
 
@@ -79,15 +81,14 @@ export const LearnTeachModule: React.FC = () => {
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Class Management & Analytics</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-6">
-             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-                <p className="text-[10px] font-black text-slate-500 uppercase mb-2">Total Students</p>
-                <p className="text-2xl font-black text-white">42</p>
-             </div>
-             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-                <p className="text-[10px] font-black text-slate-500 uppercase mb-2">Avg. Mastery</p>
-                <p className="text-2xl font-black text-white">88%</p>
-             </div>
+          {/* W439 — "Total Students: 42" and "Avg. Mastery: 88%" tiles sat here as literals.
+              This file's own W403 comment already said "the 42 students were invented too, since
+              nothing counts students anywhere" — the toast was fixed then, the tiles were not. */}
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+             <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                No class roster exists on this deployment — student counts and mastery analytics
+                appear when a real roster records them, never before.
+             </p>
           </div>
           <Button onClick={generateReport} disabled={reportLoading} className="w-full mt-6 bg-highlight text-sovereign uppercase font-black text-xs py-4">{reportLoading ? 'Generating…' : 'Generate Class Report'}</Button>
           {reportError && (

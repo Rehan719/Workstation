@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { provenanceBadge } from '../../lib/api';
 import { downloadExport } from '../../lib/download';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
@@ -831,7 +832,7 @@ export const VSBCockpit: React.FC = () => {
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {m.role === 'vsb' && m.served_by && (
                           <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${m.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                            {m.is_external ? `via ${m.served_by}` : `in-house · ${m.served_by}`}
+                            {provenanceBadge(m.served_by, m.is_external).label}
                           </span>
                         )}
                         {m.role === 'vsb' && m.image_served_by && (

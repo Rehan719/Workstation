@@ -7954,3 +7954,151 @@ def test_w438_refuter_pass_findings_stay_fixed(client):
     # 7. the health-summary basis is DERIVED from the terms, not a constant assertion
     hs = client.get("/api/v1/organism/health-summary").json()
     assert "% measured" in hs["health_basis"]
+
+
+def test_w439_qep_cluster_audited_fixes_hold(client):
+    # W439 — the QEP cluster (17 routes) audited before wiring into the Religion domain. Faith
+    # content carries the repo's highest honesty bar; this guard pins the load-bearing fixes.
+    import uuid as _uuid
+    UID = f"w439g_{_uuid.uuid4().hex[:8]}"   # the award store persists across suite runs by design
+
+    # ── gamification: "recorded" means PERSISTED (the old fallback claimed it while writing
+    # nothing, and every learner read zeros forever) ─────────────────────────────────────────────
+    a = client.post("/api/v1/qep/gamification/award",
+                    json={"uid": UID, "achievement": "surah_complete", "xp": 20}).json()
+    assert a["recorded"] is True and a["xp"] == 20
+    g = client.get(f"/api/v1/qep/gamification/{UID}").json()
+    assert g["xp"] == 20, "the award vanished — the fabricated-recorded fallback is back"
+    assert g["level_basis"] and g["streak_basis"].startswith("consecutive UTC")
+
+    # ── uid is a filename: traversal refused at the choke point ─────────────────────────────────
+    assert client.post("/api/v1/qep/gamification/award",
+                       json={"uid": "../../evil", "achievement": "x"}).status_code == 400
+
+    # ── scripture bounds: no card may exist for an ayah outside the Qur'an ──────────────────────
+    assert client.post("/api/v1/qep/hifz/schedule",
+                       json={"uid": UID, "surah_number": 1, "ayaat_range": [1, 300]}).status_code == 422
+    assert client.post("/api/v1/qep/hifz/review",
+                       json={"uid": UID, "ayah_ref": "1:299", "quality": 5}).status_code == 422
+    # a real review works, discloses its own limit, and auto-awards real XP
+    client.post("/api/v1/qep/hifz/schedule",
+                json={"uid": UID, "surah_number": 1, "ayaat_range": [1, 3]})
+    r = client.post("/api/v1/qep/hifz/review",
+                    json={"uid": UID, "ayah_ref": "1:1", "quality": 5}).json()
+    assert r["new_interval_days"] >= 1 and "review count, not a hifz certification" in r["memorised_basis"]
+    assert r["xp_awarded"] == 5 and r["gamification"]["xp"] == 25
+
+    # ── written recall: refuses what it cannot compare; never judges recitation ─────────────────
+    ref = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
+    bad = client.post("/api/v1/qep/tajweed/analyse",
+                      json={"ayah_text": ref, "recited_text": "sounded good"}).json()
+    assert bad["comparison"]["comparable"] is False, (
+        "non-Arabic input was scored again — the fabricated-accuracy class is back")
+    ok = client.post("/api/v1/qep/tajweed/analyse",
+                     json={"ayah_text": ref, "recited_text": ref}).json()
+    assert ok["comparison"]["text_similarity"] == 1.0
+    assert "NOTHING about recitation" in ok["comparison"]["scope"]
+    # keys, not substrings — the honest scope line legitimately NAMES makharij to disclaim it
+    for gone in ("accuracy", "confidence", "makharij", "is_correct", "feedback_details"):
+        assert gone not in ok["comparison"], f"the fabricated {gone} field is back"
+
+    # ── lesson plans carry provenance; a floor serve is labelled an outline ─────────────────────
+    l = client.post("/api/v1/qep/tajweed/lesson", json={"rule_name": "idgham"}).json()
+    assert "served_by" in l
+    if l["served_by"] == "native":
+        assert l["floor_served"] is True and "OUTLINE" in l["floor_note"]
+
+    # ── translation: the floor CANNOT translate — scaffold is never presented as translation ────
+    tr = client.post("/api/v1/qep/translation/translate",
+                     json={"text": "بِسْمِ اللَّهِ", "target_language": "English"})
+    ts = client.get("/api/v1/qep/translation/status").json()
+    if not ts["translation_available"]:
+        assert tr.status_code == 503, (
+            "a floor-served scaffold was returned as a 'translation' of sacred text")
+    assert "availability_basis" in ts and "pipeline" not in ts, "the constant status fields are back"
+
+    # ── XAI explains with the REAL engine's arithmetic ──────────────────────────────────────────
+    from agentic_core.religious_domain.memorization.engine import MemorizationEngine
+    want_interval, _ = MemorizationEngine().calculate_next_review(
+        quality=4, repetitions=3, previous_interval=6, previous_efactor=2.5)
+    x = client.get("/api/v1/qep/xai/explanations",
+                   params={"ease_factor": 2.5, "interval_days": 6, "repetition": 3, "last_quality": 4}).json()
+    assert x["next_interval_days"] == want_interval, (
+        "the XAI 'why the engine scheduled it' is a parallel approximation again")
+    assert "REAL MemorizationEngine" in x["interval_basis"]
+
+    # ── adaptation: nothing claims 'active'/'executed' when only a blueprint was generated ──────
+    ad = client.post("/api/v1/qep/adaptation/execute", json={"pattern": "SM-2 guard"}).json()
+    assert ad["status"] == "blueprint_generated" and ad["adaptation"]["status"] == "blueprint_generated"
+    assert "served_by" in ad["adaptation"]
+
+    # ── status: computed truth, never the dead-engine constants ─────────────────────────────────
+    st = client.get("/api/v1/qep/status").json()
+    assert "GamifiedLearning" not in st["components"]["gamification"]
+    assert "persisted award store" in st["components"]["gamification"]
+    assert "never AI-generated" in st["components"]["quran_text"]
+    assert "no phonetic model" in st["components"]["tajweed"].lower() or "NO recitation" in st["components"]["tajweed"]
+
+    # ── tafsir (constitutional): the response carries the SOURCED-Arabic contract ───────────────
+    tf = client.post("/api/v1/religion/quran-tafsir",
+                     json={"surah": 1, "ayah_start": 1, "ayah_end": 0}).json()
+    assert "arabic_source" in tf, "the tafsir no longer discloses where its Arabic came from"
+    assert "never AI-generated" in tf["arabic_source"]
+    # whether sourced or unreachable, AI-generated Quran Arabic is never requested: the response
+    # must carry the sourced text XOR the honest unavailability note
+    assert (tf["arabic_text"] is None) == ("unavailable" in tf["arabic_source"])
+
+
+def test_w439_refuter_pass_findings_stay_fixed(client):
+    # W439's OWN adversarial pass (3 refuters, 19 findings) — the load-bearing catches stay fixed.
+    import json as _json
+    import uuid as _uuid
+
+    # 1. the written-recall comparison is bounded (an unbounded O(n*m) Levenshtein on the event
+    #    loop let one request block every route for minutes)
+    big = "ب" * 2000
+    assert client.post("/api/v1/qep/tajweed/analyse",
+                       json={"ayah_text": big, "recited_text": big}).status_code == 422
+
+    # 2. legacy W409 code-literal fidelities are MIGRATED, never relabelled "model-self-declared"
+    from agentic_core.api.qep_intelligence import _REGISTRY
+    legacy = [{"id": "ADP-legacy-guard", "pattern": "x", "from": "religion", "to": "science",
+               "status": "active", "fidelity": 0.94}]
+    _REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+    _REGISTRY.write_text(_json.dumps(legacy), encoding="utf-8")
+    reg = client.get("/api/v1/qep/adaptation/registry").json()
+    e = next(x for x in reg["adaptations"] if x["id"] == "ADP-legacy-guard")
+    assert e["fidelity"] is None and "code literal" in e["fidelity_note"], (
+        "a legacy invented figure is being served as a declared fidelity again")
+    assert e["status"] == "pattern_seed", "legacy 'active' status survived migration"
+    aud = client.get("/api/v1/qep/compliance/audit").json()
+    fid = next(c for c in aud["checks"] if "fidelity" in c["control"])
+    assert fid["status"] == "not_checked", "an unprovenanced figure graded the audit again"
+
+    # 3. tafsir: nonexistent ayaat are refused, and a capped range is DISCLOSED
+    assert client.post("/api/v1/religion/quran-tafsir",
+                       json={"surah": 1, "ayah_start": 8, "ayah_end": 0}).status_code == 422
+    tf = client.post("/api/v1/religion/quran-tafsir",
+                     json={"surah": 2, "ayah_start": 1, "ayah_end": 100}).json()
+    assert tf["ayah_end"] == 10 and "capped at 10" in tf["range_note"], (
+        "silent range truncation presented as full coverage again")
+
+    # 4. a nonexistent ayah is a 422 about scripture bounds, never a rebranded 503
+    assert client.get("/api/v1/qep/ayah/1/300").status_code == 422
+
+    # 5. due_refs truncation is disclosed alongside the full count
+    uid = f"w439r_{_uuid.uuid4().hex[:8]}"
+    client.post("/api/v1/qep/hifz/schedule", json={"uid": uid, "surah_number": 2, "ayaat_range": [1, 30]})
+    pr = client.get(f"/api/v1/qep/hifz/progress/{uid}").json()
+    assert pr["due_refs_capped_at"] == 20 and pr["due_today"] == 30 and len(pr["due_refs"]) == 20
+
+    # 6. a PARSEABLE-but-wrong-shape record is quarantined, not a permanent 500
+    from agentic_core.religious_domain.api import _hifz_path
+    bad_uid = f"w439r_{_uuid.uuid4().hex[:8]}"
+    _hifz_path(bad_uid).write_text("null", encoding="utf-8")
+    r = client.get(f"/api/v1/qep/hifz/progress/{bad_uid}")
+    assert r.status_code == 200, "a wrong-shape record 500s every hifz route again"
+
+    # 7. the module header no longer advertises recitation analysis the code refuses to claim
+    import agentic_core.religious_domain.api as _qep_mod
+    assert "analyse recitation (phoneme/diacritic)" not in (_qep_mod.__doc__ or "")

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { provenanceBadge } from '../../lib/api';
 import { DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -569,7 +570,7 @@ const VSBDetailPanel: React.FC<{
             <a key={dv.id} href="/deliverables" className="flex items-center gap-2 text-[10px] p-1.5 rounded-lg bg-slate-950 border border-slate-900 hover:border-aura/30">
               <span className="font-bold text-white truncate">{dv.title}</span>
               <span className="text-[8px] text-slate-600 uppercase">{dv.type}</span>
-              {dv.served_by && <span className="ml-auto text-[8px] font-black uppercase text-aura/70">in-house · {dv.served_by}</span>}
+              {dv.served_by && <span className="ml-auto text-[8px] font-black uppercase text-aura/70">{provenanceBadge(dv.served_by).label}</span>}
             </a>
           ))}
         </div>

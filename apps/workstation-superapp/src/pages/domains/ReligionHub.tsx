@@ -5,7 +5,7 @@ import { Card, Badge, Button } from '@workstation/ui';
 import { BookOpen, Heart, Sparkles, MessageCircle, History, Info, ShieldCheck, Zap, Globe, HeartPulse, Network, Binary, Compass, Anchor, Wind, Layers, GraduationCap } from 'lucide-react';
 import { useStore, gaas } from '@workstation/shared';
 import { motion, AnimatePresence } from 'framer-motion';
-import { QEPDashboard } from '../../components/QEPDashboard';
+import { QEPStudio } from '../../components/QEPStudio';
 import { QEPFlagshipFeatures } from '../../components/QEPFlagshipFeatures';
 import { LearnTeachModule } from '../../components/LearnTeachModule';
 import { QEPImmersiveTools } from '../../components/QEPImmersiveTools';
@@ -21,10 +21,11 @@ export const ReligionHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'wisdom');
   const [madhabs, setMadhabs] = useState<Madhab[]>([]);
 
+  const [schoolsError, setSchoolsError] = useState(false);
   useEffect(() => {
     axios.get('/api/v1/religion/schools')
       .then(res => setMadhabs(res.data.madhabs ?? []))
-      .catch(() => {});
+      .catch(() => setSchoolsError(true));   // W439: a failed fetch used to pulse "Loading…" forever
   }, []);
 
   return (
@@ -89,7 +90,17 @@ export const ReligionHub: React.FC = () => {
                <div className="space-y-4">
                   {activeTab === 'qep' ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-                       <QEPDashboard />
+                       {/* W439 — the Owner's directive: the REAL Quran Education Platform lives in
+                           the Religion domain. QEPStudio is the wired, audited surface (authentic
+                           text, real SM-2 hifz, honest written-recall, provenance-labelled AI).
+                           The generic four-engine QEPDashboard filler left this tab. */}
+                       <div>
+                          <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tighter mb-6">
+                             <BookOpen size={28} className="text-aura" />
+                             Quran Education Platform
+                          </h3>
+                          <QEPStudio />
+                       </div>
 
                        <div className="pt-12 border-t border-white/5">
                           <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tighter mb-10">
@@ -101,16 +112,8 @@ export const ReligionHub: React.FC = () => {
 
                        <div className="pt-12 border-t border-white/5">
                           <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tighter mb-10">
-                             <Zap size={28} className="text-aura shadow-2xl shadow-aura/20" />
-                             Immersive & Ethical Infrastructure
-                          </h3>
-                          <QEPImmersiveTools />
-                       </div>
-
-                       <div className="pt-12 border-t border-white/5">
-                          <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tighter mb-10">
                              <Sparkles size={28} className="text-aura shadow-2xl shadow-aura/20" />
-                             Flagship Suite Completion (v0.9)
+                             Roadmap — modules not yet built (honestly labelled)
                           </h3>
                           <QEPFlagshipFeatures />
                        </div>
@@ -191,11 +194,14 @@ export const ReligionHub: React.FC = () => {
                           </div>
                        </div>
                        <div className="flex items-center gap-6">
-                          <Badge color="emerald-500">Active</Badge>
-                          <Button onClick={() => navigate('/qep-religion')} variant="outline" className="px-6">Explore</Button>
+                          {/* W439 — an "Active" badge sat on every madhab row; madhabs are static
+                              reference data, not live entities with a state */}
+                          <Button onClick={() => navigate('/qep')} variant="outline" className="px-6">Explore</Button>
                        </div>
                     </motion.div>
-                  )) : (
+                  )) : schoolsError ? (
+                    <div className="text-center py-8 text-amber-400 text-sm">Backend unreachable — jurisprudential reference data could not be loaded.</div>
+                  ) : (
                     <div className="text-center py-8 text-slate-600 text-sm animate-pulse">Loading jurisprudential traditions…</div>
                   )}
                </div>
@@ -213,43 +219,18 @@ export const ReligionHub: React.FC = () => {
                      Moral alignment checks run through the real §11 compliance engines (Halal/Sharia · Ethical).
                   </p>
                </div>
-               <div className="space-y-4 pt-6 border-t border-aura/10">
-                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500">
-                     <span>Alignment Score</span>
-                     <span className="text-emerald-500">OPTIMAL</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                     <div className="h-full bg-aura w-[98%]" />
-                  </div>
-               </div>
+               {/* W439 — an "Alignment Score OPTIMAL" row with a 98% bar sat here, directly under
+                   copy claiming the real §11 engines. Both figures were literals: nothing computed
+                   an alignment score for this page. Removed rather than replaced — the real
+                   compliance checks run per-entity in the §11 engines, not as a page decoration. */}
                <Button onClick={() => navigate('/ceo')} className="w-full bg-aura text-sovereign py-6 rounded-2xl font-black uppercase tracking-widest text-xs">Consult Ethics Council</Button>
             </Card>
 
-            <Card className="p-10 bg-slate-950 border-slate-900 space-y-6">
-               <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Spiritual Markers (Methylation)</h4>
-               <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 rounded-xl bg-slate-900 border border-slate-800">
-                     <span className="text-[10px] font-black text-slate-300">COMPASSION_STRICT</span>
-                     <Badge color="emerald-500">SET</Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 rounded-xl bg-slate-900 border border-slate-800">
-                     <span className="text-[10px] font-black text-slate-300">CONTEMPLATION_MODE</span>
-                     <Badge color="aura">ACTIVE</Badge>
-                  </div>
-               </div>
-            </Card>
-
-            <Card className="p-8 border-slate-800">
-               <div className="flex items-center gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-aura">
-                     <Globe size={24} />
-                  </div>
-                  <div>
-                     <h4 className="text-lg font-black text-white mb-1">Interfaith Mesh</h4>
-                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">142 Global Nodes Synchronized</p>
-                  </div>
-               </div>
-            </Card>
+            {/* W439 — two fabrication cards sat here: "Spiritual Markers (Methylation)" with
+                COMPASSION_STRICT SET / CONTEMPLATION_MODE ACTIVE badges (nothing sets or reads
+                either), and "Interfaith Mesh — 142 Global Nodes Synchronized" (nothing counts
+                nodes and no mesh exists — the same fabricated-figure class the browser smoke
+                bans). Removed rather than replaced: no real source exists for any of it. */}
          </div>
       </div>
     </div>

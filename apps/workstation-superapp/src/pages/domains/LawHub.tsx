@@ -1,4 +1,5 @@
 import { StartProjectCTA } from '../../components/StartProjectCTA';
+import { provenanceBadge } from '../../lib/api';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -130,7 +131,7 @@ export const LawHub: React.FC = () => {
                        <div className="flex items-center justify-between">
                           <h4 className="text-sm font-black text-white uppercase tracking-wide">Analysis</h4>
                           <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${result.ai_provenance?.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                             {result.ai_provenance?.is_external ? `via ${result.ai_provenance?.served_by}` : `in-house · ${result.ai_provenance?.served_by ?? 'native'}`}
+                             {provenanceBadge(result.ai_provenance?.served_by, result.ai_provenance?.is_external).label}
                           </span>
                        </div>
                        <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">{result.analysis}</pre>

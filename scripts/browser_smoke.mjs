@@ -50,6 +50,9 @@ const ROUTES = [
   ['/native-ai',        ['In-House AI Resources']],
   // W438 — the organism's Anatomy tab: 18 audited-then-wired routes
   ['/organism?tab=anatomy', ['Anatomy', 'Organism']],
+  // W439 — QEP in the Religion domain (Owner directive) + the /qep studio
+  ['/religion?tab=qep',  ['Quran Education Platform', 'Spire of Inquiry']],
+  ['/qep',              ['QEP']],
 ];
 
 // The landmark check above passes if ANY landmark is present, which proves the route did not crash
@@ -65,6 +68,11 @@ const REQUIRED_SECTIONS = {
   '/native-ai': ['Primitive console', 'Fabric integrity'],
   // W438 — the anatomy surfaces must ALL render: health disclosure, genome lab, wiring truth
   '/organism?tab=anatomy': ['measured only', 'Genome lab', 'wiring truth'],
+  // W439 — the REAL QEP studio must render inside the Religion domain, honestly framed
+  '/religion?tab=qep': ['authentic text', 'spaced repetition', 'false witness'],
+  // /qep opens on the AI Coach tab: the honest no-phonetic-model banner + the pointer to the
+  // live written-text tools must both render
+  '/qep': ['Recitation assessment unavailable', 'written-recall'],
 };
 
 const failures = [];

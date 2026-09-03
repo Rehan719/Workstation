@@ -40,8 +40,10 @@ class QEPFlagshipService:
             self._save_data(initial_data)
 
     def _save_data(self, data):
-        with open(self.db_path, "w") as f:
-            json.dump(data, f, indent=2)
+        # W439: store convention — locked atomic write, never a bare write_text
+        from agentic_core.config import atomic_write_json, store_lock
+        with store_lock(self.db_path):
+            atomic_write_json(self.db_path, data)
 
     def load_data(self):
         with open(self.db_path, "r") as f:
