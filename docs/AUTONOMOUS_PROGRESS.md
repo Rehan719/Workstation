@@ -3660,3 +3660,75 @@ passthrough — failed with "a legacy invented figure is being served as a decla
 again"); both restored green. Browser smoke deep-checks `/religion?tab=qep` and `/qep`; the live
 probe (scripts/_w439_probe.mjs) drives scheduling, a real SM-2 review, and the translation
 refusal through the UI.
+
+### W440 — the VBS cluster: an honest core, a disclosure residue, and the systems finally OPERATE on a page
+
+**The fourth Tier-2 cluster (11 ops) was the healthiest yet** — the QMS/DCMS core is genuinely
+solid (W307/W316/W320/W327-hardened: persistent traceable defects, the ISO 8.7/10.2
+correct→re-verify loop that closes only on a measured pass, a non-conformance rate that is a real
+failure ratio, SHA3-512 seals whose audit integrity is a RECOMPUTED fraction). The audit's residue
+was disclosure, concentrated in BMS/EMS/backbone:
+
+- **"ROI" hid a $0.50/insight invention.** The route's simulated list named only the $/Wh rate,
+  but the ROI numerator multiplied insights by an undisclosed $0.50 value constant — and at zero
+  energy a 0.001 divisor floor minted absurd ROI from nothing. The constant is now IN the payload
+  (`insight_value_usd_simulated`), the simulated list names it, and zero cost yields
+  `roi: null` with "undefined, not infinite" as the basis. The catalogue's `real` list dropped
+  ROI; swarm.py's consumer was hardened against the null (float(None) — the W437 class, caught
+  proactively this time).
+- **"latency_p95" was neither.** The backbone health figure is an EWMA over SIMULATED transport
+  (a fixed 40ms sleep) — renamed `latency_ewma_ms` with the note in the payload; a zero-node
+  registry now reports `failure_rate: null` ("nothing measured") instead of a clean 0.0; scope
+  ("in-memory, this server process") disclosed. EMS's docstring stopped claiming "FLOP/Watt
+  monitoring" nothing performs; its CO2 accrual carries its per-process scope.
+- Registration inputs bounded; the per-process `controlled_documents` counter is scoped against
+  the persistent DCMS figures in the same payload.
+
+**The wiring:** the VSB Cockpit's Living Systems tab — previously static standards cards — gained
+the operating systems: a QMS panel that runs real gates and walks the defect loop end-to-end
+(correct → paste the corrected delivery → the platform MEASURES it with the same instruments —
+the measured-vs-attested basis rendered per defect), DCMS commits with live seal + recomputed
+integrity, BMS/EMS calculators whose simulated constants are first-class amber content, and the
+backbone with honest names. Because the VBS systems are PLATFORM singletons, the panel also
+renders when no VSB exists yet — the cockpit's honest empty state is no longer a dead end, and CI
+(which has no VSBs) exercises the panel. The cockpit became ?tab= deep-linkable.
+
+**Guard:** `test_w440_vbs_cluster_disclosures_hold` — broken (the absurd-ROI divisor floor
+restored) and watched fail with "roi is None … undefined, not infinite"; restored green.
+
+**Refuter round (2 adversarial agents on the fixes, 13 findings — the practice caught live breaks
+a fourth consecutive time):** the "ISO-9001-aligned" gate's coverage was UNBOUNDED, so a
+percent-style `97` trivially PASSED (97 ≥ 0.95) — a failing delivery converted into a green chip
+by a units mistake; bounded `ge=0, le=1` (and the attested reverify leg with it), proven by
+breaking the bound and watching `coverage: 45 → 200` leak through the guard. One negative
+`energy_wh` drove the SHARED EMS singleton's `total_co2_kg` below zero — corrupting the
+platform-wide figure every viewer sees; negative BMS energy produced cost-per-insight −0.00075
+with status EFFICIENT while `roi_basis` claimed "no energy cost recorded" (a figure WAS recorded
+— it was negative); all inputs now `ge=0`/`ge=1` at the model. The gate stamped no owner, so
+under auth a tenant's failed gate opened a platform-level defect THEY COULD NEVER SEE while the
+summary counted it — the defect now belongs to the tenant that ran it. Re-registration silently
+replaced an agent's card (`replaced_existing` now disclosed, plus `auth_note`: "zero-trust" was
+advertising — nothing authenticates, the DID is a minted label; docstrings de-claimed).
+"failover rerouting" sat in the catalogue's REAL list while `route_message`/`_find_failover`
+have zero callers and carry the §4.5 archetype (payload ignored, DELIVERED constant for
+unregistered targets, first-by-dict-order failover) — moved out of `real`, both functions marked
+do-not-wire-as-is. A measured reverify on a defect with no stored section requirements (exactly
+what the cockpit gate runner creates) claimed `measured_from_content` while the coverage
+instrument had degenerated to length+stub checks — the basis now names its instruments. Panel:
+one busy-lock across ALL mutating buttons (cross-button double submit), reverify placeholder
+stopped promising "the same instruments as the original gate". Cockpit: a fetch failure rendered
+the "no VSBs exist yet" empty state — backend-unreachable is now a distinct error card ("this is
+not 'no VSBs'"), and the platform panel no longer flashes during load. Guard:
+`test_w440_refuter_pass_findings_stay_fixed` — broken (coverage bound removed) and watched fail
+with the original symptom (`45 → 200`); restored green. Probe re-run on the final build: 8/8,
+after fixing the probe's own instrument race (it read the page before the async catalogue
+painted — wait for the SPECIFIC text, the round's recurring lesson applied to itself).
+
+Final suite on the final tree: 1 failure — and it was the refuter class catching ME a fifth
+time, via the suite this round: the W316 QMS test asserted `reverify_basis ==
+"measured_from_content"` exactly, and the refuter fix appends the degenerate-instruments
+disclosure for precisely the gate-created (section-less) defect that test builds. The
+consumer-of-a-changed-field was a TEST, and the subset filter (`-k "w440 or vbs"`) missed it
+because its name contains neither. Assertion updated to expect the disclosure (the honest
+behaviour); re-run green alongside both W440 guards sharing its store. Production code is
+byte-identical to the full-suite-verified tree: 347 passed / 15 skipped / 0 failed.

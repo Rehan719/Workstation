@@ -2,9 +2,11 @@ import logging
 from typing import Dict, Any
 
 class EnvironmentalManagementSystem:
-    """
-    VBS: EMS Stewardship.
-    FLOP/Watt monitoring and AEHO scaling.
+    """VBS: EMS Stewardship — CO2 accrual over reported energy.
+
+    W440 docstring truth: no FLOP/Watt monitoring exists (nothing reads FLOPs); the class accrues
+    kgCO2 per reported Wh (real arithmetic over caller figures) and returns two constants the
+    route discloses as simulated. The accrual is in-memory, per-process.
     """
     def __init__(self, config_path: str):
         self.logger = logging.getLogger("EMS")

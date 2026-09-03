@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from agentic_core.auth.core import get_current_user, user_can_access
 from agentic_core.vbs.registry import bms, qms, ems, dcms, backbone, CATALOGUE
@@ -29,14 +29,23 @@ async def list_systems():
 
 
 class QMSGate(BaseModel):
-    coverage: float = 0.0
+    # W440 refuter catch: coverage was unbounded — a percent-style 97 trivially PASSED the
+    # "ISO-9001-aligned" gate (97 >= 0.95), converting failing deliveries into green chips
+    coverage: float = Field(default=0.0, ge=0.0, le=1.0)
     stubs_found: bool = False
 
 
 @router.post("/qms/gate")
-async def qms_gate(req: QMSGate):
-    """Run a real ISO-9001-aligned quality gate (>= min coverage AND zero stubs)."""
-    passed = await qms.run_quality_gates({"coverage": req.coverage, "stubs_found": req.stubs_found})
+async def qms_gate(req: QMSGate, user: dict | None = Depends(get_current_user)):
+    """Run a real ISO-9001-aligned quality gate (>= min coverage AND zero stubs).
+
+    W440 refuter catch: this route stamped no owner, so under auth a tenant's failed gate opened
+    a platform-level defect THEY COULD NEVER SEE — while the summary counted it. The defect now
+    belongs to the tenant that ran the gate."""
+    _u = user if isinstance(user, dict) else None
+    passed = await qms.run_quality_gates(
+        {"coverage": req.coverage, "stubs_found": req.stubs_found},
+        label="cockpit-gate", owner_id=(_u or {}).get("username"))
     return {"passed": passed, "min_coverage": qms.min_coverage,
             "non_conformance_rate": qms.get_non_conformance_rate(), "real": True}
 
@@ -84,7 +93,7 @@ async def qms_correct_defect(defect_id: str, req: DefectCorrection,
 
 
 class DefectReverify(BaseModel):
-    coverage: float | None = None      # caller-attested metrics (legacy leg — recorded as such)
+    coverage: float | None = Field(default=None, ge=0.0, le=1.0)   # caller-attested (recorded as such)
     stubs_found: bool = False
     content: str | None = None         # §10 (W316) — the corrected delivery ITSELF: measured here
 
@@ -107,8 +116,13 @@ async def qms_reverify_defect(defect_id: str, req: DefectReverify,
         cov = _delivery_coverage(req.content, secs)
         stub = (bool(_STUB_RE.search(req.content or ""))
                 or len((req.content or "").strip()) < _MIN_SUBSTANTIVE)
+        # W440 refuter catch: with no stored section requirements the coverage instrument
+        # degenerates to length+stub checks — the basis must say which instruments actually ran,
+        # or "measured" overclaims for exactly the defects the cockpit gate runner creates
         res = qms.reverify_defect(defect_id, {"coverage": cov, "stubs_found": stub,
-                                              "basis": "measured_from_content"})
+                                              "basis": ("measured_from_content" if secs else
+                                                        "measured_from_content (no stored section "
+                                                        "requirements — length + stub instruments only)")})
     else:
         if req.coverage is None:
             raise HTTPException(status_code=422,
@@ -140,12 +154,17 @@ async def dcms_commit(req: DCMSCommit):
 async def qms_document_control():
     """The QMS OWNS the DCMS (ISO 9001 §7.5): document control is a function of the QMS. This exposes the
     QMS's document-control posture — proving the DCMS is operated as the QMS's subsystem."""
-    return {"qms_owns_dcms": qms.dcms is dcms, **qms.document_control_status(), "real": True}
+    return {"qms_owns_dcms": qms.dcms is dcms, **qms.document_control_status(), "real": True,
+            "note": ("registered_artifacts and audit_integrity are PERSISTENT (dcms store); "
+                     "controlled_documents is a per-process counter since start")}
 
 
 class BMSEcon(BaseModel):
-    insights_count: int = 1
-    wh_consumed: float = 0.0
+    # W440 refuter catch: negative energy produced cost_per_insight -0.00075 with status
+    # EFFICIENT and a roi_basis claiming "no energy cost recorded" when a (negative) figure WAS
+    # recorded; zero insights yielded a per-insight figure with no units to divide over
+    insights_count: int = Field(default=1, ge=1)
+    wh_consumed: float = Field(default=0.0, ge=0.0)
 
 
 @router.post("/bms/economics")
@@ -153,11 +172,15 @@ async def bms_economics(req: BMSEcon):
     """Compute real unit economics (cost-per-insight, ROI). Energy $/Wh rate is a simulated constant."""
     econ = await bms.calculate_unit_economics(req.insights_count, req.wh_consumed)
     return {**econ, "unit_cost_target": bms.unit_cost_target,
-            "real_arithmetic": True, "simulated": ["energy $/Wh rate constant"]}
+            "real_arithmetic": True,
+            # W440 — the ROI's $0.50/insight value constant was undisclosed here
+            "simulated": ["energy $/Wh rate constant", "insight $0.50 value constant (inside ROI)"]}
 
 
 class EMSEff(BaseModel):
-    energy_wh: float = 0.0
+    # W440 refuter catch: one negative request drove the SHARED singleton's total_co2_kg below
+    # zero — corrupting the platform-wide figure every viewer sees
+    energy_wh: float = Field(default=0.0, ge=0.0)
 
 
 @router.post("/ems/efficiency")
@@ -165,7 +188,8 @@ async def ems_efficiency(req: EMSEff):
     """Accrue real CO2 (kgCO2/Wh). Efficiency-gain + resource-gain are simulated constants."""
     eff = await ems.monitor_efficiency(req.energy_wh)
     return {"efficiency_gain": eff, "total_co2_kg": ems.total_co2_kg, "resource_gain": ems.get_resource_gain(),
-            "real": ["co2 accumulation"], "simulated": ["efficiency-gain constant", "resource-gain constant"]}
+            "real": ["co2 accumulation"], "simulated": ["efficiency-gain constant", "resource-gain constant"],
+            "scope": "co2 accrues in-memory, this server process since start"}
 
 
 @router.get("/backbone/health")
@@ -175,13 +199,20 @@ async def backbone_health():
 
 
 class BackboneRegister(BaseModel):
-    agent_id: str
-    capabilities: list = []
+    agent_id: str = Field(min_length=1, max_length=128)
+    capabilities: list = Field(default_factory=list, max_length=50)
 
 
 @router.post("/backbone/register")
 async def backbone_register(req: BackboneRegister):
-    """Zero-trust DID registration of an agent into the mycelial backbone (real registry write)."""
+    """DID-labelled registration into the in-memory backbone registry (real registry write).
+
+    W440 refuter catch: "zero-trust" was advertising — no authentication is performed and nothing
+    verifies the caller or the DID; the label is minted here. Re-registration replaces the
+    existing card, disclosed."""
+    replaced = req.agent_id in backbone.registry
     ok = await backbone.register_agent(req.agent_id, {"capabilities": req.capabilities})
-    return {"registered": ok, "agent_id": req.agent_id, "active_nodes": len(backbone.registry),
+    return {"registered": ok, "agent_id": req.agent_id, "replaced_existing": replaced,
+            "active_nodes": len(backbone.registry),
+            "auth_note": "no authentication is performed on registration — the DID is a minted label",
             "protocols": [p.name for p in ProtocolType]}

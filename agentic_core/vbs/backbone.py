@@ -14,9 +14,12 @@ class ProtocolType(Enum):
     ANP = "Agent Network Protocol"
 
 class MycelialBackbone:
-    """
-    ARTICLE III.A: VSB (Virtual Systems Bridge) – Mycelial Resilience Layer v129.2.
-    Decentralized infrastructure backbone with dynamic rerouting and zero-trust auth.
+    """ARTICLE III.A: VSB (Virtual Systems Bridge) — Mycelial resilience layer.
+
+    W440 truth pass: this is an IN-MEMORY agent registry with simulated transport. No
+    authentication exists ("zero-trust auth" was advertising); route_message/_find_failover are
+    UNREACHED from any surface and carry the repo's §4.5 archetype (see their comments) — they
+    must not be wired as-is.
     """
     def __init__(self):
         self.registry = {} # Agent Cards
@@ -25,7 +28,8 @@ class MycelialBackbone:
         self.latency_p95 = 0.0
 
     async def register_agent(self, agent_id: str, card: Dict[str, Any]) -> bool:
-        """Zero-trust registration with DIDs + JSON-LD."""
+        """DID-labelled registration (the DID is minted here; nothing is verified — no JSON-LD
+        processing exists, and re-registration replaces the card)."""
         did = card.get("did", f"did:vsb:{uuid.uuid4().hex[:8]}")
         self.registry[agent_id] = {
             "did": did,
@@ -37,9 +41,9 @@ class MycelialBackbone:
         return True
 
     async def route_message(self, source: str, target: str, payload: Dict[str, Any], protocol: ProtocolType) -> Dict[str, Any]:
-        """
-        <90ms dynamic rerouting around failures.
-        """
+        """UNREACHED (W440: zero callers) and NOT wire-ready — §4.5 archetype: the payload is
+        ignored, an unregistered target still returns status "DELIVERED" (a constant), and the
+        latency is a simulated sleep. Fix delivery semantics before ever wiring this."""
         start_time = time.time()
 
         if target in self.failures:
@@ -63,7 +67,9 @@ class MycelialBackbone:
         }
 
     def _find_failover(self, failed_target: str) -> str:
-        # Simplified failover search
+        # W440: §4.5 archetype — picks the FIRST agent by dict insertion order (capabilities and
+        # status ignored) and fabricates "HYPHAL_NODE_0" for an empty registry. Unreached; must
+        # select on real criteria (and refuse honestly when no candidate exists) before wiring.
         for agent_id in self.registry:
             if agent_id != failed_target:
                 return agent_id
@@ -74,9 +80,17 @@ class MycelialBackbone:
         logger.error(f"VSB: Link failure detected for {agent_id}. Topology reconfiguring.")
 
     def get_backbone_health(self) -> Dict[str, Any]:
+        # W440 — the old field was named latency_p95: the figure is an EWMA over SIMULATED
+        # transport (a 40ms sleep), neither a p95 nor a measurement; and a 0-node registry
+        # reported failure_rate 0.0 as if measured. Names now match what the values are.
+        nodes = len(self.registry)
         return {
-            "latency_p95": f"{self.latency_p95:.2f}ms",
-            "active_nodes": len(self.registry),
-            "failure_rate": len(self.failures) / max(1, len(self.registry)),
-            "protocol_stack": [p.name for p in ProtocolType]
+            "latency_ewma_ms": round(self.latency_p95, 2),
+            "latency_note": "EWMA over SIMULATED transport (fixed 40ms sleep) — not a measured p95",
+            "active_nodes": nodes,
+            "failure_rate": (len(self.failures) / nodes) if nodes else None,
+            "failure_rate_basis": (f"failed links / {nodes} registered nodes" if nodes else
+                                   "no nodes registered — nothing measured"),
+            "scope": "in-memory, this server process since start",
+            "protocol_stack": [p.name for p in ProtocolType],
         }

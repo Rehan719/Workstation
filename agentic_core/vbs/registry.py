@@ -30,8 +30,9 @@ backbone = MycelialBackbone()
 
 CATALOGUE: List[Dict[str, Any]] = [
     {"id": "bms", "name": "Business Management System", "owned": True,
-     "real": ["unit economics (cost-per-insight, ROI)", "viral k-factor"],
-     "simulated": ["energy $/Wh rate constant"]},
+     "real": ["unit economics arithmetic (cost-per-insight)"],
+     "simulated": ["energy $/Wh rate constant", "insight $0.50 value constant (inside ROI)",
+                   "viral k-factor formula"]},
     {"id": "qms", "name": "Quality Management System", "owned": True, "owns": ["dcms"],
      "real": ["ISO-9001-aligned quality gates (coverage + zero-stub)",
               "persistent traceable defects + the §8.7/§10.2 correct→re-verify loop (W307)",
@@ -46,6 +47,11 @@ CATALOGUE: List[Dict[str, Any]] = [
               "operated as the QMS's document-control subsystem (ISO 9001 §7.5)"],
      "simulated": []},
     {"id": "backbone", "name": "Mycelial Backbone", "owned": True,
-     "real": ["zero-trust DID agent registry", "failover rerouting"],
-     "simulated": ["transport latency"]},
+     # W440 refuter catch: "failover rerouting" sat in the REAL list while route_message/
+     # _find_failover have zero callers and carry the §4.5 archetype (first-by-dict-order
+     # selection, a DELIVERED constant for unregistered targets) — unreached machinery is not a
+     # real capability
+     "real": ["DID agent registry (in-memory, per-process)"],
+     "simulated": ["transport latency (fixed 40ms sleep; the health figure is an EWMA of it, "
+                   "not a measured p95)"]},
 ]

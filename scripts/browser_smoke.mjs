@@ -53,6 +53,8 @@ const ROUTES = [
   // W439 — QEP in the Religion domain (Owner directive) + the /qep studio
   ['/religion?tab=qep',  ['Quran Education Platform', 'Spire of Inquiry']],
   ['/qep',              ['QEP']],
+  // W440 — the VBS management systems, operating (not just their standards cards)
+  ['/vsb-cockpit?tab=systems', ['VSB Cockpit']],
 ];
 
 // The landmark check above passes if ANY landmark is present, which proves the route did not crash
@@ -66,6 +68,10 @@ const REQUIRED_SECTIONS = {
   '/marketplace': ['Listings'],
   // W437 — the console that finally makes the 10 audited primitives reachable, and the integrity strip
   '/native-ai': ['Primitive console', 'Fabric integrity'],
+  // W440 — the operating VBS systems panel must render on the cockpit's Living Systems tab
+  // 'nothing simulated' renders only from LIVE /vbs/systems data (QMS/DCMS rows), so the guard
+  // is data-driven, not just static headings (refuter catch: the h4 needles pass with dead APIs)
+  '/vsb-cockpit?tab=systems': ['quality gates', 'document control', 'Mycelial backbone', 'nothing simulated'],
   // W438 — the anatomy surfaces must ALL render: health disclosure, genome lab, wiring truth
   '/organism?tab=anatomy': ['measured only', 'Genome lab', 'wiring truth'],
   // W439 — the REAL QEP studio must render inside the Religion domain, honestly framed

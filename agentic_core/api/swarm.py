@@ -772,9 +772,13 @@ async def cascade_orchestration(req: CascadeRequest):
         _insights = len(management_systems.get("document_control", {})) + len(appraisals)
         _energy_wh = round(max(0.1, (time.time() - start) / 60.0), 3)   # duration-derived ESTIMATE
         _unit = await bms.calculate_unit_economics(_insights, _energy_wh)
+        _roi = _unit.get("roi")
         management_systems["bms"] = {
             "cost_per_insight_usd": round(float(_unit.get("cost_per_insight", 0.0)), 6),
-            "roi": round(float(_unit.get("roi", 0.0)), 3), "status": _unit.get("status"),
+            # W440: roi is None when no energy cost exists (float(None) here would be the W437
+            # validate-handler class — the engine's honesty crashing its consumer)
+            "roi": round(float(_roi), 3) if _roi is not None else None,
+            "roi_basis": _unit.get("roi_basis"), "status": _unit.get("status"),
             "insights_count": _insights, "energy_wh_estimate": _energy_wh,
             "caveat": "energy is a duration-derived estimate; $/Wh is the catalogue's simulated constant",
         }

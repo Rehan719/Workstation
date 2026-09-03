@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { provenanceBadge } from '../../lib/api';
+import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
 import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
@@ -42,7 +43,11 @@ export const VSBCockpit: React.FC = () => {
   const [delivFormat, setDelivFormat] = useState('md');
   const [delivFormats, setDelivFormats] = useState<{ id: string; label: string }[]>([{ id: 'md', label: 'Markdown (.md)' }]);
   const [standards, setStandards] = useState<Dict[]>([]);
-  const [tab, setTab] = useState<string>('org');
+  // W440 — deep-linkable (?tab=), matching the app's hub pattern
+  const [tab, setTab] = useState<string>(() => {
+    const want = new URLSearchParams(window.location.search).get('tab');
+    return want && TABS.some(([id]) => id === want) ? want : 'org';
+  });
   const [loading, setLoading] = useState(false);
   const [tx, setTx] = useState<Dict | null>(null);
   const [txRunning, setTxRunning] = useState(false);
@@ -66,15 +71,20 @@ export const VSBCockpit: React.FC = () => {
   const SpeechRec: any = typeof window !== 'undefined' ? ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) : null;
   const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
+  // W440 refuter catch: nothing tracked the LIST fetch — the "no VSBs" empty state (and the
+  // platform panel) rendered on first paint before the list arrived, and FOREVER after a failed
+  // fetch, asserting "no VSBs" when the truth was "list unknown".
+  const [vsbsState, setVsbsState] = useState<'loading' | 'ready' | 'error'>('loading');
   useEffect(() => {
     axios.get('/api/v1/vsb').then(r => {
       const ents: VSBRow[] = r.data.entities || [];
       setVsbs(ents);
+      setVsbsState('ready');
       // Honour a ?vsb=<id> deep-link (e.g. "Open in Cockpit" from the Spawn Studio); else prefer an established VSB.
       const want = new URLSearchParams(window.location.search).get('vsb');
       const chosen = (want && ents.find(e => e.vsb_id === want)) || ents.find(e => e.has_board) || ents[0];
       if (chosen) setSelected(chosen.vsb_id);
-    }).catch(() => {});
+    }).catch(() => setVsbsState('error'));
     axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(() => {});
     axios.get('/api/v1/bto/components').then(r => setBtoComponents(r.data.components || [])).catch(() => {});
     axios.get('/api/v1/deliverables/output-formats').then(r => {
@@ -317,7 +327,16 @@ export const VSBCockpit: React.FC = () => {
         // renders, and the only guidance used to be an UNSELECTABLE <option> inside a dropdown —
         // text that tells you to go somewhere and does nothing when you click it. Give the dead end
         // a real way out instead.
-        if (!loading && vsbs.length === 0) {
+        if (vsbsState === 'error') {
+          return (
+            <Card className="p-8 text-center border-dashed border-slate-800">
+              <p className="text-amber-400 font-black uppercase tracking-widest text-xs">
+                VSB list unavailable — backend unreachable (this is not "no VSBs"; the list is unknown)
+              </p>
+            </Card>
+          );
+        }
+        if (vsbsState === 'ready' && vsbs.length === 0) {
           return (
             <Card className="p-8 text-center border-dashed border-slate-800">
               <Building2 size={26} className="mx-auto text-slate-700 mb-3" />
@@ -370,6 +389,16 @@ export const VSBCockpit: React.FC = () => {
           </Card>
         );
       })()}
+
+      {/* W440 — the VBS management systems are PLATFORM singletons, not per-VSB state: they
+          operate (and render) even before any VSB is established, so the honest empty state above
+          is not a dead end and CI (which has no VSBs) still exercises the panel. */}
+      {!detail && vsbsState !== 'loading' && (
+        <div className="space-y-3">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Platform management systems — operating now (no VSB required)</h4>
+          <VBSSystemsPanel />
+        </div>
+      )}
 
       {detail && (
         <>
@@ -600,19 +629,26 @@ export const VSBCockpit: React.FC = () => {
 
           {/* Living Systems */}
           {tab === 'systems' && (
-            <Card className="p-6">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2"><ShieldCheck size={14} /> Living management systems (BMS · QMS · DCS · EMS …)</h4>
-              <div className="grid grid-cols-1 @[560px]:grid-cols-2 @[900px]:grid-cols-3 gap-3">
-                {standards.map((s, i) => (
-                  <div key={s.id || i} className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-                    <p className="font-black text-white text-sm">{s.name || s.id}</p>
-                    {s.standard && <p className="text-[10px] font-mono text-aura/60 mt-1">{s.standard}</p>}
-                    {s.description && <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{s.description}</p>}
-                  </div>
-                ))}
-                {standards.length === 0 && <p className="text-slate-600 text-xs">Management systems unavailable.</p>}
-              </div>
-            </Card>
+            <div className="space-y-4">
+              <Card className="p-6">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2"><ShieldCheck size={14} /> Living management systems (BMS · QMS · DCS · EMS …)</h4>
+                <div className="grid grid-cols-1 @[560px]:grid-cols-2 @[900px]:grid-cols-3 gap-3">
+                  {standards.map((s, i) => (
+                    <div key={s.id || i} className="p-4 rounded-xl bg-slate-900 border border-slate-800">
+                      <p className="font-black text-white text-sm">{s.name || s.id}</p>
+                      {s.standard && <p className="text-[10px] font-mono text-aura/60 mt-1">{s.standard}</p>}
+                      {s.description && <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{s.description}</p>}
+                    </div>
+                  ))}
+                  {standards.length === 0 && <p className="text-slate-600 text-xs">Management systems unavailable.</p>}
+                </div>
+              </Card>
+
+              {/* W440 — the OPERATING systems, not just their standards: real QMS gates + the
+                  defect loop, SHA3-512 document control, BMS/EMS with disclosed simulations, and
+                  the mycelial backbone with honest names for its simulated figures */}
+              <VBSSystemsPanel />
+            </div>
           )}
 
           {/* Economy — the VSB's economic metabolism (virtual WST only; capital-preserving waterfall) */}

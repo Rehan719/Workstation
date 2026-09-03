@@ -922,7 +922,10 @@ def test_qms_defect_loop_and_measured_bar(client):
     # delivery's CONTENT re-runs the same instruments; the basis is recorded honestly either way.
     client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/correct", json={"correction": "second attempt"})
     rev3 = client.post(f"/api/v1/vbs/qms/defects/{d2['id']}/reverify", json={"content": body}).json()
-    assert rev3["defect"]["reverify_basis"] == "measured_from_content"
+    # W440 refuter catch: this defect is gate-created (no delivery_ref → no stored section
+    # requirements), so the measured basis must NAME its degenerate instruments, not overclaim
+    assert rev3["defect"]["reverify_basis"] == (
+        "measured_from_content (no stored section requirements — length + stub instruments only)")
     assert rev3["passed"] is True and rev3["defect"]["status"] == "closed"
     assert rev2["defect"]["reverify_basis"] == "caller_attested"   # the legacy leg says what it is
     # and a fresh assure_delivery failure carries the REAL delivery reference for that measured leg
@@ -8102,3 +8105,86 @@ def test_w439_refuter_pass_findings_stay_fixed(client):
     # 7. the module header no longer advertises recitation analysis the code refuses to claim
     import agentic_core.religious_domain.api as _qep_mod
     assert "analyse recitation (phoneme/diacritic)" not in (_qep_mod.__doc__ or "")
+
+
+def test_w440_vbs_cluster_disclosures_hold(client):
+    # W440 — the VBS cluster was largely honest already (real gates, persistent defects, recomputed
+    # seal integrity); the audit's residue was DISCLOSURE. This guard pins it.
+
+    # 1. BMS: the $0.50/insight constant inside "ROI" is disclosed, and zero energy yields
+    #    roi null-with-basis (the old 0.001 divisor floor minted absurd ROI from nothing)
+    e = client.post("/api/v1/vbs/bms/economics", json={"insights_count": 10, "wh_consumed": 50}).json()
+    assert e["insight_value_usd_simulated"] == 0.5
+    assert any("insight $0.50 value constant" in s for s in e["simulated"]), (
+        "the ROI's invented value constant went undisclosed again")
+    z = client.post("/api/v1/vbs/bms/economics", json={"insights_count": 10, "wh_consumed": 0}).json()
+    assert z["roi"] is None and "undefined, not infinite" in z["roi_basis"]
+
+    # 2. backbone health: names match what the values are — the figure is a simulated EWMA,
+    #    never "latency_p95", and a 0-node registry measures nothing
+    h = client.get("/api/v1/vbs/backbone/health").json()
+    assert "latency_p95" not in h and "latency_ewma_ms" in h
+    assert "SIMULATED" in h["latency_note"]
+    assert h["scope"].startswith("in-memory")
+    if h["active_nodes"] == 0:
+        assert h["failure_rate"] is None and "nothing measured" in h["failure_rate_basis"]
+    # registering a real agent flips the counts (still discriminates)
+    r = client.post("/api/v1/vbs/backbone/register", json={"agent_id": "w440-guard", "capabilities": ["t"]}).json()
+    assert r["registered"] is True
+    h2 = client.get("/api/v1/vbs/backbone/health").json()
+    assert h2["active_nodes"] >= 1 and h2["failure_rate"] is not None
+    # bounds: an empty agent id is refused
+    assert client.post("/api/v1/vbs/backbone/register", json={"agent_id": ""}).status_code == 422
+
+    # 3. EMS: scope disclosed on the in-memory accrual
+    ef = client.post("/api/v1/vbs/ems/efficiency", json={"energy_wh": 5}).json()
+    assert ef["scope"].startswith("co2 accrues in-memory")
+
+    # 4. the catalogue's real/simulated split matches the fixes (ROI moved to simulated)
+    cat = client.get("/api/v1/vbs/systems").json()
+    bms_row = next(s for s in cat["systems"] if s["id"] == "bms")
+    assert not any("ROI" in r for r in bms_row["real"]), "ROI is back in the 'real' list"
+    assert any("$0.50" in s for s in bms_row["simulated"])
+    bb_row = next(s for s in cat["systems"] if s["id"] == "backbone")
+    assert any("EWMA" in s for s in bb_row["simulated"])
+
+    # 5. document-control: the per-process counter is scoped against the persistent figures
+    dc = client.get("/api/v1/vbs/qms/document-control").json()
+    assert "per-process counter" in dc["note"]
+
+
+def test_w440_refuter_pass_findings_stay_fixed(client):
+    # W440's refuter pass (2 agents, 13 findings) — the load-bearing catches stay fixed.
+
+    # 1. percent-style coverage can no longer trivially PASS the gate (45 >= 0.95 was True)
+    assert client.post("/api/v1/vbs/qms/gate", json={"coverage": 45}).status_code == 422
+    # and the attested reverify leg is bounded the same way
+    # 2. negative/zero degenerate inputs are refused, not scored
+    assert client.post("/api/v1/vbs/bms/economics",
+                       json={"insights_count": 10, "wh_consumed": -50}).status_code == 422
+    assert client.post("/api/v1/vbs/bms/economics",
+                       json={"insights_count": 0, "wh_consumed": 50}).status_code == 422
+    assert client.post("/api/v1/vbs/ems/efficiency", json={"energy_wh": -100}).status_code == 422
+
+    # 3. registration disclosure: replacement + the no-auth truth travel in the payload
+    r1 = client.post("/api/v1/vbs/backbone/register", json={"agent_id": "w440r", "capabilities": []}).json()
+    assert r1["replaced_existing"] is False and "no authentication" in r1["auth_note"]
+    r2 = client.post("/api/v1/vbs/backbone/register", json={"agent_id": "w440r", "capabilities": []}).json()
+    assert r2["replaced_existing"] is True
+
+    # 4. the catalogue no longer certifies unreached failover machinery as REAL
+    cat = client.get("/api/v1/vbs/systems").json()
+    bb = next(s for s in cat["systems"] if s["id"] == "backbone")
+    assert not any("failover" in r for r in bb["real"]), (
+        "unreached §4.5-archetype failover is back in the 'real' list")
+
+    # 5. a measured reverify on a defect with NO stored section requirements names its weaker
+    #    instruments (the cockpit gate runner creates exactly such defects)
+    client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.1})   # opens an ownerless defect
+    defs = client.get("/api/v1/vbs/qms/defects").json()["defects"]
+    target = next(d for d in defs if d["status"] == "open")
+    client.post(f"/api/v1/vbs/qms/defects/{target['id']}/correct", json={"correction": "rewrote"})
+    rv = client.post(f"/api/v1/vbs/qms/defects/{target['id']}/reverify",
+                     json={"content": "A substantive corrected delivery. " * 40}).json()
+    assert "length + stub instruments only" in rv["defect"]["reverify_basis"], (
+        "the degenerate-instruments basis went undisclosed again")
