@@ -2375,10 +2375,34 @@ def test_living_plan_state(client):
     assert isinstance(r.json(), dict)
 
 
-def test_frontier_reality_status(client):
-    r = client.get("/api/v1/frontier/reality/status")
+def test_w441_frontier_retired_off_vision(client):
+    # W441 — the frontier router was retired to _archive/backend-api beside its off-vision
+    # pages. Every one of its 10 ops must be GONE (404), and the one legacy reader of its
+    # sessions store must keep answering honestly without it.
+    for method, path in [
+        ("get", "/api/v1/frontier/cosmic/signals"),
+        ("get", "/api/v1/frontier/platform/sessions"),
+        ("get", "/api/v1/frontier/reality/grants"),
+        ("get", "/api/v1/frontier/reality/status"),
+        ("post", "/api/v1/frontier/cosmic/analyze"),
+        ("post", "/api/v1/frontier/cosmic/response-protocol"),
+        ("post", "/api/v1/frontier/platform/arvr/session"),
+        ("post", "/api/v1/frontier/platform/embodiment"),
+        ("post", "/api/v1/frontier/platform/wearable/sync"),
+        ("post", "/api/v1/frontier/reality/grant"),
+    ]:
+        r = getattr(client, method)(path, **({"json": {}} if method == "post" else {}))
+        # 404 = nothing there; 405 = a POST path fell through to the GET-only SPA catch-all
+        # (/{full_path:path}) — the op is equally gone. Anything 2xx/422 means re-mounted.
+        assert r.status_code in (404, 405), f"{method.upper()} {path} still mounted: {r.status_code}"
+    # the archived module is out of the app's import graph entirely
+    import sys
+    assert "agentic_core.api.frontier" not in sys.modules
+    # legacy IoT reader survives the writer's retirement (tolerant of an absent store)
+    r = client.get("/api/v290/iot/devices")
     assert r.status_code == 200
-    assert isinstance(r.json(), dict)
+    body = r.json()
+    assert body["total"] == len(body["devices"])
 
 
 # ── Integration surface — the 18 previously-broken endpoints (Cycle 2) ────────

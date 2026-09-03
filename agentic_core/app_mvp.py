@@ -278,9 +278,14 @@ app.include_router(cca_api.router)
 from agentic_core.api import constitutional_gaas as gaas_api
 app.include_router(gaas_api.router)
 
-# 50. Frontier Phase 4 (cosmic nervous system, reality mesh, embodiment platforms)
-from agentic_core.api import frontier as frontier_api
-app.include_router(frontier_api.router)
+# 50. Frontier Phase 4 — RETIRED (W441). Its five consumer pages (Cosmic/Reality/AR-VR/
+# Wearables/Embodiment) were archived to _archive/frontend-pages as "off-vision … not part of
+# the Workstation IDBO vision" (see App.tsx); the router outlived them as a mounted, unreached,
+# write-capable orphan. The W441 audit (30 findings) found a parallel money surface bypassing
+# the economy ledger, an unlocked non-atomic store, a fabricated wss:// render target, and
+# organic-source signal injection into the organism feed — so the off-vision ruling was
+# extended to the backend: the router now lives at _archive/backend-api/frontier.py and must
+# not be re-mounted as-is (its archive header lists the defects to fix first).
 
 # 51. QEP Intelligence (explainability/XAI, translation pipeline, cross-domain adaptation)
 from agentic_core.api import qep_intelligence as qep_intel_api

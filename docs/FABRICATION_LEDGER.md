@@ -177,16 +177,16 @@ fixtures, `_archive/**`, honest empty states, and prompt/example text.
 - **reach:** live route (mounted app_mvp.py:60); not currently called by the SPA
 
 ### `agentic_core/api/frontier.py:134`
-- **status:** FIXED (W413)
+- **status:** FIXED (W413); router RETIRED (W441) — archived to `_archive/backend-api/frontier.py` beside its off-vision pages, routes unmounted
 - **claim:** GET /api/v1/frontier/reality/status — docstring "Reality coherence dashboard metrics." — returns `"coherence": 0.987` and `"reality_anchor": "stable"` as literals, alongside `total_grants` and `capital_allocated` which ARE computed from the real grant store.
 - **why it is a fabrication:** Same real-neighbour pattern as the csuite finding: two genuinely computed fields make the two literals read as measured. A dashboard renders 98.7% coherence and a "stable" anchor verdict; nothing computes or checks either.
-- **reach:** live route (mounted app_mvp.py:257)
+- **reach:** UNMOUNTED (W441) — router retired to `_archive/backend-api/frontier.py`; the path 404s
 
 ### `agentic_core/api/frontier.py:97`
-- **status:** FIXED (W413)
+- **status:** FIXED (W413); router RETIRED (W441) — archived to `_archive/backend-api/frontier.py` beside its off-vision pages, routes unmounted
 - **claim:** POST /api/v1/frontier/cosmic/response-protocol returns `"latency_ms": round(req.intensity * 12, 1)` — the reported latency is the caller's own `intensity` request parameter multiplied by 12.
 - **why it is a fabrication:** `latency_ms` names a measured elapsed time. No clock is read on this path (`time` is imported and used elsewhere in the file). Sending intensity 0.7 yields "8.4ms"; sending 0.9 yields "10.8ms" — the consumer is shown their own input knob dressed as a performance measurement.
-- **reach:** live route (mounted app_mvp.py:257)
+- **reach:** UNMOUNTED (W441) — router retired to `_archive/backend-api/frontier.py`; the path 404s
 
 ### `agentic_core/api/qep_intelligence.py:197`
 - **status:** FIXED (W409)

@@ -154,8 +154,11 @@ SM-2 hifz, a written-recall check that never judges recitation, persisted awards
 translation, and the tafsir route's constitutional fix — it was asking models to GENERATE Quran
 Arabic), and vbs (11 ops, W440 — the operating management systems on the VSB Cockpit: real QMS
 gates + the measured defect loop, DCMS seals, BMS/EMS with their simulated constants as
-first-class amber content; the panel renders platform-level, no VSB required). Next: frontier 10 ·
-economy 8.
+first-class amber content; the panel renders platform-level, no VSB required). W441 RETIRED the
+frontier router (10 ops) to _archive/backend-api beside its off-vision pages — the audit found a
+parallel money surface, an unlocked store, and a fabricated wss:// target; the honest in-vision
+AR/VR surface had deliberately declined to consume it. Reach: 455 ops, 299 reached, 92 genuine
+unreached in 40 clusters. Next: economy 8.
 Audit before wiring, every time — and REFUTE YOUR OWN FIXES before shipping: W437's validate
 handler (float(None) → 500 on the branches the W432 engine fix made honest) proved the class lives
 ONE LAYER UP from a fixed engine, and W438's refuter pass caught two consumer breaks + a

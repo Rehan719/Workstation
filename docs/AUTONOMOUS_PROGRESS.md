@@ -3732,3 +3732,49 @@ consumer-of-a-changed-field was a TEST, and the subset filter (`-k "w440 or vbs"
 because its name contains neither. Assertion updated to expect the disclosure (the honest
 behaviour); re-run green alongside both W440 guards sharing its store. Production code is
 byte-identical to the full-suite-verified tree: 347 passed / 15 skipped / 0 failed.
+
+### W441 — the frontier cluster: retired to the archive beside its off-vision pages
+
+**The queue item was "frontier 10 ops"; the honest resolution was retirement, not wiring.**
+The audit (2 agents, 30 findings) settled it: all five consumer pages
+(Cosmic/Reality/AR-VR/Wearables/Embodiment) were archived in the W153+ cleanup under the
+recorded ruling "off-vision … not part of the Workstation IDBO vision" (App.tsx), and the one
+honest in-vision surface (QEPReligionHub's AR/VR Lab tab) **deliberately consumes nothing** —
+because consuming /platform/arvr/session today would persist "active" sessions of a renderer
+that does not exist. The router outlived its pages as a mounted, unreached, write-capable
+orphan. W441 extended the off-vision ruling to the backend.
+
+**What the audit found live (the reasons "fix and wire" lost to "retire"):**
+- `reality_grant` was a parallel money surface: unbounded/NaN-accepting amounts, no owner
+  stamp, no economy-ledger integration, no UEG entry — "allocated" from nothing, summed into a
+  "capital_allocated" figure. The archived dashboard's one wired button posted a hardcoded
+  142,000-WST grant per click.
+- `_load/_save` were the shared-store concurrency class verbatim: no store_lock, non-atomic
+  writes, and corruption silently wiped the store to `[]` on the next write.
+- `arvr_session` returned a fabricated `wss://xr.workstation.local/…` render target nothing
+  serves; sessions were born "active" with no end/TTL, then re-served forever as IoT "devices"
+  by /api/v290/iot/devices.
+- `cosmic_analyze` used provenance-less `gateway.query` and returned exception text AS the
+  analysis with status "analyzed"; `cosmic_coherence` was an uptime ramp (0.5 + signals/400).
+- Frontier fires injected organic-looking sources into the organism nervous feed, bypassing
+  the `manual:` injection marking that /organism/nervous/stimulate deliberately applies.
+- The W438 n-clamp fix existed one layer down while `cosmic_signals` re-committed the
+  unclamped `n` at the wrapper (n=0 returned the entire buffer).
+
+**The change:** `agentic_core/api/frontier.py` → `_archive/backend-api/frontier.py` with a
+do-not-remount header listing the defects any resurrection must fix first; the include removed
+from app_mvp with the ruling recorded in place; iot_devices' dead "wearable" clause removed
+(the archived writer never persisted wearable sessions — a reader written against records its
+writer never produced); the vacuous `test_frontier_reality_status` (200 + isinstance dict)
+replaced by `test_w441_frontier_retired_off_vision` — all 10 ops assert gone (404, or 405
+where a POST falls through to the GET-only SPA catch-all), the module out of the import
+graph, and the legacy IoT reader still answering honestly without its writer. Guard broken
+(a frontier route re-mounted) and watched fail with "still mounted: 200"; restored green.
+
+**Refuter round (1 agent, 56 tool calls): no runtime consumer breaks** — and two catches of
+my own edits: the FABRICATION_LEDGER status lines I updated sat two lines above reach lines
+still claiming "live route (mounted app_mvp.py:257)" (a reach field false about itself —
+fixed), and the app_mvp comment cited this progress entry before it existed (now it does).
+
+**Reach after retirement:** 455 ops (−10), 299 reached, 92 genuine unreached in 40 clusters
+(148 → 92 across W438–W441: 46 wired, 10 retired). Next: economy 8.

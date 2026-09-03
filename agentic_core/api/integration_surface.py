@@ -378,9 +378,12 @@ async def twin_blueprint(twin_id: str):
 async def iot_devices():
     devices = []
     try:
+        # W441: the frontier router that WROTE this store is retired (off-vision) — rows here
+        # are frozen legacy records, served tolerantly. The old "wearable" clause was dead code:
+        # wearable_sync never persisted a session, so only arvr/embodiment kinds ever existed.
         sessions = json.loads(data_path("frontier/platform_sessions.json").read_text(encoding="utf-8"))
         for s in sessions:
-            if s.get("kind") in ("arvr", "embodiment") or "wearable" in str(s.get("kind", "")):
+            if s.get("kind") in ("arvr", "embodiment"):
                 devices.append({"id": s.get("id"), "type": s.get("kind"), "status": s.get("status")})
     except Exception:
         pass
