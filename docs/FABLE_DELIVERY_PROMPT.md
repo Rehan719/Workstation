@@ -41,7 +41,7 @@ THE SURFACE, measured 2026-09-02 against a backend booted from HEAD:
   442 paths (441 under /api) carrying 466 method+path operations
   270 frontend call sites resolving to 164 distinct /api literals + 18 template prefixes
   73 <Route> declarations in App.tsx — 72 concrete paths (the 73rd is the catch-all), all 72 render
-  suite 347 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 16 deep + 57 swept
+  suite 348 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 16 deep + 57 swept
 
 CAVEAT THAT HAS COST THIS PROJECT TIME THREE TIMES: a long-running dev process serves the code it
 booted with. Restart the backend before measuring BEHAVIOUR, and check its start time against the
@@ -155,10 +155,13 @@ translation, and the tafsir route's constitutional fix — it was asking models 
 Arabic), and vbs (11 ops, W440 — the operating management systems on the VSB Cockpit: real QMS
 gates + the measured defect loop, DCMS seals, BMS/EMS with their simulated constants as
 first-class amber content; the panel renders platform-level, no VSB required). W441 RETIRED the
-frontier router (10 ops) to _archive/backend-api beside its off-vision pages — the audit found a
-parallel money surface, an unlocked store, and a fabricated wss:// target; the honest in-vision
-AR/VR surface had deliberately declined to consume it. Reach: 455 ops, 299 reached, 92 genuine
-unreached in 40 clusters. Next: economy 8.
+frontier router (10 ops) to _archive/backend-api beside its off-vision pages. W442 fixed the
+economy cluster's money integrity (the LEDGER had no lock; NaN disabled funds conservation;
+the materiality gate was blind to the recycle queues; a blocked constitutional verdict RAN the
+cycle anyway) and wired 6 of 8 ops (venture portfolio + returns + candidates, CFO period close +
+statements, federation transfer, charity candidates pool) — /status and /charity/signals are
+recorded reasoned no-wires. Reach: 455 ops, 304 reached, 87 genuine unreached in 40 clusters.
+Next: hub 7 · qep-residual 7 · marketplace 5 · organism-residual 5.
 Audit before wiring, every time — and REFUTE YOUR OWN FIXES before shipping: W437's validate
 handler (float(None) → 500 on the branches the W432 engine fix made honest) proved the class lives
 ONE LAYER UP from a fixed engine, and W438's refuter pass caught two consumer breaks + a
@@ -341,7 +344,7 @@ Learned by being wrong, repeatedly, in ways a green suite hid. The first five ar
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 323 tests. 35 were added this session (W419–W440), each
+- integration_tests/test_mvp_spine.py — 324 tests. 36 were added this session (W419–W442), each
   broken and watched fail with its ORIGINAL symptom before being trusted.
 - scripts/check_import_integrity.py — CI job; fails when a live module imports a first-party module
   with no file behind it. Baseline scripts/import_integrity_baseline.txt (13 pre-existing, kept by a

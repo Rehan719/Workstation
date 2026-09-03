@@ -63,7 +63,7 @@ const ROUTES = [
 // contracts card, the charity directives, the board charter's invariant, and the marketplace's
 // listings layer.
 const REQUIRED_SECTIONS = {
-  '/economy': ['Service contracts', 'Charity directives'],
+  '/economy': ['Service contracts', 'Charity directives', 'Venture Portfolio', 'Close period', 'Transfer WST between your entities', 'Charity candidates'],
   '/ceo?tab=board': ['cannot instruct the board'],
   '/marketplace': ['Listings'],
   // W437 — the console that finally makes the 10 audited primitives reachable, and the integrity strip

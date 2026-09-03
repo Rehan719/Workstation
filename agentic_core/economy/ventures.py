@@ -12,11 +12,12 @@ until real user-project ingestion is wired. All allocations are virtual/simulate
 from __future__ import annotations
 
 import json
+import math
 import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from agentic_core.config import data_path
+from agentic_core.config import data_path, load_json_tolerant, store_lock
 
 _PORTFOLIO_STORE = data_path("economy_ventures_portfolio.json")
 
@@ -44,16 +45,30 @@ _STAGE_SCORE = {"concept": 0.45, "prototype": 0.62, "build": 0.70, "development"
 _BENEFIT_DOMAINS = ("care", "education", "religion", "law", "charity", "health")
 
 
-def real_candidates(exclude_vsb: str = "", cap: int = 40) -> List[Dict[str, Any]]:
+def real_candidates(exclude_vsb: str = "", cap: int = 40,
+                    user: Dict[str, Any] | None = None) -> List[Dict[str, Any]]:
     """Harvest REAL investment candidates from the platform's own stores — the user's projects and
     the living VSB offspring — with metrics derived DETERMINISTICALLY from observable state (stage,
     operational status, governance completeness, beneficence-weighted domain). No metric is invented:
     each is a documented policy function of live fields; `metrics_source` says so on every candidate."""
     out: List[Dict[str, Any]] = []
     src = "derived deterministically from live stage/status/governance (documented policy weights, not estimates)"
+    # W442 — under auth this list leaked EVERY tenant's project titles and living enterprises to
+    # any caller (contradicting the W320 scoping one endpoint over); scope to what the requesting
+    # user can access. No user (the cycle's internal path) keeps the federation view by design.
+    def _visible(owner_id) -> bool:
+        if user is None:
+            return True
+        try:
+            from agentic_core.auth.core import auth_enabled, user_can_access
+            return (not auth_enabled()) or user_can_access(user, owner_id)
+        except Exception:
+            return False
     try:
         from agentic_core.projects.api import _all_projects
         for p in _all_projects()[:cap]:
+            if not _visible(getattr(p, "owner_id", None) or getattr(p, "owner", None)):
+                continue
             stage = str(getattr(p, "stage", "") or "").lower()
             s = _STAGE_SCORE.get(stage, 0.5)
             domain = str(getattr(p, "domain", "") or getattr(p, "realm", "") or "").lower()
@@ -76,6 +91,8 @@ def real_candidates(exclude_vsb: str = "", cap: int = 40) -> List[Dict[str, Any]
             if vid == exclude_vsb:
                 continue
             ent = _load_vsb(vid) or {}
+            if not _visible(ent.get("owner_id") or rec.get("owner")):
+                continue
             governed = bool(ent.get("board")) and bool(ent.get("economy"))
             cycles = int(rec.get("operating_cycles", 0) or 0)
             domain = str(rec.get("domain", "") or "").lower()
@@ -141,10 +158,10 @@ class VentureIntelligence:
 # ── Portfolio persistence (§6: tracked as portfolio positions; returns recycle into the waterfall) ─────────
 
 def _load_portfolio() -> Dict[str, Any]:
-    try:
-        return json.loads(_PORTFOLIO_STORE.read_text()) if _PORTFOLIO_STORE.exists() else {}
-    except Exception:
-        return {}
+    # W442 — tolerant load: a corrupt file used to read as {} and the next save erased every
+    # holding (the shared-store concurrency class' silent-wipe half).
+    d = load_json_tolerant(_PORTFOLIO_STORE, {}) if _PORTFOLIO_STORE.exists() else {}
+    return d if isinstance(d, dict) else {}
 
 
 def _save_portfolio(d: Dict[str, Any]) -> None:
@@ -156,51 +173,87 @@ def record_return(vsb_id: str, holding_id: str, amount: float, memo: str = "") -
     """§6 'returns recycle into the waterfall': record a virtual RETURN on a real holding. The amount
     is tracked on the holding + queued as a PENDING return that the next metabolic cycle consumes as
     intake revenue — so returns genuinely re-enter the waterfall. Virtual WST only."""
-    amount = round(max(0.0, float(amount)), 2)
+    # W442 — the amount was caller-asserted and UNBOUNDED: inf survived max/round and a
+    # 10^12-WST "return" on a 5-WST holding was accepted — money credited that was never
+    # invested and never earned, entering the next cycle's waterfall (and, before the gate fix,
+    # distributing ungated). Finite, positive, and capped at 10× the holding's invested capital.
+    if not math.isfinite(float(amount)):
+        raise ValueError("Return amount must be a finite number.")
+    amount = round(float(amount), 2)
     if amount <= 0:
         raise ValueError("Return amount must be positive.")
-    d = _load_portfolio()
-    pf = d.get(vsb_id)
-    if not pf or holding_id not in (pf.get("holdings") or {}):
-        raise KeyError(f"No holding '{holding_id}' in {vsb_id}'s venture portfolio.")
-    at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    h = pf["holdings"][holding_id]
-    h["returned_wst"] = round(h.get("returned_wst", 0.0) + amount, 2)
-    h["last_return_at"] = at
-    pf["returns_total"] = round(pf.get("returns_total", 0.0) + amount, 2)
-    pf["pending_returns_wst"] = round(pf.get("pending_returns_wst", 0.0) + amount, 2)
-    pf["updated_at"] = at
-    d[vsb_id] = pf
-    _save_portfolio(d)
+    with store_lock(_PORTFOLIO_STORE):
+        d = _load_portfolio()
+        pf = d.get(vsb_id)
+        if not pf or holding_id not in (pf.get("holdings") or {}):
+            raise KeyError(f"No holding '{holding_id}' in {vsb_id}'s venture portfolio.")
+        h = pf["holdings"][holding_id]
+        invested = round(float(h.get("invested_wst", 0.0) or 0.0), 2)
+        cap = round(10 * invested, 2)
+        # W442 refuter catch: the cap was PER-CALL, so N calls of ≤10× each accumulated without
+        # limit (10 × 500 WST on a 50-WST holding = 100× invested minted). CUMULATIVE now.
+        already_returned = round(float(h.get("returned_wst", 0.0) or 0.0), 2)
+        if invested <= 0 or (already_returned + amount) > cap:
+            raise ValueError(
+                f"Return {amount} WST refused: holding '{holding_id}' has {invested} WST invested "
+                f"and {already_returned} WST already returned — cumulative caller-asserted returns "
+                f"above 10× invested capital (cap {cap} WST) are money from nothing. Nothing "
+                "measures venture returns; the bound is the honesty floor.")
+        at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        h["returned_wst"] = round(h.get("returned_wst", 0.0) + amount, 2)
+        h["last_return_at"] = at
+        pf["returns_total"] = round(pf.get("returns_total", 0.0) + amount, 2)
+        pf["pending_returns_wst"] = round(pf.get("pending_returns_wst", 0.0) + amount, 2)
+        pf["updated_at"] = at
+        d[vsb_id] = pf
+        _save_portfolio(d)
     return {"vsb_id": vsb_id, "holding_id": holding_id, "returned_wst": amount,
             "holding_returned_total_wst": h["returned_wst"],
             "pending_returns_wst": pf["pending_returns_wst"],
+            "amount_source": "caller_asserted (cumulative returns bounded at 10× invested; nothing measures returns)",
             "recycles": "consumed as intake revenue by the next metabolic cycle (virtual WST)",
             "memo": memo}
+
+
+def peek_pending_returns(vsb_id: str) -> float:
+    """W442 — READ-ONLY view of the queued returns, for the §3 materiality estimate (the gate
+    must see what the cycle will consume, or stuffing this queue bypasses Change Control)."""
+    pf = _load_portfolio().get(vsb_id) or {}
+    return round(pf.get("pending_returns_wst", 0.0), 2)
 
 
 def consume_pending_returns(vsb_id: str) -> float:
     """Drain the queued venture returns for a VSB — called by the metabolic cycle at intake so the
     returns enter THIS cycle's waterfall. Returns the consumed amount (0.0 when none pending)."""
-    d = _load_portfolio()
-    pf = d.get(vsb_id)
-    if not pf:
-        return 0.0
-    pending = round(pf.get("pending_returns_wst", 0.0), 2)
-    if pending <= 0:
-        return 0.0
-    pf["pending_returns_wst"] = 0.0
-    pf["recycled_total_wst"] = round(pf.get("recycled_total_wst", 0.0) + pending, 2)
-    d[vsb_id] = pf
-    _save_portfolio(d)
+    with store_lock(_PORTFOLIO_STORE):
+        d = _load_portfolio()
+        pf = d.get(vsb_id)
+        if not pf:
+            return 0.0
+        pending = round(pf.get("pending_returns_wst", 0.0), 2)
+        if pending <= 0:
+            return 0.0
+        pf["pending_returns_wst"] = 0.0
+        pf["recycled_total_wst"] = round(pf.get("recycled_total_wst", 0.0) + pending, 2)
+        d[vsb_id] = pf
+        _save_portfolio(d)
     return pending
 
 
 def record_positions(vsb_id: str, allocation: Dict[str, Any]) -> None:
-    """Track an allocation's positions in the VSB's venture portfolio (virtual; best-effort)."""
+    """Track an allocation's positions in the VSB's venture portfolio (virtual; best-effort).
+
+    W442 refuter catch: this was the THIRD writer on the portfolio store and the only unlocked
+    one — every metabolic cycle calls it, so a heartbeat cycle racing a locked record_return
+    still clobbered the just-written figures. Locking two of three writers serialises nothing."""
     positions = (allocation or {}).get("positions") or []
     if not positions:
         return
+    with store_lock(_PORTFOLIO_STORE):
+        _record_positions_locked(vsb_id, positions)
+
+
+def _record_positions_locked(vsb_id: str, positions) -> None:
     d = _load_portfolio()
     pf = d.get(vsb_id) or {"vsb_id": vsb_id, "currency": "WST", "invested_total": 0.0, "holdings": {}}
     at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -222,12 +275,19 @@ def record_positions(vsb_id: str, allocation: Dict[str, Any]) -> None:
 
 
 def portfolio(vsb_id: str) -> Dict[str, Any]:
+    # W442 refuter catch: pending_returns_wst lived in the store but never in this response, so
+    # the panel's headline badge read 0 forever — the exact invisibility W442 claimed to fix.
     pf = _load_portfolio().get(vsb_id)
     if not pf:
         return {"vsb_id": vsb_id, "currency": "WST", "invested_total": 0.0,
-                "positions_count": 0, "holdings": [], "note": "No venture investments yet (virtual)."}
+                "positions_count": 0, "holdings": [], "pending_returns_wst": 0.0,
+                "returns_total": 0.0, "recycled_total_wst": 0.0,
+                "note": "No venture investments yet (virtual)."}
     holdings = sorted(pf["holdings"].values(), key=lambda h: h["invested_wst"], reverse=True)
     return {"vsb_id": vsb_id, "currency": "WST", "invested_total": pf["invested_total"],
             "positions_count": pf.get("positions_count", len(holdings)), "holdings": holdings,
+            "pending_returns_wst": round(pf.get("pending_returns_wst", 0.0), 2),
+            "returns_total": round(pf.get("returns_total", 0.0), 2),
+            "recycled_total_wst": round(pf.get("recycled_total_wst", 0.0), 2),
             "updated_at": pf.get("updated_at"),
             "note": "Virtual/simulated venture portfolio — no real funds moved."}

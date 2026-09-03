@@ -114,8 +114,11 @@ class CharityIntelligence:
     def _candidates(self) -> List[Dict[str, Any]]:
         # W415 — curated rows and Owner-supplied signal rows were indistinguishable once merged, so
         # a consumer could not tell a hand-typed weight from an ingested one. Tag the origin.
+        # W442 — "owner_signal" asserted Owner provenance for rows an API caller typed; the label
+        # now says what the values actually are.
         pool = ([{**c, "weights_source": "curated"} for c in _CANDIDATES]
-                + [{**s, "weights_source": "owner_signal"} for s in self._live])
+                + [{**s, "weights_source": "owner_signal (ingested; caller-asserted values)"}
+                   for s in self._live])
         pool = [c for c in pool if c["id"] not in self.exclusions]
         if self.require_100pct:
             pool = [c for c in pool if c.get("donation_100pct", False)]
@@ -133,7 +136,11 @@ class CharityIntelligence:
         return round(base, 4)
 
     def ranked(self, top: int = 5) -> List[Dict[str, Any]]:
-        scored = [{**c, "score": self.score(c), "marginal_impact": self._marginal_impact(c)}
+        # W442 — ranked rows shipped the raw donation_100pct flag unlabelled; on the candidates
+        # surface it read as a verified policy check. allocate() already reports it honestly —
+        # now the rows do too.
+        scored = [{**c, "score": self.score(c), "marginal_impact": self._marginal_impact(c),
+                   "donation_100pct_verified": "not_checked"}
                   for c in self._candidates()]
         scored.sort(key=lambda x: x["score"], reverse=True)
         return scored[:top]

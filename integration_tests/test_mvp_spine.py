@@ -8212,3 +8212,135 @@ def test_w440_refuter_pass_findings_stay_fixed(client):
                      json={"content": "A substantive corrected delivery. " * 40}).json()
     assert "length + stub instruments only" in rv["defect"]["reverify_basis"], (
         "the degenerate-instruments basis went undisclosed again")
+
+
+def test_w442_economy_cluster_integrity_holds(client, monkeypatch):
+    # W442 — the economy cluster's money-integrity fixes stay fixed.
+    import uuid as _uuid
+    uid = f"w442-{_uuid.uuid4().hex[:8]}"
+
+    # 1. NaN/inf are refused AT THE MODEL (they used to pass every engine guard: nan <= 0 is
+    #    False, and one NaN posting permanently disabled the insufficient-funds check). The
+    #    TestClient's serializer refuses inf, so the bodies go raw — exactly how an attacker
+    #    would send them (Python's server-side json parser accepts Infinity/NaN by default).
+    _hdr = {"Content-Type": "application/json"}
+    for path, raw in [
+        ("/api/v1/economy/transfer", '{"from_vsb": "%s", "to_vsb": "x", "amount": Infinity}' % uid),
+        ("/api/v1/economy/ventures/return", '{"vsb_id": "%s", "holding_id": "h", "amount": NaN}' % uid),
+        ("/api/v1/economy/cycle", '{"vsb_id": "%s", "revenue": NaN}' % uid),
+        ("/api/v1/economy/owner-payments/payout", '{"vsb_id": "%s", "amount": Infinity}' % uid),
+    ]:
+        assert client.post(path, content=raw, headers=_hdr).status_code == 422, path
+    # belt-and-braces: the engine's own validator refuses non-finite amounts too
+    import math
+    import pytest as _pytest
+    from agentic_core.economy.transfers import validate_transfer
+    with _pytest.raises(ValueError, match="finite"):
+        validate_transfer(uid, "someone-else", float("nan"))
+
+    # 2. a caller-asserted venture "return" is bounded by invested capital (inf/10^12 on a tiny
+    #    holding used to mint WST from nothing into the next cycle's waterfall)
+    from agentic_core.economy.ventures import record_positions, record_return
+    record_positions(uid, {"positions": [{"id": "h1", "name": "T", "domain": "care",
+                                          "score": 0.5, "amount_wst": 50.0}]})
+    r = client.post("/api/v1/economy/ventures/return",
+                    json={"vsb_id": uid, "holding_id": "h1", "amount": 100000})
+    assert r.status_code == 400 and "money" in r.json()["detail"].lower()
+    ok = client.post("/api/v1/economy/ventures/return",
+                     json={"vsb_id": uid, "holding_id": "h1", "amount": 200}).json()
+    assert "caller_asserted" in ok["amount_source"] and ok["ueg_logged"] in (True, False)
+
+    # 3. the §3 materiality gate now SEES the recycle queues (stuffing them used to bypass
+    #    Change Control: gate saw revenue=0 while run_cycle consumed the queued heap ungated)
+    from agentic_core.economy import governance as gv
+    monkeypatch.setattr(gv, "MATERIALITY_WST", 100.0)
+    res = client.post("/api/v1/economy/cycle", json={"vsb_id": uid, "revenue": 0}).json()
+    assert res["cycle"] is None, "queued 200 WST distributed ungated despite materiality 100"
+    assert res["governance"]["status"] == "held_for_change_control"
+
+    # 4. hold identity carries the ACTION KIND — a cycle approval can no longer release a transfer
+    from agentic_core.api import change_control as cca
+    h_t = gv._materiality_gate(uid, 500.0, source="transfer")
+    h_c = gv._materiality_gate(uid, 500.0, source="api")
+    t_title = (cca._load_change(h_t["cca_id"]) or {}).get("title", "")
+    c_title = (cca._load_change(h_c["cca_id"]) or {}).get("title", "")
+    assert "material transfer" in t_title and "material distribution" in c_title
+
+    # 5. a BLOCKED constitutional verdict means NOTHING ran (it used to fall into the
+    #    missing-output fallback and run the cycle anyway — "blocked" beside moved money)
+    import asyncio
+    import agentic_core.gaas.v5 as _g5
+
+    class _BlockedRes:
+        status, output, checkpoint_id = "blocked", None, "chk-w442"
+
+    class _FakeGov:
+        def __init__(self, *a, **k): pass
+        async def intercept(self, ctx, action): return _BlockedRes()
+
+    monkeypatch.setattr(_g5, "UnifiedConstitutionalInterceptorV16Omega", _FakeGov)
+    out = asyncio.run(gv.governed_cycle(f"{uid}-b", "waqf_ltd_hybrid", "Rehan", 100.0))
+    assert out["cycle"] is None and out["governance"]["status"] == "blocked"
+
+    # 6. /status resolves attribution from the stores instead of echoing the caller's claim
+    st = client.get(f"/api/v1/economy/status?vsb_id={uid}&entity_type=charity").json()
+    assert st["attribution"]["entity_type_source"] in ("caller_claimed", "living_registry", "vsb_store")
+    # 7. /close-period reports whether the tamper-evident event actually landed + its basis
+    cl = client.post("/api/v1/economy/close-period", json={"vsb_id": uid}).json()
+    assert isinstance(cl["ueg_logged"], bool) and cl["entity_type_source"]
+
+    # 8. charity signals: junk values are rejected AND REPORTED, never a 500; ingested rows are
+    #    labelled caller-asserted, and the candidates disclaimer is COMPUTED from the pool
+    monkeypatch.setenv("CHARITY_LIVE_SIGNALS_ENABLED", "true")
+    sig = client.post("/api/v1/economy/charity/signals", json={"signals": [
+        {"id": f"sig-{uid}", "cause": "Test relief", "urgency": 0.9, "gravity": 0.8,
+         "reach": 0.7, "trust": 0.9, "donation_100pct": True},
+        {"id": "junk", "cause": "Bad row", "urgency": "high"},
+    ]})
+    assert sig.status_code == 200
+    body = sig.json()
+    assert body["ingested"] == 1 and body["rejected"] and body["rejected"][0]["id"] == "junk"
+    cand = client.get("/api/v1/economy/charity/candidates?top=20").json()
+    mine = next(c for c in cand["candidates"] if c["id"] == f"sig-{uid}")
+    assert "caller-asserted" in mine["weights_source"]
+    assert mine["donation_100pct_verified"] == "not_checked"
+    assert cand["pool"]["ingested_signals"] >= 1 and "signal" in cand["disclaimer"].lower()
+
+    # 9. the money store survives concurrent writers (it had NO lock: last-writer-wins lost
+    #    postings — the documented shared-store concurrency class, on the LEDGER itself)
+    import threading
+    from agentic_core.economy.ledger import VirtualLedger
+    def _post():
+        VirtualLedger(f"{uid}-conc").record("revenue", 10.0, memo="conc")
+    threads = [threading.Thread(target=_post) for _ in range(8)]
+    for t in threads: t.start()
+    for t in threads: t.join()
+    led = VirtualLedger(f"{uid}-conc")
+    assert len(led._data["entries"]) == 8, f"lost {8 - len(led._data['entries'])} of 8 concurrent postings"
+    assert led.trial_balance()["balanced"]
+
+    # ── refuter-round catches stay fixed ──────────────────────────────────────
+    # 10. the 10× bound is CUMULATIVE (per-call caps were defeated by repetition: N calls of
+    #     ≤10× each minted without limit). invested 50 → cap 500; 200 already returned above.
+    ok2 = client.post("/api/v1/economy/ventures/return",
+                      json={"vsb_id": uid, "holding_id": "h1", "amount": 200})
+    assert ok2.status_code == 200          # cumulative 400 ≤ 500
+    over = client.post("/api/v1/economy/ventures/return",
+                       json={"vsb_id": uid, "holding_id": "h1", "amount": 200})
+    assert over.status_code == 400 and "cumulative" in over.json()["detail"].lower()
+    # 11. the portfolio RESPONSE carries the pending/returns figures (they lived only in the
+    #     store, so the panel's headline badge read 0 forever — the invisibility re-created)
+    pf = client.get(f"/api/v1/economy/ventures/portfolio?vsb_id={uid}").json()
+    assert pf["pending_returns_wst"] >= 200 and pf["returns_total"] >= 400
+    # 12. board-pack resolves attribution instead of echoing the caller's claim
+    bp = client.get(f"/api/v1/economy/board-pack?vsb_id={uid}&entity_type=charity").json()
+    assert bp["attribution"]["entity_type_source"] in ("caller_claimed", "living_registry", "vsb_store")
+    # 13. candidates expose the UNFILTERED id universe (validating typed exclusions against the
+    #     exclusion-filtered pool false-alarmed on every correct exclusion)
+    assert f"sig-{uid}" in client.get("/api/v1/economy/charity/candidates").json()["all_cause_ids"]
+
+    # cleanup (refuter catch: the ingested signal row otherwise accumulates in the persistent
+    # shared test store on every run until it pushes itself out of top-20 and self-fails)
+    from agentic_core.config import atomic_write_json as _awj
+    from agentic_core.economy.charity import _SIGNALS_STORE, approved_signals as _sigs
+    _awj(_SIGNALS_STORE, [s for s in _sigs() if s["id"] != f"sig-{uid}"])

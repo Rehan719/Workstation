@@ -76,6 +76,49 @@ def _estimate_distributable(revenue: float, costs: float, reserve_rate: float) -
     return round(max(0.0, float(revenue) - reserves), 2)
 
 
+def _pending_intake(vsb_id: str) -> float:
+    """W442 — the §3 gate estimated from the REQUEST's revenue only, while run_cycle adds pending
+    venture returns AND inter-VSB receipts AFTER the gate: queueing 1M WST via /ventures/return
+    then cycling with revenue=0 distributed the whole 1M ungated. The gate now sees (read-only)
+    everything the cycle will actually consume."""
+    total = 0.0
+    try:
+        from agentic_core.economy.ventures import peek_pending_returns
+        total += peek_pending_returns(vsb_id)
+    except Exception:
+        pass
+    try:
+        from agentic_core.economy.transfers import peek_pending_transfers
+        total += peek_pending_transfers(vsb_id)
+    except Exception:
+        pass
+    return round(total, 2)
+
+
+def _restore_consumed_approval(vsb_id: str, source: str, reason: str) -> None:
+    """W442 refuter catch: _materiality_gate consumes the Owner's approval at gate time, BEFORE
+    the constitutional gate or the action runs. When the action then never runs (gate blocked, or
+    the atomic funds re-check refused a raced transfer), the CCA record asserted an approval was
+    consumed by an action that never happened — and the Owner had to re-file for the action they
+    already approved. Restore it, audibly (audit trail + UEG)."""
+    try:
+        from agentic_core.api import change_control as cca
+        title = (("[economy] material transfer — " + vsb_id) if source == "transfer"
+                 else _HOLD_TITLE_PREFIX + vsb_id)
+        cands = [c for c in (cca._load_change(x["cca_id"]) or {} for x in cca._list_changes())
+                 if c and c.get("title") == title and c.get("status") == "implemented"]
+        latest = max(cands, key=lambda c: c.get("implemented_at", ""), default=None)
+        if latest:
+            latest["status"] = "approved"
+            latest.setdefault("audit_trail", []).append(
+                {"event": "approval_restored_action_never_ran", "ts": _now(), "reason": reason[:200]})
+            cca._save_change(latest)
+            _ueg_log({"type": "economy.materiality_approval_restored", "vsb_id": vsb_id,
+                      "cca_id": latest["cca_id"], "reason": reason[:200]})
+    except Exception:
+        pass
+
+
 def _materiality_gate(vsb_id: str, est_distributable: float, source: str) -> Optional[Dict[str, Any]]:
     """§3 'material actions route to Change Control'. Returns None → proceed; a dict → the cycle is
     HELD (or was rejected) and must NOT run. An approved hold is consumed (marked implemented)."""
@@ -83,7 +126,12 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str) -> Opt
         return None
     try:
         from agentic_core.api import change_control as cca
-        title = _HOLD_TITLE_PREFIX + vsb_id
+        # W442 — the hold was keyed by ONE title for both kinds of material action, so an Owner
+        # approval granted for a material CYCLE was consumed by the next material TRANSFER (and
+        # vice versa): consent for distributing profit internally released an outbound drain of
+        # the reserve. The action kind is now part of the hold's identity.
+        title = (("[economy] material transfer — " + vsb_id) if source == "transfer"
+                 else _HOLD_TITLE_PREFIX + vsb_id)
         holds = [c for c in (cca._load_change(x["cca_id"]) or {} for x in cca._list_changes())
                  if c and c.get("title") == title]
         # W344/W345 CI-hardening — an Owner APPROVAL must never be shadowed by sibling hold
@@ -176,24 +224,50 @@ async def governed_cycle(vsb_id: str, entity_type: str, owner: str, revenue: flo
     from agentic_core.economy.metabolism import EconomicMetabolism
     metab = EconomicMetabolism(vsb_id, entity_type, owner)
 
-    held = _materiality_gate(vsb_id, _estimate_distributable(revenue, costs, reserve_rate), source)
+    held = _materiality_gate(vsb_id, _estimate_distributable(
+        revenue + _pending_intake(vsb_id), costs, reserve_rate), source)
     if held is not None:
         return {"cycle": None, "governance": held}
 
+    # W442 refuter catch: the except-fallback below used to call run_cycle AGAIN — if the
+    # interceptor raised AFTER the action executed (its post-validation/checkpoint steps can),
+    # one request posted the whole distribution twice. The action records its own execution so
+    # no fallback path can ever re-run it.
+    executed = {"done": False, "report": None}
+
     async def _action():
-        return metab.run_cycle(revenue, costs, reserve_rate)
+        executed["report"] = metab.run_cycle(revenue, costs, reserve_rate)
+        executed["done"] = True
+        return executed["report"]
 
     try:
         from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
         gov = UnifiedConstitutionalInterceptorV16Omega("economy-node", UEGLogger())
         result = await gov.intercept({"intent": "economy_distribution", "vsb_id": vsb_id,
                                       "revenue_wst": revenue, "source": source}, _action)
-        report = result.output if getattr(result, "output", None) else metab.run_cycle(revenue, costs, reserve_rate)
+        # W442 — a BLOCKED/HALTED verdict used to fall into the missing-output fallback and run
+        # the cycle anyway: the response said "blocked" while the money moved. The sibling
+        # /transfer handled the same verdict correctly ("never fabricate a transfer") — now the
+        # cycle does too: blocked means NOTHING ran, NOTHING posted.
+        if str(getattr(result, "status", "")).lower() in ("blocked", "halted"):
+            _ueg_log({"type": "economy.cycle_blocked", "vsb_id": vsb_id, "source": source,
+                      "gate": "gaas.v5", "status": result.status})
+            # W442 refuter catch: the materiality gate consumed the Owner's approval BEFORE this
+            # gate ran — a block means nothing ran, so the approval must not stay spent.
+            _restore_consumed_approval(vsb_id, source, f"gaas gate {result.status} — nothing ran")
+            return {"cycle": None,
+                    "governance": {"status": result.status, "checkpoint": result.checkpoint_id,
+                                   "note": "the constitutional gate blocked this distribution — "
+                                           "nothing ran, nothing was posted"}}
+        report = (result.output if getattr(result, "output", None)
+                  else (executed["report"] if executed["done"]
+                        else metab.run_cycle(revenue, costs, reserve_rate)))
         governance: Dict[str, Any] = {"status": result.status, "checkpoint": result.checkpoint_id}
     except Exception as e:
         # §3 demands the gate; if the gate itself fails we do NOT hide it — run the (virtual) cycle
-        # but emit a LOUD tamper-evident bypass event and say so in the response.
-        report = metab.run_cycle(revenue, costs, reserve_rate)
+        # but emit a LOUD tamper-evident bypass event and say so in the response. NEVER a re-run:
+        # if the action already executed inside the failed intercept, its report is reused.
+        report = executed["report"] if executed["done"] else metab.run_cycle(revenue, costs, reserve_rate)
         _ueg_log({"type": "economy.governance_bypass", "vsb_id": vsb_id, "source": source,
                   "error": str(e)[:200], "note": "gaas.v5 gate unavailable — cycle ran ungated (logged loudly)."})
         governance = {"status": "ungated_bypass_logged", "error": str(e)[:160]}
@@ -211,7 +285,8 @@ def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: floa
     from agentic_core.economy.metabolism import EconomicMetabolism
     metab = EconomicMetabolism(vsb_id, entity_type, owner)
 
-    held = _materiality_gate(vsb_id, _estimate_distributable(revenue, costs, reserve_rate), source)
+    held = _materiality_gate(vsb_id, _estimate_distributable(
+        revenue + _pending_intake(vsb_id), costs, reserve_rate), source)
     if held is not None:
         return {"cycle": None, "governance": held}
 

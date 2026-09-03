@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import json
 import time
+from contextlib import contextmanager
 from pathlib import Path
-from agentic_core.config import atomic_write_json, data_path
+from agentic_core.config import atomic_write_json, data_path, load_json_tolerant, store_lock
 from typing import Any, Dict, List
 
 _STORE = data_path("economy")
@@ -56,11 +57,11 @@ class VirtualLedger:
         self._data = self._load()
 
     def _load(self) -> Dict[str, Any]:
-        if self.path.exists():
-            try:
-                return json.loads(self.path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                pass
+        # W442 — the tolerant loader (quarantine, never silent-wipe): a half-written file used to
+        # reset the BOOKS to empty and the next save made the wipe permanent.
+        data = load_json_tolerant(self.path, None) if self.path.exists() else None
+        if isinstance(data, dict):
+            return data
         return {"vsb_id": self.vsb_id, "currency": "WST", "entries": [],
                 "balances": {a: 0.0 for a in ACCOUNTS},
                 "postings": [], "accounts": {}, "closes": []}
@@ -68,11 +69,30 @@ class VirtualLedger:
     def _save(self) -> None:
         atomic_write_json(self.path, self._data)
 
+    @contextmanager
+    def _locked(self):
+        """W442 — the money store had NO lock: /transfer, /close-period and heartbeat cycles all
+        construct independent instances on the same file, and last-writer-wins silently lost
+        postings (the shared-store concurrency class). Every mutation now re-loads INSIDE the
+        cross-process lock — the __init__ snapshot is never trusted for a write."""
+        with store_lock(self.path):
+            self._data = self._load()
+            yield
+            self._save()
+
     # ── double-entry core ─────────────────────────────────────────────────────
     def post(self, debit: str, credit: str, amount: float, memo: str = "",
              save: bool = True) -> Dict[str, Any]:
         """One BALANCED posting (VSB_ECONOMIC_LEGAL_MODEL §3): every movement debits one account and
-        credits another for the same amount, so the books always balance (trial_balance)."""
+        credits another for the same amount, so the books always balance (trial_balance).
+        save=True runs under the store lock; save=False assumes the CALLER holds the lock
+        (record/close_period batch postings inside one locked mutation)."""
+        if save:
+            with self._locked():
+                return self._apply_posting(debit, credit, amount, memo)
+        return self._apply_posting(debit, credit, amount, memo)
+
+    def _apply_posting(self, debit: str, credit: str, amount: float, memo: str = "") -> Dict[str, Any]:
         amount = round(float(amount), 2)
         accts = self._data.setdefault("accounts", {})
         for name, side in ((debit, "debit"), (credit, "credit")):
@@ -85,30 +105,28 @@ class VirtualLedger:
             "debit": debit, "credit": credit, "amount": amount, "memo": memo,
         }
         self._data.setdefault("postings", []).append(posting)
-        if save:
-            self._save()
         return posting
 
     def record(self, account: str, amount: float, memo: str = "", kind: str = "credit") -> Dict[str, Any]:
         """Record an entry (LEGACY single-sided surface — kept intact for existing readers). Also
         makes the corresponding BALANCED double-entry posting, so the real books stay double-entry
         while the legacy balances/statement remain byte-compatible."""
-        if account not in self._data["balances"]:
-            self._data["balances"][account] = 0.0
-        delta = amount if kind == "credit" else -amount
-        self._data["balances"][account] = round(self._data["balances"][account] + delta, 2)
-        entry = {
-            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "account": account, "kind": kind, "amount": round(amount, 2),
-            "memo": memo, "balance_after": self._data["balances"][account],
-        }
-        self._data["entries"].append(entry)
-        # the balanced posting this legacy entry really means
-        dr, cr = _COMPAT_POSTING.get(account) or (
-            (account, "cash") if kind == "debit" else ("cash", account))
-        self.post(dr, cr, amount, memo=memo or f"legacy:{account}", save=False)
-        self._save()
-        return entry
+        with self._locked():
+            if account not in self._data["balances"]:
+                self._data["balances"][account] = 0.0
+            delta = amount if kind == "credit" else -amount
+            self._data["balances"][account] = round(self._data["balances"][account] + delta, 2)
+            entry = {
+                "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "account": account, "kind": kind, "amount": round(amount, 2),
+                "memo": memo, "balance_after": self._data["balances"][account],
+            }
+            self._data["entries"].append(entry)
+            # the balanced posting this legacy entry really means
+            dr, cr = _COMPAT_POSTING.get(account) or (
+                (account, "cash") if kind == "debit" else ("cash", account))
+            self.post(dr, cr, amount, memo=memo or f"legacy:{account}", save=False)
+            return entry
 
     def trial_balance(self) -> Dict[str, Any]:
         """The double-entry invariant, GENUINELY verified: the sum of debit-normal account balances
@@ -188,25 +206,25 @@ class VirtualLedger:
         """PERIOD CLOSE (§9.1): produce the statements, then post the closing entries — income and
         expense balances roll into retained_earnings — so the next period starts clean. Append-only:
         the close itself is recorded as real postings + a close marker."""
-        stmts = self.statements()
-        accts = self._data.get("accounts", {})
-        for name, atype in CHART.items():
-            bal = round(accts.get(name, 0.0), 2)
-            if abs(bal) < 0.005:
-                continue
-            if atype == "income":
-                self.post(name, "retained_earnings", bal, memo="period close — income → retained earnings",
-                          save=False)
-            elif atype == "expense":
-                self.post("retained_earnings", name, bal, memo="period close — expenses → retained earnings",
-                          save=False)
-        close = {
-            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "posting_index": len(self._data.get("postings", [])),
-            "net_profit_wst": stmts["profit_and_loss"]["net_profit_wst"],
-        }
-        self._data.setdefault("closes", []).append(close)
-        self._save()
+        with self._locked():
+            stmts = self.statements()
+            accts = self._data.get("accounts", {})
+            for name, atype in CHART.items():
+                bal = round(accts.get(name, 0.0), 2)
+                if abs(bal) < 0.005:
+                    continue
+                if atype == "income":
+                    self.post(name, "retained_earnings", bal, memo="period close — income → retained earnings",
+                              save=False)
+                elif atype == "expense":
+                    self.post("retained_earnings", name, bal, memo="period close — expenses → retained earnings",
+                              save=False)
+            close = {
+                "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "posting_index": len(self._data.get("postings", [])),
+                "net_profit_wst": stmts["profit_and_loss"]["net_profit_wst"],
+            }
+            self._data.setdefault("closes", []).append(close)
         return {"close": close, "statements": stmts,
                 "retained_earnings_wst": round(self._data.get("accounts", {}).get("retained_earnings", 0.0), 2)}
 
@@ -216,6 +234,13 @@ class VirtualLedger:
             "vsb_id": self.vsb_id,
             "currency": "WST (virtual)",
             "balances": bal,
+            # W442 — TWO BOOKS, disclosed: 'balances' is the legacy cumulative intake/distribution
+            # view (record()-driven flows only) — transfers out and period closes never touch it,
+            # so after a transfer it still shows the pre-transfer reserves. The live double-entry
+            # balance is reported beside it so no reader mistakes the cumulative view for funds.
+            "reserve_fund_wst": round((self._data.get("accounts") or {}).get("reserve_fund", 0.0), 2),
+            "balances_note": ("'balances' is the cumulative legacy view (excludes transfers/closes); "
+                              "'reserve_fund_wst' is the live double-entry reserve balance."),
             "total_revenue": round(bal.get("revenue", 0.0), 2),
             "total_distributed": round(sum(bal.get(a, 0.0) for a in
                                        ("owner", "self_investment", "capital_fund",

@@ -3778,3 +3778,74 @@ fixed), and the app_mvp comment cited this progress entry before it existed (now
 
 **Reach after retirement:** 455 ops (−10), 299 reached, 92 genuine unreached in 40 clusters
 (148 → 92 across W438–W441: 46 wired, 10 retired). Next: economy 8.
+
+### W442 — the economy cluster: the money store had no lock, NaN disabled funds conservation, and Change Control was bypassable through the recycle queues
+
+**The audit (2 agents, 24 findings) found the §4.5 class at its most consequential — on the
+virtual money paths.** The VirtualLedger — the money store itself — had NO store_lock: /transfer,
+/close-period and the heartbeat's cycles all constructed independent instances on the same file,
+and last-writer-wins silently lost postings (the documented shared-store class, on the books).
+One NaN transfer passed every guard (`nan <= 0` and `reserve < nan` are both False), set the
+sender's reserve_fund to NaN, and permanently disabled the insufficient-funds check. A
+caller-asserted venture "return" was unbounded — inf survived `max/round`, and a 10^12-WST
+return on a 5-WST holding entered the next cycle as intake revenue. The §3 materiality gate
+estimated from the REQUEST's revenue while run_cycle added the pending venture returns and
+inter-VSB receipts AFTER the gate — queue 1M WST, cycle with revenue=0, distribute the lot
+ungated. And `governed_cycle` ran the distribution EVEN WHEN THE CONSTITUTIONAL GATE SAID
+BLOCKED (`result.output or run_cycle()` — the blocked verdict fell into the missing-output
+fallback), while the sibling /transfer handled the same verdict correctly. Also: the Change
+Control hold was keyed by one title for both action kinds, so an approval granted for a material
+CYCLE was consumed by the next material TRANSFER; /status reported owner "Rehan" for every
+tenant with a caller-claimed entity type (W295/W313 re-committed); statement() read the legacy
+single-sided `balances` that transfers/closes never touch (two books, one store — /status showed
+funds already sent away, now disclosed with the live double-entry figure beside it); the whole
+charity sub-surface had no auth dependency (any caller could rewrite the Owner's priorities or,
+gate open, fabricate "owner_signal" rows steering every tenant's charity stage);
+/ventures/candidates leaked every tenant's project titles cross-tenant.
+
+**All fixed**: store_lock + reload-inside-the-lock on every money mutation (ledger `_locked`,
+transfers, ventures, signals merge); `math.isfinite` at the engines + `Field(gt=0,
+allow_inf_nan=False)` at the models; returns bounded; `_pending_intake` in the materiality
+estimate (both paths); blocked → `{cycle: None}`; hold identity carries the action kind;
+idempotent transfer_id through the gaas fallback; attribution resolved from the stores on
+/status, /close-period; charity POSTs platform-scoped with per-row validation (junk was a 500,
+now rejected-and-reported), ingested rows stamped + labelled caller-asserted; candidates
+disclaimer computed from the pool; `ueg_logged` honesty fields where docstrings claimed
+"tamper-evident" over a swallowed try/except. Orphaned fabricated financials
+(src/data/fallbackData.json — 482,950 WST revenue, invented burn rate) deleted.
+
+**The wiring (5 of 8 ops; 2 reasoned no-wires recorded):** VSBEconomy gained the §6 Venture
+Portfolio panel — every holding with invested AND returned figures, pending-returns queue
+visible, per-holding "record return" (the recycle half of the loop was API-only; the Owner could
+never record an exit), plus the ranked investment candidates the next cycle selects from (demo
+set disclosed); the CFO period close button + the three statements (P&L · balance sheet · cash
+flow) on the Board Pack card ("books closed, next period starts clean" now exists); the
+federation Transfer form with the held/blocked/rejected branches rendered distinctly. Charity
+directives now show the ranked candidate pool they act on (weights_source badges, typo warning
+for ids, live-signals gate state). NOT wired, deliberately: /status (fully shadowed by
+board-pack + /ledger — wiring it would duplicate two live panels; its claim-echo fixed instead)
+and /charity/signals (a FORM would have a human hand-type 0..1 weights that then read as
+ingested Owner-provenance data — the seam stays machine-only, its gate state surfaced
+read-only).
+
+**Refuter round (2 agents, 14 findings — the sixth consecutive round of real catches):** the
+THIRD portfolio writer (record_positions, called by every cycle) was still unlocked — locking
+two of three writers serialises nothing; the 10× return bound was PER-CALL (N calls of ≤10×
+each minted without limit — now cumulative, proven by watching the third 200-WST return leak
+through); portfolio() never returned pending_returns_wst so the panel's headline badge read 0
+forever — re-creating the exact invisibility the panel claimed to fix; the cycle's gaas
+fallback could re-run an already-executed distribution (the very double-post class W442 fixed
+on /transfer — the action now records its own execution and no path re-runs it); a transfer
+replay could eat the receiver's credit (repairs the missing leg now, disclosed); board-pack
+still echoed caller claims (fixed like /status); a consumed approval stayed spent when the gate
+then blocked (restored, audibly); my unmatched-id warning false-alarmed on every CORRECT
+exclusion (the pool is exclusion-filtered — ids validate against the unfiltered universe now);
+the new panel had the documented HTTP-status-blindness (a tenant-scoped 404 rendered as "no
+holdings"); a gaas BLOCK rendered as "Held for Change Control — Owner approval required" (both
+claims false); and the guard test leaked a signal row into the persistent test store every run
+until it would have pushed itself out of top-20 and self-failed.
+
+**Guards:** `test_w442_economy_cluster_integrity_holds` (13 assertions incl. an 8-thread
+concurrency burst on the ledger) — broken twice and watched fail with the original symptoms
+(blocked verdict ran the cycle; per-call cap leaked the third return). Probe 9/9 through the UI
+(incl. the CFO close pressed and the books actually closing); smoke 16 deep + 57 swept.

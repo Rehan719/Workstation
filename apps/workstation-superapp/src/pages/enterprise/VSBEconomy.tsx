@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { ServiceContracts } from './ServiceContracts';
 import { CharityDirectives } from './CharityDirectives';
+import { VenturePortfolioPanel, TransferPanel } from './EconomyOperations';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,28 @@ export const VSBEconomy: React.FC = () => {
       loadBoardPack();  // refresh the live financial Board Pack
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setRunning(false);
+  };
+
+  // W442 — §9.1 period close existed server-side with no surface: cumulative P&L figures grew
+  // forever with no "books closed" moment, and the CFO's three statements shipped in the board
+  // pack but rendered nowhere.
+  const [closing, setClosing] = useState(false);
+  const [closeMsg, setCloseMsg] = useState('');
+  const [closeErr, setCloseErr] = useState('');
+  const doClosePeriod = async () => {
+    setClosing(true); setCloseMsg(''); setCloseErr('');
+    try {
+      const r = await fetch('/api/v1/economy/close-period', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vsb_id: vsbId }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setCloseErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setClosing(false); return; }
+      setCloseMsg(`Books closed — net profit ${(d.close?.net_profit_wst ?? 0).toLocaleString()} WST → retained earnings ${(d.retained_earnings_wst ?? 0).toLocaleString()} WST. `
+        + `Next period starts clean.${d.ueg_logged ? ' UEG-logged.' : ' (UEG event did NOT land — logging was unavailable.)'}`);
+      loadBoardPack();
+    } catch (e: any) { setCloseErr(e?.message ?? String(e)); }
+    setClosing(false);
   };
 
   const doPayout = async () => {
@@ -326,9 +349,16 @@ export const VSBEconomy: React.FC = () => {
       {/* Governance hold — a material distribution awaiting Owner approval (rendered FIRST:
           this is the branch the Owner must see, not a silent no-op). */}
       {hold && (
-        <Card className="p-6 border-amber-500/40">
-          <p className="text-[10px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-2">
-            <ShieldCheck size={14} /> Held for Change Control — Owner approval required
+        <Card className={`p-6 ${['blocked', 'halted'].includes(hold.status || '') ? 'border-vital/40' : 'border-amber-500/40'}`}>
+          {/* W442 refuter catch: every non-null hold rendered "Held for Change Control — Owner
+              approval required", including a constitutional-gate BLOCK (no CCA request exists,
+              approval releases nothing) and a Change Control REJECTION (the note contradicted
+              the header). The three verdicts now say what they mean. */}
+          <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${['blocked', 'halted'].includes(hold.status || '') ? 'text-vital' : 'text-amber-400'}`}>
+            <ShieldCheck size={14} /> {['blocked', 'halted'].includes(hold.status || '')
+              ? `Blocked by the constitutional gate (${hold.status}) — nothing ran, nothing posted`
+              : hold.status === 'rejected_by_change_control' ? 'Rejected by Change Control — submit a fresh request'
+              : 'Held for Change Control — Owner approval required'}
           </p>
           <p className="text-xs text-slate-400 mt-2 leading-relaxed">{hold.note || 'This distribution is material and awaits Change Control approval before any WST moves.'}</p>
           {hold.cca_id && (
@@ -441,10 +471,50 @@ export const VSBEconomy: React.FC = () => {
               <p className="text-[9px] text-slate-500 mt-0.5">ATP {bp.organism_posture?.atp_ratio != null ? `${Math.round(bp.organism_posture.atp_ratio * 100)}%` : '—'} · health {bp.organism_posture?.composite_health != null ? `${Math.round(bp.organism_posture.composite_health * 100)}%` : '—'}</p>
             </div>
           </div>
+          {/* W442 — §9.1: the CFO's current-period statements (real double-entry postings) + the
+              period-close act itself, previously API-only. */}
+          {bp.statements && (
+            <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3 mt-3">
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">P&L · this period</p>
+                <p className="text-sm font-black text-white">{(bp.statements.profit_and_loss?.net_profit_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">net</span></p>
+                <p className="text-[9px] text-slate-500 mt-0.5">income {(bp.statements.profit_and_loss?.total_income_wst ?? 0).toLocaleString()} · expenses {(bp.statements.profit_and_loss?.total_expenses_wst ?? 0).toLocaleString()}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Balance sheet</p>
+                <p className="text-sm font-black text-white">{(bp.statements.balance_sheet?.assets_total_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">assets</span></p>
+                <p className={`text-[9px] mt-0.5 ${bp.statements.balance_sheet?.balanced ? 'text-emerald-400' : 'text-vital'}`}>{bp.statements.balance_sheet?.balanced ? 'balanced' : 'NOT balanced'} · {bp.statements.trial_balance?.postings ?? 0} postings</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Cash flow · this period</p>
+                <p className="text-sm font-black text-white">{(bp.statements.cash_flow?.net_cash_movement_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">net</span></p>
+                <p className="text-[9px] text-slate-500 mt-0.5">period {bp.statements.period?.opened_after_close ?? 0} · {bp.statements.period?.postings ?? 0} postings</p>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-3 flex-wrap mt-4">
+            <Button onClick={doClosePeriod} disabled={closing} className="flex items-center gap-2 bg-slate-800 text-white text-xs">
+              {closing ? <Loader2 size={14} className="animate-spin" /> : <PiggyBank size={14} />}
+              {closing ? 'Closing…' : 'Close period (CFO)'}
+            </Button>
+            <span className="text-[9px] text-slate-600">rolls this period's income/expenses into retained earnings — the next period starts clean (virtual)</span>
+          </div>
+          {closeMsg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {closeMsg}</p>}
+          {closeErr && <p className="text-vital text-[10px] font-bold mt-2 flex items-center gap-1.5"><AlertCircle size={12} /> {closeErr}</p>}
           <p className="text-[9px] font-mono text-slate-600 mt-3 flex items-center gap-2"><ShieldCheck size={11} className="text-emerald-400" /> {bp.governance}</p>
           <p className="text-[9px] text-amber-400/80 italic mt-1">{bp.disclaimer}</p>
         </Card>
       )}
+
+      {/* W442 — §6: the venture portfolio + the return half of the recycle loop (previously the
+          board pack truncated to 3 invested-only names and no surface could record a return). */}
+      <VenturePortfolioPanel vsbId={vsbId} />
+
+      {/* W442 — the governed federation transfer primitive, Owner-initiated (previously reachable
+          only via contract settlement). Rendered always: the honest empty state names the
+          precondition (a registered living receiver). */}
+      <TransferPanel fromVsb={vsbId} entities={(living?.living_vsbs ?? []).map((v: any) => ({ vsb_id: v.vsb_id, name: v.name }))}
+        onDone={() => { loadBoardPack(); }} />
 
       {/* §4 — living enterprises the organism autonomously tends (continually operated on the heartbeat) */}
       {living && (living.living_vsbs?.length ?? 0) > 0 && (

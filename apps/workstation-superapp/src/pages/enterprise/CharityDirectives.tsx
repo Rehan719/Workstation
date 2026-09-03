@@ -26,6 +26,15 @@ interface Directives {
   require_100pct: boolean;
   source?: string;
   updated_at?: string | null;
+  live_signals?: { enabled: boolean; approved_signal_count: number; note: string };
+}
+
+// W442 — the ranked pool the directives act on was invisible at exactly the surface that edits
+// it: a typo'd id ('orphans') saved successfully and silently matched nothing, leaving a cause
+// fundable while the UI implied it was excluded.
+interface Candidate {
+  id: string; cause: string; score: number; weights_source?: string;
+  donation_100pct_verified?: string;
 }
 
 const toList = (s: string) =>
@@ -47,12 +56,28 @@ export const CharityDirectives: React.FC = () => {
     setRequire100(d.require_100pct !== false);
   };
 
+  const [pool, setPool] = useState<Candidate[]>([]);
+  const [allIds, setAllIds] = useState<string[]>([]);
+  const [poolErr, setPoolErr] = useState('');
+
   const load = () =>
     apiJson<Directives>('/api/v1/economy/charity/directives')
       .then(d => { apply(d); setError(''); })
       .catch(e => setError(errorMessage(e)));
+  const loadPool = () =>
+    apiJson<{ candidates: Candidate[]; all_cause_ids?: string[] }>('/api/v1/economy/charity/candidates?top=12')
+      .then(d => { setPool(d.candidates || []); setAllIds(d.all_cause_ids || []); setPoolErr(''); })
+      .catch(e => setPoolErr(errorMessage(e)));
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); loadPool(); }, []);
+
+  // W442 refuter catch: validating against the RANKED pool false-alarmed on every CORRECT
+  // exclusion (the pool is exclusion-filtered, so a working exclusion never appears in it).
+  // Typed ids validate against the unfiltered id universe the backend reports.
+  const knownIds = new Set(allIds);
+  const unmatched = allIds.length > 0
+    ? [...toList(priorities), ...toList(exclusions)].filter(id => !knownIds.has(id))
+    : [];
 
   const save = async () => {
     setSaving(true); setError(''); setNotice('');
@@ -66,6 +91,7 @@ export const CharityDirectives: React.FC = () => {
         },
       });
       apply(res);
+      loadPool();   // the pool re-ranks under the new directives — show the round-trip
       setNotice('Directives saved — honoured by allocations from the next metabolic cycle.');
     } catch (e) {
       setError(errorMessage(e));
@@ -138,9 +164,52 @@ export const CharityDirectives: React.FC = () => {
         </div>
       )}
 
+      {unmatched.length > 0 && (
+        <div role="alert" className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+          <AlertTriangle size={12} className="text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-[10px] font-bold text-amber-400 leading-relaxed">
+            {unmatched.join(', ')} match{unmatched.length === 1 ? 'es' : ''} no cause in the pool below — a
+            mistyped id saves fine but silently steers nothing. Use the exact ids shown.
+          </p>
+        </div>
+      )}
+
       <Button type="button" onClick={save} disabled={saving || !dirty}>
         {saving ? <Loader2 size={13} className="animate-spin" /> : dirty ? 'Save directives' : 'No changes'}
       </Button>
+
+      {/* W442 — the ranked pool these directives act on, rendered where they are edited so the
+          Owner can SEE the re-ranking (and the exact ids). */}
+      <div className="pt-2 border-t border-slate-900">
+        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">
+          Charity candidates — the ranked pool (weights are curated editorial values, not measurements)
+        </p>
+        {poolErr && <p role="alert" className="text-[10px] font-bold text-vital">{poolErr}</p>}
+        <div className="space-y-1.5">
+          {pool.map(c => (
+            <div key={c.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-900 text-[10px]">
+              <div className="min-w-0 flex items-center gap-2">
+                <span className="font-mono text-slate-500 shrink-0">{c.id}</span>
+                <span className="text-slate-300 font-bold truncate">{c.cause}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`px-1.5 py-0.5 rounded font-black uppercase text-[8px] ${String(c.weights_source || '').startsWith('owner_signal') ? 'bg-amber-500/15 text-amber-400' : 'bg-slate-800 text-slate-400'}`}
+                  title={c.weights_source}>
+                  {String(c.weights_source || 'curated').startsWith('owner_signal') ? 'ingested (caller-asserted)' : 'curated'}
+                </span>
+                <span className="font-mono text-slate-400">score {c.score}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        {loaded?.live_signals && (
+          <p className="text-[9px] text-slate-600 mt-2">
+            Live signal ingestion: {loaded.live_signals.enabled
+              ? `ENABLED — ${loaded.live_signals.approved_signal_count} approved signal${loaded.live_signals.approved_signal_count === 1 ? '' : 's'} in the pool (values are caller-asserted, labelled as such)`
+              : 'disabled — Owner-gated; no fabricated feeds'}. 100%-donation flags are eligibility rules, verified: not_checked.
+          </p>
+        )}
+      </div>
     </Card>
   );
 };

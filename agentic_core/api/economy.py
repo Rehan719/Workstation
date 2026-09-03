@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from agentic_core.auth.core import get_current_user, user_can_access
 from agentic_core.economy.entities import ENTITY_TEMPLATES, DEFAULT_ENTITY, get_template
@@ -69,8 +69,23 @@ async def entity_types():
 @router.get("/status")
 async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str = DEFAULT_ENTITY,
                          user: dict | None = Depends(get_current_user)):
+    """W442 — this surface re-committed the defects /cycle already fixed: it reported owner
+    "Rehan" for EVERY tenant's VSB (the constructor default) and took entity_type from the
+    caller's claim, so a stored nonprofit could be reported with a profit-distributing template's
+    waterfall and capital rules. Now resolved from the stores, with the basis disclosed."""
     _require_economy_access(vsb_id, user)
-    return EconomicMetabolism(vsb_id, entity_type).status()
+    entity_type, et_source = _resolve_entity_type(vsb_id, entity_type)
+    owner, owner_source = "Rehan", "platform_default"
+    try:
+        from agentic_core.economy.living_vsbs import _load as _lv_load
+        rec = _lv_load().get(vsb_id)
+        if rec and rec.get("owner"):
+            owner, owner_source = str(rec["owner"]), "living_registry"
+    except Exception:
+        pass
+    out = EconomicMetabolism(vsb_id, entity_type, owner).status()
+    out["attribution"] = {"entity_type_source": et_source, "owner_source": owner_source}
+    return out
 
 
 class CycleRequest(BaseModel):
@@ -81,9 +96,11 @@ class CycleRequest(BaseModel):
     # resulting distributions, reserves and charity allocations were written to the real ledger as
     # if they had happened. A default that silently manufactures the input to a financial
     # calculation is worse than a missing field. Zero means zero.
-    revenue: float = 0.0
-    costs: float = 0.0
-    reserve_rate: float = 0.20
+    # W442 — NaN/inf/negative inputs are refused at the model: a NaN revenue would have written
+    # NaN into every waterfall account (and negative figures corrupt shared totals).
+    revenue: float = Field(default=0.0, ge=0.0, allow_inf_nan=False)
+    costs: float = Field(default=0.0, ge=0.0, allow_inf_nan=False)
+    reserve_rate: float = Field(default=0.20, ge=0.0, le=1.0, allow_inf_nan=False)
     owner: str = "Rehan"
 
 
@@ -227,7 +244,7 @@ async def owner_payments(vsb_id: str = "workstation-idbo", owner: str = "Rehan",
 class PayoutRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
     owner: str = "Rehan"
-    amount: float
+    amount: float = Field(gt=0, allow_inf_nan=False)   # W442 — NaN/inf/≤0 refused at the model
 
 
 @router.post("/owner-payments/payout")
@@ -272,7 +289,9 @@ async def living_vsbs(user: dict | None = Depends(get_current_user)):
 class TransferRequest(BaseModel):
     from_vsb: str
     to_vsb: str
-    amount: float
+    # W442 — NaN passed every engine guard (nan <= 0 is False) and permanently poisoned the
+    # sender's reserve_fund; refused at the model AND at validate_transfer (belt and braces).
+    amount: float = Field(gt=0, allow_inf_nan=False)
     memo: str = ""
 
 
@@ -302,23 +321,44 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
     if held is not None:
         return {"transfer": None, "governance": held}
 
+    # W442 — one transfer_id for the whole request: the gaas fallback could re-run the action
+    # after it had ALREADY posted (an interceptor exception after execution), debiting the sender
+    # twice for one request. record_transfer is idempotent on the id, so the retry is now a no-op.
+    import uuid as _uuid
+    _xfer_id = f"xfer-{_uuid.uuid4().hex[:10]}"
+
     async def _action():
-        return record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo)
+        return record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
 
     try:
-        from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
-        gov = UnifiedConstitutionalInterceptorV16Omega("economy-node", UEGLogger())
-        result = await gov.intercept({"intent": "inter_vsb_transfer", "from": req.from_vsb,
-                                      "to": req.to_vsb, "amount_wst": req.amount}, _action)
-        transfer = result.output
-        governance = {"status": result.status, "checkpoint": result.checkpoint_id}
-        if not isinstance(transfer, dict):   # the gate blocked the action — never fabricate a transfer
-            return {"transfer": None, "governance": governance}
-    except Exception as e:
-        transfer = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo)
-        _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
-                  "error": str(e)[:200], "note": "gaas.v5 gate unavailable — transfer ran ungated (logged loudly)."})
-        governance = {"status": "ungated_bypass_logged", "error": str(e)[:160]}
+        try:
+            from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
+            gov = UnifiedConstitutionalInterceptorV16Omega("economy-node", UEGLogger())
+            result = await gov.intercept({"intent": "inter_vsb_transfer", "from": req.from_vsb,
+                                          "to": req.to_vsb, "amount_wst": req.amount}, _action)
+            transfer = result.output
+            governance = {"status": result.status, "checkpoint": result.checkpoint_id}
+            if not isinstance(transfer, dict):   # the gate blocked the action — never fabricate a transfer
+                # W442 refuter catch: the materiality approval was consumed before this gate ran;
+                # blocked means nothing posted, so the Owner's approval must not stay spent.
+                from agentic_core.economy.governance import _restore_consumed_approval
+                _restore_consumed_approval(req.from_vsb, "transfer",
+                                           f"gaas gate {result.status} — no transfer posted")
+                return {"transfer": None, "governance": governance}
+        except ValueError:
+            raise
+        except Exception as e:
+            transfer = record_transfer(req.from_vsb, req.to_vsb, req.amount, req.memo, transfer_id=_xfer_id)
+            _ueg_log({"type": "economy.governance_bypass", "vsb_id": req.from_vsb, "source": "transfer",
+                      "error": str(e)[:200], "note": "gaas.v5 gate unavailable — transfer ran ungated (logged loudly)."})
+            governance = {"status": "ungated_bypass_logged", "error": str(e)[:160]}
+    except ValueError as e:
+        # W442 refuter catch: the atomic in-lock funds re-check (a concurrent drain won the race)
+        # used to escape as a 500; it is a clean refusal — and the consumed approval is restored,
+        # because nothing posted.
+        from agentic_core.economy.governance import _restore_consumed_approval
+        _restore_consumed_approval(req.from_vsb, "transfer", "funds re-check refused — nothing posted")
+        raise HTTPException(status_code=400, detail=str(e))
 
     _ueg_log({"type": "economy.inter_vsb_transfer", **{k: transfer[k] for k in
               ("transfer_id", "from_vsb", "to_vsb", "amount_wst")},
@@ -480,8 +520,14 @@ async def close_period(req: ClosePeriodRequest, user: dict | None = Depends(get_
     REAL double-entry postings, then closing entries roll income/expenses into retained earnings so the
     next period starts clean. UEG-logged (tamper-evident). Virtual WST only."""
     _require_economy_access(req.vsb_id, user)
-    m = EconomicMetabolism(req.vsb_id, req.entity_type, req.owner)
+    # W442 — the close report was labelled with the CALLER-CLAIMED legal form (a §4.5 cousin on a
+    # financial statement header); resolve from the stores like /waterfall does.
+    entity_type, et_source = _resolve_entity_type(req.vsb_id, req.entity_type)
+    m = EconomicMetabolism(req.vsb_id, entity_type, req.owner)
     result = m.ledger.close_period()
+    # W442 — the docstring claims "UEG-logged (tamper-evident)" but the log call was swallowed
+    # try/except-pass; the response now SAYS whether the tamper-evident event actually landed.
+    ueg_logged = False
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({
@@ -491,9 +537,11 @@ async def close_period(req: ClosePeriodRequest, user: dict | None = Depends(get_
             "prepared_by": "CFO agent (AI C-Suite)",
             "disclaimer": "Virtual/simulated WST — no real funds moved.",
         })
+        ueg_logged = True
     except Exception:
         pass
-    return {"vsb_id": req.vsb_id, "entity_type": req.entity_type, **result}
+    return {"vsb_id": req.vsb_id, "entity_type": entity_type,
+            "entity_type_source": et_source, "ueg_logged": ueg_logged, **result}
 
 
 @router.get("/board-pack")
@@ -508,7 +556,19 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
     from agentic_core.economy.owner_payments import status as _owner_status
     from agentic_core.economy.ventures import portfolio as _venture_portfolio
 
-    m = EconomicMetabolism(vsb_id, entity_type)
+    # W442 refuter catch: the owner-facing financial pack still took entity_type from the caller's
+    # query and owner from the constructor default ("Rehan") — the claim-echo class W442 fixed on
+    # /status and /close-period, left live on the surface the UI actually renders.
+    entity_type, _et_source = _resolve_entity_type(vsb_id, entity_type)
+    _owner, _owner_source = "Rehan", "platform_default"
+    try:
+        from agentic_core.economy.living_vsbs import _load as _lv_load
+        _rec = _lv_load().get(vsb_id)
+        if _rec and _rec.get("owner"):
+            _owner, _owner_source = str(_rec["owner"]), "living_registry"
+    except Exception:
+        pass
+    m = EconomicMetabolism(vsb_id, entity_type, _owner)
     stmt = m.ledger.statement()
     bal = stmt["balances"]
     stages = ("owner", "self_investment", "capital_fund", "user_projects", "charity")
@@ -528,6 +588,7 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str = DEFAUL
 
     return {
         "vsb_id": vsb_id, "entity_type": entity_type, "entity_name": m.template["name"],
+        "attribution": {"entity_type_source": _et_source, "owner_source": _owner_source},
         "currency": "WST (virtual)", "generated_at": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime()),
         "profit_and_loss": {
             "total_revenue_wst": revenue, "total_reserves_wst": reserves,
@@ -558,18 +619,43 @@ async def get_ledger(vsb_id: str, user: dict | None = Depends(get_current_user))
 
 
 @router.get("/charity/candidates")
-async def charity_candidates(top: int = 8):
-    return {"candidates": CharityIntelligence().ranked(top),
-            "method": "urgency × gravity × reach × marginal-impact × trust",
-            "disclaimer": "Virtual/simulated — sources curated; live feeds pending Owner approval."}
+async def charity_candidates(top: int = 8, user: dict | None = Depends(get_current_user)):
+    """§5 — the ranked charitable-cause pool the directives act on. Weights are CURATED editorial
+    values (or Owner-gated ingested signals) — nothing is measured; every row says which."""
+    ranked = CharityIntelligence().ranked(top)
+    # W442 — the disclaimer was STATIC ("sources curated") and became false the moment ingested
+    # signals joined the pool; it is now computed from what the pool actually contains.
+    n_signal = sum(1 for c in ranked if str(c.get("weights_source", "")).startswith("owner_signal"))
+    # W442 refuter catch: the ranked pool is EXCLUSION-FILTERED, so the UI's typo check against it
+    # flagged every CORRECT exclusion as "matches no cause". Typed ids validate against the
+    # unfiltered id universe instead.
+    from agentic_core.economy.charity import _CANDIDATES, approved_signals
+    all_ids = sorted({c["id"] for c in _CANDIDATES} | {s["id"] for s in approved_signals()})
+    return {"candidates": ranked,
+            "all_cause_ids": all_ids,
+            "method": ("weighted rank over CURATED priority weights (urgency · gravity · reach · "
+                       "marginal-impact · trust) — editorial values, not measurements"),
+            "pool": {"curated": len(ranked) - n_signal, "ingested_signals": n_signal},
+            "disclaimer": ("Virtual/simulated. " +
+                           ("Pool includes Owner-gated ingested signal rows (caller-asserted values) "
+                            "alongside the curated set." if n_signal else
+                            "Sources curated; live feeds pending Owner approval."))}
 
 
 @router.get("/charity/directives")
-async def get_charity_directives():
+async def get_charity_directives(user: dict | None = Depends(get_current_user)):
     """§5 — the Owner's charity directives (priorities · exclusions · 100%-donation rule), honoured
-    by every allocation."""
-    from agentic_core.economy.charity import get_directives
-    return get_directives()
+    by every allocation. Also reports the live-signal gate state (read-only) so the UI can say
+    whether ingestion is enabled without probing the POST."""
+    import os as _os
+    from agentic_core.economy.charity import approved_signals, get_directives
+    d = get_directives()
+    d["live_signals"] = {
+        "enabled": _os.getenv("CHARITY_LIVE_SIGNALS_ENABLED", "false").lower() == "true",
+        "approved_signal_count": len(approved_signals()),
+        "note": "Owner-gated — no fabricated feeds; sources must be Owner-approved.",
+    }
+    return d
 
 
 class CharityDirectivesRequest(BaseModel):
@@ -579,9 +665,15 @@ class CharityDirectivesRequest(BaseModel):
 
 
 @router.post("/charity/directives")
-async def set_charity_directives(req: CharityDirectivesRequest):
+async def set_charity_directives(req: CharityDirectivesRequest,
+                                 user: dict | None = Depends(get_current_user)):
     """§5 — the Owner SETS the charity directives at runtime; persisted + UEG-logged + honoured by
-    the metabolic cycle's allocations from the next cycle on."""
+    the metabolic cycle's allocations from the next cycle on.
+
+    W442 — these directives are GLOBAL (they steer the charity stage of EVERY tenant's waterfall)
+    yet the route had no auth dependency at all: under multi-user auth any caller could rewrite
+    the Owner's priorities/exclusions/100% rule. Platform-scoped now (admin-only under auth)."""
+    _require_economy_access("workstation-idbo", user)
     from agentic_core.economy.charity import set_directives
     result = set_directives(req.priorities or None, req.exclusions, req.require_100pct)
     try:
@@ -598,31 +690,62 @@ class CharitySignalsRequest(BaseModel):
 
 
 @router.post("/charity/signals")
-async def ingest_charity_signals(req: CharitySignalsRequest):
+async def ingest_charity_signals(req: CharitySignalsRequest,
+                                 user: dict | None = Depends(get_current_user)):
     """§5 — the REAL live-signal ingestion seam (humanitarian/disaster/needs feeds). OWNER-GATED:
     disabled unless CHARITY_LIVE_SIGNALS_ENABLED=true (no fabricated feeds; sources must be
     Owner-approved). Accepted signals persist and join the candidate pool."""
+    import math as _math
     import os as _os
+    import time as _time
     if _os.getenv("CHARITY_LIVE_SIGNALS_ENABLED", "false").lower() != "true":
         raise HTTPException(status_code=403, detail=(
             "Live charity-signal ingestion is Owner-gated (set CHARITY_LIVE_SIGNALS_ENABLED=true "
             "after approving the sources). No fabricated feeds are ever used."))
-    from agentic_core.config import atomic_write_json
+    # W442 — even with the flag on, the route had NO auth dependency: any network caller could
+    # fabricate the "Owner-approved" feed steering every tenant's charity stage. Platform-scoped
+    # (admin-only under auth), each row stamped with who submitted it and validated per-field —
+    # junk values used to raise an unhandled 500; they are now rejected and REPORTED.
+    _require_economy_access("workstation-idbo", user)
+    from agentic_core.config import atomic_write_json, store_lock
     from agentic_core.economy.charity import _SIGNALS_STORE, approved_signals
-    valid = [s for s in req.signals
-             if isinstance(s, dict) and s.get("id") and s.get("cause")
-             and all(0.0 <= float(s.get(k, 0.5)) <= 1.0 for k in ("urgency", "gravity", "reach", "trust"))]
-    existing = {s["id"]: s for s in approved_signals()}
-    for s in valid:
-        existing[s["id"]] = s
-    atomic_write_json(_SIGNALS_STORE, list(existing.values()))
+
+    def _finite01(v) -> bool:
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return False
+        return _math.isfinite(f) and 0.0 <= f <= 1.0
+
+    valid, rejected = [], []
+    for s in req.signals:
+        if (isinstance(s, dict) and s.get("id") and s.get("cause")
+                and all(_finite01(s.get(k, 0.5)) for k in ("urgency", "gravity", "reach", "trust"))):
+            valid.append({**s, "submitted_by": (user or {}).get("username") or "anonymous",
+                          "submitted_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())})
+        else:
+            rejected.append({"id": (s.get("id") if isinstance(s, dict) else None),
+                             "reason": "missing id/cause or non-finite/out-of-range weight"})
+    with store_lock(_SIGNALS_STORE):
+        existing = {s["id"]: s for s in approved_signals()}
+        replaced = [s["id"] for s in valid if s["id"] in existing]
+        for s in valid:
+            existing[s["id"]] = s
+        atomic_write_json(_SIGNALS_STORE, list(existing.values()))
+    ueg_logged = False
     try:
         from agentic_core.gaas.v5 import UEGLogger
-        UEGLogger().log({"type": "economy.charity_signals_ingested", "count": len(valid)})
+        UEGLogger().log({"type": "economy.charity_signals_ingested", "count": len(valid),
+                         "rejected": len(rejected), "replaced": replaced,
+                         "submitted_by": (user or {}).get("username") or "anonymous"})
+        ueg_logged = True
     except Exception:
         pass
-    return {"ingested": len(valid), "total_signals": len(existing),
-            "note": "Signals join the candidate pool (still subject to the 100%-donation rule + compliance screening)."}
+    return {"ingested": len(valid), "rejected": rejected, "replaced_ids": replaced,
+            "total_signals": len(existing), "ueg_logged": ueg_logged,
+            "note": ("Signals join the candidate pool labelled 'owner_signal (ingested; "
+                     "caller-asserted values)' — still subject to the 100%-donation rule + "
+                     "compliance screening.")}
 
 
 @router.get("/ventures/candidates")
@@ -633,7 +756,9 @@ async def venture_candidates(top: int = 8, vsb_id: str = "workstation-idbo",
     curated demo set only when the platform is empty (honestly flagged). Virtual/simulated."""
     _require_economy_access(vsb_id, user)
     from agentic_core.economy.ventures import VentureIntelligence, real_candidates
-    vi = VentureIntelligence(real_candidates(exclude_vsb=vsb_id) or None)
+    # W442 — the harvest leaked every tenant's project titles + living enterprises to any caller;
+    # scoped to what THIS user can access (the internal cycle path keeps the federation view).
+    vi = VentureIntelligence(real_candidates(exclude_vsb=vsb_id, user=user) or None)
     return {"candidates": vi.ranked(top),
             "method": "outcome × value × benefit × feasibility × strategic-fit",
             "using_demo_candidates": vi.using_demo,
@@ -644,7 +769,7 @@ async def venture_candidates(top: int = 8, vsb_id: str = "workstation-idbo",
 class VentureReturnRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
     holding_id: str
-    amount: float
+    amount: float = Field(gt=0, allow_inf_nan=False)   # W442 — inf/NaN minted WST from nothing
     memo: str = ""
 
 
@@ -661,14 +786,17 @@ async def venture_return(req: VentureReturnRequest, user: dict | None = Depends(
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    ueg_logged = False
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({"type": "economy.venture_return", "vsb_id": req.vsb_id,
                          "holding_id": req.holding_id, "amount_wst": result["returned_wst"],
+                         "amount_source": "caller_asserted (bounded at 10× invested)",
                          "disclaimer": "Virtual/simulated WST — no real funds moved."})
+        ueg_logged = True
     except Exception:
         pass
-    return result
+    return {**result, "ueg_logged": ueg_logged}
 
 
 @router.get("/ventures/portfolio")
