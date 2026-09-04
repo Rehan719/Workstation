@@ -3849,3 +3849,57 @@ until it would have pushed itself out of top-20 and self-failed.
 concurrency burst on the ledger) — broken twice and watched fail with the original symptoms
 (blocked verdict ran the cycle; per-call cap leaked the third return). Probe 9/9 through the UI
 (incl. the CFO close pressed and the books actually closing); smoke 16 deep + 57 swept.
+
+### W443 — the hub cluster: a real bus with no riders, and the platform's worst unauthenticated write surface
+
+**The audit (2 agents, 15 findings) settled what the Agent Collaboration Hub IS**: the transport
+was real (genuine SSE fan-out, persisted messages) but the bus was UNOCCUPIED — zero producers,
+zero consumers, no frontend caller, no test beyond an exclusion clause — while carrying the
+platform's worst write primitive: all 7 ops unauthenticated, and **filename traversal** in every
+id (only '/' was sanitised; the other separator survived on Windows, so a crafted agent_id could
+write or delete .json files OUTSIDE the hub's stores — a poisoning/destruction primitive against
+the platform's own ledgers and registries). The work-order op narrated an execution pipeline
+nothing performs ("Claude Code sets this to in_progress/done" — nothing anywhere reads
+data/handoffs; handoffs weren't even listable), making it a purpose-built instruction dropbox
+with no provenance. Every posted message fired an ORGANIC-looking motor signal into the organism
+feed ("agents communicating = organism thinking" — bypassing the `manual:` injection marking the
+nervous system deliberately applies), rendered verbatim on the Owner's Anatomy dashboard. The
+bespoke `_write_json` (tmp.rename) made two documented behaviours false on the platform it runs
+on: "idempotent re-registration" **500'd** (proven by hand), and the last_active touch silently
+failed on every call — a liveness field frozen at registration forever. Plus: a `read_by` field
+nothing ever wrote, a registry gating nothing, no input bounds, unbounded growth.
+
+**The fix — a full rewrite** ([agent_hub.py](../agentic_core/api/agent_hub.py)): one strict id
+rule on every filename component (no separators of either kind, no leading dot); auth on all 9
+ops under AUTH_ENABLED with the acting principal stamped server-side (a caller-supplied sender
+name is a LABEL, never an identity); the mandated store pattern (atomic_write_json +
+load_json_tolerant + store_lock) replacing the broken writer; honest bus semantics — posting
+returns `delivered_to_live_subscribers`, a handoff is `"recorded"` with "no executor is
+subscribed" in the payload, `read_by` deleted, gap events on queue overflow, retention sweeps;
+organism provenance — a motor signal fires only when a message was actually DELIVERED to a live
+subscriber, with source `hub:<sender>`. New ops the original design promised and never built:
+GET /hub/handoffs (the letterbox, listable at last) and POST /hub/handoffs/{id}/status.
+
+**The wiring:** the Living Organisation hub gained an **Agent Hub tab** — participants split
+honestly (external registrations empty and said plainly; the swarm's live roster beside it), the
+message bus with the real SSE stream and a post box whose result reports actual delivery, and
+the work-order letterbox with claim/done controls under the standing banner "records only — no
+executor is subscribed; nothing runs these automatically".
+
+**Refuter round (2 agents, 8 findings — seventh consecutive round of real catches):** the
+register op let an authenticated tenant OVERWRITE another user's registration and then pass the
+deregister gate (overwrite-then-delete — now 409); records stamped 'local' in single-user mode
+mapped to a CLAIMABLE username under later auth (now admin-only per the legacy-record
+convention); the status op read outside its lock (fixed pre-emptively mid-round); EventSource
+cannot carry the auth bearer header, so under auth the panel's flagship stream would die
+silently — it now falls back to honest 10s polling with an amber badge, the "(including this
+panel)" delivery claim is conditional on the stream actually being connected, and a failed
+message load renders "feed unavailable", never the false "quiet bus" empty state; the handoff
+store gained its own retention cap and the sweep counter advances on every write path; and the
+guard test leaked 6 files per run into the persistent test store (now cleans up after itself —
+the same accumulation class the W442 refuters caught).
+
+**Guards:** `test_w443_agent_hub_hardened_and_honest` — broken (id validation removed from
+register) and watched fail with the original symptom (a traversal id accepted); restored green.
+Probe 6/6 through the UI including the live SSE round-trip and the full work-order lifecycle
+(recorded → in_progress → done). Smoke 17 deep + 57 swept.

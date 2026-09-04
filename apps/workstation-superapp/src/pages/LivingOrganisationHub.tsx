@@ -1,10 +1,11 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { MessageSquare, Crown, Network, Workflow } from 'lucide-react';
+import { MessageSquare, Crown, Network, Workflow, Radio } from 'lucide-react';
 import { CEOChat } from './CEOChat';
 import { BoardOfDirectors } from './enterprise/BoardOfDirectors';
 import VisualAgentComposer from '../components/organism/VisualAgentComposer';
 import SwarmIntelligence from '../components/organism/SwarmIntelligence';
+import AgentHubPanel from '../components/organism/AgentHubPanel';
 
 // Consolidated Living Organisation hub (§5 Chief→Board→AI CEO→… + §6 native swarm) — folds the former
 // standalone AI CEO · Board of Directors · Swarm Intelligence · Visual Composer surfaces into one tabbed
@@ -13,6 +14,8 @@ const TABS = [
   { id: 'ceo',      name: 'AI CEO',   icon: MessageSquare, El: CEOChat },
   { id: 'board',    name: 'Board',    icon: Crown,         El: BoardOfDirectors },
   { id: 'swarm',    name: 'Swarm',    icon: Network,       El: SwarmIntelligence },
+  // W443 — the Agent Collaboration Hub's 7 live ops (bus/registry/letterbox) had zero consumers
+  { id: 'hub',      name: 'Agent Hub', icon: Radio,        El: AgentHubPanel },
   { id: 'composer', name: 'Composer', icon: Workflow,      El: VisualAgentComposer },
 ] as const;
 

@@ -41,7 +41,7 @@ THE SURFACE, measured 2026-09-02 against a backend booted from HEAD:
   442 paths (441 under /api) carrying 466 method+path operations
   270 frontend call sites resolving to 164 distinct /api literals + 18 template prefixes
   73 <Route> declarations in App.tsx — 72 concrete paths (the 73rd is the catch-all), all 72 render
-  suite 348 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 16 deep + 57 swept
+  suite 349 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 17 deep + 57 swept
 
 CAVEAT THAT HAS COST THIS PROJECT TIME THREE TIMES: a long-running dev process serves the code it
 booted with. Restart the backend before measuring BEHAVIOUR, and check its start time against the
@@ -160,8 +160,11 @@ economy cluster's money integrity (the LEDGER had no lock; NaN disabled funds co
 the materiality gate was blind to the recycle queues; a blocked constitutional verdict RAN the
 cycle anyway) and wired 6 of 8 ops (venture portfolio + returns + candidates, CFO period close +
 statements, federation transfer, charity candidates pool) — /status and /charity/signals are
-recorded reasoned no-wires. Reach: 455 ops, 304 reached, 87 genuine unreached in 40 clusters.
-Next: hub 7 · qep-residual 7 · marketplace 5 · organism-residual 5.
+recorded reasoned no-wires. W443 rewrote the agent hub end-to-end (filename traversal killed,
+auth + server-side principal stamping on all 9 ops, honest bus semantics — delivery counts,
+records-not-executions, organism provenance) and wired the Agent Hub tab on the Living
+Organisation hub (participants + live SSE feed + work-order letterbox with claim/done).
+Next: qep-residual 7 · marketplace 5 · organism-residual 5.
 Audit before wiring, every time — and REFUTE YOUR OWN FIXES before shipping: W437's validate
 handler (float(None) → 500 on the branches the W432 engine fix made honest) proved the class lives
 ONE LAYER UP from a fixed engine, and W438's refuter pass caught two consumer breaks + a
@@ -344,12 +347,12 @@ Learned by being wrong, repeatedly, in ways a green suite hid. The first five ar
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 324 tests. 36 were added this session (W419–W442), each
+- integration_tests/test_mvp_spine.py — 325 tests. 37 were added this session (W419–W443), each
   broken and watched fail with its ORIGINAL symptom before being trusted.
 - scripts/check_import_integrity.py — CI job; fails when a live module imports a first-party module
   with no file behind it. Baseline scripts/import_integrity_baseline.txt (13 pre-existing, kept by a
   negation at .gitignore:21 because :17 is a blanket *.txt). Run before AND after any file move.
-- scripts/browser_smoke.mjs — 16 deep routes + every other route swept, list PARSED from App.tsx.
+- scripts/browser_smoke.mjs — 17 deep routes + every other route swept, list PARSED from App.tsx.
   REQUIRED_SECTIONS demands named sections ALL render (W437 /native-ai; W438 /organism?tab=anatomy;
   W439 /religion?tab=qep + /qep; W440 /vsb-cockpit?tab=systems: the operating VBS panel,
   platform-level so CI's zero-VSB store still exercises it). Waits on #root painting, not networkidle. NOTE: needles must be

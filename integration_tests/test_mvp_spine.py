@@ -8344,3 +8344,80 @@ def test_w442_economy_cluster_integrity_holds(client, monkeypatch):
     from agentic_core.config import atomic_write_json as _awj
     from agentic_core.economy.charity import _SIGNALS_STORE, approved_signals as _sigs
     _awj(_SIGNALS_STORE, [s for s in _sigs() if s["id"] != f"sig-{uid}"])
+
+
+def test_w443_agent_hub_hardened_and_honest(client):
+    # W443 — the hub cluster: identity/filename validation, the mandated store pattern,
+    # honest bus semantics (delivery counts, records-not-executions), and organism provenance.
+    import uuid as _uuid
+    aid = f"w443-{_uuid.uuid4().hex[:8]}"
+
+    # 1. filename-unsafe ids are refused at the boundary (they used to become disk paths:
+    #    a crafted agent_id could write or delete .json files outside the hub's stores)
+    for path, body in [
+        ("/api/v1/hub/agents/register", {"agent_id": "..\\..\\evil", "role": "ENGINEERING"}),
+        ("/api/v1/hub/message", {"sender_id": "../x", "sender_role": "USER", "content": "hi"}),
+        ("/api/v1/hub/claude-code-handoff", {"from_agent": "a/b", "task_title": "t", "task_description": "d"}),
+    ]:
+        assert client.post(path, json=body).status_code == 422, path
+
+    # 2. re-registration is genuinely idempotent (the bespoke writer 500'd on Windows while
+    #    the docstring claimed idempotence), and registered_at survives the refresh
+    r1 = client.post("/api/v1/hub/agents/register", json={"agent_id": aid, "role": "ENGINEERING"})
+    r2 = client.post("/api/v1/hub/agents/register", json={"agent_id": aid, "role": "ENGINEERING"})
+    assert r1.status_code == 201 and r2.status_code == 201
+    assert r1.json()["registered_at"] == r2.json()["registered_at"]
+
+    # 3. honest bus semantics: the response says how many live subscribers actually received
+    #    the message (none here), and the dead read_by field is gone
+    m = client.post("/api/v1/hub/message",
+                    json={"sender_id": aid, "sender_role": "USER", "content": "salaam"})
+    assert m.status_code == 201
+    assert m.json()["delivered_to_live_subscribers"] == 0
+    assert "read_by" not in m.json()
+    # oversized content is refused, not stored
+    assert client.post("/api/v1/hub/message",
+                       json={"sender_id": aid, "sender_role": "USER",
+                             "content": "x" * 16001}).status_code == 422
+
+    # 4. last_active is a real measurement again (the old writer silently failed on every
+    #    touch, freezing it at registration forever)
+    ag = client.get("/api/v1/hub/agents").json()
+    rec = next(a for a in ag["registered"] if a["agent_id"] == aid)
+    assert rec["last_active"] != rec["registered_at"]
+    # and the participants view splits honest registrations from the live swarm roster
+    assert len(ag["platform_roster"]) >= 5 and "presence record" in ag["note"]
+
+    # 5. a handoff is a RECORD, visible and status-tracked — never a narrated execution
+    h = client.post("/api/v1/hub/claude-code-handoff",
+                    json={"from_agent": aid, "task_title": "T", "task_description": "D"}).json()
+    assert h["status"] == "recorded" and "no executor is subscribed" in h["note"].lower()
+    hid = h["handoff_id"]
+    ls = client.get("/api/v1/hub/handoffs").json()
+    mine = next(x for x in ls["handoffs"] if x["handoff_id"] == hid)
+    assert mine["status"] == "recorded" and mine["status_history"]
+    up = client.post(f"/api/v1/hub/handoffs/{hid}/status", json={"status": "done"})
+    assert up.status_code == 200 and up.json()["status"] == "done"
+    assert client.post(f"/api/v1/hub/handoffs/{_uuid.uuid4().hex}/status",
+                       json={"status": "done"}).status_code == 404
+
+    # 6. organism provenance: with zero live subscribers, posting fires NO nervous signal
+    #    (letters in a dead letterbox are not "organism thinking"), and any hub signal that
+    #    does fire carries the hub: source prefix — never an organic-looking one
+    sig = client.get("/api/v1/organism/nervous/signals?n=100")
+    if sig.status_code == 200:
+        srcs = [str(s.get("source", "")) for s in (sig.json().get("signals") or [])]
+        assert not any(s.startswith("hub.") for s in srcs), "old organic-masquerade source is back"
+        assert not any(s.startswith("hub:") for s in srcs), "hub signal fired with no live subscriber"
+
+    # cleanup (refuter catch: this test otherwise leaks 6 files per run into the persistent
+    # shared test store — the W394 accumulation class; the sweep never fires under pytest)
+    from agentic_core.api.agent_hub import _HANDOFF_DIR, _MSG_DIR, _REG_DIR
+    for d in (_MSG_DIR, _HANDOFF_DIR):
+        for f in d.glob("*.json"):
+            try:
+                if aid in f.name or aid in f.read_text(encoding="utf-8"):
+                    f.unlink()
+            except OSError:
+                pass
+    (_REG_DIR / f"{aid}.json").unlink(missing_ok=True)

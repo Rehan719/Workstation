@@ -55,6 +55,8 @@ const ROUTES = [
   ['/qep',              ['QEP']],
   // W440 — the VBS management systems, operating (not just their standards cards)
   ['/vsb-cockpit?tab=systems', ['VSB Cockpit']],
+  // W443 — the Agent Collaboration Hub's first surface (bus + registry + work-order letterbox)
+  ['/ceo?tab=hub',      ['Agent Collaboration Hub']],
 ];
 
 // The landmark check above passes if ANY landmark is present, which proves the route did not crash
@@ -65,6 +67,8 @@ const ROUTES = [
 const REQUIRED_SECTIONS = {
   '/economy': ['Service contracts', 'Charity directives', 'Venture Portfolio', 'Close period', 'Transfer WST between your entities', 'Charity candidates'],
   '/ceo?tab=board': ['cannot instruct the board'],
+  // W443 — the hub's honesty lines: unoccupied bus + records-only letterbox must stay on screen
+  '/ceo?tab=hub': ['no executor is subscribed', 'work-order letterbox'],
   '/marketplace': ['Listings'],
   // W437 — the console that finally makes the 10 audited primitives reachable, and the integrity strip
   '/native-ai': ['Primitive console', 'Fabric integrity'],
