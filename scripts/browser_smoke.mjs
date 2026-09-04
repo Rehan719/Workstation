@@ -69,7 +69,9 @@ const REQUIRED_SECTIONS = {
   '/ceo?tab=board': ['cannot instruct the board'],
   // W443 — the hub's honesty lines: unoccupied bus + records-only letterbox must stay on screen
   '/ceo?tab=hub': ['no executor is subscribed', 'work-order letterbox'],
-  '/marketplace': ['Listings'],
+
+  // W444 — all listings render (unpriced badged); pricing/edit lives in the detail drawer
+  '/marketplace': ['Listings', 'set its price'],
   // W437 — the console that finally makes the 10 audited primitives reachable, and the integrity strip
   '/native-ai': ['Primitive console', 'Fabric integrity'],
   // W440 — the operating VBS systems panel must render on the cockpit's Living Systems tab
@@ -77,12 +79,12 @@ const REQUIRED_SECTIONS = {
   // is data-driven, not just static headings (refuter catch: the h4 needles pass with dead APIs)
   '/vsb-cockpit?tab=systems': ['quality gates', 'document control', 'Mycelial backbone', 'nothing simulated'],
   // W438 — the anatomy surfaces must ALL render: health disclosure, genome lab, wiring truth
-  '/organism?tab=anatomy': ['measured only', 'Genome lab', 'wiring truth'],
+  '/organism?tab=anatomy': ['measured only', 'Genome lab', 'wiring truth', 'Change history', 'Reset to defaults'],
   // W439 — the REAL QEP studio must render inside the Religion domain, honestly framed
   '/religion?tab=qep': ['authentic text', 'spaced repetition', 'false witness'],
   // /qep opens on the AI Coach tab: the honest no-phonetic-model banner + the pointer to the
   // live written-text tools must both render
-  '/qep': ['Recitation assessment unavailable', 'written-recall'],
+  '/qep': ['Recitation assessment unavailable', 'written-recall', 'Intelligence'],
 };
 
 const failures = [];

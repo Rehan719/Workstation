@@ -41,7 +41,7 @@ THE SURFACE, measured 2026-09-02 against a backend booted from HEAD:
   442 paths (441 under /api) carrying 466 method+path operations
   270 frontend call sites resolving to 164 distinct /api literals + 18 template prefixes
   73 <Route> declarations in App.tsx — 72 concrete paths (the 73rd is the catch-all), all 72 render
-  suite 349 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 17 deep + 57 swept
+  suite 350 passed / 15 skipped / 0 failed · import integrity clean · browser smoke 17 deep + 57 swept
 
 CAVEAT THAT HAS COST THIS PROJECT TIME THREE TIMES: a long-running dev process serves the code it
 booted with. Restart the backend before measuring BEHAVIOUR, and check its start time against the
@@ -161,10 +161,16 @@ the materiality gate was blind to the recycle queues; a blocked constitutional v
 cycle anyway) and wired 6 of 8 ops (venture portfolio + returns + candidates, CFO period close +
 statements, federation transfer, charity candidates pool) — /status and /charity/signals are
 recorded reasoned no-wires. W443 rewrote the agent hub end-to-end (filename traversal killed,
-auth + server-side principal stamping on all 9 ops, honest bus semantics — delivery counts,
-records-not-executions, organism provenance) and wired the Agent Hub tab on the Living
-Organisation hub (participants + live SSE feed + work-order letterbox with claim/done).
-Next: qep-residual 7 · marketplace 5 · organism-residual 5.
+auth + principal stamping, honest bus semantics) and wired the Agent Hub tab. W444 closed the
+LAST three substantial clusters: the shadowed parallel marketplace in capital_fund RETIRED
+(its create path returned "active" for listings no consumer could ever see), valuation/report
+provenance fixed (floor → refuse/label), marketplace PATCH validation + drawer wiring (the §12
+pricing door finally opens), the QEP ops strip + Intelligence tab (XAI/weights/adaptation/
+compliance), and the Anatomy config history/direct-edit/reset-guard. Reasoned no-wires:
+nervous/status + self-healing/status (already rendered via /systems), /economy/status,
+/charity/signals. The Tier-2 reach backlog of substantial clusters is COMPLETE — reach 456 ops · 325 reached ·
+67 genuine unreached, all small scatter across tiny clusters (re-run scripts/reach_audit.py
+before opening any).
 Audit before wiring, every time — and REFUTE YOUR OWN FIXES before shipping: W437's validate
 handler (float(None) → 500 on the branches the W432 engine fix made honest) proved the class lives
 ONE LAYER UP from a fixed engine, and W438's refuter pass caught two consumer breaks + a
@@ -347,7 +353,7 @@ Learned by being wrong, repeatedly, in ways a green suite hid. The first five ar
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 325 tests. 37 were added this session (W419–W443), each
+- integration_tests/test_mvp_spine.py — 326 tests. 38 were added this session (W419–W444), each
   broken and watched fail with its ORIGINAL symptom before being trusted.
 - scripts/check_import_integrity.py — CI job; fails when a live module imports a first-party module
   with no file behind it. Baseline scripts/import_integrity_baseline.txt (13 pre-existing, kept by a

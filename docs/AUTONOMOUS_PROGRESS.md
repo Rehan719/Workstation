@@ -3903,3 +3903,62 @@ the same accumulation class the W442 refuters caught).
 register) and watched fail with the original symptom (a traversal id accepted); restored green.
 Probe 6/6 through the UI including the live SSE round-trip and the full work-order lifecycle
 (recorded → in_progress → done). Smoke 17 deep + 57 swept.
+
+### W444 — the three residual clusters: a shadowed parallel marketplace, and the honest layers finally get witnesses
+
+**The audit (2 agents, 22 findings) confirmed every W438/W439 fix still holds** — then found the
+residue. The worst: `capital_fund.py` carried a PARALLEL marketplace whose GET was permanently
+shadowed by the real marketplace's identical path, so its ungoverned POST /marketplace/list
+returned status "active" for listings **no consumer could ever see** — fabricated success — while
+bypassing the §11 compliance screen, auth, ownership and bounds the real path enforces. Retired,
+with the file's stale route advertising corrected. The AI valuation (`/marketplace/value`) and
+fund report used provenance-less `gateway.query` — a floor scaffold would ship as a "startup
+valuation expert" assessment; the valuation now REFUSES on the floor (503 — a template presented
+as a valuation would be fabrication) and the report labels floor service. The real marketplace's
+PATCH applied a raw dict via setattr with no validation (a junk price persisted verbatim, then
+the next load silently DROPPED the listing — self-corruption into invisibility) — the merged
+listing now revalidates; purchase quantity bounded; a SOLD listing survives deletion as a draft
+so receipts keep resolving. QEP: auth on the three side-effect POSTs, XAI inputs bounded to
+SM-2's actual domain, the audit's "model-self-declared" grading excludes floor/error entries.
+Organism: auth + a TRUE authorship stamp on config/update (it hardcoded "owner-ui-direct" for
+any anonymous caller — an audit trail asserting the Owner made changes anyone could have made).
+
+**The wiring (13 ops; 3 reasoned no-wires recorded):** QEPStudio gained the QEP ops strip — the
+platform's own honesty statement (per-component truth lines + "Quran text never AI-generated /
+recitation never scored") on screen instead of API-only — and the computed translation
+availability chip. QEPReligionHub gained the **Intelligence tab**: XAI via the real
+MemorizationEngine with its basis lines rendered prominently, the owner-tunable recommendation
+weights with the sum-to-1 contract, the adaptation registry (fidelity = self-declared number or
+"unmeasured", never a flattering constant) + blueprint generation with the "nothing was
+installed" note verbatim, and the tri-state compliance audit (amber "NOT ESTABLISHED — controls
+could not run", never a green badge over controls that did not run). The marketplace shows ALL
+listings (unpriced badged) with a detail drawer — §11 verdicts, edit/price (the PATCH that
+finally opens the already-built §12 purchase economy), delete, AI valuation behind the
+provenance badge. Anatomy gained the config change history, direct edit for ungoverned keys
+(the missing half of the two-path design), and the reset guard rendered as designed — the 409
+IS the wiring, with one click seeding the CCA proposal from the refusal's own example payload.
+Reasoned no-wires: nervous/status + self-healing/status (the Anatomy tab already renders the
+same singleton readings via /systems — a second fetch would just invite drift).
+
+**Refuter round (2 agents, 11 findings — the eighth consecutive round of real catches, several
+REPRODUCED live):** my fund-lock comment was FALSE — only one of two writers held the lock, and
+the reproduction showed an unlocked /fund/allocate erasing a locked contribution entirely (both
+writers serialise now); the deleted-to-draft listing **kept selling by id** (reproduced:
+sales_count 1→4 after deletion) — anything not active now refuses; my "quarantine" comment was
+a fabricated safety claim (load_json_tolerant does not quarantine) — the corrupt fund file is
+now genuinely renamed aside before a fresh pool takes over; my four new smoke needles were
+SILENTLY OVERWRITTEN by duplicate object keys (JS last-key-wins — a vacuous guard), and one
+needle asserted text that only renders on a tab the smoke never clicks — merged into the real
+entries and verified by evaluating the object; the reset-refusal JSON.parse was dead code
+(apiJson truncates the detail at 300 chars) — raw fetch now carries the full 409 body so the
+CCA proposal seeds from the backend's own example, never a lockstep copy; origin/route became
+immutable (an owner could forge 'catalog' provenance by patch); an empty description — a legal
+stored state — no longer 422s the valuation; the empty-compliance dict no longer renders an
+unnamed amber verdict pill; and a NameError landmine (_save_listings referencing the deleted
+store) was swept. Post-probe, the smoke itself caught my 'Set price' needle being
+state-dependent — replaced with a permanent hint line.
+
+**Guards:** `test_w444_residual_clusters_hardened_and_honest` (17 assertions) — broken (the
+PATCH validation removed → a junk price accepted as 200) and watched fail; restored green.
+Probe 11/11 through the UI (tab clicks included — the ops strip, XAI, drawer pricing, the
+reset 409); smoke 17 deep + 57 swept, green on a state-mutated store.

@@ -35,7 +35,9 @@ from pathlib import Path
 from agentic_core.config import data_path, atomic_write_json, store_lock
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -284,7 +286,8 @@ class ConfigUpdateRequest(BaseModel):
 
 
 @router.post("/config/update")
-async def update_config(req: ConfigUpdateRequest):
+async def update_config(req: ConfigUpdateRequest,
+                        user: dict | None = Depends(get_current_user)):
     """Apply a configuration change — UNGOVERNED keys only.
 
     The four wired live levers (rpm_limit, metabolic_throttle, immune_quarantine,
@@ -297,9 +300,13 @@ async def update_config(req: ConfigUpdateRequest):
             "example": {"title": f"Set {req.section}.{req.key}", "change_type": "config_major",
                         "description": req.reason or "organism lever change",
                         "config_change": {"section": req.section, "key": req.key, "value": req.value}}})
+    # W444 — updated_by was hardcoded "owner-ui-direct": an authorship claim nothing verified
+    # (any anonymous caller's change carried the Owner's name in the audit trail).
+    from agentic_core.auth.core import request_owner_id
+    _by = request_owner_id(user, "owner-ui-direct")
     try:
         change = apply_config_change(req.section, req.key, req.value,
-                                     reason=req.reason, updated_by="owner-ui-direct")
+                                     reason=req.reason, updated_by=_by)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     return {"status": "applied", "change": change,

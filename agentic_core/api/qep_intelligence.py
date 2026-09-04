@@ -28,7 +28,9 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Query
+
+from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel, Field
 
 from agentic_core.ai.gateway import gateway
@@ -97,8 +99,10 @@ class RecommendationUpdate(BaseModel):
 
 
 @router.get("/xai/explanations")
-async def xai_explanations(ease_factor: float = 2.5, interval_days: int = 6,
-                           repetition: int = 3, last_quality: int = 4):
+async def xai_explanations(ease_factor: float = Query(default=2.5, ge=1.3, le=3.0),
+                           interval_days: int = Query(default=6, ge=0, le=3650),
+                           repetition: int = Query(default=3, ge=0, le=1000),
+                           last_quality: int = Query(default=4, ge=0, le=5)):
     """
     Feature-attributed explanation of *why* the SM-2 engine scheduled a hifz
     review as it did. Real XAI over the actual scheduling inputs QEP uses.
@@ -143,7 +147,8 @@ async def xai_explanations(ease_factor: float = 2.5, interval_days: int = 6,
 
 
 @router.post("/recommendation/update")
-async def recommendation_update(req: RecommendationUpdate):
+async def recommendation_update(req: RecommendationUpdate,
+                                user: dict | None = Depends(get_current_user)):
     """Retune the recommendation model weights (persisted). W439: the compliance audit's own
     check requires the weights to sum to ~1.0 — accepting weights that fail it would let this
     route silently break the contract the audit grades."""
@@ -202,7 +207,8 @@ async def translation_status():
 
 
 @router.post("/translation/translate")
-async def translation_translate(req: TranslateRequest):
+async def translation_translate(req: TranslateRequest,
+                                user: dict | None = Depends(get_current_user)):
     prompt = (
         f"Translate the following from {req.source_language} to {req.target_language}. "
         "Preserve meaning and scholarly register"
@@ -288,7 +294,8 @@ def _parse_fidelity(blueprint: str):
     return val if 0.0 <= val <= 1.0 else None
 
 @router.post("/adaptation/execute")
-async def adaptation_execute(req: AdaptationRequest):
+async def adaptation_execute(req: AdaptationRequest,
+                             user: dict | None = Depends(get_current_user)):
     """Adapt a learning pattern from one domain into another via the AI gateway."""
     prompt = (
         f"You are the QEP Cross-Domain Adaptation engine. Adapt the pedagogical pattern "
@@ -351,8 +358,11 @@ async def compliance_audit():
     model = _load(_MODEL, {"ease_weight": 0.4, "interval_weight": 0.35, "quality_weight": 0.25})
 
     # only figures with provenance count — a legacy number nobody declared grades nothing
+    # W444 — 'model-self-declared' must be true of the figure's source: floor-served ('native')
+    # and error-path (None) entries carry no model self-assessment and grade nothing.
     graded = [a.get("fidelity") for a in registry
-              if isinstance(a.get("fidelity"), (int, float)) and "served_by" in a]
+              if isinstance(a.get("fidelity"), (int, float))
+              and a.get("served_by") not in (None, "native")]
     weights_ok = abs(sum(v for k, v in model.items() if k.endswith("_weight")) - 1.0) < 0.05
 
     checks = [

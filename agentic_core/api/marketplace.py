@@ -23,7 +23,7 @@ from agentic_core.config import atomic_write_json, data_path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
 
@@ -71,7 +71,7 @@ class CreateListingRequest(BaseModel):
 
 class PurchaseRequest(BaseModel):
     user_id: str = "demo_user"
-    quantity: int = 1
+    quantity: int = Field(default=1, ge=1, le=1000)   # W444 — 0/negative quantities were accepted
 
 
 # ── Persistence helpers ───────────────────────────────────────────────────────
@@ -338,10 +338,29 @@ async def update_listing(listing_id: str, patch: dict,
         raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
     if "vsb_id" in patch and patch.get("vsb_id") != listing.vsb_id:
         _require_vsb_attribution(str(patch.get("vsb_id") or ""), user)
-    for k, v in patch.items():
-        if k not in ("id", "created_at", "certified", "creator_id", "sales_count",
-                     "compliance", "status") and hasattr(listing, k):
-            setattr(listing, k, v)
+    # W444 — the raw-dict patch was applied via setattr with NO validation: price_wst "free"
+    # (or a negative/NaN price) persisted verbatim, the next Listing(**doc) raised, and
+    # _all_listings silently DROPPED the record — an owner could corrupt their listing into
+    # invisibility, and a negative price made purchases skip the ledger while sales_count
+    # climbed. The merged result must re-validate as a Listing before anything is saved.
+    # W444 refuter catch: origin/route are PROVENANCE ('catalog' asserts derivation from a real
+    # registered product) — an owner could forge them by patch; immutable now.
+    _immutable = ("id", "created_at", "certified", "creator_id", "sales_count",
+                  "compliance", "status", "origin", "route")
+    allowed = {k: v for k, v in patch.items() if k not in _immutable and hasattr(listing, k)}
+    if "price_wst" in allowed:
+        try:
+            _p = float(allowed["price_wst"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="price_wst must be a number.")
+        import math as _math
+        if not _math.isfinite(_p) or _p < 0:
+            raise HTTPException(status_code=422, detail="price_wst must be a finite number ≥ 0.")
+        allowed["price_wst"] = round(_p, 2)
+    try:
+        listing = type(listing)(**{**listing.model_dump(), **allowed})
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Invalid patch: {str(e)[:300]}")
     # §11 (W322) — a public-text edit RE-SCREENS; a clean re-screen is the ONLY way off hold,
     # and a failing edit puts an active listing on hold (status/compliance are never patchable).
     if any(k in patch for k in ("name", "description", "tags")) or listing.status == "held":
@@ -359,10 +378,19 @@ async def delete_listing(listing_id: str,
     p = _listing_path(listing_id)
     if not p.exists():
         raise HTTPException(status_code=404, detail="Listing not found")
-    if not user_can_access(user, _load(listing_id).creator_id):    # W311 — owner-scoped, 404-never-403
+    listing = _load(listing_id)
+    if not user_can_access(user, listing.creator_id):    # W311 — owner-scoped, 404-never-403
         raise HTTPException(status_code=404, detail="Listing not found")
+    # W444 — the module's own invariant: "a receipt must never point at a listing that
+    # vanished". A SOLD listing is retired to draft (kept, not advertised), never unlinked.
+    if getattr(listing, "sales_count", 0) > 0:
+        listing.status = "draft"
+        _save(listing)
+        return {"deleted": None, "retired_to_draft": listing_id,
+                "note": (f"listing has {listing.sales_count} recorded sale(s) — retained as a "
+                         "draft so its receipts keep resolving; it is no longer advertised")}
     p.unlink()
-    return {"deleted": listing_id}
+    return {"deleted": listing_id, "retired_to_draft": None}
 
 
 @router.post("/api/v1/marketplace/listings/{listing_id}/purchase")
@@ -383,6 +411,12 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest,
     if listing.status == "held":   # §11 (W322) — a FAIL-screened listing is not purchasable
         raise HTTPException(status_code=409,
                             detail="Listing is held by the §11 compliance screen and cannot be purchased.")
+    # W444 refuter catch (reproduced): a DRAFT listing — including one its owner just deleted,
+    # retired to draft so receipts keep resolving — stayed fully purchasable by id, selling and
+    # charging WST after deletion. Anything not 'active' is not for sale.
+    if listing.status != "active":
+        raise HTTPException(status_code=409,
+                            detail=f"Listing is {listing.status} — not offered for sale.")
 
     total_cost = listing.price_wst * req.quantity
 
@@ -401,6 +435,9 @@ async def purchase_listing(listing_id: str, req: PurchaseRequest,
         if listing.status == "held":
             raise HTTPException(status_code=409,
                                 detail="Listing is held by the §11 compliance screen and cannot be purchased.")
+        if listing.status != "active":   # W444 — re-checked inside the lock like the others
+            raise HTTPException(status_code=409,
+                                detail=f"Listing is {listing.status} — not offered for sale.")
         if total_cost > 0:
             try:
                 from agentic_core.commercial.token_ledger import TokenLedger, UserTier

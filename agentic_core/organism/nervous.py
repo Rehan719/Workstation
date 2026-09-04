@@ -23,7 +23,9 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Deque, Callable, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from agentic_core.auth.core import get_current_user
 
 router = APIRouter(prefix="/api/v1/organism", tags=["idbo-organism"])
 
@@ -192,7 +194,8 @@ class StimulateRequest(BaseModel):
 
 
 @router.post("/nervous/stimulate")
-async def stimulate(req: StimulateRequest):
+async def stimulate(req: StimulateRequest,
+                    user: dict | None = Depends(get_current_user)):
     """Manually inject a signal — testing/demonstration. The injection is honest about itself:
     the recorded source is always prefixed `manual:` so an injected signal can never masquerade
     as an organic one in the feed, and the type is validated against the four real classes."""

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Card, Button, Badge, toast } from '@workstation/ui';
 import { QEPStudio } from '../../components/QEPStudio';
-import { Mic, MicOff, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity } from 'lucide-react';
+import { Mic, MicOff, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity, Brain } from 'lucide-react';
+import QEPIntelligence from '../../components/qep/QEPIntelligence';
 
 export const QEPReligionHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState('coach');
@@ -18,6 +19,8 @@ export const QEPReligionHub: React.FC = () => {
              { id: 'coach', label: 'AI Coach', icon: Mic },
              { id: 'mem', label: 'Memorization', icon: BookOpen },
              { id: 'comp', label: 'Competitions', icon: Trophy },
+             // W444 — the intelligence layer (XAI/adaptation/compliance) had no surface
+             { id: 'intel', label: 'Intelligence', icon: Brain },
              { id: 'lab', label: 'AR/VR Lab', icon: Glasses }
            ].map(t => (
              <button
@@ -34,6 +37,7 @@ export const QEPReligionHub: React.FC = () => {
 
       {activeTab === 'coach' && <TajwidCoach />}
       {activeTab === 'mem' && <MemorizationSuite />}
+      {activeTab === 'intel' && <QEPIntelligence />}
       {activeTab === 'comp' && <QuranCompetitions />}
       {activeTab === 'lab' && <ARVRLab />}
     </div>

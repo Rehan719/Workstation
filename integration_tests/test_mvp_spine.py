@@ -8421,3 +8421,86 @@ def test_w443_agent_hub_hardened_and_honest(client):
             except OSError:
                 pass
     (_REG_DIR / f"{aid}.json").unlink(missing_ok=True)
+
+
+def test_w444_residual_clusters_hardened_and_honest(client):
+    # W444 — the three residual clusters (qep 7, marketplace 5, organism 5): the fixes hold.
+    import uuid as _uuid
+    uid = f"w444-{_uuid.uuid4().hex[:8]}"
+
+    # 1. the PARALLEL marketplace is retired: its ungoverned create path is gone, while the
+    #    real (screened, owner-stamped) marketplace still serves the shared URL namespace
+    r = client.post("/api/v1/marketplace/list", json={"title": "x", "description": "y"})
+    assert r.status_code in (404, 405), f"the ungoverned parallel create path is back: {r.status_code}"
+    assert client.get("/api/v1/marketplace/listings").status_code == 200
+
+    # 2. the AI valuation refuses on the floor rather than shipping a template as a valuation
+    v = client.post("/api/v1/marketplace/value", json={"title": "T", "description": "D"})
+    assert v.status_code == 503 and "fabrication" in v.json()["detail"].lower()
+    # and the fund report labels floor-served output instead of presenting it as CIO analysis
+    fr = client.post("/api/v1/fund/report", json={})
+    if fr.status_code == 200:
+        body = fr.json()
+        assert "served_by" in body
+        if body["served_by"] == "native":
+            assert "floor_note" in body
+
+    # 3. PATCH validates the merged listing (a junk price used to persist verbatim, then the
+    #    next load silently DROPPED the record — self-corruption into invisibility)
+    made = client.post("/api/v1/marketplace/listings",
+                       json={"name": f"L-{uid}", "description": "test listing",
+                             "creator_id": "community"}).json()
+    lid = made["id"]
+    assert client.patch(f"/api/v1/marketplace/listings/{lid}",
+                        json={"price_wst": "free"}).status_code == 422
+    assert client.patch(f"/api/v1/marketplace/listings/{lid}",
+                        json={"price_wst": -5}).status_code == 422
+    ok = client.patch(f"/api/v1/marketplace/listings/{lid}", json={"price_wst": 25})
+    assert ok.status_code == 200 and ok.json()["price_wst"] == 25
+    # 4. purchase quantity is bounded
+    assert client.post(f"/api/v1/marketplace/listings/{lid}/purchase",
+                       json={"quantity": 0}).status_code == 422
+    # 5. a SOLD listing survives deletion as a draft (receipts must keep resolving);
+    #    an unsold one deletes cleanly
+    from agentic_core.api.marketplace import _load as _ml, _save as _ms
+    _l = _ml(lid); _l.sales_count = 1; _ms(_l)
+    d1 = client.delete(f"/api/v1/marketplace/listings/{lid}").json()
+    assert d1["retired_to_draft"] == lid and d1["deleted"] is None
+    # refuter catch (reproduced): the retired draft stayed PURCHASABLE by id — selling and
+    # charging WST after its owner deleted it. Anything not 'active' is not for sale.
+    pd = client.post(f"/api/v1/marketplace/listings/{lid}/purchase", json={"quantity": 1})
+    assert pd.status_code == 409 and "not offered for sale" in pd.json()["detail"]
+    # refuter catch: origin is PROVENANCE — a patch cannot forge 'catalog' onto a user listing
+    og = client.patch(f"/api/v1/marketplace/listings/{lid}", json={"origin": "catalog"}).json()
+    assert og["origin"] != "catalog"
+    # refuter catch: an empty description is a legal stored state — the valuation refuses on
+    # the FLOOR (503), never on an innocent empty field (422)
+    ve = client.post("/api/v1/marketplace/value", json={"title": "T", "description": ""})
+    assert ve.status_code == 503
+    _l = _ml(lid); _l.sales_count = 0; _ms(_l)
+    d2 = client.delete(f"/api/v1/marketplace/listings/{lid}").json()
+    assert d2["deleted"] == lid
+
+    # 6. XAI inputs are bounded to SM-2's actual domain (quality 0-5 etc.)
+    assert client.get("/api/v1/qep/xai/explanations?last_quality=99").status_code == 422
+    assert client.get("/api/v1/qep/xai/explanations?ease_factor=0.5").status_code == 422
+    x = client.get("/api/v1/qep/xai/explanations").json()
+    assert "REAL MemorizationEngine" in x["interval_basis"]
+    # 7. the compliance audit keeps its tri-state honesty
+    a = client.get("/api/v1/qep/compliance/audit").json()
+    assert a["compliant"] in (True, False, None) and "never asserted true" in a["note"]
+
+    # 8. an ungoverned organism config key applies DIRECTLY and lands in the history with a
+    #    true-under-auth authorship stamp (it was hardcoded "owner-ui-direct" regardless)
+    cfg = client.get("/api/v1/organism/config").json()
+    k = next(w for w in cfg["key_wiring"] if not w["governed"])
+    cur = cfg["config"].get(k["section"], {}).get(k["key"])
+    up = client.post("/api/v1/organism/config/update",
+                     json={"section": k["section"], "key": k["key"], "value": cur,
+                           "reason": f"w444 guard {uid}"})
+    assert up.status_code == 200 and up.json()["status"] == "applied"
+    hist = client.get("/api/v1/organism/config/history").json()["history"]
+    mine = next(h for h in hist if h.get("reason") == f"w444 guard {uid}")
+    assert mine["updated_by"] == "owner-ui-direct"   # auth off → the requested default stands
+    # 9. the reset guard still refuses to the CCA (surfacing the refusal IS the wiring)
+    assert client.post("/api/v1/organism/config/reset", json={}).status_code == 409

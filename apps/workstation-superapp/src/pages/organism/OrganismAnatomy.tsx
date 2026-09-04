@@ -145,6 +145,71 @@ export const OrganismAnatomy: React.FC = () => {
     setBusy('');
   };
 
+  // ── W444 — the missing half of the two-path config design: DIRECT edits for ungoverned keys
+  // (governed keys propose via the CCA above), the change history, and the reset guard.
+  const [directEdit, setDirectEdit] = useState<{ section: string; key: string; value: string } | null>(null);
+  const [directNote, setDirectNote] = useState('');
+  const submitDirect = async () => {
+    if (!directEdit) return;
+    setBusy('direct'); setErr(''); setDirectNote('');
+    try {
+      const d = await apiJson<any>('/api/v1/organism/config/update', { method: 'POST', body: {
+        section: directEdit.section, key: directEdit.key, value: directEdit.value,
+        reason: 'Owner edit from the Anatomy panel',
+      } });
+      setDirectNote(`applied: ${directEdit.section}.${directEdit.key} → ${String(d.change?.new_value ?? directEdit.value)}${d.note ? ` — ${d.note}` : ''}`);
+      setDirectEdit(null); loadAll();
+    } catch (e) { setErr(errorMessage(e)); }
+    setBusy('');
+  };
+  const [history, setHistory] = useState<any>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const toggleHistory = () => {
+    const next = !showHistory;
+    setShowHistory(next);
+    if (next && history == null) {
+      apiJson<any>('/api/v1/organism/config/history').then(setHistory).catch(() => setHistory({ history: null }));
+    }
+  };
+  const [resetRefusal, setResetRefusal] = useState<any>(null);
+  const tryReset = async () => {
+    setBusy('reset'); setErr(''); setResetRefusal(null);
+    // W444 refuter catch: apiJson truncates a dict `detail` to a 300-char string, so parsing it
+    // back was dead code and the Owner saw a raw JSON blob. Raw fetch keeps the full 409 body —
+    // its `example` payload seeds the CCA proposal, so the two sides can never drift.
+    try {
+      const r = await fetch('/api/v1/organism/config/reset', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+      });
+      if (r.ok) {
+        // the route's ONLY honest behaviour is the 409 — success would mean the guard vanished
+        setErr('reset unexpectedly succeeded without Change Control — the governance guard is missing');
+      } else {
+        const body = await r.json().catch(() => null);
+        const d = body?.detail;
+        setResetRefusal(d && typeof d === 'object' ? d : { why: typeof d === 'string' ? d : `HTTP ${r.status}` });
+      }
+    } catch {
+      setErr('reset check failed — backend unreachable');
+    }
+    setBusy('');
+  };
+  const submitResetProposal = async () => {
+    setBusy('resetcca'); setErr(''); setCcaResult(null);
+    try {
+      const ex = resetRefusal?.example || {};
+      setCcaResult(await apiJson('/api/v1/cca/submit', { method: 'POST', body: {
+        title: ex.title || 'Reset organism config to defaults',
+        change_type: ex.change_type || 'config_major',
+        description: ex.description || 'Owner-requested reset of every organism lever to defaults',
+        submitted_by: 'owner-anatomy-panel',
+        config_change: ex.config_change || { reset: true },
+      } }));
+      setResetRefusal(null);
+    } catch (e) { setErr(errorMessage(e)); }
+    setBusy('');
+  };
+
   const traitAxes = selGenome?.traits ? Object.keys(selGenome.traits) : [];
 
   return (
@@ -385,9 +450,14 @@ export const OrganismAnatomy: React.FC = () => {
                   <div className="flex items-center gap-1 shrink-0">
                     {k.governed && <Chip tone="gov">governed</Chip>}
                     <Chip tone={k.wired ? 'ok' : 'dim'}>{k.wired ? 'wired' : 'stored-only'}</Chip>
-                    {k.governed && (
+                    {k.governed ? (
                       <button type="button" onClick={() => setProposal({ section: k.section, key: k.key, value: String(val) })}
                         className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-highlight/40 text-highlight hover:bg-highlight/10">propose</button>
+                    ) : (
+                      /* W444 — ungoverned keys take the DIRECT path by design; only governed
+                         levers must go through the CCA. The stored-only chip keeps this honest. */
+                      <button type="button" onClick={() => setDirectEdit({ section: k.section, key: k.key, value: String(val) })}
+                        className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-slate-700 text-slate-400 hover:bg-slate-800">edit</button>
                     )}
                   </div>
                 </div>
@@ -409,6 +479,54 @@ export const OrganismAnatomy: React.FC = () => {
             <p className="text-[10px] text-emerald-400 mb-3">
               Submitted as {ccaResult.cca_id} · tier {ccaResult.impact_tier} · status {ccaResult.status} — track and implement it on the Change Control page.
             </p>
+          )}
+          {directEdit && (
+            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 mb-3 flex items-center gap-2 flex-wrap">
+              <p className="text-[10px] font-bold text-slate-300">Set {directEdit.section}.{directEdit.key} =</p>
+              <input value={directEdit.value} onChange={e => setDirectEdit({ ...directEdit, value: e.target.value })}
+                aria-label="config value"
+                className="w-24 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-1.5 text-white" />
+              <Button onClick={submitDirect} disabled={busy === 'direct'} className="flex items-center gap-1.5 bg-slate-800 text-white text-[10px]">
+                {busy === 'direct' ? <Loader2 size={11} className="animate-spin" /> : <Settings2 size={11} />} Apply
+              </Button>
+              <button type="button" onClick={() => setDirectEdit(null)} className="text-[9px] text-slate-500 hover:text-white">cancel</button>
+            </div>
+          )}
+          {directNote && <p className="text-[10px] text-emerald-400 mb-3">{directNote}</p>}
+          {/* W444 — the reset guard, visible: this route's only honest behaviour is the 409
+              pointing at Change Control (a reset flips every wired lever at once). */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <button type="button" onClick={tryReset} disabled={busy === 'reset'}
+              className="text-[9px] font-black uppercase px-2 py-1 rounded border border-slate-700 text-slate-400 hover:bg-slate-800">
+              Reset to defaults
+            </button>
+            <button type="button" onClick={toggleHistory}
+              className="text-[9px] font-black uppercase px-2 py-1 rounded border border-slate-700 text-slate-400 hover:bg-slate-800">
+              {showHistory ? 'hide change history' : 'Change history'}
+            </button>
+          </div>
+          {resetRefusal && (
+            <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/30 mb-3">
+              <p className="text-[10px] font-bold text-amber-400">Refused (as designed): {String(resetRefusal.why || resetRefusal.refused || 'a reset is governed')}</p>
+              <Button onClick={submitResetProposal} disabled={busy === 'resetcca'} className="flex items-center gap-1.5 bg-highlight text-sovereign text-[10px] mt-2">
+                {busy === 'resetcca' ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />} Submit reset proposal to CCA
+              </Button>
+            </div>
+          )}
+          {showHistory && (
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-900 mb-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">Config change history</p>
+              {history == null && <p className="text-[10px] text-slate-600 italic">loading…</p>}
+              {history != null && history.history == null && <p className="text-[10px] text-vital font-bold">history unavailable — the read failed (this is not "no changes")</p>}
+              {history?.history != null && history.history.length === 0 && <p className="text-[10px] text-slate-600 italic">no changes recorded yet</p>}
+              {(history?.history ?? []).map((c: any, i: number) => (
+                <p key={i} className="text-[10px] font-mono text-slate-400">
+                  {String(c.applied_at || c.at || '').slice(0, 19)} · {c.section}.{c.key}: {String(c.old_value)} → <span className="text-white">{String(c.new_value)}</span>
+                  <span className="text-slate-600"> · by {c.updated_by}{c.wired === false ? ' · stored-only' : ''}</span>
+                </p>
+              ))}
+              {history?.note && <p className="text-[9px] text-slate-600 italic mt-1">{history.note}</p>}
+            </div>
           )}
           <div className="flex items-center gap-2 mb-2">
             <Button onClick={runSuggest} disabled={busy === 'suggest'} className="flex items-center gap-1.5 bg-slate-900 text-slate-300 text-[10px]">

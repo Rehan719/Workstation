@@ -41,10 +41,19 @@ export const QEPStudio: React.FC = () => {
       .then(set)
       .catch(e => setLoadErrs(errs => [...errs, String(e?.message ?? e)]));
 
+  // W444 — the platform's own honesty statement (per-component truth lines + the constitutional
+  // constraints) and the translation availability were served but never shown to anyone.
+  const [qepStatus, setQepStatus] = useState<any>(null);
+  const [trStatus, setTrStatus] = useState<any>(null);
   const loadCore = () => {
     setLoadErrs([]);
     getJson(`/api/v1/qep/hifz/progress/${UID}`, setProgress);
     getJson(`/api/v1/qep/gamification/${UID}`, setGami);
+    getJson('/api/v1/qep/status', setQepStatus);
+    fetch('/api/v1/qep/translation/status')
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(setTrStatus)
+      .catch(() => setTrStatus(null));   // unknown availability is shown as unknown, never assumed
   };
   const [suwarFailed, setSuwarFailed] = useState(false);
   const loadSuwar = () => {
@@ -142,6 +151,25 @@ export const QEPStudio: React.FC = () => {
       )}
 
       {/* gamification strip — REAL persisted awards only */}
+      {/* W444 — the QEP ops strip: each component's honest state line, and the constraints that
+          govern the whole platform, on screen instead of API-only. */}
+      {qepStatus && (
+        <Card className="p-4">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">QEP components — honest state</p>
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(qepStatus.components || {}).map(([k, v]) => (
+              <span key={k} title={String(v)}
+                className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${/only|no |never|unavailable/i.test(String(v)) ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
+                {k}
+              </span>
+            ))}
+          </div>
+          {(qepStatus.constraints || []).length > 0 && (
+            <p className="text-[9px] text-amber-400/80 italic mt-2">{(qepStatus.constraints || []).join(' · ')}</p>
+          )}
+        </Card>
+      )}
+
       {gami && (
         <div className="flex items-center gap-2 flex-wrap">
           <Chip tone="ok" title={gami.level_basis}>level {gami.level}</Chip>
@@ -277,7 +305,16 @@ export const QEPStudio: React.FC = () => {
         {/* ── Translation — refuses rather than fabricates ── */}
         <Card className="p-5">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-2"><Languages size={14} /> Educational translation — model-only</h3>
-          <p className="text-[9px] text-slate-600 mb-2">A translation must come from a model. When only the deterministic floor is available, this REFUSES — the floor's output will never be presented as a translation of sacred text.</p>
+          {/* W444 — the COMPUTED availability, shown before anyone types sacred text into a box
+              that will refuse; both this chip and the click-time 503 read the same model probe. */}
+          <p className="mb-1">
+            <Chip tone={trStatus == null ? 'dim' : trStatus.translation_available ? 'ok' : 'warn'}>
+              {trStatus == null ? 'availability unknown'
+                : trStatus.translation_available ? `available — ${trStatus.availability_basis || 'model discovered'}`
+                : 'unavailable — the floor cannot translate; Translate will refuse'}
+            </Chip>
+          </p>
+          <p className="text-[9px] text-slate-600 mb-2">A translation must come from a model. When only the deterministic floor is available, this REFUSES — the floor's output will never be presented as a translation of sacred text.{trStatus?.tajweed_note ? ` ${trStatus.tajweed_note}` : ''}</p>
           <textarea value={trText} onChange={e => setTrText(e.target.value)} rows={2}
             className="w-full text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300 mb-2" placeholder="Arabic educational text…" />
           <Button onClick={runTranslate} disabled={busy === 'translate' || !trText.trim()} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[10px]">
