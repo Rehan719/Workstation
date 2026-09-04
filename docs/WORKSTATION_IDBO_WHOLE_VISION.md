@@ -11,7 +11,11 @@
   §16 rewritten 2026-09-02 as a short pointer section (its progress accretion had become the source
   of documented overclaims); §18's four certainty questions recorded as settled the same day. The
   fidelity verdict lives in docs/VISION_FIDELITY_LEDGER.md; the cycle log in
-  docs/AUTONOMOUS_PROGRESS.md (W1→W434).
+  docs/AUTONOMOUS_PROGRESS.md (W1→W445).
+  2026-09-04 (W445): every factual claim in this document re-verified against HEAD 89f36fea by a
+  two-agent provenance pass; §16 regenerated from fresh measurement; §11 gained the faith-content
+  constitution the Owner's 2026-09-03 QEP directive established (delivered W439); §18-A updated to
+  describe model DISCOVERY (the fixed three-model list had been outgrown by the code).
   2026-06-24 clarification (Owner): added §3A — the TWO distinct, in-house-AI-first ways IDBO serves a
   user (1: Domains = domain-specific AI-mediated tools/resources for working in all domains/realms;
   2: end-to-end Concept→Commercialisation → a living VSB IDBO Enterprise entity) — and the Chief-owned
@@ -85,7 +89,10 @@ optional accelerants, never dependencies; §6):
    Enterprise / Learning / Developing / Scholarship realms. These are immediate, usable, in-house-AI-mediated
    working capabilities (research · analyse · generate · plan · assess · author · design · review …): the
    user works *with* AI mediation **inside their domain**, getting best-in-class capability on demand —
-   without necessarily establishing an enterprise.
+   without necessarily establishing an enterprise. **Owner directive (2026-09-03, delivered W439): the
+   Religion domain carries the Quran Education Platform (QEP) as its flagship** — authentic sourced
+   text, real SM-2 memorisation, written-recall assessment, gamified progression — under the
+   faith-content constitution recorded in §11.
 
 2. **End-to-End Lifecycle — Concept → Commercialisation → a living VSB IDBO Enterprise.** *Separately*,
    Workstation IDBO AI-mediates the user through the **complete end-to-end lifecycle (Concept →
@@ -215,8 +222,12 @@ workstream **W1 — Native AI Resource Fabric**.)
 > live and in-house-first; the **autonomous workflow-TREE** ("dynamic, adaptive, autonomous workflow /
 > pipeline / cascade trees", §6) runs goals through 12 real owned capabilities (governance · validation ·
 > decision · consensus · biomimetic signal · provenance); external providers are optional, never
-> dependencies. See **§16** for the full execution ledger and `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`
-> for the real-vs-mock record.
+> dependencies. §16 points at where the execution record lives (`docs/AUTONOMOUS_PROGRESS.md`);
+> `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md` holds the real-vs-mock record, and
+> `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` records the primitives' audit: **all 10 audited
+> primitives FIXED and WIRED (W437)**; what remains there is latent — four unreached fabricating
+> functions, plus two dormant governance gaps on reached CCA routes (latent by absent
+> contention/consumers, not by unreachability).
 
 ## 7. The Reconfigurable Resource Fabric + Digital Resources (with user design control)
 
@@ -278,6 +289,24 @@ Solutions are **ethically evaluated for human and environmental well-being, safe
 Compliance engines (Halal/Sharia · UK-Legal/London · Regulatory · EHS · Ethical · Constitutional/gaas)
 are integrated into every synthesis/generative/operational workflow, not bolted on.
 
+**The faith-content constitution (Owner-established, delivered W439 — immovable):** where the
+platform touches sacred text, honesty constraints bind harder than anywhere else.
+1. **Qur'an Arabic text is NEVER AI-generated** — only fetched from the authoritative source
+   (alquran.cloud), labelled at source, and injected into any AI prompt as *given material* with an
+   explicit do-not-reproduce instruction (the tafsir route was found asking models to emit Quranic
+   Arabic from their weights, and was fixed — W439's constitutional catch).
+2. **Sourced-only, exactly:** nonexistent ayaat are refused against the real 114-surah ayah-count
+   table; a truncated range is disclosed as the covered range, never claimed whole.
+3. **Recitation is NEVER scored** — no phonetic model exists, and a fabricated judgement about
+   recitation of the Qur'an would be a false witness (the W403 precedent). Assessment is
+   written-recall only: the learner's typed Arabic against the authoritative text, with its scope
+   stated ("says NOTHING about recitation").
+4. **Floor-served output is never presented as scholarship or translation** — translation of sacred
+   text refuses (503) rather than serving a template, and every AI-served surface renders serving
+   provenance (the shared amber "structured floor — not model analysis" badge).
+5. **AI content is labelled AI-assisted with provenance — never authoritative**; learners are
+   directed to qualified teachers.
+
 ## 12. The Economic Organism (the VSB)
 
 Each VSB is an **autonomous, compliant, hybrid Waqf/Trust/Multinational economic entity** that
@@ -338,31 +367,55 @@ of the truth that must be kept in sync, and it was not. So this section no longe
 carries pointers to the places that do, each of which is verified rather than asserted. The old
 text remains in git history.
 
-**State as of 2026-09-02** (measured against a backend booted from HEAD `d937dd37`; re-verify before
-relying — a long-running dev process serves the code it booted with):
-- Integration suite **337 passed / 15 skipped / 0 failed**; Spine CI green; import integrity clean;
-  browser smoke 11 deep routes + 61 swept, including the in-browser PDF-extraction guard.
-- 442 API paths · 466 method+path operations · 72 concrete frontend routes, all rendering.
-- The fabrication audit is closed (63/63) and a defect *class* — a value selected or reported as a
-  result when nothing discriminated — has been closed in sixteen places across five subsystems.
+**State as of 2026-09-04** (measured against HEAD `89f36fea`; every figure below is reproducible —
+`python scripts/reach_audit.py` for the surface, the pytest suite for the tests — and should be
+re-measured rather than trusted once this date is old; a long-running dev process serves the code
+it booted with):
+- Integration suite **350 passed / 15 skipped / 0 failed** (326 test functions); Spine CI green;
+  import integrity clean; browser smoke **17 deep routes + 57 swept**, including the in-browser
+  PDF-extraction guard and the honest-empty-state needles.
+- **463 method+path operations over 439 API paths · 271 distinct frontend /api fragments · 73
+  `<Route>` declarations** (72 concrete + the catch-all), all rendering.
+- Reach, classified: **325 of 456 /api operations reached · 64 legacy (non-v1, kept — they have
+  live callers) · 67 genuine-unreached, all small scatter.** The Tier-2 reach backlog of
+  substantial clusters is COMPLETE (W437–W444): native-AI Primitive Console · organism Anatomy +
+  CCA governance fusion · QEP in the Religion domain (Owner directive) · VBS operating systems ·
+  the frontier router RETIRED to `_archive` beside its off-vision pages · economy money-integrity +
+  wiring · the Agent Hub rewritten and wired · the residual clusters (a shadowed parallel
+  marketplace retired; the §12 marketplace pricing door opened; QEP Intelligence tab; organism
+  config history/edit/reset-guard).
+- The fabrication audit is closed (63/63); the §4.5 defect *class* — a value selected or reported
+  as a result when nothing discriminated — is closed at every reached site, and the
+  refute-your-own-fixes practice (adversarial agents on every round's diff) caught live breaks in
+  **eight consecutive rounds** before any user saw them.
 
 **Where the truth lives:**
-- `docs/VISION_FIDELITY_LEDGER.md` — **the fidelity verdict, section by section** (74 findings,
-  adversarially refuted, dated). This is the document §16 used to pretend to be.
-- `docs/FABLE_DELIVERY_PROMPT.md` — the working ledger: what remains open, tiered by how much a
-  real person is misled or blocked, with acceptance criteria.
-- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W434). A record of intent
+- `docs/VISION_FIDELITY_LEDGER.md` — **the fidelity verdict, section by section** (v2, 2026-09-02;
+  74 findings, adversarially refuted, dated). Its baseline HEAD is now ten workstreams old —
+  weigh it accordingly.
+- `docs/FABLE_DELIVERY_PROMPT.md` — **the working ledger (v11, 2026-09-04)**: what remains open,
+  tiered by how much a real person is misled or blocked, with acceptance criteria.
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W445). A record of intent
   and account, not proof.
-- `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` and `docs/FABRICATION_LEDGER.md` — the two defect
-  ledgers (the first partially open, the second closed).
+- `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — **all 10 audited primitives FIXED + WIRED (W437)**;
+  what remains open there is LATENT: four unreached fabricating functions, and two dormant
+  governance gaps on reached CCA routes. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
+- `scripts/reach_audit.py` — the reach measure itself; run it fresh, never trust a written figure.
 
-**Open against this vision, in one paragraph:** the journey UI still certifies floor-served output
-without disclosing the floor (prompt ledger item 1 — Tier 1, small); the canon's single 5-stage
-lifecycle does not exist in the product, which runs several vocabularies, and every established VSB
-currently holds `stage: "commercialise"` from a constant (item 2 — an Owner decision); ~71–93 of 217
-write-capable v1 routes are unreached from any UI; and four native-AI primitives remain recorded as
-defective and deliberately unwired. Everything else materially claimed by §1–§15 is either delivered
-or honestly disclosed as partial at the surface where a user would meet it.
+**Open against this vision, in one paragraph (regenerated 2026-09-04):** the canon's single
+5-stage lifecycle does not exist in the product — several vocabularies run, and every established
+VSB holds `stage: "commercialise"` from a literal (`genesis.py:687/:852`) that no code path ever
+advances (prompt ledger item 1 — an **Owner decision**, options measured); 67 genuine-unreached
+/api operations remain as small scatter (audit each before wiring — unreached is not the same as
+ready); the primitive ledger's LATENT entries stay recorded, not rushed (an unreached
+evolution engine whose fitness is mostly random, three more fabricating unreached functions, and
+two dormant governance gaps on reached CCA routes — a low-contention audit-trail race and a
+ratification flag no Board surface consumes); the exposed Stripe key is redacted from the tree but **remains in git
+history — rotation at Stripe is an Owner action still owed**; `configs/realms.yaml` still encodes
+the six drifted domain-shaped entries the §18-B ruling declared wrong (dormant — no live
+consumer — but uncorrected); and §18-A's heavier self-hosted/trained-model programme remains a
+recorded future ambition, not a gap. Everything else materially claimed by §1–§15 is either
+delivered or honestly disclosed as partial at the surface where a user would meet it.
 
 ---
 
@@ -377,7 +430,9 @@ architecture). This is the exact structural skeleton the fine-grained vision han
   Developing (innovation/technical) · Scholarship (research/academic).
 - **Domains (the problem space):** Religion · Science · Education · Law · Employment/Career · Care. The
   **Domains section** surfaces **domain-specific AI-mediated tools & resources** for AI-mediated working
-  in each (offering 1, §3A) — usable directly, independent of establishing an enterprise.
+  in each (offering 1, §3A) — usable directly, independent of establishing an enterprise. The Religion
+  domain's flagship is the **Quran Education Platform** (Owner directive 2026-09-03; §11's
+  faith-content constitution binds it).
 - **Products (how work runs):** Reactor (rapid AI generation) · Incubator (iterative development) ·
   Factory (production-grade delivery) · Laboratory (experimental/research).
 - All 96 follow the same **Concept → Design → Build → Launch → Commercialise** stage-gated lifecycle.
@@ -387,7 +442,10 @@ architecture). This is the exact structural skeleton the fine-grained vision han
 2. **Nervous** — the cognitive engines + MJM + SPI/BPI + Knowledge Tree (sense → think → decide).
 3. **Immune** — GaaS (legal/ethical/quality/safety/environmental) + self-healing (defend).
 4. **Cardiovascular** — dynamic resource allocation (distribute).
-5. **Respiratory** — autonomous workflow cascade / Agent Hub (do).
+5. **Respiratory** — autonomous workflow cascade / Agent Hub (do). *Live surface since W443: the
+   Agent Hub tab on the Living Organisation hub — a real SSE message bus, agent registry, and
+   work-order letterbox, honest about its occupancy (no executor is subscribed; work-orders are
+   records, not executions).*
 6. **Musculoskeletal** — digital facilities: Reactors, Labs, Factories, Petri dishes, Generators,
    Simulators, Digital Twin (act on the world).
 7. **Endocrine** — signal bus / shared context + MJM (coordinate).
@@ -488,13 +546,19 @@ re-opened**
 (evidence: prompt v10 `<answers_to_the_owner>`; decisions dated below):
 
 - **A — "Own models" scope — SETTLED (in practice, ratified by use).** Control plane + local-first is
-  the realisation: `GET /api/v1/native-ai/models` serves llama2 / llama3.2 / llama3.2:1b through the
-  owned orchestration control plane, with a deterministic native floor always available; external
-  providers are opt-in accelerants (`AI_ALLOW_EXTERNAL`), never a dependency. The heavier
-  self-hosted/trained-model programme remains open as a future ambition, not a gap.
+  the realisation: `GET /api/v1/native-ai/models` **discovers whatever local models the owned control
+  plane actually holds** and builds its serving tiers dynamically (auto · the always-available
+  deterministic native floor · the promoted local default · one tier per discovered model), with the
+  W276 model-lifecycle estate (promotion, retirement) reported alongside; external providers are
+  opt-in accelerants (`AI_ALLOW_EXTERNAL`), never a dependency. (An earlier revision of this answer
+  named a fixed three-model list; the code outgrew it — discovery is the mechanism, not a roster.)
+  The heavier self-hosted/trained-model programme remains open as a future ambition, not a gap.
 - **B — Realm set — CONFIRMED.** The canon's four user-type Realms stand (Enterprise · Learning ·
-  Developing · Scholarship). Where live configuration disagreed, the CONFIG was wrong, not the canon
-  (`configs/realms.yaml` encodes domain-shaped entries). The sidebar variants were drift.
+  Developing · Scholarship), resolved in code with one source each side (`agentic_core/taxonomy.py`
+  + `apps/workstation-superapp/src/lib/taxonomy.ts`). Where live configuration disagreed, the CONFIG
+  was wrong, not the canon — and note honestly: `configs/realms.yaml` still encodes the six drifted
+  domain-shaped entries today; it has no live consumer (dormant), but it was ruled wrong and never
+  corrected. The sidebar variants were drift.
 - **C — Scope priority — ANSWERED ON EVIDENCE.** W1 (native AI fabric) was NOT the right next build —
   it was substantially delivered, and its remaining gaps were reach and reporting. The right next
   work was, and is, whatever the current delivery-prompt ledger ranks first by how much a real
@@ -505,7 +569,7 @@ re-opened**
   a server upload — W429. One §17.1 question remains genuinely open and sits with the Owner: the
   single 5-stage lifecycle does not exist in the product (several vocabularies run, and every
   established VSB holds `stage: "commercialise"` from a constant) — see the delivery prompt's
-  ledger item 2 for the measured options.
+  ledger item 1 (v11) for the measured options.
 
 *(The progress addenda formerly numbered §16.3 and §16.4 — the Rounds 11–12 reconciliation and the
 §6 architecture-vs-practice correction, W363–W380 — are preserved verbatim in git history and in

@@ -3962,3 +3962,56 @@ state-dependent — replaced with a permanent hint line.
 PATCH validation removed → a junk price accepted as 200) and watched fail; restored green.
 Probe 11/11 through the UI (tab clicks included — the ops strip, XAI, drawer pricing, the
 reset 409); smoke 17 deep + 57 swept, green on a state-mutated store.
+
+### W445 — the documentation set regenerated from provenance, again — and the refuters caught the regeneration itself
+
+**The Owner asked for the two canonical documents regenerated, enhanced, and advanced — the
+delivery prompt to v11.** Done the W435 way, with the muscle built since: two verification agents
+checked **every factual claim in v10 and the vision against HEAD 89f36fea** (96 tool calls of
+file:line evidence) before a word was rewritten; the surface was re-measured fresh
+(`scripts/reach_audit.py`, the suite, the route table); and the REGENERATED text was then
+adversarially refuted before shipping.
+
+**What the verification caught in the old documents:** v10 contradicted itself — its "STILL OPEN:
+four native-AI primitives" line was WRONG against its own companion note and the ledger's
+ALL-10-FIXED-AND-WIRED status; the vision's §16 state block (suite 337, smoke 11+61, 442 paths)
+was three figures deep in staleness; its "open against this vision" paragraph still listed the
+W436-closed journey defect and the superseded 71–93 reach range; §18-A named a fixed three-model
+list the code had outgrown (the models endpoint DISCOVERS local models and builds tiers
+dynamically); and ledger item 2's evidence lines had moved (genesis.py:687/:852 now). The store
+counts were re-verified live: 4 projects all at "concept", 219 VSBs all at "commercialise".
+
+**What v11 and the vision now carry:** the fresh measured surface with its reproduction commands;
+the W437–W444 campaign compressed into the trajectory (wire OR retire — two whole surfaces were
+honestly retired); a ONE-entry ledger (the lifecycle question, an Owner decision, with the
+Tier-1-in-a-Tier-3-costume caveat stated at the claim site); six new method rules (19–24) earned
+by the campaign — refute your own fixes; enumerate ALL writers before claiming a store is locked;
+verify the guard OBJECT (duplicate keys, state-dependent needles); wait for the specific outcome
+element; unreached is a queue of decisions and retirement is first-class; every filename
+component is an identity surface — and a rhythm that makes the refuter round and the
+final-tree-suite discipline mandatory. The vision gained the **faith-content constitution** in
+§11 (the Owner's QEP directive, delivered W439: Quran Arabic never AI-generated, sourced-only,
+recitation never scored, floor output never presented as scholarship or translation), the QEP
+flagship recorded in §3A and §17.1, a live surface noted for the Respiratory layer (W443's Agent
+Hub), §18-A corrected to discovery-not-roster, and §18-B's honest note that configs/realms.yaml
+remains drifted-but-dormant.
+
+**Refuter round (2 agents, 12 findings — the NINTH consecutive round of real catches, this time
+on the regenerated documents):** v10's ledger numbering survived into the vision's §18-D ("item
+2" → the v11 ledger has ONE entry); the two documents contradicted each other on the log range
+(W444 vs W445 — resolved by this entry existing in the same commit); my CRLF census didn't
+reproduce (I had copied a verification agent's *.py/*.tsx/*.md subset figure as if global — true
+figures 201/4230/5 by `git ls-files --eol`, now stated with the command); the standing-queue
+list omitted hub 3 (the API-side agent ops the wired panel deliberately doesn't call — now
+listed with the decision deferred, not assumed resolved) and said ~30 clusters where the audit
+prints 38; the probe range implied a W441 probe that never existed (the retirement round needed
+none); the REQUIRED_SECTIONS enumeration missed its ninth key; the Tier-1 "none remains" claim
+carried its known exception three screens away (now stated at the claim site); "all unreached
+code" mislabelled the two CCA latents (they are DORMANT ON REACHED ROUTES — latent by absent
+contention/consumers, and they graduate to incidents the day their preconditions arrive); and
+the regeneration itself had flattened the CRLF vision file to LF — a 1,108-line diff for nine
+intended sections, violating the very constraint the new text restates — restored to CRLF,
+shrinking the diff to 134 lines.
+
+Docs-only round: no production code changed; the suite figure (350/15/0) stands from W444's
+final run at the same HEAD.
