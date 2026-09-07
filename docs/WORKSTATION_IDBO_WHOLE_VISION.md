@@ -16,6 +16,13 @@
   two-agent provenance pass; §16 regenerated from fresh measurement; §11 gained the faith-content
   constitution the Owner's 2026-09-03 QEP directive established (delivered W439); §18-A updated to
   describe model DISCOVERY (the fixed three-model list had been outgrown by the code).
+  2026-09-05 (W446): regenerated from a three-phase review — a research analysis of the whole body of
+  previous work (69 Owner directives, 30 lessons, every §-promise vs the log, 15 canon inconsistencies),
+  a FRESH six-region fidelity audit against a backend booted from HEAD 06c51109 (ledger v3: 60 findings,
+  all individually refuted), and regeneration from that provenance. §16 re-measured; §17.1–§17.5 carry
+  dated status notes; §18 gained E (federation) and the list of rulings still with the Owner; Owner
+  directives the log recorded but the canon never carried are now recorded at their claim sites
+  (§3A, §5, §7, §8, §9, §12, §13, §14, §15.10) — each attributed and dated, none rewriting §1–§15 prose.
   2026-06-24 clarification (Owner): added §3A — the TWO distinct, in-house-AI-first ways IDBO serves a
   user (1: Domains = domain-specific AI-mediated tools/resources for working in all domains/realms;
   2: end-to-end Concept→Commercialisation → a living VSB IDBO Enterprise entity) — and the Chief-owned
@@ -93,6 +100,14 @@ optional accelerants, never dependencies; §6):
    Religion domain carries the Quran Education Platform (QEP) as its flagship** — authentic sourced
    text, real SM-2 memorisation, written-recall assessment, gamified progression — under the
    faith-content constitution recorded in §11.
+   **Owner directives that define this offering (recorded W446 from the execution log — W29/W30/W37,
+   the 2026-06-26 user-capability review E1–E7, and the 2026-09-01 rulings):** every tool result can be
+   **iteratively advanced / developed / refined in place**, the draft preserved verbatim and additions
+   labelled; users **bring their own data** to every tool and to Genesis Describe (text documents, and
+   PDFs extracted **in the browser — the file never leaves the machine**); the six domains carry tool
+   sets of **comparable scope, scale and complexity** (the Employment parity directive, incl. the
+   application-form / supporting-statement tool that never invents experience the candidate lacks);
+   outputs persist in **My Work** with real export formats; dictation follows the user's language.
 
 2. **End-to-End Lifecycle — Concept → Commercialisation → a living VSB IDBO Enterprise.** *Separately*,
    Workstation IDBO AI-mediates the user through the **complete end-to-end lifecycle (Concept →
@@ -174,6 +189,18 @@ instruct the Board/genome):
   development, establishment, management) per task/objective/plan.
 - **Change Control (arms-length Agency)** — governs all change at arm's length from operations.
 
+**Recorded W446 — the Board of specialist Directors, as the canon elsewhere names them and as built
+(`agentic_core/api/board.py`):** the Chief (the Owner's digital twin) chairs Directors of **Strategy &
+Vision · Technology & Architecture · Governance & Compliance · Biomimetic Systems** (the highest authority
+to monitor / change / control every VSB living process) **· Operations & Delivery · Finance & Capital ·
+Evolution & Learning**; Finance & Capital and Governance & Compliance oversee the economic model (§12), so
+the economic-governance chain reads Owner → Chief → Board → AI CEO → CFO once.
+**Recorded W446 — Owner directive (W110, 2026-06-25): the QMS OWNS the Document Control Management System**
+(ISO 9001 §7.5 — control of documented information is a function of the QMS, not a sibling), and the AI
+CEO "integrates the living management systems" concretely by **document-controlling the organisation's
+key decisions** (CEO directive · Board action plan · BTO programme · Build-to-Order) through that QMS-owned
+DCMS — the `BMS · QMS · DCS · EMS` list above is read with that ownership structure.
+
 The whole organisation is **reconfigurable with user design control**, and is itself **modelled and
 simulated** for continual improvement, advancement and optimisation — an automated **living twin of
 the founder *and* the enterprise**, with all roles, responsibilities, compliance and optimisations
@@ -252,6 +279,17 @@ Across **Synthesis Lab · Build-to-Order · Forge**, users **access, select, rec
 resources / swarm cascades** — composing, combining, re-running, and re-using them to build-to-order
 the enterprise they need, with the platform modelling and simulating the configuration before commit.
 
+**Recorded W446 — the Owner's integration rule for owned capability (W12, W12-c, W59–W77):** existing
+`agentic_core` modules are **integrated into the native swarm / fabric — federated, never duplicated,
+never a prompt approximation of a real engine** — and a module that cannot be made real is archived; the
+fabric federates (does not duplicate) catalog / BTO / products / studio / twin, and **every composed
+resource runs its REAL engine**. **The facility family, related once:** the grid's four Products (§17.1:
+Reactor · Incubator · Factory · Laboratory — "how work runs") are the user-facing quartet of the fabric's
+eight digital resources above (+ Engine · Petri dish · Generator · Simulator); the Reactor is the
+vision-exact composite defined above; the Laboratory is realised as the Forge's analysis / synthesis bench
+(`forge.py` stage `laboratory`) and the Synthesis Lab; digital twins, generators and simulators are the
+modelling organ that §4.5 ranking and §17.5 twin pre-validation rely on.
+
 ## 8. The Biomimetic Living-Organism Nature
 
 Inspired by **nature's solved solutions in biology and geobio-physical systems**, Workstation is a
@@ -263,6 +301,14 @@ make it **dynamic, adaptive, responsive** — and **defend itself, learn, and im
 customer/user satisfaction, founder-alignment, and live compliance are all continuously monitored,
 evaluated, and improved.
 
+**Recorded W446 — the self-curation principle (Owner directive, 2026-06-22 capstone; W42, W266):**
+Workstation's OWN evolution and transformation are delivered by its own living organisation — the
+Sovereign Evolution Office introspects → AI CEO triage → C-Suite verdicts → CoE/BTO roadmap → Change
+Control, on the circadian heartbeat — and the platform's whole transformation is run end-to-end through
+the Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order → Change Control cascade
+(`POST /api/v1/transformation/orchestrate`). The organism delivers its own transformation through its own
+org: dogfood is the design, not an afterthought.
+
 ## 9. The User Experience — multimodal, enterprise-aware, reconfigurable
 
 - **Enterprise-aware avatar** integrated across the platform: **multimodal communication / interaction**
@@ -273,6 +319,22 @@ evaluated, and improved.
   optimal solution.
 - **Accessible to all** — all languages; **adaptive and responsive**, dynamically and intelligently
   **personalised** to each user's instructions, requests, history, preferences, needs and abilities.
+
+**Recorded W446 — three Owner rulings the log carried and the canon did not:**
+- **The VSB Cockpit is the founder's operating surface** for their established enterprise (Owner, W43):
+  one place to interact with the generated living VSB IDBO Enterprise's org structure, its Chief (digital
+  twin), its living systems (BMS/QMS/DCS/EMS), its business plan (vision / strategy / roadmap / action
+  plan), its deliverables, economy, transformation and converse channel (`/vsb-cockpit`).
+- **Information architecture and naming (Owner, W86–W88, W127–W142, W172–W175):** the front door leads
+  with the two §3A journeys; navigation is organised by vision sections (Home · Work in a Domain · Build
+  an Enterprise · Platform · Governance & Trust · System), not technical subsystems; **only wired,
+  functional surfaces are routed** (aspirational pages archived, never shown); the term is **VSB
+  Enterprises** — "Enterprise Realm" / "Forest of Collaboration" were removed by Owner instruction.
+- **Multimodality is in-house-first and honesty-bound (Owner, W53; E6/E7):** image understanding runs on
+  an OWNED local vision model when one is provisioned, an external accelerant only if opted in, and
+  otherwise an honest "image received but not analysed" — never a fabricated description; voice runs
+  in the browser (Web Speech, feature-detected — no fake microphone) and recognition follows the user's
+  language preference; when the serving resource cannot honour the language, the answer says so.
 
 ## 10. The Solution-Quality Bar
 
@@ -315,6 +377,19 @@ in users; donates intelligently to causes by real-world urgency (WATER · Orphan
 Dawah; 100%-donation-only). **Virtual/simulated money until the Owner directs real rails**; built to
 launch-ready standard. (Full design in `VSB_ECONOMIC_LEGAL_MODEL.md`.)
 
+**Recorded W446 — what the Owner approved (2026-06-21, re-approved 2026-06-29; built W215–W221 and
+hardened through W442; `agentic_core/economy/entities.py`):** **nine selectable legal forms** (Sole
+Holder · Ltd · PLC · Trust · Waqf · Multinational Group · Non-profit · Charity · **Waqf-Ltd Hybrid,
+the recommended default** — auto-chosen and user-editable at establishment); the **six-stage waterfall**
+with Stage 0 legal/operating **reserves off the top** (costs + 20% of revenue) and the approved default
+split of the distributable **Owner 20 · Self-investment 30 · Capital Fund 20 · User-projects 15 ·
+Charity 15** (Owner-adjustable per VSB, template-bounded, every split UEG-logged, material
+distributions held for Change Control); jurisdiction **UK / London**; owner payments **virtual WST now,
+Stripe real-money later behind compliance/KYC** (`REAL_MONEY_ENABLED` stays False until the Owner
+flips it); the four causes with a **100%-donation-only screen** and Owner-set directives (inclusions /
+exclusions honoured); the live charity-signals seam **Owner-gated**; double-entry books with period
+close and CFO statements.
+
 ## 13. What the Output *is* (every deliverable is alive)
 
 Not static artefacts but **living, specific, optimised, continually-developing, learning,
@@ -331,6 +406,15 @@ record, and the integrated Website/Web-app/Phone-app are all reconfigurable and 
 to research, build, operate, improve and evolve under the founder's intent — quality-gated (§10),
 compliance-screened (§11), document-controlled and provenance-sealed (§6) throughout.
 
+**Recorded W446 — the Owner-ratified honest scope of the three surfaces (D1, 2026-06-25; W121–W124;
+W331):** the **Website** is a real multi-page static site, the **Web app** a real client-side interactive
+app, the **Phone app** a real installable PWA (offline-capable when hosted) — **never a fabricated compiled
+native binary**; the platform generates, version-controls and serves them but does not host or deploy
+them for the founder; the earlier Expo mobile husk was archived because the superapp itself is the
+mobile experience. And the §15.6 corollary the W446 audit made explicit: a body the floor served is
+shipped as the founder's own words plus an honest "content pending the owned model" state — never
+as the enterprise's concept.
+
 ## 14. The Democratisation Outcome
 
 Capabilities and resources previously available **only to the best-funded governments, world-industry-
@@ -340,6 +424,14 @@ commercial delivery → enterprise establishment, management and growth — are 
 for any realm and domain**, intelligently and autonomously AI-mediated, enabling **personal,
 professional, social and economic development, progression, growth and potential** for all humanity,
 individually and collectively.
+
+**Recorded W446 — the switches that stand between "built" and "available to all", all held by the
+Owner by design (cost, account, infrastructure):** registration is Owner-curated today with self-serve
+signup behind an Owner flag (`SELF_SERVE_SIGNUP`); authentication on (`AUTH_ENABLED`); external AI
+accelerants (`AI_ALLOW_EXTERNAL` + a key); real-money rails (`REAL_MONEY_ENABLED`, after compliance /
+KYC); managed Postgres; production hosting; and the rotation of the exposed Stripe key. Democratisation
+is therefore **measurable as which switches the Owner has flipped**, not asserted — and each switch has
+its pre-flight built and proven before it is offered (delivery-plan P4).
 
 ## 15. The Founding Principles (invariant)
 
@@ -356,6 +448,11 @@ individually and collectively.
    that establishes a **living VSB IDBO Enterprise**. Distinct, complementary, both native-AI-first.
 9. **The Chief-owned Business Plan opens with Executive Summary · Concept · Vision** (then Mission ·
    Strategy · Aims · Objectives) — the founder's idea, framed by the digital-twin Chief, AI-generable in-house.
+10. **Launch-ready, lean, honest (recorded W446 from the Owner's standing directives — UNDERSTANDING §9;
+   W78–W81, W153–W171):** the whole vision is realised to **commercially-ready, launch-ready standard**;
+   anything **not wired to vision realisation is archived** (never deleted — history-preserving); stubs
+   and mocks never ship; and **retiring a surface that narrates capability nothing can serve is a
+   first-class resolution**, equal to wiring it.
 
 ## 16. Fidelity Check & Execution Progress — vision vs. live system
 
@@ -367,55 +464,74 @@ of the truth that must be kept in sync, and it was not. So this section no longe
 carries pointers to the places that do, each of which is verified rather than asserted. The old
 text remains in git history.
 
-**State as of 2026-09-04** (measured against HEAD `89f36fea`; every figure below is reproducible —
-`python scripts/reach_audit.py` for the surface, the pytest suite for the tests — and should be
-re-measured rather than trusted once this date is old; a long-running dev process serves the code
-it booted with):
+**State as of 2026-09-05** (measured against HEAD `06c51109`; every figure below is reproducible —
+`python scripts/reach_audit.py` for the surface, the pytest suite for the tests, the six-region fidelity
+workflow `scripts/workflows/fidelity_audit_v3.js` for the verdict — and should be re-measured rather
+than trusted once this date is old; a long-running dev process serves the code it booted with):
 - Integration suite **350 passed / 15 skipped / 0 failed** (326 test functions); Spine CI green;
-  import integrity clean; browser smoke **17 deep routes + 57 swept**, including the in-browser
-  PDF-extraction guard and the honest-empty-state needles.
+  import integrity clean; browser smoke **17 deep routes + 57 swept**.
 - **463 method+path operations over 439 API paths · 271 distinct frontend /api fragments · 73
   `<Route>` declarations** (72 concrete + the catch-all), all rendering.
-- Reach, classified: **325 of 456 /api operations reached · 64 legacy (non-v1, kept — they have
-  live callers) · 67 genuine-unreached, all small scatter.** The Tier-2 reach backlog of
-  substantial clusters is COMPLETE (W437–W444): native-AI Primitive Console · organism Anatomy +
-  CCA governance fusion · QEP in the Religion domain (Owner directive) · VBS operating systems ·
-  the frontier router RETIRED to `_archive` beside its off-vision pages · economy money-integrity +
-  wiring · the Agent Hub rewritten and wired · the residual clusters (a shadowed parallel
-  marketplace retired; the §12 marketplace pricing door opened; QEP Intelligence tab; organism
-  config history/edit/reset-guard).
-- The fabrication audit is closed (63/63); the §4.5 defect *class* — a value selected or reported
-  as a result when nothing discriminated — is closed at every reached site, and the
-  refute-your-own-fixes practice (adversarial agents on every round's diff) caught live breaks in
-  **eight consecutive rounds** before any user saw them.
+- Reach, classified: **325 of 456 /api operations reached · 64 legacy (non-v1, kept — live callers) ·
+  67 genuine-unreached, small scatter in 38 tiny clusters.** The Tier-2 reach backlog of substantial
+  clusters is COMPLETE (W437–W444); two whole surfaces were honestly RETIRED rather than wired.
+- **Fidelity, re-measured (ledger v3, 60 findings, every one individually refuted against the booted
+  HEAD):** as assessed STUB 12 · MISSING 3 · DOC_OVERCLAIM 5 · PARTIAL 32 · DELIVERED 8; standing after
+  refutation STUB 10 · MISSING 3 · DOC_OVERCLAIM 5 · PARTIAL 36 · DELIVERED 6 — the refuters overturned
+  four (two DELIVERED claims down, two STUBs up) and reproduced the other 56 with their own inputs. The
+  economy (§12), the native fabric core (§6), the six domain surfaces (§3A), the org cascade (§5) and
+  the living roadmap are DELIVERED by execution. **The audit found Tier-1 truth defects on reached,
+  used surfaces** — the shared QMS gate certifies floor scaffold (coverage measured against no
+  sections), the shipped VSB body presents that scaffold as the enterprise's concept, the Living
+  Organisation hub's default tab is a detached roleplay outside the native fabric, the Mode 3 review
+  gates gate nothing, the Constitutional compliance row cannot read content, ten badge sites paint the
+  floor green — none of them an unreached route. They are the delivery plan's Phase P1.
+- The fabrication audit is closed (63/63); the §4.5 defect *class* is closed at every reached site;
+  the refute-your-own-fixes practice has caught live breaks in **ten consecutive rounds**.
 
-**Where the truth lives:**
-- `docs/VISION_FIDELITY_LEDGER.md` — **the fidelity verdict, section by section** (v2, 2026-09-02;
-  74 findings, adversarially refuted, dated). Its baseline HEAD is now ten workstreams old —
-  weigh it accordingly.
-- `docs/FABLE_DELIVERY_PROMPT.md` — **the working ledger (v11, 2026-09-04)**: what remains open,
-  tiered by how much a real person is misled or blocked, with acceptance criteria.
-- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W445). A record of intent
+**Where the truth lives — and the precedence of the canon set (recorded W446):**
+- **This document prevails.** `WORKSTATION_IDBO_UNDERSTANDING.md`, `WORKSTATION_IDBO_LIVING_PLAN.md`,
+  `VSB_ECONOMIC_LEGAL_MODEL.md` and `KNOWLEDGE_OPERATING_PROCESS.md` are companions that reconcile TO
+  it; where they disagree with it, they are stale, not it. Its §1–§15 are the Owner's words and are
+  not an agent's to rewrite — recorded directives are ADDED at their claim sites, attributed and dated.
+- `docs/VISION_FIDELITY_LEDGER.md` — **the fidelity verdict, section by section** (v3, 2026-09-05;
+  60 findings, all individually refuted, dated, baseline `06c51109`). A verdict is dated the day it
+  ran: it is re-issued at every delivery-plan milestone, never carried forward by reading.
+- `docs/FABLE_DELIVERY_PROMPT.md` — **the working ledger and THE DELIVERY PLAN (v11 rev 2,
+  2026-09-05)**: what remains open, tiered by how much a real person is misled or blocked, and the
+  ordered, verifiable plan to deliver the whole of §1–§15 — phases P1–P4, acceptance criteria per
+  workstream, the six-step verification each must pass, milestones that are measurements, and the
+  definition of complete.
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W446). A record of intent
   and account, not proof.
-- `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — **all 10 audited primitives FIXED + WIRED (W437)**;
-  what remains open there is LATENT: four unreached fabricating functions, and two dormant
-  governance gaps on reached CCA routes. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
-- `scripts/reach_audit.py` — the reach measure itself; run it fresh, never trust a written figure.
+- `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — all 10 audited primitives FIXED + WIRED (W437); what
+  remains is LATENT. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
+- `scripts/reach_audit.py` and `scripts/workflows/fidelity_audit_v3.js` — the two measures; run them
+  fresh, never trust a written figure or verdict.
+- Legacy fragments describing a different product (`docs/GOVERNANCE.md`, `docs/ARCHITECTURE.md` —
+  Jules-era "Sovereign Investment Civilisation" lore) are archived under `_archive/docs/` (W446).
 
-**Open against this vision, in one paragraph (regenerated 2026-09-04):** the canon's single
-5-stage lifecycle does not exist in the product — several vocabularies run, and every established
-VSB holds `stage: "commercialise"` from a literal (`genesis.py:687/:852`) that no code path ever
-advances (prompt ledger item 1 — an **Owner decision**, options measured); 67 genuine-unreached
-/api operations remain as small scatter (audit each before wiring — unreached is not the same as
-ready); the primitive ledger's LATENT entries stay recorded, not rushed (an unreached
-evolution engine whose fitness is mostly random, three more fabricating unreached functions, and
-two dormant governance gaps on reached CCA routes — a low-contention audit-trail race and a
-ratification flag no Board surface consumes); the exposed Stripe key is redacted from the tree but **remains in git
-history — rotation at Stripe is an Owner action still owed**; `configs/realms.yaml` still encodes
-the six drifted domain-shaped entries the §18-B ruling declared wrong (dormant — no live
-consumer — but uncorrected); and §18-A's heavier self-hosted/trained-model programme remains a
-recorded future ambition, not a gap. Everything else materially claimed by §1–§15 is either
-delivered or honestly disclosed as partial at the surface where a user would meet it.
+**Open against this vision, in one paragraph (regenerated 2026-09-05 from ledger v3):** fourteen
+Tier-1 truth defects on reached surfaces (delivery-plan P1 — the gate that cannot fail on the floor,
+the scaffold-bodied VSB, the detached AI CEO chat, advisory review gates, green floor badges, the
+Employment "live job board", a compliance row that reads nothing, the floor "Translation" heading on
+the tafsir tab, Care scoring that computes nothing, a status page inverted by a failure row, Change
+Control's prose-only tiers, a disconnected composer canvas, a marketplace counting directories as
+live products, a board pack certifying an empty narrative); the invisible shortfalls (P2 — floor
+cascades grounded in the engine's own marker text, provenance stopping at the API boundary on seven
+pages, the avatar answering its persona line, an organism that defends on paper — reflex arcs
+unregistered, immune defence uncalled, a survival instinct on a simulator that cannot fall, two
+layers vouched for by an unwired file, torch optionality failing at import — the GaaS gate on 8 of
+57 modules, an unauthenticated control perimeter, and the 67-op scatter); the genuine capability gaps
+(P3 — §4.6 Develop, §4.1 image intake, §17.3 cadence layers, §17.4 Mode 2, autonomy that starts at
+establishment, §9 depth, §13 repo access — and four OWNER RULINGS: the single lifecycle (219 VSBs
+born at `stage: "commercialise"` from `genesis.py:687/:852` literals, none ever advanced), the
+§17.1 Products axis, the §17.5 KPI gate, the Mode 2 scope); and the Owner-held switches (P4). The
+exposed Stripe key **remains in git history — rotation at Stripe is an Owner action still owed**;
+`configs/realms.yaml` is scheduled for retirement (P2.5); §18-A's heavier self-hosted/trained-model
+programme remains a recorded future ambition, not a gap. Everything else materially claimed by
+§1–§15 is delivered by execution or disclosed at the surface where a user meets it — and that
+sentence is re-earned at every milestone by re-running the audit, never by re-reading it.
 
 ---
 
@@ -434,12 +550,25 @@ architecture). This is the exact structural skeleton the fine-grained vision han
   domain's flagship is the **Quran Education Platform** (Owner directive 2026-09-03; §11's
   faith-content constitution binds it).
 - **Products (how work runs):** Reactor (rapid AI generation) · Incubator (iterative development) ·
-  Factory (production-grade delivery) · Laboratory (experimental/research).
+  Factory (production-grade delivery) · Laboratory (experimental/research). *Status (W446 audit): the
+  four facilities exist in the fabric (§7) but the Products AXIS has no code realisation — no
+  `PRODUCTS` constant in the taxonomy, no grid picker feeding Genesis; the Laboratory runs as the Forge
+  `laboratory` stage and the Synthesis Lab. OWNER RULING (delivery-plan P3.0): build the axis, or amend
+  this line to "design intent".*
 - All 96 follow the same **Concept → Design → Build → Launch → Commercialise** stage-gated lifecycle.
+  *Status (re-verified W446): no single gated lifecycle exists in the product — eight stage
+  vocabularies run, and every established VSB holds `stage: "commercialise"` from a literal that no
+  code path advances (219 of 219). OWNER RULING — delivery-plan item 3.10 / P3.0: options (A) the canon
+  five become the ONE gated lifecycle and the others migrate; (B) this line is corrected to describe
+  what the product does; (C) NARROW — make the VSB stage genuinely advance or rename it to the status
+  it is (the recommendation). §4's ten fine-resolution steps map onto whichever gates the Owner rules;
+  the mapping is recorded here once ruled, so it can never re-open.*
 
 **17.2 The biomimetic body — 7 layers (the IDBO's anatomy).**
 1. **Genome** — VSB identity/capabilities/constraints/evolution (arms-length controlled).
-2. **Nervous** — the cognitive engines + MJM + SPI/BPI + Knowledge Tree (sense → think → decide).
+2. **Nervous** — the **nine** cognitive engines (six foundational — Aqal · Hoshiyari · Iman · Inkashaf ·
+   Samajh · Soch — and three meta — Niyyah · Tafakkur · Tawazun; `agentic_core/api/cognitive.py`) + MJM
+   + SPI/BPI + Knowledge Tree (sense → think → decide).
 3. **Immune** — GaaS (legal/ethical/quality/safety/environmental) + self-healing (defend).
 4. **Cardiovascular** — dynamic resource allocation (distribute).
 5. **Respiratory** — autonomous workflow cascade / Agent Hub (do). *Live surface since W443: the
@@ -451,23 +580,63 @@ architecture). This is the exact structural skeleton the fine-grained vision han
 7. **Endocrine** — signal bus / shared context + MJM (coordinate).
 + homeostasis loops (immune↔nervous↔metabolic), circadian operation, and a survival instinct.
 
+**Realisation map — each layer to the module that realises it, with its W446-audited status (ledger v3
+R4/R6; re-measure, don't trust):** Genome → `organism/genome.py` (a trait-vector genome, honest about
+encoding) + the VSB `GenomicRegistry` (`api/vsb.py`) — the two are not yet one arms-length-controlled
+identity (P2.7/P3). Nervous → the nine engines + MJM + the `NervousSystem` signal ring (`organism/
+nervous.py`) — REAL as a bus; **reflex arcs: zero registered**, so "auto-triggered responses" cannot
+fire (P2.7). Immune → gaas.v5 + `organism/immune.py` + self-healing breakers + `POST /api/v1/cca/
+immune-reconfigure` — real sensing; **the defence route has no caller** (P2.7). Cardiovascular →
+`homeostasis.assess` genuinely caps admitted parallelism from ATP/immune state (a real, unlabelled
+dynamic allocation), while the "cardiovascular" biometric is CPU-idle relabelled and the optimizer
+self-declares simulated (P2.7). Respiratory → the Agent Hub (W443) + the org cascade — real bus,
+**records only, no executor subscribed**, honest on-surface. Musculoskeletal → the §7 facilities +
+digital twin — REAL (every composed resource runs its engine). Endocrine → the biomimetic signal bus +
+shared context (`organism/biobus.py`) — REAL as the bus; the PID regulator file the W434 quality note
+vouched for is imported by nothing (the note is corrected in P2.7). The survival instinct keys off an
+ATP simulator whose threshold is unreachable — labelled simulated on the Anatomy tab only (P2.7).
+
 **17.3 The Living Business System — 4 continuously-maintained layers (with cadence).**
 - **Constitutional** (genome-locked): Mission · Vision · Values · Ethical mandate (rarely changes).
 - **Strategic** (AI CEO; quarterly + market signal): position, growth, resource posture.
 - **Action Plan** (BTO; weekly + KPI-triggered): sprint priorities, corrective actions, timelines.
 - **Board Pack** (on-demand): assembled fresh from live data, DCS-registered. — ✅ DELIVERED (W125): `POST /api/v1/vsb/{id}/board-pack` assembles the pack fresh from the VSB's live data + an in-house AI-CEO narrative, QMS-gated + §11-compliance-screened + DCS-registered (document-controlled via the QMS-owned DCMS), with history; an **Assemble Board Pack** action on the Genesis page surfaces it.
 
+*Status (W446 audit, ledger R3.5/R3.6): the Constitutional layer and the on-demand Board Pack exist;
+**the Strategic and Action-Plan cadence layers are MISSING** — nothing refreshes them quarterly / weekly
+/ on signal; the pack labels pre-existing fields (`ceo_specification`, the board roster) as those layers
+and carries one constant values string for every VSB, and its §10 certification finds the required
+sections in a preamble the handler wrote itself. The §17.5 "≤5-min staleness" clause IS met — by
+read-time derivation of the roadmap and pack, not by a refresh cadence. Delivery plan: P1.14 (pack
+honesty), P3.3 (the cadence generators).*
+
 **17.4 The 3 Human–AI integration modes.**
 - **Mode 1** — Owner sets mission/values/ethical bounds → the IDBO executes everything else autonomously.
 - **Mode 2** — Expert → **Digital-Twin human node** (24/7 expertise without the expert present). *This is
-  the basis of the Chief = the founder's digital twin.*
-- **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome). — ✅ DELIVERED (W126): per-VSB `review_gates` config (`GET/POST /api/v1/vsb/{id}/review-gates`, per-stage status + `blocks_progress`, human `…/{stage}/decision` approve|reject), each config + decision append-only DCS-audited (§17.5); a **Human review gates (Mode 3)** panel on the Genesis page.
+  the basis of the Chief = the founder's digital twin.* *Status (W446, ledger R3.8/R3.4): NOT BUILT — no
+  expert twin node exists; the Chief today is a constant values sentence plus the last five stored
+  instructions, invoked only by click (`/api/v1/twin/models` holds 0 models; per-VSB Chiefs are titled
+  "Digital Twin of default"). Delivery plan P3.4; the scope is an OWNER RULING (P3.0).*
+- **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome). — ◐ RECORDS DELIVERED (W126), **GATING NOT YET** (W446 audit, ledger R3.3/R2.3: no lifecycle mover — orchestrate, cascade, evolve, ship, establish — consults `blocks_progress`; a REJECTED design gate stopped nothing. Delivery plan P1.4.) The W126 delivery: per-VSB `review_gates` config (`GET/POST /api/v1/vsb/{id}/review-gates`, per-stage status + `blocks_progress`, human `…/{stage}/decision` approve|reject), each config + decision append-only DCS-audited (§17.5); a **Human review gates (Mode 3)** panel on the Genesis page.
 
 **17.5 The 10 architecture invariants (absolute).** User isolation (scoped to user_id) · mandatory GaaS
 gate on every output · append-only DCS audit · **Arms-Length Agency** (AI CEO cannot instruct the
 board/genome) · digital-twin pre-validation before major change · torch optionality · single
 router-mount point · signal-bus atomicity · living business plan ≤5-min staleness · KPI gate before
 customer delivery.
+
+*Status of the ten (W446 audit, ledger R6/R3; each re-measured at every milestone):* **hold in code** —
+append-only DCS/UEG (chain verifies), single router mount (all `include_router` calls in `app_mvp.py`),
+signal-bus atomicity (locked ring + bounded queues), twin pre-validation (auto-run for HIGH/CRITICAL,
+409 without a pass — with an honest `health_gate_default` fallback when no twin model exists), plan
+staleness (read-time derivation), and arms-length IN PROCESS (no AI-tier code writes board/genome;
+W345 falsified it live). **Partial** — user isolation: delivered on the VSB spine, Genesis, Studio,
+economy, deliverables, QMS, marketplace, avatar, memory and hub, but the organism's control perimeter
+(heartbeat, genome, organism-status, sovereign-evolution, board, CCA, business-plan, swarm) carries no
+auth dependency (P2.6); GaaS gate on every output: true for 8 of 57 API modules — every other output
+passes only a three-regex keyword filter (P2.6). **Not held** — torch optionality: the app fails to
+import without torch via `avatars → uci_interceptor → mjm/hd_omni_learner` (P2.7); KPI gate before
+customer delivery: nothing gates any delivery on KPIs (OWNER RULING P3.0 — build or amend).
 
 **16.1 Reconciliation addendum — Rounds 3–7 (W241–W331), reconciled 2026-08-23.**
 The W331 fidelity walk verified ~34 §16–§18 claims accurate and corrected 25; the load-bearing
@@ -569,7 +738,18 @@ re-opened**
   a server upload — W429. One §17.1 question remains genuinely open and sits with the Owner: the
   single 5-stage lifecycle does not exist in the product (several vocabularies run, and every
   established VSB holds `stage: "commercialise"` from a constant) — see the delivery prompt's
-  ledger item 1 (v11) for the measured options.
+  ledger item 3.10 (v11 rev 2) and §17.1's status note for the measured options.
+- **E — Cross-VSB federation — DECIDED BY THE OWNER 2026-08-31 (Option A), recorded here W446 so it is
+  never re-opened:** cross-INSTANCE federation stays **honestly simulated** (peers flagged
+  `simulated: true`; `GET /api/v1/mesh/status`) until a second instance actually exists; when one does,
+  the first step is a **private mesh with explicitly-configured peer URLs and a pre-shared key — never
+  open discovery**. Entity-to-entity service contracts, transfers and the §12 marketplace within ONE
+  instance are delivered and are not what this ruling gates.
+
+**Still with the Owner (recorded W446; the delivery plan puts each with its evidence at P3.0 and does
+not choose):** the single lifecycle (§17.1, item 3.10 — A / B / C) · whether §17.1's Products axis is
+built or amended · whether §17.5's KPI gate is built or amended · the scope of §17.4 Mode 2 · the Stripe
+key roll · the 162 test-owned entities · and, at P4, each Owner-held switch in §14.
 
 *(The progress addenda formerly numbered §16.3 and §16.4 — the Rounds 11–12 reconciliation and the
 §6 architecture-vs-practice correction, W363–W380 — are preserved verbatim in git history and in

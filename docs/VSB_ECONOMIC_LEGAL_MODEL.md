@@ -1,11 +1,14 @@
 <!--
   VSB ECONOMIC & LEGAL MODEL — Workstation IDBO
-  DESIGN FOR OWNER REVIEW AND APPROVAL — NOT YET IMPLEMENTED.
+  APPROVED BY THE OWNER (2026-06-20/21, re-approved 2026-06-29) AND BUILT as virtual/simulated WST —
+  see the banner below. (Header corrected W446: it had read "NOT YET IMPLEMENTED / AWAITING OWNER
+  APPROVAL" for ten weeks after the build, contradicting the body.)
   Defines the VSB as a hybrid Waqf/Trust/Multinational profit-making, autonomously self-managing,
   legally-compliant economic entity; its profit-distribution waterfall; charitable-giving intelligence;
   and the legal-entity-type options users can select when generating their VSB.
   All financial flows are designed VIRTUAL/SIMULATED first — no real funds move without explicit
-  Owner authorisation and a compliance gate. Status: AWAITING OWNER APPROVAL · 2026-06-20
+  Owner authorisation and a compliance gate. Status: APPROVED · BUILT (W215–W221, hardened W442) ·
+  real-money rails remain Owner-gated (REAL_MONEY_ENABLED=False)
 -->
 
 # VSB Economic & Legal Model — Hybrid Waqf / Trust / Multinational
@@ -107,4 +110,4 @@ Donations are **intelligently allocated**, not arbitrary:
 
 ---
 
-> **This is a design awaiting your approval.** Please review, answer the open questions in `WORKSTATION_IDBO_UNDERSTANDING.md` §9 (especially proportions, jurisdiction, default entity type, charity sources, and virtual-vs-real money), and give direction. On your approval I will proceed to transformation per §9 above.
+> **Status (corrected W446):** this design was approved and built (virtual/simulated WST; the Owner's 2026-06-21 decisions — proportions, jurisdiction UK/London, default entity type Waqf-Ltd Hybrid, the four causes and the 100%-donation-only screen — are in effect; see `WORKSTATION_IDBO_UNDERSTANDING.md` §9 and vision §12's recorded block). Real-money rails, Stripe and any live payment path stay behind the Owner's explicit authorisation and a compliance/KYC review.

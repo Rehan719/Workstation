@@ -12,18 +12,19 @@
 
 ---
 
-## 1. The Knowledge System (four layers, one truth)
+## 1. The Knowledge System (five layers, one truth — the Vision at the apex)
 
-Knowledge lives in four synchronised layers. Each has a clear role; together they are the single source of truth.
+Knowledge lives in five synchronised layers. Each has a clear role; together they are the single source of truth. **Precedence (recorded W446): the Vision prevails; every other layer reconciles TO it.**
 
 | Layer | Artifact | Role | Cadence |
 |---|---|---|---|
+| **Vision (apex)** | `docs/WORKSTATION_IDBO_WHOLE_VISION.md` | The Owner's canonical fine-resolution vision (§1–§15 are the Owner's words), the structural specifics (§17), the settled rulings (§18), and the dated fidelity pointers (§16) | Only when the Owner refines intent or rules (§18); §16/§17 status notes re-measured at every delivery-plan milestone |
 | **Understanding** | `docs/WORKSTATION_IDBO_UNDERSTANDING.md` | The "same page" — who you are, the vision (envisaged + final), my articulated understanding, open questions | When vision/intent is refined; reconciled each major session |
 | **Plan** | `docs/WORKSTATION_IDBO_LIVING_PLAN.md` | Vision ↔ grounded current state ↔ action (roadmap, scorecard, collaboration protocol) | Every session that changes the codebase |
 | **Memory** | `~/.claude/.../memory/*.md` (+ `MEMORY.md` index) | Durable agent memory: facts, decisions, feedback, references — loaded every session | Whenever a durable fact/decision/correction occurs |
 | **Code + Live State** | the repo + `GET /api/v1/plan/state` | The ground truth; auto-introspectable current state | Continuous |
 
-**Rule of coherence:** these four must never contradict each other. The **Code/Live State** is ground truth; **Understanding** captures intent; **Plan** bridges the two; **Memory** preserves the why. If they diverge, reconcile in the same session.
+**Rule of coherence:** these five must never contradict each other. The **Vision** is the Owner's intent and prevails; the **Code/Live State** is ground truth about what exists; **Understanding** is the same-page summary of the Vision; **Plan** bridges Vision and state; **Memory** preserves the why. If they diverge, reconcile in the same session — and where the live system differs from the Vision, the difference is the work to do (the delivery plan), never a redefinition of the Vision down to capability.
 
 ## 2. The Update Loop (how knowledge stays alive)
 
@@ -85,6 +86,7 @@ The process is not purely manual — the organism helps keep it honest:
 - **Read** `UNDERSTANDING` (are we on the same page?) and `PLAN §7` (adherence scorecard — am I realising your vision?).
 - **Query** `GET /api/v1/plan` (pillars/phases/adherence) and `/api/v1/plan/state` (live reality) anytime.
 - **Direct** via the Board: `POST /api/v1/board/chief/instruct` — your Chief turns your wish into governed action.
-- **Correct** by editing `UNDERSTANDING` / answering its §9 open questions — that is the authoritative channel for refining intent.
+- **Correct** by refining the Vision — `WORKSTATION_IDBO_WHOLE_VISION.md` §1–§15 (your words) and §18 (rulings; the delivery prompt lists what is still with you) — that is the authoritative channel for refining intent; `UNDERSTANDING` and the `PLAN` are then reconciled to it in the same session. (Corrected W446: this line had pointed at `UNDERSTANDING` §9, whose questions were resolved on 2026-06-21.)
+- **Measure** rather than read: `python scripts/reach_audit.py` for the surface, `scripts/workflows/fidelity_audit_v3.js` for the section-by-section verdict (`docs/VISION_FIDELITY_LEDGER.md`), and the delivery plan in `docs/FABLE_DELIVERY_PROMPT.md` for what is being done about it, in what order, and how each item is proven.
 
 > Companion: `WORKSTATION_IDBO_UNDERSTANDING.md`, `WORKSTATION_IDBO_LIVING_PLAN.md`, `VSB_ECONOMIC_LEGAL_MODEL.md`.
