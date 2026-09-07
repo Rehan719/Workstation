@@ -23,6 +23,19 @@
   dated status notes; §18 gained E (federation) and the list of rulings still with the Owner; Owner
   directives the log recorded but the canon never carried are now recorded at their claim sites
   (§3A, §5, §7, §8, §9, §12, §13, §14, §15.10) — each attributed and dated, none rewriting §1–§15 prose.
+  2026-09-07: added APPENDIX A — the Quran Education Platform vision for the Religion domain, at
+  §1–§17 resolution, so the flagship is specified in this canon rather than sampled from memory.
+  ONLY the durable, Owner-authored layer is carried: concept · vision · objectives · features (plus the
+  guidance content and the Waqf/Trust governance intent, which are Owner-authored and not technical).
+  The source repositories were Jules-built and the audit found substantial agent unreliability, and
+  their technology and architecture are 2025-dated — so A.10 EXCLUDES the stack, the service/event
+  architecture, the 19-phase roadmap, the methodology, and every status claim those repos made;
+  §6/§7 supply all of it. Claims are provenance-graded [OWNER] / [DERIVED-FAITHFUL] / [EXCLUDED].
+  A.9 records the six places §11's faith-content constitution OVERRIDES the inherited vision
+  (recitation scoring, generated Arabic, translation, emotion inference, Fitrah-as-measurement,
+  AI Ask-a-Scholar) — principled refusals, not gaps. A.11's status is measured against HEAD 06c51109.
+  Long form + the audit of the three attempts: docs/QURAN_EDUCATION_PLATFORM_VISION.md (its Part V
+  technology and Part VI roadmap are superseded by A.10). §1–§18 prose is unchanged.
   2026-06-24 clarification (Owner): added §3A — the TWO distinct, in-house-AI-first ways IDBO serves a
   user (1: Domains = domain-specific AI-mediated tools/resources for working in all domains/realms;
   2: end-to-end Concept→Commercialisation → a living VSB IDBO Enterprise entity) — and the Chief-owned
@@ -99,7 +112,8 @@ optional accelerants, never dependencies; §6):
    without necessarily establishing an enterprise. **Owner directive (2026-09-03, delivered W439): the
    Religion domain carries the Quran Education Platform (QEP) as its flagship** — authentic sourced
    text, real SM-2 memorisation, written-recall assessment, gamified progression — under the
-   faith-content constitution recorded in §11.
+   faith-content constitution recorded in §11. **The whole QEP vision — concept, eight objectives, the
+   15 core features, governance, and the constitutional deltas — is APPENDIX A.**
    **Owner directives that define this offering (recorded W446 from the execution log — W29/W30/W37,
    the 2026-06-26 user-capability review E1–E7, and the 2026-09-01 rulings):** every tool result can be
    **iteratively advanced / developed / refined in place**, the draft preserved verbatim and additions
@@ -548,7 +562,7 @@ architecture). This is the exact structural skeleton the fine-grained vision han
   **Domains section** surfaces **domain-specific AI-mediated tools & resources** for AI-mediated working
   in each (offering 1, §3A) — usable directly, independent of establishing an enterprise. The Religion
   domain's flagship is the **Quran Education Platform** (Owner directive 2026-09-03; §11's
-  faith-content constitution binds it).
+  faith-content constitution binds it; specified in full in **Appendix A**).
 - **Products (how work runs):** Reactor (rapid AI generation) · Incubator (iterative development) ·
   Factory (production-grade delivery) · Laboratory (experimental/research). *Status (W446 audit): the
   four facilities exist in the fabric (§7) but the Products AXIS has no code realisation — no
@@ -758,6 +772,456 @@ OBSERVED, never what the system reports about itself.)*
 
 ---
 
+
+
+---
+
+---
+
+# Appendix A — The Quran Education Platform (QEP): the Religion domain's vision
+
+> **Why this appendix exists.** The Owner's 2026-09-03 directive placed the **Quran Education Platform in
+> the Religion domain** as its flagship (§3A offering 1; §17.1), and W439 delivered its honest core. But
+> the *vision* behind QEP — its concept, objectives and full feature intent — had never been written into
+> this canon. It survived only in three abandoned 2025 build attempts outside this repository. This
+> appendix carries it at §1–§17 resolution, so the Religion domain's flagship is **specified here** rather
+> than sampled from memory or re-derived from transcripts.
+>
+> **What was extracted, and what was left behind.** The source repositories were built with Google's Jules
+> agent, and the audit of them (recorded in `docs/QURAN_EDUCATION_PLATFORM_VISION.md` §§2–4) found
+> substantial agent-generated unreliability — a documentation pipeline emitting placeholder text into its
+> own "canonical" outline for all twenty phases, backends whose every persistence path was a commented-out
+> import behind an in-memory dictionary, 209 unresolved compile errors committed, and a phase plan silently
+> deleting three major capabilities and calling it a revision. Their **technology and architecture are also
+> simply out of date** — free-tier model rosters, hosting strategies and event-bus choices from mid-2025,
+> for a platform that now has its own native fabric (§6, §7).
+>
+> **So only the durable, Owner-authored layer is carried here: concept · vision · objectives · features**
+> (plus the guidance content and the governance/finance intent, which are Owner-authored and not technical).
+> **A.10 records exactly what was excluded and why** — it is not an omission to be closed later.
+>
+> **Provenance grading.** Every claim below carries one of three grades, so a future reader knows what it
+> rests on. **[OWNER]** — recurs across multiple independent source transcripts and matches the Owner's own
+> language and values (the vision statement appears in 8 of 18 sources; the *fitrah* concept in 8; the
+> waqf/trust model in 3). **[DERIVED-FAITHFUL]** — synthesised by the Jules agent, but a faithful grouping
+> of items that appear in the Owner's own lists; useful, and re-checkable against them. **[EXCLUDED]** —
+> see A.10.
+>
+> **The binding rule.** §11's faith-content constitution governs everything below. Where the inherited
+> vision and §11 disagree, **§11 prevails** — and **A.9** records each disagreement, because those are
+> principled refusals that must never be "fixed".
+>
+> **Status convention.** Status notes in A.6 and A.11 are MEASUREMENTS taken 2026-09-07 against HEAD
+> `06c51109`, by reading the named routes and modules, cross-read against `VISION_FIDELITY_LEDGER.md` v3
+> (findings R1.0, R1.7, R5.8, R5.9). Re-measure; do not trust this text.
+
+## A.1 Where QEP sits in the Workstation structure
+
+QEP is **not a separate product, and not a stack to rebuild**. It is the **Religion domain's flagship
+instance of §3A offering 1** — domain-specific, in-house-AI-mediated tools and resources a user works with
+immediately, without establishing an enterprise. It spans all four Realms: a *Learning*-realm user memorises
+and studies; an *Enterprise*-realm user runs a madrasah or institution on it; a *Developing*-realm user
+builds curricula and tooling; a *Scholarship*-realm user researches tafsir, hadith and linguistics.
+
+It is **also a legitimate §3A offering-2 target**: a founder whose challenge is "establish a Quranic
+education service for my community" flows through Concept → Commercialisation (§4) and receives a living
+VSB IDBO Enterprise shaped by this appendix.
+
+**The load-bearing consequence.** QEP is composed from the same reconfigurable resources as every other
+domain (§7), served by Workstation's **own** native swarm, models and orchestration (§6). All three prior
+attempts built a standalone platform with its own stack, and all three died in the commodity layers before
+reaching the capability that justified the product (A.13.1). **QEP is a composition problem here, not a
+construction problem.**
+
+## A.2 Concept · **[OWNER]**
+
+QEP is a comprehensive, AI-mediated Quranic education capability serving **learners and educators together**
+— recitation support, memorisation, structured learning, teaching tools, community, immersive presentation
+and personalised guidance — delivered on any device, optimised for underserved regions, and governed as a
+Sharia-compliant, trust-based endeavour.
+
+The Owner's own framing is broader than "an app": *an innovative Muslim social platform* in which Quranic
+education happens through **reading, memorisation, competition, learning, teaching and guided reflection**,
+wrapped in community and gamification — the *ummah* dimension being part of the pedagogy, not decoration on
+it. Learning is to be **personalised and emotionally responsive**, adapting to the individual rather than
+presenting one path to everyone.
+
+## A.3 Vision statement · **[OWNER]**
+
+The wording recurs, near-verbatim, across eight independent source transcripts:
+
+> To deliver a **universally accessible, immersive, and ethically grounded Quranic education platform**
+> that empowers Muslims of all ages to **recite, memorize, understand, and live the Quran** — through the
+> seamless integration of AI, immersive media, live teaching, social learning and gaming technologies, all
+> within a **fully Sharia-compliant, trust-based framework**. It offers personalized, emotionally responsive
+> learning via AI agents, immersive environments, and collaborative tools. It supports recitation,
+> memorization, learning, teaching, competitions, and guided reflection — accessible on any device and
+> optimized for underserved regions.
+
+**Vision in action** — the Owner's own five-line summary:
+
+- **Platform & Trust** powers a global, Sharia-compliant AI Quranic learning system built by a not-for-profit trust.
+- **Features & Technology** integrate immersive media with live teaching, AI coaching, and gamified social learning.
+- **Objectives** focus on free access to Quranic education, personalisation, community, and authentic & ethical integrity.
+- **Governance** is led by elected volunteers, a Sharia board, and specialist teams ensuring transparency and compliance.
+- **Join Us** to co-create, volunteer, and advance this dawah-driven mission, seeking the pleasure and love of Allah SWT.
+
+## A.4 The four core goals · **[OWNER]**
+
+Every QEP feature, route and surface must tie demonstrably to one of four goals. This was the scoping test
+the original vision set for itself, and it is adopted unchanged as the Religion domain's admission rule —
+the domain-level analogue of §10's quality bar:
+
+1. **Learn Quran** — acquire knowledge and understanding.
+2. **Recite Quran** — improve pronunciation and Tajwīd. *(Narrowed by §11 rule 3 — see A.9.1.)*
+3. **Understand Quran** — grasp meaning, context and relevance through tafsir and guidance.
+4. **Teach Quran** — empower educators to guide others.
+
+## A.5 Strategic objectives · **[OWNER]**
+
+Eight objectives, consistent across the detailed sources. Each is stated as the Owner stated it, then read
+into Workstation — **without importing any 2025 technology choice** (A.10).
+
+**A.5.1 Universal Accessibility.** Access on mobile, tablet, desktop and immersive devices; low-bandwidth
+and offline modes; multilingual UI and content including RTL (Arabic, Urdu, Bahasa); and explicit reach into
+**underserved regions**, including by whatever connectivity of the day makes that possible. *Here:* inherits
+§9's language posture and its honest limits — a language claim holds only when a capable model serves.
+
+**A.5.2 AI-Powered Personalised Learning.** Learner-specific pathways adapting to individual pace,
+proficiency and style; real-time correction; memorisation coaching. *Here:* served by the native fabric
+(§6), never an external dependency.
+
+**A.5.3 Adaptive UI/UX by user profile.** Layout, content presentation and navigation tailored by **age
+group** (children, teens, adults), **role** (learner, teacher, parent, administrator), **skill level**
+(beginner, intermediate, advanced) and **cognitive preference** (visual, auditory, kinesthetic). The sources
+add *emotional state* — not adopted; see A.9.4.
+
+**A.5.4 Immersive Education Tools.** Overlays visualising articulation points (*makhārij*); journeys through
+Quranic narrative and historical settings; virtual mosque; **3D memory palaces** anchoring verses in
+spatial-visual context. *Here:* these belong to §7's musculoskeletal facilities — not a separate 3D stack.
+
+**A.5.5 Connected Global Communities.** Peer mentoring, virtual study circles, recitation rooms,
+competitions and virtual events; regional and international leaderboards; group challenges.
+
+**A.5.6 Sharia & Ethics Compliance.** Scholar-led governance board and regular Sharia audit of curricula,
+AI and content; transparent AI-ethics guidelines; data practices aligned to GDPR; Islamic finance principles
+embedded in payment and donation flows. *Here:* §11's Halal/Sharia engine and faith-content constitution are
+the architectural realisation.
+
+**A.5.7 Cross-Device Compatibility.** One consistent, responsive experience across web, mobile, tablet and
+immersive devices. *Here:* the superapp Shell below 768px **is** the mobile experience (W331) — no separate app.
+
+**A.5.8 Privacy & Security.** Encryption, role-based access control and multi-factor authentication. *Here:*
+per-tenant isolation (§17.5 invariant 1). Learner data — especially children's — is the strictest case this
+platform holds.
+
+## A.6 The fifteen core features · **[DERIVED-FAITHFUL]**
+
+The Jules-era synthesis grouped the Owner's feature lists into exactly fifteen features plus a shared area.
+The *grouping* is agent work; the *features* are the Owner's, and each is traceable back to his own lists.
+Adopted here as the Religion domain's feature register, with **measured status** in Workstation today.
+
+**1 · User Authentication & Profile Management.** Identity, MFA, OAuth, RBAC across four roles —
+**learner, teacher, parent, admin** — plus profiles and learning preferences.
+*Status: platform-level auth exists and is the right home. The **parent** and **teacher** roles do not exist
+— and the parent role is what makes feature 15's Parental Insights possible.*
+
+**2 · AI Tajwīd Coach.** Verse selection, recitation capture, articulation and Tajwīd feedback, error
+highlighting, progress history.
+*Status: **constitutionally narrowed, and correctly so** (A.9.1). What exists is real: written-recall
+comparison of the learner's typed Arabic against the authoritative text (`POST /api/v1/qep/tajweed/analyse`),
+refusing non-Arabic input, returning missing rule-markers, and stating in every payload that it says nothing
+about recitation. Tajwīd **lesson** generation exists, floor-labelled as an outline rather than scholarship.*
+
+**3 · Memorization Suite.** Flashcards, spaced repetition, review scheduling, progress heatmaps, recall
+testing (display then hide), audio looping and segment selection, memorisation coaching.
+*Status: **DELIVERED and honest** (ledger R1.7). Real SM-2 spaced repetition in
+`religious_domain/memorization/engine.py` — e-factor arithmetic, interval growth, a bounded interval cap —
+behind `/qep/hifz/{schedule,review,progress}`. Ayah ranges validate against the real 114-surah ayah-count
+table (1:9 → 422). Progress reports its basis: "a review count, not a hifz certification." The flashcard,
+heatmap and audio surfaces are not built.*
+
+**4 · Gamified Learning & Competitions.** Time-bound recitation and memorisation competitions, global and
+regional leaderboards, XP, badges, streaks, event notification, replay and share.
+*Status: XP is real and persisted (`/qep/gamification/{uid}` and `/award`, every derived figure — level,
+streak — carrying its formula, W439). Competitions, leaderboards and badges do not exist.*
+
+**5 · Learner-Centric Learning Modules.** Structured curricula — **Noorani Qaida, Tajwīd, Quranic Arabic,
+Tafsir** — as lessons (text, video, interactive), quizzes with immediate feedback, recommended learning
+paths, and explanation of selected text on demand.
+*Status: `religious_domain/learning/` holds gamification only; the LearnTeach surface honestly reports "NOT
+ESTABLISHED" rather than showing figures. No curriculum content exists — see A.12.3.*
+
+**6 · Educator Platform & Class Management.** Virtual classes, student enrolment, module assignment,
+progress dashboards, grading and feedback, announcements, and AI suggestions to the teacher ("many students
+struggle with lesson X").
+*Status: not built.*
+
+**7 · Community Engagement Platform.** Forums, Q&A, events with RSVP, **study circles**, **recitation
+rooms**, **Ask a Scholar**, content sharing, and content moderation.
+*Status: not built. The QEP intelligence surface honestly reports "no scholars are verified" rather than
+implying a scholar network exists — the correct posture until one does (A.9.6).*
+
+**8 · Video Conferencing & Collaboration.** 1:1 and group live sessions, screen share, collaborative
+whiteboard, recording, live transcription, in-session chat.
+*Status: not built.*
+
+**9 · Immersive AR/VR Experiences.** Overlay of articulation points while reciting; walkthroughs of Quranic
+historical settings; virtual mosque; 3D memory palaces.
+*Status: rendered as **planned**, and the buttons say so on click. Honest, and a placeholder. Constitutional
+constraint: an overlay that appears to correct a live recitation would breach A.9.1 — it may **teach**
+articulation, never **assess** it.*
+
+**10 · AI Guidance & Fitrah Profiling System.** Conversational Quranic Q&A; the **99-aspect "Fitrah
+Spectrum"** mapped to the Divine Attributes (*Asmāʾ al-Ḥusnā*); guidance conditioned on profile, state and
+query, suggesting Ayah, Hadith, Dua and action; voice interaction; a guidance companion presence.
+*Status: the conversational half has a home — the platform's enterprise-aware avatar (§9) and the Religion
+tools. The Fitrah Spectrum does not exist in any form, and its 99 aspects were never enumerated in any
+source. It is the vision's largest specification gap and its sharpest honesty risk — A.9.5 and A.12.4.*
+
+**11 · Swarm Intelligence & Collaborative Learning.** Analysis of collective learner behaviour surfacing
+common difficulties, pathways that worked for similar learners, and group study suggestions.
+*Status: not built as a QEP capability, and **must not be built as one** — Workstation has its own swarm and
+orchestration (§6); this is a consumer of that fabric. Note the two distinct meanings the sources conflate:
+population-level optimisation, and multi-agent deliberation offering diverse perspectives on a question.
+They are different systems; build them under different names or not at all.*
+
+**12 · Adaptive UI/UX Engine.** Layout, density, font size, theme and navigation adapting to profile and
+stated preference.
+*Status: an adaptation registry surface exists. The platform-level posture (§9, the W428 explicit profile)
+is the right substrate.*
+
+**13 · Platform Settings, Globalization & Accessibility.** Language selection with full RTL; themes
+(light, dark, **Islamic**); notification and privacy controls; accessibility (font scaling, high contrast);
+offline access to core content; and **digital certifications** for completed modules.
+*Status: platform settings and §9's language coverage apply. `/qep/translation/translate` **refuses (503)**
+rather than serving a template over sacred text — §11 rule 4 working as designed. Certifications do not
+exist, and must not until A.12.2 is ruled.*
+
+**14 · Secure Billing, Subscriptions & Donations.** Sharia-compliant, riba-free pricing; freemium and paid
+tiers; institutional billing at **cost + 5%**; **Zakat-eligible** donation funds; a transparent donor
+dashboard; and **Sponsor-a-Student**.
+*Status: not built. §12's VSB economy is the natural home — see A.8, the strongest structural convergence
+between QEP and Workstation.*
+
+**15 · Admin, Analytics & Platform Governance.** Admin console, moderation, role-based analytics for
+learners, teachers, admins and **parents (a Parental Insights Dashboard with session limits and activity
+digests)**, audit logging, GDPR and Sharia compliance, institutional analytics, and embedding into an
+institution's existing learning platform.
+*Status: `/api/qep/analytics/overview` exists and states `measured: false` plainly — honest, and empty.*
+
+**The shared area.** Component library, auth utilities, API clients, i18n, logging, shared types, validation,
+standardised AI-service clients, offline utilities, accessibility helpers. **In Workstation these are already
+platform concerns — not QEP's to rebuild.** This is precisely the reuse the original vision asked for and
+none of the three attempts achieved.
+
+## A.7 Personalised guidance — the four content pillars · **[OWNER]**
+
+A companion concept in the sources, folded into QEP. It is preserved because it is the only place the
+material defines the *content* of guidance rather than the mechanism:
+
+| Pillar | Framing | Content |
+|---|---|---|
+| **Spiritual Development** | *Worship* | Prayer reminders; contextual dua suggestions; daily Quranic reflections suited to the learner's state |
+| **Character Development** | *Ikhlāq* | Guidance on virtues; reflection prompts supporting moral and ethical growth |
+| **Acts of Worship** | *Aʿmāl* | Tracking of obligatory and voluntary deeds, with suggestions |
+| **Rights & Relationships** | *Ḥaq / Ḥuqūq* | Strengthening bonds with family, friends and community per Islamic teaching; reconciliation guidance grounded in Islamic values |
+
+**Design philosophy for these surfaces** — stated by the Owner and applicable platform-wide, not only here:
+**minimalist and serene**. Neutral tones, subtle Islamic patterns, elegant Arabic calligraphy, soft motion —
+chosen deliberately to evoke calm and focus.
+
+*Status: none of the four pillars is built. Each is subject to A.9.5 and A.12.3 — guidance drawing on sacred
+text needs the scholar-review mechanism before a learner sees it.*
+
+## A.8 Governance, ethics and finance · **[OWNER]**
+
+Carried because it is Owner-authored, durable, and converges with what Workstation already built.
+
+- **A dual body** — a **Waqf Endowment Board** (stewards gifts, secures perpetual funding) alongside a
+  **Not-for-Profit Trust** (day-to-day management and platform development).
+- **An Executive Board mirroring an eight-pointed star of Divine Attributes**, each attribute leading a
+  division: Majesty (*Al-ʿAzīz*) · Beauty (*Al-Wadūd*) · Knowledge (*Al-ʿAlīm*) · Creation (*Al-Khāliq*) ·
+  Justice (*Al-ʿAdl*) · Forgiveness (*Al-Ghaffār*) · Transcendence (*Al-Aḥad*) · Guidance (*Al-Hādī*).
+- **Oversight** — Board of Trustees; a **Sharia Supervisory Council** auditing curricula, AI and content;
+  steering committees for Governance & Risk, Ethics & Sharia, Finance & Audit, Impact & Quality.
+- **Finance** — 100% donation and waqf-backed; **free at the point of use** for individuals; institutional
+  partnerships at **cost + 5%**; a **surplus cap of ≤ 5%** with reinvestment; Zakat-eligible funds;
+  Sponsor-a-Student; a transparent donor dashboard showing allocation and impact.
+- **Compliance intent** — recognised quality, information-security, data-protection and charity-accounting
+  standards, with **Sharia compliance paramount**.
+- **Collaboration tiers (voluntary)** — Technology Engine · Islamic Scholarship · Outreach & Localization ·
+  Governance & Funding · Strategic Allies · Active Contributors · Community Anchors.
+
+**The convergence.** §12's VSB is *already* a hybrid Waqf/Trust/Multinational economic entity with an
+adjustable profit-share waterfall. QEP's governance is not a foreign model needing a parallel economy — it
+is the **most natural possible instance of the one Workstation built**. A QEP VSB would use §12's waterfall
+with a surplus cap, a Zakat-eligible charity channel and free-at-point-of-use individual pricing: an
+economic model that is genuinely *its own* rather than the generic default. The eight-attribute executive
+board maps onto §5's living organisation as a Religion-domain board composition.
+
+*Status: unrealised. No QEP VSB exists; §12's entities carry the generic template.*
+
+## A.9 Where §11 overrides the inherited vision — the constitutional deltas
+
+Six places the inherited vision assumes something the faith-content constitution forbids or narrows.
+**Each is a principled refusal, not a backlog entry.** Any agent reading the long-form vision document must
+read this section alongside it, or it will "close a gap" that is deliberately open.
+
+**A.9.1 Recitation is never scored — the cornerstone feature is narrowed.** The inherited flagship is an
+**AI Tajwīd Coach that grades recitation**. §11 rule 3 forbids it: no phonetic model is provisioned, and a
+fabricated judgement about a person's recitation of the Qur'an would be a false witness (the W403 precedent;
+W439's backend catch found exactly this — a string comparison over English notes returned as recitation
+"accuracy" with a hardcoded 0.95 confidence). **What QEP delivers instead** is written-recall assessment
+that states its own scope, plus Tajwīd *teaching* content labelled AI-assisted. If a genuine, validated
+phonetic capability is ever provisioned and scholar-reviewed, this narrowing may be revisited **by Owner
+ruling** — never by an agent deciding the feature list says so.
+
+**A.9.2 Qur'an Arabic is never generated.** §11 rules 1–2: Arabic is fetched from the authoritative source,
+labelled, and injected into prompts as *given material* with an explicit do-not-reproduce instruction;
+nonexistent ayaat are refused against the real ayah-count table; a truncated range is disclosed as the range
+actually covered.
+
+**A.9.3 Translation refuses rather than approximates.** §11 rule 4 — translation of sacred text returns a
+refusal rather than serving a template. The inherited vision assumed translation as an ordinary feature. It
+is not one.
+
+**A.9.4 Emotion inference is not adopted.** The sources have emotion detection driving the interface, the
+guidance companion's tone and the guidance itself — including for children. **Not adopted.** It fails §11's
+honesty bar (an inferred emotional state presented as known), the sources contain no consent, retention or
+opt-out model, and the population includes minors. QEP's adaptive UI adapts to **profile and stated
+preference** (the W428 explicit profile), never to inferred affect. Reopening this needs an Owner ruling
+with a consent model attached.
+
+**A.9.5 Fitrah profiling must not claim to measure the soul.** The 99-aspect Fitrah Spectrum mapped to the
+Divine Attributes is the vision's most original idea and its sharpest risk: an instrument asserting a
+person's spiritual condition, then conditioning religious guidance on it. Under §11 it may exist only as an
+explicitly **self-reported reflection aid** — the learner's own stated inclinations, held as the learner's
+words, with no claim of measurement, no derived score presented as fact, and no implication that the platform
+knows the state of anyone's *fitrah*. The Ayah → Attribute → state chain may be offered as **material for
+reflection**, never as a diagnosis. If it cannot be built to that standard, it is not built.
+
+**A.9.6 "Ask a Scholar" requires actual scholars.** It is a verified-human channel, not an AI persona. Until
+real scholars are verified, the surface must say so — as it already does.
+
+## A.10 What was deliberately NOT carried across
+
+Recorded so no future agent mistakes these for gaps, or lifts them out of the long-form document.
+
+**A.10.1 The entire 2025 technology stack — EXCLUDED as dated.** Specific model rosters, speech and emotion
+SDKs, event-bus and database selections, hosting and free-tier strategies, and the vendor-ecosystem mapping
+all reflect mid-2025 availability. **Workstation supplies every one of these from §6 and §7.** QEP declares
+*capabilities*; the fabric decides what serves them. Naming a 2025 vendor in a QEP build would be a
+regression, not a plan.
+
+**A.10.2 The service and event architecture — EXCLUDED as superseded.** The inherited design has a
+four-microservice "Neural Core" behind a named event bus with named topics. §17.2's nervous and endocrine
+layers, §6's swarm and orchestration, and §9's enterprise-aware avatar **are** that design, generalised
+across six domains instead of one. The durable content is the *capability* — personalised guidance,
+collective intelligence, adaptive interface, a conversational companion — not its 2025 realisation.
+
+**A.10.3 The 19-phase roadmap — EXCLUDED.** Jules-authored, and it disagrees with itself across attempts:
+the last generation silently deleted Fitrah profiling, institutional onboarding and the ethical finance model
+from phases 16–18 and presented it as a revision. Workstation's delivery order is set by the
+`FABLE_DELIVERY_PROMPT.md` plan and its ledger, not by an inherited phase list.
+
+**A.10.4 The delivery methodology, phase→feature mapping, and effort/impact ratings — EXCLUDED.** Workstation
+has its own method, verification rhythm and ordering principle ("how much a real person is misled or
+blocked"). The inherited ratings are subjective 1–5 scores with no rubric.
+
+**A.10.5 All status and completeness claims from the source repositories — EXCLUDED as unreliable.** The
+audit found placeholder text presented as a canonical plan, in-memory dictionaries presented as a backend,
+zero-byte files implying eleven features, and 209 unresolved compile errors committed. **Nothing about what
+those repositories "had working" is evidence of anything.** A.11's status comes from measuring Workstation.
+
+## A.11 Measured status, 2026-09-07 (HEAD `06c51109`)
+
+**What is real and honest** (ledger R1.7 DELIVERED, survived adversarial refutation): sourced Qur'an text
+with its source label; ayah-count refusals at the ayah, schedule and review routes; genuine SM-2
+memorisation with persisted XP; written-recall comparison that refuses non-Arabic and states it says nothing
+about recitation; a translation route that refuses before any model call; floor-served lessons labelled as
+outlines; analytics that says `measured: false`; and UI reporting "NOT ESTABLISHED" and "no scholars are
+verified" instead of inventing figures.
+
+**Surface inventory.** `agentic_core/religious_domain/api.py` (674 lines, 11 routes) · `api/religion.py`
+(347 lines, 6 tools) · `api/qep_intelligence.py` (394 lines, 7 routes) · `api/qep_analytics.py` (1 route) ·
+`reactor/religion/{qep_flagship.py, quranic_studies.py, qep_authoring/}` · frontend `QEPStudio.tsx` (341),
+`QEPIntelligence.tsx` (248), `QEPReligionHub.tsx` (155), `QEPDashboard.tsx` (117),
+`QEPFlagshipFeatures.tsx` (141), `QEPImmersiveTools.tsx` (70).
+
+**Three known defects, each already carried in the delivery plan:**
+- **The Tafsir surface is the constitution's weakest point** (ledger R1.0, PARTIAL). On the floor it serves
+  a scaffold under a "## Translation" heading; `arabic_text`, `arabic_source`, `reference` and `range_note`
+  never reach the screen; it is the only Religion tool with no `disclaimer` key; and a green QMS chip sits
+  beside a compliance verdict of "review". The same rule that makes translation refuse is not applied here.
+  → **P1.8**.
+- **A dead "QEP Flagship" tab on five non-Religion hubs** (ledger R5.8) rendering a generic four-engine
+  panel that reports NOT_WIRED on click — contrary to the directive that QEP lives in Religion. → **P1.13**.
+- **The QMS gate cannot fail on floor output**, so QEP surfaces show green "QMS pass" chips over scaffold.
+  → **P1.1** (the class-kill).
+
+**Twelve of the fifteen features have no module — and there is archived prior art.** The tracked Religion
+package holds three modules only: `learning/gamification.py`, `memorization/engine.py`, `tajwid/coach.py`.
+Ten sibling modules covering auth, community (forum, video), educator, finops, governance, guidance,
+immersive, integrations and swarm **did exist as Jules-era stubs (626 lines total) and were archived,
+correctly, to `_archive/jules-unwired/agentic_core/religious_domain/` in W382** (2026-08-31) because nothing
+called them. They are prior art at stub depth — worth a glance before building a feature, never worth
+restoring. *Note for whoever measures next: those nine directory names persist in a working tree as
+`__pycache__`-only residue. They are untracked, absent from a fresh clone, and must not be read as packages
+— an `iterdir` scan will see them and be wrong.*
+
+*Recording the W382 commit honestly, since this canon's rule is to record what was observed: its message
+describes a WebSocket default resolved at build time and says nothing about the Religion domain. The
+archival of 626 lines of QEP code rode along in the same commit as a large archive move — the `git add -A`
+class. The retirement was right; its record was not.*
+
+## A.12 Design decisions that block the build — Owner rulings
+
+None of these is engineering. Each blocks engineering, and each is the Owner's to make.
+
+**A.12.1 Corpus provenance.** No source is named for recitation audio, translations, the Hadith corpus or
+Tafsir; no licensing; no canonical edition; no *qirāʾāt* selection. The Qur'an Arabic source is settled
+(alquran.cloud, per §11). Everything else is not.
+
+**A.12.2 Certification authority.** Feature 13 issues certificates for completed modules. Under what
+authority, and reviewed by whom? A platform-issued certificate in Quranic study makes a claim about a
+person's standing. Until ruled, certification is not built — and the memorisation basis line ("a review
+count, not a hifz certification") is the correct posture meanwhile.
+
+**A.12.3 Curriculum ownership, and scholarly review of AI-generated religious content.** Noorani Qaida,
+Tajwīd, Quranic Arabic and Tafsir curricula are assumed by the feature set. Who authors them, and which
+scholarly authority approves them before a learner sees them? Relatedly and more urgently: **§11 requires
+scholar-led audit of AI and content, and no mechanism specifies how a generated tafsir explanation, dua
+suggestion or Hadith citation is reviewed *before* a user sees it.** This blocks A.6 features 5, 6 and 7 and
+all of A.7.
+
+**A.12.4 Fitrah Spectrum — build to the A.9.5 standard, or do not build.** The 99 aspects were never
+enumerated in any source. The ruling needed is whether it proceeds as a self-reported reflection aid at all.
+
+**A.12.5 Tajwīd rule scope.** Which rules are taught and assessed in writing, and to what level of
+madhhab-specific variation. The sources use two rules as recurring examples and never define the set.
+
+## A.13 What the three prior attempts cost, as binding constraints
+
+Recorded because this canon's operating rule is to record what was observed.
+
+1. **All three died in the commodity layers.** Every attempt spent itself on repository setup, auth and
+   billing; none reached the intelligence capability that justified the product. → **Build QEP by composing
+   §6/§7 resources. Never a private stack.**
+2. **Structure was mistaken for capability.** One attempt created nineteen feature directories and filled
+   four, with zero-byte README files standing in for eleven features. → **A directory, a route or a module
+   name proves nothing until something exercises it.** W382's archival of the ten unwired Religion modules
+   was this lesson already being applied here (A.11).
+3. **A broken generator kept being cited as canon.** One attempt's documentation pipeline failed and emitted
+   placeholder text for all twenty phases, with junk auto-derived titles, while downstream documents kept
+   citing it. → **A generated artefact needs an assertion that it contains content before anything may cite
+   it.**
+4. **Scope was reduced silently and called a revision.** The last attempt deleted three major capabilities
+   from its plan without recording a decision. → **Scope reduction is a ruling, never an edit.**
+
+*Full evidence for all four in `docs/QURAN_EDUCATION_PLATFORM_VISION.md` §§2–4 — which is a reconstruction
+and audit of those repositories, and whose Part V (technology) and Part VI (roadmap) are superseded here by
+A.10.*
 
 
 ---

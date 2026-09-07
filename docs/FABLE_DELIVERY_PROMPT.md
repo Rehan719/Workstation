@@ -26,7 +26,12 @@
 > plans the delivery of the WHOLE vision (§1–§15) to completion rather than the next cluster.
 >
 > Companions: `WORKSTATION_IDBO_WHOLE_VISION.md` (the Owner's canon; §16/§17/§18 regenerated
-> 2026-09-05; recorded Owner directives added at their claim sites) · `VISION_FIDELITY_LEDGER.md`
+> 2026-09-05; recorded Owner directives added at their claim sites; **APPENDIX A added 2026-09-07 —
+> the Quran Education Platform vision for the Religion domain: concept · vision · objectives ·
+> features only, provenance-graded, with A.9's six constitutional refusals, A.10's exclusions and
+> A.12's five Owner rulings**) · `QURAN_EDUCATION_PLATFORM_VISION.md` (the QEP long form and the
+> audit of the three abandoned 2025 build attempts — read it for provenance, but its technology and
+> roadmap parts are 2025-dated and SUPERSEDED by appendix A.10) · `VISION_FIDELITY_LEDGER.md`
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
@@ -100,7 +105,15 @@ C — WHAT TO BUILD NEXT: the reach backlog is COMPLETE. The next work is <deliv
 D — DECIDED BY THE OWNER AND DELIVERED: Realm gets teeth at NARROW scope (W427/W434); an EXPLICIT
     owner-scoped user profile, never implicit recall (W428); a BUNDLED browser-side PDF extractor,
     never a server upload (W429); THE QURAN EDUCATION PLATFORM LIVES IN THE RELIGION DOMAIN
-    (W439) under the faith-content constitution in the vision's §11.
+    (W439) under the faith-content constitution in the vision's §11. The QEP vision — concept,
+    vision, 8 objectives, 15 features, Waqf/Trust governance — is now vision APPENDIX A.
+    READ A.9 BEFORE TOUCHING ANY QEP SURFACE: six things the inherited vision assumes that §11
+    FORBIDS (recitation scoring, generated Arabic, translation, emotion inference, Fitrah as
+    measurement, AI Ask-a-Scholar). They are ratified boundaries under DEFINITION OF COMPLETE
+    clause (b) — never gaps to close. AND READ A.10: the source repos' technology, service
+    architecture, 19-phase roadmap and every status claim they made are EXCLUDED as dated and
+    agent-unreliable. QEP declares capabilities; §6/§7 decide what serves them. Naming a 2025
+    vendor, or restoring an inherited phase plan, is a regression.
 
 E — FEDERATION (Owner decision 2026-08-31, now recorded as vision §18-E): cross-INSTANCE
     federation stays honestly simulated (peers flagged simulated: true) until a second instance
@@ -483,7 +496,14 @@ PHASE P3 — CAPABILITY (Tier 3; ~11 rounds; OWNER RULINGS put with evidence at 
       (build the grid picker feeding Genesis, or amend §17.1 to "design intent") · 3.6 KPI gate
       (block deliverable/marketplace release until the owning VSB's objective KPIs are set and
       tracked, or amend §17.5) · 3.4 Mode 2 scope · AND THE FIVE QEP RULINGS (vision A.10, each
-      tracked, or amend §17.5) · 3.4 Mode 2 scope.
+      blocking P3.9-P3.11): A.12.1 corpus provenance (recitation audio, translations, Hadith,
+      Tafsir — licence + canonical edition + qira'at; Qur'an Arabic is already settled at
+      alquran.cloud per §11) · A.12.2 certification authority (who stands behind a QEP
+      certificate) · A.12.3 curriculum ownership AND the scholar-review mechanism for
+      AI-generated religious content BEFORE a learner sees it — §11 requires the audit and no
+      mechanism exists; this one blocks features 5/6/7 and all of A.7 · A.12.4 whether the Fitrah
+      Spectrum proceeds at all, and only ever as A.9.5's self-reported reflection aid ·
+      A.12.5 Tajwid rule scope and madhhab variation.
  P3.1 [3.1] §4.6 Develop: a distinct journey stage between design and operational intelligence
       producing at least one buildable, checkable artefact (a costed bill of materials, a
       runnable prototype spec, or a parameterised model via factory/forge) with a REAL pass/fail
@@ -507,6 +527,23 @@ PHASE P3 — CAPABILITY (Tier 3; ~11 rounds; OWNER RULINGS put with evidence at 
       entity's products listed on the marketplace with §12 pricing.
  P3.8 [3.5, 3.6, 3.10] The rulings, implemented as ruled — each a Tier-1-shaped fix once ruled
       (a lifecycle field that only ever holds its final value is the §4.5 shape).
+ P3.9 [vision A.6, A.1] QEP composed, not rebuilt. The Religion domain's remaining features are
+      built by COMPOSING §6/§7 resources — never a private QEP stack, which is what killed all
+      three prior attempts (A.13.1), and never the excluded 2025 stack (A.10). First the two that
+      need no ruling: memorisation UI (the
+      flashcard/review/heatmap surface over the REAL SM-2 that already runs) and competitions +
+      leaderboards over the persisted XP. ACCEPT: a learner schedules 3 ayaat, reviews at q=4,
+      and sees the interval, the e-factor and the 'a review count, not a hifz certification'
+      basis on screen; a leaderboard ranks two seeded learners by recorded XP with its formula
+      shown. GUARD: no route added under /qep may return a figure without a basis string.
+ P3.10 [A.6 f5/f6, gated on A.12.3] Learning modules + the educator toolkit. Curriculum content
+      and classes ship ONLY behind the ruled scholar-review mechanism; until it is ruled, the
+      LearnTeach surface keeps saying NOT ESTABLISHED, which is correct and must not be dressed.
+ P3.11 [A.8] The QEP VSB. §12's waterfall configured as the Waqf/Trust instance A.8 describes —
+      free at point of use for individuals, institutions at cost+5%, surplus cap <=5%, a
+      Zakat-eligible charity channel, Sponsor-a-Student — so one entity has an economic model
+      that is ITS OWN rather than the generic template. The eight-attribute executive board
+      (A.8) as the Religion-domain board composition.
  MILESTONE M3: fidelity workflow re-run → zero STUB/MISSING/DOC_OVERCLAIM; every PARTIAL
    disclosed; ledger v6 = the ratified boundaries only.
 
