@@ -530,7 +530,7 @@ def test_cascade_appraisals_measured_and_persisted(client):
         "mission": "w268 measured appraisal contract", "domain": "enterprise"}).json()
     assert set(r["appraisals"].keys()) >= {"chief_appraises_board", "board_appraises_ceo",
                                            "ceo_appraises_csuite", "bto_appraises_build"}
-    assert r["quality"].get("qms_gate_passed") is not None      # the gate ran (before the appraisals)
+    assert r["quality"].get("qms_basis") and r["quality"].get("quality_record_hash")   # the gate ran (before the appraisals) — W449: the verdict may be None (not assessable), so the witness is the basis + the seal
     runs = client.get("/api/v1/swarm/cascade/runs").json()
     top = runs["runs"][0]
     assert top["run_id"] == r["run_id"]                          # this run persisted
@@ -652,7 +652,7 @@ def test_all_four_management_systems_compute(client):
     r = client.post("/api/v1/swarm/cascade", json={
         "mission": "w271 four living systems contract", "domain": "enterprise"}).json()
     ms = r["management_systems"]
-    assert ms["document_control"] and r["quality"].get("qms_gate_passed") is not None
+    assert ms["document_control"] and r["quality"].get("qms_basis")   # W449: the verdict may be None; the basis proves the gate ran
     bms = ms["bms"]
     assert isinstance(bms["cost_per_insight_usd"], (int, float)) and bms["insights_count"] >= 4
     assert bms["status"] in ("EFFICIENT", "REVISE") and "estimate" in bms["caveat"]
@@ -1312,7 +1312,7 @@ def test_vsb_repo_cascades_rerunnable(client):
                     json={"mission": "w291 operate the entity", "objective_id": oid}).json()
     assert r["run"]["business_plan_scope"] == vid             # scoped to THIS entity's plan
     rr = r["repo_run"]
-    assert (rr.get("plan_binding") or {}).get("result") in ("review_written", "qms_failed_no_advance")
+    assert (rr.get("plan_binding") or {}).get("result") in ("review_written", "qms_failed_no_advance", "qms_not_assessable_no_advance")   # W449: a floor run is not assessable
     runfile = pathlib.Path(m["repo_root"]) / "resources" / "runs" / f"{rr['run_id']}.json"
     assert runfile.exists()                                   # the run is bound INTO the repo
     assert "cascade:" in r["version_control"]["message"]      # and committed
@@ -1601,7 +1601,7 @@ def test_cascade_sees_and_moves_the_living_plan(client):
         assert pb["advanced"] is True and obj["status"] == "in_progress"
         assert obj["reviews"][-1]["org_cascade_run"]["run_id"] == r["run_id"]
     else:                                                  # honest: a failed gate never advances
-        assert pb["result"] == "qms_failed_no_advance" and obj["status"] == "planned"
+        assert pb["result"] in ("qms_failed_no_advance", "qms_not_assessable_no_advance") and obj["status"] == "planned"   # W449: not assessable never advances either
     top = client.get("/api/v1/swarm/cascade/runs").json()["runs"][0]
     assert top["run_id"] == r["run_id"]
     assert (top.get("plan_binding") or {}).get("objective_id") == oid   # binding persisted
@@ -1727,7 +1727,10 @@ def test_native_learning_loop_closed(client):
     r = client.post("/api/v1/swarm/cascade", json={
         "mission": "w275 quality loop contract", "domain": "enterprise"}).json()
     mq = [x for x in _ops() if x["kind"] == "model_quality" and x.get("ref") == r["run_id"]]
-    assert mq and mq[0]["success"] == bool(r["quality"].get("qms_gate_passed"))
+    if r["quality"].get("qms_gate_passed") is None:      # W449 — not assessable ⇒ NO model_quality row
+        assert not mq, "a not-assessable floor run was recorded as a model outcome: %r" % (mq,)
+    else:
+        assert mq and mq[0]["success"] == bool(r["quality"].get("qms_gate_passed"))
     # …and the apex Board accrues operational rows like every other tier
     client.post("/api/v1/board/chief/instruct", json={"instruction": "w275 board rows contract"})
     assert any(x["kind"] == "ai_call" and str(x["resource"]).startswith("agent:board")
@@ -1760,7 +1763,7 @@ def test_composition_runs_persist_feed_selection_and_move_the_plan(client):
         assert pb["advanced"] is True and obj["status"] == "in_progress"
         assert obj["reviews"][-1]["composition_run"]["run_id"] == r["run_id"]
     else:                                                      # honest: a failed gate never advances
-        assert pb["result"] == "qms_failed_no_advance" and obj["status"] == "planned"
+        assert pb["result"] in ("qms_failed_no_advance", "qms_not_assessable_no_advance") and obj["status"] == "planned"   # W449: not assessable never advances either
     runs = client.get("/api/v1/resources/compositions/runs").json()["runs"]
     assert runs[0]["run_id"] == r["run_id"]                    # the run persisted, newest first
     assert [x["resource"] for x in runs[0]["real_resources"]] == ["petri_dish"]
@@ -2316,7 +2319,7 @@ def test_genesis_journey_in_house_provenance(client):
     # W109 — continual operational delivery within the LIVING QMS: the journey's buildable + go-to-market
     # delivery is QMS-gated, held to the §10 bar, recorded within the §8 organism (same shared capability).
     qa = body["quality_assurance"]; q = qa["quality"]; bio = qa["biomimetic"]
-    assert isinstance(q["qms_gate_passed"], bool) and 0.0 <= q["delivery_coverage"] <= 1.0
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and 0.0 <= q["delivery_coverage"] <= 1.0   # W449: floor-served in this suite
     assert q["qms_min_coverage"] == 0.95 and len(q["bar"]) >= 12 and {"verified", "safe"} <= set(q["bar"])
     # W422 — `layers` now means CONTRIBUTED, not declared. The old assertion (== 7) enshrined the
     # defect: the record named all seven on every delivery regardless of what participated.
@@ -2509,7 +2512,7 @@ def test_resource_compose_model_and_simulate_before_commit(client):
     m = sim["model"]
     assert m["pipeline"] and m["combined_capabilities"] and m["usage_area_supported_by_all"] is True
     q = sim["simulation"]["quality"]
-    assert isinstance(q["qms_gate_passed"], bool) and len(q["bar"]) >= 12
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and len(q["bar"]) >= 12   # W449: a template plan is not assessable
     assert sim["simulation"]["biomimetic"]["layers"] and sim["commit_ready"] is True
     # an incompatible selection (gaas_v5 supports governance/delivery/evolution, not 'design') is caught
     bad = client.post("/api/v1/resources/compose/simulate",
@@ -2552,7 +2555,7 @@ def test_resource_composition_run_on_native_swarm(client):
     assert all(t["served_by"] in ("native", "ollama") for t in run["trace"])
     assert run["final"]                                       # produced a combined pipeline result
     q = run["quality_assurance"]["quality"]                   # QMS-gated + document-controlled (§10/§8)
-    assert isinstance(q["qms_gate_passed"], bool) and q["document_controlled"] is True
+    assert q["qms_gate_passed"] is None and q["document_controlled"] is True   # W449: floor-served, still sealed
     # unknown composition is a 404
     assert client.post("/api/v1/resources/compositions/nope/run", json={}).status_code == 404
 
@@ -2764,7 +2767,7 @@ def test_vsb_website_generation(client):
     paths = {p["path"] for p in m["pages"]} | {a["path"] for a in m["assets"]}
     assert {"web/index.html", "web/about.html", "web/solution.html", "web/styles.css"} <= paths
     q = m["quality_assurance"]["quality"]
-    assert q["qms_gate_passed"] is True and q["document_controlled"] is True
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and q["document_controlled"] is True   # W449: the site copy is floor-served here — not assessable, still sealed
     assert q["compliance"]["overall"] in ("pass", "review", "fail")
     assert m["ai_provenance"]["any_external"] is False                 # copy generated in-house (§6)
     # generated pages are served as real HTML; styles too; unknown page is 404 (no traversal)
@@ -2847,7 +2850,7 @@ def test_vsb_board_pack(client):
     assert m["narrative"]
     assert m["dcs_registered"] is True and isinstance(m["dcs_hash"], str) and len(m["dcs_hash"]) == 128
     q = m["quality_assurance"]["quality"]
-    assert q["qms_gate_passed"] is True and q["compliance"]["overall"] in ("pass", "review", "fail")
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and q["compliance"]["overall"] in ("pass", "review", "fail")   # W449: the floor narrative is not assessable
     assert m["ai_provenance"]["any_external"] is False
     # GET latest + history; unknown VSB is a 404
     assert client.get(f"/api/v1/vsb/{vid}/board-pack").json()["dcs_hash"] == m["dcs_hash"]
@@ -3121,7 +3124,7 @@ def test_deliverables_living_lifecycle(client):
     # W108 — continual operational delivery within the LIVING QMS: the produced deliverable is gated by
     # the OWNED QMS, held to the §10 Solution-Quality Bar, recorded within the §8 biomimetic organism.
     qa = d["quality_assurance"]; q = qa["quality"]; bio = qa["biomimetic"]
-    assert isinstance(q["qms_gate_passed"], bool) and 0.0 <= q["delivery_coverage"] <= 1.0
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and 0.0 <= q["delivery_coverage"] <= 1.0   # W449: floor-served in this suite
     assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
     assert len(q["bar"]) >= 12 and {"verified", "compliant", "safe", "ranked"} <= set(q["bar"])
     assert bio["layers"] == ["Immune"] and len(bio["layers_declared"]) == 7
@@ -3373,7 +3376,7 @@ def test_swarm_cascade_in_house_provenance(client):
     assert all(appr[k] for k in appr)
     # §10 Solution-Quality Bar + continual operational delivery within the LIVING QMS (real gate)
     q = r["quality"]
-    assert isinstance(q["qms_gate_passed"], bool) and 0.0 <= q["delivery_coverage"] <= 1.0
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and 0.0 <= q["delivery_coverage"] <= 1.0   # W449: floor-served in this suite
     assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
     assert len(q["bar"]) >= 12 and {"verified", "compliant", "ranked", "safe"} <= set(q["bar"])
     # the QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5)
@@ -3757,7 +3760,7 @@ def test_vbs_living_systems_integrated_in_house(client):
     tree = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
     gov = tree.get("governance")
     assert gov and gov["governed_by"].startswith("VBS QMS + DCMS")
-    assert isinstance(gov["qms_passed"], bool) and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128
+    assert gov["qms_passed"] is None and "not assessable" in gov["qms_basis"] and gov["dcms_algo"] == "sha3_512" and len(gov["dcms_hash"]) == 128   # W449: every node floor-served
 
 
 def test_data_dir_configurable(client):
@@ -5330,7 +5333,7 @@ def test_stale_repo_loop_closes_and_records_honestly(client):
         heartbeat.configure(auto_ship=False)                       # never leave the flag on
     assert s2.get("stale") is False
     msg = (s2.get("version_control") or {}).get("message", "")
-    assert "compliance None" not in msg and "QMS" in msg           # honest aggregate, not fabricated
+    assert "compliance None" not in msg and "QMS" in msg and "QMS fail" not in msg   # honest aggregate, not fabricated (W449: a not-assessable surface never renders as fail)
     ev2 = client.get("/api/v1/gaas/ueg/events", params={"limit": 300}).json()
     t2 = [((e.get("data") or {}).get("type")) for e in (ev2.get("events") or ev2.get("nodes") or [])]
     assert "vsb.repo.reshipped_on_drift" in t2
@@ -7599,6 +7602,14 @@ def test_w436_floor_served_stages_are_not_certified(client):
     attested = set(bar.get("attested_criteria") or [])
     assert "tested" not in attested and "validated" not in attested, (
         "a floor run attested verification it could not perform: %r" % (attested,))
+    # W449 (ledger 3.11) — on a tie / identical candidates the run must not attest ranked · simulated ·
+    # modelled either: each is WITHHELD with its reason, never silently counted as met.
+    s5 = d.get("stage_5_model_simulate_rank") or {}
+    if (s5.get("tie") or {}).get("detected") or (s5.get("candidates_distinct") or 0) <= 1:
+        for name in ("ranked", "simulated", "modelled", "optimised"):
+            assert name not in attested, "%s attested on a tie / identical candidates" % name
+            crit = (bar.get("criteria") or {}).get(name) or {}
+            assert crit.get("met") is None and "not attested" in (crit.get("basis") or ""), (name, crit)
 
 
 def test_w437_native_primitives_no_longer_fabricate(client):
@@ -8504,3 +8515,168 @@ def test_w444_residual_clusters_hardened_and_honest(client):
     assert mine["updated_by"] == "owner-ui-direct"   # auth off → the requested default stands
     # 9. the reset guard still refuses to the CCA (surfacing the refusal IS the wiring)
     assert client.post("/api/v1/organism/config/reset", json={}).status_code == 409
+
+
+def test_w449_floor_served_gate_is_not_assessable_both_ways(client):
+    """§10 (delivery-plan P1.1, ledger 1.1) — THE GATE THAT COULD NOT FAIL.
+
+    assure_delivery measured coverage as "declared section names present in the text". The floor
+    composes its reply out of the caller's OWN headings, so coverage was 1.0 by construction; on
+    Offering-1 it was called with NO sections, so coverage collapsed to a 200-character length check;
+    the stub regex never matches the floor's vocabulary. 174 of 174 native deliverables in the store
+    were sealed "pass · verified" — a certificate printer. Genesis fixed this class for its own stage
+    checks in W436; the SHARED gate every other surface uses never got it.
+
+    Both ways, as rule 4 demands: floor-served → None with the reason, nothing counted as a gate run,
+    the record still sealed; the SAME document model-served → pass; with a stub → fail.
+    """
+    import asyncio as _aio
+    from agentic_core.vbs.quality import assure_delivery, floor_served
+    loop = _aio.new_event_loop()   # never get_event_loop(): deprecated, and 3.12 raises outside a running loop
+    secs = ["Executive Summary", "Background", "Analysis", "Recommendations"]
+    doc = "\n".join(
+        f"## {s}\n" + (f"A halal artisan bakery in Leeds serving students and families; {s.lower()} "
+                       "covers demand, pricing, supply, staffing and the first ninety days. " * 3)
+        for s in secs)
+    assert len(doc) >= 900
+
+    def gates_run():
+        return client.get("/api/v1/vbs/qms/defects").json()["summary"]["gates_run"]
+
+    before = gates_run()
+    floor = loop.run_until_complete(assure_delivery(doc, secs, label="w449", served_by="native"))["quality"]
+    assert floor["qms_gate_passed"] is None, "a floor-served delivery was certified: %r" % (floor.get("qms_gate_passed"),)
+    assert "not assessable" in floor["qms_basis"] and floor["not_assessable"] is True
+    c = floor["bar_measured"]["criteria"]
+    assert c["verified"]["met"] is None and c["verified"]["source"] == "none" and "not assessable" in c["verified"]["basis"]
+    assert c["specifically designed"]["met"] is None and c["specifically designed"]["source"] == "none"
+    assert "verified" not in floor["bar_measured"]["measured_criteria"]
+    assert floor["document_controlled"] is True and floor["quality_record_hash"]      # still sealed
+    assert gates_run() == before, "a not-assessable delivery was counted as a gate run"
+
+    # the SAME document served by a model is assessable — and passes, measured
+    model = loop.run_until_complete(assure_delivery(doc, secs, label="w449", served_by="ollama:llama3.2"))["quality"]
+    assert model["qms_gate_passed"] is True and model["delivery_coverage"] == 1.0
+    v = model["bar_measured"]["criteria"]["verified"]
+    assert v["met"] is True and v["source"] == "gate" and "verified" in model["bar_measured"]["measured_criteria"]
+    assert gates_run() == before + 1
+    # …and the gate can still FAIL on real content
+    bad = loop.run_until_complete(assure_delivery(doc + "\nTODO finish", secs, label="w449", served_by="ollama:llama3.2"))["quality"]
+    assert bad["qms_gate_passed"] is False
+    # the seal is PER DELIVERY now (content hash + server are inside it)
+    assert floor["quality_record_hash"] != model["quality_record_hash"] != bad["quality_record_hash"]
+
+    # provenance shapes the gate understands
+    assert floor_served("native") and floor_served({"native": 3}) and floor_served(["native", "native"]) and floor_served("template")
+    assert not floor_served(None) and not floor_served({"native": 2, "ollama:x": 1}) and not floor_served(["ollama:x"])
+    assert not floor_served("verbatim-ingest")   # undeclared origin = the caller's own writing: the gate runs
+
+    # through the API on the floor (this suite): a produced deliverable and a domain tool both say so,
+    # and the domain tool's coverage is now measured against the PROMPT's own sections, not None
+    d = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "title": "w449 floor", "brief": "a halal artisan bakery in Leeds"}).json()
+    q = d["quality_assurance"]["quality"]
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"]
+    law = client.post("/api/v1/law/analyse", json={"document_text": "This agreement is between A and B. " * 20}).json()
+    qa = (law.get("ai_provenance") or {}).get("quality_assurance") or {}
+    assert qa.get("qms_gate_passed") is None and "not assessable" in (qa.get("qms_basis") or ""), qa
+
+    # refuter F1 — the Genesis page saves the journey VERBATIM as a deliverable. Told only
+    # "verbatim-ingest", the gate had certified floor text PASS. Now the ingest carries its origin:
+    # floor origin → None (floor basis); no declared origin → the caller's own writing, the gate runs
+    # and the basis names verbatim-ingest; a declared model origin → the gate runs under that name.
+    v1 = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "title": "w449 verbatim floor", "brief": "b", "content": doc,
+        "source_served_by": {"native": 5}}).json()["quality_assurance"]["quality"]
+    assert v1["qms_gate_passed"] is None and "floor-served" in v1["qms_basis"], v1
+    v2 = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "title": "w449 verbatim unknown", "brief": "b", "content": doc}).json()["quality_assurance"]["quality"]
+    assert v2["qms_gate_passed"] is True and "served_by=verbatim-ingest" in v2["qms_basis"], v2
+    v3 = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "title": "w449 verbatim model", "brief": "b", "content": doc,
+        "source_served_by": "ollama:llama3.2"}).json()["quality_assurance"]["quality"]
+    assert v3["qms_gate_passed"] is True and "served_by=ollama:llama3.2" in v3["qms_basis"], v3
+
+    # refuter F2 — the VSB entity never carried ai_provenance, so repo / webapp / mobile ALWAYS fell
+    # to the old gate ("QMS gate: PASS … served_by=unspecified" in every shipped QUALITY.md). A
+    # journey-born entity now stores the journey's provenance and its shipped body is not assessable
+    # on the floor; a standalone /establish (origin unknown) still gets the measured gate.
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": "w449 f2: a halal artisan bakery in Leeds serving students", "domain": "enterprise",
+        "establish": True, "ship_output": False}).json()
+    ent = client.get(f"/api/v1/vsb/{j['established_vsb']['vsb_id']}").json()
+    assert "native" in (ent.get("ai_provenance") or {}).get("served_by", {}), ent.get("ai_provenance")
+    for leg in ("repo", "webapp", "mobile"):
+        rq = client.post(f"/api/v1/vsb/{ent['vsb_id']}/{leg}").json()["quality_assurance"]["quality"]
+        assert rq["qms_gate_passed"] is None and "floor-served" in rq["qms_basis"], (leg, rq)
+    from agentic_core.api.vsb import _REPO_STORE as _RS
+    qmd = (_RS / ent["vsb_id"] / "compliance" / "QUALITY.md").read_text(encoding="utf-8")
+    assert "NOT ASSESSABLE" in qmd and "QMS gate: PASS" not in qmd, qmd[:600]
+    loop.close()
+
+
+def test_w449_bar_attestations_withheld_on_tie_both_ways(client):
+    """§10 (ledger 3.11, R1.4/R2.5) — a ranking that carried no information is not a ranking.
+
+    Genesis attested "modelled · simulated · ranked" as met on runs whose three candidates were
+    byte-identical and whose ranking was a tie resolved by list order — while its own basis text said
+    "NOT by evidence". Now each is WITHHELD with the reason; with distinct candidates it is attested.
+    And the shipped EVIDENCE.md carries the tie note the page already showed.
+    """
+    from agentic_core.api.genesis import _bar_attestations
+    from agentic_core.vbs.quality import _measure_bar
+
+    same = "the same simulation text " * 20
+    cands = [{"id": i, "modelled_score": 0.7, "simulation": same, "simulation_score": 0.7,
+              "score": 0.8, "score_basis": "form"} for i in ("pragmatic", "innovative", "lean")]
+    tie = {"tie": {"detected": True, "resolved_by": "list order — NOT evidence"}, "candidates_distinct": 1,
+           "selection_basis": "TIE at 0.8 across 3 candidates — resolved by list order, NOT by evidence. selected pragmatic"}
+    ev, wh = _bar_attestations(cands, tie, cands[0], "enterprise", "enterprise", {}, 0)
+    four = {"modelled", "ranked", "simulated", "optimised"}
+    assert four <= set(wh) and not (four & set(ev)), (ev, wh)
+    assert "TIE" in wh["ranked"] and "identical" in wh["simulated"]
+    bar = _measure_bar(1.0, False, True, 0.6, {"verdicts": []}, ev, withheld=wh)
+    r = bar["criteria"]["ranked"]
+    assert r["met"] is None and r["source"] == "none" and "not attested" in r["basis"]
+    assert not (four & set(bar["attested_criteria"]))
+
+    # the other way: distinct candidates, distinct twin outputs, no tie → attested
+    cands2 = [{**c, "simulation": f"distinct simulation for {c['id']} " * 20,
+               "score": 0.9 - 0.1 * i} for i, c in enumerate(cands)]
+    ok = {"tie": {"detected": False}, "candidates_distinct": 3, "selection_basis": "selected pragmatic on evidence"}
+    ev2, wh2 = _bar_attestations(cands2, ok, cands2[0], "enterprise", "enterprise", {}, 0)
+    assert four <= set(ev2) and not (four & set(wh2)), (ev2, wh2)
+
+    # the tie travels to the shipped body: EVIDENCE.md says what the page said
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w449 tie evidence", "domain": "enterprise", "owner_id": "pytest",
+        "selected_candidate": {"id": "pragmatic", "rank": 1, "score": 0.8, "coverage": 1.0,
+                               "tie": {"detected": True, "resolved_by": "list order — NOT evidence"},
+                               "candidates_distinct": 1}}).json()
+    client.post(f"/api/v1/vsb/{est['vsb_id']}/repo")
+    from agentic_core.api.vsb import _REPO_STORE
+    ev_md = (_REPO_STORE / est["vsb_id"] / "EVIDENCE.md").read_text(encoding="utf-8")
+    assert "TIE" in ev_md and "identical text" in ev_md, ev_md
+
+
+def test_w449_qms_chip_renders_through_one_helper():
+    """Rule 26 — a class-kill is only a kill where every site uses the helper. Twenty renderers
+    branched on truthiness or `typeof === 'boolean'`; a null verdict would have been amber
+    'flagged' on DomainTool and invisible everywhere else. Every chip now routes through qmsChip()."""
+    import pathlib
+    import re
+
+    src = pathlib.Path("apps/workstation-superapp/src")
+    api = (src / "lib" / "api.ts").read_text(encoding="utf-8")
+    assert "export const qmsChip" in api and "'not assessable'" in api
+    offenders = []
+    users = 0
+    for f in src.rglob("*.tsx"):
+        text = f.read_text(encoding="utf-8", errors="ignore")
+        if "qmsChip(" in text:
+            users += 1
+        for i, line in enumerate(text.splitlines(), 1):
+            if re.search(r"qms_gate_passed\s*\?(?!:)", line) or re.search(r"typeof [^\n]*qms_gate_passed[^\n]*=== 'boolean'", line):
+                offenders.append(f"{f.relative_to(src)}:{i}")
+    assert not offenders, "inline QMS chip logic outside qmsChip(): %s" % offenders
+    assert users >= 8, "expected the helper on every chip surface, found %d files" % users

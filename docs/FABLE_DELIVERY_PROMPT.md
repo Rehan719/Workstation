@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W448) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W449) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W448 (448 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W449 (449 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,6 +192,10 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
+W448–W449: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+P1.1 delivered — the living-QMS gate learned who served the content (W449). The first Tier-1 item
+of the whole-vision plan is closed by execution, not by declaration.
+
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
 copied census, a phantom probe, a mislabelled latent class); then W446 re-audited the product and
@@ -210,7 +214,16 @@ saying which other instrument it rests on. The plan below groups them into works
 the same cites; this block is the register of WHAT IS WRONG.
 
 TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
- 1.1 THE QMS GATE IS A CERTIFICATE PRINTER ON THE FLOOR. assure_delivery measures coverage as
+ 1.1 [CLOSED W449 — served_by reaches assure_delivery; floor-served → qms_gate_passed=None with the
+     basis, nothing counted as a gate run, the record still sealed (per delivery: content hash + server
+     inside the seal); ai_text() measures against the prompt's own declared sections (the floor's
+     extractor) instead of None; a verbatim ingest carries its origin (a floor journey saved as a
+     deliverable is not assessable — refuter F1); the entity stores the journey's provenance so the
+     shipped repo/webapp/mobile gates know who wrote the concept (refuter F2); one qmsChip helper
+     on every surface. Guards:
+     test_w449_floor_served_gate_is_not_assessable_both_ways, test_w449_qms_chip_renders_through_one_helper;
+     probe scripts/_w449_probe.mjs. The text below is the record of what was wrong.]
+     THE QMS GATE WAS A CERTIFICATE PRINTER ON THE FLOOR. assure_delivery measured coverage as
      "declared section names present"; the floor echoes the caller's own headings, so coverage is
      1.0 by construction; on Offering-1 it is called with NO sections, so coverage is a 200-char
      length check; the stub regex never matches the floor's vocabulary. Every floor-served
@@ -375,7 +388,9 @@ TIER 3 — CAPABILITY GAPS
      carries the tie note); the wording half is an OWNER RULING (P3.0) — build instruments for at
      least the commercial trio (effective · efficient · commercially viable, e.g. from the BMS
      unit-economics estimate) or amend §10 to 'measured where an in-house instrument exists; the
-     record names what was not'.
+     record names what was not'. [attestation half CLOSED W449 — Genesis WITHHOLDS modelled / simulated /
+     ranked / optimised on a tie or identical candidates with the reason, and EVIDENCE.md carries the
+     tie note (test_w449_bar_attestations_withheld_on_tie_both_ways); the wording half stays P3.0.]
 
 OWNER-GATED, NOT GAPS: real-money rails, live Stripe (the exposed key is redacted from the tree
 but STILL IN GIT HISTORY — rotation at Stripe is an Owner action still owed), managed Postgres,
@@ -421,15 +436,28 @@ content that P3 builds on). P3 items marked OWNER RULING are put to the Owner wi
 the START of P3 so rulings arrive while the unambiguous P3 items are built. P4 is the Owner's hand.
 
 PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
- P1.1 [ledger 1.1 + 3.11's attestation half · R1.2 R1.4 R2.0 R2.5 R3.6 R3.7 R5.2] The gate that cannot fail — class-kill. assure_delivery(served_by=…) →
+ P1.1 ✅ DONE W449 [ledger 1.1 + 3.11's attestation half · R1.2 R1.4 R2.0 R2.5 R3.6 R3.7 R5.2] The gate that cannot fail — class-kill. assure_delivery(served_by=…) →
       floor-served: qms_gate_passed=None, 'verified'/'specifically designed' source 'none', basis
-      "not assessable — the floor emits the requested headings"; ai_text() passes each router's
-      real section list; coverage never measured against None; DomainTool/Deliverables/Genesis/
+      "not assessable — the floor emits the requested headings"; ai_text() measures against the
+      prompt's own declared sections; coverage never measured against None; DomainTool/Deliverables/Genesis/
       Swarm/ResourceFabric/board-pack chips render slate '—' with the basis. ACCEPT: the NEWS2
       case, the empty-concept board pack and a floor cascade all return None; a real 900-char
       4-section document still passes; Genesis no longer attests 'ranked'/'simulated' when
       tie.detected or candidates_distinct == 1 (met:None with the reason) and EVIDENCE.md carries the
       tie / identical-candidates note beside the selected candidate; guard both ways.
+      DELIVERED W449: the NEWS2 case, the empty-concept board pack and a floor cascade all return
+      None with the basis; a real 900-char 4-section document still passes and a stubbed one fails
+      (both-ways test); the tie withholds both ways; ten chip files route through qmsChip under a
+      grep guard; the orchestrator tree's own length-proxy gate (the same class, one layer over)
+      says 'not assessable' too; downstream consumers treat None as neither pass nor fail
+      (plan binding 'qms_not_assessable_no_advance', no model-quality row, no cascade revenue,
+      commit_ready not blocked, ship aggregate three-state, QUALITY.md 'NOT ASSESSABLE'). The
+      refuter on the round's own diff found the class re-committed at two reached seams — the
+      Genesis page's 'save as deliverable' ingested floor text verbatim and the gate certified it,
+      and the VSB entity never carried ai_provenance so repo/webapp/mobile always got the old
+      gate — both fixed in the same round and guarded in the both-ways test. What
+      P1.1 does NOT close: the scaffold body itself (P1.2), the green in-house chip on the cascade
+      (P1.5), the empty-concept board pack refusal (P1.14), the §10 wording (P3.0).
  P1.2 [1.2 · R2.0 R2.1 R2.6 R2.9] The shipped body never wears scaffold — nor a fallback name. On the floor, establish ships the founder's
       verbatim problem statement + "content pending the owned model — this enterprise has not
       yet composed its own concept" on website/webapp/mobile/BUSINESS_PLAN.md/Plan tab; the
@@ -728,7 +756,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 326 tests; 39 session guards W419–W444, each broken and
+- integration_tests/test_mvp_spine.py — 329 tests; 42 session guards W419–W449, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -749,7 +777,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w444_probe.mjs (eight — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w449_probe.mjs (nine — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).

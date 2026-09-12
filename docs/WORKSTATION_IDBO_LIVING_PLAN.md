@@ -102,6 +102,11 @@ parallel marketplace retired (W444). Reach now: **325/456 `/api` ops reached · 
 fragment matcher — kept under rule 17) · 67 genuine-unreached, small scatter in 38 tiny clusters.** Every round since W437 has
 been adversarially refuted before shipping — nine consecutive rounds of real catches. W445/W446
 regenerated the canon from provenance (vision, prompt v11, fidelity ledger v3, this plan).
+**W449 (2026-09-12):** delivery-plan **P1.1 delivered** — the living-QMS gate learned who served the
+content: floor-served → `qms_gate_passed: null` with the basis (never `pass`), no gate run counted, the
+record sealed per delivery; coverage measured against the prompt's own sections; a verbatim ingest and
+a journey-born entity carry their origin to the gate; Genesis withholds modelled/simulated/ranked on a
+tie; one `qmsChip` helper on every surface under a grep guard.
 Open items live in `FABLE_DELIVERY_PROMPT.md` (v11 rev 2 — the `<ledger>` and the `<delivery_plan>`
 for the whole of §1–§15).
 
@@ -196,7 +201,7 @@ Honest self-assessment of how well delivered work realises each vision pillar. `
 
 | # | Vision pillar | Status | Evidence / gap |
 |---|---|---|---|
-| 1 | AI-mediated end-to-end Concept→Design→Delivery | ◐ | Journey runs end-to-end; the user's problem survives every stage (W434); the journey UI discloses the floor (W436). ◐ because (W446, ledger R2/R1) the shipped VSB body presents floor scaffold as the enterprise's concept, the shared §10 gate certifies it, Mode 3 gates gate nothing, and §4.6 Develop has no stage — plan P1.1/P1.2/P1.4, P3.1 |
+| 1 | AI-mediated end-to-end Concept→Design→Delivery | ◐ | Journey runs end-to-end; the user's problem survives every stage (W434); the journey UI discloses the floor (W436). ◐ because (W446, ledger R2/R1) the shipped VSB body presents floor scaffold as the enterprise's concept (the shared §10 gate no longer certifies it — 'not assessable' on the floor since W449, P1.1), Mode 3 gates gate nothing, and §4.6 Develop has no stage — plan P1.2/P1.4, P3.1 |
 | 2 | Generate a living Enterprise IDBO (VSB) for the user | ● | `/establish` (and the SSE stream) persists a real, governed VSB with Board + Chief + economy + plan + registration (W248/W255); 219 entities live. Caveat: born at `stage: "commercialise"` from a literal (Owner ruling 3.10) and, on the floor, bodied with scaffold (P1.2) |
 | 3 | VSB org (AI CEO→C-Suite→CoE→BTO) curates work | ◐ | The full-hierarchy cascade runs on the owned fabric with real facility requisitions, plan binding and UEG seal (W446 re-verified, ledger R3.7) and the Sovereign Evolution cycle runs — but the hub's DEFAULT tab (AI CEO chat) is a detached "Galactic Era" Ollama roleplay outside the fabric (R3.0), review gates are advisory (R3.1), and the Board's grounded deliberation is API-only (R3.4). ◐ until P1.3/P1.4 land |
 | 4 | Reconfigurable, combinable resource fabric | ● | 41 federated resources (live count); compose → simulate → commit → **every composed resource runs its REAL engine** on the native swarm (W199–W250); cascades user-definable on `/native-ai` and `/resource-fabric` (W446 re-verified, R4.4). Caveats: the per-VSB swarm is one fixed 4-stage template (P2.8); the Composer tab is a disconnected canvas (P1.12) |
@@ -222,6 +227,8 @@ under a lockstep test, so the API dropped with it in the same commit.
 ---
 
 ## 8. Changelog (dated, append-only)
+- **2026-09-12 (W449)** — delivery-plan P1.1 delivered (the gate that could not fail on the floor); §4
+  and §7 row 1 evidence updated; glyphs unchanged (row 1 stays ◐ until P1.2/P1.4/P3.1).
 - **2026-09-05 (W446 reconciliation)** — §4 brought current through W435–W446 (suite 350✓/15 skip/0 fail;
   463 ops / 439 paths; reach 325/456 + 64 legacy + 67 scatter); §6.2/§6.3 statuses corrected against code
   (SSE establish ✅, twin pre-validation ✅ with its health-gate caveat, isolation/federation/persistence

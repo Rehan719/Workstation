@@ -4311,3 +4311,117 @@ tree: this round changed one string list in `living_plan.py` and no other applic
 **Landing (the step after this entry is written — recorded as intent here, as outcome in memory and
 the next entry, never as a past tense this entry cannot know):** commit on `docs/qep-vision-appendix`,
 fast-forward main onto it (carrying W446, unpushed since 2026-09-05), push, watch both CI workflows.
+
+### W449 — delivery-plan P1.1: the living-QMS gate learns who served the content — the certificate printer stops printing
+
+**The first Tier-1 item of the whole-vision delivery plan, worked in the plan's own order.** Ledger
+v3's most consequential finding (R1.2 · R5.2 · R3.6 · R3.7 · R2.0, plus 3.11's attestation half):
+`assure_delivery` measured coverage as "declared section names present in the text"; the
+deterministic floor composes its reply out of the caller's OWN headings, so coverage was 1.0 by
+construction; on Offering-1 it was called with NO sections, so coverage was a 200-character length
+check; the stub regex never matched the floor's vocabulary. Every floor-served delivery — a NEWS2
+assessment that computed no score, a board pack with an empty concept, a 16-tier cascade, a tafsir
+— was sealed "verified · pass · cov 100%" into the DCMS. 174 of 174 native deliverables in the
+historical store had passed; 163 of 176 records shared one seal hash, because the seal covered only
+the verdict's shape. Genesis had said "not assessable" for its own stage checks since W436; the
+SHARED gate every other surface uses never got it — rule 14 in its purest form.
+
+**What changed (backend):** `assure_delivery(..., served_by=, withheld=)` — `floor_served()` accepts
+the orchestrator's string, a provenance count map or a per-agent list; when every producer is the
+floor (or a deterministic template), the gate does NOT run: `qms_gate_passed: None`, `qms_basis`
+says why, 'verified' and 'specifically designed' are `met: None · source: none`, nothing is counted
+as a gate run, and the record is STILL sealed — now per delivery (content hash + server inside the
+payload). `ai_text()` measures coverage against the PROMPT's declared sections (the floor's own
+`_sections` extractor) and threads served_by, so every domain tool and refine says "not assessable"
+on the floor instead of "pass". Every caller threads provenance: deliverables (produce and
+regenerate), the cascade and delegate synthesis, composition run (per-node servers) and composition
+simulate (`served_by="template"` — a plan built from the names it is measured against), the three
+Products facilities, the VSB website and board pack (their own generation provenance), repo /
+webapp / mobile (the journey's provenance, which the entity now STORES at establishment — the
+refuter found the entity had never carried it, so all three had still fallen to the old gate; a
+standalone `/establish` declares no origin and still gets the measured gate). A verbatim ingest
+(`/deliverables/produce` with `content=`) carries `source_served_by`: the Genesis page's "save as
+deliverable" posts the journey's own provenance, the refine loop posts the refiner's, and an ingest
+that declares nothing is judged as the caller's own writing with the basis naming `verbatim-ingest`
+(the refuter found the gate certifying a floor journey PASS through this seam). My first cut made
+every undeclared ingest "not assessable" — three older tests that post caller-written stubs and
+partial drafts to exercise the gate failed, and they were right: a human's own text IS assessable.
+The orchestrator tree's consensus voter ABSTAINS on a not-assessable QMS verdict instead of voting
+"caution", and the threshold is taken over the voters that voted. Genesis's attestations were
+extracted into `_bar_attestations()` and now WITHHOLD modelled / simulated / ranked / optimised on
+a tie, identical candidates or identical twin outputs — each with its reason, rendered `not
+attested: …` by the gate — and the tie facts travel with the selected candidate into the shipped
+EVIDENCE.md. The orchestrator tree's own length-proxy gate (the same class, one layer over) says
+"not assessable" when every node was floor-served.
+
+**One layer up (rules 14 and 18):** every consumer of the verdict was enumerated and taught the
+third state. Plan binding: `qms_not_assessable_no_advance` (never an advance, never a "failure");
+the learning loop writes NO model-quality row for a not-assessable run (a floor run had been
+recorded as a model FAILURE and fed `_reorder_by_health`); no simulated cascade revenue on None;
+`commit_ready` is not blocked by a not-assessable template verdict; the ship-level aggregate is
+three-state (any FAIL → false; else any not-assessable → null; else true); the entity repo's commit
+message and QUALITY.md print `not assessable`, never `fail`; the biobus signal too; the business
+plan's orchestrate advances only on `is True`.
+
+**Frontend:** one `qmsChip()` helper beside `provenanceBadge` (three states, basis in the title;
+slate '—' for not assessable), routed through ten files — DomainTool (was amber 'flagged' for a
+null), Deliverables (list dot + detail chip), Genesis (journey + repo/site/webapp/pwa cards + a QMS
+chip the board-pack card never had), Swarm (cascade + run rows), Resource Fabric (simulate, history,
+run), BTO catalogue, Service Contracts, Reactor Studio (was a hard-coded green 'QMS · doc-controlled'
+from `document_controlled` alone — true for every floor delivery), the native-AI tree governance
+pill. TS interfaces accept `boolean | null` + `qms_basis`.
+
+**Tests — the suite runs on the floor, so it had encoded the overclaim (rule 3):** eleven assertions
+moved (`isinstance(…, bool)` / `is True` / `is not None` on floor-served verdicts → `is None` with
+the basis; the website and board-pack surfaces to not-assessable; the two plan-binding else-branches
+accept the third result; the learning-loop assertion expects NO row on None; the ship message must
+not say "QMS fail"; the tree governance `qms_passed is None`); the W433 source-shape guard kept its
+literal loop head after a first patch broke it. Three new guards: **the both-ways test** — the same
+900-char four-section document returns None + basis + no gate run when served_by='native', True
+with 'verified' measured by the gate when served_by='ollama:llama3.2', False with a stub; the seal
+differs per delivery; the provenance shapes; then through the API on the floor, a produced
+deliverable and `/law/analyse` both say not assessable — **broken by making `floor_served()` blind
+and watched fail with the ORIGINAL symptom ("a floor-served delivery was certified: True"), then
+restored**; the tie test both ways (withheld on a tie, attested on distinct candidates, the EVIDENCE.md
+note on an established VSB); and the chip-helper grep guard (my first regex matched TypeScript's
+optional-property `?:` — narrowed to the ternary). Suite on the final tree (after every refuter fix, isolated data dir, `AI_DISABLE_LOCAL=1`):
+**353 passed · 15 skipped · 0 failed** (34 min).
+
+**Browser (fresh backend :8027 serving the bundle rebuilt after the refuter fixes — `scripts/_w449_probe.mjs`, 7/7):** a
+produced deliverable shows `Living-QMS gate: —` with the not-assessable basis in its title beside the
+amber floor badge (never `pass`); the Curriculum Designer's response shows `QMS —` (never `pass` or
+`flagged`); an org cascade shows `QMS gate: —`; a Genesis journey shows `Living-QMS gate: —` beside
+the not-assessable stage checks; and the refuter's F1 seam driven end to end — the journey's
+`Report` button saves it as a deliverable, and the stored record carries `source_served_by: {native: 11}`
+with `qms_gate_passed: null` and the floor basis (this leg would have read `pass` before the fix).
+The probe's first two selectors were wrong (a `^`-anchored regex
+against a button whose text starts with an icon; a hub whose default tab is not the tool) — fixed by
+reading the components, not by loosening the checks.
+
+**Recorded, my own mistakes this round:** the backend patch script asserted "no CRLF" on text it had
+read in universal-newline mode — a vacuous check (the exact W445 trap) — and wrote four index-CRLF
+files as LF: a 5,453-line diff for ~280 intended lines; `git diff --stat` caught it and the four
+were restored before anything else. The first tsc run failed on an optional chain I had dropped
+inside a title template. The pytest foreground pipeline hit a `Bad file descriptor` fault on every
+file open (an environment fault, not code — the same tests passed detached).
+
+**Refuted (a single adversarial agent on the round's own diff, rule "refute your own fixes"):
+five findings, all fixed before commit.** F1 — the class re-committed at a reached seam: the Genesis
+page's "save as deliverable" ingests the floor journey verbatim and the gate, told only
+`served_by="verbatim-ingest"`, certified it PASS (my own new test had even asserted that
+verbatim-ingest was assessable). F2 — the VSB entity never carried `ai_provenance`, so the
+repo/webapp/mobile `served_by=` I had threaded was always None and every shipped QUALITY.md still
+said `QMS gate: PASS … served_by=unspecified`. F3 — the ledger's R2.0/R3.6 status lines and the
+prompt's "routers pass their real section lists" claimed more than the diff did (ai_text() measures
+against the prompt's headings; no router passes a list) — reworded. F4 — the tree's consensus voter
+collapsed None to "caution". F5 — `asyncio.get_event_loop()` in the new test, `native×0` in the
+provenance label, and the Swarm run-row colour still branched on the raw verdict. The both-ways test
+now also drives a verbatim ingest three ways (floor origin → None with the floor basis; no origin →
+the gate runs and the basis names verbatim-ingest; a declared model origin → the gate runs under
+that name) and a journey-born entity's repo, webapp and mobile legs to None with
+`NOT ASSESSABLE` in the shipped QUALITY.md.
+
+**Docs:** ledger v3 re-rendered with a STATUS map (R1.2, R5.2 FIXED; R1.4/R2.5 attestation half
+FIXED; R3.6/R3.7/R2.0 gate half FIXED — the remainders named by plan item); prompt ledger 1.1 CLOSED
+and P1.1 ✅ DONE with what it does NOT close (P1.2 the body, P1.5 the green in-house chip, P1.14 the
+empty-concept refusal, P3.0 the §10 wording); vision §16 and the living plan updated (row 1 stays ◐).

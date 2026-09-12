@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, qmsChip } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -66,7 +66,7 @@ interface Simulation {
     } | null;
   };
   simulation: {
-    quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[]; document_controlled?: boolean;
+    quality?: { qms_gate_passed?: boolean | null; qms_basis?: string; delivery_coverage?: number; bar?: string[]; document_controlled?: boolean;
       compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } };
     biomimetic?: { immune?: { health?: number }; circadian?: string };
   };
@@ -473,12 +473,12 @@ export const ResourceFabric: React.FC = () => {
               <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.commit_ready ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
                 {sim.commit_ready ? 'commit-ready' : 'not commit-ready'}
               </span>
-              {typeof sim.simulation?.quality?.qms_gate_passed === 'boolean' && (
-                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.simulation.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
-                  title={`§10 quality bar: ${(sim.simulation.quality.bar || []).join(' · ')}`}>
-                  QMS gate: {sim.simulation.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((sim.simulation.quality.delivery_coverage || 0) * 100)}%{sim.simulation.quality.document_controlled ? ' · doc-controlled' : ''}
+              {(() => { const c = qmsChip(sim.simulation?.quality, 'QMS gate:'); return c && (
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`}
+                  title={`${c.title}\n§10 quality bar: ${(sim.simulation?.quality?.bar || []).join(' · ')}`}>
+                  {c.label}
                 </span>
-              )}
+              ); })()}
               {sim.simulation?.biomimetic?.immune && (
                 <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300">
                   organism: immune {Math.round((sim.simulation.biomimetic.immune.health ?? 0) * 100)}% · {sim.simulation.biomimetic.circadian}
@@ -531,9 +531,9 @@ export const ResourceFabric: React.FC = () => {
                 <div key={h.run_id} className="flex flex-wrap items-center gap-1.5 border-t border-slate-800 first:border-t-0 pt-1.5 first:pt-0">
                   <span className="text-[9px] font-mono text-slate-500">{h.run_id}</span>
                   <span className="text-[10px] font-black text-white">{h.name}</span>
-                  {typeof h.qms_gate_passed === 'boolean' && (
-                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${h.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>QMS {h.qms_gate_passed ? 'pass' : 'fail'}</span>
-                  )}
+                  {(() => { const c = qmsChip({ qms_gate_passed: h.qms_gate_passed }); return c && (
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                  ); })()}
                   {(h.real_resources ?? []).map(rr => (
                     <span key={rr.resource} className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/10 text-aura">{rr.resource}</span>
                   ))}
@@ -621,11 +621,9 @@ export const ResourceFabric: React.FC = () => {
                             plan: {runResult.plan_binding.result}
                           </span>
                         )}
-                        {typeof runResult.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
-                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${runResult.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
-                            QMS gate: {runResult.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{runResult.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
-                          </span>
-                        )}
+                        {(() => { const c = qmsChip(runResult.quality_assurance?.quality, 'QMS gate:'); return c && (
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                        ); })()}
                         {runResult.quality_assurance?.quality?.compliance && (
                           <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${runResult.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
                             title={`§11 live compliance — ${(runResult.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>

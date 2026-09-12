@@ -33,6 +33,7 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.vbs.quality import gate_word
 from agentic_core.auth.core import get_current_user
 from agentic_core.organism.biobus import biobus
 from agentic_core.cognitive.cascade_v16 import UltimateCognitiveCascade
@@ -151,6 +152,18 @@ def _build_repo_files(vsb: dict) -> dict:
                           f"(modelled {_cand.get('modelled_score')}; declared weights 60/40)"]
             if _cand.get("simulation"):
                 _ev_lines += ["", "### Simulation excerpt", str(_cand.get("simulation"))[:800]]
+        # W449 (ledger 3.11, R2.5) — the page said TIE / identical candidates; the shipped evidence
+        # file did not. Now it does, beside the selected candidate it qualifies.
+        _tie = _cand.get("tie") if isinstance(_cand.get("tie"), dict) else {}
+        _nd = _cand.get("candidates_distinct")
+        _notes = []
+        if _tie.get("detected"):
+            _notes.append("TIE — " + str(_tie.get("resolved_by") or "resolved by list order, NOT by evidence"))
+        if isinstance(_nd, int) and _nd <= 1:
+            _notes.append(f"candidates_distinct={_nd} — the ranked alternatives were identical text; "
+                          "no comparison happened")
+        if _notes:
+            _ev_lines += ["- comparison: " + "; ".join(_notes)]
         _ev_lines += [""]
     if _sv:
         _ev_lines += ["## Stage Verifications (§5 measured)"]
@@ -236,7 +249,7 @@ def _version_control_commit(root, vsb_id: str, surface: str, qa: Dict[str, Any] 
     compliance overall · DCS seal). Fail-soft to a SHA3-512 hash-CHAIN entry in versions.json when
     git is unavailable — whichever mechanism actually ran is recorded honestly."""
     q = ((qa or {}).get("quality") or {})
-    msg = (f"{surface}: QMS {'pass' if q.get('qms_gate_passed') else 'fail'} · "
+    msg = (f"{surface}: QMS {gate_word(q.get('qms_gate_passed'))} · "
            f"compliance {((q.get('compliance') or {}).get('overall'))} · "
            f"seal {str(q.get('quality_record_hash'))[:12]}")
     try:
@@ -302,7 +315,8 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
     combined = "\n".join(v for k, v in files.items() if k.endswith(".md"))
     # required sections = content headings that genuinely appear in the repo docs (not filenames)
     qa = await assure_delivery(combined, ["Business Plan", "Organisation", "Identity", "Executive Summary"],
-                               label="vsb_repo")
+                               label="vsb_repo",
+                               served_by=((vsb.get("ai_provenance") or {}).get("served_by")))
     # §13 (W289) — compliance/QUALITY.md is the REAL record now (the sealed verdicts of THIS
     # generation), not a pointer note to a snapshot.
     _q = (qa.get("quality") or {})
@@ -312,7 +326,8 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         f"Generated {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} — the SEALED record of this "
         f"generation (§10 QMS + §11 federated screen), document-controlled via the owned DCMS.\n\n"
         f"## §10 Quality\n"
-        f"- QMS gate: {'PASS' if _q.get('qms_gate_passed') else 'FAIL'}\n"
+        f"- QMS gate: {gate_word(_q.get('qms_gate_passed')).upper()}\n"
+        f"- Basis: {_q.get('qms_basis')}\n"
         f"- Delivery coverage: {_q.get('delivery_coverage')}\n"
         f"- Non-conformance rate (stateful): {_q.get('qms_non_conformance_rate')}\n"
         f"- Document-control seal: {_q.get('quality_record_hash')}\n\n"
@@ -586,7 +601,8 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
             files[_p] = _h
     from agentic_core.vbs.quality import assure_delivery
     combined = "\n".join(c for p, c in files.items() if p.endswith(".html"))
-    qa = await assure_delivery(combined, ["About", "Solution", "What we do"], label="vsb_website")
+    qa = await assure_delivery(combined, ["About", "Solution", "What we do"], label="vsb_website",
+                               served_by=prov["served_by"])
 
     root = _REPO_STORE / vsb_id
     written = []
@@ -788,7 +804,8 @@ async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_curre
     combined = (f"{vsb.get('name')} — interactive web app. Sections: Overview · Business Plan · "
                 f"Organisation · Resources.\n{vsb.get('challenge', '')}\n" + files["webapp/data.json"])
     qa = await assure_delivery(combined, ["Overview", "Business Plan", "Organisation", "Resources"],
-                               label="vsb_webapp")
+                               label="vsb_webapp",
+                               served_by=((vsb.get("ai_provenance") or {}).get("served_by")))
     root = _REPO_STORE / vsb_id
     written = []
     for path, content in files.items():
@@ -922,7 +939,8 @@ async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_curre
     combined = (f"{vsb.get('name')} — installable PWA phone app. Sections: Overview · Business Plan · "
                 f"Organisation · Resources.\n{vsb.get('challenge', '')}\n" + files["mobile/data.json"])
     qa = await assure_delivery(combined, ["Overview", "Business Plan", "Organisation", "Resources"],
-                               label="vsb_mobile")
+                               label="vsb_mobile",
+                               served_by=((vsb.get("ai_provenance") or {}).get("served_by")))
     root = _REPO_STORE / vsb_id
     written = []
     for path, content in files.items():
@@ -1020,7 +1038,8 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     combined = (f"Board Pack — {name}. Sections: Executive Summary · Strategic Position · Action Priorities "
                 f"· Key Risks · Recommendation.\n{narrative}")
     qa = await assure_delivery(combined, ["Executive Summary", "Strategic Position", "Action Priorities",
-                                          "Recommendation"], label="board_pack")
+                                          "Recommendation"], label="board_pack",
+                               served_by=prov["served_by"])
     ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     pack = {
         "vsb_id": vsb_id, "name": name, "kind": "board_pack", "generated_at": ts,
@@ -1525,8 +1544,12 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     # message even when every surface passed).
     _ok = [s for s in surfaces.values() if "error" not in s]
     _overalls = [s.get("compliance_overall") for s in _ok if s.get("compliance_overall")]
+    _vals = [s.get("qms_gate_passed") for s in _ok]
+    # W449 — three states aggregate honestly: any FAIL → False; else any not-assessable → None;
+    # else True (only when every surface genuinely passed).
     _agg_qa = {"quality": {
-        "qms_gate_passed": bool(_ok) and all(s.get("qms_gate_passed") for s in _ok),
+        "qms_gate_passed": (False if any(v is False for v in _vals)
+                            else None if any(v is None for v in _vals) else bool(_ok)),
         "compliance": {"overall": ("fail" if "fail" in _overalls else
                                    "review" if "review" in _overalls else
                                    "pass") if _overalls else None},

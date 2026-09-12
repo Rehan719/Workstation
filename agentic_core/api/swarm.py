@@ -23,7 +23,7 @@ from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.organism.biobus import biobus
-from agentic_core.vbs.quality import assure_delivery
+from agentic_core.vbs.quality import assure_delivery, gate_word
 
 router = APIRouter(prefix="/api/v1/swarm", tags=["agent-swarm"])
 
@@ -185,8 +185,9 @@ async def delegate_task(req: DelegateRequest):
     # §10 (W282) — the delegate synthesis is held to the same real QMS gate as the cascade.
     try:
         _qa = await assure_delivery(synthesis, ["Executive Decision", "Recommended Course of Action",
-                                                "Next Steps"], label="delegate")
-        _quality = {k: _qa["quality"].get(k) for k in ("qms_gate_passed", "delivery_coverage",
+                                                "Next Steps"], label="delegate",
+                                    served_by=provenance["served_by"])
+        _quality = {k: _qa["quality"].get(k) for k in ("qms_gate_passed", "qms_basis", "delivery_coverage",
                                                        "qms_non_conformance_rate", "stub_found")}
     except Exception:
         _quality = {}
@@ -637,7 +638,7 @@ async def cascade_orchestration(req: CascadeRequest):
     _qa = await assure_delivery(
         f"{build_to_order}\n{products_services_catalogue}",
         ["Operational Delivery Resources", "Work Breakdown", "Quality Gates", "Go-Live"],
-        label="cascade")
+        label="cascade", served_by=provenance["served_by"])
     quality: dict = _qa["quality"]
     biomimetic: dict = _qa["biomimetic"]
 
@@ -678,7 +679,11 @@ async def cascade_orchestration(req: CascadeRequest):
             _counts = provenance["served_by"]
             _top_n = max(_counts.values())
             _top_models = sorted(m for m, n in _counts.items() if n == _top_n)
+            # W449 — a NOT-ASSESSABLE verdict is not a model outcome: no learning-loop row is written
+            # for it (a floor run used to be recorded as a model FAILURE, feeding _reorder_by_health).
             for _m in _top_models:
+                if quality.get("qms_gate_passed") is None:
+                    break   # not assessable: no model is credited or blamed
                 _rq("model_quality", "cascade_qms_verdict", served_by=_m,
                     is_external=bool(provenance.get("any_external")),
                     success=bool(quality.get("qms_gate_passed")), ref=run_id)
@@ -686,7 +691,7 @@ async def cascade_orchestration(req: CascadeRequest):
         pass
     measured_block = (
         "Measured outcomes for THIS run (judge against these — do not merely restate the text):\n"
-        f"- QMS gate passed: {quality.get('qms_gate_passed')}\n"
+        f"- QMS gate: {gate_word(quality.get('qms_gate_passed'))}\n"
         f"- Delivery coverage: {quality.get('delivery_coverage')}\n"
         f"- QMS non-conformance rate (stateful, all-time): {quality.get('qms_non_conformance_rate')}\n"
         f"- Stub/placeholder content detected: {quality.get('stub_found')}\n"
@@ -838,6 +843,8 @@ async def cascade_orchestration(req: CascadeRequest):
             _tgt = next((o for o in _fresh.get("objectives", []) if o.get("id") == req.objective_id), None)
             if _tgt is None:
                 plan_binding["result"] = "objective_not_found"
+            elif quality.get("qms_gate_passed") is None:
+                plan_binding["result"] = "qms_not_assessable_no_advance"   # W449 — no evidence, no advance
             elif not quality.get("qms_gate_passed"):
                 plan_binding["result"] = "qms_failed_no_advance"
             else:
@@ -861,7 +868,7 @@ async def cascade_orchestration(req: CascadeRequest):
     # estimate is recorded as the run's cost side — the delivery org's real work now funds the
     # economic organism (virtual WST; honest simulation constants, never real money). Best-effort.
     economic_event = None
-    if req.scope != "workstation" and quality.get("qms_gate_passed"):
+    if req.scope != "workstation" and quality.get("qms_gate_passed") is True:   # W449 — never on None
         try:
             from agentic_core.economy.revenue import SIM_DELIVERY_TARIFF_WST, record_event
             _rev = record_event(req.scope, "revenue", SIM_DELIVERY_TARIFF_WST, "cascade_delivery",
@@ -887,7 +894,7 @@ async def cascade_orchestration(req: CascadeRequest):
         _runs.append({
             "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
             "csuite_engaged": selected, "appraisals": appraisals,
-            "quality": {**{k: quality.get(k) for k in ("qms_gate_passed", "delivery_coverage",
+            "quality": {**{k: quality.get(k) for k in ("qms_gate_passed", "qms_basis", "delivery_coverage",
                                                        "qms_non_conformance_rate", "stub_found")},
                         # §11 (W287) — the persisted run record carries the compliance verdict
                         "compliance_overall": (quality.get("compliance") or {}).get("overall")},

@@ -43,9 +43,16 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     # UI already renders. Failures open traceable QMS defects (label = the serving agent).
     try:
         from agentic_core.vbs.quality import assure_delivery
-        _qa = (await assure_delivery(output, None, label=f"tool:{agent}"))["quality"]
+        # §10 (W449, ledger 1.1) — coverage is measured against the sections the PROMPT declared (the
+        # same "## " extraction the floor itself uses), never against None (which collapsed to a
+        # 200-character length check); and served_by reaches the gate, so floor output is recorded
+        # "not assessable" — never "pass" beside a clinical or Quranic scaffold.
+        from agentic_core.ai.native.engine import _sections as _prompt_sections
+        _qa = (await assure_delivery(output, _prompt_sections(prompt) or None, label=f"tool:{agent}",
+                                     served_by=served_by))["quality"]
         provenance["quality_assurance"] = {
             "qms_gate_passed": _qa.get("qms_gate_passed"),
+            "qms_basis": _qa.get("qms_basis"),
             "delivery_coverage": _qa.get("delivery_coverage"),
             "stub_found": _qa.get("stub_found"),
             "compliance_overall": (_qa.get("compliance") or {}).get("overall"),

@@ -482,7 +482,8 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
     _record(comp_meta)
 
     combined = comparison + "\n" + "\n".join(o.outcome for o in outcomes)
-    qa = await assure_delivery(combined, [o.scenario for o in outcomes], label="experiment")
+    qa = await assure_delivery(combined, [o.scenario for o in outcomes], label="experiment",
+                               served_by=prov["served_by"])
 
     return ExperimentResult(
         experiment_id=eid, subject=req.subject, domain=req.domain, scenarios_run=len(scenarios),
@@ -543,7 +544,8 @@ async def petri_culture(req: PetriRequest) -> PetriResult:
 
     tail = culture.lower()[-400:]
     viable = ("not-viable" not in tail) and ("not viable" not in tail)
-    qa = await assure_delivery(culture, ["Growth", "Nutrients Required", "Contamination Risks", "Viability"], label="petri")
+    qa = await assure_delivery(culture, ["Growth", "Nutrients Required", "Contamination Risks", "Viability"], label="petri",
+                               served_by=prov["served_by"])
     return PetriResult(culture_id=cid, specimen=req.specimen, domain=req.domain, medium=req.medium,
                        passages=passages, culture=culture, viable=viable, ai_provenance=prov,
                        quality_assurance=qa, cultured_at=time.time())
@@ -632,7 +634,8 @@ async def reactor_studio(req: StudioRequest) -> StudioResult:
         prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
         prov["any_external"] = bool(meta.get("is_external"))
 
-    qa = await assure_delivery(insight or f"{req.title}: {analytics}", [p.label for p in pts], label="studio")
+    qa = await assure_delivery(insight or f"{req.title}: {analytics}", [p.label for p in pts], label="studio",
+                               served_by=prov["served_by"])
 
     return StudioResult(
         title=req.title, domain=req.domain, chart_type=chart_type, dimensions=dimensions,

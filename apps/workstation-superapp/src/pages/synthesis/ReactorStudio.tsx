@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { qmsChip } from '../../lib/api';
 import { Card, Button } from '@workstation/ui';
 import { BarChart3, LineChart, ScatterChart, Loader2, Sparkles } from 'lucide-react';
 
@@ -11,7 +12,7 @@ interface StudioResult {
     min: { label: string; value: number }; max: { label: string; value: number } };
   insight: string;
   ai_provenance: { any_external: boolean; served_by: Record<string, number> };
-  quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
+  quality_assurance?: { quality?: { qms_gate_passed?: boolean | null; qms_basis?: string; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } } };
 }
 
@@ -172,9 +173,13 @@ export const ReactorStudio: React.FC = () => {
                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${!result.ai_provenance.any_external ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
                   {!result.ai_provenance.any_external ? 'in-house' : 'external'}
                 </span>
-                {result.quality_assurance?.quality?.document_controlled && (
-                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">QMS · doc-controlled</span>
-                )}
+                {(() => {
+                  /* W449 — was a hard-coded green 'QMS · doc-controlled' from document_controlled alone (true for
+                     every floor delivery); now the real three-state verdict, doc-controlled noted inside it. */
+                  const c = qmsChip(result.quality_assurance?.quality); return c && (
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                  );
+                })()}
                 {result.quality_assurance?.quality?.compliance && (
                   <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
                     title={`§11 live compliance — ${(result.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>

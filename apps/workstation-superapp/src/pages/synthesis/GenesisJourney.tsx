@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { qmsChip } from '../../lib/api';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
@@ -45,7 +46,7 @@ interface JourneyResult {
   stages_note?: string | null;
   ai_provenance?: { posture?: string; served_by?: Record<string, number>; any_external?: boolean };
   quality_assurance?: {
-    quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[];
+    quality?: { qms_gate_passed?: boolean | null; qms_basis?: string; delivery_coverage?: number; bar?: string[];
       // §10 (W419/W436) — the bar's real shape: measured by the gate vs merely attested by a caller.
       bar_measured?: { measured: number; attested: number; not_measured: number; summary?: string;
         measured_criteria?: string[]; attested_criteria?: string[] };
@@ -226,6 +227,9 @@ export const GenesisJourney: React.FC = () => {
           // The journey POST above already sends realm; without this line the deliverable produced
           // from that very journey silently reverted to "enterprise".
           domain, realm, content, vsb_id: vsb?.vsb_id ?? (result as any)?.established_vsb?.vsb_id ?? undefined,
+          // W449 — the deliverable is this journey's text VERBATIM: tell the gate who served it, so
+          // a floor journey saved as a report is 'not assessable', never certified 'pass'.
+          source_served_by: result?.ai_provenance?.served_by ?? null,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -743,16 +747,17 @@ export const GenesisJourney: React.FC = () => {
                 {/* §10 (W436, v10 item 1b) — the OLD tooltip listed all 16 bar names under a green
                     PASS badge, beside a payload recording six of them as met:null. Now mirrors
                     Deliverables.tsx exactly: measured vs attested vs not-measured, stated apart. */}
-                {typeof result.quality_assurance.quality.qms_gate_passed === 'boolean' && (
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${result.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
-                    title={`§10 Solution-Quality Bar — ${result.quality_assurance.quality.bar_measured?.summary ?? 'per-criterion breakdown unavailable'}
+                {(() => { const c = qmsChip(result.quality_assurance.quality, 'Living-QMS gate:'); return c && (
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${c.cls}`}
+                    title={`${c.title}
+§10 Solution-Quality Bar — ${result.quality_assurance.quality.bar_measured?.summary ?? 'per-criterion breakdown unavailable'}
 MEASURED by this gate: ${(result.quality_assurance.quality.bar_measured?.measured_criteria || []).join(' · ') || 'none'}
 ATTESTED by the journey (a claim about a run, not a measurement): ${(result.quality_assurance.quality.bar_measured?.attested_criteria || []).join(' · ') || 'none'}
 The full 16: ${(result.quality_assurance.quality.bar || []).join(' · ')}${result.quality_assurance.quality.quality_record_hash ? `
 Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>
-                    Living-QMS gate: {result.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((result.quality_assurance.quality.delivery_coverage || 0) * 100)}%{result.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                    {c.label}
                   </span>
-                )}
+                ); })()}
                 {result.quality_assurance.quality.bar_measured && (
                   <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-700/40 text-slate-300"
                     title="§10 — measured: this gate computed it. attested: the journey asserted it from its own run. not measured: nothing established it.">
@@ -862,11 +867,9 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Repository</span>
                           <span className="text-[8px] font-mono text-slate-500">{repo.file_count} files · {repo.total_bytes} bytes</span>
-                          {typeof repo.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
-                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${repo.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
-                              QMS: {repo.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{repo.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
-                            </span>
-                          )}
+                          {(() => { const c = qmsChip(repo.quality_assurance?.quality, 'QMS:'); return c && (
+                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                          ); })()}
                           {repo.quality_assurance?.quality?.compliance && (
                             <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${repo.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
                               compliance: {repo.quality_assurance.quality.compliance.overall}
@@ -889,11 +892,9 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-[9px] font-black uppercase tracking-widest text-aura">Website · {site.kind}</span>
                             <span className="text-[8px] font-mono text-slate-500">{site.page_count} pages · {site.total_bytes} bytes</span>
-                            {typeof site.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
-                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${site.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
-                                QMS: {site.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{site.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
-                              </span>
-                            )}
+                            {(() => { const c = qmsChip(site.quality_assurance?.quality, 'QMS:'); return c && (
+                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                            ); })()}
                             {site.quality_assurance?.quality?.compliance && (
                               <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${site.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
                                 compliance: {site.quality_assurance.quality.compliance.overall}
@@ -919,11 +920,9 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Web app · {webapp.kind}</span>
                               {webapp.interactive && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">interactive</span>}
-                              {typeof webapp.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
-                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${webapp.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
-                                  QMS: {webapp.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{webapp.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
-                                </span>
-                              )}
+                              {(() => { const c = qmsChip(webapp.quality_assurance?.quality, 'QMS:'); return c && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                              ); })()}
                               {webapp.quality_assurance?.quality?.compliance && (
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${webapp.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
                                   compliance: {webapp.quality_assurance.quality.compliance.overall}
@@ -951,11 +950,9 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                               <span className="text-[9px] font-black uppercase tracking-widest text-aura">Phone app · {pwa.kind}</span>
                               {pwa.installable && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">installable</span>}
                               {pwa.offline_capable && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">offline</span>}
-                              {typeof pwa.quality_assurance?.quality?.qms_gate_passed === 'boolean' && (
-                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${pwa.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
-                                  QMS: {pwa.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'}{pwa.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
-                                </span>
-                              )}
+                              {(() => { const c = qmsChip(pwa.quality_assurance?.quality, 'QMS:'); return c && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                              ); })()}
                               {pwa.quality_assurance?.quality?.compliance && (
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${pwa.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
                                   compliance: {pwa.quality_assurance.quality.compliance.overall}
@@ -983,6 +980,9 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                               <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Board Pack</span>
                               <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">{Object.keys(pack.layers).join(' · ')}</span>
                               {pack.dcs_registered && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400" title={pack.dcs_hash}>DCS-registered</span>}
+                              {(() => { const c = qmsChip(pack.quality_assurance?.quality, 'QMS:'); return c && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                              ); })()}
                               {pack.quality_assurance?.quality?.compliance && (
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${pack.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
                                   compliance: {pack.quality_assurance.quality.compliance.overall}

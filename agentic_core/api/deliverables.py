@@ -147,6 +147,17 @@ async def _generate(d_type: str, title: str, brief: str, domain: str,
     }
 
 
+def _gate_served_by(gen: Dict[str, Any]) -> Any:
+    """W449 (refuter F1) — what the §10 gate is told about WHO produced the content. A verbatim ingest
+    that declares its origin is judged by that origin (the Genesis page's "save as deliverable" was
+    posting floor journey text and the gate, told only "verbatim-ingest", certified it PASS); one
+    that declares nothing is judged as the caller's own writing — "verbatim-ingest" runs the gate
+    and the basis names it, so the record says whose text was measured."""
+    prov = gen.get("ai_provenance") or {}
+    src = prov.get("source_served_by")
+    return src if src not in (None, "", {}, []) else prov.get("served_by")
+
+
 class ProduceRequest(BaseModel):
     type: str = "report"
     title: str = ""
@@ -159,11 +170,15 @@ class ProduceRequest(BaseModel):
     sections: List[str] = []          # optional override (reconfigure the structure)
     content: str = ""                 # §4.9 (W306): verbatim ingest — already-produced work
                                       # becomes a living deliverable WITHOUT regeneration
+    # W449 (refuter F1) — WHO produced the verbatim content (a journey's served_by map, a tool's
+    # server string). The gate judges by it; without it the content counts as the caller's own.
+    source_served_by: Any = None
 
 
 class RegenerateRequest(BaseModel):
     brief: Optional[str] = None       # reconfigure the brief …
     sections: Optional[List[str]] = None  # … and/or the section structure
+    source_served_by: Any = None      # W449 — origin of a verbatim `content` (see ProduceRequest)
     content: str = ""                 # §3A (W308): DEVELOP — refined text persists as the next
                                       # version VERBATIM (no regeneration), same QMS gate
 
@@ -232,6 +247,7 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
                 or _TYPES.get(req.type, [])
         gen = {"content": req.content, "sections": _secs,
                "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
+                                 "source_served_by": req.source_served_by,
                                  "note": "content supplied verbatim by the caller — not regenerated"}}
     else:
         gen = await _generate(req.type, req.title, req.brief, req.domain, req.vsb_id,
@@ -240,7 +256,8 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
     # Continual operational delivery within the LIVING QMS: every produced deliverable is gated by the
     # OWNED QMS (real, stateful), held to the §10 Solution-Quality Bar, recorded within the §8 organism.
     _owner = request_owner_id(user if isinstance(user, dict) else None, "default")
-    qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable", owner_id=_owner)
+    qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable", owner_id=_owner,
+                               served_by=_gate_served_by(gen))
     # §13→§8: producing a living deliverable is real cognitive work — register it with the homeostatic
     # controller so it EXPENDS metabolic ATP and carries the organism posture (like the cognition paths).
     try:
@@ -910,6 +927,7 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest,
                            m.group(1).strip() for m in
                            re.finditer(r"^#{1,2}\s+(.+)$", req.content, flags=re.M)][:24],
                        "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
+                                         "source_served_by": req.source_served_by,
                                          "note": "refined content supplied verbatim — not regenerated"}}
             else:
                 # §13 (W425) — hand the model the draft it is replacing. Skipped when the brief or
@@ -921,7 +939,8 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest,
                                       d.get("vsb_id"), sections, prior=_prior,
                                       realm=d.get("realm", "enterprise"))
             qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable",
-                                       owner_id=d.get("owner_id"))
+                                       owner_id=d.get("owner_id"),
+                                       served_by=_gate_served_by(gen))
             now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
             # §13 (W425) — MEASURE whether this version is actually better, on the same real proxies

@@ -278,7 +278,7 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest):
     # §5 loop closure (W266) — delivery MOVES the living plan: a GENUINELY governed successful run
     # (the real QMS gate passed) advances a 'planned' objective to 'in_progress'. Never auto-'done'
     # (completion stays an Owner decision); a failed/ungoverned run leaves the status untouched.
-    qms_passed = bool((tree.get("governance") or {}).get("qms_passed"))
+    qms_passed = (tree.get("governance") or {}).get("qms_passed") is True   # W449: None (not assessable) never advances
     status_advanced = False
     if qms_passed and obj.get("status") == "planned":
         obj["status"] = "in_progress"

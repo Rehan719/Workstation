@@ -11,7 +11,7 @@
   §16 rewritten 2026-09-02 as a short pointer section (its progress accretion had become the source
   of documented overclaims); §18's four certainty questions recorded as settled the same day. The
   fidelity verdict lives in docs/VISION_FIDELITY_LEDGER.md; the cycle log in
-  docs/AUTONOMOUS_PROGRESS.md (W1→W448).
+  docs/AUTONOMOUS_PROGRESS.md (W1→W449).
   2026-09-04 (W445): every factual claim in this document re-verified against HEAD 89f36fea by a
   two-agent provenance pass; §16 regenerated from fresh measurement; §11 gained the faith-content
   constitution the Owner's 2026-09-03 QEP directive established (delivered W439); §18-A updated to
@@ -513,6 +513,11 @@ than trusted once this date is old; a long-running dev process serves the code i
   Organisation hub's default tab is a detached roleplay outside the native fabric, the Mode 3 review
   gates gate nothing, the Constitutional compliance row cannot read content, ten badge sites paint the
   floor green — none of them an unreached route. They are the delivery plan's Phase P1.
+- **P1.1 delivered (W449, 2026-09-12):** the shared living-QMS gate learned who served the content —
+  floor-served output is recorded `not assessable` (None, with the reason), never `pass`; nothing is
+  counted as a gate run; the record is still sealed, now per delivery; Genesis withholds the
+  modelled/simulated/ranked attestations on a tie; every chip renders the three states through one
+  helper. Thirteen Tier-1 items remain open in the plan.
 - The fabrication audit is closed (63/63); the §4.5 defect *class* is closed at every reached site;
   the refute-your-own-fixes practice has caught live breaks in **ten consecutive rounds**.
 
@@ -529,7 +534,7 @@ than trusted once this date is old; a long-running dev process serves the code i
   ordered, verifiable plan to deliver the whole of §1–§15 — phases P1–P4, acceptance criteria per
   workstream, the six-step verification each must pass, milestones that are measurements, and the
   definition of complete.
-- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W448). A record of intent
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W449). A record of intent
   and account, not proof.
 - `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — all 10 audited primitives FIXED + WIRED (W437); what
   remains is LATENT. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
@@ -539,8 +544,9 @@ than trusted once this date is old; a long-running dev process serves the code i
   Framework": 3/5 Dilithium-5 signatures over 5% of AUM) and `docs/ARCHITECTURE.md` (the Jules-era
   "Sovereign Investment Civilisation") — are archived under `_archive/docs/` (W446).
 
-**Open against this vision, in one paragraph (regenerated 2026-09-05 from ledger v3):** fourteen
-Tier-1 truth defects on reached surfaces (delivery-plan P1 — the gate that cannot fail on the floor,
+**Open against this vision, in one paragraph (regenerated 2026-09-05 from ledger v3; P1.1 closed
+2026-09-12):** thirteen Tier-1 truth defects on reached surfaces (fourteen found; the gate that could
+not fail on the floor closed W449; delivery-plan P1 —
 the scaffold-bodied VSB, the detached AI CEO chat, advisory review gates, green floor badges, the
 Employment "live job board", a compliance row that reads nothing, the floor "Translation" heading on
 the tafsir tab, Care scoring that computes nothing, a status page inverted by a failure row, Change

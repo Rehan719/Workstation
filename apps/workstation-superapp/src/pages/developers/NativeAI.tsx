@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save, Activity } from 'lucide-react';
-import { apiJson, errorMessage, provenanceBadge } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge, qmsChip } from '../../lib/api';
 
 interface ModelResource {
   name: string; kind: string; available: boolean; is_external: boolean; model?: string; note?: string;
@@ -18,7 +18,7 @@ interface SwarmRun { agent: string; stages: number; trace: SwarmStep[]; final: s
 interface Stage { role: string; instruction: string }
 interface TreeNodeDef { id: string; role: string; depends_on: string[] }
 interface TreeNodeResult extends TreeNodeDef { served_by: string; is_external: boolean; output: string }
-interface TreeGovernance { governed_by: string; qms_passed: boolean; qms_coverage_proxy: number; dcms_hash: string; dcms_algo: string; dcms_version: number }
+interface TreeGovernance { governed_by: string; qms_passed: boolean | null; qms_basis?: string; qms_coverage_proxy: number; dcms_hash: string; dcms_algo: string; dcms_version: number }
 interface TreeDecision { recommendation: string; consistency: number; worst_case_utility: number; method: string; stressors: string[] }
 interface TreeValidation { max_branch_overlap: number; integrated: boolean; branches_checked: number; method: string }
 interface TreeConsensus { reached: boolean; choice: string | null; threshold: number; votes: Record<string, string>; proceed_fraction: number; method: string }
@@ -110,7 +110,9 @@ function TreeView({ run }: { run: TreeRun }) {
       {run.governance && (
         <div className="mt-3 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2">
           <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">VBS governance</span>
-          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.governance.qms_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>QMS {run.governance.qms_passed ? 'passed' : 'flagged'}</span>
+          {(() => { const c = qmsChip({ qms_gate_passed: run.governance.qms_passed, qms_basis: run.governance.qms_basis }); return c && (
+            <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+          ); })()}
           <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-slate-900 text-slate-400">DCMS {run.governance.dcms_algo} v{run.governance.dcms_version}</span>
           <span className="text-[8px] font-mono text-slate-600" title={run.governance.dcms_hash}>{run.governance.dcms_hash.slice(0, 16)}…</span>
         </div>

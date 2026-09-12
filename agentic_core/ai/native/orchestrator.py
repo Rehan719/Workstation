@@ -564,14 +564,22 @@ class NativeOrchestrator:
         try:
             from agentic_core.vbs.registry import qms, dcms
             coverage_proxy = min(1.0, len(final.strip()) / 600.0)   # substantive synthesis ≈ "covered"
-            qms_passed = await qms.run_quality_gates({"coverage": coverage_proxy, "stubs_found": not final.strip()})
+            # W449 (ledger 1.1's sibling) — a length proxy cannot fail on ≥600-char floor output; when every
+            # node was floor-served the verdict is None ("not assessable"), never a pass.
+            _all_floor = bool(results) and all((r or {}).get("served_by") == "native" for r in results.values())
+            qms_passed = None if _all_floor else await qms.run_quality_gates(
+                {"coverage": coverage_proxy, "stubs_found": not final.strip()})
             dcms_hash = await dcms.commit_artifact(f"tree:{(goal or '')[:48]}",
                                                    {"goal": goal, "final": final[:2000], "nodes": len(nodes)}, "native.tree")
-            governance = {"governed_by": "VBS QMS + DCMS (owned, real)", "qms_passed": bool(qms_passed),
+            governance = {"governed_by": "VBS QMS + DCMS (owned, real)",
+                          "qms_passed": (None if _all_floor else bool(qms_passed)),
+                          "qms_basis": ("not assessable — every node floor-served; the length proxy cannot fail"
+                                        if _all_floor else "QMS gate on the synthesis length/stub proxies"),
                           "qms_coverage_proxy": round(coverage_proxy, 3),
                           "dcms_hash": dcms_hash, "dcms_algo": "sha3_512",
                           "dcms_version": len(dcms.registry.get(f"tree:{(goal or '')[:48]}", []))}
-            _fire("reflex", "native.tree", f"VBS governance: qms={'pass' if qms_passed else 'fail'}", 0.4)
+            _fire("reflex", "native.tree",
+                  f"VBS governance: qms={'not assessable' if _all_floor else 'pass' if qms_passed else 'fail'}", 0.4)
         except Exception:
             governance = None
 
@@ -602,7 +610,7 @@ class NativeOrchestrator:
         decision: Dict[str, Any] = None
         try:
             from agentic_core.cognition.minimax_optimizer import MinimaxOptimizer
-            qms_ok = bool(governance and governance.get("qms_passed"))
+            qms_ok = bool(governance) and governance.get("qms_passed") is not False   # W449: None ≠ failed
             cov = float((governance or {}).get("qms_coverage_proxy", 0.5))
             st = {"qms_passed": qms_ok, "immune": threat, "in_house": (not any_external), "coverage": cov}
 
@@ -635,19 +643,24 @@ class NativeOrchestrator:
         consensus: Dict[str, Any] = None
         try:
             from agentic_core.swarm.conflict_resolution import ConsensusEngine
+            # W449 (refuter F4) — a not-assessable QMS verdict is NOT a "caution" vote: the voter
+            # ABSTAINS and the threshold is taken over the voters that actually voted.
+            _qv = (governance or {}).get("qms_passed")
             voters = {
-                "qms": "proceed" if (governance or {}).get("qms_passed") else "caution",
+                "qms": "proceed" if _qv is True else "caution" if _qv is False else "abstain",
                 "validation": "proceed" if (validation or {}).get("integrated") else "caution",
                 "minimax": "proceed" if (decision or {}).get("recommendation") == "proceed" else "caution",
                 "immune": "proceed" if threat == "NOMINAL" else "caution",
             }
             ce = ConsensusEngine(threshold=0.66)
-            for voter, choice in voters.items():
+            _cast = {v: c for v, c in voters.items() if c != "abstain"}
+            for voter, choice in _cast.items():
                 ce.record_vote("tree", voter, choice)
-            agreed = ce.check_consensus("tree", len(voters))
-            proceed_votes = sum(1 for c in voters.values() if c == "proceed")
+            agreed = ce.check_consensus("tree", len(_cast)) if _cast else None
+            proceed_votes = sum(1 for c in _cast.values() if c == "proceed")
             consensus = {"reached": agreed is not None, "choice": agreed, "threshold": ce.threshold,
-                         "votes": voters, "proceed_fraction": round(proceed_votes / len(voters), 3),
+                         "votes": voters, "abstained": [v for v, c in voters.items() if c == "abstain"],
+                         "proceed_fraction": round(proceed_votes / len(_cast), 3) if _cast else 0.0,
                          "method": "threshold consensus (owned swarm)"}
             _fire("cognitive", "native.tree", f"swarm consensus: {agreed or 'none'}", 0.4)
         except Exception:

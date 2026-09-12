@@ -31,9 +31,64 @@ BIOMIMETIC_LAYERS: List[str] = ["Genome", "Nervous", "Immune", "Cardiovascular",
 _STUB_RE = re.compile(r"\b(TODO|TBD|FIXME|lorem ipsum|placeholder|coming soon|as an ai)\b", re.I)
 _MIN_SUBSTANTIVE = 200  # chars — below this a "delivery" is treated as an empty / stub shell.
 
+# §10 (W449, ledger 1.1) — servers whose output THIS GATE CANNOT ASSESS. The deterministic floor
+# composes its reply out of the caller's own requested headings (engine.py:153), so "declared
+# sections present" is 1.0 by construction and _STUB_RE never matches its vocabulary; a deterministic
+# template (the composition simulate plan) is the same shape. On these the gate does not run — the
+# record says "not assessable" with the reason, and nothing is certified. 174 of 174 native
+# deliverables in the store had been sealed "pass · verified" before this existed.
+_NOT_ASSESSABLE_SERVERS = {"native", "template"}
+NOT_ASSESSABLE_BASIS = ("not assessable — floor-served: the deterministic floor emits the requested "
+                        "headings, so coverage cannot fail by construction and the stub regex never "
+                        "matches its vocabulary; no instrument here can say whether this content is good")
+# W449 (refuter F1) — "verbatim-ingest" is NOT in this set: content a caller supplies with no
+# declared origin is judged as the caller's own writing (the old gate); a caller that knows the
+# producer passes it as source_served_by and the gate judges by THAT (a floor journey → None).
+
+
+def floor_served(served_by: Any) -> bool:
+    """True when EVERY call that produced the content was served by a non-assessable server.
+
+    Accepts the orchestrator's served_by string, a provenance count map ({"native": 3}), a list of
+    per-agent servers, or None. None means UNKNOWN and is treated as assessable — the pre-W449
+    behaviour — so a caller that does not know who served the content gets the old gate, not a
+    silent "not assessable"; the honest fix at such a caller is to thread served_by through.
+    A MIXED provenance (some model, some floor) is assessable: a model produced part of it."""
+    if served_by is None:
+        return False
+    if isinstance(served_by, str):
+        return served_by.strip().lower() in _NOT_ASSESSABLE_SERVERS
+    if isinstance(served_by, dict):
+        keys = [str(k).strip().lower() for k, n in served_by.items() if (n or 0) > 0]
+        return bool(keys) and all(k in _NOT_ASSESSABLE_SERVERS for k in keys)
+    if isinstance(served_by, (list, tuple, set)):
+        vals = [str(v).strip().lower() for v in served_by if v is not None]
+        return bool(vals) and all(v in _NOT_ASSESSABLE_SERVERS for v in vals)
+    return False
+
+
+def describe_served(served_by: Any) -> str:
+    """One string for the record: 'native', 'native×3', 'ollama:llama3.2, native', or 'unspecified'."""
+    if served_by is None:
+        return "unspecified"
+    if isinstance(served_by, str):
+        return served_by
+    if isinstance(served_by, dict):
+        return ", ".join(f"{k}×{n}" for k, n in served_by.items() if (n or 0) > 0) or "unspecified"
+    if isinstance(served_by, (list, tuple, set)):
+        return ", ".join(sorted({str(v) for v in served_by if v is not None})) or "unspecified"
+    return str(served_by)
+
+
+def gate_word(verdict: Optional[bool]) -> str:
+    """The three honest words for a gate verdict — a renderer must never collapse None to 'fail'."""
+    return "pass" if verdict is True else "fail" if verdict is False else "not assessable"
+
 
 def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_coverage: float,
-                 compliance: Dict[str, Any], evidence: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+                 compliance: Dict[str, Any], evidence: Optional[Dict[str, Any]],
+                 floor_served: bool = False,
+                 withheld: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """§10 — the Solution-Quality Bar resolved PER-CRITERION, honestly, in THREE distinct states.
 
     W307 made "not measured" representable, which fixed the implied-16 problem. It left a hole at the
@@ -49,6 +104,12 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
 
     The counts are reported separately for the same reason, so a reader sees "4 measured · 5 attested
     · 7 not measured" rather than a single "9 measured" that hides which is which.
+
+    W449 adds two states the record could not express: ``floor_served`` — the two criteria this gate
+    measures from coverage/stub are NOT measurable on floor output (coverage 1.0 by construction), so
+    they are recorded ``met: None`` with the reason, never ``met: True``; and ``withheld`` — criteria the
+    caller DECLINES to attest, with its reason (a tie, identical candidates, an empty twin), recorded
+    ``source: none`` with ``basis: "not attested: …"`` instead of silently counting as attested.
     """
     ev = evidence or {}
     verdicts = {v.get("framework"): v.get("status") for v in (compliance.get("verdicts") or [])}
@@ -62,13 +123,21 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
         crit[name] = {"met": None, "basis": "not measured by this gate", "measured": False,
                       "attested": False, "source": "none"}
 
-    measured("specifically designed", coverage >= min_coverage and not stub,
-             f"delivery coverage {coverage} against the declared structure (min {min_coverage}), "
-             f"stub_found={stub}")
-    if qms_passed is not None:
-        measured("verified", bool(qms_passed), "QMS gate on real coverage/stub metrics")
+    def not_assessable(name: str) -> None:
+        crit[name] = {"met": None, "basis": NOT_ASSESSABLE_BASIS, "measured": False,
+                      "attested": False, "source": "none"}
+
+    if floor_served:
+        not_assessable("specifically designed")
+        not_assessable("verified")
     else:
-        unmeasured("verified")
+        measured("specifically designed", coverage >= min_coverage and not stub,
+                 f"delivery coverage {coverage} against the declared structure (min {min_coverage}), "
+                 f"stub_found={stub}")
+        if qms_passed is not None:
+            measured("verified", bool(qms_passed), "QMS gate on real coverage/stub metrics")
+        else:
+            unmeasured("verified")
     if verdicts:
         measured("compliant", compliance.get("overall") != "fail", f"§11 screen verdicts: {verdicts}")
         _safety = [f for f in ("ethical", "ehs", "sharia_halal") if f in verdicts]
@@ -80,8 +149,13 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
     else:
         unmeasured("compliant")
         unmeasured("safe")
+    _wh = withheld or {}
     for name in SOLUTION_QUALITY_BAR:
         if name in crit:
+            continue
+        if name in _wh:
+            crit[name] = {"met": None, "basis": f"not attested: {str(_wh[name])[:200]}",
+                          "measured": False, "attested": False, "source": "none"}
             continue
         if ev.get(name):
             # The caller ATTESTS this criterion. Recorded, attributed, and deliberately NOT counted
@@ -115,8 +189,17 @@ def _delivery_coverage(content: str, required_sections: Optional[List[str]]) -> 
 async def assure_delivery(content: str, required_sections: Optional[List[str]] = None,
                           label: str = "delivery",
                           evidence: Optional[Dict[str, Any]] = None,
-                          owner_id: Optional[str] = None) -> Dict[str, Any]:
+                          owner_id: Optional[str] = None,
+                          served_by: Any = None,
+                          withheld: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """Subject an operational delivery to the living QMS + §10 bar + §8 organism.
+
+    ``served_by`` (W449) is who produced the content — the orchestrator's served_by string, a
+    provenance count map, or a list per agent. When every producer is the deterministic floor the
+    gate does NOT run: ``qms_gate_passed`` is None, ``qms_basis`` says why, and the two
+    coverage-derived bar criteria are ``met: None`` — the record is still sealed, so the DCMS holds
+    the not-assessable verdict rather than nothing. ``withheld`` names bar criteria the caller
+    declines to attest, with reasons.
 
     Returns ``{"quality": {...}, "biomimetic": {...}}`` — honest and real (no fabricated numbers).
     Never raises: a QMS / organism hiccup is captured as an ``*_error`` field so a delivery is never
@@ -124,10 +207,14 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
     """
     coverage = _delivery_coverage(content, required_sections)
     stub = bool(_STUB_RE.search(content or "")) or len((content or "").strip()) < _MIN_SUBSTANTIVE
+    _floor = floor_served(served_by)
+    _served_label = describe_served(served_by)
     quality: Dict[str, Any] = {
         "bar": list(SOLUTION_QUALITY_BAR),
         "delivery_coverage": coverage,
         "stub_found": stub,
+        "served_by": _served_label,
+        "not_assessable": _floor,
     }
 
     # §11 (W287) — the compliance screen runs BEFORE the QMS seal (it used to run after, so the
@@ -153,16 +240,26 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         import hashlib as _hashlib
         _ref = {"content_sha3": _hashlib.sha3_256((content or "").encode("utf-8")).hexdigest()[:24],
                 "required_sections": [str(s) for s in (required_sections or [])], "label": label}
-        quality["qms_gate_passed"] = bool(await qms.run_quality_gates(
-            {"coverage": coverage, "stubs_found": stub}, label=label, owner_id=owner_id,
-            delivery_ref=_ref))
+        if _floor:
+            # §10 (W449, ledger 1.1) — THE GATE CANNOT FAIL ON FLOOR OUTPUT, so it does not run and
+            # nothing is counted as a gate run or a pass. Genesis has said "not assessable" for its
+            # own stage checks since W436; the SHARED gate every other surface uses said "pass".
+            quality["qms_gate_passed"] = None
+            quality["qms_basis"] = NOT_ASSESSABLE_BASIS
+        else:
+            quality["qms_gate_passed"] = bool(await qms.run_quality_gates(
+                {"coverage": coverage, "stubs_found": stub}, label=label, owner_id=owner_id,
+                delivery_ref=_ref))
+            quality["qms_basis"] = (f"QMS gate on real coverage/stub metrics "
+                                    f"(served_by={_served_label})")
         quality["qms_min_coverage"] = qms.min_coverage
         quality["qms_non_conformance_rate"] = qms.get_non_conformance_rate()
         quality["qms_defects"] = qms.defect_summary()
         # §10 (W307) — the bar measured PER-CRITERION (measured / caller-attested / honestly
         # not-measured), replacing the bare 16-name list that implied a measurement that never ran.
         quality["bar_measured"] = _measure_bar(coverage, stub, quality["qms_gate_passed"],
-                                               qms.min_coverage, _comp, evidence)
+                                               qms.min_coverage, _comp, evidence,
+                                               floor_served=_floor, withheld=withheld)
         # The QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5):
         # the gate verdict becomes a versioned, SHA3-512-sealed controlled document — W287: the §11
         # verdicts are IN the sealed payload now (the §13 repo's 'compliance + quality record').
@@ -170,6 +267,11 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
             f"qms_record:{label}",
             {"label": label, "delivery_coverage": coverage, "stub_found": stub,
              "qms_gate_passed": quality["qms_gate_passed"], "bar": SOLUTION_QUALITY_BAR,
+             # W449 — the seal is PER DELIVERY: the content hash and the server are in the sealed
+             # payload (163 of 176 historical records shared one hash because it sealed only the
+             # verdict shape, so one seal certified a scaffold and a real document alike).
+             "content_sha3": _ref["content_sha3"], "served_by": _served_label,
+             "qms_basis": quality["qms_basis"],
              "bar_measured": quality["bar_measured"],
              "compliance": {"overall": _comp.get("overall"),
                             "verdicts": _comp.get("verdicts")}},
@@ -245,7 +347,7 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         biomimetic["layers"].append("Immune")   # the only layer that contributes a measured value
         # The organism senses every quality outcome (homeostatic feedback).
         biobus.fire_signal("cognitive", f"qms.{label}",
-                           f"QMS gate {'PASS' if quality.get('qms_gate_passed') else 'FAIL'} (cov={coverage})", 0.6)
+                           f"QMS gate {gate_word(quality.get('qms_gate_passed')).upper()} (cov={coverage})", 0.6)
     except Exception as exc:
         biomimetic["error"] = str(exc)
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
-import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
+import { apiJson, errorMessage, provenanceBadge, qmsChip } from '../lib/api';
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
@@ -10,7 +10,7 @@ interface DeliverableSummary {
   versions: number; served_by?: string; updated_at?: string; qms_gate_passed?: boolean | null;
 }
 interface QualityAssurance {
-  quality?: { qms_gate_passed?: boolean; delivery_coverage?: number; bar?: string[];
+  quality?: { qms_gate_passed?: boolean | null; qms_basis?: string; delivery_coverage?: number; bar?: string[];
     // §10 (W419) — the bar resolved per-criterion in THREE states. `measured` counts only what the
     // gate computed; `attested` counts what a caller asserted and nothing verified. Rendering one
     // conflated number is what let 4 real measurements vouch for 12 nobody evaluated.
@@ -119,11 +119,13 @@ export const Deliverables: React.FC = () => {
         body: JSON.stringify({ previous: selected.content, instruction: refineInstr, context: selected.title }),
       });
       if (!rr.ok) throw new Error(`refine HTTP ${rr.status}`);
-      const refined = String((await rr.json())?.refined ?? '');
+      const rj = await rr.json();
+      const refined = String(rj?.refined ?? '');
       if (!refined.trim()) throw new Error('refine returned empty content');
       const vr = await fetch(`/api/v1/deliverables/${selected.id}/regenerate`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: refined }),
+        // W449 — the next version is the refiner's text verbatim: the gate is told who refined it
+        body: JSON.stringify({ content: refined, source_served_by: rj?.ai_provenance?.served_by ?? null }),
       });
       if (!vr.ok) throw new Error(`version HTTP ${vr.status}`);
       setSelected(await vr.json());
@@ -182,9 +184,9 @@ export const Deliverables: React.FC = () => {
                 <p className="text-xs font-black text-white truncate">{d.title}</p>
                 <p className="text-[9px] font-bold uppercase text-slate-600 mt-0.5 flex items-center gap-1.5">
                   {d.type} · v{d.versions} · {d.served_by}
-                  {typeof d.qms_gate_passed === 'boolean' && (
-                    <span className={d.qms_gate_passed ? 'text-emerald-400' : 'text-vital'} title={`Living-QMS gate: ${d.qms_gate_passed ? 'pass' : 'fail'}`}>● QMS</span>
-                  )}
+                  {(() => { const c = qmsChip({ qms_gate_passed: d.qms_gate_passed }); return c && (
+                    <span className={c.verdict === 'pass' ? 'text-emerald-400' : c.verdict === 'fail' ? 'text-vital' : 'text-slate-500'} title={`Living-QMS gate: ${c.verdict}`}>● QMS</span>
+                  ); })()}
                 </p>
               </button>
             ))}
@@ -208,16 +210,17 @@ export const Deliverables: React.FC = () => {
               {/* Continual operational delivery within the living QMS — §10 bar + §8 organism */}
               {selected.quality_assurance?.quality && (
                 <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                  {typeof selected.quality_assurance.quality.qms_gate_passed === 'boolean' && (
-                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${selected.quality_assurance.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
-                      title={`§10 Solution-Quality Bar — ${selected.quality_assurance.quality.bar_measured?.summary ?? 'per-criterion breakdown unavailable'}
+                  {(() => { const c = qmsChip(selected.quality_assurance.quality, 'Living-QMS gate:'); return c && (
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`}
+                      title={`${c.title}
+§10 Solution-Quality Bar — ${selected.quality_assurance.quality.bar_measured?.summary ?? 'per-criterion breakdown unavailable'}
 MEASURED by this gate: ${(selected.quality_assurance.quality.bar_measured?.measured_criteria || []).join(' · ') || 'none'}
 ATTESTED by a caller (a claim about a run, not a measurement): ${(selected.quality_assurance.quality.bar_measured?.attested_criteria || []).join(' · ') || 'none'}
 The full 16: ${(selected.quality_assurance.quality.bar || []).join(' · ')}${selected.quality_assurance.quality.quality_record_hash ? `
 Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>
-                      Living-QMS gate: {selected.quality_assurance.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((selected.quality_assurance.quality.delivery_coverage || 0) * 100)}%{selected.quality_assurance.quality.document_controlled ? ' · doc-controlled' : ''}
+                      {c.label}
                     </span>
-                  )}
+                  ); })()}
                   {/* §10 (W419) — the bar's real shape ON the surface, not only in the sealed record. */}
                   {selected.quality_assurance.quality?.bar_measured && (
                     <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-700/40 text-slate-300"

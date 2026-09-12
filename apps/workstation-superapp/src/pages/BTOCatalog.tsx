@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { qmsChip } from '../lib/api';
 import {
   Settings2, Fingerprint, Dna, Building2, Users, Award, Globe,
   ShoppingBag, Wrench, Box, Cpu, CheckSquare, Square,
@@ -264,9 +265,9 @@ export const BTOCatalog: React.FC = () => {
                       <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950 border border-slate-900">
                         <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.status === 'BUILT' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>{b.status}</span>
                         <span className="text-xs font-bold text-white truncate flex-1">{b.name}</span>
-                        {typeof b.qms_gate_passed === 'boolean' && (
-                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>QMS {b.qms_gate_passed ? 'pass' : 'fail'}</span>
-                        )}
+                        {(() => { const c = qmsChip({ qms_gate_passed: b.qms_gate_passed }); return c && (
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                        ); })()}
                         {b.deliverable_id && (
                           <span className="text-[8px] font-mono text-aura shrink-0" title="Produced via the §13 living-deliverables engine">{b.deliverable_id}</span>
                         )}

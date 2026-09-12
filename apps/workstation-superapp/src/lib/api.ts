@@ -70,3 +70,26 @@ export const provenanceBadge = (servedBy: string | null | undefined, isExternal?
     title: 'the deterministic native floor composes structured output from the request — it is not model inference' };
   return { label: `in-house · ${sb}`, cls: 'bg-emerald-500/20 text-emerald-400', title: undefined };
 };
+
+// W449 (delivery-plan P1.1, ledger 1.1) — the living-QMS gate has THREE honest states: pass · fail ·
+// NOT ASSESSABLE (null — the deterministic floor served the content, and the gate cannot measure floor
+// output: the floor emits the caller's own headings, so coverage cannot fail by construction). Twenty
+// renderers branched on truthiness or `typeof === 'boolean'`, so a null verdict would have painted
+// amber "flagged" on DomainTool and vanished everywhere else. One helper, every chip; a guard test
+// (test_w449_qms_chip_renders_through_one_helper) fails on any inline `qms_gate_passed ?` ternary.
+export type QmsQuality = {
+  qms_gate_passed?: boolean | null; qms_basis?: string | null;
+  delivery_coverage?: number | null; document_controlled?: boolean | null;
+} | null | undefined;
+export const qmsChip = (q: QmsQuality, prefix = 'QMS') => {
+  if (!q || q.qms_gate_passed === undefined) return null;   // no gate ran (or a gate error) — no chip
+  const v = q.qms_gate_passed;
+  const cov = typeof q.delivery_coverage === 'number' ? ` · cov ${Math.round(q.delivery_coverage * 100)}%` : '';
+  const doc = q.document_controlled ? ' · doc-controlled' : '';
+  if (v === null) return { verdict: 'not assessable' as const, label: `${prefix} —`, cls: 'bg-slate-800 text-slate-500',
+    title: q.qms_basis || 'not assessable — floor-served: the floor emits the requested headings, so the gate cannot measure it' };
+  if (v) return { verdict: 'pass' as const, label: `${prefix} pass${cov}${doc}`, cls: 'bg-emerald-500/15 text-emerald-400',
+    title: q.qms_basis || 'living-QMS gate passed on real coverage/stub metrics' };
+  return { verdict: 'fail' as const, label: `${prefix} fail${cov}${doc}`, cls: 'bg-vital/15 text-vital',
+    title: q.qms_basis || 'living-QMS gate failed on real coverage/stub metrics' };
+};

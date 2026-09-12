@@ -973,7 +973,8 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                    prefer_external=req.prefer_external, timeout=req.timeout)
     # §10/§8 — the combined run is gated by the living QMS + document-controlled under the QMS
     qa = await assure_delivery(res.get("final", ""), [r["name"] for r in comp["resources"]],
-                               label="composition_run")
+                               label="composition_run",
+                               served_by=[t.get("served_by") for t in (res.get("trace") or [])] or None)
     try:
         from agentic_core.api.operational_excellence import record_outcome
         served = res["trace"][0]["served_by"] if res.get("trace") else "native"
@@ -1063,6 +1064,8 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             tgt = next((o for o in fresh.get("objectives", []) if o.get("id") == req.objective_id), None)
             if tgt is None:
                 plan_binding["result"] = "objective_not_found"
+            elif qa["quality"].get("qms_gate_passed") is None:
+                plan_binding["result"] = "qms_not_assessable_no_advance"   # W449 — no evidence, no advance
             elif not qa["quality"].get("qms_gate_passed"):
                 plan_binding["result"] = "qms_failed_no_advance"    # a failed gate never advances the plan
             else:
@@ -1469,15 +1472,20 @@ def _model_configuration(resource_ids: List[str], usage_area: str,
 async def _simulate_configuration(name: str, resource_ids: List[str], usage_area: str,
                                   config: Dict[str, Dict[str, Any]]):
     """MODEL + SIMULATE a configuration before commit (§7): the config plan is gated by the living QMS
-    (held to the §10 bar, recorded within the §8 organism). commit_ready iff the gate passes AND every
-    selected resource supports the chosen usage area."""
+    (held to the §10 bar, recorded within the §8 organism). W449: the plan text is a deterministic
+    TEMPLATE built from the resource names it is then measured against, so the gate records it "not
+    assessable" (served_by="template") rather than "pass". commit_ready iff the gate did not FAIL
+    (a not-assessable verdict neither blocks nor certifies) AND every selected resource supports the
+    chosen usage area."""
     resolved, model = _model_configuration(resource_ids, usage_area, config)
     n = len(resolved)
     plan_text = (f"Configuration '{name}' for usage area '{usage_area}', composing {n} resources: "
                  + ", ".join(model["pipeline"]) + ". Combined capabilities: "
                  + ", ".join(model["combined_capabilities"][:24]) + ".") if n else ""
-    qa = await assure_delivery(plan_text, [r["name"] for r in resolved], label="composition")
-    commit_ready = bool(qa["quality"].get("qms_gate_passed") and model["usage_area_supported_by_all"])
+    qa = await assure_delivery(plan_text, [r["name"] for r in resolved], label="composition",
+                               served_by="template")
+    commit_ready = bool(qa["quality"].get("qms_gate_passed") is not False
+                        and model["usage_area_supported_by_all"])
     return resolved, model, qa, commit_ready
 
 

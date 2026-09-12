@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { provenanceBadge } from '../lib/api';
+import { provenanceBadge, qmsChip } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
@@ -229,12 +229,15 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
                 return <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${b.cls}`} title={b.title}>{b.label}</span>;
               })()}
               {/* §10×§11 (W308) — every Offering-1 response carries its real QMS + compliance posture */}
-              {effectiveProv?.quality_assurance && (
-                <span title={`coverage ${effectiveProv.quality_assurance.delivery_coverage} · compliance ${effectiveProv.quality_assurance.compliance_overall ?? 'n/a'}`}
-                  className={`text-[8px] font-black uppercase px-2 py-1 rounded ${effectiveProv.quality_assurance.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                  QMS {effectiveProv.quality_assurance.qms_gate_passed ? 'pass' : 'flagged'}
-                </span>
-              )}
+              {(() => {
+                /* W449 (P1.1) — three states through one helper: a floor-served response is 'QMS —'
+                   (not assessable, basis in the title), never green 'pass' beside the amber floor badge. */
+                const c = qmsChip(effectiveProv?.quality_assurance);
+                return c && (
+                  <span title={`${c.title} · compliance ${effectiveProv.quality_assurance.compliance_overall ?? 'n/a'}`}
+                    className={`text-[8px] font-black uppercase px-2 py-1 rounded ${c.cls}`}>{c.label}</span>
+                );
+              })()}
               <button type="button" onClick={copyResult} aria-label="Copy result"
                 className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1">
                 {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />} {copied ? 'Copied' : 'Copy'}

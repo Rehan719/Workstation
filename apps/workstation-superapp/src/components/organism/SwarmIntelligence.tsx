@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { qmsChip } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -30,9 +31,8 @@ function RunCard({ run }: { run: SwarmRun }) {
   // W344 — HONEST fields only: runs carry no 'status' or 'fitness' (audit-proven) — the old code
   // invented a synthetic fitness % from duration and a fabricated COMPLETE badge. What a run
   // GENUINELY has: duration_ms + the real QMS verdict.
-  const qmsPassed = (run as any)?.quality?.qms_gate_passed;
-  const coverage = (run as any)?.quality?.delivery_coverage;
-  const colorCls = qmsPassed === false ? (STATUS_COLOR.FAILED ?? STATUS_COLOR.default) : STATUS_COLOR.default;
+  const qmsC = qmsChip((run as any)?.quality);   // W449 — three states through the one helper (rule 26)
+  const colorCls = qmsC?.verdict === 'fail' ? (STATUS_COLOR.FAILED ?? STATUS_COLOR.default) : STATUS_COLOR.default;
 
   return (
     <div className={`p-2.5 bg-[#111] mb-2 rounded-md border-l-[3px] ${colorCls.split(' ')[0]} cursor-pointer`} onClick={() => setOpen(o => !o)}>
@@ -44,9 +44,8 @@ function RunCard({ run }: { run: SwarmRun }) {
           </div>
         </div>
         <div className="text-right shrink-0 ml-2">
-          {typeof coverage === 'number' && <div className="text-xs text-[#00d4ff]">QMS cov {(coverage * 100).toFixed(0)}%</div>}
-          <div className={`text-[9px] ${colorCls.split(' ')[1] ?? 'text-white/40'}`}>
-            {qmsPassed === true ? 'QMS PASS' : qmsPassed === false ? 'QMS FAIL' : `${run.duration_ms ?? '—'}ms`}
+          <div className={`text-[9px] ${colorCls.split(' ')[1] ?? 'text-white/40'}`} title={qmsC?.title}>
+            {qmsC ? qmsC.label : `${run.duration_ms ?? '—'}ms`}
           </div>
           {open ? <ChevronUp size={10} className="ml-auto text-white/30 mt-1" /> : <ChevronDown size={10} className="ml-auto text-white/30 mt-1" />}
         </div>
@@ -255,12 +254,12 @@ const SwarmIntelligence: React.FC = () => {
               {Array.isArray(cascade.management_systems?.integrated) && cascade.management_systems.integrated.length > 0 && (
                 <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">mgmt: {cascade.management_systems.integrated.join('·')}</span>
               )}
-              {cascade.quality && typeof cascade.quality.qms_gate_passed === 'boolean' && (
-                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
-                  title={`§10 quality bar: ${(cascade.quality.bar || []).join(' · ')}${cascade.quality.quality_record_hash ? `\nDocument-controlled under the QMS (DCMS) · record ${String(cascade.quality.quality_record_hash).slice(0, 16)}…` : ''}`}>
-                  QMS gate: {cascade.quality.qms_gate_passed ? 'pass' : 'fail'} · cov {Math.round((cascade.quality.delivery_coverage || 0) * 100)}%{cascade.quality.document_controlled ? ' · doc-controlled' : ''}
+              {(() => { const c = qmsChip(cascade.quality, 'QMS gate:'); return c && (
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`}
+                  title={`${c.title}\n§10 quality bar: ${(cascade.quality.bar || []).join(' · ')}${cascade.quality.quality_record_hash ? `\nDocument-controlled under the QMS (DCMS) · record ${String(cascade.quality.quality_record_hash).slice(0, 16)}…` : ''}`}>
+                  {c.label}
                 </span>
-              )}
+              ); })()}
               {cascade.biomimetic?.immune && (
                 <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300" title={`7 biomimetic layers · ${cascade.biomimetic.self}`}>
                   organism: immune {Math.round((cascade.biomimetic.immune.health ?? 0) * 100)}% · {cascade.biomimetic.circadian}
@@ -402,9 +401,9 @@ const SwarmIntelligence: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-[8px] font-mono text-white/30">{cr.run_id}</span>
                     <span className="text-[10px] text-white/70 font-bold truncate max-w-[180px]" title={cr.mission}>{cr.mission}</span>
-                    {typeof cr.quality?.qms_gate_passed === 'boolean' && (
-                      <span className={`text-[8px] font-black uppercase px-1 py-0.5 rounded ${cr.quality.qms_gate_passed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>QMS {cr.quality.qms_gate_passed ? 'pass' : 'fail'}</span>
-                    )}
+                    {(() => { const c = qmsChip(cr.quality); return c && (
+                      <span className={`text-[8px] font-black uppercase px-1 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
+                    ); })()}
                     {cr.appraisals && <span className="text-[8px] text-amber-300/60">{Object.keys(cr.appraisals).length} appraisals</span>}
                     {(cr.fabric_requisitions ?? []).map((f: any) => (
                       <span key={f.resource} className="text-[8px] font-black uppercase px-1 py-0.5 rounded bg-aura/10 text-aura">{f.resource}</span>

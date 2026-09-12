@@ -21,7 +21,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Card, Button, Badge } from '@workstation/ui';
 import { Handshake, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
-import { apiJson, errorMessage } from '../../lib/api';
+import { apiJson, errorMessage, qmsChip, type QmsQuality } from '../../lib/api';
 
 interface Entity { vsb_id: string; name?: string }
 
@@ -88,7 +88,7 @@ function qualityText(q: unknown): string | null {
   if (simple !== undefined && typeof simple !== 'object') return String(simple);
 
   const parts: string[] = [];
-  if (typeof o.qms_gate_passed === 'boolean') parts.push(o.qms_gate_passed ? 'QMS pass' : 'QMS FAIL');
+  { const c = qmsChip(o as QmsQuality); if (c) parts.push(c.verdict === 'pass' ? 'QMS pass' : c.verdict === 'fail' ? 'QMS FAIL' : 'QMS not assessable'); }
   if (typeof o.delivery_coverage === 'number') parts.push(`coverage ${Math.round(o.delivery_coverage * 100)}%`);
   const d = o.qms_defects as Record<string, any> | undefined;
   if (d && typeof d.defects_total === 'number' && typeof d.gates_run === 'number') {

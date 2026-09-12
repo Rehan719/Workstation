@@ -151,6 +151,67 @@ async def genesis_status():
     }
 
 
+def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any], winner: Dict[str, Any],
+                      realm: str, domain: str, stage_verifications: Dict[str, Any],
+                      stages_verified: int) -> "tuple[Dict[str, str], Dict[str, str]]":
+    """§10 (W419 → W449, ledger 3.11) — the journey's bar attestations, DERIVED from this run, and the
+    criteria it DECLINES to attest, each with the reason. Returns (evidence, withheld).
+
+    W419 made each attestation name its real output. It still attested "modelled" and "ranked"
+    unconditionally and "simulated" on length alone — so a run whose three candidates were
+    byte-identical and whose ranking was a tie resolved by list order sealed "modelled · simulated ·
+    ranked: met" into the QMS record while its own basis text said "NOT by evidence". A ranking
+    that carried no information is not a ranking; three copies of one text are not three
+    candidates; identical twin outputs are not a simulation of alternatives. Each is now WITHHELD
+    with its reason rather than attested. Unit-testable both ways (W419-style)."""
+    import hashlib as _hl
+    ev: Dict[str, str] = {}
+    wh: Dict[str, str] = {}
+    n = len(candidates)
+    _tied = bool((stage_5.get("tie") or {}).get("detected"))
+    _distinct = int(stage_5.get("candidates_distinct") or (n if n else 0))
+    ev["categorised"] = f"realm '{realm}' × domain '{domain}' categorisation"
+    if n > 1 and _distinct > 1:
+        ev["modelled"] = (f"stage 5 modelled {n} candidates ({_distinct} distinct); form scores "
+                          + " · ".join(f"{c['id']}={c.get('modelled_score')}" for c in candidates))
+    elif n > 1:
+        wh["modelled"] = (f"candidates_distinct={_distinct} of {n} — one text modelled {n} times is "
+                          f"not {n} candidates modelled")
+    else:
+        wh["modelled"] = "a single candidate is not a comparison"
+    _sim_lengths = [len(c.get("simulation") or "") for c in candidates]
+    _sim_digests = {_hl.md5((c.get("simulation") or "").encode("utf-8")).hexdigest() for c in candidates}
+    _short = sum(1 for l in _sim_lengths if l < 200)
+    if candidates and _short == 0 and (len(_sim_digests) > 1 or n == 1):
+        ev["simulated"] = (
+            f"digital-twin forward-simulation returned {min(_sim_lengths)}-{max(_sim_lengths)} chars "
+            f"per candidate ({len(_sim_digests)} distinct outputs); twin scores "
+            + " · ".join(f"{c['id']}={c.get('simulation_score')}" for c in candidates))
+    elif candidates and _short:
+        wh["simulated"] = f"twin output below 200 chars for {_short} of {n} candidates"
+    elif candidates:
+        wh["simulated"] = (f"the twin returned one identical output for all {n} candidates — "
+                           f"nothing was simulated apart")
+    if n > 1 and _distinct > 1 and not _tied:
+        ev["ranked"] = stage_5.get("selection_basis") or "ranked on measured evidence"
+        ev["optimised"] = (
+            f"selected {winner['id']} at {winner['score']} over "
+            + " · ".join(f"{c['id']}={c['score']}" for c in candidates if c["id"] != winner["id"])
+            + f" ({winner.get('score_basis')})")
+    else:
+        _why = (stage_5.get("selection_basis") if _tied else
+                f"candidates_distinct={_distinct} — identical candidates cannot be ranked" if n > 1 else
+                "a single candidate is not ranked")
+        wh["ranked"] = str(_why)[:200]
+        wh["optimised"] = "selection did not discriminate — " + str(_why)[:160]
+    if stage_verifications and stages_verified == len(stage_verifications):
+        ev["tested"] = (f"all {stages_verified}/{len(stage_verifications)} stages verified: "
+                        + " · ".join(f"{k}={v['sections_present']}" for k, v in stage_verifications.items()))
+        ev["validated"] = ("every stage validated against its declared section structure: "
+                           + " · ".join(f"{k}={v['score']}" for k, v in stage_verifications.items()))
+    return ev, wh
+
+
 @router.post("/journey")
 async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_current_user)):
     """Run the full intelligently-autonomous Concept → Commercialisation cascade."""
@@ -431,38 +492,18 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # modelled+simulated evidence") that would have been written identically had the twin returned a
     # single empty line. An attestation that cannot be false is not evidence. The gate now records
     # these as ATTESTED rather than measured, and they must at minimum be true of THIS run.
-    _sim_lengths = [len(c.get("simulation") or "") for c in candidates]
-    _simulated_ok = [n for n in _sim_lengths if n >= 200]
-    _bar_evidence = {
-        "modelled": (f"stage 5 modelled {len(candidates)} candidates; form scores "
-                     + " · ".join(f"{c['id']}={c['modelled_score']}" for c in candidates)),
-        "ranked": stage_5["selection_basis"],
-        "categorised": f"realm '{req.realm}' × domain '{req.domain}' categorisation",
-    }
-    # Attest "simulated" ONLY if the twin actually produced substantive output for every candidate.
-    if len(_simulated_ok) == len(candidates) and candidates:
-        _bar_evidence["simulated"] = (
-            f"digital-twin forward-simulation returned {min(_sim_lengths)}-{max(_sim_lengths)} chars "
-            f"per candidate; twin scores "
-            + " · ".join(f"{c['id']}={c['simulation_score']}" for c in candidates))
-    # Attest "optimised" ONLY when the selection actually discriminated — a tie means it did not.
-    if not stage_5["tie"]["detected"] and len(candidates) > 1:
-        _bar_evidence["optimised"] = (
-            f"selected {winner['id']} at {winner['score']} over "
-            + " · ".join(f"{c['id']}={c['score']}" for c in candidates if c["id"] != winner["id"])
-            + f" ({winner['score_basis']})")
-    if stages_verified == len(stage_verifications):
-        _bar_evidence["tested"] = (f"all {stages_verified}/{len(stage_verifications)} stages verified: "
-                                   + " · ".join(f"{k}={v['sections_present']}"
-                                                for k, v in stage_verifications.items()))
-        _bar_evidence["validated"] = ("every stage validated against its declared section structure: "
-                                      + " · ".join(f"{k}={v['score']}"
-                                                   for k, v in stage_verifications.items()))
+    # W449 (ledger 3.11) — attestations derived from the run, and the ones the run DECLINES with reasons
+    # (a tie, identical candidates, identical twin outputs) — extracted so both directions are testable.
+    _bar_evidence, _bar_withheld = _bar_attestations(candidates, stage_5, winner, req.realm, req.domain,
+                                                     stage_verifications, stages_verified)
+    # W449 (ledger 1.1) — the gate learns who served the design + commercialisation it measures.
+    _gate_servers = [s for s in (_sba.get("genesis_design"), _sba.get("genesis_commercial")) if s]
     quality_assurance = await assure_delivery(
         f"{design}\n{commercial}",
         ["Solution Architecture", "Core Components", "Technology & Delivery Plan", "MVP Scope",
          "Go-To-Market Strategy", "Revenue Model", "VSB Blueprint", "First 90 Days"],
-        label="genesis", evidence=_bar_evidence)
+        label="genesis", evidence=_bar_evidence, withheld=_bar_withheld,
+        served_by=_gate_servers or None)
 
     # ── §4→§5 SEAM — optionally culminate the journey by ESTABLISHING the living VSB IDBO enterprise, so a
     #    plainly-described challenge flows in ONE continuous workflow all the way to a living enterprise that
@@ -475,9 +516,15 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                 concept=concept, design=design, commercialisation=commercial,
                 entity_type=req.entity_type, ship_output=req.ship_output,
                 research=research, operations=operations,
-                selected_candidate=(stage_5 or {}).get("candidates", [{}])[0]
-                    if (stage_5 or {}).get("candidates") else {},
-                stage_verifications=stage_verifications),
+                # W449 — the tie / identical-candidates facts travel WITH the selected candidate so the
+                # shipped EVIDENCE.md can say what the page already says (ledger 3.11, R2.5).
+                selected_candidate=({**(stage_5 or {}).get("candidates", [{}])[0],
+                                     "tie": (stage_5 or {}).get("tie"),
+                                     "candidates_distinct": (stage_5 or {}).get("candidates_distinct"),
+                                     "selection_basis": (stage_5 or {}).get("selection_basis")}
+                                    if (stage_5 or {}).get("candidates") else {}),
+                stage_verifications=stage_verifications,
+                ai_provenance=provenance),   # W449 — the entity knows who served its body (F2)
                 user=user if isinstance(user, dict) else None)   # W302+W304 - the whole journey flows
         except Exception as e:
             established_vsb = {"error": f"establishment deferred: {e}"}
@@ -534,6 +581,10 @@ class EstablishRequest(BaseModel):
     operations: str = ""
     selected_candidate: dict = {}
     stage_verifications: dict = {}
+    # W449 (refuter F2) — the journey's provenance (served_by count map, per-agent servers) is STORED
+    # on the entity so the repo / webapp / mobile gates know who wrote the concept they measure.
+    # Empty for the standalone /establish path: origin unknown → the gate runs as before.
+    ai_provenance: dict = {}
 
 
 def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
@@ -710,6 +761,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
             "selected_candidate": req.selected_candidate,
             "stage_verifications": req.stage_verifications,
         },
+        "ai_provenance": dict(req.ai_provenance or {}),   # W449 — who served the body (F2)
         "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
         "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
     }
@@ -858,6 +910,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "genesis_journey": {"research": req.research, "operations": req.operations,
                                 "selected_candidate": req.selected_candidate,
                                 "stage_verifications": req.stage_verifications},
+            "ai_provenance": dict(req.ai_provenance or {}),   # W449 — parity with the blocking path (F2)
             "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
             "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
         }
