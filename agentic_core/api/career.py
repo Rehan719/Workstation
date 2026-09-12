@@ -231,8 +231,11 @@ class JobSearchRequest(BaseModel):
 @router.post("/job-search")
 async def job_search(req: JobSearchRequest):
     """
-    Generate realistic job listings tailored to the candidate's profile.
-    Uses AI synthesis — not a live job board. Returns structured listings.
+    Synthesise ILLUSTRATIVE example listings tailored to the candidate's profile — AI synthesis, not a
+    live job board (W454, ledger 1.6 / R5.0). The old prompt asked the model to invent a URL and a
+    published date for each listing and the page linked them as if live; a listing here carries no
+    url and no date, its salary is labelled an estimate, `illustrative` is True on every row, and
+    `sources_used` is EMPTY — synthesis is not a source. The page says all of this.
     """
     profile_summary = ""
     if req.file_ids:
@@ -254,10 +257,11 @@ async def job_search(req: JobSearchRequest):
         + (f"Profile:\n{profile_summary}\n" if profile_summary else "")
         + (f"Search query: {req.query}\n" if req.query else "")
         + (f"Additional criteria: {req.instructions}\n" if req.instructions else "")
-        + f"\nFor each listing, provide a JSON object on one line with these fields:\n"
-        + '{"source": "...", "title": "...", "company": "...", "location": "...", '
-        + '"url": "https://...", "salary": "...", "tags": ["tag1","tag2"], '
-        + '"published": "2026-06-...", "description": "2-sentence description"}\n\n'
+        + f"\nThese are ILLUSTRATIVE example listings (the kind of role this candidate could target), not real "
+        + "adverts: do not invent employers' web addresses or posting dates. For each listing, provide a JSON "
+        + "object on one line with these fields:\n"
+        + '{"title": "...", "company": "...", "location": "...", "salary_estimate": "...", '
+        + '"tags": ["tag1","tag2"], "description": "2-sentence description"}\n\n'
         + f"Output exactly {limit} JSON objects, one per line. No other text."
     )
 
@@ -269,17 +273,17 @@ async def job_search(req: JobSearchRequest):
         if line.startswith("{") and line.endswith("}"):
             try:
                 obj = json.loads(line)
-                # Ensure required fields
                 listings.append({
-                    "source": obj.get("source", "JobBoard"),
+                    "listing_id": uuid.uuid4().hex[:10],
                     "title": obj.get("title", "Position"),
                     "company": obj.get("company", "Company"),
                     "location": obj.get("location", "Remote"),
-                    "url": obj.get("url", "https://example.com/job"),
-                    "salary": obj.get("salary"),
+                    # W454 — labelled for what it is; never a fabricated url / posting date
+                    "salary_estimate": obj.get("salary_estimate") or obj.get("salary"),
                     "tags": obj.get("tags", []),
-                    "published": obj.get("published", time.strftime("%Y-%m-%d")),
                     "description": obj.get("description", ""),
+                    "illustrative": True,
+                    "basis": "AI-synthesised example — not a live advert; verify any role, employer or figure independently",
                 })
             except json.JSONDecodeError:
                 pass
@@ -287,18 +291,40 @@ async def job_search(req: JobSearchRequest):
     return {
         "results": listings,
         "query": req.query or "tailored to profile",
-        "sources_used": ["AI Career Intelligence"],
+        "sources_used": [],                       # W454 — synthesis is not a source
+        "illustrative": True,
+        "basis": ("AI-synthesised example listings — not a live job board; no listing here links to a real "
+                  "advert, and every employer, role and figure must be verified independently"),
         "total": len(listings),
         "ai_provenance": provenance,
     }
 
 
 class UseListingRequest(BaseModel):
-    url: str
+    listing_id: str = ""
     title: str = ""
+    company: str = ""
+    location: str = ""
+    description: str = ""
+    salary_estimate: str | None = None
 
 
 @router.post("/job-search/use")
 async def mark_listing_used(req: UseListingRequest):
-    """Record that the user has applied to / is working on a job listing."""
-    return {"status": "saved", "url": req.url, "title": req.title}
+    """W454 (refuter F1) — this returned `{"status": "saved"}` and persisted NOTHING while the page flipped
+    the card to a green 'Set as Target Job Ad' and the generator never saw the role. Now the listing is
+    INGESTED as a `job_ad` entry — the same registry the Studio's upload slots read and the generator
+    builds its target context from — labelled illustrative in its own text, so what the tick says is
+    what happened."""
+    if not (req.title or req.description):
+        raise HTTPException(status_code=422, detail="a listing needs at least a title or a description")
+    from agentic_core.ingestion.api import ingestion_manager
+    text = (f"# Target role (ILLUSTRATIVE — an AI-synthesised example listing, not a live advert; verify the "
+            f"employer, role and figures independently)\n\n"
+            f"Title: {req.title}\nCompany: {req.company or 'not stated'}\nLocation: {req.location or 'not stated'}\n"
+            + (f"Salary estimate: {req.salary_estimate}\n" if req.salary_estimate else "")
+            + f"\n{req.description}\n")
+    entry = ingestion_manager.ingest_text(text, filename=f"illustrative-listing-{(req.title or 'role')[:40]}.md",
+                                          category="job_ad")
+    return {"status": "attached", "listing_id": req.listing_id or None, "file_id": entry.get("file_id"),
+            "category": "job_ad", "title": req.title, "illustrative": True}

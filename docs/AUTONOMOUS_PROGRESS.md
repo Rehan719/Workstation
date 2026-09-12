@@ -4790,3 +4790,79 @@ justified (Genesis writes a map into a field typed as a string — cosmetic); th
 **Docs:** ledger v3 status R5.1, R3.4 FIXED and R3.7's chip half FIXED W453; prompt ledger 1.5
 CLOSED and P1.5 ✅ DONE with what the guard found and what stays outside the class; vision §16;
 living plan §4/§8.
+
+### W454 — delivery-plan P1.6: the Employment hub's default tab tells the truth about its job search
+
+**What was wrong (ledger 1.6 · R5.0).** The hub opened on the Application Studio. Its Job Search
+Engine told the user "Live, real-time search across public job boards" and, after a search,
+"Searched … across AI Career Intelligence"; the route behind it said in its own docstring "not a
+live job board" and asked the model, per listing, to invent `"url": "https://..."` and
+`"published": "2026-06-..."`; the page rendered each invented URL as an external link with an
+"Open listing" title, and "No live listings matched" when the floor's output did not parse. The
+synthesis was listed as a *source*. Generated documents carried provenance in the response and
+rendered none of it.
+
+**What changed (backend, `career.py`):** the prompt no longer asks for a URL or a posting date
+and tells the model these are illustrative roles ("do not invent employers' web addresses or
+posting dates"); each row is `{listing_id, title, company, location, salary_estimate, tags,
+description, illustrative: true, basis}` — no `url`, no `published`, no `source`; the response
+carries `illustrative: true`, `sources_used: []` (synthesis is not a source), a `basis` sentence
+("AI-synthesised example listings — not a live job board; no listing here links to a real advert,
+and every employer, role and figure must be verified independently") and `ai_provenance`;
+`/job-search/use` records a listing by id (a legacy url still accepted, and the record says
+whether it was illustrative).
+
+**Frontend:** `EmploymentHub` opens on the CV Tailor (`?tab=` still deep-links; the two "career
+path" / "new opportunity" shortcuts still land on the Studio's sections). The Application Studio's
+panel says "AI-synthesised example listings — **not a live job board** … every employer, role and
+figure must be verified independently"; the result line says "Synthesised N illustrative listings
+for "…" — no sources searched" with the provenance badge beside it; every card wears an amber
+"illustrative · no live URL" chip, shows the salary as "est. …", and has no link; the empty state
+says "No example listings were synthesised"; the failure copy no longer says "Live job search
+failed"; every generated document renders its provenance badge beside its title. Listings are
+keyed by id, not by an invented URL.
+
+**Tests:** `test_w454_employment_default_tab_is_honest` — the route's response shape both ways
+(illustrative, empty sources, basis, provenance; no url/published/source on any row; a legacy
+`use` call reports illustrative=False, an id call reports True); a source grep of `career.py`
+(the prompt asks for no url or date), the Studio (none of the old claims, no `listing.url`, the
+honest copy and chip, two badge sites) and the hub (default `'cv'`); the CV tool on the new default
+tab still generates with provenance. **The first break-test PASSED with a fabricated url put back on
+each row — the floor emits no JSON lines, so the per-row loop was empty and the guard was vacuous
+(rule 4 caught my own guard).** The guard now substitutes a model that ignores the prompt and
+invents a url, a date and a source; the route must ship none of them — and with the url put back
+the guard fails on that row. Restored.
+Suite on the final tree (isolated data dir, `AI_DISABLE_LOCAL=1`): **359 passed · 15 skipped · 0
+failed** (38 min). A first full run had two SPA-serving failures because I rebuilt the bundle while the
+suite was reading the served dist folder — my own concurrency mistake, not the change; both pass alone
+and in the clean rerun. Recorded rather than silently retried.
+
+**Browser (fresh backend :8038 on the final tree, serving the rebuilt bundle — `scripts/_w454_probe.mjs`, 7/7; the pre-refuter tree passed 5/5 on :8037):**
+`/employment` opens on the CV Tailor (no Job Search Engine on the page); `?tab=studio` shows "not a
+live job board" and no "Live, real-time search"; a search renders the "no sources searched" line
+with the amber floor badge, zero live links in the panel; the API's generated document carries
+`ai_provenance` and the job search is illustrative with no url/published on any row; the listing CARDS
+are driven through a stubbed model-shaped response (the floor synthesises none): the illustrative chip,
+the salary as an estimate, no live link, the in-house model badge — and "Use as Target Job Ad" really
+attaches the listing as a job_ad upload.
+
+**Refuted (one adversarial agent on the round's own diff): five findings, all fixed before commit.**
+F1 (HIGH — the R5.0 class left standing and re-labelled as truth): `/job-search/use` returned
+`{"status": "saved"}` and persisted NOTHING — verified by hashing every file under the data dir
+before and after — while the page flipped the card to a green "Set as Target Job Ad" and the
+generator, which builds its target context only from uploaded files, never saw the role; my own
+guard had certified the no-op. It now INGESTS the listing as a `job_ad` entry (the same registry the
+Studio's upload slots read and the generator reads), labelled illustrative in its own text, and
+refuses an empty listing; the card says "Attached as Target Job Ad (illustrative)"; the guard
+counts the attachment. F2 — the floor's empty state told the user to "broaden your terms" when the
+floor cannot compose listings at all — it says so now. F3 — the search mesh still described the
+hub as "Career, CVs & job marketplace" — "application tools". F4 — the probe's card leg was vacuous
+on the floor (zero listings, zero links trivially) — the cards are now driven through a stubbed
+model-shaped response and the attach is exercised end to end. F5 — a legacy `url` field on the use
+request let "illustrative: false" be asserted on no evidence — dropped. Dismissed after checking:
+no other consumer of the old listing shape; no deep link expects the old default tab; the CV tool
+on the new default renders provenance through DomainTool; the guard's second form is non-vacuous;
+LF intact; tsc clean.
+
+**Docs:** ledger v3 status R5.0 FIXED W454; prompt ledger 1.6 CLOSED and P1.6 ✅ DONE; vision §16;
+living plan §4/§8.

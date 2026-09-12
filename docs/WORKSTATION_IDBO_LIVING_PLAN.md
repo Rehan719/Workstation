@@ -121,6 +121,9 @@ birth hold the birth-ship, the heartbeat holds gated entities with a recorded ac
 **W453 (2026-09-12):** delivery-plan **P1.5 delivered** — provenanceBadge class-kill part 2: every badge
 site renders the helper's cls/title; `provenanceMapBadge` for count maps; the floor is amber everywhere;
 a source-grep guard holds the shape.
+**W454 (2026-09-12):** delivery-plan **P1.6 delivered** — Employment default-tab honesty: the hub opens
+on the CV tools; the job search returns illustrative listings (no invented url/date, no 'source'), the
+page says so and badges the search and every generated document.
 Open items live in `FABLE_DELIVERY_PROMPT.md` (v11 rev 2 — the `<ledger>` and the `<delivery_plan>`
 for the whole of §1–§15).
 
@@ -241,6 +244,8 @@ under a lockstep test, so the API dropped with it in the same commit.
 ---
 
 ## 8. Changelog (dated, append-only)
+- **2026-09-12 (W454)** — delivery-plan P1.6 delivered (Employment default-tab honesty); §4 updated;
+  glyphs unchanged.
 - **2026-09-12 (W453)** — delivery-plan P1.5 delivered (provenanceBadge class-kill part 2); §4 updated;
   glyphs unchanged.
 - **2026-09-12 (W452)** — delivery-plan P1.4 delivered (Mode 3 gates gate); §4 and §7 row 1 evidence

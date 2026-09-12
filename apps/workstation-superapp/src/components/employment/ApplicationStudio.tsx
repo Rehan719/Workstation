@@ -4,9 +4,10 @@ import {
   FileStack, FileText, Star, Target, ClipboardList, BookOpen, Mic,
   FileSignature, GraduationCap, ShieldCheck, UploadCloud, Trash2, Download,
   CheckSquare, Square, Loader2, Sparkles, Link as LinkIcon, Globe, Linkedin, Wand2,
-  Search, Briefcase, MapPin, ExternalLink, CircleCheck, ScrollText
+  Search, Briefcase, MapPin, CircleCheck, ScrollText
 } from 'lucide-react';
 import { Card, Button } from '@workstation/ui';
+import { provenanceBadge } from '../../lib/api';
 
 interface IngestedFile {
   file_id: string;
@@ -21,6 +22,7 @@ interface GeneratedDoc {
   title: string;
   content: string;
   timestamp: string;
+  ai_provenance?: { served_by?: string | null; is_external?: boolean };   // W454 — rendered, not dropped
 }
 
 interface ClassificationNotice {
@@ -29,16 +31,17 @@ interface ClassificationNotice {
   confidence: number;
 }
 
+// W454 — an ILLUSTRATIVE example listing: no url, no posting date (they were invented), a salary estimate
 interface JobListing {
-  source: string;
+  listing_id: string;
   title: string;
   company: string;
   location: string;
-  url: string;
-  salary?: string | null;
+  salary_estimate?: string | null;
   tags: string[];
-  published?: string;
   description: string;
+  illustrative?: boolean;
+  basis?: string;
 }
 
 const INPUT_SLOTS = [
@@ -77,7 +80,7 @@ export const ApplicationStudio: React.FC = () => {
   const [jobQuery, setJobQuery] = useState('');
   const [jobSearching, setJobSearching] = useState(false);
   const [jobResults, setJobResults] = useState<JobListing[] | null>(null);
-  const [jobSearchMeta, setJobSearchMeta] = useState<{ query: string; sources_used: string[] } | null>(null);
+  const [jobSearchMeta, setJobSearchMeta] = useState<{ query: string; basis?: string; total?: number; ai_provenance?: { served_by?: string | null; is_external?: boolean } } | null>(null);
   const [jobSearchError, setJobSearchError] = useState('');
   const [usingListingUrl, setUsingListingUrl] = useState<string | null>(null);
   const [usedListingUrls, setUsedListingUrls] = useState<string[]>([]);
@@ -209,26 +212,26 @@ export const ApplicationStudio: React.FC = () => {
         limit: 12,
       });
       setJobResults(resp.data.results);
-      setJobSearchMeta({ query: resp.data.query, sources_used: resp.data.sources_used });
+      setJobSearchMeta({ query: resp.data.query, basis: resp.data.basis, total: resp.data.total, ai_provenance: resp.data.ai_provenance });
     } catch (err) {
-      setJobSearchError('Live job search failed. Try again.');
+      setJobSearchError('Example-listing synthesis failed. Try again.');
     } finally {
       setJobSearching(false);
     }
   };
 
   const handleUseListing = async (listing: JobListing) => {
-    setUsingListingUrl(listing.url);
+    setUsingListingUrl(listing.listing_id);
     try {
       await axios.post('/api/v1/career/job-search/use', {
         title: listing.title,
         company: listing.company,
         location: listing.location,
-        url: listing.url,
+        listing_id: listing.listing_id,
         description: listing.description,
-        source: listing.source,
+        salary_estimate: listing.salary_estimate ?? null,
       });
-      setUsedListingUrls(prev => [...prev, listing.url]);
+      setUsedListingUrls(prev => [...prev, listing.listing_id]);
       await fetchUploads();
     } catch (err) {
       alert('Could not attach this listing as the Target Job Ad.');
@@ -390,7 +393,7 @@ export const ApplicationStudio: React.FC = () => {
             <Briefcase size={11} /> Job Search Engine
           </label>
           <p className="text-[10px] text-slate-500 font-bold mt-1 leading-relaxed">
-            Live, real-time search across public job boards — tailored to your instructions, or to the Target Job Ad / Person Specification / CV materials you've uploaded above if left blank.
+            AI-synthesised example listings — <b>not a live job board</b>. They illustrate the kind of role your materials point to (or your search terms); no listing links to a real advert, and every employer, role and figure must be verified independently before you rely on it.
           </p>
         </div>
         <div className="flex gap-2">
@@ -409,47 +412,52 @@ export const ApplicationStudio: React.FC = () => {
         {jobSearchError && <p className="text-[10px] text-red-400 font-bold">{jobSearchError}</p>}
 
         {jobSearchMeta && (
-          <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
-            Searched "{jobSearchMeta.query}" across {jobSearchMeta.sources_used.join(', ') || 'no sources'}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
+              Synthesised {jobSearchMeta.total ?? 0} illustrative listing{jobSearchMeta.total === 1 ? '' : 's'} for "{jobSearchMeta.query}" — no sources searched
+            </p>
+            {jobSearchMeta.ai_provenance && (() => { const b = provenanceBadge(jobSearchMeta.ai_provenance?.served_by, jobSearchMeta.ai_provenance?.is_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
+          </div>
         )}
 
         {jobResults && jobResults.length === 0 && (
-          <p className="text-[10px] text-slate-600 font-bold">No live listings matched. Try broadening your terms.</p>
+          <p className="text-[10px] text-slate-600 font-bold">
+            {jobSearchMeta?.ai_provenance?.served_by === 'native'
+              ? 'No example listings were synthesised — the deterministic native floor served this search and cannot compose listings; an owned model is needed for examples.'
+              : 'No example listings were synthesised. Try broadening your terms.'}
+          </p>
         )}
 
         {jobResults && jobResults.length > 0 && (
           <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
             {jobResults.map(listing => {
-              const used = usedListingUrls.includes(listing.url);
+              const used = usedListingUrls.includes(listing.listing_id);
               return (
-                <div key={listing.url} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <div key={listing.listing_id} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-xs font-black text-white truncate">{listing.title}</p>
                       <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5 mt-0.5">
                         {listing.company} <span className="text-slate-600">·</span>
                         <MapPin size={9} className="inline" /> {listing.location || 'Not specified'}
-                        <span className="text-slate-600">·</span> {listing.source}
+                        {listing.salary_estimate && <><span className="text-slate-600">·</span> est. {listing.salary_estimate}</>}
                       </p>
                     </div>
-                    <a href={listing.url} target="_blank" rel="noopener noreferrer" aria-label={`Open listing for ${listing.title} at ${listing.company}`} title="Open listing" className="text-slate-500 hover:text-aura shrink-0">
-                      <ExternalLink size={14} />
-                    </a>
+                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 shrink-0" title={listing.basis || 'AI-synthesised example — not a live advert'}>illustrative · no live URL</span>
                   </div>
                   <p className="text-[10px] text-slate-500 leading-relaxed line-clamp-3">{listing.description}</p>
                   {used ? (
                     <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-emerald-400">
-                      <CircleCheck size={12} /> Set as Target Job Ad
+                      <CircleCheck size={12} /> Attached as Target Job Ad (illustrative)
                     </span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => handleUseListing(listing)}
-                      disabled={usingListingUrl === listing.url}
+                      disabled={usingListingUrl === listing.listing_id}
                       className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-aura rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors"
                     >
-                      {usingListingUrl === listing.url ? <Loader2 size={11} className="animate-spin" /> : <Target size={11} />}
+                      {usingListingUrl === listing.listing_id ? <Loader2 size={11} className="animate-spin" /> : <Target size={11} />}
                       Use as Target Job Ad
                     </button>
                   )}
@@ -497,8 +505,11 @@ export const ApplicationStudio: React.FC = () => {
         <div className="space-y-4 pt-6 border-t border-slate-800">
           {results.map(doc => (
             <div key={doc.output_id} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-black text-aura uppercase tracking-widest">{doc.title}</p>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-xs font-black text-aura uppercase tracking-widest flex items-center gap-2">{doc.title}
+                  {/* W454 — every generated document says who served it (it rendered with no provenance) */}
+                  {doc.ai_provenance && (() => { const b = provenanceBadge(doc.ai_provenance?.served_by, doc.ai_provenance?.is_external); return <span className={`text-[8px] font-black normal-case tracking-normal px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
+                </p>
                 <button
                   type="button"
                   onClick={() => handleDownload(doc)}

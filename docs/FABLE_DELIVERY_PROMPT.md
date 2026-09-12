@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W453) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W454) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W453 (453 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W454 (454 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,13 +192,13 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W453: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W454: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
 (W452); P1.5 — every provenance badge routes through the helper, the floor never wears green
-(W453). The first five Tier-1 items of the whole-vision plan are closed by execution, not by
-declaration.
+(W453); P1.6 — the Employment hub's default tab tells the truth about its job search (W454). The
+first six Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -311,7 +311,14 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      floor label, Generator and OrganismAnatomy chip it green; BoardOfDirectors and
      SwarmIntelligence inline their own green chips. [R5.1, R3.4, R3.7]  DONE WHEN every site uses
      the helper's .cls/.title and a guard fails on `.label` used without `.cls`.
- 1.6 THE EMPLOYMENT HUB'S DEFAULT TAB PROMISES "LIVE, REAL-TIME SEARCH ACROSS PUBLIC JOB BOARDS"
+ 1.6 [CLOSED W454 — the hub opens on the CV tools; the job-search route synthesises ILLUSTRATIVE
+     example listings (no url, no posting date, salary labelled an estimate, illustrative=True and a
+     basis sentence on every row, sources_used EMPTY — synthesis is not a source, provenance on the
+     response); the Application Studio says 'AI-synthesised example listings — not a live job board',
+     keys listings by id, links nothing, badges the search and every generated document. Guard:
+     test_w454_employment_default_tab_is_honest; probe scripts/_w454_probe.mjs. The text below is the
+     record of what was wrong.]
+     THE EMPLOYMENT HUB'S DEFAULT TAB PROMISED "LIVE, REAL-TIME SEARCH ACROSS PUBLIC JOB BOARDS"
      over a route whose docstring says "not a live job board" and whose prompt fabricates
      url/salary/published; generated documents render with no provenance. [R5.0]
  1.7 THE CONSTITUTIONAL COMPLIANCE ROW CANNOT READ CONTENT — validate(kind, …) never consults the
@@ -564,10 +571,15 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       migrated with the rest. What P1.5 does NOT close: text-only labels that mention external
       use without colouring (a title string, a ' · external used' suffix) are outside the class;
       the class is COLOUR that contradicts the helper.
- P1.6 [1.6 · R5.0] Employment default tab honesty. Copy → "AI-synthesised example listings — not a live
+ P1.6 ✅ DONE W454 [1.6 · R5.0] Employment default tab honesty. Copy → "AI-synthesised example listings — not a live
       job board; verify every URL"; synthesis is not a "source"; fabricated url/salary/published
       dropped or labelled illustrative; ApplicationStudio renders provenance; default tab → the
       CV tools. ACCEPT: probe reads the honest copy on the default tab; badge present.
+      DELIVERED W454: url and published DROPPED from the prompt and the rows (the model is told
+      not to invent employers' addresses or dates), salary carried as salary_estimate and shown
+      as 'est.'; every row wears 'illustrative · no live URL'; the search line says how many
+      illustrative listings were synthesised and that no sources were searched, with the badge;
+      broken by putting a url back on each row → the guard fails; restored.
  P1.7 [1.7 · R1.1 R1.3 R1.6] Compliance that reads. Constitutional row → 'not applicable to content — gaas.v5
       gates agent actions' (amber, not_checked) unless kind is an action, or validate_output on
       the subject with a label saying what it checks; router except → recorded error, never a
@@ -839,7 +851,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 334 tests; 47 session guards W419–W453, each broken and
+- integration_tests/test_mvp_spine.py — 335 tests; 48 session guards W419–W454, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -860,7 +872,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w453_probe.mjs (thirteen — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w454_probe.mjs (fourteen — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).

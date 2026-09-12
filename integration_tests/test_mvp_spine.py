@@ -9069,3 +9069,61 @@ def test_w453_every_provenance_badge_routes_through_the_helper():
     assert len(users) >= 18, f"expected the helpers on every badge surface, found {sorted(users)}"
     api = (src / "lib" / "api.ts").read_text(encoding="utf-8")
     assert api.count("export const provenanceMapBadge") == 1 and "return provenanceBadge('native')" in api
+
+
+def test_w454_employment_default_tab_is_honest(client, monkeypatch):
+    """Ledger 1.6 (R5.0) — the Employment hub opened on the Application Studio, whose Job Search Engine
+    said "Live, real-time search across public job boards" over a route whose own docstring said "not a
+    live job board" and whose prompt asked the model to invent a URL and a posting date per listing —
+    rendered as links; "sources_used" named the synthesis as a source; generated documents rendered
+    with no provenance.
+
+    Both ways: the route returns ILLUSTRATIVE listings (no url, no published, salary labelled an
+    estimate, illustrative=True, sources_used empty, a basis sentence, provenance); the hub opens on
+    the CV tools; the page's copy and rendering carry none of the old claims (source grep) and render
+    provenance on the search and on every generated document; a legacy 'use' call still works.
+    """
+    from pathlib import Path
+    r = client.post("/api/v1/career/job-search", json={"query": "halal bakery operations manager Leeds", "limit": 3}).json()
+    assert r["illustrative"] is True and r["sources_used"] == [] and "not a live job board" in r["basis"]
+    assert r["ai_provenance"]["served_by"] in ("native", "ollama") or str(r["ai_provenance"]["served_by"]).startswith("ollama:")
+    for row in r["results"]:
+        assert "url" not in row and "published" not in row and "source" not in row, row
+        assert row["illustrative"] is True and row["listing_id"] and "not a live advert" in row["basis"]
+    # the floor emits no JSON rows, so the loop above is empty on the floor (the first break-test of this
+    # guard PASSED with a fabricated url put back — vacuous). Substitute a model that IGNORES the prompt
+    # and invents a url, a date and a source: the route must still ship none of them.
+    from agentic_core.api import career as _career
+    async def _model_that_invents(prompt, agent, **kw):
+        return ('{"title": "Ops Manager", "company": "Bakehouse", "location": "Leeds", "url": "https://invented.example/job", '
+                '"published": "2026-01-01", "salary": "£32k", "source": "Indeed", "tags": ["ops"], "description": "d"}',
+                {"posture": "in-house-first", "served_by": "ollama:test", "is_external": False})
+    monkeypatch.setattr(_career, "ai_text", _model_that_invents)
+    r2 = client.post("/api/v1/career/job-search", json={"query": "ops", "limit": 3}).json()
+    assert len(r2["results"]) == 1, r2
+    row = r2["results"][0]
+    assert "url" not in row and "published" not in row and "source" not in row, row
+    assert row["salary_estimate"] == "£32k" and row["illustrative"] is True and row["listing_id"]
+    assert r2["ai_provenance"]["served_by"] == "ollama:test" and r2["sources_used"] == []
+    # refuter F1 — 'use' had persisted NOTHING behind a green "Set as Target Job Ad": it attaches now
+    before = len(client.get("/api/v1/ingest/list", params={"category": "job_ad"}).json())
+    used = client.post("/api/v1/career/job-search/use", json={"listing_id": "abc123", "title": "Ops Manager",
+                                                               "company": "Bakehouse", "location": "Leeds",
+                                                               "description": "Run the bakery.", "salary_estimate": "£32k"}).json()
+    assert used["status"] == "attached" and used["illustrative"] is True and used["file_id"]
+    ads = client.get("/api/v1/ingest/list", params={"category": "job_ad"}).json()
+    assert len(ads) == before + 1 and "ILLUSTRATIVE" in ads[-1]["extracted_text"] and "Ops Manager" in ads[-1]["extracted_text"]
+    assert client.post("/api/v1/career/job-search/use", json={"listing_id": "x"}).status_code == 422   # nothing to attach
+    # the prompt no longer asks for a url or a date
+    src = Path("agentic_core/api/career.py").read_text(encoding="utf-8")
+    assert '"url": "https://...' not in src and '"published": "2026' not in src and "do not invent employers' web addresses" in src
+    # the page: no live-board claim, no fabricated link, ids not urls, provenance rendered; the hub opens on the CV tools
+    tsx = Path("apps/workstation-superapp/src/components/employment/ApplicationStudio.tsx").read_text(encoding="utf-8")
+    for needle in ("Live, real-time search", "No live listings", "sources_used", "listing.url", "href={listing.url}", "listing.published"):
+        assert needle not in tsx, needle
+    assert "not a live job board" in tsx and "illustrative · no live URL" in tsx and tsx.count("provenanceBadge(") >= 2
+    hub = Path("apps/workstation-superapp/src/pages/domains/EmploymentHub.tsx").read_text(encoding="utf-8")
+    assert "get('tab') || 'cv'" in hub and "get('tab') || 'studio'" not in hub
+    # the other way: the CV tool on the new default tab still generates with provenance
+    cv = client.post("/api/v1/employment/cv", json={"target_role": "Bakery operations manager", "experience": "five years running a halal bakery in Leeds", "skills": ["operations", "food safety"], "seniority": "mid"}).json()
+    assert (cv.get("ai_provenance") or {}).get("served_by"), cv

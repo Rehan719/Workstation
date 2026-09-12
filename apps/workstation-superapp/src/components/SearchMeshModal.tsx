@@ -34,7 +34,7 @@ const SEARCH_INDEX: SearchEntry[] = [
   { id: 'education',       label: 'Education',          description: 'Learning & teaching platform',        category: 'Domains',     icon: GraduationCap,   route: '/education' },
   { id: 'law',             label: 'Law',                description: 'Legal research & governance',         category: 'Domains',     icon: Gavel,           route: '/law' },
   { id: 'care',            label: 'Care',               description: 'Health & wellbeing services',         category: 'Domains',     icon: HeartPulse,      route: '/care' },
-  { id: 'employment',      label: 'Employment',         description: 'Career, CVs & job marketplace',       category: 'Domains',     icon: Briefcase,       route: '/employment' },
+  { id: 'employment',      label: 'Employment',         description: 'Career, CVs & application tools',       category: 'Domains',     icon: Briefcase,       route: '/employment' },
   { id: 'genome-explorer', label: 'Genome',             description: 'System evolution & GRN mesh',         category: 'Evolution',   icon: Fingerprint,     route: '/genome-explorer' },
   { id: 'grn-dashboard',   label: 'GRN Mesh',           description: 'Gene regulatory network dashboard',   category: 'Evolution',   icon: Network,         route: '/grn-dashboard' },
   { id: 'introspection',   label: 'Introspection',      description: 'Cognitive self-analysis & memory',    category: 'Evolution',   icon: Brain,           route: '/introspection' },

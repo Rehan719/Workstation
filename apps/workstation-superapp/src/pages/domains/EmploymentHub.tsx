@@ -10,7 +10,9 @@ import { DomainTool } from '../../components/DomainTool';
 
 export const EmploymentHub: React.FC = () => {
   const { layout, emotionalAdjustment } = useAdaptiveUI();
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'studio');
+  // W454 (P1.6, ledger 1.6) — the hub opens on the CV tools; the Application Studio (whose job search is
+  // AI-synthesised examples, not a live board) is one click away and says what it is.
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'cv');
 
   const scrollToSection = (id: string) => {
     // Defer until the tab's content has mounted.

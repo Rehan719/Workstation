@@ -86,6 +86,9 @@ STATUS = {
             "amber floor label on the floor, the models named otherwise.",
     "R3.7": "chip half FIXED W453 (P1.5) — SwarmIntelligence's cascade 'in-house' chip and the run rows route "
             "through the helpers (the gate half closed W449).",
+    "R5.0": "FIXED W454 (P1.6) — the hub opens on the CV tools; the job search synthesises ILLUSTRATIVE listings "
+            "(no url / posting date, salary an estimate, sources_used empty, provenance on the response) and the page "
+            "says 'not a live job board', links nothing and badges the search and every generated document.",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "
