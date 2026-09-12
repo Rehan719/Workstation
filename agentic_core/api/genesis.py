@@ -72,13 +72,21 @@ def _screen_candidate(text: str) -> Dict[str, Any]:
         return {"screen_error": str(exc), "compliance": None, "safety": None, "disqualified": False,
                 "verdicts": {}}
     verdicts = {v.get("framework"): v.get("status") for v in (s.get("verdicts") or [])}
-    comp = [_VERDICT_SCORE.get(v, 0.5) for f, v in verdicts.items() if f not in _SAFETY_FRAMEWORKS]
-    safe = [_VERDICT_SCORE.get(verdicts[f], 0.5) for f in _SAFETY_FRAMEWORKS if f in verdicts]
+    # W455 — a row that says 'review — no engine covers this area' (coverage 'none') is not a finding
+    # against the candidate; it is the screen saying it could not read this subject. It neither
+    # scores nor penalises. A review WITH coverage (a matched trigger) still counts.
+    _covered = {v.get("framework") for v in (s.get("verdicts") or []) if v.get("coverage", "vocabulary") != "none"}
+    comp = [_VERDICT_SCORE.get(v, 0.5) for f, v in verdicts.items() if f not in _SAFETY_FRAMEWORKS and f in _covered]
+    safe = [_VERDICT_SCORE.get(verdicts[f], 0.5) for f in _SAFETY_FRAMEWORKS if f in verdicts and f in _covered]
     return {
         "verdicts": verdicts,
         "overall": s.get("overall"),
+        # W455 (refuter F5) — the score names WHICH frameworks read the subject; a 1.0 built on one
+        # keyword screen is not the same claim as a 1.0 across three, and the reader can see that
         "compliance": round(sum(comp) / len(comp), 3) if comp else None,
+        "compliance_covered": sorted(f for f in verdicts if f not in _SAFETY_FRAMEWORKS and f in _covered),
         "safety": round(sum(safe) / len(safe), 3) if safe else None,
+        "safety_covered": sorted(f for f in _SAFETY_FRAMEWORKS if f in verdicts and f in _covered),
         # VETO: a candidate the §11 screen fails cannot be selected, whatever its prose scores.
         "disqualified": s.get("overall") == "fail",
     }

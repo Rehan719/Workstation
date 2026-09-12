@@ -310,13 +310,16 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
                 from agentic_core.api.change_control import SubmitChangeRequest, submit_change
                 _fails = "; ".join(f"{v['framework']}: {v['reason'][:120]}"
                                    for v in (_comp.get("verdicts") or []) if v["status"] == "fail")
-                await submit_change(SubmitChangeRequest(
+                _cca = await submit_change(SubmitChangeRequest(
                     title=f"Compliance FAIL on {label} delivery",
                     change_type="config_major",   # MEDIUM tier — never auto-approved
-                    description=f"§11 screen failed on a material '{label}' delivery. {_fails}",
+                    description=(f"§11 screen failed on a material '{label}' delivery "
+                                 f"(content sha3 {_ref['content_sha3']}). {_fails}"),
                     rationale="Automatic routing of a compliance violation to arms-length review (W287).",
                     affected_systems=["compliance", label], submitted_by="compliance_screen"))
                 quality["compliance_routed_to_cca"] = True
+                # W455 (R1.3) — the review's id travels with the artifact (it was discarded here)
+                quality["compliance_cca_id"] = (_cca or {}).get("cca_id") if isinstance(_cca, dict) else None
             except Exception:
                 pass
 

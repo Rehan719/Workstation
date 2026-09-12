@@ -319,6 +319,8 @@ async def list_deliverables(vsb_id: Optional[str] = None,
     summaries = [{"id": d["id"], "type": d["type"], "title": d["title"], "vsb_id": d.get("vsb_id"),
                   "versions": len(d.get("versions", [])), "served_by": d.get("ai_provenance", {}).get("served_by"),
                   "qms_gate_passed": d.get("quality_assurance", {}).get("quality", {}).get("qms_gate_passed"),
+                  # W455 — a FAIL is visible on the list row, not only in the detail pane
+                  "compliance_overall": ((d.get("quality_assurance") or {}).get("quality") or {}).get("compliance", {}).get("overall"),
                   "updated_at": d.get("updated_at")} for d in rows]
     return {"deliverables": summaries[::-1], "total": len(summaries)}
 
@@ -336,9 +338,11 @@ def _to_markdown(d: Dict[str, Any]) -> str:
     prov = d.get("ai_provenance", {})
     served = prov.get("served_by", "native")
     in_house = "in-house" if not prov.get("is_external") else f"via {served}"
+    stamp = _compliance_stamp(d)
     return (
         f"# {d.get('title', 'Deliverable')}\n\n"
-        f"_{d.get('type', 'deliverable')} · produced on Workstation's own AI fabric ({in_house} · {served})_\n\n"
+        + (f"> **{stamp}**\n\n" if stamp else "")
+        + f"_{d.get('type', 'deliverable')} · produced on Workstation's own AI fabric ({in_house} · {served})_\n\n"
         f"> **Brief:** {d.get('brief', '')}\n\n"
         f"{d.get('content', '')}\n\n"
         "---\n"
@@ -410,11 +414,29 @@ _DOC_CSS = (
 )
 
 
+def _compliance_stamp(d: Dict[str, Any]) -> Optional[str]:
+    """W455 (P1.7, ledger 1.7 / R1.3) — a §11 FAIL used to route to Change Control and the artifact
+    still exported clean in every format. The verdict now rides on page one of every export."""
+    q = ((d.get("quality_assurance") or {}).get("quality") or {})
+    comp = q.get("compliance") or {}
+    if comp.get("overall") != "fail":
+        return None
+    fails = ", ".join(f"{v.get('framework')}: {str(v.get('reason') or '')[:90]}"
+                      for v in (comp.get("verdicts") or []) if v.get("status") == "fail") or "see the record"
+    cca = q.get("compliance_cca_id")
+    # the verdict, the clearance and the review id come FIRST: a truncating renderer (svg/png sub
+    # line) must drop reasons, never the verdict (refuter F6)
+    return (f"COMPLIANCE VERDICT: FAIL — NOT cleared for use — routed to Change Control"
+            f"{f' ({cca})' if cca else ''} — {fails}")
+
+
 def _doc_subtitle(d: Dict[str, Any]) -> str:
     prov = d.get("ai_provenance", {})
     served = prov.get("served_by", "native")
     mode = "in-house" if not prov.get("is_external") else f"via {served}"
-    return f"{d.get('type', 'deliverable')} · produced on Workstation IDBO's own AI fabric ({mode} · {served})"
+    base = f"{d.get('type', 'deliverable')} · produced on Workstation IDBO's own AI fabric ({mode} · {served})"
+    stamp = _compliance_stamp(d)
+    return f"{stamp} · {base}" if stamp else base
 
 
 def _html_doc(d: Dict[str, Any]) -> str:
@@ -516,7 +538,7 @@ def _strip_md(md: str) -> str:
     t = re.sub(r"^#{1,6}\s*", "", md, flags=re.M)
     t = re.sub(r"\*\*(.+?)\*\*", r"\1", t)
     t = re.sub(r"(?<!\*)\*(?!\s)([^*]+?)\*", r"\1", t)
-    t = re.sub(r"(?<!_)_(?!\s)([^_]+?)_", r"\1", t)
+    t = re.sub(r"(?<![_\w])_(?!\s)([^_]+?)_(?!\w)", r"\1", t)   # W455 — `uk_legal` is an id, not italics
     t = re.sub(r"`([^`]+)`", r"\1", t)
     t = re.sub(r"^>\s?", "", t, flags=re.M)
     t = re.sub(r"^[-*]\s+", "• ", t, flags=re.M)
@@ -865,7 +887,12 @@ def _render_deliverable(d: Dict[str, Any], fmt: str) -> str:
     if fmt == "json":
         keep = ("id", "type", "title", "brief", "domain", "realm", "vsb_id", "sections", "content",
                 "ai_provenance", "created_at", "updated_at")
-        return json.dumps({k: d.get(k) for k in keep}, indent=2, ensure_ascii=False)
+        _out = {k: d.get(k) for k in keep}
+        _q = ((d.get("quality_assurance") or {}).get("quality") or {})
+        _out["compliance"] = _q.get("compliance")                 # W455 — the verdict is part of the artifact
+        _out["compliance_cca_id"] = _q.get("compliance_cca_id")
+        _out["compliance_stamp"] = _compliance_stamp(d)
+        return json.dumps(_out, indent=2, ensure_ascii=False)
     if fmt == "html":
         return _html_doc(d)
     if fmt == "slides":

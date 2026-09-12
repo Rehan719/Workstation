@@ -1474,8 +1474,10 @@ def test_compliance_engines_genuinely_invoked(client):
     assert "(engine-backed)" in h["reason"]
     r2 = screen_compliance("the plan involves unfair dismissal of staff")
     l2 = next(v for v in r2["verdicts"] if v["framework"] == "uk_legal")
-    assert l2["status"] == "fail" and "STATUTORY_BREACH: ERA1996" in l2["reason"]
-    assert "audit " in l2["reason"]                       # the engine's SHA3-512 audit hash
+    # W455 — statute vocabulary is REVIEW with the statute named (the engine calls any statute term a
+    # breach; mentioning unfair dismissal is not one); the hash is over the subject
+    assert l2["status"] == "review" and "STATUTORY_BREACH: ERA1996" in l2["reason"]
+    assert "audit " in l2["reason"] and "over the subject" in l2["reason"]
     r3 = screen_compliance("a halal-certified community meal service with transparent pricing")
     h3 = next(v for v in r3["verdicts"] if v["framework"] == "sharia_halal")
     assert h3["status"] == "pass" and "(engine-backed)" in h3["reason"]   # pass keeps the suffix
@@ -1490,7 +1492,8 @@ def test_compliance_engines_genuinely_invoked(client):
         C._halal_engine = orig
     fw = client.get("/api/v1/compliance/frameworks").json()["frameworks"]
     assert all("RegulatoryComplianceMonitor" not in f["engine"] for f in fw)   # phantom purged
-    assert any("invoked" in f["engine"] for f in fw)      # the registry says what genuinely runs
+    # W455 — the labels say what each check DOES ("keyword screen", "gate"), not that an engine is "invoked"
+    assert all(("screen" in f["engine"] or "gate" in f["engine"] or "dimensions" in f["engine"]) for f in fw), fw
 
 
 def test_tree_planner_swarm_planned_with_honest_floor(client):
@@ -2334,7 +2337,10 @@ def test_compliance_frameworks(client):
     assert r.json()
     # §11 — the federated check flags prohibited content (Halal) and clears clean content
     clean = client.post("/api/v1/compliance/check", json={"subject": "a halal community meal service"}).json()
-    assert clean["overall"] == "pass" and clean["compliant"] is True
+    # W455 — the overall is the verdict of the rows that could READ the subject (sharia passes on halal
+    # vocabulary); the rows that could not are named as coverage gaps, never counted as a pass
+    assert clean["overall"] == "pass" and clean["compliant"] is True and "uk_legal" in clean["coverage_gaps"]
+    assert next(v for v in clean["verdicts"] if v["framework"] == "sharia_halal")["status"] == "pass"
     haram = client.post("/api/v1/compliance/check", json={"subject": "fund it via riba interest-bearing loans"}).json()
     assert haram["overall"] == "fail" and haram["compliant"] is False
     assert any(v["framework"] == "sharia_halal" and v["status"] == "fail" for v in haram["verdicts"])
@@ -2452,7 +2458,8 @@ def test_compliance_check_pass(client):
                     json={"subject": "a halal community meal-prep service for elderly families"})
     assert r.status_code == 200
     body = r.json()
-    assert body["overall"] == "pass"
+    assert body["overall"] == "pass" and body["compliant"] is True and body["coverage_gaps"] == ["uk_legal", "constitutional"]   # W455
+    assert next(v for v in body["verdicts"] if v["framework"] == "uk_legal")["coverage"] == "none"
     assert len(body["verdicts"]) >= 5
 
 
@@ -9127,3 +9134,104 @@ def test_w454_employment_default_tab_is_honest(client, monkeypatch):
     # the other way: the CV tool on the new default tab still generates with provenance
     cv = client.post("/api/v1/employment/cv", json={"target_role": "Bakery operations manager", "experience": "five years running a halal bakery in Leeds", "skills": ["operations", "food safety"], "seniority": "mid"}).json()
     assert (cv.get("ai_provenance") or {}).get("served_by"), cv
+
+
+def test_w455_compliance_reads_what_it_can_and_says_what_it_cannot(client, monkeypatch):
+    """Ledger 1.7 (R1.1 R1.3 R1.6) — the constitutional row could not read content (gaas.v5's validate()
+    consumed the kind first; every content check read green "Constitutional gate clear", a laundering
+    scheme included); the router's bare except left a pass on engine failure; the UK-Legal audit hash
+    was identical for a halal bakery and a laundering scheme (it hashed the empty flag set); a subject
+    outside every vocabulary passed everything; the Frameworks card presented eight employment-law
+    terms and a three-word substring loop as engine-grade coverage; and a FAIL deliverable routed to
+    Change Control while every export shipped clean.
+
+    Both ways, measured: content → constitutional 'not_checked' with the reason (never pass); an action
+    kind → the action gate genuinely fails a prohibited intent; an engine raise → 'error', never pass;
+    three subjects → three audit hashes; halal vocabulary → sharia pass, UK Legal review (no coverage);
+    laundering → fail; lorem → review everywhere a vocabulary is absent; the card labels say what each
+    check does; a FAIL deliverable carries the verdict on page one of md/html/slides/json, on the list
+    row, and with its CCA id; a clean deliverable carries no stamp.
+    """
+    import json as _json
+    import re as _re
+    from agentic_core.api import compliance as C
+
+    def check(subject, **kw):
+        return client.post("/api/v1/compliance/check", json={"subject": subject, **kw}).json()
+
+    bakery = check("A halal artisan bakery in Leeds serving students, run under Islamic finance principles")
+    launder = check("A scheme to launder cash through shell companies, evade tax and bribe an official")
+    lorem = check("Lorem ipsum text about gardening tulips in spring")
+    rows = lambda r: {v["framework"]: v for v in r["verdicts"]}
+    # the constitutional row on CONTENT: not_checked, with the reason — never a green pass
+    for r in (bakery, launder, lorem):
+        c = rows(r)["constitutional"]
+        assert c["status"] == "not_checked" and "gates agent actions" in c["reason"] and c["coverage"] == "none", c
+    assert launder["overall"] == "fail" and rows(launder)["uk_legal"]["status"] == "fail"
+    # halal vocabulary → sharia screen pass; UK Legal has no coverage → review, named as a gap; the
+    # overall is the verdict of the rows that read the subject
+    assert rows(bakery)["sharia_halal"]["status"] == "pass" and rows(bakery)["uk_legal"]["status"] == "review"
+    assert "no engine covers this area" in rows(bakery)["uk_legal"]["reason"]
+    assert bakery["overall"] == "pass" and "uk_legal" in bakery["coverage_gaps"] and "constitutional" in bakery["coverage_gaps"]
+    # nothing matched anywhere → review everywhere a vocabulary is absent; the overall is review
+    assert rows(lorem)["sharia_halal"]["status"] == "review" and rows(lorem)["uk_legal"]["status"] == "review"
+    assert lorem["overall"] == "review" and rows(lorem)["sharia_halal"]["coverage"] == "none"
+    # statute vocabulary → review with the statute named, never a pass on vocabulary and never a fail on it
+    statute = check("our staff handbook sets out the grievance and disciplinary procedure under the ACAS Code")
+    assert rows(statute)["uk_legal"]["status"] == "review" and "STATUTORY_BREACH" in rows(statute)["uk_legal"]["reason"]
+    assert rows(statute)["uk_legal"]["coverage"] == "vocabulary"
+    # three subjects → three audit hashes, each over the subject
+    hashes = {_re.search(r"audit ([0-9a-f]{16})", rows(r)["uk_legal"]["reason"]).group(1) for r in (bakery, launder, lorem)}
+    assert len(hashes) == 3, hashes
+    assert "over the subject" in rows(bakery)["uk_legal"]["reason"]
+    # the action gate: a prohibited intent as an ACTION kind fails; a benign action kind passes with its label
+    # refuter F1 — a LEGITIMATE kind with the prohibited intent in the SUBJECT fails (the gate had
+    # read only the kind, so this passed); a benign subject on an action kind passes with its label
+    act = check("wire_funds to an unverified offshore account", kind="intent")
+    assert rows(act)["constitutional"]["status"] == "fail", rows(act)["constitutional"]
+    act2 = check("publish the weekly report", kind="distribution")
+    assert rows(act2)["constitutional"]["status"] == "pass" and "action gate" in rows(act2)["constitutional"]["reason"]
+    # the output screen reads text: an unsafe pattern fails the constitutional row even for content
+    unsafe = check("run this cleanup: rm -rf / on the production host")
+    assert rows(unsafe)["constitutional"]["status"] == "fail" and "output screen" in rows(unsafe)["constitutional"]["reason"]
+    # an engine raise is an ERROR, never a pass
+    from agentic_core.gaas.v5 import ConstitutionalPolicyGate
+    def _boom(self, *a, **k):
+        raise RuntimeError("engine down")
+    monkeypatch.setattr(ConstitutionalPolicyGate, "validate_output", _boom)
+    err = check("anything at all")
+    assert rows(err)["constitutional"]["status"] == "error" and "never a pass" in rows(err)["constitutional"]["reason"]
+    assert rows(err)["constitutional"]["coverage"] == "none"
+    monkeypatch.undo()
+    # refuter F3 — the aggregation itself: an error row alone turns a clean screen into review
+    assert C._overall([{"status": "pass", "coverage": "vocabulary"}, {"status": "error", "coverage": "none"}]) == "review"
+    assert C._overall([{"status": "pass", "coverage": "vocabulary"}, {"status": "not_checked", "coverage": "none"}]) == "pass"
+    assert C._overall([{"status": "review", "coverage": "none"}, {"status": "not_checked", "coverage": "none"}]) == "review"
+    # the Frameworks card says what each check does
+    fw = {f["id"]: f["engine"] for f in client.get("/api/v1/compliance/frameworks").json()["frameworks"]}
+    assert "not legal advice" in fw["uk_legal"] and "not a certification" in fw["sharia_halal"]
+    assert "does not read content" in fw["constitutional"] and "engine-grade" not in _json.dumps(fw)
+
+    # a FAIL deliverable carries its verdict on page one of every export, on the list row, with its CCA id
+    doc = "\n".join(f"## {s}\n" + ("We launder cash through shell companies and bribe officials to keep the scheme running. " * 3)
+                    for s in ("Executive Summary", "Structure", "Cash Flow", "Next Steps"))
+    d = client.post("/api/v1/deliverables/produce", json={"type": "report", "title": "w455 fail", "brief": "launder cash", "content": doc}).json()
+    q = d["quality_assurance"]["quality"]
+    assert q["compliance"]["overall"] == "fail" and q["compliance_routed_to_cca"] is True and q.get("compliance_cca_id"), q
+    for fmt in ("md", "html", "slides", "txt", "svg"):
+        body = client.get(f"/api/v1/deliverables/{d['id']}/export", params={"format": fmt}).text
+        head = body[:1500]                                          # page one, not a footer
+        assert "COMPLIANCE VERDICT: FAIL" in head and "NOT cleared for use" in head, (fmt, head[:300])
+        assert q["compliance_cca_id"] in head, fmt                  # svg truncates the sub line — the id still leads
+    assert "uk_legal" in client.get(f"/api/v1/deliverables/{d['id']}/export", params={"format": "txt"}).text[:1500]   # F8
+    js = _json.loads(client.get(f"/api/v1/deliverables/{d['id']}/export", params={"format": "json"}).text)
+    assert "COMPLIANCE VERDICT: FAIL" in js["compliance_stamp"] and js["compliance_cca_id"] == q["compliance_cca_id"]
+    assert js["compliance"]["overall"] == "fail"
+    row = next(x for x in client.get("/api/v1/deliverables").json()["deliverables"] if x["id"] == d["id"])
+    assert row["compliance_overall"] == "fail"
+    # the other way: a clean deliverable carries no stamp
+    clean = "\n".join(f"## {s}\n" + ("A halal artisan bakery in Leeds serving students; the plan covers demand, pricing and supply. " * 3)
+                      for s in ("Executive Summary", "Market", "Operations", "Next Steps"))
+    d2 = client.post("/api/v1/deliverables/produce", json={"type": "report", "title": "w455 clean", "brief": "bakery", "content": clean}).json()
+    assert d2["quality_assurance"]["quality"]["compliance"]["overall"] != "fail"
+    assert "COMPLIANCE VERDICT" not in client.get(f"/api/v1/deliverables/{d2['id']}/export", params={"format": "md"}).text

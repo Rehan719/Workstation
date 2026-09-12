@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
+import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceCls } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -485,7 +485,7 @@ export const ResourceFabric: React.FC = () => {
                 </span>
               )}
               {sim.simulation?.quality?.compliance && (
-                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.simulation.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(sim.simulation.quality.compliance.overall)}`}
                   title={`§11 live compliance — ${(sim.simulation.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
                   compliance: {sim.simulation.quality.compliance.overall}
                 </span>
@@ -623,7 +623,7 @@ export const ResourceFabric: React.FC = () => {
                           <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                         ); })()}
                         {runResult.quality_assurance?.quality?.compliance && (
-                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${runResult.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(runResult.quality_assurance.quality.compliance.overall)}`}
                             title={`§11 live compliance — ${(runResult.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
                             compliance: {runResult.quality_assurance.quality.compliance.overall}
                           </span>

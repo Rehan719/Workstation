@@ -78,6 +78,10 @@ export const provenanceBadge = (servedBy: string | null | undefined, isExternal?
 // refuter F1 — the swarm / tree / composition responses carry a per-step TRACE, not a count map: derive
 // the map from what was actually served (an undefined map would have read as 'floor' even when the
 // owned model served every step)
+// W455 (P1.7) — a §11 verdict has THREE colours: fail (red) · review (amber) · pass (emerald). Ten
+// chips coloured by `compliant` (= not fail) painted every 'review' green.
+export const complianceCls = (overall: string | null | undefined) =>
+  overall === 'fail' ? 'bg-vital/15 text-vital' : overall === 'review' ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400';
 export const provenanceMapFromTrace = (steps: Array<{ served_by?: string | null }> | null | undefined): Record<string, number> => {
   const m: Record<string, number> = {};
   for (const s of steps ?? []) { const k = s?.served_by || 'native'; m[k] = (m[k] || 0) + 1; }

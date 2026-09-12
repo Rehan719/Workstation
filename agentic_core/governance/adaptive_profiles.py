@@ -77,7 +77,9 @@ class IslamicFinanceAdapter(IndustryAdapter):
             logger.info(f"IAGF: Sharia screen → {verdict['status']}: {verdict['reason']}")
             return {
                 "type": "Shariah",
-                "halal": verdict["status"] == "pass",
+                # W455 — three honest states: True (screen passed), False (a haram term), None (the
+                # screen could not read this subject — 'review, no engine covers this area')
+                "halal": True if verdict["status"] == "pass" else False if verdict["status"] == "fail" else None,
                 "status": verdict["status"],
                 "reason": verdict["reason"],
                 "zakat": "NOT_CHECKED",

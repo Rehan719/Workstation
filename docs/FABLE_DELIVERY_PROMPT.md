@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W454) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W455) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W454 (454 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W455 (455 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,13 +192,15 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W454: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W455: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
 (W452); P1.5 — every provenance badge routes through the helper, the floor never wears green
-(W453); P1.6 — the Employment hub's default tab tells the truth about its job search (W454). The
-first six Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
+(W453); P1.6 — the Employment hub's default tab tells the truth about its job search (W454); P1.7 —
+compliance that reads: the constitutional row says what it can check, the audit hash covers the
+subject, nothing matched is review not pass, a FAIL rides on page one of every export (W455). The
+first seven Tier-1 items of the whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -321,7 +323,19 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      THE EMPLOYMENT HUB'S DEFAULT TAB PROMISED "LIVE, REAL-TIME SEARCH ACROSS PUBLIC JOB BOARDS"
      over a route whose docstring says "not a live job board" and whose prompt fabricates
      url/salary/published; generated documents render with no provenance. [R5.0]
- 1.7 THE CONSTITUTIONAL COMPLIANCE ROW CANNOT READ CONTENT — validate(kind, …) never consults the
+ 1.7 [CLOSED W455 — the constitutional row says what it can check: content → gaas.v5's output
+     screen runs (fail on an unsafe pattern) and the row is 'not_checked — not applicable to content;
+     gaas.v5 gates agent actions'; an action kind → the action gate; an engine raise → 'error', never
+     a pass. The UK-Legal audit hash is SHA3-512 over the subject (three subjects, three hashes). A
+     subject outside every vocabulary is 'review — no engine covers this area' (coverage recorded per
+     row), never a pass; halal vocabulary passes the screen, labelled 'not a certification'. The
+     Frameworks card labels each check by what it does. A FAIL deliverable carries 'COMPLIANCE
+     VERDICT: FAIL … NOT cleared for use' with its Change-Control id on page one of every export
+     (md/txt/html/slides/pdf/docx/pptx/svg/png via the shared subtitle; a compliance_stamp key in
+     json), on the list row, and on the download button. Candidate scoring treats a no-coverage
+     review as neutral. Guard: test_w455_compliance_reads_what_it_can_and_says_what_it_cannot; probe
+     scripts/_w455_probe.mjs. The text below is the record of what was wrong.]
+     THE CONSTITUTIONAL COMPLIANCE ROW COULD NOT READ CONTENT — validate(kind, …) never consulted the
      subject; every content check is green "Constitutional gate clear"; the router's bare except
      leaves a pass on engine failure; a compliance FAIL on a deliverable routes to the CCA and the
      artifact still exports clean. And the "UK Legal (London)" engine is eight employment-law terms
@@ -580,7 +594,7 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       as 'est.'; every row wears 'illustrative · no live URL'; the search line says how many
       illustrative listings were synthesised and that no sources were searched, with the badge;
       broken by putting a url back on each row → the guard fails; restored.
- P1.7 [1.7 · R1.1 R1.3 R1.6] Compliance that reads. Constitutional row → 'not applicable to content — gaas.v5
+ P1.7 ✅ DONE W455 [1.7 · R1.1 R1.3 R1.6] Compliance that reads. Constitutional row → 'not applicable to content — gaas.v5
       gates agent actions' (amber, not_checked) unless kind is an action, or validate_output on
       the subject with a label saying what it checks; router except → recorded error, never a
       pass; a FAIL verdict on a deliverable → export watermarked with the verdict (or blocked),
@@ -589,6 +603,13 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       subject, and anything outside a vocabulary returns 'review — no engine covers this area', never
       'pass'. ACCEPT: the prohibited-token subject no longer greens; a haram brief exports with its
       verdict on page one; two different subjects never share an audit hash.
+      DELIVERED W455: all three ACCEPT clauses measured in the guard and the probe; two older tests
+      that asserted 'overall pass' on a subject nothing had read now assert 'review' (they had
+      encoded the overclaim); broken by making the export ship clean again → the guard fails;
+      restored. Chosen and stated: a FAIL export is WATERMARKED, not blocked — the verdict and the
+      Change-Control id on page one, the row and the button say so; blocking would hide the
+      record the reviewer needs. What P1.7 does NOT close: the screens are keyword screens — the
+      labels now say so; depth is P2/P3 work.
  P1.8 [1.8 · R1.0] The tafsir surface completes §11. disclaimer key; on the floor refuse the
       Translation/Transliteration sections (503 like /translation) or drop the headings with a
       floor_note; Tafsir tab renders arabic_text + arabic_source + reference + range_note; the
@@ -851,7 +872,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 335 tests; 48 session guards W419–W454, each broken and
+- integration_tests/test_mvp_spine.py — 336 tests; 49 session guards W419–W455, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -872,7 +893,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w454_probe.mjs (fourteen — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w455_probe.mjs (fifteen — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { qmsChip, provenanceMapBadge } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceCls } from '../../lib/api';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
@@ -802,7 +802,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                   </span>
                 )}
                 {result.quality_assurance.quality?.compliance && (
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${result.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${complianceCls(result.quality_assurance.quality.compliance.overall)}`}
                     title={`§11 live compliance — ${(result.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
                     compliance: {result.quality_assurance.quality.compliance.overall}
                   </span>
@@ -922,7 +922,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                           ); })()}
                           {repo.quality_assurance?.quality?.compliance && (
-                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${repo.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(repo.quality_assurance.quality.compliance.overall)}`}>
                               compliance: {repo.quality_assurance.quality.compliance.overall}
                             </span>
                           )}
@@ -947,7 +947,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                               <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                             ); })()}
                             {site.quality_assurance?.quality?.compliance && (
-                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${site.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(site.quality_assurance.quality.compliance.overall)}`}>
                                 compliance: {site.quality_assurance.quality.compliance.overall}
                               </span>
                             )}
@@ -975,7 +975,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                               ); })()}
                               {webapp.quality_assurance?.quality?.compliance && (
-                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${webapp.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(webapp.quality_assurance.quality.compliance.overall)}`}>
                                   compliance: {webapp.quality_assurance.quality.compliance.overall}
                                 </span>
                               )}
@@ -1005,7 +1005,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                               ); })()}
                               {pwa.quality_assurance?.quality?.compliance && (
-                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${pwa.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(pwa.quality_assurance.quality.compliance.overall)}`}>
                                   compliance: {pwa.quality_assurance.quality.compliance.overall}
                                 </span>
                               )}
@@ -1035,7 +1035,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                               ); })()}
                               {pack.quality_assurance?.quality?.compliance && (
-                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${pack.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}>
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(pack.quality_assurance.quality.compliance.overall)}`}>
                                   compliance: {pack.quality_assurance.quality.compliance.overall}
                                 </span>
                               )}

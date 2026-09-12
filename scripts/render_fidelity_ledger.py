@@ -89,6 +89,16 @@ STATUS = {
     "R5.0": "FIXED W454 (P1.6) — the hub opens on the CV tools; the job search synthesises ILLUSTRATIVE listings "
             "(no url / posting date, salary an estimate, sources_used empty, provenance on the response) and the page "
             "says 'not a live job board', links nothing and badges the search and every generated document.",
+    "R1.1": "FIXED W455 (P1.7) — the constitutional row is 'not_checked — not applicable to content; gaas.v5 gates "
+            "agent actions' (the output screen still runs and fails an unsafe pattern); an action kind meets the action "
+            "gate; an engine raise is 'error', never a pass; the overall never counts not_checked as a pass.",
+    "R1.3": "FIXED W455 (P1.7) — a §11 FAIL rides on page one of every export ('COMPLIANCE VERDICT: FAIL … NOT cleared "
+            "for use' with the Change-Control id, whose id the gate now keeps), on the list row and on the download "
+            "button. Watermarked, not blocked — stated as a choice.",
+    "R1.6": "FIXED W455 (P1.7) — the Frameworks card labels each check by what it does (keyword screens, statute "
+            "vocabulary, an action gate; 'not legal advice', 'not a certification'); the audit hash is SHA3-512 over "
+            "the subject; a subject outside every vocabulary is 'review — no engine covers this area', never pass; "
+            "coverage is recorded per row.",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
-import { ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Scale } from 'lucide-react';
+import { ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Scale, MinusCircle } from 'lucide-react';
 
-interface Verdict { framework: string; status: string; reason: string }
+interface Verdict { framework: string; status: string; reason: string; coverage?: string }
 interface Result { subject: string; jurisdiction: string; overall: string; compliant: boolean; verdicts: Verdict[] }
 
-const STATUS_ICON: Record<string, React.ComponentType<any>> = { pass: CheckCircle2, review: AlertTriangle, fail: XCircle };
-const STATUS_TONE: Record<string, string> = { pass: 'text-emerald-400', review: 'text-amber-400', fail: 'text-vital' };
+// W455 — two more honest states: not_checked (this row cannot read this kind of subject) and error
+// (an engine raised — recorded, never a pass)
+const STATUS_ICON: Record<string, React.ComponentType<any>> = { pass: CheckCircle2, review: AlertTriangle, fail: XCircle, not_checked: MinusCircle, error: XCircle };
+const STATUS_TONE: Record<string, string> = { pass: 'text-emerald-400', review: 'text-amber-400', fail: 'text-vital', not_checked: 'text-slate-500', error: 'text-vital' };
 
 export const ComplianceChecker: React.FC = () => {
   const [frameworks, setFrameworks] = useState<any[]>([]);
@@ -34,15 +36,22 @@ export const ComplianceChecker: React.FC = () => {
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Governance</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Compliance</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-          One federated check across <span className="text-highlight">Sharia/Halal · UK Legal (London) · Regulatory · EHS · Ethical · Constitutional</span>.
-          Used by the economy, synthesis, Genesis, and the Forge to keep every output halal, lawful, and ethical.
+          One federated screen across <span className="text-highlight">Sharia/Halal · UK Legal (London) · Regulatory · EHS · Ethical · Constitutional</span> —
+          keyword and vocabulary screens plus engines where one exists. It flags; it does not certify. A pass is a pass of the screen;
+          "review — no engine covers this area" means nothing here read the subject. Used by the economy, synthesis, Genesis and the Forge.
         </p>
       </header>
 
       <Card className="p-6">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2"><Scale size={14} /> Frameworks</h3>
         <div className="flex flex-wrap gap-2">
-          {frameworks.map(f => <span key={f.id} className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-400">{f.name}</span>)}
+          {/* W455 — each framework says what it actually checks (the card had shown only the names) */}
+          {frameworks.map(f => (
+            <div key={f.id} className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 max-w-xs" title={f.engine}>
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{f.name}</p>
+              <p className="text-[9px] text-slate-500 leading-snug mt-0.5">{f.engine}</p>
+            </div>
+          ))}
         </div>
       </Card>
 
@@ -73,7 +82,9 @@ export const ComplianceChecker: React.FC = () => {
                 <div className="flex items-start gap-3">
                   <Icon size={16} className={`${STATUS_TONE[v.status]} mt-0.5 shrink-0`} />
                   <div>
-                    <p className="font-black text-white text-sm uppercase">{v.framework.replace(/_/g, ' ')} <span className={`text-[10px] ${STATUS_TONE[v.status]}`}>· {v.status}</span></p>
+                    <p className="font-black text-white text-sm uppercase">{v.framework.replace(/_/g, ' ')} <span className={`text-[10px] ${STATUS_TONE[v.status] ?? 'text-slate-500'}`}>· {v.status.replace('_', ' ')}</span>
+                      {v.coverage === 'none' && <span className="ml-2 text-[9px] normal-case font-bold text-slate-500">nothing here read this subject</span>}
+                    </p>
                     <p className="text-[11px] text-slate-500 mt-0.5">{v.reason}</p>
                   </div>
                 </div>

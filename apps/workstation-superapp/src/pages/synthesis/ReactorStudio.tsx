@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { qmsChip, provenanceMapBadge } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceCls } from '../../lib/api';
 import { Card, Button } from '@workstation/ui';
 import { BarChart3, LineChart, ScatterChart, Loader2, Sparkles } from 'lucide-react';
 
@@ -179,7 +179,7 @@ export const ReactorStudio: React.FC = () => {
                   );
                 })()}
                 {result.quality_assurance?.quality?.compliance && (
-                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(result.quality_assurance.quality.compliance.overall)}`}
                     title={`§11 live compliance — ${(result.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
                     compliance: {result.quality_assurance.quality.compliance.overall}
                   </span>

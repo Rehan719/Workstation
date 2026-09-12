@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { qmsChip, provenanceMapBadge } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceCls } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -264,7 +264,7 @@ const SwarmIntelligence: React.FC = () => {
                 </span>
               )}
               {cascade.quality?.compliance && (
-                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(cascade.quality.compliance.overall)}`}
                   title={`§11 live compliance — ${(cascade.quality.compliance.verdicts || []).map((v: any) => `${v.framework}:${v.status}`).join(' · ')}`}>
                   compliance: {cascade.quality.compliance.overall}
                 </span>

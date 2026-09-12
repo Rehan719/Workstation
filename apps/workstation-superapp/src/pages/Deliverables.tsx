@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
-import { apiJson, errorMessage, provenanceBadge, qmsChip } from '../lib/api';
+import { apiJson, errorMessage, provenanceBadge, qmsChip, complianceCls } from '../lib/api';
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
   id: string; type: string; title: string; vsb_id?: string;
   versions: number; served_by?: string; updated_at?: string; qms_gate_passed?: boolean | null;
+  compliance_overall?: string | null;   // W455 — a FAIL is visible on the row
 }
 interface QualityAssurance {
   quality?: { qms_gate_passed?: boolean | null; qms_basis?: string; delivery_coverage?: number; bar?: string[];
@@ -187,6 +188,7 @@ export const Deliverables: React.FC = () => {
                   {(() => { const c = qmsChip({ qms_gate_passed: d.qms_gate_passed }); return c && (
                     <span className={c.verdict === 'pass' ? 'text-emerald-400' : c.verdict === 'fail' ? 'text-vital' : 'text-slate-500'} title={`Living-QMS gate: ${c.verdict}`}>● QMS</span>
                   ); })()}
+                  {d.compliance_overall === 'fail' && <span className="px-1.5 py-0.5 rounded bg-vital/15 text-vital" title="§11 compliance FAIL — routed to Change Control; every export carries the verdict on page one">compliance FAIL</span>}
                 </p>
               </button>
             ))}
@@ -249,7 +251,7 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                     </span>
                   )}
                   {selected.quality_assurance.quality?.compliance && (
-                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${selected.quality_assurance.quality.compliance.compliant ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`}
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${complianceCls(selected.quality_assurance.quality.compliance.overall)}`}
                       title={`§11 live compliance — ${(selected.quality_assurance.quality.compliance.verdicts || []).map(v => `${v.framework}:${v.status}`).join(' · ')}`}>
                       compliance: {selected.quality_assurance.quality.compliance.overall}
                     </span>
@@ -300,8 +302,9 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                     try { await downloadExport(`/api/v1/deliverables/${selected.id}/export?format=${dlFormat}`, `${selected.title || 'deliverable'}.${dlFormat}`); }
                     catch (e: any) { alert(e?.message ?? 'Export failed'); }
                   }}
-                  className="flex items-center gap-1.5 bg-aura text-sovereign text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90">
-                  <Download size={12} /> Download
+                  title={selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'This export carries the COMPLIANCE FAIL verdict on page one — the artifact is not cleared for use' : undefined}
+                  className={`flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90 ${selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'bg-vital/20 text-vital border border-vital/40' : 'bg-aura text-sovereign'}`}>
+                  <Download size={12} /> {selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'Download (carries FAIL verdict)' : 'Download'}
                 </button>
               </div>
               {/* §3A (W308) — DEVELOP: the refined result persists as the next version */}

@@ -4866,3 +4866,96 @@ LF intact; tsc clean.
 
 **Docs:** ledger v3 status R5.0 FIXED W454; prompt ledger 1.6 CLOSED and P1.6 ✅ DONE; vision §16;
 living plan §4/§8.
+
+### W455 — delivery-plan P1.7: compliance that reads — the row that could not read says so, and the verdict rides on the artifact
+
+**Measured first (:8039, `AI_DISABLE_LOCAL=1`).** A halal bakery, a laundering-and-bribery scheme and
+"lorem ipsum gardening tulips" produced the SAME UK-Legal audit hash (`ed0614b07becece9…`) — the
+engine hashed `{intent_type, violations, layer}`, never the subject, and its statute flags never
+fired. The constitutional row read green "Constitutional gate clear" for the laundering scheme:
+gaas.v5's `validate()` is an action gate over nine prohibited intents, it consumed the `kind`
+argument first so the subject was dead input, and the router's bare `except: pass` left the
+default pass standing on any engine raise. The "Sharia / Halal" engine was a three-word substring
+loop confirming the regex. A subject that matched nothing passed everything. A deliverable whose
+every paragraph was laundering and bribery was stored with `overall: fail`, routed to Change
+Control (the CCA id discarded), listed with a green `● QMS` and no compliance field, and exported
+clean in md, html and slides. The Frameworks card showed six names over labels that said "engine
+… invoked … statute vocabularies + SHA3-512 audit".
+
+**What changed (`compliance.py`):** every verdict carries `coverage` (vocabulary · engine · screen · none).
+Sharia: haram term → fail; halal vocabulary and no haram term → *pass of the screen*, "not a
+certification"; nothing → `review — no engine covers this area`. UK Legal: unlawful term → fail;
+statute vocabulary → REVIEW with the statute named (the engine calls any statute term a breach;
+mentioning a grievance procedure is not one — never a fail on vocabulary, never a pass on it);
+nothing → review, no coverage, "not legal advice"; the audit hash is SHA3-512 over `{subject, flags, status, engine_audit}` — three subjects,
+three hashes, "over the subject" in the reason. Regulatory and EHS say "keyword screen — not an
+assessment". `_overall`: fail if any row fails; review on an engine error; otherwise the verdict of the rows that
+could READ the subject, with `coverage_gaps` naming the rows that could not (a pass over a gap is
+never a pass of the gap); if no row could read the subject, review. The
+constitutional row: gaas.v5's `validate_output` (the only method that reads text) runs on the
+subject — an unsafe shell / SQL / private-key pattern fails the row; otherwise `kind=content` →
+`not_checked — not applicable to content; gaas.v5 gates agent actions (nine prohibited intents)`;
+an action kind → the nine-intent gate over the kind AND the subject text (labelled as a substring
+gate, not a policy reading); an engine raise → `error … recorded, never a pass`. The Frameworks card labels name what
+each check does. `assure_delivery` keeps the CCA id (`compliance_cca_id`). Candidate scoring in
+Genesis treats a no-coverage review as neutral (it is the screen saying it could not read the
+subject, not a finding). **Deliverables:** `_compliance_stamp()` — "COMPLIANCE VERDICT: FAIL — …
+— routed to Change Control (cca-…); this artifact is NOT cleared for use" — is prefixed to the
+shared subtitle (html, slides, pdf, docx, pptx, svg, png), to the markdown/txt header, and to the
+json export as `compliance_stamp` with the verdict and CCA id; the list row carries
+`compliance_overall`. The choice, stated: watermarked, not blocked — the reviewer needs the record.
+
+**Frontend:** the Compliance tab renders each framework with what it checks, two more honest
+states (`not checked` slate, `error` red), a "nothing here read this subject" note on no-coverage
+rows, and header copy that says "It flags; it does not certify". The Deliverables list wears a red
+"compliance FAIL" chip on a failing row, and the download button reads "Download (carries FAIL
+verdict)" with the reason in its title.
+
+**Tests:** `test_w455_compliance_reads_what_it_can_and_says_what_it_cannot` — the three subjects
+(not_checked constitutional row on all three; laundering fails; bakery: sharia pass, UK Legal
+review no-coverage; lorem: review everywhere; three distinct hashes "over the subject"); the
+action gate fails a prohibited intent kind and labels a benign one; the output screen fails an
+unsafe pattern in content; a monkeypatched engine raise → `error` "never a pass"; the Frameworks
+labels; a FAIL deliverable → verdict and CCA id on page one of md/html/slides/txt and in the json
+keys, `compliance_overall: fail` on the list row; a clean deliverable carries no stamp. Two older
+tests that asserted `overall == "pass"` on a subject only one screen had read now also assert the
+`coverage_gaps` beside it; the engines test's "invoked" label assertion became "says what it
+does", and its "unfair dismissal → fail" became "review with the statute named". **Broken by making the export ship clean again: the guard failed on
+the md export; restored.** My first patch forgot `import json` in the router and the bare
+`except` swallowed it into "(built-in rules)" — the engines test caught it, which is exactly the
+except the ledger complained about doing its work one last time.
+Suite on the final tree (isolated data dir, `AI_DISABLE_LOCAL=1`, no concurrent build): **360 passed ·
+15 skipped · 0 failed** (38 min).
+
+**Browser (fresh backend :8042 on the final tree, serving the rebuilt bundle — `scripts/_w455_probe.mjs`, 7/7; the pre-refuter tree scored 4/7 on :8041 because three waits were satisfied by the page's own header copy — fixed by waiting for the verdict rows):**
+the Frameworks card says "not legal advice · not a certification · does not read content"; the header
+says it flags, it does not certify; the laundering subject reads FAIL with "uk legal · fail … over the
+subject" and "constitutional · not checked … gates agent actions" (never "Constitutional gate clear");
+lorem reads REVIEW with "no engine covers this area"; a failing deliverable wears "compliance FAIL" on
+its list row, its button says "Download (carries FAIL verdict)", and its md and html exports open with
+the verdict.
+
+**Refuted (one adversarial agent on the round's own diff): ten findings, all fixed before commit.**
+F1 (HIGH) — the action-kind path still never read the subject (gaas.v5's gate matches the string it
+is given; given the kind alone, "wire_funds to an offshore account" as an `intent` PASSED), and my
+guard had reached "fail" only by inventing `kind="wire_funds"` — the gate is given the kind and the
+subject now, and the guard uses a legitimate kind with the prohibited intent in the subject. F2
+(HIGH) — my "pass on statute vocabulary" branch was dead code: the engine records a breach for ANY
+statute term, so UK Legal could only ever fail or review, the overall `pass` was unreachable for
+every subject, and the green card was dead UI — statute vocabulary is review with the statute
+named, and the overall is now the verdict of the rows that could read the subject with the gaps
+listed (the two older tests went back to asserting `pass` — with `coverage_gaps`). F3 — a vacuous
+`overall in (review, fail)` — the aggregation is asserted directly. F4 — the Sharia adapter said
+`halal: False` for "could not read" — three states now. F5 — a candidate's compliance score of 1.0
+on one keyword screen — the covered frameworks are named beside the score. F6 — the svg/png sub
+line truncated the stamp before "NOT cleared for use" and the CCA id — the verdict, the clearance
+and the id come first. F7 — ten chips coloured by `compliant` painted every "review" green — one
+`complianceCls` helper, three colours. F8 — the txt export ate the underscores in `uk_legal`. F9 —
+an engine raise dropped the audit hash the card promised — computed before the engine runs. F10 —
+the Change-Control request could not find its artifact — it carries the content hash. Dismissed
+after checking: every other consumer of the verdict holds only on `fail`; the CCA id is really
+returned and awaited; the refine path re-stamps; CRLF intact; tsc clean. Watermark-not-block was
+judged a defensible choice worth a stronger style — left as stated.
+
+**Docs:** ledger v3 status R1.1, R1.3, R1.6 FIXED W455 (the watermark-not-block choice stated);
+prompt ledger 1.7 CLOSED and P1.7 ✅ DONE; vision §16; living plan §4/§8.
