@@ -15,6 +15,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Brain, Loader2, AlertCircle, ShieldCheck, GitBranch, Scale } from 'lucide-react';
+import { provenanceBadge } from '../../lib/api';
 
 const Chip: React.FC<{ tone: 'ok' | 'warn' | 'bad' | 'dim'; children: React.ReactNode; title?: string }> = ({ tone, children, title }) => (
   <span title={title} className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
@@ -166,7 +167,7 @@ const QEPIntelligence: React.FC = () => {
               <span className="text-slate-300 font-bold truncate">{a.pattern}<span className="text-slate-600 font-mono"> · {a.from} → {a.to}</span></span>
               <div className="flex items-center gap-1.5 shrink-0">
                 <Chip tone="dim">{a.status}</Chip>
-                {a.served_by != null && <Chip tone={a.served_by === 'native' ? 'warn' : 'ok'}>{a.served_by === 'native' ? 'floor-served' : `served by ${a.served_by}`}</Chip>}
+                {a.served_by != null && (() => { const b = provenanceBadge(a.served_by); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                 {typeof a.fidelity === 'number' && a.served_by != null && a.served_by !== 'native'
                   ? <span className="font-mono text-slate-400" title="model self-declared — not independently measured">fidelity {a.fidelity}</span>
                   : <Chip tone="dim" title={a.fidelity_note || 'no measured fidelity exists'}>unmeasured</Chip>}
@@ -201,9 +202,7 @@ const QEPIntelligence: React.FC = () => {
             <div className="flex items-center gap-1.5 mb-1.5">
               <Chip tone="dim">{blueprint.status}</Chip>
               {blueprint.adaptation?.served_by && (
-                <Chip tone={blueprint.adaptation.served_by === 'native' ? 'warn' : 'ok'}>
-                  {blueprint.adaptation.served_by === 'native' ? 'outline-grade — floor-served, not model analysis' : `served by ${blueprint.adaptation.served_by}`}
-                </Chip>
+                (() => { const b = provenanceBadge(blueprint.adaptation.served_by); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>outline-grade · {b.label}</span>; })()
               )}
               <span className="text-[9px] text-slate-500">fidelity: {typeof blueprint.adaptation?.fidelity === 'number' ? `${blueprint.adaptation.fidelity} (model self-declared)` : 'none parsed → unmeasured'}</span>
             </div>

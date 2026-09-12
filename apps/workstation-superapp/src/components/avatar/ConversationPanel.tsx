@@ -92,9 +92,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                 {renderRichText(m.content)}
               </div>
               {m.role === 'assistant' && m.servedBy && (
-                <span className={`text-[8px] font-black uppercase tracking-widest px-1 ${m.isExternal ? 'text-amber-500/70' : 'text-emerald-500/70'}`}>
-                  {provenanceBadge(m.servedBy, m.isExternal).label}
-                </span>
+                (() => { const b = provenanceBadge(m.servedBy, m.isExternal); return <span className={`text-[8px] font-black uppercase tracking-widest px-1 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()
               )}
               {m.role === 'assistant' && (m.suggestedAreas?.length ?? 0) > 0 && (
                 // §5/§9 guided navigation — whitelisted platform areas only, honest match reason on hover

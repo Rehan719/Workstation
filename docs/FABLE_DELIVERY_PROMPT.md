@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W452) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W453) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W452 (452 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W453 (453 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,11 +192,12 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W452: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+W448–W453: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
 P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
 body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
 fabric with provenance per answer (W451); P1.4 — Mode 3 review gates gate every lifecycle mover
-(W452). The first four Tier-1 items of the whole-vision plan are closed by execution, not by
+(W452); P1.5 — every provenance badge routes through the helper, the floor never wears green
+(W453). The first five Tier-1 items of the whole-vision plan are closed by execution, not by
 declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
@@ -295,7 +296,16 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      Genesis panel says nothing about advisory, and vision §17.4 said ✅ DELIVERED at the audit
      baseline (corrected to ◐ in W446). [R3.1, R2.2]  DONE WHEN every lifecycle mover
      consults the gate and a blocking gate returns 409 with the gate status, proven both ways.
- 1.5 TEN BADGE SITES PAINT THE FLOOR GREEN. provenanceBadge() returns amber + "structured floor —
+ 1.5 [CLOSED W453 — every badge site renders the helper's cls/title; a second helper
+     (provenanceMapBadge) for provenance count maps replaces every inline 'in-house / external used'
+     chip (all-floor → amber floor label; any external → amber 'via'; else emerald with the models
+     named); MyWork, Generator, OrganismAnatomy, QEPIntelligence, NativeAI (tree runs, resource cards,
+     step icons), VSBSpawnStudio, BoardOfDirectors, SwarmIntelligence, ReactorStudio, ResourceFabric
+     migrated; the Cockpit's W450 plan-tab badge uses the map helper too. Guard:
+     test_w453_every_provenance_badge_routes_through_the_helper (fails on `.label` without `.cls`, on
+     any colour ternary over is_external/any_external/served_by==='native', and on fewer than 16 helper
+     users); probe scripts/_w453_probe.mjs. The text below is the record of what was wrong.]
+     TEN BADGE SITES PAINTED THE FLOOR GREEN. provenanceBadge() returns amber + "structured floor —
      not model analysis"; seven sites take .label and colour by is_external (incl. the Law hub's
      default tab and the avatar footer on every page), MyWork renders "in-house" emerald with no
      floor label, Generator and OrganismAnatomy chip it green; BoardOfDirectors and
@@ -545,10 +555,15 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       code links a stage to a mover. What P1.4 does NOT close: a per-stage journey that pauses
       at a gate mid-run (the journey still runs every stage in one request before the entity
       exists — gates set at birth hold the SHIP, not the stages).
- P1.5 [1.5 · R3.4 R3.7 R5.1] provenanceBadge class-kill, part 2. All ten sites use .cls/.title; MyWork label;
+ P1.5 ✅ DONE W453 [1.5 · R3.4 R3.7 R5.1] provenanceBadge class-kill, part 2. All ten sites use .cls/.title; MyWork label;
       BoardOfDirectors + SwarmIntelligence use the helper; the "every badge routes through it"
       claim made true. GUARD: a test that fails on `provenanceBadge(` used with `.label` and no
       `.cls`, and on any inline `is_external ?` colour ternary in src/.
+      DELIVERED W453: the guard itself found four sites the ledger had not listed (NativeAI's
+      tree-run chips ×2, the Spawn Studio's swarm-run chip, the Cockpit's own W450 plan badge) —
+      migrated with the rest. What P1.5 does NOT close: text-only labels that mention external
+      use without colouring (a title string, a ' · external used' suffix) are outside the class;
+      the class is COLOUR that contradicts the helper.
  P1.6 [1.6 · R5.0] Employment default tab honesty. Copy → "AI-synthesised example listings — not a live
       job board; verify every URL"; synthesis is not a "source"; fabricated url/salary/published
       dropped or labelled illustrative; ApplicationStudio renders provenance; default tab → the
@@ -824,7 +839,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 333 tests; 46 session guards W419–W452, each broken and
+- integration_tests/test_mvp_spine.py — 334 tests; 47 session guards W419–W453, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -845,7 +860,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w452_probe.mjs (twelve — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w453_probe.mjs (thirteen — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).

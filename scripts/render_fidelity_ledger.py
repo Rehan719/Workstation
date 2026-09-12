@@ -80,6 +80,12 @@ STATUS = {
             "before the entity exists — a per-stage pause mid-journey is not built.",
     "R3.1": "FIXED W452 (P1.4) — blocks_progress is consumed by every mover through vsb._refuse_gated; the panel "
             "says what a gate does; the Cockpit renders the refusal with the gate named.",
+    "R5.1": "FIXED W453 (P1.5) — the Law hub's analysis badge (and every other .label-only site) renders the "
+            "helper's cls/title: amber on the floor, never emerald; a source-grep guard fails on the old shape.",
+    "R3.4": "FIXED W453 (P1.5) — BoardOfDirectors' inline 'served by native×N · in-house' chip is the map helper: "
+            "amber floor label on the floor, the models named otherwise.",
+    "R3.7": "chip half FIXED W453 (P1.5) — SwarmIntelligence's cascade 'in-house' chip and the run rows route "
+            "through the helpers (the gate half closed W449).",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

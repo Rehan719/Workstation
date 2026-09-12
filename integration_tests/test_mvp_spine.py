@@ -9031,3 +9031,41 @@ def test_w452_mode3_review_gates_gate_every_lifecycle_mover_both_ways(client):
     j = client.post("/api/v1/genesis/journey", json={"problem": "w452 journey gates", "name": "Journey Gated",
                                                      "establish": True, "ship_output": True, "review_gates": ["launch"]}).json()
     assert j["established_vsb"]["initial_ship"]["deferred"] == "review gate" and j["established_vsb"]["initial_ship"]["gate"] == "launch"
+
+def test_w453_every_provenance_badge_routes_through_the_helper():
+    """Ledger 1.5 (R5.1 R3.4 R3.7) — TEN BADGE SITES PAINTED THE FLOOR GREEN. provenanceBadge() has said
+    amber "structured floor — not model analysis" since W439, but eight sites took only its .label and
+    coloured the chip by is_external (emerald unless external — so the floor wore green), MyWork wrote
+    'in-house' emerald with no floor label, Generator and OrganismAnatomy chipped by is_external, and
+    BoardOfDirectors / SwarmIntelligence / ReactorStudio / ResourceFabric inlined their own
+    'in-house / external used' chips over provenance MAPS (green when every call was the floor).
+
+    Rule 26 — a class-kill is only a kill where every site uses the helper: every site now renders
+    the helper's cls/title (provenanceBadge for a string, provenanceMapBadge for a count map). This
+    guard fails on `.label` taken without `.cls`, on any inline is_external / any_external / served_by
+    === "native" colour ternary, and on the helpers being fewer than the sites they replaced.
+    """
+    import re
+    from pathlib import Path
+    src = Path("apps/workstation-superapp/src")
+    files = [p for p in src.rglob("*.tsx")] + [p for p in src.rglob("*.ts")]
+    label_only, ternaries, users = [], [], set()
+    for p in files:
+        text = p.read_text(encoding="utf-8")
+        if ("provenanceBadge(" in text or "provenanceMapBadge(" in text) and p.name != "api.ts":
+            users.add(p.name)   # renderers only — the helper's own file is not a user (refuter F7)
+        for i, line in enumerate(text.splitlines(), 1):
+            if re.search(r"provenanceBadge\(.*?\)\.label", line) or re.search(r"provenanceMapBadge\(.*?\)\.label", line):
+                label_only.append(f"{p.name}:{i}")
+            # a COLOUR ternary over provenance: a tailwind class, a tone/colour prop, or a JSX icon as the
+            # consequent (refuter F2: the first cut matched only bare classes and missed Chip tone= /
+            # Badge color= / icon-swap shapes). Text-only suffixes (' · external used') are not the class.
+            if re.search(r"(is_external|isExternal|any_external)\s*\?\s*('(bg-|text-|border-|warn|ok|amber|emerald)|<)", line) \
+                    or re.search(r"served_by === 'native' \?\s*('(bg-|text-|border-|warn|ok|amber|emerald)|<)", line) \
+                    or re.search(r"served_by\['native'\][^?]*\?\s*'(bg-|text-|border-)", line):
+                ternaries.append(f"{p.name}:{i}: {line.strip()[:100]}")
+    assert not label_only, f"badge label taken without its cls/title: {label_only}"
+    assert not ternaries, f"inline provenance colouring outside the helper: {ternaries}"
+    assert len(users) >= 18, f"expected the helpers on every badge surface, found {sorted(users)}"
+    api = (src / "lib" / "api.ts").read_text(encoding="utf-8")
+    assert api.count("export const provenanceMapBadge") == 1 and "return provenanceBadge('native')" in api

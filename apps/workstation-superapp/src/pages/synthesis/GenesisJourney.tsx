@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { qmsChip } from '../../lib/api';
+import { qmsChip, provenanceMapBadge } from '../../lib/api';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
@@ -609,7 +609,7 @@ export const GenesisJourney: React.FC = () => {
               verified" over floor-served output. The user must see what produced their result
               BEFORE they read the verification chips below it. */}
           {result.ai_provenance?.served_by && (
-            <Card className={`p-4 ${(result.ai_provenance.served_by['native'] || 0) > 0 ? 'border-amber-500/30 bg-amber-500/5' : 'border-emerald-500/20'}`}>
+            <Card className={`p-4 ${provenanceMapBadge(result.ai_provenance.served_by, result.ai_provenance.any_external).cls.includes('amber') ? 'border-amber-500/30 bg-amber-500/5' : 'border-emerald-500/20'}`}>
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">What served this journey</h3>
                 <span className="text-[9px] font-mono text-slate-400">

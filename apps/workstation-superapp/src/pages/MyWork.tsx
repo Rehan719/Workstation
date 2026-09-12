@@ -7,6 +7,7 @@ import {
   syncWorkspaceFromServer, lastSyncError, type OutputRecord,
 } from '../lib/outputHistory';
 import { getToken } from '../lib/auth';
+import { provenanceBadge, provenanceMapBadge } from '../lib/api';
 
 // §9 — "My Work": revisit the outputs you've generated (domain tools + journeys).
 //
@@ -129,7 +130,7 @@ export const MyWork: React.FC = () => {
                       <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 flex items-center gap-2 mt-0.5">
                         <Clock size={9} /> {new Date(rec.ts).toLocaleString()}
                         {rec.domain ? <span className="text-slate-500">· {rec.domain}</span> : null}
-                        {rec.provenance ? <span className={rec.provenance.is_external ? 'text-amber-400' : 'text-emerald-400'}>· {rec.provenance.is_external ? `via ${rec.provenance.served_by}` : 'in-house'}</span> : null}
+                        {rec.provenance ? (() => { const sb: any = rec.provenance?.served_by; const b = (sb && typeof sb === 'object') ? provenanceMapBadge(sb, (rec.provenance as any)?.any_external ?? rec.provenance?.is_external) : provenanceBadge(sb, rec.provenance?.is_external); return <span className={`px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>· {b.label}</span>; })() : null}
                         {/* W337 — refinement history is visible: the latest text IS the record; priors kept */}
                         {(rec.refineCount ?? 0) > 0 ? <span className="text-aura">· v{(rec.refineCount ?? 0) + 1} ({rec.versions?.length ?? 0} prior kept)</span> : null}
                       </p>

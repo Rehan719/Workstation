@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Dna, Loader2, Settings2, ShieldCheck, Waves, Play, GitMerge, Sparkles, Send } from 'lucide-react';
-import { apiJson, errorMessage } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge } from '../../lib/api';
 
 // W438 — the organism's ANATOMY, finally reachable: 18 routes (config · genome · nervous ·
 // self-healing · health/lifecycle) existed server-side with no page. Every sub-area was AUDITED
@@ -532,7 +532,7 @@ export const OrganismAnatomy: React.FC = () => {
             <Button onClick={runSuggest} disabled={busy === 'suggest'} className="flex items-center gap-1.5 bg-slate-900 text-slate-300 text-[10px]">
               {busy === 'suggest' ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} AI-suggest changes
             </Button>
-            {suggest && <Chip tone={suggest.is_external ? 'warn' : 'ok'}>served by {suggest.served_by}</Chip>}
+            {suggest && (() => { const b = provenanceBadge(suggest.served_by, suggest.is_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
           </div>
           {suggest && suggest.suggestions.length === 0 && <p className="text-[10px] text-slate-600 italic">no suggestions parsed from this serve — advisory only, nothing fabricated to fill the gap</p>}
           {(suggest?.suggestions || []).map((s, i) => (

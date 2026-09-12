@@ -118,6 +118,9 @@ badge and a pill that reads from it; the persona, fake tool registration and can
 **W452 (2026-09-12):** delivery-plan **P1.4 delivered** — Mode 3 review gates gate: one shared guard on
 every lifecycle mover (409 with the gate named while a gated stage is pending or rejected), gates set at
 birth hold the birth-ship, the heartbeat holds gated entities with a recorded action, the panel says so.
+**W453 (2026-09-12):** delivery-plan **P1.5 delivered** — provenanceBadge class-kill part 2: every badge
+site renders the helper's cls/title; `provenanceMapBadge` for count maps; the floor is amber everywhere;
+a source-grep guard holds the shape.
 Open items live in `FABLE_DELIVERY_PROMPT.md` (v11 rev 2 — the `<ledger>` and the `<delivery_plan>`
 for the whole of §1–§15).
 
@@ -238,6 +241,8 @@ under a lockstep test, so the API dropped with it in the same commit.
 ---
 
 ## 8. Changelog (dated, append-only)
+- **2026-09-12 (W453)** — delivery-plan P1.5 delivered (provenanceBadge class-kill part 2); §4 updated;
+  glyphs unchanged.
 - **2026-09-12 (W452)** — delivery-plan P1.4 delivered (Mode 3 gates gate); §4 and §7 row 1 evidence
   updated; glyphs unchanged (row 1 stays ◐ until P3.1).
 - **2026-09-12 (W451)** — delivery-plan P1.3 delivered (the AI CEO chat on the fabric); §4 updated;

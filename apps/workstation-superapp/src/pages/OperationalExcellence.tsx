@@ -157,9 +157,7 @@ export const OperationalExcellence: React.FC = () => {
               {o.success ? <CheckCircle2 size={11} className="text-emerald-400" /> : <span className="text-vital">✕</span>}
               <span className="font-bold text-white">{o.resource}</span>
               <span className="text-slate-600 uppercase">{o.kind}</span>
-              <span className={`ml-auto text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${o.is_external ? 'bg-amber-500/10 text-amber-400' : 'bg-aura/10 text-aura'}`}>
-                {provenanceBadge(o.served_by, o.is_external).label}
-              </span>
+              {(() => { const b = provenanceBadge(o.served_by, o.is_external); return <span className={`ml-auto text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
               <span className="text-slate-600">{o.duration_ms}ms</span>
             </div>
           ))}

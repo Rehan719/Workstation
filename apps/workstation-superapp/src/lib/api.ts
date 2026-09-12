@@ -71,6 +71,30 @@ export const provenanceBadge = (servedBy: string | null | undefined, isExternal?
   return { label: `in-house · ${sb}`, cls: 'bg-emerald-500/20 text-emerald-400', title: undefined };
 };
 
+// W453 (delivery-plan P1.5, ledger 1.5) — the same class-kill for provenance MAPS: a run that
+// records {served_by: {native: 3, 'ollama:x': 1}, any_external} was chipped green 'in-house' by
+// five renderers when every call was the floor. One helper, every map chip: all-floor → amber
+// with the floor label; any external → amber 'via'; otherwise emerald with the models named.
+// refuter F1 — the swarm / tree / composition responses carry a per-step TRACE, not a count map: derive
+// the map from what was actually served (an undefined map would have read as 'floor' even when the
+// owned model served every step)
+export const provenanceMapFromTrace = (steps: Array<{ served_by?: string | null }> | null | undefined): Record<string, number> => {
+  const m: Record<string, number> = {};
+  for (const s of steps ?? []) { const k = s?.served_by || 'native'; m[k] = (m[k] || 0) + 1; }
+  return m;
+};
+export const provenanceMapBadge = (servedBy: Record<string, number> | null | undefined, anyExternal?: boolean) => {
+  const keys = Object.entries(servedBy ?? {}).filter(([, n]) => (n || 0) > 0).map(([k]) => k);
+  // refuter F4 — an external run still lists the owned model in its map; 'via' names only the accelerant
+  if (anyExternal) return { label: `via ${keys.filter(k => k !== 'native' && !k.startsWith('ollama:')).join(' · ') || 'external'}`, cls: 'bg-amber-500/20 text-amber-400',
+    title: 'served by an external accelerant (opt-in)' };
+  if (!keys.length || keys.every(k => k === 'native')) return provenanceBadge('native');
+  const models = keys.filter(k => k !== 'native');
+  const floorCalls = servedBy?.['native'] || 0;
+  return { label: `in-house · ${models.join(' · ')}${floorCalls ? ` (+${floorCalls} floor)` : ''}`, cls: 'bg-emerald-500/20 text-emerald-400',
+    title: floorCalls ? 'a mix: the owned model served most calls; the deterministic floor served the rest' : undefined };
+};
+
 // W449 (delivery-plan P1.1, ledger 1.1) — the living-QMS gate has THREE honest states: pass · fail ·
 // NOT ASSESSABLE (null — the deterministic floor served the content, and the gate cannot measure floor
 // output: the floor emits the caller's own headings, so coverage cannot fail by construction). Twenty

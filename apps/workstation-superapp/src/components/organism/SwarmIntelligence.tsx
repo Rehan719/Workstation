@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { qmsChip } from '../../lib/api';
+import { qmsChip, provenanceMapBadge } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -247,9 +247,7 @@ const SwarmIntelligence: React.FC = () => {
             {/* §5↔§6 — the living organisation's delivery, in-house + governed + provenance-sealed */}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[8px] font-black uppercase tracking-widest text-fuchsia-400">Living-Organisation delivery</span>
-              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.ai_provenance && !cascade.ai_provenance.any_external ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                {cascade.ai_provenance && !cascade.ai_provenance.any_external ? 'in-house' : 'external used'}
-              </span>
+              {(() => { const b = provenanceMapBadge(cascade.ai_provenance?.served_by, cascade.ai_provenance?.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
               {cascade.governance && <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cascade.governance.status === 'allowed' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>gov: {cascade.governance.status}{cascade.governance.arms_length ? ' · arms-length' : ''}</span>}
               {Array.isArray(cascade.management_systems?.integrated) && cascade.management_systems.integrated.length > 0 && (
                 <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">mgmt: {cascade.management_systems.integrated.join('·')}</span>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { qmsChip } from '../../lib/api';
+import { qmsChip, provenanceMapBadge } from '../../lib/api';
 import { Card, Button } from '@workstation/ui';
 import { BarChart3, LineChart, ScatterChart, Loader2, Sparkles } from 'lucide-react';
 
@@ -170,9 +170,7 @@ export const ReactorStudio: React.FC = () => {
             <Card className="p-5">
               <div className="flex flex-wrap items-center gap-1.5 mb-2">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Insight</h4>
-                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${!result.ai_provenance.any_external ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                  {!result.ai_provenance.any_external ? 'in-house' : 'external'}
-                </span>
+                {(() => { const b = provenanceMapBadge(result.ai_provenance.served_by, result.ai_provenance.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                 {(() => {
                   /* W449 — was a hard-coded green 'QMS · doc-controlled' from document_controlled alone (true for
                      every floor delivery); now the real three-state verdict, doc-controlled noted inside it. */

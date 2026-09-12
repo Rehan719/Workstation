@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save, Activity } from 'lucide-react';
-import { apiJson, errorMessage, provenanceBadge, qmsChip } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, qmsChip } from '../../lib/api';
 
 interface ModelResource {
   name: string; kind: string; available: boolean; is_external: boolean; model?: string; note?: string;
@@ -44,16 +44,14 @@ function Trace({ run }: { run: SwarmRun }) {
     <div className="mt-4">
       <div className="flex items-center gap-2 mb-2">
         <span className="text-[9px] font-black uppercase text-slate-400">{run.stages} stages</span>
-        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${run.any_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-          {run.any_external ? 'used external accelerant' : 'fully in-house'}
-        </span>
+        {(() => { const b = provenanceMapBadge(provenanceMapFromTrace(run.trace), run.any_external); return <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
       </div>
       <div className="space-y-2">
         {run.trace.map(s => (
           <div key={s.step} className="p-3 rounded-xl bg-slate-950 border border-slate-900">
             <div className="flex items-center justify-between mb-1">
               <p className="text-xs font-black text-white flex items-center gap-1.5">
-                {s.served_by === 'native' ? <CheckCircle2 size={11} className="text-aura" /> : <Circle size={11} className="text-emerald-400" />}
+                <Circle size={11} className={provenanceBadge(s.served_by).cls.split(' ')[1]} />
                 {s.step}. {s.role}
               </p>
               <span className="text-[8px] font-bold uppercase text-slate-600">served by {s.served_by}</span>
@@ -77,7 +75,7 @@ function TreeView({ run }: { run: TreeRun }) {
         <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-900 text-slate-400">{levels.length} levels</span>
         <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-900 text-slate-400">{run.parallel_levels} parallel · ≤{run.max_parallel}/level</span>
         <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${run.immune_threat === 'NOMINAL' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>immune: {run.immune_threat}</span>
-        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${run.any_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{run.any_external ? 'used external accelerant' : 'fully in-house'}</span>
+        {(() => { const b = provenanceMapBadge(provenanceMapFromTrace(run.nodes), run.any_external); return <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
       </div>
       {/* dependency levels — nodes in the same level ran in PARALLEL */}
       <div className="space-y-2">
@@ -92,7 +90,7 @@ function TreeView({ run }: { run: TreeRun }) {
                   <div key={nid} className="p-2.5 rounded-xl bg-slate-950 border border-slate-900">
                     <div className="flex items-center justify-between gap-1 mb-1">
                       <p className="text-[11px] font-black text-white flex items-center gap-1 truncate">
-                        {n.served_by === 'native' ? <CheckCircle2 size={10} className="text-aura shrink-0" /> : <Circle size={10} className="text-emerald-400 shrink-0" />}
+                        <Circle size={10} className={`${provenanceBadge(n.served_by).cls.split(' ')[1]} shrink-0`} />
                         {n.id}
                       </p>
                       <span className="text-[7px] font-bold uppercase text-slate-600 shrink-0">{n.served_by}</span>
@@ -636,11 +634,11 @@ export const NativeAI: React.FC = () => {
                 return (
                   <Card key={r.name} className="p-4">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="font-black text-white text-sm flex items-center gap-2"><Icon size={14} className={r.is_external ? 'text-slate-500' : 'text-aura'} /> {r.name} {r.model && <span className="text-[9px] text-slate-600 font-bold">({r.model})</span>}</p>
+                      <p className="font-black text-white text-sm flex items-center gap-2"><Icon size={14} className="text-aura" /> {r.name} {r.model && <span className="text-[9px] text-slate-600 font-bold">({r.model})</span>}</p>
                       <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${r.available ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-600'}`}>{r.available ? 'available' : 'off'}</span>
                     </div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${r.is_external ? 'bg-amber-500/10 text-amber-400' : 'bg-aura/10 text-aura'}`}>{r.is_external ? 'external (opt-in)' : 'owned'}</span>
+                      {(() => { const b = provenanceBadge(r.name, r.is_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{r.is_external ? 'external (opt-in)' : r.name === 'native' ? 'owned · deterministic floor' : 'owned'}</span>; })()}
                       <span className="text-[8px] font-bold uppercase text-slate-600">{r.kind}</span>
                     </div>
                     <p className="text-[10px] text-slate-600 leading-relaxed">{r.note}</p>
@@ -695,9 +693,7 @@ export const NativeAI: React.FC = () => {
             {cRes && (
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${cRes.is_external ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
-                    {provenanceBadge(cRes.served_by, cRes.is_external).label}
-                  </span>
+                  {(() => { const b = provenanceBadge(cRes.served_by, cRes.is_external); return <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                   {cRes.resources_tried && <span className="text-[8px] font-mono text-slate-600">tried: {cRes.resources_tried.join(' → ')}</span>}
                 </div>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">{cRes.output}</p>

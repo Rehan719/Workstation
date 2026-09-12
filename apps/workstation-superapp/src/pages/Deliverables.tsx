@@ -203,9 +203,7 @@ export const Deliverables: React.FC = () => {
                   <p className="text-[9px] font-black uppercase tracking-widest text-highlight">{selected.type} · v{selected.versions.length}</p>
                   <h3 className="text-lg font-black text-white">{selected.title}</h3>
                 </div>
-                <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${selected.ai_provenance.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                  {provenanceBadge(selected.ai_provenance.served_by, selected.ai_provenance.is_external).label}
-                </span>
+                {(() => { const b = provenanceBadge(selected.ai_provenance.served_by, selected.ai_provenance.is_external); return <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
               </div>
               {/* Continual operational delivery within the living QMS — §10 bar + §8 organism */}
               {selected.quality_assurance?.quality && (

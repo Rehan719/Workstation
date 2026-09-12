@@ -4714,3 +4714,79 @@ no wrong-reason pass; CRLF/LF intact.
 pause mid-journey — the journey still runs every stage in one request before the entity exists);
 prompt ledger 1.4 CLOSED and P1.4 ✅ DONE with the rule stated; vision §16 and the §17.4 Mode 3
 line; living plan §4/§7 row 1 (stays ◐ for P3.1)/§8.
+
+### W453 — delivery-plan P1.5: provenanceBadge class-kill, part 2 — the floor never wears green
+
+**What was wrong (ledger 1.5 · R5.1 R3.4 R3.7).** W439 gave the platform one helper that says
+amber "structured floor — not model analysis" for the deterministic floor — and eight sites took
+only its `.label` and coloured the chip themselves by `is_external` (emerald unless external, so
+the floor wore green on the Law hub's default tool, the Deliverables detail, the Cockpit chat, the
+Operational Excellence rows, the Resource Fabric run rows, the native-AI tree, the avatar
+footer and the Spawn Studio's deliverable list); MyWork wrote "in-house" emerald with no floor
+label; Generator built its own "Native floor (in-house)" label and coloured a Badge by
+`is_external`; OrganismAnatomy chipped by tone; QEPIntelligence inlined a correct-but-private
+"floor-served" chip; BoardOfDirectors, SwarmIntelligence, ReactorStudio and ResourceFabric inlined
+"in-house / external used" chips over provenance MAPS — green when every one of eleven calls was
+the floor. "Every badge routes through the helper" was a claim about one helper and twenty sites.
+
+**What changed:** `provenanceMapBadge(servedBy, anyExternal)` beside `provenanceBadge` in
+`lib/api.ts` — for a count map: any external → amber "via …"; every call the floor → the floor's
+own amber badge; otherwise emerald with the models named (and "+N floor" when mixed). Every site
+renders the helper's `cls` and `title` through one shape (`const b = …; <span className={b.cls}
+title={b.title}>{b.label}</span>`): ConversationPanel, Deliverables, LawHub, VSBCockpit (chat
+badge, vision badge, and my own W450 plan-tab badge — which had hand-picked a key from the map),
+VSBSpawnStudio (deliverable badge + swarm-run chip), OperationalExcellence, ResourceFabric (run
+rows + the composition run chip), NativeAI (the cascade result, the resource cards, both tree-run
+chips, and the step icons whose tint now comes from the helper), MyWork (string or map at runtime),
+Generator, OrganismAnatomy, QEPIntelligence (both chips), SwarmIntelligence, ReactorStudio,
+BoardOfDirectors (the map chip keeps the per-model counts after the honest label).
+
+**The guard (rule 26):** `test_w453_every_provenance_badge_routes_through_the_helper` greps the SPA
+source and fails on `provenanceBadge(...).label` / `provenanceMapBadge(...).label` taken without
+`.cls`, on any COLOUR ternary over `is_external` / `isExternal` / `any_external` /
+`served_by === 'native'` (a consequent that is a colour class, a Chip tone / Badge colour, or a JSX
+icon), and on fewer than eighteen renderers using the helpers. Its first run found four sites the ledger had not listed — NativeAI's two
+tree-run chips, the Spawn Studio's swarm-run chip and my own W450 badge — which is the guard
+working before it was even committed. **Broken by regressing the Deliverables site to the old
+label-only shape: the guard failed naming `Deliverables.tsx:206`; restored.** My first cut of the
+regex flagged text-only ternaries (a ' · external used' suffix, a title string); narrowed to colour
+— the class is colour that contradicts the helper, not the word "external".
+
+**Recorded, my own mistakes this round:** a patch script written through a heredoc had its `\n`
+literals turned into real newlines (rule 10 — twice in one round); repaired with the Edit tool.
+A resumable re-run of the patch appended the map helper twice (the "already applied" check saw
+the old text inside the new); `tsc` caught it, then a stray brace from the dedupe; both fixed.
+Nine badge sites sat inside `cond && (…)` / `cond && {…}` where a JSX expression container is
+invalid — `tsc` caught all nine.
+Suite on the final tree (isolated data dir, `AI_DISABLE_LOCAL=1`): **358 passed · 15 skipped · 0
+failed** (35 min).
+
+**Browser (fresh backend :8036 on the final tree, serving the rebuilt bundle — `scripts/_w453_probe.mjs`, 3/3; the pre-refuter tree passed the same 3/3 on :8035):**
+a produced deliverable's detail chip, the Law hub's analysis chip and the Board of Directors' map chip
+each carry the helper's amber classes on the floor, and no chip on any of the three pages says
+"in-house" in emerald.
+
+**Refuted (one adversarial agent on the round's own diff): seven findings, all fixed before commit.**
+F1 (the class re-committed, and the probe could not see it) — four map sites fed `undefined` into the
+map helper: the swarm, tree and composition responses carry a per-step TRACE, not a count map, so
+on a machine where the owned model served every step the chip would have said "structured floor";
+before W453 it said "fully in-house" for the floor — the class had moved, not died. Under
+`AI_DISABLE_LOCAL=1` (the probe's environment) both read the same. Now `provenanceMapFromTrace()`
+derives the map from what was actually served (NativeAI's two tree-run chips, the Spawn Studio's
+swarm-run chip, the Resource Fabric composition chip). F2 — the guard did not fail on five of the
+eight shapes it claimed to kill (Chip `tone=`, Badge `color=`, an icon swap, nested parens in the
+`.label` regex) — widened to tone/colour-prop/JSX consequents and nested parens, and **broken a
+second time with a Chip-tone regression at OrganismAnatomy: the guard failed; restored**. F3 — the
+Genesis provenance card's border was a hand-rolled map colour (emerald for an all-external
+journey) — it follows the map helper now. F4 — the 'via' label named the owned Ollama model as an
+external accelerant in a mixed run — 'via' names only the accelerant. F5 — the Board chip stated the
+counts twice and could end in a dangling separator — the helper's label, counts in the title. F6 —
+three chips had grown a size against their sibling chips — matched. F7 — the guard's floor of
+sixteen counted the helper's own file — renderers only, floor eighteen. Dismissed after checking:
+the icon tint index is the text class in every helper branch; MyWork's runtime string/map branch is
+justified (Genesis writes a map into a field typed as a string — cosmetic); three map sites
+(Swarm, Board, Reactor) are fed real maps; the W449/W451 guards do not conflict; CRLF intact.
+
+**Docs:** ledger v3 status R5.1, R3.4 FIXED and R3.7's chip half FIXED W453; prompt ledger 1.5
+CLOSED and P1.5 ✅ DONE with what the guard found and what stays outside the class; vision §16;
+living plan §4/§8.

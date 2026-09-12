@@ -1,3 +1,4 @@
+import { provenanceMapBadge } from '../../lib/api';
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -158,9 +159,7 @@ export const BoardOfDirectors: React.FC = () => {
           {/* W270/W284 — apex honesty chips: which OWNED resource served, the gaas verdict, what landed on the plan */}
           <div className="flex flex-wrap items-center gap-1.5">
             {result.ai_provenance?.served_by && (
-              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.ai_provenance.any_external ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
-                served by {Object.entries(result.ai_provenance.served_by).map(([k, v]) => `${k}×${v}`).join(' · ')}{result.ai_provenance.any_external ? '' : ' · in-house'}
-              </span>
+              (() => { const b = provenanceMapBadge(result.ai_provenance?.served_by, result.ai_provenance?.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={`${b.title ? b.title + ' — ' : ''}calls: ${Object.entries(result.ai_provenance?.served_by ?? {}).map(([k, v]) => `${k}×${v}`).join(' · ') || 'none'}`}>{b.label}</span>; })()
             )}
             {result.governance?.status && (
               <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">gaas: {result.governance.status}</span>

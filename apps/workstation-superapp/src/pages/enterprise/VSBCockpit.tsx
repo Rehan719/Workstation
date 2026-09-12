@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, provenanceMapBadge } from '../../lib/api';
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
 import axios from 'axios';
@@ -507,7 +507,7 @@ export const VSBCockpit: React.FC = () => {
                       const sb = plan.provenance?.served_by as Record<string, number> | null | undefined;
                       if (!sb) return null;
                       const keys = Object.keys(sb).filter(k => (sb[k] || 0) > 0);
-                      const b = provenanceBadge(keys.length && keys.every(k => k === 'native') ? 'native' : (keys.find(k => k !== 'native') ?? 'native'));
+                      const b = provenanceMapBadge(sb);   // W453 — the map helper, not a hand-rolled key pick
                       return <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>;
                     })()}
                     {Array.isArray(plan.provenance?.body_pending) && plan.provenance.body_pending.length > 0 && (
@@ -882,14 +882,10 @@ export const VSBCockpit: React.FC = () => {
                       <p className="whitespace-pre-wrap font-sans">{m.text}</p>
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {m.role === 'vsb' && m.served_by && (
-                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${m.is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                            {provenanceBadge(m.served_by, m.is_external).label}
-                          </span>
+                          (() => { const b = provenanceBadge(m.served_by, m.is_external); return <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()
                         )}
                         {m.role === 'vsb' && m.image_served_by && (
-                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${m.image_is_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                            vision: {m.image_served_by}
-                          </span>
+                          (() => { const b = provenanceBadge(m.image_served_by, m.image_is_external); return <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>vision · {b.label}</span>; })()
                         )}
                       </div>
                     </div>

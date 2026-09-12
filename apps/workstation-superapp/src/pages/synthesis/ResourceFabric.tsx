@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { provenanceBadge, qmsChip } from '../../lib/api';
+import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -610,9 +610,7 @@ export const ResourceFabric: React.FC = () => {
                         <p className="text-[9px] text-amber-400 border border-amber-500/30 bg-amber-500/5 rounded-lg px-2.5 py-1.5">{runResult.quality_warning}</p>
                       )}
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${!runResult.any_external ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                          {!runResult.any_external ? 'in-house' : 'external used'}
-                        </span>
+                        {(() => { const b = provenanceMapBadge(provenanceMapFromTrace(runResult.trace), runResult.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                         {(runResult.run_params_applied ?? []).length > 0 && (
                           <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">per-run params: {runResult.run_params_applied!.join(' · ')}</span>
                         )}
@@ -684,10 +682,7 @@ export const ResourceFabric: React.FC = () => {
                                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">{rr.stages_run} stages</span>
                                 )}
                                 {rr.served_by && (
-                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${rr.is_external ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}
-                                    title="Which OWNED resource served (native floor · local Ollama model · opt-in external)">
-                                    {provenanceBadge(rr.served_by, rr.is_external).label}
-                                  </span>
+                                  (() => { const b = provenanceBadge(rr.served_by, rr.is_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()
                                 )}
                               </div>
                               {(rr.output || rr.error) && (

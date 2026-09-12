@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
 import { DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -538,9 +538,7 @@ const VSBDetailPanel: React.FC<{
           {swarmErr && <p className="mt-2 text-[10px] text-vital font-bold">{swarmErr}</p>}
           {swarmRun && (
             <div className="mt-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${swarmRun.any_external ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                {swarmRun.any_external ? 'used external accelerant' : 'fully in-house'} · {swarmRun.stages} stages
-              </span>
+              {(() => { const b = provenanceMapBadge(provenanceMapFromTrace(swarmRun.trace), swarmRun.any_external); return <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label} · {swarmRun.stages} stages</span>; })()}
               <div className="mt-2 space-y-1">
                 {swarmRun.trace.map(t => (
                   <p key={t.step} className="text-[9px] text-slate-500"><span className="text-aura/80 font-bold">{t.step}. {t.role}</span> <span className="text-slate-600">· served by {t.served_by}</span></p>
@@ -570,7 +568,7 @@ const VSBDetailPanel: React.FC<{
             <a key={dv.id} href="/deliverables" className="flex items-center gap-2 text-[10px] p-1.5 rounded-lg bg-slate-950 border border-slate-900 hover:border-aura/30">
               <span className="font-bold text-white truncate">{dv.title}</span>
               <span className="text-[8px] text-slate-600 uppercase">{dv.type}</span>
-              {dv.served_by && <span className="ml-auto text-[8px] font-black uppercase text-aura/70">{provenanceBadge(dv.served_by).label}</span>}
+              {dv.served_by && (() => { const b = provenanceBadge(dv.served_by, (dv as any).is_external); return <span className={`ml-auto text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
             </a>
           ))}
         </div>

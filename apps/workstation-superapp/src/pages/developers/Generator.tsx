@@ -3,6 +3,7 @@ import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Badge } from '@workstation/ui';
 import { Wand2, Play, Download, Copy, Check, Loader2, Code2, Braces, Settings, FileText, Boxes, Cpu } from 'lucide-react';
+import { provenanceBadge } from '../../lib/api';
 
 const ARTEFACT_TYPES = [
   { id: 'code',       label: 'Code',        icon: Code2,    fmt: 'python'   },
@@ -96,12 +97,8 @@ export const Generator: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // owned-resource provenance label
-  const provenance = result
-    ? (result.is_external ? `External · ${result.served_by}`
-       : result.served_by === 'native' ? 'Native floor (in-house)'
-       : `Local model · ${result.served_by}`)
-    : '';
+  // W453 — owned-resource provenance through the ONE helper (the floor is amber, never 'in-house')
+  const provenance = result ? provenanceBadge(result.served_by, result.is_external) : null;
 
   return (
     <div className="space-y-8 pb-24">
@@ -184,7 +181,7 @@ export const Generator: React.FC = () => {
                 {result && (
                   <>
                     <Badge color="aura">{result.artefact_type} · {result.format}</Badge>
-                    <Badge color={result.is_external ? 'amber-500' : 'emerald-500'}>{provenance}</Badge>
+                    {provenance && <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${provenance.cls}`} title={provenance.title}>{provenance.label}</span>}
                   </>
                 )}
               </div>
