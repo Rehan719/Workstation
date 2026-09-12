@@ -113,7 +113,8 @@ def _build_repo_files(vsb: dict) -> dict:
         "This repository is the enterprise's living body — genome/identity, business plan, organisation, "
         "digital resources, AI-swarm cascades, compliance + quality record, and the integrated "
         "Website / Web app / Phone app surfaces. Generated in-house on Workstation's own AI fabric; "
-        "quality-gated (§10), compliance-screened (§11), document-controlled (§6).\n\n"
+        "the §10 quality verdict (pass, fail or not assessable), the §11 compliance screen and the §6 "
+        "document-control seal are recorded in `compliance/QUALITY.md`.\n\n"
         "## Structure\n"
         "- `IDENTITY.md` · `genome.json` — genome / identity\n"
         "- `BUSINESS_PLAN.md` — Executive Summary · Concept · Vision · Mission · Strategy\n"
@@ -151,7 +152,18 @@ def _build_repo_files(vsb: dict) -> dict:
             _ev_lines += [f"- simulated evidence: {_cand.get('simulation_score')} "
                           f"(modelled {_cand.get('modelled_score')}; declared weights 60/40)"]
             if _cand.get("simulation"):
-                _ev_lines += ["", "### Simulation excerpt", str(_cand.get("simulation"))[:800]]
+                # W450 (P1.2) — the floor's "simulation" is a headings frame over the problem's
+                # bigrams; it shipped as evidence. When the twin/candidate agents were floor-served
+                # the excerpt is an honest pending state, never the scaffold.
+                _sba = ((vsb.get("ai_provenance") or {}).get("served_by_agent") or {})
+                _sim_agents = [a for a in _sba if a.startswith(("genesis_twin_", "genesis_cand"))]
+                from agentic_core.vbs.quality import floor_served as _floor_served
+                _sim_floor = (all(_sba[a] == "native" for a in _sim_agents) if _sim_agents
+                              else _floor_served((vsb.get("ai_provenance") or {}).get("served_by")))
+                _ev_lines += ["", "### Simulation excerpt",
+                              ("simulation pending the owned model — the deterministic floor served the "
+                               "digital-twin stage; its output is a structured frame, not a simulation"
+                               if _sim_floor else str(_cand.get("simulation"))[:800])]
         # W449 (ledger 3.11, R2.5) — the page said TIE / identical candidates; the shipped evidence
         # file did not. Now it does, beside the selected candidate it qualifies.
         _tie = _cand.get("tie") if isinstance(_cand.get("tie"), dict) else {}
@@ -197,7 +209,7 @@ def _build_repo_files(vsb: dict) -> dict:
                                   "repository is in `manifest.json` → `quality_assurance`.\n")
     f["web/index.html"] = (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
                            f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-                           f"<title>{name}</title></head><body><h1>{name}</h1><p>{challenge}</p>"
+                           f"<title>{_esc(name)}</title></head><body><h1>{_esc(name)}</h1><p>{_esc(challenge)}</p>"
                            f"<p><em>Integrated Website — scaffold; full site generated in a later increment.</em></p>"
                            f"</body></html>")
     f["webapp/README.md"] = (f"# {name} — Web app (scaffold)\n\nReconfigurable web-app surface for the VSB "
@@ -224,6 +236,16 @@ def _blueprint(vsb: dict) -> dict:
         "commercialisation": str(bp.get("commercialisation")
                                  or bp.get("phase_3_commercialisation", "") or ""),
     }
+
+
+def _refuse_pending_name(vsb: dict) -> None:
+    """W450 (P1.2, refuter F2) — 'a slug never ships' was enforced only at birth: every publish endpoint
+    and the Cockpit's Ship button would still print a pending working name on 15+ files. The public
+    surfaces and the ship refuse until the founder names the enterprise (POST /{id}/name)."""
+    if vsb.get("name_pending"):
+        raise HTTPException(status_code=409, detail=(
+            f"name pending — the founder names the enterprise before its body is published: "
+            f"POST /api/v1/vsb/{vsb.get('vsb_id')}/name"))
 
 
 def _require_vsb_access(vsb_id: str, user: dict | None) -> dict:
@@ -311,6 +333,19 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
     directories are honest scaffolds (later increments), never claimed as built/running apps."""
     vsb = _require_vsb_access(vsb_id, user)
     files = _build_repo_files(vsb)
+    root = _REPO_STORE / vsb_id
+    # W450 (P1.2, ledger 1.2 / R2.9) — the repo step writes one-line SCAFFOLD placeholders for
+    # web/webapp/mobile. Run after a birth-ship (the Genesis card's "Generate VSB Repository"),
+    # it overwrote the shipped three-page website with the 471-byte scaffold and the PWA manifest
+    # with a bare one, while the ship manifest still said stale=false. A surface a richer
+    # generator already produced is never regressed: its scaffold placeholders are dropped here.
+    _generated = {"website": (root / "web" / "site.json").exists(),
+                  "webapp": (root / "webapp" / "app.json").exists(),
+                  "mobile": (root / "mobile" / "app.json").exists()}
+    for _scaffold, _surface in (("web/index.html", "website"), ("webapp/README.md", "webapp"),
+                                ("mobile/README.md", "mobile"), ("mobile/manifest.webmanifest", "mobile")):
+        if _generated[_surface]:
+            files.pop(_scaffold, None)
     from agentic_core.vbs.quality import assure_delivery
     combined = "\n".join(v for k, v in files.items() if k.endswith(".md"))
     # required sections = content headings that genuinely appear in the repo docs (not filenames)
@@ -335,7 +370,6 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         + "".join(f"- {v['framework']}: {v['status']} — {v['reason'][:160]}\n"
                   for v in (_comp.get("verdicts") or []))
         + "\nRe-screened continuously when the organism's auto_compliance beat is enabled (W288).\n")
-    root = _REPO_STORE / vsb_id
     written = []
     for path, content in files.items():
         fp = root / path
@@ -350,8 +384,11 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         "repo_root": str(root), "file_count": len(written),
         "total_bytes": sum(x["bytes"] for x in written),
         "tree": sorted(x["path"] for x in written), "files": written,
-        "integrated_surfaces": {"website": "web/index.html (scaffold)", "webapp": "webapp/ (scaffold)",
-                                "mobile": "mobile/ (scaffold)"},
+        # W450 — labelled by what is actually on disk: a generated surface is never re-labelled scaffold
+        "integrated_surfaces": {
+            "website": "web/ (generated — index · about · solution)" if _generated["website"] else "web/index.html (scaffold)",
+            "webapp": "webapp/ (generated)" if _generated["webapp"] else "webapp/ (scaffold)",
+            "mobile": "mobile/ (generated PWA)" if _generated["mobile"] else "mobile/ (scaffold)"},
         "quality_assurance": qa, "posture": "in-house-first",
         # §13 (W289) — genuine version control + manifest lineage
         "version_control": _vc,
@@ -407,7 +444,7 @@ def _website_page(title: str, active: str, body: str) -> str:
             f"<title>{_esc(title)}</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"
             f"<header class=\"nav\"><nav>{nav}</nav></header><main>{body}</main>"
             f"<footer>Living VSB IDBO enterprise · generated in-house on Workstation's own AI fabric · "
-            f"quality-gated, compliance-screened, document-controlled.</footer></body></html>")
+            f"quality record and compliance screen in the entity repository (compliance/QUALITY.md).</footer></body></html>")
 
 
 def _build_website_files(vsb: dict, copy: dict) -> dict:
@@ -533,6 +570,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     compliance-screened + document-controlled. HONEST: a static info/marketing site (real HTML/CSS) — NOT
     a running web app (increment 3) and not deployed/hosted."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     name, challenge, domain = vsb.get("name"), vsb.get("challenge", ""), vsb.get("domain", "enterprise")
     concept = _blueprint(vsb)["concept"]     # W301 - canonical accessor (both shapes)
     prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
@@ -686,7 +724,7 @@ _WEBAPP_APP_JS = r"""(async function () {
     return '';
   }
   function render() {
-    app.innerHTML = '<header><h1>' + esc(d.name) + '</h1><nav>' + tabs.map((t) => '<button data-tab="' + t.id + '" class="' + (t.id === active ? 'active' : '') + '">' + t.label + '</button>').join('') + '</nav></header><div class="content">' + section(active) + '</div><footer>Living VSB IDBO web app · generated in-house · quality-gated · compliance-screened · document-controlled.</footer>';
+    app.innerHTML = '<header><h1>' + esc(d.name) + '</h1><nav>' + tabs.map((t) => '<button data-tab="' + t.id + '" class="' + (t.id === active ? 'active' : '') + '">' + t.label + '</button>').join('') + '</nav></header><div class="content">' + section(active) + '</div><footer>Living VSB IDBO web app · generated in-house · quality record and compliance screen in the entity repository.</footer>';
     app.querySelectorAll('nav button').forEach((b) => b.onclick = () => { active = b.dataset.tab; render(); });
     const rf = document.getElementById('rfilter');
     if (rf) rf.oninput = () => { filter = rf.value; const pos = rf.selectionStart; render(); const nf = document.getElementById('rfilter'); if (nf) { nf.focus(); nf.setSelectionRange(pos, pos); } };
@@ -797,6 +835,7 @@ async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_curre
     compliance-screened + document-controlled. HONEST: a client-side interactive app that runs directly in
     a browser (no build) — NOT a server/backend app, not deployed/hosted."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     files = _build_webapp_files(vsb)
     from agentic_core.vbs.quality import assure_delivery
     # Gate the app's CONTENT (entity data + section structure), not the raw JS source — the JS legitimately
@@ -933,6 +972,7 @@ async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_curre
     into the repo's `mobile/` dir, QMS-gated + compliance-screened + document-controlled. HONEST: a PWA
     (installable + offline-capable when hosted) — NOT a compiled native iOS/Android app, not deployed."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     files = _build_mobile_files(vsb)
     from agentic_core.vbs.quality import assure_delivery
     # gate the CONTENT (entity data + sections), not the raw JS — avoid the `placeholder`-attribute false-fail
@@ -1010,6 +1050,7 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     Operational), with an in-house AI-CEO narrative — QMS-gated + compliance-screened + DCS-registered
     (document-controlled via the QMS-owned DCMS). The on-demand layer of the §17.3 Living Business System."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     name, challenge = vsb.get("name"), vsb.get("challenge", "")
     bp = _blueprint(vsb)                     # W301 - canonical accessor (both shapes)
     concept, commercial = bp["concept"], bp["commercialisation"]
@@ -1029,10 +1070,15 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         f"{commercial[:400]}.\n\nProduce a concise board pack:\n## Executive Summary\n## Strategic Position\n"
         "## Action Priorities (this period)\n## Key Risks\n## Recommendation",
         agent="vsb-board-pack", augment=False)   # W332 — persisted board pack: no cross-request recall
-    narrative = meta.get("output", "") or ""
     sb = meta.get("served_by", "native")
     prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
     prov["any_external"] = bool(meta.get("is_external"))
+    # W450 (P1.2) — on the floor the "narrative" was the engine's marker, role line and headings
+    # frame, stored raw as the Board's reading. A floor-served narrative is an honest pending
+    # state; a model-served one is scrubbed of any provenance marker before it is filed.
+    narrative = (("narrative pending the owned model — this board pack has not been composed; the "
+                  "operational snapshot, constitutional layer and strategic specification below are live data")
+                 if sb == "native" else _public_prose(meta.get("output", "") or "").strip())
 
     from agentic_core.vbs.quality import assure_delivery
     combined = (f"Board Pack — {name}. Sections: Executive Summary · Strategic Position · Action Priorities "
@@ -1120,6 +1166,82 @@ def _gate_status(rg: dict, stage: str) -> dict:
         status = "pending"
     return {"stage": stage, "gated": gated, "status": status, "decision": dec,
             "blocks_progress": gated and (not dec or dec.get("decision") == "reject")}
+
+
+class NameRequest(BaseModel):
+    name: str
+
+
+@router.post("/{vsb_id}/name")
+async def name_vsb(vsb_id: str, req: NameRequest, user: dict | None = Depends(get_current_user)):
+    """W450 (P1.2) — the founder names the enterprise. A floor establishment carries a neutral slug
+    marked pending; nothing ships under it. Naming records the founder as the source, updates the
+    living register and the plan's opening line, ships the body that establishment deferred, and
+    marks an already-shipped body stale (its every page wears the name)."""
+    vsb = _require_vsb_access(vsb_id, user)
+    name = (req.name or "").strip()
+    low = name.lower()
+    if len(name) < 2 or len(name) > 60 or "native structured engine" in low or name.startswith(("_[", "#")):
+        raise HTTPException(status_code=422, detail="name must be 2–60 characters of the founder's choosing")
+    old = vsb.get("name")
+    vsb["name"] = name
+    vsb["name_source"] = "founder"
+    vsb["name_pending"] = False
+    if isinstance(vsb.get("swarm_config"), dict):
+        vsb["swarm_config"]["CEO"] = f"AI CEO — {name}"
+    # refuter F4 — the delivery swarm ships in resources/cascades.json under the entity's name
+    if isinstance(vsb.get("native_swarm"), dict):
+        vsb["native_swarm"]["name"] = f"{name} — delivery swarm"
+        try:
+            from agentic_core.api import resource_fabric as _rf
+            _rows = _rf._load_swarms()
+            for _r in _rows:
+                if _r.get("id") == vsb["native_swarm"].get("cascade_id"):
+                    _r["name"] = f"{name} — delivery swarm"
+                    _r["context"] = str(_r.get("context") or "").replace(f"VSB: {old}", f"VSB: {name}", 1)
+            _rf._save_swarms(_rows)
+        except Exception:
+            pass
+    _save_vsb(vsb)
+    try:
+        from agentic_core.economy import living_vsbs as _lv
+        from agentic_core.config import store_lock as _lock
+        with _lock(_lv._STORE):
+            _d = _lv._load()
+            if vsb_id in _d:
+                _d[vsb_id]["name"] = name
+                _lv._save(_d)
+    except Exception:
+        pass
+    try:
+        from agentic_core.api import business_plan as _bp
+        _plan = _bp._load(vsb_id)
+        if old and (_plan.get("executive_summary") or "").startswith(str(old)):
+            _plan["executive_summary"] = name + _plan["executive_summary"][len(str(old)):]
+        _plan.setdefault("provenance", {})["name_source"] = "founder"   # refuter F6 — unconditional
+        _bp._save(_plan)
+    except Exception:
+        pass
+    shipped = None
+    ship_json = _REPO_STORE / f"{vsb_id}.ship.json"
+    if ship_json.exists():
+        mark_repo_stale(vsb_id, f"renamed by the founder: {name}")
+        shipped = {"shipped": False, "marked_stale": True}
+    elif vsb.get("ship_requested"):
+        try:
+            _s = await ship_vsb_repo(vsb_id, user=user)
+            shipped = {"shipped": True, "coherent_whole": _s.get("coherent_whole"),
+                       "surfaces": sorted((_s.get("surfaces") or {}).keys()),
+                       "commit": (_s.get("version_control") or {}).get("commit")}
+        except Exception as exc:
+            shipped = {"shipped": False, "error": str(exc)[:160]}
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "vsb.named", "vsb_id": vsb_id, "name": name, "previous": old})
+    except Exception:
+        pass
+    return {"vsb_id": vsb_id, "name": name, "name_source": "founder", "name_pending": False,
+            "previous": old, "ship": shipped}
 
 
 class ReviewGatesRequest(BaseModel):
@@ -1319,6 +1441,7 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
 
 class SpawnRequest(BaseModel):
     challenge: str
+    name: str = ""            # W450 — the founder's name; a floor slug is PENDING and publishes nothing
     domain: str = "enterprise"
     realm: str = "enterprise"
     scope: str = "build"     # concept | build | commercialise
@@ -1414,11 +1537,23 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             f"5. Critical resources and constraints\n\n"
             f"Format as a structured business entity specification."
         )
+        # W450 (P1.2, refuter F1) — this seam stored the floor's marker/headings frame as the CEO
+        # specification and shipped it in ORGANISATION.md, the app's Org tab and the board pack. The
+        # same rule as Genesis establish: a floor-served field is an honest pending state.
+        _spawn_prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
         try:
-            ceo_spec = await gateway.query(ceo_prompt, agent="vsb_ceo", augment=False)   # W332 — persisted into the entity
+            _cm = await gateway.query_meta(ceo_prompt, agent="vsb_ceo", augment=False)   # W332 — no cross-request recall
+            _csb = _cm.get("served_by", "native")
+            _spawn_prov["served_by"][_csb] = 1
+            _spawn_prov["served_by_agent"] = {"vsb_ceo": _csb}
+            _spawn_prov["any_external"] = bool(_cm.get("is_external"))
+            ceo_spec = ((_cm.get("output", "") or "") if _csb != "native" else
+                        "content pending the owned model — this enterprise has not yet composed its own CEO specification")
         except Exception as e:
             ceo_spec = f"CEO specification pending: {e}"
-        yield _event("ceo_complete", "CEO Strategy Complete", ceo_spec[:500])
+        _spawn_body_pending = {"ceo_specification": ceo_spec.startswith("content pending the owned model")}
+        yield _event("ceo_complete", ("CEO Strategy Pending" if _spawn_body_pending["ceo_specification"]
+                                      else "CEO Strategy Complete"), ceo_spec[:500])
 
         # ── Stage 5: Genome Encoding ──────────────────────────────────────────
         yield _event("genome", "Genome Encoding", "Encoding VSB DNA into epigenetic registry...")
@@ -1463,9 +1598,16 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         yield _event("swarm_complete", "Swarm Configured", f"Agent hierarchy set for {req.domain} domain.", {"swarm": swarm_config})
 
         # ── Persist VSB Entity ────────────────────────────────────────────────
+        # W450 (refuter F1) — never `VSB — {challenge[:60]}`: the founder's name, else a pending slug
+        from agentic_core.api.genesis import _slug_name as _slug
+        _spawn_name = (req.name or "").strip()
+        _spawn_source = "founder" if _spawn_name else "slug"
+        _spawn_name = _spawn_name or _slug(req.challenge)
         vsb_entity = {
             "vsb_id": vsb_id,
-            "name": f"VSB — {req.challenge[:60]}",
+            "name": _spawn_name,
+            "name_source": _spawn_source, "name_pending": _spawn_source == "slug",
+            "body_pending": _spawn_body_pending, "ai_provenance": _spawn_prov,
             "challenge": req.challenge,
             "domain": req.domain,
             "realm": req.realm,
@@ -1497,7 +1639,8 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         biobus.fire_signal("motor", "vsb.launch", f"VSB launched: {vsb_id} — {req.challenge[:60]}", 0.9)
 
         yield _event("complete", "VSB Operational", f"VSB {vsb_id} is now operational.", {
-            "vsb_id": vsb_id,
+            "vsb_id": vsb_id, "name": _spawn_name,
+            "name_source": _spawn_source, "name_pending": _spawn_source == "slug",   # W450
             "dashboard": f"/api/v1/vsb/{vsb_id}",
             "elapsed_seconds": vsb_entity["elapsed_seconds"],
         })
@@ -1526,6 +1669,7 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     repo-level compliance verdict and one version-control commit. This is the §13 canonical output
     produced in one deliberate act, not four disconnected calls."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     surfaces: Dict[str, Any] = {}
     for name, gen in (("repo", generate_vsb_repo), ("website", generate_vsb_website),
                       ("webapp", generate_vsb_webapp), ("mobile", generate_vsb_mobile),

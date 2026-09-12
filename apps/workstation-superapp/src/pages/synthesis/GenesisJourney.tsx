@@ -142,7 +142,24 @@ export const GenesisJourney: React.FC = () => {
   const [establishing, setEstablishing] = useState(false);
   // §5 — the live birth log: each entry is a REAL completed establishment step from the SSE stream
   const [birthStages, setBirthStages] = useState<{ stage: string; label: string; content: string }[]>([]);
-  const [vsb, setVsb] = useState<{ vsb_id: string; name: string; dashboard: string; governance?: any } | null>(null);
+  const [vsb, setVsb] = useState<{ vsb_id: string; name: string; dashboard: string; governance?: any;
+    name_pending?: boolean; name_source?: string; body_pending?: Record<string, boolean>; initial_ship?: any } | null>(null);
+  // W450 (P1.2) — the founder names the enterprise: optionally before the journey, or on the newborn card
+  const [enterpriseName, setEnterpriseName] = useState('');
+  const [naming, setNaming] = useState(false);
+  const nameEnterprise = async () => {
+    if (!vsb || !enterpriseName.trim() || naming) return;
+    setNaming(true); setError('');
+    try {
+      const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/name`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: enterpriseName.trim() }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      setVsb({ ...vsb, name: d.name, name_pending: false, name_source: 'founder', initial_ship: d.ship ?? vsb.initial_ship });
+    } catch (e: any) { setError(`Naming failed — ${e?.message ?? 'backend unreachable'}; nothing changed.`); }
+    setNaming(false);
+  };
   // §2 — the VSB's legal/economic form, selected by the user at generation (wired to the economy templates)
   const [entityTypes, setEntityTypes] = useState<{ id: string; name: string; description: string }[]>([]);
   const [entityType, setEntityType] = useState('waqf_ltd_hybrid');
@@ -180,7 +197,8 @@ export const GenesisJourney: React.FC = () => {
         // §5 — when "establish on completion" is on, ONE continuous workflow takes the challenge all the way
         // to a living VSB enterprise (W222 seam); else the journey stops at the blueprint (two-step establish).
         body: JSON.stringify(establishOnComplete
-          ? { problem, domain, realm, establish: true, entity_type: entityType }
+          ? { problem, domain, realm, establish: true, entity_type: entityType,
+              ...(enterpriseName.trim() ? { name: enterpriseName.trim() } : {}) }   // W450 — the founder's name, when given
           : { problem, domain, realm }),
       });
       if (!res.ok) { setError(`HTTP ${res.status}`); setRunning(false); return; }
@@ -258,6 +276,10 @@ export const GenesisJourney: React.FC = () => {
       operations: result?.stage_7_operational_intelligence ?? '',
       selected_candidate: cands[0] ?? {},
       stage_verifications: result?.stage_verifications ?? {},
+      // W450 — the two-step path carries the journey's provenance too, so a floor-served field
+      // becomes an honest pending state in the body instead of scaffold
+      ai_provenance: (result as any)?.ai_provenance ?? {},
+      ...(enterpriseName.trim() ? { name: enterpriseName.trim() } : {}),
     });
     try {
       // §5 — watch the VSB being born: each SSE event reflects a REAL completed establishment step
@@ -537,6 +559,14 @@ export const GenesisJourney: React.FC = () => {
               className="accent-highlight w-4 h-4" aria-label="Establish living VSB on completion" />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Establish living VSB on completion <span className="text-slate-600 normal-case">(one continuous workflow → living enterprise)</span></span>
           </label>
+          {establishOnComplete && (
+            <div>
+              <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-1 block">Enterprise name <span className="normal-case tracking-normal text-slate-600">(optional — asked again if none can be composed)</span></label>
+              <input aria-label="Enterprise name" value={enterpriseName} onChange={e => setEnterpriseName(e.target.value)} maxLength={60}
+                placeholder="Name your enterprise"
+                className="bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-200 px-3 py-2 focus:outline-none focus:border-highlight/50 w-56" />
+            </div>
+          )}
           {establishOnComplete && entityTypes.length > 0 && (
             <div>
               <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-1 block">Legal / economic form</label>
@@ -821,7 +851,28 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                   <div className="flex items-center gap-2 mb-1">
                     <ShieldCheck size={14} className="text-emerald-400" />
                     <p className="font-black text-white text-sm">{vsb.name}</p>
+                    {vsb.name_pending && <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400" title="a working slug from your own words — not a chosen name">working name — pending yours</span>}
                   </div>
+                  {/* W450 (P1.2) — no name could be composed on the floor: the founder names it, then the body ships */}
+                  {vsb.name_pending && (
+                    <div className="mt-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                      <p className="text-[10px] text-amber-300 leading-snug">
+                        The owned model could not compose a name, so nothing has shipped under one. Name the enterprise and its body ships{vsb.initial_ship?.deferred ? ' now' : ''}.
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        <input aria-label="Enterprise name" value={enterpriseName} onChange={e => setEnterpriseName(e.target.value)} maxLength={60}
+                          placeholder="Name your enterprise" className="flex-1 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-200 px-3 py-1.5 focus:outline-none focus:border-amber-500/50" />
+                        <Button onClick={nameEnterprise} disabled={naming || !enterpriseName.trim()} className="bg-slate-900 text-amber-300 text-[11px]">
+                          {naming ? <Loader2 size={12} className="animate-spin" /> : 'Name & ship'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {vsb.body_pending && Object.values(vsb.body_pending).some(Boolean) && (
+                    <p className="text-[9px] text-amber-400/80 mt-1" title="the deterministic floor served these stages; their text is not this enterprise's own">
+                      Pending the owned model: {Object.entries(vsb.body_pending).filter(([, v]) => v).map(([k]) => k).join(' · ')} — the body ships the founder's words plus an honest pending state, never floor scaffold.
+                    </p>
+                  )}
                   <p className="text-[10px] text-slate-500 font-mono">
                     {vsb.vsb_id} · operational · governance {vsb.governance?.status ?? 'not reported'}
                   </p>

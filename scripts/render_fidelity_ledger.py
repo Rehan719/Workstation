@@ -50,7 +50,21 @@ STATUS = {
             "board pack by their own generation provenance; repo / webapp / mobile by the provenance the "
             "journey now STORES on the entity (the refuter caught that the entity never carried it, so those "
             "three had still fallen to the old gate). A standalone /establish declares no origin and still "
-            "gets the measured gate. The scaffold-as-concept body itself remains P1.2.",
+            "gets the measured gate. Body half FIXED W450 (P1.2) — a floor-served field is an honest pending "
+            "state at establishment, never the floor's text; the founder's words always ship; the README and "
+            "footers no longer claim 'quality-gated, compliance-screened'. The body's SUBSTANCE still needs the "
+            "owned model to compose it.",
+    "R2.1": "narrative half FIXED W450 (P1.2) — on the floor the board pack's narrative is 'narrative pending the "
+            "owned model' (its live layers stand), never the engine's marker/role/headings frame; a model-served "
+            "narrative is scrubbed of markers. The empty-concept refusal and identical-hash disclosure remain P1.14.",
+    "R2.6": "FIXED W450 (P1.2) — /repo drops its web/webapp/mobile scaffold placeholders when a generated surface "
+            "is on disk (measured: it had overwritten the shipped three-page site with 471 bytes while ship.json said "
+            "stale=false) and labels integrated_surfaces by what is on disk; a rename marks a shipped body stale. The "
+            "file/zip endpoint and clickable tree remain P3.7.",
+    "R2.9": "FIXED W450 (P1.2) — the floor's fallback name `VSB — {problem[:40]}` is gone: a neutral whole-word slug "
+            "from the founder's words, marked name_pending, ships NOTHING; the newborn card asks the founder and "
+            "POST /vsb/{id}/name ships the deferred body (living register, swarm CEO label and plan opening follow). "
+            "An optional name field precedes the journey.",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

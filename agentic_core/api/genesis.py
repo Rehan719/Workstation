@@ -617,13 +617,40 @@ def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
         pass
 
 
-async def _derive_name(problem: str, domain: str, requested: str = "") -> str:
-    """The VSB's name: the user's when given, else AI-derived — with the native engine's provenance
-    marker / markdown headings / scaffold lines filtered so an auto-named VSB never inherits them.
+_NAME_STOP = {"the", "and", "for", "with", "that", "this", "from", "your", "have", "will", "our",
+              "are", "but", "not", "can", "cannot", "keep", "lose", "every", "each", "into", "onto",
+              "afford", "need", "needs", "want", "wants", "there", "their", "they", "them", "when",
+              "what", "who", "how", "why", "all", "any", "some", "very", "just", "than", "then",
+              "because", "while", "about", "over", "under", "more", "most", "less", "much", "many"}
+
+
+def _slug_name(problem: str) -> str:
+    """W450 (P1.2, ledger 1.2) — the floor's fallback name used to be `VSB — {problem[:40]}`: a
+    hard cut mid-sentence with a trailing space, shipped as the enterprise's BRAND on every page,
+    manifest, README and board pack. A neutral slug from the founder's own salient words, whole
+    words only, no prefix, no trailing space — and marked pending so the founder is asked to name
+    the enterprise before its body ships."""
+    import re as _re
+    # letters only (no promoted contractions), whole words only (a word longer than the slug can
+    # hold is skipped, never cut — the refuter reproduced a 40-char mid-word cut on one long word)
+    words = [w for w in _re.findall(r"[A-Za-z]{3,}", problem or "")
+             if w.lower() not in _NAME_STOP and len(w) <= 24]
+    pick = words[:3] or ["Venture"]
+    slug = " ".join(w[:1].upper() + w[1:] for w in pick)
+    while len(slug) > 40 and " " in slug:
+        slug = slug.rsplit(" ", 1)[0]
+    return slug.strip() or "Venture"
+
+
+async def _derive_name(problem: str, domain: str, requested: str = "") -> tuple:
+    """The VSB's name AND where it came from: ("founder" — given by the user; "model" — a model
+    proposed it; "slug" — the floor could not, so a neutral slug from the founder's words stands
+    in, PENDING the founder's own choice). The native engine's provenance marker / markdown
+    headings / scaffold lines are filtered so an auto-named VSB never inherits them.
     Shared by the blocking /establish and the SSE /establish/stream."""
     name = (requested or "").strip()
     if name:
-        return name
+        return name, "founder"
     derived = await _q(
         "Propose ONE concise, brandable business name (2-4 words, no quotes, no preamble, no "
         f"markdown) for a venture that solves: {problem}\nDomain: {domain}\nReturn ONLY the name.",
@@ -638,7 +665,40 @@ async def _derive_name(problem: str, domain: str, requested: str = "") -> str:
             continue
         cand = s[:60]
         break
-    return cand or f"VSB — {problem[:40]}"
+    if cand:
+        return cand, "model"
+    return _slug_name(problem), "slug"
+
+
+# W450 (P1.2, ledger 1.2 / R2.0 R2.1) — the body a floor journey ships. The floor composes each
+# stage out of the requested headings, engine names and the problem's own bigrams; that text was
+# stored as the enterprise's concept / design / commercialisation and printed on its public pages,
+# BUSINESS_PLAN.md, the app data, the genome and the Cockpit Plan tab as if the enterprise had
+# composed it. Now a field the floor served is REPLACED at establishment by an honest pending
+# state — the founder's verbatim problem statement is always shipped; the scaffold never is. A
+# field with no provenance (the standalone /establish path) is the caller's own writing and ships
+# as given; a model-served field ships as given.
+_PENDING_BODY = ("content pending the owned model — this enterprise has not yet composed its own {what}")
+_BODY_AGENTS = (("concept", "genesis_concept", "concept"),
+                ("design", "genesis_design", "design"),
+                ("commercialisation", "genesis_commercial", "commercialisation"),
+                ("operations", "genesis_operations", "operational intelligence"))
+
+
+def _resolve_body_fields(req: "EstablishRequest") -> dict:
+    """Replace floor-served body fields on `req` with the pending state; return {field: pending?}."""
+    from agentic_core.vbs.quality import floor_served
+    prov = req.ai_provenance or {}
+    sba = prov.get("served_by_agent") or {}
+    all_floor = (not sba) and floor_served(prov.get("served_by"))
+    pending: dict = {}
+    for field, agent, what in _BODY_AGENTS:
+        text = getattr(req, field, "") or ""
+        is_floor = bool(text.strip()) and (sba.get(agent) == "native" if sba else all_floor)
+        pending[field] = is_floor
+        if is_floor:
+            setattr(req, field, _PENDING_BODY.format(what=what))
+    return pending
 
 
 def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", entity: dict) -> None:
@@ -661,6 +721,12 @@ def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", ent
         plan["mission"] = f"Deliver: {req.problem[:160]}"
         plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
                             "(Chief = owner's digital twin) → AI CEO → C-Suite → CoE → BTO.")
+        # W450 (P1.2) — who wrote the opening, and which fields are still pending the owned model
+        plan["provenance"] = {
+            "served_by": (entity.get("ai_provenance") or {}).get("served_by") or None,
+            "body_pending": [k for k, v in (entity.get("body_pending") or {}).items() if v],
+            "name_source": entity.get("name_source"),
+        }
         plan.setdefault("objectives", [])
         if not plan["objectives"]:
             for _title in ("Validate the concept", "Deliver the design", "Launch to market"):
@@ -704,7 +770,8 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     from agentic_core.api import vsb as vsb_mod
 
     vsb_id = f"vsb-{_uuid.uuid4().hex[:10]}"
-    name = await _derive_name(req.problem, req.domain, req.name)
+    body_pending = _resolve_body_fields(req)          # W450 — floor scaffold never becomes the body
+    name, name_source = await _derive_name(req.problem, req.domain, req.name)
 
     async def _attest() -> str:
         return "VSB establishment attested under v16-Omega constitutional supervision."
@@ -762,6 +829,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
             "stage_verifications": req.stage_verifications,
         },
         "ai_provenance": dict(req.ai_provenance or {}),   # W449 — who served the body (F2)
+        # W450 (P1.2) — the name's source (founder / model / slug) and which body fields are
+        # pending the owned model; a slug name is PENDING the founder's choice.
+        "name_source": name_source, "name_pending": name_source == "slug",
+        "body_pending": body_pending, "ship_requested": bool(req.ship_output),
         "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
         "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
     }
@@ -826,7 +897,14 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     # previously the entity was born body-less until five manual clicks. Best-effort: a ship
     # failure NEVER blocks establishment; the outcome is recorded honestly either way.
     initial_ship = None
-    if req.ship_output:
+    if req.ship_output and name_source == "slug":
+        # W450 (P1.2) — a slug is not a brand: the founder names the enterprise, then it ships
+        # (POST /api/v1/vsb/{id}/name ships the requested body). Nothing is published under a
+        # name nobody chose.
+        initial_ship = {"shipped": False, "deferred": "name pending",
+                        "reason": "the founder names the enterprise before its body ships — "
+                                  f"POST /api/v1/vsb/{vsb_id}/name"}
+    elif req.ship_output:
         try:
             from agentic_core.api.vsb import ship_vsb_repo
             _s = await ship_vsb_repo(vsb_id, user=user if isinstance(user, dict) else None)
@@ -839,6 +917,8 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     return {
         "vsb_id": vsb_id,
         "name": name,
+        "name_source": name_source, "name_pending": name_source == "slug",   # W450
+        "body_pending": body_pending,                                          # W450
         "status": "operational",
         "dashboard": f"/api/v1/vsb/{vsb_id}",
         "governance": entity["governance"],
@@ -873,9 +953,13 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         yield _event("init", "Establishment Initiated",
                      f"Generating a living Enterprise IDBO for: {req.problem[:120]}", {"vsb_id": vsb_id})
 
-        # 1 — naming (AI-derived when blank; scaffold lines filtered)
-        name = await _derive_name(req.problem, req.domain, req.name)
-        yield _event("named", "Named", f"The enterprise is named: {name}", {"name": name})
+        # 1 — naming (AI-derived when blank; scaffold lines filtered; W450: a floor slug is PENDING)
+        body_pending = _resolve_body_fields(req)      # W450 — floor scaffold never becomes the body
+        name, name_source = await _derive_name(req.problem, req.domain, req.name)
+        yield _event("named", ("Named" if name_source != "slug" else "Name Pending"),
+                     (f"The enterprise is named: {name}" if name_source != "slug" else
+                      f"No name could be composed on the floor — working slug: {name}; the founder names it"),
+                     {"name": name, "name_source": name_source, "name_pending": name_source == "slug"})
 
         # 2 — constitutional attestation (gaas.v5)
         async def _attest() -> str:
@@ -911,6 +995,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                                 "selected_candidate": req.selected_candidate,
                                 "stage_verifications": req.stage_verifications},
             "ai_provenance": dict(req.ai_provenance or {}),   # W449 — parity with the blocking path (F2)
+            "name_source": name_source, "name_pending": name_source == "slug",   # W450
+            "body_pending": body_pending, "ship_requested": bool(req.ship_output),
             "governance": {"status": gov.status, "checkpoint": gov.checkpoint_id},
             "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
         }
@@ -971,7 +1057,13 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
 
         # 7 — §4 (W302): the newborn's WHOLE §13 living body ships at birth (watchable, honest)
         initial_ship = None
-        if req.ship_output:
+        if req.ship_output and name_source == "slug":
+            initial_ship = {"shipped": False, "deferred": "name pending",
+                            "reason": "the founder names the enterprise before its body ships — "
+                                      f"POST /api/v1/vsb/{vsb_id}/name"}
+            yield _event("ship", "Ship Deferred", "name pending — the founder names the enterprise, then it ships",
+                         initial_ship)
+        elif req.ship_output:
             try:
                 from agentic_core.api.vsb import ship_vsb_repo
                 _s = await ship_vsb_repo(vsb_id, user=user if isinstance(user, dict) else None)
@@ -988,6 +1080,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
 
         yield _event("complete", "Operational", f"{name} is alive.", {
             "vsb_id": vsb_id, "name": name, "status": "operational",
+            "name_source": name_source, "name_pending": name_source == "slug",   # W450
+            "body_pending": body_pending,
             "dashboard": f"/api/v1/vsb/{vsb_id}",
             "initial_ship": initial_ship,
             "birth_vitals": birth_vitals,

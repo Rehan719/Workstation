@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W449) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W450) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W449 (449 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W450 (450 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,9 +192,10 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W449: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
-P1.1 delivered — the living-QMS gate learned who served the content (W449). The first Tier-1 item
-of the whole-vision plan is closed by execution, not by declaration.
+W448–W450: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+P1.1 delivered — the living-QMS gate learned who served the content (W449); then P1.2 — the shipped
+body never wears floor scaffold nor a fallback name (W450). The first two Tier-1 items of the
+whole-vision plan are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -234,7 +235,18 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      content yields qms_gate_passed=None with a "not assessable" basis on EVERY surface (chip
      renders slate '—'), routers pass their real section lists, and a test proves the gate says
      no to floor scaffold and yes to a real document.
- 1.2 THE SHIPPED VSB BODY PRESENTS FLOOR SCAFFOLD AS THE ENTERPRISE'S CONCEPT — website ×3 pages,
+ 1.2 [CLOSED W450 — a floor-served body field is REPLACED at establishment by 'content pending the
+     owned model — this enterprise has not yet composed its own <field>' (decided by the journey's
+     per-agent provenance, not by regex; caller text with no provenance ships as given); the floor's
+     fallback name is a neutral whole-word slug marked PENDING, nothing ships under it, the newborn
+     card asks the founder and POST /vsb/{id}/name ships the deferred body (a shipped body is marked
+     stale on rename); /repo never regresses a generated surface and labels what is on disk; the
+     board-pack narrative and the EVIDENCE.md simulation excerpt are pending on the floor; the
+     footers/README no longer claim 'quality-gated, compliance-screened'. Guard:
+     test_w450_shipped_body_never_wears_scaffold_or_fallback_name (a forbidden-vocabulary grep over
+     every shipped file, both ways); probe scripts/_w450_probe.mjs 8/8. The text below is the record
+     of what was wrong.]
+     THE SHIPPED VSB BODY PRESENTED FLOOR SCAFFOLD AS THE ENTERPRISE'S CONCEPT — website ×3 pages,
      webapp/mobile data.json, BUSINESS_PLAN.md, the Cockpit Plan tab — with a footer claiming
      "quality-gated, compliance-screened", and 1.1 certifies it. And on the floor `_derive_name`
      rejects every returned line and falls back to `VSB — {problem[:40]}`, so the enterprise is
@@ -458,7 +470,7 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       gate — both fixed in the same round and guarded in the both-ways test. What
       P1.1 does NOT close: the scaffold body itself (P1.2), the green in-house chip on the cascade
       (P1.5), the empty-concept board pack refusal (P1.14), the §10 wording (P3.0).
- P1.2 [1.2 · R2.0 R2.1 R2.6 R2.9] The shipped body never wears scaffold — nor a fallback name. On the floor, establish ships the founder's
+ P1.2 ✅ DONE W450 [1.2 · R2.0 R2.1 R2.6 R2.9] The shipped body never wears scaffold — nor a fallback name. On the floor, establish ships the founder's
       verbatim problem statement + "content pending the owned model — this enterprise has not
       yet composed its own concept" on website/webapp/mobile/BUSINESS_PLAN.md/Plan tab; the
       W434 scrubber remains for model output; provenance badged in the Cockpit. ACCEPT: a floor
@@ -467,6 +479,18 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       becomes a neutral trimmed slug and the newborn card asks the founder to name the enterprise
       before it ships; re-generating the repo never regresses a shipped surface, and the ship
       manifest reports stale honestly.
+      DELIVERED W450: measured first on a live floor entity (name 'VSB — I keep 40 beehives in
+      Somerset and lose ', concept = INKASHAF/SAMAJH/SOCH/AQAL headings over problem bigrams on
+      every surface, /repo after the birth-ship regressed the site to 471 bytes with stale=false);
+      then the body resolved per field from provenance, the slug + pending name + naming endpoint
+      + deferred ship, the no-regress /repo, the honest board-pack narrative and evidence excerpt.
+      The guard greps the whole shipped tree for engine vocabulary and the fallback name, checks
+      the founder's words and the pending state are present, that /repo leaves the shipped site
+      byte-identical, that a rename marks a shipped body stale, and — the other way — that a
+      model-served establishment ships its concept verbatim with nothing pending and a
+      founder-named one ships at birth. Broken by blinding the resolution: the guard failed with
+      the original symptom (SAMAJH text as the concept). What P1.2 does NOT close: the body's
+      SUBSTANCE (only the owned model composes it — P1.3+/P2), the Cockpit's other tabs, P1.14.
  P1.3 [1.3 · R3.0 R4.0] The AI CEO chat on the fabric. Replace v138/ceo's stream with gateway.stream/
       orchestrator (in-house-first, honours AI_DISABLE_LOCAL, guardrails, breaker, learning
       loop, tenant memory); final SSE event {served_by, is_external}; delete the Galactic Era
@@ -756,7 +780,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 329 tests; 42 session guards W419–W449, each broken and
+- integration_tests/test_mvp_spine.py — 331 tests; 44 session guards W419–W450, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -777,7 +801,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w449_probe.mjs (nine — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w450_probe.mjs (ten — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).

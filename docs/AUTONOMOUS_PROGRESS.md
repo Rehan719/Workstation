@@ -4425,3 +4425,104 @@ that name) and a journey-born entity's repo, webapp and mobile legs to None with
 FIXED; R3.6/R3.7/R2.0 gate half FIXED — the remainders named by plan item); prompt ledger 1.1 CLOSED
 and P1.1 ✅ DONE with what it does NOT close (P1.2 the body, P1.5 the green in-house chip, P1.14 the
 empty-concept refusal, P3.0 the §10 wording); vision §16 and the living plan updated (row 1 stays ◐).
+
+### W450 — delivery-plan P1.2: the shipped body never wears floor scaffold — nor a fallback name
+
+**The second Tier-1 item, worked in the plan's order, measured first.** Two read-only leads audited
+the seams and drove a live floor entity on :8027 before anything was written. What a founder got:
+an enterprise NAMED `VSB — I keep 40 beehives in Somerset and lose ` (a 40-character cut, trailing
+space) in every `<title>`, `<h1>`, the hero tag, the PWA manifest, README, `cascades.json` ("AI CEO —
+VSB — I keep 40 beehives…"), the board pack and the Cockpit; a "concept" that was the floor's
+nine-engine headings (`## INKASHAF / SAMAJH / SOCH / AQAL`) over the problem's own bigrams — printed
+as the Executive Summary, the Concept, the "Optimal Solution Concept", the website's "What we do"
+and "Its approach", the app data, the genome, the Plan tab and the EVIDENCE.md "simulation
+excerpt"; a footer claiming "quality-gated, compliance-screened"; and "Generate VSB Repository"
+after the birth-ship overwriting the three-page site with a 471-byte scaffold while `ship.json`
+still said `stale: false, website.file_count: 3`. The provenance marker itself was already scrubbed
+everywhere — the scaffold that shipped was everything the scrubber could not, by construction,
+recognise (`test_client_apps_never_ship_engine_scaffolding` requires heading words and term bullets
+to survive it). Regex could not fix this. Provenance can: the entity has known since W449 who served
+each stage.
+
+**What changed (backend):** `_resolve_body_fields()` at establishment (both paths) — a field the
+journey's `served_by_agent` says the floor served is REPLACED by `content pending the owned model —
+this enterprise has not yet composed its own <concept|design|commercialisation|operational
+intelligence>`; caller text with no provenance is the caller's writing and ships as given; a
+model-served field ships as given; `body_pending` is stored on the entity and the plan carries
+`provenance` (served_by · body_pending · name_source) for the Cockpit to badge. Every §13 builder
+reads the resolved fields, so BUSINESS_PLAN.md, the genome, `ceo_specification`, the website, the
+app data and the Plan tab all ship the founder's verbatim problem plus the honest pending state.
+`_derive_name()` returns the SOURCE with the name (founder · model · slug): on the floor the
+fallback is a neutral whole-word slug from the founder's own words (`Beehives Somerset Colonies`),
+marked `name_pending`, and a slug NEVER ships — `initial_ship` is deferred with the reason, and
+`POST /api/v1/vsb/{id}/name` records the founder as the source, updates the living register, the
+swarm's CEO label and the plan's opening line, ships the deferred body, or marks an already-shipped
+body stale (its every page wears the name). `/repo` drops its scaffold placeholders when
+`web/site.json` / `webapp/app.json` / `mobile/app.json` exist and labels `integrated_surfaces` by
+what is on disk (the scaffold index page now escapes what it prints). The board-pack narrative is
+`narrative pending the owned model` on the floor (its live layers stand) and scrubbed otherwise;
+the EVIDENCE.md simulation excerpt is pending when the twin agents were floor-served. README and
+both footers stopped claiming "quality-gated, compliance-screened" and point at
+`compliance/QUALITY.md`, where the three-state verdict actually lives.
+
+**Frontend:** the Genesis page takes an optional enterprise name before the journey; the newborn
+card shows `working name — pending yours`, names the pending body fields, and carries a "Name &
+ship" input when no name could be composed (the body ships on naming — nothing before); the
+two-step establish now sends the journey's `ai_provenance` too (it had sent the floor text with no
+origin). The Cockpit's Plan tab badges the body's provenance (amber floor badge) and lists the
+pending fields; the org header shows the pending-name tag.
+
+**Tests:** `test_w450_shipped_body_never_wears_scaffold_or_fallback_name` — a floor journey
+establishes with a pending slug and a deferred ship; the entity's blueprint and CEO spec carry no
+INKASHAF; naming ships a coherent whole; a forbidden-vocabulary regex (marker · role line ·
+`Subject: … (domain:` · `Structured … frame for` · `Component for` · `Positioning wedge` ·
+`deterministic scaffold` · the four engine names · `VSB — ` · `quality-gated`) finds NOTHING in
+any of the 15+ shipped files; the founder's words are in index.html and BUSINESS_PLAN.md; the
+pending state is in the plan, about.html and the app data; the PWA manifest keeps its icons;
+`/repo` after the ship leaves index.html byte-identical with `stale: false` and three website
+files; a rename marks the shipped body stale with the reason; the other way, a model-served
+establishment (provenance declared) ships `CONCEPT-W450-XRAY` verbatim with nothing pending and a
+founder-named one ships at birth; a no-provenance establishment ships the caller's concept as
+given. **Broken by blinding the resolution: the guard failed with the original symptom (the
+concept began `## SAMAJH …`), then restored.** Sixteen older tests that established without a name and then shipped or published now name
+their venture (a founder names what publishes) — the refusal below made nine of them fail first,
+and the first full suite caught two more (a repo test whose named venture now birth-shipped, so the
+scaffold placeholders it expected were rightly absent — it asks for no ship now; an authenticated
+memory-isolation test that published unnamed), which is the guard working. The first run of the guard caught
+`EVIDENCE.md: SAMAJH` — the simulation excerpt — which is how the evidence-excerpt fix came to be.
+Suite on the final tree (isolated data dir, `AI_DISABLE_LOCAL=1`): **355 passed · 15 skipped · 0
+failed** (34 min) — the run before it, on the same Python, had caught the two unnamed publishers above.
+
+**Browser (fresh backend :8029 on the final tree, serving the rebuilt bundle — `scripts/_w450_probe.mjs`, 8/8):**
+tick "Establish living VSB on completion", launch; the newborn card shows the pending working name
+and asks for one, no `VSB — I keep…` anywhere, `GET …/repo/ship` is 404; type "Somerset Hive
+Health", click Name & ship → the ship manifest says coherent · not stale; the served index page
+carries the name and the founder's words, about.html carries the pending state, neither carries
+engine vocabulary or "quality-gated"; "Generate VSB Repository" afterwards leaves the served index
+byte-identical and the ship fresh; the Cockpit Plan tab shows the amber floor badge, `pending the
+owned model: concept · design · commercialisation`, the founder's words and no scaffold. One probe
+check was wrong first (it looked for a placeholder in `innerText`) — fixed by checking the visible
+copy, not by loosening.
+
+**Refuted (one adversarial agent on the round's own diff): six findings, all fixed before commit.**
+F1 — the class re-committed at a reached seam: `/api/v1/vsb/spawn` (the Spawn Studio) still wrote
+`VSB — {challenge[:60]}` and stored the floor's raw output as the CEO specification, which ships in
+ORGANISATION.md, the app's Org tab and the board pack — now the same rule as Genesis (a pending slug
+that publishes nothing; a pending CEO spec on the floor via `query_meta`; an optional founder name),
+with its own guard. F2 — "a slug never ships" was enforced only at birth: every publish endpoint and
+the Cockpit's Ship button would still print the working name on 15+ files — the website, web app,
+phone app, board pack and ship now refuse (409, with the way out) while the name is pending; `/repo`
+(the internal body) stays available. F3 — my new test's "no-provenance ships as given" assertion was
+vacuous (`A and B or C` precedence) — fixed. F4 — a rename left the slug alive in the delivery swarm
+that ships in `resources/cascades.json` — the swarm and its fabric record follow the name now, and
+the guard checks it. F5 — `_slug_name` cut mid-word on a single long word (reproduced with
+"Pneumonoultramicroscopicsilicovolcanoconiosis") and promoted contractions — letters only, whole words
+only, guarded. F6 — the plan's `name_source` was refreshed only when the opener still began with the
+old slug — unconditional now. The refuter also checked and dismissed: the `_derive_name` tuple's
+callers, SSE parity, the agent-name mapping, mixed provenance, the pending sentences against every
+scrubber and the stub regex, the heartbeat's auto-ship (needs an existing ship.json — cannot ship a
+slug), rename authorisation, CRLF/LF.
+
+**Docs:** ledger v3 status lines R2.0 (body half), R2.1 (narrative half), R2.6, R2.9 FIXED W450 with
+what remains (P1.14, P3.7, the body's substance); prompt ledger 1.2 CLOSED and P1.2 ✅ DONE with what
+it does NOT close; vision §16 and the living plan updated (row 1 stays ◐ — Mode 3 gates and §4.6).

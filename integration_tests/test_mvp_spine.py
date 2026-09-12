@@ -776,8 +776,8 @@ def test_genome_consequential_evolution_loop(client):
     import json as _json
     from agentic_core.config import data_path
     j = client.post("/api/v1/genesis/journey", json={
-        "problem": "w310 genome venture", "domain": "enterprise",
-        "establish": True, "ship_output": True}).json()
+        "problem": "w310 genome venture", "domain": "enterprise", "name": "W310 Genome Venture",
+        "establish": True, "ship_output": True}).json()   # W450: a named founder's body ships at birth
     vid = (j.get("established_vsb") or {}).get("vsb_id")
     assert vid
     ev = client.post(f"/api/v1/vsb/{vid}/evolve", json={"trigger": "w310"}).json()
@@ -810,7 +810,7 @@ def test_birth_is_alive_and_consequences(client):
     import json as _json
     from agentic_core.config import atomic_write_json, data_path, load_json_tolerant
     e = client.post("/api/v1/genesis/establish", json={
-        "problem": "w309 living birth venture", "domain": "enterprise",
+        "problem": "w309 living birth venture", "domain": "enterprise", "name": "W309 Birth Venture",   # W450: named → ships at birth
         "concept": "A halal community textile venture with clear operations.",
         "design": "Design body.", "commercialisation": "Commercial plan."}).json()
     vid = e["vsb_id"]
@@ -1065,7 +1065,7 @@ def test_newborn_ships_its_living_body_and_journey_carries_identity(client, monk
     tok = client.post("/api/v1/auth/token", data={"username": "w302-iso", "password": "pw-302"})
     H = {"Authorization": f"Bearer {tok.json()['access_token']}"}
     j = client.post("/api/v1/genesis/journey",
-                    json={"problem": "w302 auth journey", "domain": "care", "establish": True},
+                    json={"problem": "w302 auth journey", "domain": "care", "establish": True, "name": "W302 Auth Journey"},   # W450: named → ships at birth
                     headers=H).json()
     ev = j.get("established_vsb") or {}
     assert "error" not in ev and ev.get("vsb_id")             # the deferred crash is gone
@@ -2737,7 +2737,8 @@ def test_vsb_repo_generation(client):
     # VSB, on the native fabric, QMS-gated + compliance-screened + document-controlled. web/webapp/mobile
     # are HONEST scaffolds (later increments), never claimed as built apps.
     est = client.post("/api/v1/genesis/establish",
-                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest",
+                            "name": "Halal Community Meals", "ship_output": False})   # W450: a bare repo, no birth-ship
     vid = est.json()["vsb_id"]
     m = client.post(f"/api/v1/vsb/{vid}/repo").json()
     assert m["file_count"] >= 8 and m["total_bytes"] > 0
@@ -2760,7 +2761,8 @@ def test_vsb_website_generation(client):
     # from the entity, written into the repo's web/, QMS-gated + compliance-screened + document-controlled;
     # the pages are served as real HTML (known pages only — no path traversal).
     est = client.post("/api/v1/genesis/establish",
-                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest",
+                            "name": "Halal Community Meals"})   # W450: a founder names what publishes
     vid = est.json()["vsb_id"]
     m = client.post(f"/api/v1/vsb/{vid}/website").json()
     assert m["kind"] == "static_website" and m["page_count"] == 3
@@ -2784,7 +2786,8 @@ def test_vsb_webapp_generation(client):
     # data.json) data-driven from the entity, written into the repo's webapp/, QMS-gated + compliance-
     # screened + document-controlled; the files are served so the app runs in-browser (known files only).
     est = client.post("/api/v1/genesis/establish",
-                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest",
+                            "name": "Halal Community Meals"})   # W450: a founder names what publishes
     vid = est.json()["vsb_id"]
     m = client.post(f"/api/v1/vsb/{vid}/webapp").json()
     assert m["kind"] == "client_web_app" and m["interactive"] is True
@@ -2811,7 +2814,8 @@ def test_vsb_mobile_pwa_generation(client):
     # mobile-first interactive app) generated from the entity into the repo's mobile/, QMS-gated +
     # compliance-screened + document-controlled; served with correct content-types so it runs in-browser.
     est = client.post("/api/v1/genesis/establish",
-                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest",
+                            "name": "Halal Community Meals"})   # W450: a founder names what publishes
     vid = est.json()["vsb_id"]
     m = client.post(f"/api/v1/vsb/{vid}/mobile").json()
     assert m["kind"] == "installable_pwa" and m["installable"] is True and m["offline_capable"] is True
@@ -2841,7 +2845,8 @@ def test_vsb_board_pack(client):
     # (Constitutional · Strategic · Action · Operational) + an in-house AI-CEO narrative, QMS-gated +
     # compliance-screened + DCS-registered (document-controlled via the QMS-owned DCMS).
     est = client.post("/api/v1/genesis/establish",
-                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest",
+                            "name": "Halal Community Meals"})   # W450: a founder names what publishes
     vid = est.json()["vsb_id"]
     m = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
     assert m["kind"] == "board_pack"
@@ -2863,7 +2868,8 @@ def test_vsb_review_gates_mode3(client):
     # §17.4 Mode 3 — optional human review gates at any Concept→Commercialisation stage (set in the VSB
     # genome). Configurable per-VSB; each config + decision is append-only DCS-audited (§17.5).
     est = client.post("/api/v1/genesis/establish",
-                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest"})
+                      json={"problem": "a halal community meal service", "domain": "care", "owner_id": "pytest",
+                            "name": "Halal Community Meals"})   # W450: a founder names what publishes
     vid = est.json()["vsb_id"]
     g0 = client.get(f"/api/v1/vsb/{vid}/review-gates").json()
     assert g0["mode"].startswith("Mode 3") and g0["stages"] == [] and len(g0["lifecycle"]) == 8
@@ -4753,8 +4759,8 @@ def test_evolution_auto_apply_loop_end_to_end(client):
     import json as _json
     from agentic_core.config import data_path
     j = client.post("/api/v1/genesis/journey", json={
-        "problem": "w346 loop venture", "domain": "enterprise",
-        "establish": True, "ship_output": True}).json()
+        "problem": "w346 loop venture", "domain": "enterprise", "name": "W346 Loop Venture",
+        "establish": True, "ship_output": True}).json()   # W450: a named founder's body ships at birth
     vid = (j.get("established_vsb") or {}).get("vsb_id")
     assert vid
     ev = client.post(f"/api/v1/vsb/{vid}/evolve", json={"trigger": "w346"}).json()
@@ -4827,7 +4833,7 @@ def test_two_authenticated_users_memory_isolated(client, monkeypatch):
                memory_v01.query("private board notes", owner_id="alice343"))
     # B ships a website — A's secret never reaches B's public surfaces
     est = client.post("/api/v1/genesis/establish", headers=B,
-                      json={"problem": "b343 pottery cooperative", "ship_output": False}).json()
+                      json={"problem": "b343 pottery cooperative", "ship_output": False, "name": "B343 Pottery"}).json()   # W450
     vid = est["vsb_id"]
     assert client.post(f"/api/v1/vsb/{vid}/website", headers=B).status_code == 200
     m = client.get(f"/api/v1/vsb/{vid}/repo", headers=B).json()
@@ -4847,7 +4853,7 @@ def test_round8_product_loop_contracts(client):
     from agentic_core.economy import living_vsbs as lv
     from agentic_core.economy.revenue import record_event
     est = client.post("/api/v1/genesis/establish", json={
-        "problem": "w8c date-farm cooperative", "ship_output": False}).json()
+        "problem": "w8c date-farm cooperative", "ship_output": False, "name": "W8C Date Farm"}).json()   # W450
     vid = est["vsb_id"]
     client.post(f"/api/v1/vsb/{vid}/repo/ship")
     lv.operate_vsb(vid)                                       # zero activity
@@ -4922,7 +4928,7 @@ def test_memory_no_cross_tenant_bleed_into_shipped_copy(client):
     client.post("/api/v1/ai/query", json={
         "query": f"Confidential: hero tagline for the {SECRET}. Do not disclose the target."})
     est = client.post("/api/v1/genesis/establish", json={
-        "problem": "a honey cooperative for local beekeepers", "ship_output": False}).json()
+        "problem": "a honey cooperative for local beekeepers", "ship_output": False, "name": "Honey Cooperative"}).json()   # W450
     vid = est["vsb_id"]
     assert client.post(f"/api/v1/vsb/{vid}/website").status_code == 200
     m = client.get(f"/api/v1/vsb/{vid}/repo").json()
@@ -4951,9 +4957,9 @@ def test_service_contracts_and_self_investment_consumer(client):
     # stage with no consumer — now funds the entity's OWN development actions (honest unfunded
     # record when the balance is empty; development never blocks).
     a = client.post("/api/v1/genesis/establish",
-                    json={"problem": "w330t client venture", "ship_output": False}).json()["vsb_id"]
+                    json={"problem": "w330t client venture", "ship_output": False, "name": "W330T Client"}).json()["vsb_id"]   # W450
     b = client.post("/api/v1/genesis/establish",
-                    json={"problem": "w330t provider venture", "ship_output": False}).json()["vsb_id"]
+                    json={"problem": "w330t provider venture", "ship_output": False, "name": "W330T Provider"}).json()["vsb_id"]   # W450
     ctr = client.post("/api/v1/economy/contracts", json={
         "client_vsb": a, "provider_vsb": b,
         "brief": "produce a halal supply-chain playbook", "price_wst": 120.0}).json()
@@ -4982,7 +4988,7 @@ def test_avatar_grounding_live_and_honest(client):
     # asserted ONLY when a grounding block actually built (previously the request's vsb_id was
     # echoed back even for a missing entity, and grounding held only static header fields).
     est = client.post("/api/v1/genesis/establish",
-                      json={"problem": "w325t halal courier venture", "ship_output": False}).json()
+                      json={"problem": "w325t halal courier venture", "ship_output": False, "name": "W325T Courier"}).json()   # W450
     vid = est.get("vsb_id")
     from agentic_core.economy import living_vsbs as lv
     lv.operate_vsb(vid)
@@ -5263,7 +5269,7 @@ def test_establish_paths_share_one_plan_core_and_ship_clean_copy(client):
     # provenance markers / markdown headings no longer land on public pages).
     import json as _json
     import pathlib
-    body = {"problem": "w315t halal logistics venture",
+    body = {"problem": "w315t halal logistics venture", "name": "W315T Logistics",   # W450: named → publishes
             "concept": "CONCEPT-W315T-XRAY smart halal cold-chain",
             "design": "modular design", "commercialisation": "b2b subscriptions",
             "operations": "run cold-chain audits weekly", "ship_output": False}
@@ -5303,7 +5309,7 @@ def test_stale_repo_loop_closes_and_records_honestly(client):
     # (previously it fabricated 'QMS fail · compliance None' even when every surface passed);
     # and the repo cascade re-run EXECUTES the stored swarm design instead of discarding it.
     import asyncio
-    est = client.post("/api/v1/genesis/establish", json={"problem": "w319t loop venture"}).json()
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w319t loop venture", "name": "W319 Loop Venture"}).json()   # W450: named → ships at birth
     vid = est.get("vsb_id") or (est.get("entity") or {}).get("vsb_id")
     assert vid and est.get("initial_ship", {}).get("shipped")
     from agentic_core.economy import living_vsbs as lv
@@ -7445,7 +7451,7 @@ def test_w434_a_published_vsb_website_carries_no_engine_scaffold(client):
     """
     j = client.post("/api/v1/genesis/journey", json={
         "problem": "Beekeepers in Konya lose hives to varroa mites", "domain": "science",
-        "realm": "developing", "establish": True, "ship_output": True}).json()
+        "realm": "developing", "establish": True, "ship_output": True, "name": "Konya Hive Health"}).json()   # W450
     vid = (j.get("established_vsb") or {}).get("vsb_id")
     assert vid, "the journey did not establish an entity"
     client.post("/api/v1/vsb/%s/website" % vid)
@@ -8603,7 +8609,7 @@ def test_w449_floor_served_gate_is_not_assessable_both_ways(client):
     # on the floor; a standalone /establish (origin unknown) still gets the measured gate.
     j = client.post("/api/v1/genesis/journey", json={
         "problem": "w449 f2: a halal artisan bakery in Leeds serving students", "domain": "enterprise",
-        "establish": True, "ship_output": False}).json()
+        "establish": True, "ship_output": False, "name": "Leeds Student Bakery"}).json()   # W450: named → may publish
     ent = client.get(f"/api/v1/vsb/{j['established_vsb']['vsb_id']}").json()
     assert "native" in (ent.get("ai_provenance") or {}).get("served_by", {}), ent.get("ai_provenance")
     for leg in ("repo", "webapp", "mobile"):
@@ -8680,3 +8686,141 @@ def test_w449_qms_chip_renders_through_one_helper():
                 offenders.append(f"{f.relative_to(src)}:{i}")
     assert not offenders, "inline QMS chip logic outside qmsChip(): %s" % offenders
     assert users >= 8, "expected the helper on every chip surface, found %d files" % users
+
+
+def test_w450_shipped_body_never_wears_scaffold_or_fallback_name(client):
+    """§4/§13 (ledger 1.2 · R2.0 R2.1 R2.6 R2.9) — the body a floor journey ships.
+
+    Measured on a live floor entity (W450 audit, :8027): the enterprise was NAMED
+    "VSB — I keep 40 beehives in Somerset and lose " (a 40-char cut with a trailing space) on
+    every page, manifest, README and the Cockpit; its "concept" on the website, BUSINESS_PLAN.md,
+    the app data and the Plan tab was the floor's nine-engine headings (INKASHAF / SAMAJH / SOCH /
+    AQAL) over repeated problem bigrams and "Structured … frame for:" archetypes; the footer said
+    "quality-gated, compliance-screened"; and "Generate VSB Repository" after the birth-ship
+    overwrote the three-page website with a 471-byte scaffold while ship.json said stale=false.
+
+    Both ways: a floor journey → slug name marked pending, ship deferred, the founder names it, the
+    body ships the founder's words plus an honest pending state and ZERO engine vocabulary, and
+    /repo afterwards leaves the shipped site byte-identical; a model-served establishment (provenance
+    declared) ships the concept verbatim with no pending state, and a founder-named one ships at birth.
+    """
+    import json as _json
+    import re as _re
+    from agentic_core.api.vsb import _REPO_STORE
+    from agentic_core.api import business_plan as bp_mod
+
+    problem = "I keep 40 beehives in Somerset and lose colonies to varroa every winter and cannot afford lab testing"
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": problem, "domain": "enterprise", "establish": True, "ship_output": True}).json()
+    est = j["established_vsb"]
+    vid = est["vsb_id"]
+    # the name: a neutral slug, whole words, no prefix, no trailing space — and PENDING
+    assert est["name_pending"] is True and est["name_source"] == "slug", est
+    assert not est["name"].startswith("VSB") and est["name"] == est["name"].strip() and len(est["name"]) <= 40
+    assert est["initial_ship"]["shipped"] is False and est["initial_ship"]["deferred"] == "name pending"
+    assert not (_REPO_STORE / f"{vid}.ship.json").exists()          # nothing shipped under a slug
+    # refuter F2 — and no publish endpoint ships under the working name either (409 with the way out)
+    for leg in ("website", "webapp", "mobile", "board-pack", "repo/ship"):
+        r = client.post(f"/api/v1/vsb/{vid}/{leg}")
+        assert r.status_code == 409 and "/name" in r.json()["detail"], (leg, r.status_code)
+    # the body: every floor-served field is pending, never the floor's text
+    ent = client.get(f"/api/v1/vsb/{vid}").json()
+    assert all(ent["body_pending"].get(k) for k in ("concept", "design", "commercialisation")), ent["body_pending"]
+    assert ent["genesis_blueprint"]["concept"].startswith("content pending the owned model")
+    assert "INKASHAF" not in _json.dumps(ent["genesis_blueprint"]) and "INKASHAF" not in ent["ceo_specification"]
+    plan = bp_mod._load(vid)
+    assert "content pending the owned model" in plan["concept"] and plan["provenance"]["body_pending"]
+    assert "native" in (plan["provenance"]["served_by"] or {})
+
+    # the founder names it → the deferred body ships
+    named = client.post(f"/api/v1/vsb/{vid}/name", json={"name": "Somerset Hive Health"}).json()
+    assert named["name_source"] == "founder" and named["ship"]["shipped"] is True and named["ship"]["coherent_whole"] is True
+    ent = client.get(f"/api/v1/vsb/{vid}").json()
+    assert ent["name"] == "Somerset Hive Health" and ent["name_pending"] is False
+    assert client.post(f"/api/v1/vsb/{vid}/name", json={"name": "x"}).status_code == 422
+
+    # the shipped body: the founder's words, the honest pending state, and NO engine vocabulary
+    root = _REPO_STORE / vid
+    forbidden = _re.compile(r"_\[|Acting as|native structured|Subject: .*\(domain:|Structured [a-z -]+frame for|"
+                            r"Component for |Positioning wedge|Stream from |deterministic scaffold|"
+                            r"\bINKASHAF\b|\bSAMAJH\b|\bSOCH\b|\bAQAL\b|VSB — |quality-gated", _re.I)
+    body_files = [p for p in root.rglob("*") if p.is_file() and ".git" not in p.parts
+                  and p.suffix in (".md", ".html", ".json", ".js", ".webmanifest")]
+    assert len(body_files) >= 15, [str(p) for p in body_files]
+    hits = {}
+    for p in body_files:
+        m = forbidden.search(p.read_text(encoding="utf-8"))
+        if m:
+            hits[str(p.relative_to(root))] = m.group(0)
+    assert not hits, f"engine scaffold / fallback name shipped in the body: {hits}"
+    index = (root / "web" / "index.html").read_text(encoding="utf-8")
+    assert "Somerset Hive Health" in index and "beehives in Somerset" in index
+    bplan = (root / "BUSINESS_PLAN.md").read_text(encoding="utf-8")
+    assert "beehives in Somerset" in bplan and "content pending the owned model" in bplan
+    assert "content pending the owned model" in (root / "web" / "about.html").read_text(encoding="utf-8")
+    assert "content pending the owned model" in _json.loads((root / "webapp" / "data.json").read_text(encoding="utf-8"))["concept"]
+    pack = client.get("/api/v1/economy/board-pack", params={"vsb_id": vid}).json()
+    assert "native structured" not in _json.dumps(pack).lower()
+    manifest = _json.loads((root / "mobile" / "manifest.webmanifest").read_text(encoding="utf-8"))
+    assert manifest["name"] == "Somerset Hive Health" and manifest.get("icons")
+
+    # re-generating the repo after the ship never regresses the shipped site, and the ship is honest
+    before = (root / "web" / "index.html").read_bytes()
+    m2 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    assert (root / "web" / "index.html").read_bytes() == before
+    assert "generated" in m2["integrated_surfaces"]["website"] and "web/index.html" not in m2["tree"]
+    ship = _json.loads((_REPO_STORE / f"{vid}.ship.json").read_text(encoding="utf-8"))
+    assert ship["stale"] is False and ship["surfaces"]["website"]["file_count"] == 3
+    # …and renaming a SHIPPED body marks it stale with the reason (its every page wears the name),
+    # and the delivery swarm the body ships follows the name (refuter F4)
+    r2 = client.post(f"/api/v1/vsb/{vid}/name", json={"name": "Somerset Hive Health Ltd"}).json()
+    assert r2["ship"]["marked_stale"] is True
+    ent = client.get(f"/api/v1/vsb/{vid}").json()
+    assert ent["native_swarm"]["name"] == "Somerset Hive Health Ltd — delivery swarm"
+    assert bp_mod._load(vid)["provenance"]["name_source"] == "founder"
+    ship = _json.loads((_REPO_STORE / f"{vid}.ship.json").read_text(encoding="utf-8"))
+    assert ship["stale"] is True and "renamed" in ship["stale_reason"]
+
+    # the other way: a model-served establishment (provenance declared) ships its concept VERBATIM,
+    # nothing pending; a founder-named one ships at birth
+    concept = "CONCEPT-W450-XRAY a mobile varroa lab van serving Somerset beekeepers by subscription"
+    e2 = client.post("/api/v1/genesis/establish", json={
+        "problem": problem, "domain": "enterprise", "name": "Varroa Van", "concept": concept,
+        "design": "a van, a microscope, a route", "commercialisation": "monthly subscription per apiary",
+        "ship_output": True,
+        "ai_provenance": {"served_by": {"ollama:llama3.2": 11}, "any_external": False,
+                          "served_by_agent": {"genesis_concept": "ollama:llama3.2", "genesis_design": "ollama:llama3.2",
+                                              "genesis_commercial": "ollama:llama3.2"}}}).json()
+    assert e2["name_source"] == "founder" and e2["name_pending"] is False and e2["initial_ship"]["shipped"] is True
+    assert not any(e2["body_pending"].values()), e2["body_pending"]
+    bp2 = (_REPO_STORE / e2["vsb_id"] / "BUSINESS_PLAN.md").read_text(encoding="utf-8")
+    assert "CONCEPT-W450-XRAY" in bp2 and "content pending" not in bp2
+    # a standalone establishment with NO provenance is the caller's own writing — shipped as given
+    e3 = client.post("/api/v1/genesis/establish", json={
+        "problem": "w450 caller words", "concept": "CALLER-W450-CONCEPT", "ship_output": False}).json()
+    assert not any(e3["body_pending"].values()) and e3["name_source"] in ("model", "slug")   # refuter F3: precedence
+    assert client.get(f"/api/v1/vsb/{e3['vsb_id']}").json()["genesis_blueprint"]["concept"] == "CALLER-W450-CONCEPT"
+
+
+def test_w450_spawn_seam_shares_the_name_and_body_rule(client):
+    """Refuter F1 — /api/v1/vsb/spawn (reached from the Spawn Studio) still wrote `VSB — {challenge[:60]}`
+    and stored the floor's raw output as the CEO specification. Same rule as Genesis: a pending slug
+    that publishes nothing, a pending CEO spec on the floor; a founder-named spawn is not pending."""
+    import json as _json
+    from agentic_core.api.genesis import _slug_name
+    r = client.post("/api/v1/vsb/spawn", json={"challenge": "w450 spawn: a halal artisan bakery in Leeds serving students"})
+    done = [_json.loads(l[6:]) for l in r.text.splitlines() if l.startswith("data: ")]
+    fin = [e for e in done if e.get("stage") == "complete"][-1]["data"]
+    assert fin["name_pending"] is True and not fin["name"].startswith("VSB")
+    ent = client.get(f"/api/v1/vsb/{fin['vsb_id']}").json()
+    assert ent["body_pending"]["ceo_specification"] is True
+    assert ent["ceo_specification"].startswith("content pending the owned model")
+    assert "native structured" not in ent["ceo_specification"].lower()
+    assert client.post(f"/api/v1/vsb/{fin['vsb_id']}/website").status_code == 409
+    r2 = client.post("/api/v1/vsb/spawn", json={"challenge": "w450 named spawn", "name": "Leeds Halal Bakery"})
+    fin2 = [_json.loads(l[6:]) for l in r2.text.splitlines() if l.startswith("data: ") and '"complete"' in l][-1]["data"]
+    assert fin2["name"] == "Leeds Halal Bakery" and fin2["name_pending"] is False
+    # the slug itself: whole words only, letters only, never a mid-word cut
+    assert _slug_name("Pneumonoultramicroscopicsilicovolcanoconiosis treatment clinic") == "Treatment Clinic"
+    assert _slug_name("I've been thinking about bees") == "Been Thinking Bees"
+    assert len(_slug_name("x")) >= 3 and " " not in _slug_name("").strip() or _slug_name("") == "Venture"

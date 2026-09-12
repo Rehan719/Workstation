@@ -416,7 +416,7 @@ export const VSBCockpit: React.FC = () => {
             <div className="space-y-4">
               <Card className="p-6 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <h3 className="text-lg font-black text-white">{detail.name}</h3>
+                  <h3 className="text-lg font-black text-white">{detail.name}{detail.name_pending && <span className="ml-2 align-middle text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400" title="a working slug from the founder's words — name it on the Genesis page">working name — pending the founder's</span>}</h3>
                   <div className="flex gap-2">
                     {detail.domain && <Badge color="highlight">{detail.domain}</Badge>}
                     {detail.status && <Badge color="emerald-500">{detail.status}</Badge>}
@@ -498,6 +498,17 @@ export const VSBCockpit: React.FC = () => {
                   <div className="flex items-center gap-2 mb-3">
                     <Crown size={15} className="text-highlight" />
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-white">Chief’s Opening — Executive Summary · Concept · Vision</h4>
+                    {/* W450 (P1.2) — who wrote the opening: the body's provenance, badged; pending fields named */}
+                    {(() => {
+                      const sb = plan.provenance?.served_by as Record<string, number> | null | undefined;
+                      if (!sb) return null;
+                      const keys = Object.keys(sb).filter(k => (sb[k] || 0) > 0);
+                      const b = provenanceBadge(keys.length && keys.every(k => k === 'native') ? 'native' : (keys.find(k => k !== 'native') ?? 'native'));
+                      return <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>;
+                    })()}
+                    {Array.isArray(plan.provenance?.body_pending) && plan.provenance.body_pending.length > 0 && (
+                      <span className="text-[9px] text-amber-400/80" title="the deterministic floor served these; the enterprise has not composed them">pending the owned model: {plan.provenance.body_pending.join(' · ')}</span>
+                    )}
                   </div>
                   {([['Executive Summary', plan.executive_summary], ['Concept', plan.concept], ['Vision', plan.vision]] as [string, string][])
                     .filter(([, v]) => v).map(([label, val]) => (
