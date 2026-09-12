@@ -4,13 +4,15 @@
 >
 > **How v11 rev 2 was derived (W446).** v11 (rev 1, 2026-09-04) closed the Tier-2 reach campaign
 > and carried a ONE-entry ledger. It was honest about one thing it could not know: its companion
-> fidelity ledger was **eleven workstreams old** ("weigh it accordingly"). Rev 2 stops weighing and
+> fidelity ledger was **ten workstreams old** by its own count ("weigh it accordingly" — eleven by the
+> time W445 shipped). Rev 2 stops weighing and
 > re-measures. Three phases, all run as multi-agent workflows with every finding adversarially
 > refuted: (1) a research analysis of the whole body of previous work — 69 Owner directives, 30
 > lessons, every §-promise against what the log says was delivered, and 15 canon inconsistencies
 > across the companion documents; (2) a **fresh six-region fidelity audit against a backend booted
-> from HEAD `06c51109`** (`VISION_FIDELITY_LEDGER.md` v3 — 60 findings, all 60 individually
-> refuted, not the six-per-region cap of v2); (3) regeneration of the canon set from that
+> from HEAD `06c51109`** (`VISION_FIDELITY_LEDGER.md` v3 — 60 findings, ten per region because the
+> assessors were CAPPED at ten and every region hit the cap, so 60 is the cap not the gap; then all 60
+> individually refuted, where v2 refuted six per region); (3) regeneration of the canon set from that
 > provenance — this prompt, the vision (§16, §17, §18-E, recorded Owner directives), the living
 > plan (scorecard re-scored honestly, with its API mirror), and the companions.
 >
@@ -35,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W446) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W448) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -50,7 +52,8 @@ honesty-over-polish. Extend and integrate what exists; never rewrite what works.
 THE SURFACE, measured 2026-09-05 against HEAD 06c51109 (reproduce: python scripts/reach_audit.py):
   463 method+path operations over 439 API paths · 271 distinct frontend /api fragments
   73 <Route> declarations in App.tsx — 72 concrete + the catch-all, all 72 render
-  reach, classified: 325/456 /api ops reached · 64 legacy (non-v1, KEPT — live callers) ·
+  reach, classified: 325/456 /api ops reached · 64 legacy (non-v1, UNREACHED by the fragment
+    matcher; KEPT under rule 17 until callers it cannot see are ruled out) ·
     67 genuine-unreached, small scatter in 38 tiny clusters
   suite 350 passed / 15 skipped / 0 failed (326 test functions) · import integrity clean ·
     browser smoke 17 deep + 57 swept
@@ -62,8 +65,9 @@ PARTIAL 32 · DELIVERED 8; STANDING after refutation STUB 10 · MISSING 3 · DOC
 PARTIAL 36 · DELIVERED 6. The refuters overturned four — two DELIVERED claims down to PARTIAL (a
 green in-house chip over 16 floor-served tiers; a status page inverted by a failure row) and two
 STUBs up to PARTIAL (a real chat with undisclosed provenance; a real gate fed nothing to measure)
-— and reproduced the other 56 with their OWN inputs. Read the ledger before the code; read
-<delivery_plan> before choosing work.
+— and stood the other 56: several reproduced with the refuters' OWN inputs (a second journey, VSB,
+change record, transfer), the rest confirmed by re-executing the assessor's route or reading the
+code. Read the ledger before the code; read <delivery_plan> before choosing work.
 
 CAVEAT THAT HAS COST THIS PROJECT TIME REPEATEDLY: a long-running dev process serves the code it
 booted with. Boot a FRESH backend before probing behaviour (this project increments a port per
@@ -133,9 +137,11 @@ Work in this order. It is not effort order — it is "how much a real person is 
   TIER 1 — TRUTH DEFECTS. The system tells a user something untrue, or certifies what it could
            not assess. THE AUDIT FOUND FOURTEEN, ALL ON REACHED SURFACES — they are <delivery_plan>
            P1, and P1 is worked before anything else. The pattern behind most of them: a gate,
-           badge or chip that CANNOT FAIL on the shipped default configuration (the floor serves
-           100% of calls in CI and on any box without a local model). Ask of every green thing:
-           what input makes this say no?
+           badge or chip that CANNOT FAIL on the floor — the configuration CI runs and any box
+           without a local model gets (NOT the shipped default: with AI_DISABLE_LOCAL unset and
+           Ollama discoverable, the gateway serves from the local model), and the one that served
+           every gateway call during the audit (one surface, the v138 CEO chat, bypasses the
+           gateway — ledger 1.3). Ask of every green thing: what input makes this say no?
   TIER 2 — REACH AND DISCLOSURE GAPS. The capability EXISTS but nobody can reach it, or the
            shortfall is INVISIBLE to the person relying on it (a floor-served stage grounded in
            the engine's own marker text; a profile that is stored, shown, and inert). P2.
@@ -153,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W446 (446 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W448 (448 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -199,8 +205,9 @@ batch 3–4 per round; audit each before wiring; retirement is an equal outcome.
 </trajectory>
 
 <ledger>
-The surviving gaps, tiered, each citing its VISION_FIDELITY_LEDGER.md v3 entries (region.index).
-The plan below groups them into workstreams; this block is the register of WHAT IS WRONG.
+The surviving gaps, tiered, each citing its VISION_FIDELITY_LEDGER.md v3 entries (region.index), or
+saying which other instrument it rests on. The plan below groups them into workstreams and carries
+the same cites; this block is the register of WHAT IS WRONG.
 
 TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
  1.1 THE QMS GATE IS A CERTIFICATE PRINTER ON THE FLOOR. assure_delivery measures coverage as
@@ -216,7 +223,13 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      no to floor scaffold and yes to a real document.
  1.2 THE SHIPPED VSB BODY PRESENTS FLOOR SCAFFOLD AS THE ENTERPRISE'S CONCEPT — website ×3 pages,
      webapp/mobile data.json, BUSINESS_PLAN.md, the Cockpit Plan tab — with a footer claiming
-     "quality-gated, compliance-screened", and 1.1 certifies it. [R2.0, R2.1, R2.2]  DONE WHEN a
+     "quality-gated, compliance-screened", and 1.1 certifies it. And on the floor `_derive_name`
+     rejects every returned line and falls back to `VSB — {problem[:40]}`, so the enterprise is
+     NAMED "VSB — I keep 40 beehives in Somerset and lose " (truncated mid-sentence, trailing
+     space) on every public page, the PWA manifest, README, commits, board pack and Cockpit — it
+     reads as a chosen brand; and clicking "Generate VSB Repository" after a birth-ship REGRESSES
+     the public website to a one-line scaffold while the ship manifest still says stale=false.
+     [R2.0, R2.1, R2.6, R2.9]  DONE WHEN a
      floor-served establishment ships the founder's OWN words plus an honest "content pending the
      owned model" state, zero engine vocabulary in any public page, and the body's provenance is
      badged on the Cockpit.
@@ -231,7 +244,8 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      provenance.
  1.4 MODE 3 REVIEW GATES GATE NOTHING. review_gates/blocks_progress are read by their own four
      endpoints only; a REJECTED design gate did not stop orchestrate, cascade, evolve or ship; the
-     Genesis panel and vision §17.4 say DELIVERED. [R3.3, R2.3]  DONE WHEN every lifecycle mover
+     Genesis panel says nothing about advisory, and vision §17.4 said ✅ DELIVERED at the audit
+     baseline (corrected to ◐ in W446). [R3.1, R2.2]  DONE WHEN every lifecycle mover
      consults the gate and a blocking gate returns 409 with the gate status, proven both ways.
  1.5 TEN BADGE SITES PAINT THE FLOOR GREEN. provenanceBadge() returns amber + "structured floor —
      not model analysis"; seven sites take .label and colour by is_external (incl. the Law hub's
@@ -245,7 +259,10 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
  1.7 THE CONSTITUTIONAL COMPLIANCE ROW CANNOT READ CONTENT — validate(kind, …) never consults the
      subject; every content check is green "Constitutional gate clear"; the router's bare except
      leaves a pass on engine failure; a compliance FAIL on a deliverable routes to the CCA and the
-     artifact still exports clean. [R1.1, R1.3]
+     artifact still exports clean. And the "UK Legal (London)" engine is eight employment-law terms
+     (Equality Act 2010 / ERA 1996 / ACAS) whose audit hash is identical for a halal bakery and a
+     laundering scheme (it hashes the empty flag set, not the subject); "Sharia/Halal" is a
+     substring loop; the Frameworks card presents them as engine-grade coverage. [R1.1, R1.3, R1.6]
  1.8 THE TAFSIR TAB SERVES A FLOOR "TRANSLATION" SECTION — rule 4 of §11 applied to
      /qep/translation (503) and not to /religion/quran-tafsir; the sourced Arabic, range cap and
      scholar-referral never reach the screen (no disclaimer key; DomainTool renders resultKey +
@@ -271,16 +288,18 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
  1.14 THE BOARD PACK CERTIFIES A CONTENTLESS NARRATIVE — required sections are found in the
      preamble the handler itself wrote; three "assembled fresh" packs carry one byte-identical
      DCS hash; the Chief's Opening stores prompt-echo, drops the floor prefix, and has no owner-
-     edit surface. [R3.6, R3.5, R3.4]
+     edit surface. [R3.6, R3.5, R3.3]
 
 TIER 2 — REACH AND INVISIBLE SHORTFALLS
  2.1 FLOOR CASCADES GROUND STAGES 2+ IN THE ENGINE'S OWN MARKER TEXT ("external dependency ·
      structured engine"); BDP 8/8 stages never mention the challenge; a literal "\n" in the
-     orchestrator's f-string; gateway recall injects earlier floor output into unrelated calls.
-     [R4.1]
- 2.2 PROVENANCE STOPS AT THE API BOUNDARY for 47 gateway.query() sites and seven output pages
-     (Intelligence Lab, Forge, Synthesis Studio/Nexus, BTO, Sovereign Evolution, Business Plan).
-     [R4.2, R4.9, R3.3]
+     orchestrator's f-string; gateway recall injects earlier floor output into unrelated calls;
+     and inside the journey the two helpers that bypass the problem prefix (_ai_cognitive_prime,
+     _ai_mjm_lifecycle) let the engine describe itself — 'architecture specialised · cognitive
+     architecture' — while engines_used is a constant list, not provenance. [R4.1, R2.7]
+ 2.2 PROVENANCE STOPS AT THE API BOUNDARY for 47 gateway.query() sites and R4.2's seven output
+     pages (Intelligence Lab, Forge, Synthesis Studio/Nexus, BTO, Sovereign Evolution, Organism
+     Dashboard) — plus the Business Plan's Chief's Opening card (R3.3). [R4.2, R4.9, R3.3]
  2.3 THE AVATAR ANSWERS ITS OWN PERSONA LINE under the floor; the user's language preference is
      returned null and never shown; /status pings Ollama regardless of the disable flag; the
      profile's profile_applied flag is dropped, so the W428 profile is stored, shown and inert
@@ -293,24 +312,29 @@ TIER 2 — REACH AND INVISIBLE SHORTFALLS
      living-VSB compliance rows read keys the screen never writes; the user_projects waterfall
      stage leaves the investor's books and reaches no investee; requirements.txt and pyproject
      pin torch as a HARD dependency while §17.5 calls it optional. [R4.5, R4.6, R6.1, R6.3, R6.4,
-     R6.5, R6.8 — all stood under refutation; the refuter also observed the guardrail block LIVE:
-     "exploit the market opportunity" → "[POLICY VIOLATION]".]
+     R6.5, R6.8 — all stood under refutation.]
  2.5 THE GaaS GATE COVERS 8 OF 57 API MODULES; the gateway every other output takes runs a
-     three-regex keyword filter that blocks "exploit the market opportunity". [R6.0]
+     three-regex keyword filter that blocks "exploit the market opportunity" — observed LIVE by
+     R6.0's refuter: POST /api/ai/query → "[POLICY VIOLATION]". [R6.0]
  2.6 THE CONTROL PERIMETER HAS NO AUTH — heartbeat, genome, organism-status, sovereign-evolution,
      board, CCA, business-plan, swarm, studio: any caller under auth could stop the heart or run
      economy cycles across every tenant. [R6.2, R3.2]
  2.7 "BESPOKE PER SOLUTION" IS ONE FIXED 4-STAGE TEMPLATE per VSB; the tree's planner flag
      ('deterministic_template') is never rendered under copy saying "autonomously decomposes";
-     Forge exposes no per-stage config or rerun. [R4.4]
- 2.8 THE 67-OP SCATTER (38 clusters) — audit-before-wire, retirement equal.
+     the Forge UI exposes neither per-stage config nor Rerun although the API accepts both
+     (POST /api/v1/forge/runs/{id}/rerun exists; per-stage config is honoured) — UI wiring, not
+     backend work. [R4.4]
+ 2.8 THE 67-OP SCATTER (38 clusters) — audit-before-wire, retirement equal. [no ledger entry — the
+     instrument is scripts/reach_audit.py, run fresh]
  2.9 REALM DRIFT: configs/realms.yaml orphaned; sovereign_config.yaml points at a file that does
      not exist; hub CTAs post domains as realms; DomainTool never sends a realm. [R5.5]
 
 TIER 3 — CAPABILITY GAPS
  3.1 §4.6 DEVELOP — no stage between design and operations produces a checkable artefact with a
-     real pass/fail (v2 finding, unrefuted then; the journey still has no develop stage).
- 3.2 §4.1 IMAGE INTAKE — the Describe field accepts text/voice/text-PDF only.
+     real pass/fail (v2 §4.6 MISSING, unrefuted then; v3 R2.3 re-observed the journey's stage list
+     'minus §4.6 Develop — nothing builds the user's solution'). [R2.3]
+ 3.2 §4.1 IMAGE INTAKE — the Describe field accepts text/voice/text-PDF only; image reaches only the
+     Cockpit 'Converse' tab. [R2.8]
  3.3 §17.3 STRATEGIC + ACTION-PLAN CADENCE LAYERS — nothing refreshes them quarterly/weekly/on
      signal; the board pack labels pre-existing fields as layers and a constant values string.
      [R3.5]  (The ≤5-min staleness invariant IS met by read-time derivation — a wording overclaim.)
@@ -321,15 +345,37 @@ TIER 3 — CAPABILITY GAPS
  3.6 §17.5 KPI GATE — nothing gates delivery on KPIs. [R6.6]  OWNER RULING: build or amend.
  3.7 §4.10 AUTONOMY — every autonomy flag OFF by default and persisted OFF; /establish does not
      switch tending on, yet its API response says "the organism tends this VSB on the circadian
-     heartbeat" (untrue while auto_economy is OFF — an API-level overclaim no UI renders); genome
-     generation 0. [R6.7]
- 3.8 §9 DEPTH — i18n chrome only on three pages; AI output English; profile inert on the floor.
- 3.9 §13 — no repo file/zip endpoint or clickable tree; the entity's products not listed.
+     heartbeat" (untrue while auto_economy is OFF — the SSE birth log announces it too); genome
+     generation 0; §11's "continuously monitored" compliance is the same OFF switch (auto_compliance
+     false, last_compliance null after 48 beats; deliverables and domain outputs are screened ONCE
+     at production and never again, and nothing on Deliverables says so). [R6.7, R2.4, R1.5]
+ 3.8 §9 DEPTH — i18n chrome only on three pages; AI output English; profile inert on the floor. [R5.7]
+ 3.9 §13 — no repo file/zip endpoint or clickable tree; the entity's products not listed (v2 §13
+     finding, not re-assessed in v3; the adjacent v3 entry is R2.6 — 'Generate VSB Repository' after a
+     birth-ship REGRESSES the public website to a one-line scaffold while the ship manifest says
+     stale=false — which P3.7 also closes). [R2.6]
  3.10 §4 · §17.1 — THERE IS NO SINGLE LIFECYCLE (OWNER RULING, unchanged from v11 rev 1): eight
-     vocabularies; every VSB born at "commercialise" from genesis.py:687/:852 literals and never
-     advanced (219/219 re-counted 2026-09-05); options (A) canon five become the one gated
+     vocabularies; 219 of 219 VSBs at "commercialise" and never advanced — 218 born from the
+     genesis.py:687/:852 literals, one via vsb.py's spawn path (`stage: req.scope`; re-counted
+     2026-09-05); options (A) canon five become the one gated
      lifecycle, (B) correct the canon, (C) NARROW — make VSB stage advance or rename it (the
-     recommendation). (C)'s VSB half is a Tier-1 truth defect in a Tier-3 costume.
+     recommendation). (C)'s VSB half is a Tier-1 truth defect in a Tier-3 costume. [R2.3 — two entry
+     pipelines, four stage vocabularies, neither gated; a Spawn-Studio entity persists stage 'build'
+     beside journey-born ones at 'commercialise']
+
+ 3.11 §10 NAMES SIXTEEN CRITERIA; INSTRUMENTS EXIST FOR FOUR — best-in-class, innovative, effective,
+     efficient, commercially viable, optimised, tested, validated have no instrument anywhere; and
+     Genesis ATTESTS 'modelled · simulated · ranked' as met (source 'caller', sealed into the QMS
+     record and the shipped EVIDENCE.md) on runs whose own payload says the three candidates were
+     byte-identical and the ranking was a tie resolved by list order. The page discloses the tie
+     and the record's basis string carries it — but the record COUNTS ranked/simulated/modelled
+     as met:true beside that basis, and the shipped EVIDENCE.md has no tie note. [R1.4, R2.5]
+     TWO HALVES: the attestation half is Tier 1 and
+     rides with P1.1 (never attest ranked/simulated on a tie or identical candidates; EVIDENCE.md
+     carries the tie note); the wording half is an OWNER RULING (P3.0) — build instruments for at
+     least the commercial trio (effective · efficient · commercially viable, e.g. from the BMS
+     unit-economics estimate) or amend §10 to 'measured where an in-house instrument exists; the
+     record names what was not'.
 
 OWNER-GATED, NOT GAPS: real-money rails, live Stripe (the exposed key is redacted from the tree
 but STILL IN GIT HISTORY — rotation at Stripe is an Owner action still owed), managed Postgres,
@@ -375,71 +421,79 @@ content that P3 builds on). P3 items marked OWNER RULING are put to the Owner wi
 the START of P3 so rulings arrive while the unambiguous P3 items are built. P4 is the Owner's hand.
 
 PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
- P1.1 [ledger 1.1] The gate that cannot fail — class-kill. assure_delivery(served_by=…) →
+ P1.1 [ledger 1.1 + 3.11's attestation half · R1.2 R1.4 R2.0 R2.5 R3.6 R3.7 R5.2] The gate that cannot fail — class-kill. assure_delivery(served_by=…) →
       floor-served: qms_gate_passed=None, 'verified'/'specifically designed' source 'none', basis
       "not assessable — the floor emits the requested headings"; ai_text() passes each router's
       real section list; coverage never measured against None; DomainTool/Deliverables/Genesis/
       Swarm/ResourceFabric/board-pack chips render slate '—' with the basis. ACCEPT: the NEWS2
       case, the empty-concept board pack and a floor cascade all return None; a real 900-char
-      4-section document still passes; guard both ways. Closes R1.2 R5.2 R3.6 R3.7.
- P1.2 [1.2] The shipped body never wears scaffold. On the floor, establish ships the founder's
+      4-section document still passes; Genesis no longer attests 'ranked'/'simulated' when
+      tie.detected or candidates_distinct == 1 (met:None with the reason) and EVIDENCE.md carries the
+      tie / identical-candidates note beside the selected candidate; guard both ways.
+ P1.2 [1.2 · R2.0 R2.1 R2.6 R2.9] The shipped body never wears scaffold — nor a fallback name. On the floor, establish ships the founder's
       verbatim problem statement + "content pending the owned model — this enterprise has not
       yet composed its own concept" on website/webapp/mobile/BUSINESS_PLAN.md/Plan tab; the
       W434 scrubber remains for model output; provenance badged in the Cockpit. ACCEPT: a floor
       journey's public pages contain the founder's words and zero marker/engine/role vocabulary
-      (grep guard over the shipped body); an Ollama-served journey unchanged. Closes R2.0–R2.2.
- P1.3 [1.3] The AI CEO chat on the fabric. Replace v138/ceo's stream with gateway.stream/
+      (grep guard over the shipped body); an Ollama-served journey unchanged; a floor fallback name
+      becomes a neutral trimmed slug and the newborn card asks the founder to name the enterprise
+      before it ships; re-generating the repo never regresses a shipped surface, and the ship
+      manifest reports stale honestly.
+ P1.3 [1.3 · R3.0 R4.0] The AI CEO chat on the fabric. Replace v138/ceo's stream with gateway.stream/
       orchestrator (in-house-first, honours AI_DISABLE_LOCAL, guardrails, breaker, learning
       loop, tenant memory); final SSE event {served_by, is_external}; delete the Galactic Era
       persona, the lambda "tool registration" and the canned advisory; ground the CEO in the
       Board's directives + the living plan (the §5 chain); CEOChat pill + per-message
       provenanceBadge from that event. ACCEPT: AI_DISABLE_LOCAL=1 → floor answer, amber badge,
       no "[Offline Mode]" text anywhere in the repo; with a local model → served_by shown.
- P1.4 [1.4] Mode 3 gates gate. orchestrate, cascade, /evolve, /repo/ship and establish consult
+ P1.4 [1.4 · R2.2 R3.1] Mode 3 gates gate. orchestrate, cascade, /evolve, /repo/ship and establish consult
       review_gates; blocking → 409 {gate, status, blocks_progress}; Genesis panel copy honest.
       ACCEPT: rejected design gate → 409 on each mover; approved → 200; guard both ways.
- P1.5 [1.5] provenanceBadge class-kill, part 2. All ten sites use .cls/.title; MyWork label;
+ P1.5 [1.5 · R3.4 R3.7 R5.1] provenanceBadge class-kill, part 2. All ten sites use .cls/.title; MyWork label;
       BoardOfDirectors + SwarmIntelligence use the helper; the "every badge routes through it"
       claim made true. GUARD: a test that fails on `provenanceBadge(` used with `.label` and no
       `.cls`, and on any inline `is_external ?` colour ternary in src/.
- P1.6 [1.6] Employment default tab honesty. Copy → "AI-synthesised example listings — not a live
+ P1.6 [1.6 · R5.0] Employment default tab honesty. Copy → "AI-synthesised example listings — not a live
       job board; verify every URL"; synthesis is not a "source"; fabricated url/salary/published
       dropped or labelled illustrative; ApplicationStudio renders provenance; default tab → the
       CV tools. ACCEPT: probe reads the honest copy on the default tab; badge present.
- P1.7 [1.7] Compliance that reads. Constitutional row → 'not applicable to content — gaas.v5
+ P1.7 [1.7 · R1.1 R1.3 R1.6] Compliance that reads. Constitutional row → 'not applicable to content — gaas.v5
       gates agent actions' (amber, not_checked) unless kind is an action, or validate_output on
       the subject with a label saying what it checks; router except → recorded error, never a
       pass; a FAIL verdict on a deliverable → export watermarked with the verdict (or blocked),
-      list row marked. ACCEPT: the prohibited-token subject no longer greens; a haram brief
-      exports with its verdict on page one.
- P1.8 [1.8] The tafsir surface completes §11. disclaimer key; on the floor refuse the
+      list row marked; the Frameworks card labels each engine by what it actually checks ("UK Legal —
+      keyword screen + employment-statute vocabulary; not legal advice"), the audit hash covers the
+      subject, and anything outside a vocabulary returns 'review — no engine covers this area', never
+      'pass'. ACCEPT: the prohibited-token subject no longer greens; a haram brief exports with its
+      verdict on page one; two different subjects never share an audit hash.
+ P1.8 [1.8 · R1.0] The tafsir surface completes §11. disclaimer key; on the floor refuse the
       Translation/Transliteration sections (503 like /translation) or drop the headings with a
       floor_note; Tafsir tab renders arabic_text + arabic_source + reference + range_note; the
       QMS chip follows P1.1. ACCEPT: probe on /religion?tab=tafsir sees sourced Arabic, the
       range note for 2:1-20, the scholar line, and no "Translation" heading over floor text.
- P1.9 [1.9] Care scoring computes. NEWS2 / MUST / Waterlow / falls arithmetic in-house from the
+ P1.9 [1.9 · R5.3] Care scoring computes. NEWS2 / MUST / Waterlow / falls arithmetic in-house from the
       published tables, returned as a deterministic `score` block rendered FIRST; AI narrates
       interpretation only; observations validated for units/completeness; copy corrected.
       ACCEPT: the assessor's case → NEWS2 6, band "urgent ward-based response"; table tests.
- P1.10 [1.10] Status honesty + disabled ≠ failed. floor_active from the most recent SUCCESSFUL
+ P1.10 [1.10 · R4.7 R4.8] Status honesty + disabled ≠ failed. floor_active from the most recent SUCCESSFUL
       completion; _run_model under AI_DISABLE_LOCAL raises a sentinel → tried "ollama (disabled
       by config, skipped)", no _record_model/_organism_report. ACCEPT: a model='local' call
       leaves immune health and model-health untouched and status says floor.
- P1.11 [1.11 + the CCA latents] Change Control enforced. Auth on the CCA (and P2.6's routers);
+ P1.11 [1.11 + the CCA latents · R3.2 R6.2] Change Control enforced. Auth on the CCA (and P2.6's routers);
       submitted_by stamped server-side; override admin-only and never for CRITICAL without an
       explicit admin decision recorded as that principal (not 'cca_ai'); the docstring tiers
       implemented or deleted; twin fallback rendered "no twin model — health gate only";
       store_lock on review/twin-prevalidate/implement; requires_ratification gets a Board
       consumer or stops being set. ACCEPT: auth-ON test — non-admin override on CRITICAL → 403;
       audit_trail 'by' = the principal.
- P1.12 [1.12] Visual Composer: wire Export/Deploy to /resources/swarm/define + run with the
+ P1.12 [1.12 · R4.3] Visual Composer: wire Export/Deploy to /resources/swarm/define + run with the
       returned cascade id, or RETIRE the tab and link the /native-ai designer. Either way the
       "GaaS COMPLIANT" badge goes. ACCEPT: no unevaluated compliance badge in src/.
- P1.13 [1.13] Catalogue honesty. Marketplace counts only routed entries as live; the six Domain
+ P1.13 [1.13 · R5.6 R5.8] Catalogue honesty. Marketplace counts only routed entries as live; the six Domain
       Signature literals badged legacy or retired; the "QEP Flagship" tab removed from the five
       non-Religion hubs; DomainsHub/AIToolsCatalogue counts derived from ONE tool registry the
       hubs mount from. GUARD: a test that counts mounted DomainTool forms against the registry.
- P1.14 [1.14] Board pack + Chief's Opening honesty. Required-section check against the narrative
+ P1.14 [1.14 · R3.3 R3.5 R3.6] Board pack + Chief's Opening honesty. Required-section check against the narrative
       only; empty blueprint → "no concept recorded — pack not assembled"; identical DCS hash →
       "unchanged since <date>"; provenance badge on the Genesis card; plan parser keeps the
       floor prefix as provenance; POST /business-plan/set wired to an owner-edit surface; the
@@ -447,33 +501,34 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
  MILESTONE M1: fidelity workflow re-run → Tier-1 count 0; ledger v4.
 
 PHASE P2 — REACH AND DISCLOSURE (Tier 2; ~8 rounds + the scatter)
- P2.1 [2.1] Cascade grounding. engine.py strips the marker line, "_Acting as:" lines and
+ P2.1 [2.1 · R2.7 R4.1] Cascade grounding. engine.py strips the marker line, "_Acting as:" lines and
       "## <role> output" headers from carried context before _subject/_keywords/_role;
       'Task'/'Objective'/'Challenge' join the subject labels; intelligence.py labels the
       challenge in every stage template; the orchestrator's literal "\n" fixed; floor output is
       never STORED for recall (augment=False stays — this removes, never adds, recall). ACCEPT:
       a 3-stage floor swarm's stage 3 contains the user's subject and not "external dependency";
-      BDP 8/8 stages mention the challenge; guard.
- P2.2 [2.2] Provenance to every surface. The 47 gateway.query() sites → query_meta carrying
+      BDP 8/8 stages mention the challenge; the journey's cognitive/MJM helpers route through the
+      journey's own `_q` seam and engines_used derives from served_by_agent; guard.
+ P2.2 [2.2 · R3.3 R4.2 R4.9] Provenance to every surface. The 47 gateway.query() sites → query_meta carrying
       {served_by, is_external} (SSE engines: on every stage + complete event); badges on
       IntelligenceLab, ForgePipeline (payload already there), SynthesisStudio/Nexus, BTOCatalog,
-      SovereignEvolution, BusinessPlan, the Genesis board-pack card. GUARD: `gateway.query(`
+      SovereignEvolution, OrganismDashboard, BusinessPlan, the Genesis board-pack card. GUARD: `gateway.query(`
       count in agentic_core/api == 0.
- P2.3 [2.3] Avatar + profile honesty. User message as the floor's subject; language null with a
+ P2.3 [2.3 · R5.4 R5.7] Avatar + profile honesty. User message as the floor's subject; language null with a
       preference set → "Answered in English — your language needs the owned model"; /status
       reports the effective serving mode; profile_applied carried into ai_provenance and shown
       as "profile: applied / not usable by the floor"; Settings copy corrected.
- P2.4 [2.8] The scatter: 67 ops in 38 clusters, 3–4 per round, audit-before-wire, retire freely.
- P2.5 [2.9] Realm drift retired: configs/realms.yaml removed, sovereign_config path fixed, hub
+ P2.4 [2.8 · no ledger entry — reach audit] The scatter: 67 ops in 38 clusters, 3–4 per round, audit-before-wire, retire freely.
+ P2.5 [2.9 · R5.5] Realm drift retired: configs/realms.yaml removed, sovereign_config path fixed, hub
       CTAs pass a canonical realm + domain, DomainTool sends the user's default realm so
       realm_directive reaches Offering-1, projects API validates realm against the taxonomy.
- P2.6 [2.6, 2.5] The perimeter and the gate. include_router dependencies=[require_admin] for
+ P2.6 [2.6, 2.5 · R3.2 R6.0 R6.2] The perimeter and the gate. include_router dependencies=[require_admin] for
       heartbeat, genome, organism-status, sovereign-evolution, board, CCA; owner scoping on
       business-plan, swarm, studio; ConstitutionalPolicyGate + UEG checkpoint inside
       gateway.query_meta; guardrails regex → word-boundary/context. ACCEPT: auth-ON suite —
       401 on POST /heartbeat/stop; "exploit the market opportunity" passes; every query_meta
       response carries a gate checkpoint.
- P2.7 [2.4] The organism defends for real (the honest half first, then the wiring). layers_note
+ P2.7 [2.4 · R4.5 R4.6 R6.1 R6.3 R6.4 R6.5 R6.8] The organism defends for real (the honest half first, then the wiring). layers_note
       truthful (Immune, Nervous bus, Self-healing, Musculoskeletal engaged; Cardiovascular and
       Endocrine not implemented; Respiratory = Agent Hub, records only) and the W434 sentence
       deleted; reflexes REGISTERED from the heartbeat's hand-coded checks so threshold events
@@ -484,7 +539,7 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; ~8 rounds + the scatter)
       test with sys.modules['torch']=None; living-VSB compliance keys aligned; venture positions
       queue investee intake or are labelled "recorded, unfunded"; ledger postings tagged by
       source and split in the board pack.
- P2.8 [2.7] Bespoke swarms. genesis derives extra stages from the concept (risk, economics,
+ P2.8 [2.7 · R4.4] Bespoke swarms. genesis derives extra stages from the concept (risk, economics,
       implementation) with the same keyword rules _plan_tree uses; "Edit cascade" on the
       Cockpit; planner rendered on the tree view; Forge per-stage config + Rerun; the
       transformation realisation engine measures DELIVERY (ledger verdicts), not route existence.
@@ -492,11 +547,13 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; ~8 rounds + the scatter)
    resolved (wired or recorded-retired); ledger v5.
 
 PHASE P3 — CAPABILITY (Tier 3; ~11 rounds; OWNER RULINGS put with evidence at P3 start)
- P3.0 OWNER RULINGS, put together with the evidence: 3.10 lifecycle (A/B/C) · 3.5 Products axis
+ P3.0 OWNER RULINGS, put together with the evidence: 3.10 lifecycle (A/B/C) · 3.11 §10's sixteen
+      criteria (instruments for the commercial trio, or amend §10) · 3.5 Products axis
       (build the grid picker feeding Genesis, or amend §17.1 to "design intent") · 3.6 KPI gate
       (block deliverable/marketplace release until the owning VSB's objective KPIs are set and
-      tracked, or amend §17.5) · 3.4 Mode 2 scope · AND THE FIVE QEP RULINGS (vision A.10, each
-      blocking P3.9-P3.11): A.12.1 corpus provenance (recitation audio, translations, Hadith,
+      tracked, or amend §17.5) · 3.4 Mode 2 scope · AND THE FIVE QEP RULINGS (vision A.12 — A.12.3 blocks
+      P3.10 and every guidance surface; A.12.1/A.12.2/A.12.5 shape P3.9's later features; A.12.4
+      gates the Fitrah feature; P3.9's first two items need no ruling): A.12.1 corpus provenance (recitation audio, translations, Hadith,
       Tafsir — licence + canonical edition + qira'at; Qur'an Arabic is already settled at
       alquran.cloud per §11) · A.12.2 certification authority (who stands behind a QEP
       certificate) · A.12.3 curriculum ownership AND the scholar-review mechanism for
@@ -504,28 +561,29 @@ PHASE P3 — CAPABILITY (Tier 3; ~11 rounds; OWNER RULINGS put with evidence at 
       mechanism exists; this one blocks features 5/6/7 and all of A.7 · A.12.4 whether the Fitrah
       Spectrum proceeds at all, and only ever as A.9.5's self-reported reflection aid ·
       A.12.5 Tajwid rule scope and madhhab variation.
- P3.1 [3.1] §4.6 Develop: a distinct journey stage between design and operational intelligence
+ P3.1 [3.1 · R2.3] §4.6 Develop: a distinct journey stage between design and operational intelligence
       producing at least one buildable, checkable artefact (a costed bill of materials, a
       runnable prototype spec, or a parameterised model via factory/forge) with a REAL pass/fail
       recorded in the journey; floor → honest "not buildable on the floor".
- P3.2 [3.7] Autonomy that starts. /establish switches auto_economy + auto_compliance on for the
+ P3.2 [3.7 · R1.5 R2.4 R6.7] Autonomy that starts. /establish switches auto_economy + auto_compliance on for the
       new entity with a visible "tending on" state; the Cockpit shows last_operated, cycles and
-      the governing flags; the living-plan pillar re-scored only when an instance has evolved
-      ≥1 generation.
- P3.3 [3.3] §17.3 cadence: heartbeat-driven Strategic (quarterly + market signal) and Action-
+      the governing flags; auto_compliance defaults ON (cheap, deterministic) and its beat extends to
+      living deliverables, each card showing 'last screened <time>'; the living-plan pillar re-scored
+      only when an instance has evolved ≥1 generation.
+ P3.3 [3.3 · R3.5] §17.3 cadence: heartbeat-driven Strategic (quarterly + market signal) and Action-
       Plan (weekly + KPI-triggered) refresh generators writing to the plan with provenance and
       history; board-pack layers assembled from THEM; values from the VSB's own constitution.
- P3.4 [3.4] Mode 2 (per ruling): the Chief as a genuine modelled twin — a per-founder model
+ P3.4 [3.4 · R3.4 R3.8] Mode 2 (per ruling): the Chief as a genuine modelled twin — a per-founder model
       built from the explicit profile + instructions + decisions, invoked unprompted
       (heartbeat auto_align → board_directive with execute) and rendered with its basis;
       per-VSB Chiefs titled for their owner, never "of default".
- P3.5 [3.2] Image intake from Describe: an owned vision resource reads an attached image into
+ P3.5 [3.2 · R2.8] Image intake from Describe: an owned vision resource reads an attached image into
       text, or refuses with an accurate reason; the accept list says what is supported.
- P3.6 [3.8] §9 depth: useT across hubs/DomainTool/Settings/avatar; AI-output language honoured by
+ P3.6 [3.8 · R5.7] §9 depth: useT across hubs/DomainTool/Settings/avatar; AI-output language honoured by
       the owned model and labelled when not; 12-language list trimmed to what has a dictionary.
- P3.7 [3.9] §13 repo: file/zip endpoint, clickable tree, preview links from the Cockpit; the
+ P3.7 [3.9 · R2.6] §13 repo: file/zip endpoint, clickable tree, preview links from the Cockpit; the
       entity's products listed on the marketplace with §12 pricing.
- P3.8 [3.5, 3.6, 3.10] The rulings, implemented as ruled — each a Tier-1-shaped fix once ruled
+ P3.8 [3.5, 3.6, 3.10, 3.11 · R1.4 R2.3 R2.5 R5.5 R6.6] The rulings, implemented as ruled — each a Tier-1-shaped fix once ruled
       (a lifecycle field that only ever holds its final value is the §4.5 shape).
  P3.9 [vision A.6, A.1] QEP composed, not rebuilt. The Religion domain's remaining features are
       built by COMPOSING §6/§7 resources — never a private QEP stack, which is what killed all
@@ -547,7 +605,8 @@ PHASE P3 — CAPABILITY (Tier 3; ~11 rounds; OWNER RULINGS put with evidence at 
  MILESTONE M3: fidelity workflow re-run → zero STUB/MISSING/DOC_OVERCLAIM; every PARTIAL
    disclosed; ledger v6 = the ratified boundaries only.
 
-PHASE P4 — THE OWNER'S HAND (Tier 4; pre-flights built by us, switches flipped by the Owner)
+PHASE P4 — THE OWNER'S HAND (Tier 4; pre-flights built by us, switches flipped by the Owner;
+ no ledger entries — these rest on §14's recorded switch list and the Owner's decisions)
  P4.1 AUTH_ENABLED on, with the auth-ON suite green and the perimeter (P2.6) closed.
  P4.2 SELF_SERVE_SIGNUP per the Owner; the 162 test-owned entities pruned only on instruction.
  P4.3 AI_ALLOW_EXTERNAL + a key, as accelerants only — the in-house-first order proven by test.
@@ -655,7 +714,7 @@ load-bearing.
     provenanceBadge" was true of the helper and false of ten call sites that took its label and
     chose their own colour. Guard the helper's USE (grep for the partial use), not its existence
     — and count the sites again after the guard lands.
-27. A FIDELITY VERDICT IS DATED THE DAY IT RAN. v2 was eleven workstreams old when v11 rev 1 said
+27. A FIDELITY VERDICT IS DATED THE DAY IT RAN. v2 was ten workstreams old when v11 rev 1 said
     "weigh it accordingly"; re-measured, its 74 findings had become 60 different ones, with new
     Tier-1 defects on surfaces the campaign had walked past. Never carry a verdict forward by
     reading; re-run the six-region assessment at every milestone, and treat "no known Tier-1

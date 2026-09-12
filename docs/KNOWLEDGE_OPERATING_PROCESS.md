@@ -60,18 +60,18 @@ The process is not purely manual — the organism helps keep it honest:
 **Three working modes** (from the Cowork canon's Human-AI Integration):
 - **For you (autonomous):** you set mission/values/bounds; the organism executes the rest, faithfully, under your Chief/Board.
 - **With you (collaborative):** you direct and review; I decide-and-build on clear matters and stop at gates you set.
-- **With other AI agents (co/team):** multiple agents share this knowledge system; each reads the four layers before acting and writes back after.
+- **With other AI agents (co/team):** multiple agents share this knowledge system; each reads the five layers before acting and writes back after.
 
 **Multi-agent handshake (lightweight, robust):**
 1. **On entry** — read `UNDERSTANDING`, `PLAN §3/§7`, recent `MEMORY`, and the latest changelog entries; if continuing another agent's work, read its last handoff note in the changelog.
 2. **During** — keep tasks visible (task list); honour the 10 Architecture Invariants and the working mandate `[[feedback-workstation-working-mandate]]`.
 3. **On exit** — append a dated changelog line in `PLAN §8` (what changed, verification result, next priority, blockers); update `MEMORY`; leave the tree clean (revert mid-work failures).
 
-**Roles are explicit, not implied:** the Owner sets direction; the Chief (Owner's digital twin) represents the Owner; the Board owns plan/strategy; AI agents execute under that hierarchy. No agent silently changes vision — only the Owner refines `UNDERSTANDING`.
+**Roles are explicit, not implied:** the Owner sets direction; the Chief (Owner's digital twin) represents the Owner; the Board owns plan/strategy; AI agents execute under that hierarchy. No agent silently changes vision — only the Owner refines the Vision (`WORKSTATION_IDBO_WHOLE_VISION.md` §1–§15 and its §18 rulings); `UNDERSTANDING` is reconciled to it.
 
 ## 5. Horizons
 
-- **Immediate (this/next session):** keep the four layers coherent; execute the approved next increment; verify green; update Plan + Memory.
+- **Immediate (this/next session):** keep the five layers coherent; execute the approved next increment; verify green; update Plan + Memory.
 - **Short term:** deepen autonomy (executable resource pipelines, scheduled evolution), and the approved VSB economic model; broaden the realm×domain coverage.
 - **Long term:** the fully self-running organism — per-VSB living business plans, cross-VSB federation, the economic/charitable engine operating continuously under governance, with the knowledge system maintained largely autonomously and reviewed by you.
 

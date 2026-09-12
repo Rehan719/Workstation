@@ -1,7 +1,8 @@
 // Workstation IDBO — the six-region vision-fidelity assessment (W446, ledger v3).
 // A Claude Code *Workflow* script (see the Workflow tool / workflow-authoring reference), not a Node program.
-// HOW TO RUN: boot a FRESH backend from HEAD on a scratch DATA_DIR (AI_DISABLE_LOCAL=1 mirrors CI and the
-// shipped default), set BASE below to it, then Workflow({script: <this file's contents>}). Every finding is
+// HOW TO RUN: boot a FRESH backend from HEAD on a scratch DATA_DIR (AI_DISABLE_LOCAL=1 mirrors CI — NOT the shipped
+// default: with the flag unset and Ollama discoverable the gateway serves from the local model; the flag makes
+// floor-disclosure assessable, and one surface — the v138 CEO chat — bypasses the gateway regardless), set BASE below to it, then Workflow({script: <this file's contents>}). Every finding is
 // adversarially refuted (default refuted=true; a refuter must REPRODUCE a gap to let it stand).
 // RENDER: python scripts/render_fidelity_ledger.py <result.json> docs/VISION_FIDELITY_LEDGER.md <HEAD> <date>
 // Re-run at every milestone (delivery-prompt rule 27) — a fidelity verdict is dated the day it ran.

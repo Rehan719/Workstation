@@ -2,7 +2,13 @@
 
 > **Status:** Canonical vision capture, reconstructed from primary sources.
 > **Compiled:** 2026-09-06
-> **Sources:** three separate build attempts in `C:\Users\rehan\github_repos`, plus ~1.9 MB of original planning transcripts preserved under `Quran-recitation-platform/sources/`.
+> **Sources:** three separate build attempts in `C:\Users\rehan\github_repos`, plus ~2.4 MB (2,395,108 bytes; 2.1 MB net of two byte-identical duplicates) of original planning
+> transcripts preserved under `Quran-recitation-platform/sources/`.
+> **Read with Appendix A.9 of `WORKSTATION_IDBO_WHOLE_VISION.md`.** Six capabilities this document describes as
+> vision are FORBIDDEN by that canon's §11 faith-content constitution — recitation scoring (Feature 2, §11's recitation-analysis service),
+> generated Qur'an Arabic, translation of sacred text, emotion inference (Features 10 and 12, §11, §12, §14), the
+> Fitrah Spectrum as a measurement (Feature 10, §12) and an AI Ask-a-Scholar (Feature 7). They are ratified
+> boundaries, not gaps to close; they are marked ⛔ A.9 below where they occur.
 > **Purpose:** hold, in one document, the *complete* vision — concept, objectives, features, intelligence layer, architecture, roadmap, governance, finance and methodology — so that no future attempt has to re-derive it from scattered transcripts again.
 
 **Naming.** Across the sources the product is called, interchangeably: *AI-Driven Quranic Education Platform*, *Quran Education AI Platform*, *QEP*, and *Quran-Education-AI-Platform*. They are one product. This document uses **QEP**.
@@ -67,7 +73,7 @@
 
 ## 1. Why this document exists
 
-Three times between May and June 2025 this vision was handed to an AI agent ("Jules") to build. Three times a repository was created, populated, and abandoned. The vision itself was never the problem — it survived intact across all three attempts, scattered across ~1.9 MB of chat transcripts, four generations of phase guides, two "Guide" documents, and a documentation pipeline that failed and then began emitting placeholders into its own canonical outline.
+Three times between May and June 2025 this vision was handed to an AI agent ("Jules") to build. Three times a repository was created, populated, and abandoned. The vision itself was never the problem — it survived intact across all three attempts, scattered across ~2.4 MB of chat transcripts, four generations of phase guides, two "Guide" documents, and a documentation pipeline that failed and then began emitting placeholders into its own canonical outline.
 
 The most valuable asset in all three repositories is **not the code**. It is the vision material. This document consolidates it.
 
@@ -91,7 +97,7 @@ The three are not competing designs. They are **three passes at the same plan**,
 
 ### Attempt 1 — `quran-recitation-mvp`
 
-**Reality:** ~4,300 lines of TypeScript/Python across 103 source files, 349 tracked files. A `backend/` (NestJS) and `frontend-vite/` (React + Vite) pair that was actually run — the repository contains ~30 captured build logs, an npm audit trail, and a `vite_dev_output.txt`, which is evidence of a real dev loop rather than generated-and-never-executed code.
+**Reality:** ~4,300 lines of TypeScript/Python across 97 TypeScript/Python source files (107 with JavaScript), 349 tracked files. A `backend/` (NestJS) and `frontend-vite/` (React + Vite) pair that was actually run — the repository contains ~30 captured build logs, an npm audit trail, and a `vite_dev_output.txt`, which is evidence of a real dev loop rather than generated-and-never-executed code.
 
 **The re-scaffold:** partway through, the repo was reorganised into `features/<feature-name>/{ai,backend,frontend,tests}` — one directory per core feature. The audit result:
 
@@ -101,11 +107,11 @@ The three are not competing designs. They are **three passes at the same plan**,
 | `user-authentication-profile-management` | 15 | 10 |
 | `shared` | 17 | 4 |
 | `memorization-suite` | 7 | 2 |
-| **11 other feature folders** | **5 each** | **0** |
+| **12 other feature folders** | **5 each** | **0** |
 
-Eleven of the fifteen core features — adaptive UI, admin/analytics, AI guidance & Fitrah, community, educator platform, gamified learning, AR/VR, learner modules, settings/globalization, billing/donations, swarm intelligence, video conferencing — exist only as **empty directory skeletons with zero-byte README files**.
+Twelve of the fifteen core features — adaptive UI, admin/analytics, AI guidance & Fitrah, community, educator platform, gamified learning, AR/VR, learner modules, settings/globalization, billing/donations, swarm intelligence, video conferencing — exist only as **empty directory skeletons with zero-byte README files**.
 
-**Build state at abandonment:** broken. `npm_build_error_log_latest.txt` records **209 TypeScript errors**; the final captured build fails on a syntax error in `src/components/Admin/PlatformSettings.tsx`. The error mix is telling — a long tail of `TS6133` (unused declarations) and `TS7006` (implicit `any`) alongside genuine `TS1128` parse failures.
+**Build state as last captured (commit f59a44d, 2025-06-07 — 102 commits before the 2025-06-18 abandonment, after which `frontend-vite/src` was cut from 317 tracked files to 6):** broken. `npm_build_error_log_latest.txt` records **209 TypeScript errors** (TS6133 unused declarations 49 · TS2339 46 · TS1484 19 · TS7006 implicit `any` 16 · TS2300 14 · TS2304 13 — no parse failures in that log); two other captured builds (`npm_build_output_manual_targeted.txt`, `npm_build_output_post_cleanup.txt`) fail on a `TS1128` syntax error in `src/components/Admin/PlatformSettings.tsx`. All 35 logs were committed together in that one commit, so none is git-orderable as "final".
 
 ### Attempt 2 — `Quran-recitation-platform`
 
@@ -121,7 +127,7 @@ private conceptualClasses: Map<string, ClassEntity> = new Map();
 
 Every persistence path is a commented-out TypeORM import backed by an in-memory `Map`. Its own README says so plainly: *"the skeleton structure… theoretical steps for installation"*. The backend nonetheless has 15 module directories covering nearly the whole feature set — auth, billing, community, competitions, gamification, institutional, learning, memorization, recitation, settings, teaching, users, video-conferencing, admin, ai-guidance — which makes it the **best structural map of the intended domain model**, even though nothing persists.
 
-**Where the value is:** `sources/` (18 transcripts, ~1.9 MB), `docs/` (consolidated source material, core-features definition, the 1,162-line consolidated phase guide), the 109 KB Developer Guide, the 75 KB Jules Agent Guide, and `planning/` (audit summary, status reports, worklog).
+**Where the value is:** `sources/` (18 transcripts, ~2.4 MB), `docs/` (consolidated source material, core-features definition, the 1,162-line consolidated phase guide), the 109 KB Developer Guide, the 75 KB Jules Agent Guide, and `planning/` (audit summary, status reports, worklog).
 
 ### Attempt 3 — `QEP-MVP`
 
@@ -144,7 +150,7 @@ def analyze_recitation_stub(audio_file_path: str) -> dict:
 
 The three attempts failed for three *different* reasons. All three are worth carrying forward as constraints on any fourth attempt.
 
-**1. Attempt 1 — generation outran verification.** 209 unresolved TypeScript errors, ~30 build logs committed into the repo, and a `features/` re-scaffold that created 19 directories and filled 4. Code was produced faster than it was compiled, and the reorganisation was a plan for work that never happened.
+**1. Attempt 1 — generation outran verification.** 209 TypeScript errors in the last captured build log, 35 build logs committed into the repo, and a `features/` re-scaffold that created 19 directories and filled 4. Code was produced faster than it was compiled, and the reorganisation was a plan for work that never happened.
 
 **2. Attempt 2 — the documentation pipeline broke, and nobody noticed it was emitting placeholders.** The Python doc-generation chain (`generate_inventory.py` → `extract_plan_sections.py` → `synthesize_outline.py`) failed on an `os.stat()` issue in the sandbox that returned zero file sizes and default timestamps. The visible consequence is `docs/canonical_phase_outline.md` — a document that presents itself as the single source of truth and contains, for all twenty phases, only:
 
@@ -180,7 +186,7 @@ The framing that recurs most across the sources: this is not only an education p
 
 ## 6. Vision statement
 
-The canonical wording, consistent across `AI-Driven Quranic Education Platform.txt`, the Jules Updated variants, and the Developer Guide:
+The canonical wording, consistent across `AI-Driven Quranic Education Platfor SAVED.txt` (sic), the `… Jules Updated (2).txt` file, and the Developer Guide:
 
 > To deliver a **universally accessible, immersive, and ethically grounded Quranic education platform** that empowers Muslims of all ages to **recite, memorize, understand, and live the Quran** — through the seamless integration of AI, AR/VR, video conferencing, social learning, and gaming technologies, all within a **fully Sharia-compliant, trust-based framework**. This platform offers personalized, emotionally responsive learning via AI agents, immersive environments, and collaborative tools. It supports recitation, memorization, learning, teaching, competitions, and guided reflection — accessible on any device and optimized for underserved regions.
 
@@ -293,7 +299,7 @@ Each feature below carries its scope, its user stories as written in the Develop
 
 ---
 
-### Feature 2 — AI Tajwīd Coach
+### Feature 2 — AI Tajwīd Coach · ⛔ A.9.1 — recitation is never scored; written-recall only
 
 **Scope.** Real-time feedback on Quranic recitation: phonetic analysis, identification of Tajwīd errors (Madd, Ghunnah, and the wider rule set), and scoring. Audio capture, processing via AI models (fine-tuned Whisper for Arabic plus rule-based systems), and user-friendly display of feedback. Multiple recitation modes catering to different learner levels.
 
@@ -372,7 +378,7 @@ Each feature below carries its scope, its user stories as written in the Develop
 
 ---
 
-### Feature 7 — Community Engagement Platform
+### Feature 7 — Community Engagement Platform · ⛔ A.9.6 — no AI Ask-a-Scholar; a scholar answers or nobody does
 
 **Scope.** Forums, Q&A boards, event management (online and offline), specialised interaction rooms — **study circles, recitation rooms** — "Ask a Scholar" functionality, content liking/sharing, and AI-powered content moderation.
 
@@ -418,7 +424,7 @@ Each feature below carries its scope, its user stories as written in the Develop
 
 ---
 
-### Feature 10 — AI Guidance & Fitrah Profiling System
+### Feature 10 — AI Guidance & Fitrah Profiling System · ⛔ A.9.5 — the Fitrah Spectrum is never a measurement; A.12.3/A.12.4 rulings pending
 
 **Scope.** The most distinctive feature in the vision. A sophisticated AI system providing personalised ethical, spiritual and personal-growth guidance:
 
@@ -451,7 +457,7 @@ Each feature below carries its scope, its user stories as written in the Develop
 
 ---
 
-### Feature 12 — Adaptive UI/UX Engine
+### Feature 12 — Adaptive UI/UX Engine · ⛔ A.9.4 — no emotion inference
 
 **Scope.** The interface adapts dynamically to the individual, based on profile (age, role, skill level), stated preferences (learning style, theme), and **real-time emotional state detected via AI**.
 
@@ -531,7 +537,7 @@ Contents: the UI component library (React + Tailwind, documented in Storybook); 
 
 This is the part of the vision that makes QEP distinctive, and the part no attempt reached.
 
-## 11. Phase 14 — the Neural Core
+## 11. Phase 14 — the Neural Core · ⛔ A.9.1 / A.9.4 — its recitation-analysis and emotion services are forbidden capabilities
 
 **Goal (verbatim):** *"Central orchestrator for AI-driven feedback & recommendation. Unify AI Agents, emotion AI, Swarm routing, and hands-free Avatar UI as the platform's neural core."*
 
@@ -576,7 +582,7 @@ Attempt 3's Phase 14 restatement adds **Ready Player Me** as a candidate avatar 
 - **MongoDB** (Atlas M0) — unstructured: AI model outputs, logs, community content.
 - **Redis** — caching, session management, message queuing.
 
-## 12. The Fitrah Spectrum
+## 12. The Fitrah Spectrum · ⛔ A.9.5 — never a psychometric measurement; the 99 aspects were never enumerated
 
 Phase 16. The vision's most original idea, and the least specified.
 
@@ -602,7 +608,7 @@ Two distinct ideas travel under this name in the sources, and they should be kep
 
 The plan folds both into Phase 14 without reconciling them. Any future build should decide which it is building, or build both under separate names.
 
-## 14. The Adaptive UI/UX engine
+## 14. The Adaptive UI/UX engine · ⛔ A.9.4 — the emotion-based axis is forbidden
 
 Phase 15. Three adaptation axes:
 
@@ -989,6 +995,11 @@ Governance is described as **led by elected volunteers**, with a Sharia board an
 
 **Technical controls:** end-to-end encryption; RBAC; MFA; PII encryption; Helmet.js security middleware; audit logging of critical actions; data export and deletion tooling for GDPR; SAST in CI; WAF and rate limiting.
 
+**Constitutional overrides (Workstation §11 / Appendix A.9):** six capabilities in Parts III–IV are forbidden
+in Workstation regardless of what the sources say — recitation scoring, generated Qur'an Arabic, translation
+of sacred text, emotion inference, Fitrah-as-measurement, and an AI Ask-a-Scholar. A surface that refuses
+one of them and says so is the delivered form.
+
 **AI ethics:** transparent AI-ethics guidelines are named as a governance obligation. The corpus does not elaborate them — see [§29](#29-what-the-vision-never-specified).
 
 ## 25. Implementation strategy
@@ -1112,7 +1123,16 @@ Honest gaps. These are not contradictions — they are places where the vision a
 | `docs/canonical_phase_outline.md` | Attempt 2 | Placeholder-corrupted pipeline output presenting itself as canon; phase titles are arbitrary matched lines |
 | `intermediaries/canonical_phase_outline.md` (171 KB) | Attempt 2 | Raw, fragmented script output |
 | `intermediaries/compiled_quran_education_platform_docs.md` (53 KB) | Attempt 2 | Manually compiled, significantly redundant, superseded |
-| `features/*/README.md` (11 of 19) | Attempt 1 | Zero-byte files implying features that do not exist |
+| `features/*/README.md` (15 of 19 zero-byte — every core-feature folder's, including the three with code) | Attempt 1 | Zero-byte files implying features that do not exist |
+
+### Recurrence tally behind Appendix A's provenance grades
+
+Computed 2026-09-11 over the 18 files in `Quran-recitation-platform/sources/` (2,395,108 bytes): the vision
+statement ("universally accessible") is in 8 files, *fitrah* in 8, *waqf* in 3. The 18 are not independent —
+two pairs are byte-identical (`jule.txt` ≡ `Jules-background-saved.txt`; `Developer-guide.txt` ≡
+`Jules-guide.txt`), and the eight vision-statement files include re-saves of one transcript (`compiled.txt` ≡
+`Commplied-background.txt`; `Combined-background-saved.txt` ⊂ `compiled-background.txt` at 95%;
+`Phases-19-background-saved.txt` ⊂ at 82%) — so "eight files" is roughly five distinct texts.
 
 ### Code worth salvaging
 
@@ -1131,7 +1151,7 @@ Not part of the vision; offered because the audit produced them.
 2. **Close the four blocking design gaps first** — Quranic text/audio provenance, Tajwīd rule scope, the Sharia review mechanism for AI-generated religious content, and the 99 Fitrah aspects. None requires engineering; all block engineering.
 3. **Invert the phase order's practical effect.** Every attempt died in Phases 1–3. Build a thin vertical slice through Phase 4 (Tajwīd coach) and Phase 14 (Neural Core) early, even against stubs, so the distinctive capability is proven before the commodity infrastructure is polished.
 4. **Never let a generated document become canon without verification.** Attempt 2's pipeline emitted placeholders for twenty phases and downstream documents kept citing it. Any generated artefact needs an assertion that it contains content.
-5. **Compile before committing.** Attempt 1 committed 209 TypeScript errors and ~30 build logs.
+5. **Compile before committing.** Attempt 1 committed 209 TypeScript errors and 35 build logs.
 6. **Treat "conceptual" implementations as debt with a name.** Attempt 2's in-memory `Map` pattern was honest but produced 11,400 lines that cannot run.
 
 ---

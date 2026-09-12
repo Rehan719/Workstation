@@ -11,32 +11,32 @@
 - **[VSB Economic & Legal Model](VSB_ECONOMIC_LEGAL_MODEL.md)** — ✅ APPROVED & BUILT: the hybrid Waqf/Trust/Multinational autonomous economic VSB; profit waterfall; legal-entity-type selection; charitable-giving intelligence (WATER/Orphan/Conflict/Dawah, 100%-donation-only).
 - **[Development Timeline](../_archive/docs/DEVELOPMENT_TIMELINE.md)** *(archived in the W153+ docs consolidation; the ongoing record is [AUTONOMOUS_PROGRESS.md](AUTONOMOUS_PROGRESS.md))* — from start of development (2026-02-20) to current state, synthesised from the 999-commit git history + the living-plan changelog. The "what was intended / started / done / requested" picture.
 
-> **Everything below this canon block is the Jules-era documentation index** — kept for navigation, **not authoritative**; several entries describe a product that was never built ("Singularity Era", Nematron/Nemoclaw adapters, Docker Swarm/Kubernetes deployment). Where it disagrees with the canon above, the canon prevails. Two fragments describing a different product (`GOVERNANCE.md` — a MultiSig "Sovereign Investment Civilisation"; `ARCHITECTURE.md`) were archived to `_archive/docs/` in W446.
+> **Everything below this canon block is the Jules-era documentation index, kept as a HISTORICAL record — not authoritative.** Its links were re-pointed in W448 to `_archive/docs/` where the file survives (the W153+ consolidation moved them; only `compliance/MANDATES_FINAL.md` still lives under `docs/`), and to `src/organism/` for the three that were never under `docs/`; several entries describe a product that was never built ("Singularity Era", Nematron/Nemoclaw adapters, Docker Swarm/Kubernetes deployment). Where it disagrees with the canon above, the canon prevails. Two fragments describing a different product (`GOVERNANCE.md` — a MultiSig "Sovereign Investment Civilisation"; `ARCHITECTURE.md`) were archived to `_archive/docs/` in W446.
 
 ## 🏛️ Foundational Documents
-- **[Supreme Constitution v1.0](constitution/CONSTITUTION_FINAL.md)**: The 1127-article digital charter governing all autonomous actions.
-- **[Technical Specification v1.0](architecture/SPECIFICATION.md)**: Definitive v1.0 production baseline and API surface.
-- **[Fine-Resolution Feature Map](architecture/FINE_RESOLUTION_FEATURE_MAP.md)**: Granular code-to-feature provenance for QMS auditability.
+- **[Supreme Constitution v1.0](../_archive/docs/constitution/CONSTITUTION_FINAL.md)**: The 1127-article digital charter governing all autonomous actions.
+- **[Technical Specification v1.0](../_archive/docs/architecture/SPECIFICATION.md)**: Definitive v1.0 production baseline and API surface.
+- **[Fine-Resolution Feature Map](../_archive/docs/architecture/FINE_RESOLUTION_FEATURE_MAP.md)**: Granular code-to-feature provenance for QMS auditability.
 - **[Mandates Final Inventory](compliance/MANDATES_FINAL.md)**: Audited system requirements and compliance status.
 
 ## 🚀 Strategic Roadmap & Planning
-- **[Comprehensive Development Plan v7.0 (The Singularity Era)](DEVELOPMENT_PLAN_v7.0.md)**: The definitive roadmap from v6.0 Predictive Era to the v7.0 Singularity.
-- **[Version Lineage](synthesis/VERSION_LINEAGE.md)**: Canonical chronological lineage from v1.0 through the Galactic Era.
+- **[Comprehensive Development Plan v7.0 (The Singularity Era)](../_archive/docs/DEVELOPMENT_PLAN_v7.0.md)**: The definitive roadmap from v6.0 Predictive Era to the v7.0 Singularity.
+- **[Version Lineage](../_archive/docs/synthesis/VERSION_LINEAGE.md)**: Canonical chronological lineage from v1.0 through the Galactic Era.
 
 ## 🏗️ Architecture & Domains
-- **[Architecture Mapping v154.0](architecture/ARCHITECTURE_MAP_v154.md)**: The v3.0 Unified 12-Layer Architecture (L1-L12).
-- **[Sovereign AI Integration](AI_INTEGRATION.md)**: Details on the Nematron (Brain), Nemoclaw (Immune), and OpenClaw (Execution) adapters.
-- **[Law Domain: Predictive Litigation](python/evidence/law_orchestrator.py)**: Documentation on the v6.0 Law Domain enhancements.
-- **[Science Domain: Science Reactor](python/evidence/science_reactor.py)**: Documentation on the v6.0 Science Domain enhancements.
+- **[Architecture Mapping v154.0](../_archive/docs/architecture/ARCHITECTURE_MAP_v154.md)**: The v3.0 Unified 12-Layer Architecture (L1-L12).
+- **[Sovereign AI Integration](../src/organism/AI_INTEGRATION.md)** *(lives under `src/organism/`)*: Details on the Nematron (Brain), Nemoclaw (Immune), and OpenClaw (Execution) adapters.
+- **[Law Domain: Predictive Litigation](../src/organism/python/evidence/law_orchestrator.py)** *(lives under `src/organism/`)*: Documentation on the v6.0 Law Domain enhancements.
+- **[Science Domain: Science Reactor](../src/organism/python/evidence/science_reactor.py)** *(lives under `src/organism/`)*: Documentation on the v6.0 Science Domain enhancements.
 
 ## 📚 User & Developer Guides
-- **[Quick Start Guide](guides/QUICKSTART.md)**: One-click setup instructions.
-- **[User Guide](user/USER_GUIDE.md)**: Operating the Workstation UI and Mobile App.
-- **[Deployment Guide](deployment_guide.md)**: Production deployment instructions for Docker Swarm and Kubernetes.
+- **[Quick Start Guide](../_archive/docs/guides/QUICKSTART.md)**: One-click setup instructions.
+- **[User Guide](../_archive/docs/user/USER_GUIDE.md)**: Operating the Workstation UI and Mobile App.
+- **[Deployment Guide](../_archive/docs/deployment_guide.md)**: Production deployment instructions for Docker Swarm and Kubernetes.
 
 ## 📜 Historical Records
-- **[Implementation Reports](implementation/v1.0_IMPLEMENTATION_REPORT.md)**: Historical v0.1-v1.0 development logs.
-- **[Unified Assimilation Final](synthesis/unified_assimilation_final.md)**: record of the grand synthesis of v0.7-v0.9.
+- **[Implementation Reports](../_archive/docs/implementation/v1.0_IMPLEMENTATION_REPORT.md)**: Historical v0.1-v1.0 development logs.
+- **[Unified Assimilation Final](../_archive/docs/synthesis/unified_assimilation_final.md)**: record of the grand synthesis of v0.7-v0.9.
 
 ---
 *Generated via Workstation v1.0 Documentation Engine. CIVILIZATION SECURED.*

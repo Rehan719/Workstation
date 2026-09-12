@@ -4015,3 +4015,299 @@ shrinking the diff to 134 lines.
 
 Docs-only round: no production code changed; the suite figure (350/15/0) stands from W444's
 final run at the same HEAD.
+
+### W446 — the canon re-measured, not re-read: a fresh fidelity audit found Tier-1 defects on the surfaces users land on, and the delivery plan for the whole vision was written from it
+
+*(Committed as f3ff0d2c by a separate session that found the work finished and unstaged; this
+entry was written in W448, which also applied the refuter catches that session did not have.)*
+
+**The Owner asked for the two canonical documents regenerated, enhanced and advanced (the delivery
+prompt at v11) "based on learning from review of understanding from research analysis of previous
+work … and audit of current state against vision" — and then to plan "the execution and
+verification to completion" of the whole vision §1–§15.** Three phases, each a multi-agent
+workflow with every finding adversarially refuted.
+
+**Phase 1 — research analysis of the whole body of work.** Two agents read the execution log
+(W1→W445; 384 `### W` headings plus ~50 round-bulleted workstreams — the "highest number, not a
+count" warning is borne out), every memory file, the canon and its companions. Output: **69 Owner
+directives** (dated, with what was delivered and whether the canon records them), **30 lessons**
+(which method rule carries each — five carried by nothing), **23 §-promise-vs-delivered rows**, a
+learning narrative (four eras: build-out · convergence · deepening by directive · the honesty
+campaign; the same three regressions recurring — §6 declared complete five times, fabrication
+found inside new fixes, guards that could not fail), **15 canon inconsistencies** across the
+companion documents (the living plan marking delivered items ◻ planned; UNDERSTANDING §5's gaps
+paragraph listing as open six things delivered W252–W444; the VSB model's header saying "NOT YET
+IMPLEMENTED" above a banner saying "APPROVED & BUILT"; KOP's knowledge system omitting the vision
+entirely; two Jules-era fragments describing a MultiSig "Sovereign Investment Civilisation" living
+in `docs/`; the Chief-vs-VSB twin wording; the Nervous layer's engine count) and **17 grounded
+vision-enhancement candidates** — Owner directives the log recorded and the canon never carried.
+
+**Phase 2 — the fidelity audit, v3.** Six assessors, one vision region each, against a backend
+booted from HEAD 06c51109 on :8024 (`AI_DISABLE_LOCAL=1` — the gateway serves from the floor, as
+in CI and on any box without a local model; what is assessable is whether every floor-served
+surface SAYS so), barred from §16, the v2 ledger and the progress log, and **capped at ten findings
+per region — every region returned exactly ten, so 60 is the cap, not the size of the gap**. Then,
+uncapped for the first time (v2 refuted six per region), **every one of the 60 findings was
+attacked by an independent refuter** told to default to refuted and to reproduce with its own
+inputs (a second journey, VSB, change record, transfer). Result: as assessed STUB 12 · MISSING 3 ·
+DOC_OVERCLAIM 5 · PARTIAL 32 · DELIVERED 8; standing after refutation STUB 10 · MISSING 3 ·
+DOC_OVERCLAIM 5 · PARTIAL 36 · DELIVERED 6. The refuters overturned four — two DELIVERED claims
+DOWN (the org cascade's green in-house chip over 16 floor-served tiers; `/native-ai/status`
+reporting `real_model` while the floor served everything, because the most recent model-health
+row was a FAILURE) and two STUBs UP (the AI CEO chat is a real chat with undisclosed provenance;
+the Offering-1 QMS gate is real machinery fed nothing to measure) — and stood the other 56 (several
+reproduced with the refuters' own inputs, the rest confirmed by re-executing the assessor's route or
+reading the code).
+
+**What the audit found that eight reach campaigns walked past — all on REACHED surfaces:** the
+shared QMS gate is a certificate printer on the floor (coverage measured against the caller's own
+echoed headings, or against NO sections on Offering-1 → a 200-character length check; 174/174
+native deliverables in the store "pass · verified"; Genesis got the W436 fix, the shared gate
+never did); the shipped VSB body presents floor scaffold as the enterprise's concept on the
+website, web app, mobile data, BUSINESS_PLAN.md and the Cockpit Plan tab, and the §10 gate seals
+it; **the DEFAULT tab of the Living Organisation hub** is a detached Ollama roleplay — hard-coded
+llama3.2, "AI CEO of the Galactic Era", invented constitutional articles, a lambda registered on
+"can you create" and narrated as "tool_87f3 successfully integrated", ignoring AI_DISABLE_LOCAL,
+guardrails, the breaker, tenant memory and provenance, with a canned "[Offline Mode] sovereign mesh
+advisory" typed out char-by-char under a green "Planetary Strategy Active" pill; the Mode 3
+review gates gate nothing (a REJECTED design gate stopped neither orchestrate nor cascade nor
+evolve nor ship — vision §17.4 said ✅ DELIVERED); the Constitutional compliance row never reads
+the subject (`validate(kind, …)` — a prohibited-token subject greens); **ten badge sites paint the
+floor green** while the shared helper's label says "not model analysis" (the Law hub's default tab
+and the avatar footer on every page among them — the W439 "every badge routes through it" claim
+was true of the helper, false of the sites); the Employment hub's default tab promises "live,
+real-time search across public job boards" over a route whose own docstring says "not a live job
+board"; Care's "validated risk scoring" computes nothing (NEWS2 is a published table — the
+assessor's observations scored 6, urgent band, and returned no score under a green pass); the
+tafsir tab serves a floor "Translation" heading over sacred text while `/translation` refuses;
+Change Control's tiers are prose (no auth dependency; `submitted_by` free text; override honoured
+for CRITICAL; a human override attributed to `cca_ai`); the GaaS gate covers 8 of 57 API modules
+and the three-regex guardrail every other output takes blocked "exploit the market opportunity"
+LIVE; the organism defends on paper (reflex arcs registered = 0 — "reflex: 542" in the payload is
+a signal CATEGORY; `immune-reconfigure` has no caller; the survival instinct keys off an ATP
+simulator whose production always exceeds its capped consumption; Cardiovascular is CPU-idle
+relabelled and Endocrine an unimported PID file while the W434 quality note vouching for them
+travels in every record; torch optionality fails at import via `avatars → uci_interceptor →
+hd_omni_learner`); the Products axis of §17.1 has no code realisation; Mode 2 and §17.3's cadence
+layers are MISSING; no KPI gate exists anywhere. The economy (§12) is the strongest region and
+DELIVERED by execution — cycle → transfer → receiver consumption → period close with the books
+balanced at every step, charity honouring the Owner's directives with provenance disclosed, UEG
+verifying at 1,096 events.
+
+**Phase 3 — regeneration from that provenance.**
+- `VISION_FIDELITY_LEDGER.md` **v3** — rendered by a committed script (`scripts/
+  render_fidelity_ledger.py`) from the audit JSON: 60 entries, region.index headings, the
+  REFUTER's standing verdict in each heading with the assessor's original where it differs, per-
+  region tables, the refuter's reasoning and evidence per entry. The audit workflow itself is
+  committed as `scripts/workflows/fidelity_audit_v3.js` — the re-runnable instrument behind
+  "definition of complete".
+- `FABLE_DELIVERY_PROMPT.md` **v11 rev 2** — the surface re-measured; `<ordering>` corrected
+  ("Tier 1 — no known entry" was a statement about our knowledge, not the product); a regenerated
+  `<ledger>` of 14 Tier-1 · 9 Tier-2 · 10 Tier-3 entries (an eleventh Tier-3 entry added in W448)
+  each citing its ledger indices; **the first `<delivery_plan>` for the whole of §1–§15** —
+  definition of complete (every claim DELIVERED by execution and refuted, or a disclosed
+  Owner-ratified boundary; the six-region audit returning zero STUB/MISSING/DOC_OVERCLAIM), the
+  six-step verification every workstream passes (execute · guard · refute · suite · measure ·
+  record), phases P1 truth (14 workstreams, in order, nothing else ships first) → P2 reach/
+  disclosure (8 + the scatter) → P3 capability (11, four of them OWNER RULINGS put with evidence
+  at P3 start) → P4 the Owner's switches, milestones M1–M3 that are re-runs of the audit, and an
+  honest effort figure (~33 rounds); four new method rules (25 the default tab is the product ·
+  26 a class-kill is only a kill where every site uses the helper · 27 a fidelity verdict is dated
+  the day it ran · 28 on the shipped default configuration, what input makes this gate say no?);
+  §18-E recorded.
+- `WORKSTATION_IDBO_WHOLE_VISION.md` — §16 regenerated (measured state, fidelity tallies, canon
+  PRECEDENCE stated, the open paragraph regenerated from v3); §17.1/§17.2/§17.3/§17.4/§17.5 carry
+  dated status notes (the nine cognitive engines named; a layer→module realisation map; Mode 3
+  corrected from ✅ to ◐ records-delivered-gating-not-yet; the ten invariants scored hold /
+  partial / not held); §18 gained E (federation, the 2026-08-31 ruling) and the list of rulings
+  still with the Owner; and **the 17 candidates landed as recorded Owner directives at their claim
+  sites** (§3A, §5, §7, §8, §9, §12, §13, §14, §15.10) — each attributed and dated, **no §1–§15
+  prose reworded or removed** (verified: every deleted line in the diff is in §16–§18). CRLF
+  preserved (280-line diff, not a whole-file rewrite).
+- `WORKSTATION_IDBO_LIVING_PLAN.md` — §4 brought current (figures, the W435–W446 block, the gaps
+  paragraph regenerated from v3), §6.2/§6.3 statuses corrected against code (SSE establish ✅;
+  twin pre-validation ✅ with its health-gate caveat; isolation / federation / persistence ▶
+  partial naming the exact routers still open), §2/§3.3 corrected (the Chief, not the VSB, is the
+  twin), **§7 re-scored honestly DOWN — pillars 3, 5, 7, 8 to ◐** (from 7 strong to 3) with
+  `living_plan.py::_PILLARS` moved in the same commit under the W435 lockstep test, which was
+  broken (one glyph) and watched fail with its original symptom before being trusted.
+- Companions: UNDERSTANDING §5 (figures; the stale W251 gaps paragraph replaced with the pointer
+  and a one-line summary; precedence stated); KOP §1 (the vision as the apex fifth layer; the
+  coherence rule) and §7 (the "authoritative channel" corrected from UNDERSTANDING §9 — resolved
+  2026-06-21 — to the vision + §18); the VSB model's header/footer corrected to match its body;
+  `docs/README.md` gained the prompt + ledger canon lines, a corrected timeline link and an honest
+  note that everything below the canon block is the Jules-era index; `GOVERNANCE.md` and
+  `ARCHITECTURE.md` (Jules-era "Sovereign Investment Civilisation" fragments, referenced by
+  nothing) archived to `_archive/docs/`.
+
+**My own mistakes this round, recorded:** (1) the lockstep break-test command carried a `git
+checkout -- <living plan>` line I had meant to delete — it reverted the round's whole living-plan
+edit set; `git diff --stat` (1 insertion / 1 deletion where 94 lines were expected) caught it, and
+the two asserted patch scripts re-applied cleanly. The suite and the refuter round that had just
+started against the wrong doc state were killed and relaunched. Rule 4's cousin: a break-test
+edits in place and restores in place — never with a git command in the same shell line. (2) The
+prompt's first draft stated the fidelity tallies from memory (STUB 9 · DOC 4 · "four corrected
+downward, none upward"); recomputing from the JSON gave STUB 12 · DOC 5 and two-up/two-down —
+fixed before the refuters saw it, and the render script now prints the tallies it writes.
+
+**Refuter round on the regenerated set (the TENTH consecutive round of real catches):** four
+refuters were launched; three died on the session's usage limit before reporting, and the
+committing session did not have their results. The ledger refuter finished and caught seven
+defects in the first render — recorded here and FIXED IN W448: the header claimed "the floor
+served every model call … the shipped default" (false on both counts: the v138 CEO chat bypasses
+the gateway and reached the host's Ollama during the audit — the ledger's own R4.0 said so — and
+`AI_DISABLE_LOCAL=1` is CI's setting, not the default); "no per-region cap" (the assessment WAS
+capped at ten and every region hit it — only the refutation was uncapped); the renderer's clipping
+cut file:line citations in 25 refuter-evidence fields, the refuters' own closing verdict sentences
+in 14 SURVIVED entries, the sentence justifying R5.2's corrected verdict, and five region
+summaries' conclusions including R6's "I could not drive a browser" caveat; "every plan workstream
+cites the ledger entries it closes" was true of 2 of 37; item 1.4 cited the wrong entries (R3.3,
+R2.3 — the Chief's Opening and the lifecycle — for the review gates, R3.1/R2.2); the footer called
+every entry a "reproduced observation" while UI statements are reasoned from source; and the
+documented RENDER command wrote LF into a CRLF file.
+
+**Suite:** 350 passed / 15 skipped / 0 failed (2:44:07 wall-clock — the box was also running the
+refuter workflows) on the final Python tree of the round (`living_plan.py` re-scored); the
+documentation changed after that run, the code did not.
+
+### W447 — the Religion domain's QEP vision enters the canon — and what was left out of it
+
+**Authored and committed (3ef29921, branch `docs/qep-vision-appendix`) by a separate session; this
+entry records it from the commit and from re-verification in W448, since the log had no record.**
+
+**What was wrong:** the Owner's 2026-09-03 directive put the Quran Education Platform in the Religion
+domain as its flagship and W439 delivered its honest core — but the VISION behind it had never been
+written into the canon. It survived only in three abandoned 2025 build attempts under `github_repos`
+(all stopped on the same day) and ~2.4 MB of planning transcripts (the commit message said ~1.9 MB;
+corrected in W448 — 2,395,108 bytes).
+
+**What W447 did:** recovered it as `docs/QURAN_EDUCATION_PLATFORM_VISION.md` (1,139 lines — a
+reconstruction of the vision plus an audit of what each attempt actually built) and carried the
+durable, Owner-authored layer into the canon as `WORKSTATION_IDBO_WHOLE_VISION.md` **APPENDIX A**
+(A.1–A.13): concept · vision statement · four goals · eight strategic objectives · the fifteen core
+features · the four guidance pillars · Waqf/Trust governance, every claim provenance-graded
+([OWNER] where it recurs across independent source transcripts; [DERIVED-FAITHFUL] where the Jules
+agent grouped items traceable to the Owner's own lists; [EXCLUDED] otherwise).
+
+**What it refused to carry (A.10):** the 2025 technology stack, the four-microservice "Neural Core",
+the 19-phase roadmap, the delivery methodology, and every status claim those repositories made — the
+audit found a documentation pipeline emitting placeholder text into its own "canonical" outline for
+all twenty phases, backends whose persistence was a commented-out import behind an in-memory dict,
+zero-byte files standing in for twelve features (the commit message said eleven — corrected in W448),
+209 compile errors committed in the last captured build log, and a
+phase plan that silently deleted three capabilities and called it a revision. The long-form
+document's Part V (technology) and Part VI (roadmap) carry SUPERSEDED banners.
+
+**Where §11 overrides it (A.9) — six refusals recorded so they are never "fixed":** recitation
+scoring (the original vision's cornerstone — no phonetic model exists, and a fabricated judgement
+about someone's recitation of the Qur'an would be a false witness), generated Qur'an Arabic,
+translation of sacred text, emotion inference (also a consent problem — the users include
+children), Fitrah-as-measurement, and an AI Ask-a-Scholar. Ratified boundaries under the delivery
+plan's DEFINITION OF COMPLETE clause (b), not gaps.
+
+**Status measured, not asserted (A.11, HEAD 06c51109):** the QEP core is delivered and honest
+(ledger v3 R1.7 DELIVERED); its three known defects are already plan items (R1.0 → P1.8; R5.8 →
+P1.13; the QMS gate → P1.1); twelve of fifteen features have no module, and the ten Jules-era
+Religion stubs archived in W382 are prior art at stub depth, not a restore target. **Five Owner
+rulings (A.12)** block the build — corpus provenance, certification authority, curriculum ownership
+plus the scholar-review mechanism for AI-generated religious content, whether the Fitrah Spectrum
+proceeds at all, Tajwīd rule scope — and are put at P3.0. **Wired through the delivery chain:**
+prompt companions + answer D + P3.0 + new items P3.9–P3.11 (QEP composed from §6/§7 resources,
+never a private stack — what killed all three prior attempts, A.13.1); the six-region fidelity
+workflow told that A.9 refusals are DELIVERED when a surface refuses and says so, never MISSING;
+the docs README canon block.
+
+**Re-verified in W448 before merging to main:** `node --check` on the amended audit workflow;
+every A.x cross-reference in the prompt, the workflow and the appendix resolves to a real A.1–A.13
+heading; A.11's ledger cites (R1.7 DELIVERED, R1.0 PARTIAL, R5.8 PARTIAL) match the v3 JSON; the
+vision stayed CRLF with zero bare-LF lines after a 466-line insertion; the long-form doc is LF.
+Documentation only — no application code changed.
+
+### W448 — closing the two unrecorded rounds: the refuters' catches on W446 and W447 applied, the missing log entries written, and the appendix branch landed on main
+
+**What was wrong when this round opened.** Main held W446 (f3ff0d2c) unpushed; the QEP appendix
+(W447, 3ef29921) sat on `docs/qep-vision-appendix` unmerged and un-refuted; neither had a progress
+entry, so the canon's "W1→W446/W447" pointers described a log that ended at W445; and the seven
+catches the W446 ledger refuter had made before the session limit killed its siblings had never
+been applied — the committed ledger still said "no per-region cap" and "the floor served every
+model call … the shipped default". The prompt's own V6 RECORD step had been skipped twice.
+
+**Round one of fixes (the W446 refuter's seven):** the ledger header corrected (the gateway path
+served every call from the floor; the v138 CEO chat bypasses the gateway and reached Ollama; the
+flag is CI's setting, not the shipped default); the cap stated (assessors capped at ten per region,
+every region hit it — 60 is the cap, not the gap; only the refutation was uncapped); the renderer
+no longer truncates anything (25 evidence fields had lost their file:line citations, 14 refuter
+verdict sentences were cut, five region summaries lost their conclusions including R6's "I could
+not drive a browser"); item 1.4's cites corrected (R3.1/R2.2 — the review-gate findings, not the
+Chief's Opening and the lifecycle); every plan workstream now carries the region.index entries it
+closes (29 stamped mechanically from the ledger items, plus P2.4's "no ledger entry"; P4 says which
+other instrument it rests on); the footer no longer calls source-reasoned UI statements "reproduced observations"; the
+renderer preserves the destination's CRLF. And six surviving non-DELIVERED v3 findings the prompt
+ledger had never cited were folded in (the fallback enterprise NAME as part of the scaffold body,
+R2.9; "UK Legal" as eight employment terms with a subject-blind audit hash, R1.6; the journey's two
+helpers that let the engine describe itself, R2.7; continuous compliance as the same OFF switch,
+R1.5; a new item 3.11 — §10 names sixteen criteria, instruments exist for four, and Genesis attests
+ranked/simulated on a tie — R1.4/R2.5). Proven by script: every non-DELIVERED v3 finding is cited
+by the prompt ledger; every cite resolves.
+
+**Round two — five refuters on the whole set (prompt, vision incl. appendix A, ledger, plan +
+companions, the QEP long form) against a backend booted from this tree on :8025 and the three
+source repositories under `github_repos`: 53 verified defects, all applied.** The ones that
+mattered: the canon claimed the execution log ran to W447 while the file ended at W445 (fixed by
+writing the W446 and W447 entries — this round is W448); §16 listed the native fabric core and the
+org cascade as DELIVERED although those are precisely the two DELIVERED claims the refuters
+overturned (fixed to the six standing verdicts); "reproduced the other 56 with their own inputs"
+overstated the ledger's own "several" (R3.2 re-read the assessor's record; R6.2/R6.6/R4.3 were
+code-only) — now "stood the other 56"; ledger 1.2/P1.2 cited the review-gates finding R2.2 for the
+shipped body (→ R2.6, the repo-regression neighbour); the vision's Mode 3 note cited R3.3/R2.3 (→
+R3.1/R2.2); P3.0 pointed the five QEP rulings at A.10, the exclusions (→ A.12); 3.11 said the QMS
+record does not disclose the tie when its basis string does (the COUNT is the defect, and the
+shipped EVIDENCE.md); the §8 self-curation directive was attributed to a "2026-06-22 capstone;
+W42, W266" that records no such thing (→ the pre-W1 capstone entry that does); "219 born from the
+genesis literals" is 218 + one via the spawn path's `stage: req.scope`; the living plan and its
+API mirror said `/api/v191` was kept for "live frontend callers — Proposals + EvolutionDashboard"
+(zero callers exist; W261 absorbed it; the app_mvp comment is stale); "45+ federated resources" is
+41 and "12 real owned capabilities" is 16 on the live backend; the VSB model's body still said
+"please approve … Open Q §9.1" and "AFTER your approval" under a header claiming header and body
+agreed (six body lines now cite the 2026-06-21 rulings); thirteen source paths the living plan
+and UNDERSTANDING cited as live were archived in W153+ (re-pointed to `_archive/`), and the
+docs README's "kept for navigation" sat over thirteen dead Jules-era links (re-pointed to
+`_archive/docs/` where the file survives, and to `src/organism/` for the three the refuter of this
+round found tracked there); KOP §4/§5 still said "four layers" after §1
+moved to five; UNDERSTANDING's header still said "W251 … suite 219✓" over a body at 350; the
+living plan named a "studio-composer" router that does not exist and omitted the four
+control-perimeter routers the audit found open. On the appendix and the long form: "eleven of the
+fifteen features" as empty skeletons is twelve (and fifteen of nineteen READMEs are zero-byte);
+the [OWNER]-graded quotations had been silently reworded ("AR/VR, video conferencing" → "immersive
+media, live teaching"; "social media platform" → "social platform"; "AI analysis of actions" →
+"reflection prompts") while asserting near-verbatim recurrence — restored to the Owner's words
+with explicit A.10/A.9 glosses; "eight independent sources" are eight FILES of eighteen that
+include two byte-identical pairs and re-saves of one transcript (about five distinct texts — the
+tally now recorded in the long form's §30, where before it existed nowhere the canon pointed);
+"the only Religion tool with no disclaimer key" is one of two (interfaith — an erratum now
+rendered beside ledger R1.0, whose refuter said "only"); two UI strings were attributed to the
+wrong components; "~1.9 MB" of transcripts is 2.4 MB; "at abandonment … final captured build …
+TS1128" described a state 102 commits before abandonment, in a log with no TS1128; the A.9
+refusals were flagged nowhere in the long form (now in its header, at six feature/section
+headings, and in §24); and the audit workflow's own header still asserted the "shipped default"
+falsehood its ledger had just corrected.
+
+**Recorded, as this canon's rule requires:** the second-round fixes were verified by script
+(every citation resolves; every README link resolves; every EOL preserved; the renderer, the API
+mirror and the workflow parse; the lockstep test passes), and by one independent refuter on the
+diff before commit — not by a third five-agent round, which the session's usage limit would not
+have survived. That refuter caught eight more, all applied — the ELEVENTH consecutive round of
+real catches: this entry's own "Landing" paragraph had been written in the past tense before
+the landing happened (the fabricated-success class, in the entry that criticises it); the README
+fix declared three git-tracked files "exist nowhere" (they live under `src/organism/`); the W447
+entry, written this round, restated the "~1.9 MB" and "eleven features" figures the same round
+corrects; the A.7 "[OWNER]" quotes had been restored to the long form's paraphrase, not the
+transcripts' words; the long form's new A.9 header named Feature 14 (billing) for emotion
+inference instead of Feature 10, and §11's recitation-analysis service carried no marker; an A.10
+gloss attributed a reading A.10 never states; the Sovereign Evolution Office's date came from
+memory (06-20) not the repo (first commit b0c3eeee, 2026-06-21); and three counts were off by one. The full suite figure (350 / 15 / 0) stands from W446's run on the identical Python
+tree: this round changed one string list in `living_plan.py` and no other application code.
+
+**Landing (the step after this entry is written — recorded as intent here, as outcome in memory and
+the next entry, never as a past tense this entry cannot know):** commit on `docs/qep-vision-appendix`,
+fast-forward main onto it (carrying W446, unpushed since 2026-09-05), push, watch both CI workflows.

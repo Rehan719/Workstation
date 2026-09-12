@@ -3,7 +3,7 @@
   Purpose: put the Owner (Rehan) and any AI agent on the SAME PAGE about the vision and current state.
   This is my (Claude's) honest, evidenced articulation of what I understand you want, so you can
   correct, confirm, and direct. Maintained as a living artifact — see KNOWLEDGE_OPERATING_PROCESS.md.
-  Status: FOR OWNER REVIEW · current-state refreshed 2026-08-12, W251 (real-engine Resource Fabric across the whole catalogue; governed virtual economy; every generated VSB carries Board+Chief; suite 219✓)
+  Status: FOR OWNER REVIEW · current-state refreshed 2026-09-05/12 (W446–W448: fidelity ledger v3, delivery plan v11 rev 2, this document reconciled to the vision; suite 350✓ / 15 skip)
 -->
 
 # Workstation IDBO — Shared Understanding & Knowledge Base
@@ -54,12 +54,12 @@ You have sharpened and expanded the vision across this session. As I understand 
 
 Verified by direct build and test (full detail in `WORKSTATION_IDBO_LIVING_PLAN.md` §4, auto-checkable via `GET /api/v1/plan/state`):
 - Frontend **tsc 0 errors**; integration tests **350 pass / 0 fail** (15 skip need a live external key; 326 test functions; measured 2026-09-05); Spine + Doc-Sync CI green on `main`. Figures here WILL drift — the living plan §4 and `GET /api/v1/plan/state` are the maintained copies; the section-by-section fidelity verdict is `docs/VISION_FIDELITY_LEDGER.md` (v3, 2026-09-05 — 60 findings against a HEAD-booted backend, every one adversarially refuted); the ordered plan to close what remains is `docs/FABLE_DELIVERY_PROMPT.md` (v11 rev 2). **Precedence (recorded W446): `WORKSTATION_IDBO_WHOLE_VISION.md` prevails; this document reconciles TO it.**
-- **AI is IN-HOUSE-FIRST** (native fabric, not external API calls): owned model discovery/routing/tiers + parallel multi-model **ensemble** + the autonomous **workflow-TREE** orchestrator + 12 real owned capabilities, catalogued + self-checked + surfaced on `/native-ai`; the memory store is corruption-tolerant with atomic writes. Real-vs-mock record in `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`.
+- **AI is IN-HOUSE-FIRST** (native fabric, not external API calls): owned model discovery/routing/tiers + parallel multi-model **ensemble** + the autonomous **workflow-TREE** orchestrator + 16 real owned capabilities (live count 2026-09-11), catalogued + self-checked + surfaced on `/native-ai`; the memory store is corruption-tolerant with atomic writes. Real-vs-mock record in `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`.
 - **Live process-intelligence engines:** BDP, SPI, APIE, DDPIE, Cognitive Cascade+MJM, Synthesis Nexus, **Genesis** — and ALL EIGHT run their **real staged pipeline when composed** in the Resource Fabric.
 - **The deliverable works:** `Genesis /establish` instantiates a real, persisted, governed, operational **VSB IDBO entity** — and (W248) **every** generation path (establish · SSE spawn · Studio) attaches its own Board + Chief-of-its-owner, a living economy in its selected legal form, living-entity registration (heartbeat-tended), and a seeded business plan.
 - **Governance:** `gaas.v5` constitutional engine (interceptor + breaker + SHA3-512 UEG audit). **Apex governance:** Board of Directors (Chief = your digital twin) above the AI CEO. **Economic governance (W249):** every cycle gaas-gated + UEG split-logged; material distributions held for Change Control approval.
 - **Self-evolution:** Sovereign Evolution Office (introspect → org-curate → Change Control) on the circadian heartbeat.
-- **Resource Fabric:** 45+ federated, reconfigurable, combinable resources — **every composed resource runs its REAL engine** (8 PI engines · 8 digital-resource facilities incl. the vision-exact composite Reactor and the Generator · 8 organism systems · the enterprise/org layer · compliance/consensus/mega/omnimedia/mesh).
+- **Resource Fabric:** 41 federated, reconfigurable, combinable resources (live count 2026-09-11) — **every composed resource runs its REAL engine** (8 PI engines · 8 digital-resource facilities incl. the vision-exact composite Reactor and the Generator · 8 organism systems · the enterprise/org layer · compliance/consensus/mega/omnimedia/mesh).
 - **VSB Economy (BUILT; virtual/simulated WST only):** 9 selectable legal-entity forms, the §4 profit waterfall (Owner-adjustable, template-bounded), 100%-donation charity screen, owner-payments ledger, venture investment, living VSBs operated by the heartbeat. Real-money rails remain hard-gated.
 - **Living Plan API:** `/api/v1/plan` + `/api/v1/plan/state` (self-introspecting).
 - 6 domains (18+ honesty-guarded domain tools), VSB pipeline, swarm org cascade, Synthesis Studio (15 output types), Products (Reactor/Factory/Incubator/Generator), Catalog+BTO, Capital Fund, Digital Twin, Management Systems (QMS/BMS/DCS/EMS), full biomimetic systems.
@@ -69,7 +69,7 @@ Verified by direct build and test (full detail in `WORKSTATION_IDBO_LIVING_PLAN.
 ## 6. The Evidence Base (what this understanding is built from)
 
 - **Repo current state:** the live codebase (`agentic_core/`, `apps/workstation-superapp/`), built and tested directly this session.
-- **Repo documentation:** `docs/business/` (mission/vision/values, growth/market/service-catalog), `docs/bms/BMS-STRAT-001`, `docs/charters/` (C-Suite/CoE/BTO), `docs/design/DESIGN.md`, `docs/architecture/`, `docs/DEVELOPMENT_PLAN_v7.0_SINGULARITY` (retained as horizon lore, not current state), the Constitution.
+- **Repo documentation (archived W153+ under `_archive/docs/` — historical sources, re-pointed W448):** `_archive/docs/business/` (mission/vision/values, growth/market/service-catalog), `_archive/docs/bms/BMS-STRAT-001`, `_archive/docs/charters/` (C-Suite/CoE/BTO), `_archive/docs/design/DESIGN.md`, `_archive/docs/architecture/`, `_archive/docs/DEVELOPMENT_PLAN_v7.0_SINGULARITY` (retained as horizon lore, not current state), the Constitution.
 - **Your Cowork-agent collaboration docs** (external, synthesised): `CLAUDE_CODE_AGENT_PROMPT_v4.md`, `workstation_concept_design.md`, `IDBO_ARCHITECTURE_MASTER_v4.docx`, `WORKSTATION_ADVANCED_ROADMAP_v3.docx`.
 - **All your inputs this session:** the engine requests; the synergy/autonomy directives; the gaas.v5 + Phase-4 builds; the Genesis/establish deliverable; the Sovereign Evolution + VSB-org curation; the Resource Fabric; the Board of Directors + Chief-as-your-digital-twin; the living-plan request; and this Waqf/Trust economic-model request.
 - **My memory** (`MEMORY.md` + the project/feedback/reference notes) and the outputs I have produced and verified.

@@ -11,7 +11,7 @@
   §16 rewritten 2026-09-02 as a short pointer section (its progress accretion had become the source
   of documented overclaims); §18's four certainty questions recorded as settled the same day. The
   fidelity verdict lives in docs/VISION_FIDELITY_LEDGER.md; the cycle log in
-  docs/AUTONOMOUS_PROGRESS.md (W1→W445).
+  docs/AUTONOMOUS_PROGRESS.md (W1→W448).
   2026-09-04 (W445): every factual claim in this document re-verified against HEAD 89f36fea by a
   two-agent provenance pass; §16 regenerated from fresh measurement; §11 gained the faith-content
   constitution the Owner's 2026-09-03 QEP directive established (delivered W439); §18-A updated to
@@ -35,7 +35,14 @@
   (recitation scoring, generated Arabic, translation, emotion inference, Fitrah-as-measurement,
   AI Ask-a-Scholar) — principled refusals, not gaps. A.11's status is measured against HEAD 06c51109.
   Long form + the audit of the three attempts: docs/QURAN_EDUCATION_PLATFORM_VISION.md (its Part V
-  technology and Part VI roadmap are superseded by A.10). §1–§18 prose is unchanged.
+  technology and Part VI roadmap are superseded by A.10). No §1–§18 line was removed; two lines
+  (§3A, §17.1) gained an appended pointer to Appendix A.
+  2026-09-12 (W448): the refuters' catches on W446/W447 applied — §16's DELIVERED list corrected to the
+  six standing verdicts; the Mode 3 cite (R3.1/R2.2); the §8 directive attribution; the 218+1 lifecycle
+  count; Appendix A's [OWNER] quotes restored to the Owner's own words with A.10 glosses, its provenance
+  tally grounded in the long form's §30, and its A.6/A.11 factual slips (swapped UI strings, "only"
+  tool without a disclaimer, eleven→twelve empty features, unqualified paths) corrected; a second
+  refuter on those fixes then put A.7's quotations back to the transcripts' exact words.
   2026-06-24 clarification (Owner): added §3A — the TWO distinct, in-house-AI-first ways IDBO serves a
   user (1: Domains = domain-specific AI-mediated tools/resources for working in all domains/realms;
   2: end-to-end Concept→Commercialisation → a living VSB IDBO Enterprise entity) — and the Chief-owned
@@ -315,7 +322,10 @@ make it **dynamic, adaptive, responsive** — and **defend itself, learn, and im
 customer/user satisfaction, founder-alignment, and live compliance are all continuously monitored,
 evaluated, and improved.
 
-**Recorded W446 — the self-curation principle (Owner directive, 2026-06-22 capstone; W42, W266):**
+**Recorded W446 — the self-curation principle (Owner directive recorded in the pre-W1 "Capstone —
+End-to-End Transformation Orchestration" entry of `AUTONOMOUS_PROGRESS.md`, June 2026: "run the WHOLE
+transformation through the IDBO's own VSB delivery org, end to end"; realised there as
+`POST /api/v1/transformation/orchestrate`, with the Sovereign Evolution Office first committed 2026-06-21, b0c3eeee):**
 Workstation's OWN evolution and transformation are delivered by its own living organisation — the
 Sovereign Evolution Office introspects → AI CEO triage → C-Suite verdicts → CoE/BTO roadmap → Change
 Control, on the circadian heartbeat — and the platform's whole transformation is run end-to-end through
@@ -489,12 +499,15 @@ than trusted once this date is old; a long-running dev process serves the code i
 - Reach, classified: **325 of 456 /api operations reached · 64 legacy (non-v1, kept — live callers) ·
   67 genuine-unreached, small scatter in 38 tiny clusters.** The Tier-2 reach backlog of substantial
   clusters is COMPLETE (W437–W444); two whole surfaces were honestly RETIRED rather than wired.
-- **Fidelity, re-measured (ledger v3, 60 findings, every one individually refuted against the booted
-  HEAD):** as assessed STUB 12 · MISSING 3 · DOC_OVERCLAIM 5 · PARTIAL 32 · DELIVERED 8; standing after
+- **Fidelity, re-measured (ledger v3, 60 findings — ten per region, the assessors' cap, which every
+  region hit, so 60 is the cap not the gap — every one individually refuted against the booted HEAD):** as assessed STUB 12 · MISSING 3 · DOC_OVERCLAIM 5 · PARTIAL 32 · DELIVERED 8; standing after
   refutation STUB 10 · MISSING 3 · DOC_OVERCLAIM 5 · PARTIAL 36 · DELIVERED 6 — the refuters overturned
-  four (two DELIVERED claims down, two STUBs up) and reproduced the other 56 with their own inputs. The
-  economy (§12), the native fabric core (§6), the six domain surfaces (§3A), the org cascade (§5) and
-  the living roadmap are DELIVERED by execution. **The audit found Tier-1 truth defects on reached,
+  four (two DELIVERED claims down, two STUBs up) and stood the other 56 — several reproduced with the
+  refuters' own inputs, the rest confirmed by re-executing the assessor's route or reading the code.
+  Standing DELIVERED, by execution: the economy (§12), the six domain surfaces (§3A), the QEP core
+  (§11), the QMS defect loop and the compliance-screen UI (§10/§11), and the living roadmap (§5); the
+  native fabric core (§6) and the org cascade (§5) are real machinery whose DELIVERED claims the
+  refuters moved to PARTIAL for undisclosed floor status. **The audit found Tier-1 truth defects on reached,
   used surfaces** — the shared QMS gate certifies floor scaffold (coverage measured against no
   sections), the shipped VSB body presents that scaffold as the enterprise's concept, the Living
   Organisation hub's default tab is a detached roleplay outside the native fabric, the Mode 3 review
@@ -516,14 +529,15 @@ than trusted once this date is old; a long-running dev process serves the code i
   ordered, verifiable plan to deliver the whole of §1–§15 — phases P1–P4, acceptance criteria per
   workstream, the six-step verification each must pass, milestones that are measurements, and the
   definition of complete.
-- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W446). A record of intent
+- `docs/AUTONOMOUS_PROGRESS.md` — the cycle-by-cycle execution log (W1→W448). A record of intent
   and account, not proof.
 - `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — all 10 audited primitives FIXED + WIRED (W437); what
   remains is LATENT. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
 - `scripts/reach_audit.py` and `scripts/workflows/fidelity_audit_v3.js` — the two measures; run them
   fresh, never trust a written figure or verdict.
-- Legacy fragments describing a different product (`docs/GOVERNANCE.md`, `docs/ARCHITECTURE.md` —
-  Jules-era "Sovereign Investment Civilisation" lore) are archived under `_archive/docs/` (W446).
+- Legacy fragments describing a different product — `docs/GOVERNANCE.md` (a MultiSig "Governance
+  Framework": 3/5 Dilithium-5 signatures over 5% of AUM) and `docs/ARCHITECTURE.md` (the Jules-era
+  "Sovereign Investment Civilisation") — are archived under `_archive/docs/` (W446).
 
 **Open against this vision, in one paragraph (regenerated 2026-09-05 from ledger v3):** fourteen
 Tier-1 truth defects on reached surfaces (delivery-plan P1 — the gate that cannot fail on the floor,
@@ -539,7 +553,8 @@ layers vouched for by an unwired file, torch optionality failing at import — t
 57 modules, an unauthenticated control perimeter, and the 67-op scatter); the genuine capability gaps
 (P3 — §4.6 Develop, §4.1 image intake, §17.3 cadence layers, §17.4 Mode 2, autonomy that starts at
 establishment, §9 depth, §13 repo access — and four OWNER RULINGS: the single lifecycle (219 VSBs
-born at `stage: "commercialise"` from `genesis.py:687/:852` literals, none ever advanced), the
+at `stage: "commercialise"` — 218 from the `genesis.py:687/:852` literals, one via the spawn path's
+`stage: req.scope` — none ever advanced), the
 §17.1 Products axis, the §17.5 KPI gate, the Mode 2 scope); and the Owner-held switches (P4). The
 exposed Stripe key **remains in git history — rotation at Stripe is an Owner action still owed**;
 `configs/realms.yaml` is scheduled for retirement (P2.5); §18-A's heavier self-hosted/trained-model
@@ -571,8 +586,9 @@ architecture). This is the exact structural skeleton the fine-grained vision han
   this line to "design intent".*
 - All 96 follow the same **Concept → Design → Build → Launch → Commercialise** stage-gated lifecycle.
   *Status (re-verified W446): no single gated lifecycle exists in the product — eight stage
-  vocabularies run, and every established VSB holds `stage: "commercialise"` from a literal that no
-  code path advances (219 of 219). OWNER RULING — delivery-plan item 3.10 / P3.0: options (A) the canon
+  vocabularies run, and every established VSB holds `stage: "commercialise"` — 218 of 219 from a
+  genesis literal, one from the spawn path's `stage: req.scope` — and no code path advances it
+  (219 of 219). OWNER RULING — delivery-plan item 3.10 / P3.0: options (A) the canon
   five become the ONE gated lifecycle and the others migrate; (B) this line is corrected to describe
   what the product does; (C) NARROW — make the VSB stage genuinely advance or rename it to the status
   it is (the recommendation). §4's ten fine-resolution steps map onto whichever gates the Owner rules;
@@ -631,7 +647,7 @@ honesty), P3.3 (the cadence generators).*
   expert twin node exists; the Chief today is a constant values sentence plus the last five stored
   instructions, invoked only by click (`/api/v1/twin/models` holds 0 models; per-VSB Chiefs are titled
   "Digital Twin of default"). Delivery plan P3.4; the scope is an OWNER RULING (P3.0).*
-- **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome). — ◐ RECORDS DELIVERED (W126), **GATING NOT YET** (W446 audit, ledger R3.3/R2.3: no lifecycle mover — orchestrate, cascade, evolve, ship, establish — consults `blocks_progress`; a REJECTED design gate stopped nothing. Delivery plan P1.4.) The W126 delivery: per-VSB `review_gates` config (`GET/POST /api/v1/vsb/{id}/review-gates`, per-stage status + `blocks_progress`, human `…/{stage}/decision` approve|reject), each config + decision append-only DCS-audited (§17.5); a **Human review gates (Mode 3)** panel on the Genesis page.
+- **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome). — ◐ RECORDS DELIVERED (W126), **GATING NOT YET** (W446 audit, ledger R3.1/R2.2: no lifecycle mover — orchestrate, cascade, evolve, ship, establish — consults `blocks_progress`; a REJECTED design gate stopped nothing. Delivery plan P1.4.) The W126 delivery: per-VSB `review_gates` config (`GET/POST /api/v1/vsb/{id}/review-gates`, per-stage status + `blocks_progress`, human `…/{stage}/decision` approve|reject), each config + decision append-only DCS-audited (§17.5); a **Human review gates (Mode 3)** panel on the Genesis page.
 
 **17.5 The 10 architecture invariants (absolute).** User isolation (scoped to user_id) · mandatory GaaS
 gate on every output · append-only DCS audit · **Arms-Length Agency** (AI CEO cannot instruct the
@@ -754,8 +770,8 @@ re-opened**
   established VSB holds `stage: "commercialise"` from a constant) — see the delivery prompt's
   ledger item 3.10 (v11 rev 2) and §17.1's status note for the measured options.
 - **E — Cross-VSB federation — DECIDED BY THE OWNER 2026-08-31 (Option A), recorded here W446 so it is
-  never re-opened:** cross-INSTANCE federation stays **honestly simulated** (peers flagged
-  `simulated: true`; `GET /api/v1/mesh/status`) until a second instance actually exists; when one does,
+  never re-opened:** cross-INSTANCE federation stays **honestly simulated** (the discovery block
+  flagged `simulated: true`, its peers placeholder names; `GET /api/v1/mesh/status`) until a second instance actually exists; when one does,
   the first step is a **private mesh with explicitly-configured peer URLs and a pre-shared key — never
   open discovery**. Entity-to-entity service contracts, transfers and the §12 marketplace within ONE
   instance are delivered and are not what this ruling gates.
@@ -802,8 +818,11 @@ OBSERVED, never what the system reports about itself.)*
 >
 > **Provenance grading.** Every claim below carries one of three grades, so a future reader knows what it
 > rests on. **[OWNER]** — recurs across multiple independent source transcripts and matches the Owner's own
-> language and values (the vision statement appears in 8 of 18 sources; the *fitrah* concept in 8; the
-> waqf/trust model in 3). **[DERIVED-FAITHFUL]** — synthesised by the Jules agent, but a faithful grouping
+> language and values (counted over the 18 transcript files in the external
+> `Quran-recitation-platform/sources/` — the vision statement is in 8 of the 18 FILES, the *fitrah*
+> concept in 8, the waqf/trust model in 3; the 18 include two byte-identical pairs and several re-saves
+> of one transcript, so eight files are roughly five distinct texts — the tally is recorded in the
+> long form's §30). **[DERIVED-FAITHFUL]** — synthesised by the Jules agent, but a faithful grouping
 > of items that appear in the Owner's own lists; useful, and re-checkable against them. **[EXCLUDED]** —
 > see A.10.
 >
@@ -840,7 +859,7 @@ QEP is a comprehensive, AI-mediated Quranic education capability serving **learn
 and personalised guidance — delivered on any device, optimised for underserved regions, and governed as a
 Sharia-compliant, trust-based endeavour.
 
-The Owner's own framing is broader than "an app": *an innovative Muslim social platform* in which Quranic
+The Owner's own framing is broader than "an app": *an innovative Muslim social media platform* in which Quranic
 education happens through **reading, memorisation, competition, learning, teaching and guided reflection**,
 wrapped in community and gamification — the *ummah* dimension being part of the pedagogy, not decoration on
 it. Learning is to be **personalised and emotionally responsive**, adapting to the individual rather than
@@ -848,20 +867,25 @@ presenting one path to everyone.
 
 ## A.3 Vision statement · **[OWNER]**
 
-The wording recurs, near-verbatim, across eight independent source transcripts:
+The wording recurs, near-verbatim, in eight of the 18 transcript files (re-saves included — about five
+distinct texts); the Owner's own words, technology names and all:
 
 > To deliver a **universally accessible, immersive, and ethically grounded Quranic education platform**
 > that empowers Muslims of all ages to **recite, memorize, understand, and live the Quran** — through the
-> seamless integration of AI, immersive media, live teaching, social learning and gaming technologies, all
+> seamless integration of AI, AR/VR, video conferencing, social learning, and gaming technologies, all
 > within a **fully Sharia-compliant, trust-based framework**. It offers personalized, emotionally responsive
 > learning via AI agents, immersive environments, and collaborative tools. It supports recitation,
 > memorization, learning, teaching, competitions, and guided reflection — accessible on any device and
 > optimized for underserved regions.
 
+*(Quoted with the Owner's technology words intact. This appendix reads "AR/VR, video conferencing" as
+the capabilities — immersive presentation, live teaching — under A.10.1's rule that the durable content
+is the capability, never the 2025 stack.)*
+
 **Vision in action** — the Owner's own five-line summary:
 
 - **Platform & Trust** powers a global, Sharia-compliant AI Quranic learning system built by a not-for-profit trust.
-- **Features & Technology** integrate immersive media with live teaching, AI coaching, and gamified social learning.
+- **Features & Technology** integrate immersive AR with VC and VR, AI coaching, and gamified social media (the source reads "gamified social mediatized" — sic).
 - **Objectives** focus on free access to Quranic education, personalisation, community, and authentic & ethical integrity.
 - **Governance** is led by elected volunteers, a Sharia board, and specialist teams ensuring transparency and compliance.
 - **Join Us** to co-create, volunteer, and advance this dawah-driven mission, seeking the pleasure and love of Allah SWT.
@@ -949,8 +973,9 @@ streak — carrying its formula, W439). Competitions, leaderboards and badges do
 **5 · Learner-Centric Learning Modules.** Structured curricula — **Noorani Qaida, Tajwīd, Quranic Arabic,
 Tafsir** — as lessons (text, video, interactive), quizzes with immediate feedback, recommended learning
 paths, and explanation of selected text on demand.
-*Status: `religious_domain/learning/` holds gamification only; the LearnTeach surface honestly reports "NOT
-ESTABLISHED" rather than showing figures. No curriculum content exists — see A.12.3.*
+*Status: `religious_domain/learning/` holds gamification only; the LearnTeach surface honestly reports "No
+scholars are verified on this deployment" rather than inventing a scholar board. No curriculum content
+exists — see A.12.3.*
 
 **6 · Educator Platform & Class Management.** Virtual classes, student enrolment, module assignment,
 progress dashboards, grading and feedback, announcements, and AI suggestions to the teacher ("many students
@@ -959,8 +984,9 @@ struggle with lesson X").
 
 **7 · Community Engagement Platform.** Forums, Q&A, events with RSVP, **study circles**, **recitation
 rooms**, **Ask a Scholar**, content sharing, and content moderation.
-*Status: not built. The QEP intelligence surface honestly reports "no scholars are verified" rather than
-implying a scholar network exists — the correct posture until one does (A.9.6).*
+*Status: not built. The QEP intelligence surface honestly reports "NOT ESTABLISHED — controls could not
+run" for its compliance audit rather than a green tick, and the LearnTeach surface says no scholars are
+verified rather than implying a scholar network exists — the correct posture until one does (A.9.6).*
 
 **8 · Video Conferencing & Collaboration.** 1:1 and group live sessions, screen share, collaborative
 whiteboard, recording, live transcription, in-session chat.
@@ -1023,9 +1049,9 @@ material defines the *content* of guidance rather than the mechanism:
 | Pillar | Framing | Content |
 |---|---|---|
 | **Spiritual Development** | *Worship* | Prayer reminders; contextual dua suggestions; daily Quranic reflections suited to the learner's state |
-| **Character Development** | *Ikhlāq* | Guidance on virtues; reflection prompts supporting moral and ethical growth |
+| **Character Development** | *Ikhlāq* | Guidance on virtues; "AI analysis of actions for moral growth" *(the transcripts' words; realised under A.9.4 as reflection prompts — no behaviour or emotion inference)* |
 | **Acts of Worship** | *Aʿmāl* | Tracking of obligatory and voluntary deeds, with suggestions |
-| **Rights & Relationships** | *Ḥaq / Ḥuqūq* | Strengthening bonds with family, friends and community per Islamic teaching; reconciliation guidance grounded in Islamic values |
+| **Rights & Relationships** | *Ḥaq / Ḥuqūq* | Strengthening bonds with family, friends and community per Islamic teaching; "AI conflict resolution tools (advice based on Islamic values)" *(the transcripts' words; A.9: advisory, labelled AI-assisted, never authoritative)* |
 
 **Design philosophy for these surfaces** — stated by the Owner and applicable platform-wide, not only here:
 **minimalist and serene**. Neutral tones, subtle Islamic patterns, elegant Arabic calligraphy, soft motion —
@@ -1131,7 +1157,7 @@ blocked"). The inherited ratings are subjective 1–5 scores with no rubric.
 
 **A.10.5 All status and completeness claims from the source repositories — EXCLUDED as unreliable.** The
 audit found placeholder text presented as a canonical plan, in-memory dictionaries presented as a backend,
-zero-byte files implying eleven features, and 209 unresolved compile errors committed. **Nothing about what
+zero-byte files implying twelve features, and 209 compile errors committed in the last captured build log. **Nothing about what
 those repositories "had working" is evidence of anything.** A.11's status comes from measuring Workstation.
 
 ## A.11 Measured status, 2026-09-07 (HEAD `06c51109`)
@@ -1143,16 +1169,18 @@ about recitation; a translation route that refuses before any model call; floor-
 outlines; analytics that says `measured: false`; and UI reporting "NOT ESTABLISHED" and "no scholars are
 verified" instead of inventing figures.
 
-**Surface inventory.** `agentic_core/religious_domain/api.py` (674 lines, 11 routes) · `api/religion.py`
-(347 lines, 6 tools) · `api/qep_intelligence.py` (394 lines, 7 routes) · `api/qep_analytics.py` (1 route) ·
-`reactor/religion/{qep_flagship.py, quranic_studies.py, qep_authoring/}` · frontend `QEPStudio.tsx` (341),
+**Surface inventory.** `agentic_core/religious_domain/api.py` (674 lines, 11 routes) · `agentic_core/api/religion.py`
+(347 lines, 6 tools) · `agentic_core/api/qep_intelligence.py` (394 lines, 7 routes) ·
+`agentic_core/api/qep_analytics.py` (1 route) ·
+`agentic_core/reactor/religion/{qep_flagship.py, quranic_studies.py, qep_authoring/}` · frontend `QEPStudio.tsx` (341),
 `QEPIntelligence.tsx` (248), `QEPReligionHub.tsx` (155), `QEPDashboard.tsx` (117),
 `QEPFlagshipFeatures.tsx` (141), `QEPImmersiveTools.tsx` (70).
 
 **Three known defects, each already carried in the delivery plan:**
 - **The Tafsir surface is the constitution's weakest point** (ledger R1.0, PARTIAL). On the floor it serves
   a scaffold under a "## Translation" heading; `arabic_text`, `arabic_source`, `reference` and `range_note`
-  never reach the screen; it is the only Religion tool with no `disclaimer` key; and a green QMS chip sits
+  never reach the screen; it is one of two Religion tools with no `disclaimer` key (interfaith is the
+  other); and a green QMS chip sits
   beside a compliance verdict of "review". The same rule that makes translation refuse is not applied here.
   → **P1.8**.
 - **A dead "QEP Flagship" tab on five non-Religion hubs** (ledger R5.8) rendering a generic four-engine
@@ -1162,8 +1190,10 @@ verified" instead of inventing figures.
 
 **Twelve of the fifteen features have no module — and there is archived prior art.** The tracked Religion
 package holds three modules only: `learning/gamification.py`, `memorization/engine.py`, `tajwid/coach.py`.
-Ten sibling modules covering auth, community (forum, video), educator, finops, governance, guidance,
-immersive, integrations and swarm **did exist as Jules-era stubs (626 lines total) and were archived,
+Ten archived module directories — the nine sibling areas auth, community (forum, video), educator,
+finops, governance, guidance, immersive, integrations and swarm (581 lines), plus a `learning/modules.py`
+beside the tracked learning package — **did exist as Jules-era stubs (626 lines in all, `__init__`s
+included) and were archived,
 correctly, to `_archive/jules-unwired/agentic_core/religious_domain/` in W382** (2026-08-31) because nothing
 called them. They are prior art at stub depth — worth a glance before building a feature, never worth
 restoring. *Note for whoever measures next: those nine directory names persist in a working tree as
@@ -1209,7 +1239,8 @@ Recorded because this canon's operating rule is to record what was observed.
    billing; none reached the intelligence capability that justified the product. → **Build QEP by composing
    §6/§7 resources. Never a private stack.**
 2. **Structure was mistaken for capability.** One attempt created nineteen feature directories and filled
-   four, with zero-byte README files standing in for eleven features. → **A directory, a route or a module
+   four, with zero-byte README files standing in for twelve features (fifteen of the nineteen READMEs are
+   zero-byte). → **A directory, a route or a module
    name proves nothing until something exercises it.** W382's archival of the ten unwired Religion modules
    was this lesson already being applied here (A.11).
 3. **A broken generator kept being cited as canon.** One attempt's documentation pipeline failed and emitted
@@ -1219,7 +1250,9 @@ Recorded because this canon's operating rule is to record what was observed.
 4. **Scope was reduced silently and called a revision.** The last attempt deleted three major capabilities
    from its plan without recording a decision. → **Scope reduction is a ruling, never an edit.**
 
-*Full evidence for all four in `docs/QURAN_EDUCATION_PLATFORM_VISION.md` §§2–4 — which is a reconstruction
+*Full evidence for constraints 1–3 in `docs/QURAN_EDUCATION_PLATFORM_VISION.md` §§2–4, and for constraint 4
+in its §21 (inside the superseded Part VI — read there as evidence of what happened, never as a plan) —
+which is a reconstruction
 and audit of those repositories, and whose Part V (technology) and Part VI (roadmap) are superseded here by
 A.10.*
 

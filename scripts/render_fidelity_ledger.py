@@ -2,7 +2,12 @@
 
 Input: a JSON file holding the workflow's return value — a list of
   {region, findings:[...], verdicts:[...], summary}
-Output: markdown (LF) written to the path given as argv[2].
+Output: markdown written to the path given as argv[2] — the destination's existing line endings
+are preserved (the committed ledger is CRLF); a new file is written LF. argv[5] (optional) is the
+port the audited backend ran on (default 8024).
+
+Nothing load-bearing is clipped: observed/evidence/reason/summary are rendered whole (W446 refuter
+catch — the first render cut file:line citations and the refuters' own verdict sentences).
 
 The verdict that STANDS for each finding is the refuter's corrected_verdict when a verdict
 exists for that index, else the assessor's verdict (marked 'not individually refuted').
@@ -20,12 +25,20 @@ REGION_TITLES = {
     "R6": "§8 + §12 + §17.5 — the biomimetic living organism, the economic organism, the ten architecture invariants",
 }
 ORDER = ["R1", "R2", "R3", "R4", "R5", "R6"]
+# Corrections to the audit text itself, found by later refutation and verified against the code. The JSON is
+# never edited (it is the record of what the assessors and refuters said); the erratum renders beside the entry.
+ERRATA = {
+    "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "
+            "interfaith (agentic_core/api/religion.py:302-347) returns none either; two of the five Religion POST "
+            "tools lack one. The verdict is unaffected.",
+}
 VERDICTS = ["STUB", "MISSING", "DOC_OVERCLAIM", "API_ONLY", "PARTIAL", "DELIVERED"]
 
 
-def clip(s, n=520):
+def clip(s, n=None):
+    """Flatten to one line. `n` is accepted for call-site compatibility and IGNORED — no truncation."""
     s = (s or "").replace("\r", " ").replace("\n", " ").strip()
-    return s if len(s) <= n else s[: n - 1].rstrip() + "…"
+    return s
 
 
 def standing(f, v):
@@ -39,7 +52,7 @@ def standing(f, v):
     return cv, "survived"
 
 
-def main(src, dst, head, date):
+def main(src, dst, head, date, port="8024"):
     regions = json.load(open(src, encoding="utf-8"))
     by_key = {r["region"]: r for r in regions}
     rows = []  # (region, idx, finding, verdict, standing_verdict, how)
@@ -68,17 +81,24 @@ def main(src, dst, head, date):
     w(f"**Supersedes v2 (2026-09-02, baseline `d937dd37`) in full.** v2 predated W435–W445 — eleven")
     w("workstreams including the whole W437–W444 reach campaign — and prompt v11 said to weigh it")
     w(f"accordingly. This edition is regenerated from a fresh six-region assessment against a backend")
-    w(f"booted from HEAD `{head}` (port :8024, single-user mode, `AI_DISABLE_LOCAL=1` — the deterministic")
-    w("native floor served every model call, which is the shipped default configuration, not a defect;")
-    w("what IS assessable is whether every floor-served surface discloses it).")
+    w(f"booted from HEAD `{head}` (port :{port}, single-user mode, `AI_DISABLE_LOCAL=1`). Under that flag the")
+    w("gateway routes every model call to the deterministic native floor — the configuration CI runs and")
+    w("the one any machine without a local model gets (it is NOT the shipped default: with the flag unset")
+    w("and Ollama discoverable, the gateway serves from the local model). What IS assessable on the floor")
+    w("is whether every floor-served surface discloses it. One caveat the audit itself found (R3.0/R4.0):")
+    w("a surface that bypasses the gateway — the v138 AI-CEO chat — reached the host's Ollama directly and")
+    w("returned real llama3.2 prose during this audit, so 'the floor served every call' is true of the")
+    w("gateway path, not of every route.")
     w("")
     w("## How this document was generated — and what that means for reading it")
     w("")
     w("Six assessors ran one vision region each against the booted HEAD, explicitly barred from three")
     w("sources: the vision's own §16, the previous edition of this ledger, and `AUTONOMOUS_PROGRESS.md`")
     w("(a record of intent, not proof). They executed routes, read handlers and components, and counted")
-    w("stores. **Every finding — all of them this time, no per-region cap — was then attacked by an")
-    w("independent refuter instructed to default to refuted**, who had to reproduce the gap (execute the")
+    w("stores. The ASSESSMENT was capped at ten findings per region, most consequential first — and every")
+    w("region returned exactly ten, so **60 is the size of the cap, not the size of the gap**; a region's")
+    w("eleventh-worst thing is not in this ledger. **Every finding was then attacked by an independent")
+    w("refuter instructed to default to refuted** (v2 refuted six per region), who had to reproduce the gap (execute the")
     w("route, read the code, count the store) before letting it stand, and who was told to correct the")
     w("verdict UP or DOWN when the assessor had it wrong.")
     w("")
@@ -121,7 +141,9 @@ def main(src, dst, head, date):
     w("")
     w("The distilled, actionable form of the surviving gaps is **prompt v11 rev 2's `<ledger>` and")
     w("`<delivery_plan>`** (`docs/FABLE_DELIVERY_PROMPT.md`). This document is the evidence base behind")
-    w("them: every plan workstream cites the ledger entries it closes by region and index.")
+    w("them: every `<ledger>` item cites the entries here it rests on by region.index, and every plan")
+    w("workstream carries the region.index entries it closes (or says it rests on another instrument —")
+    w("the reach audit for the scatter, the Owner's hand for P4).")
     w("")
     w("---")
     for k in ORDER:
@@ -135,6 +157,7 @@ def main(src, dst, head, date):
             w(f"**Assessor's region summary:** {clip(r['summary'], 2400)}")
             w("")
         for (kk, i, f, v, sv, how) in [x for x in rows if x[0] == k]:
+            key = f"{k}.{i}"
             av = f.get("verdict", "?").upper()
             tag = f" *(assessed {av})*" if sv != av else ""
             w(f"### {k}.{i} · {f.get('section', '').strip()} — **{sv}**{tag}")
@@ -156,16 +179,25 @@ def main(src, dst, head, date):
                 w(f"- **refutation: SURVIVED** (reproduced by the refuter). {clip(v.get('reason'), 1200)}")
             if v is not None and v.get("evidence"):
                 w(f"- **refuter's evidence:** {clip(v['evidence'], 900)}")
-            if f.get("smallest_honest_fix") and sv != "DELIVERED":
-                w(f"- **smallest honest fix (assessor's proposal — a lead, not a decision):** {clip(f['smallest_honest_fix'], 700)}")
+            if f.get("smallest_honest_fix"):
+                label = ("residual lead (assessor's note on a DELIVERED entry — a lead, not a defect)" if sv == "DELIVERED"
+                         else "smallest honest fix (assessor's proposal — a lead, not a decision)")
+                w(f"- **{label}:** {clip(f['smallest_honest_fix'], 700)}")
+            if key in ERRATA:
+                w(f"- **erratum (W448, verified against the code):** {ERRATA[key]}")
             w("")
         w("---")
     w("")
-    w("*Regenerated by W446 from the audit workflow's journal; every entry above is a reproduced")
-    w("observation against the booted HEAD named in the header, not a claim read from another document.*")
-    open(dst, "w", encoding="utf-8", newline="\n").write("\n".join(out) + "\n")
-    print(f"wrote {dst}: {total} findings; standing={dict(stands)}; hows={dict(hows)}; up={refuted_up} down={refuted_down}")
+    w("*Regenerated by W446 from the audit workflow's journal. Every entry above is an observation against")
+    w("the booted HEAD named in the header — routes executed, handlers and components read, stores counted —")
+    w("not a claim read from another document. No browser was driven: statements about what a user SEES")
+    w("(a chip's colour, a tab's default, a rendered badge) are reasoned from the component source, and the")
+    w("assessors and refuters say so where it matters.*")
+    import os
+    eol = (chr(13) + chr(10)) if (os.path.exists(dst) and (chr(13) + chr(10)).encode() in open(dst, 'rb').read(4096)) else chr(10)
+    open(dst, 'wb').write((eol.join(out) + eol).encode('utf-8'))
+    print(f"wrote {dst} ({'CRLF' if len(eol) == 2 else 'LF'}): {total} findings; standing={dict(stands)}; hows={dict(hows)}; up={refuted_up} down={refuted_down}")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    main(*sys.argv[1:6])
