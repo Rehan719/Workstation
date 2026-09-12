@@ -375,13 +375,18 @@ async def stream_synthesis(request: SynthesisRequest):
     collected: list[str] = []
 
     async def event_stream() -> AsyncIterator[str]:
-        async for token in gateway.stream(prompt, agent=f"synthesis:stream:{otype}"):
-            collected.append(token)
-            safe = token.replace("\n", "\\n").replace("\r", "")
-            yield f"data: {json.dumps({'token': safe})}\n\n"
+        fin: dict = {}
+        # W451 — stream_meta: the done frame discloses who served it and whether the profile shaped it
+        async for ev in gateway.stream_meta(prompt, agent=f"synthesis:stream:{otype}"):
+            if "token" in ev:
+                collected.append(ev["token"])
+                safe = ev["token"].replace("\n", "\\n").replace("\r", "")
+                yield f"data: {json.dumps({'token': safe})}\n\n"
+            elif ev.get("done"):
+                fin = ev
 
-        # Persist full content
-        content = "".join(collected)
+        # Persist full content (the guardrail's replacement, never a violation — as query_meta persists)
+        content = "".join(collected) if fin.get("guardrail_passed") is not False else (fin.get("output") or "")
         ext = "html" if otype == "website" else ("json" if otype in ("presentation", "video", "audiobook", "business_model", "simulation") else "md")
         output_path = synthesis_manager.output_dir / f"{output_id}.{ext}"
         output_path.write_text(content, encoding="utf-8")
@@ -393,7 +398,7 @@ async def stream_synthesis(request: SynthesisRequest):
             "timestamp": timestamp,
         })
 
-        yield f"data: {json.dumps({'done': True, 'output_id': output_id, 'download_url': f'/api/v1/synthesis/download/{output_id}', 'timestamp': timestamp})}\n\n"
+        yield f"data: {json.dumps({'done': True, 'output_id': output_id, 'download_url': f'/api/v1/synthesis/download/{output_id}', 'timestamp': timestamp, 'served_by': fin.get('served_by'), 'is_external': bool(fin.get('is_external')), 'profile_applied': bool(fin.get('profile_applied'))})}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 

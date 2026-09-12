@@ -270,18 +270,49 @@ class ModelGateway:
             chunks.append(cur)
         return chunks
 
-    async def stream(self, prompt: str, agent: str = "assistant",
-                     owner_id: str | None = None, augment: bool = True) -> AsyncIterator[str]:
-        """Yield response tokens — IN-HOUSE FIRST (§6), mirroring query_meta's contract:
+    async def _stream_owned_model(self, augmented: str) -> AsyncIterator[str]:
+        """W451 — the OWNED local model's token stream, factored out so the provenance seam can be
+        proved both ways (a test substitutes this and the final event must name the model)."""
+        import json as _json
+        timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            async with client.stream("POST", self.ollama_url, json={
+                "model": self._effective_ollama_model,
+                "prompt": augmented,
+                "stream": True,
+            }) as r:
+                async for line in r.aiter_lines():
+                    if line:
+                        try:
+                            obj = _json.loads(line)
+                            token = obj.get("response", "")
+                            if token:
+                                yield token
+                            if obj.get("done"):
+                                break
+                        except Exception:
+                            continue
+
+    async def stream_meta(self, prompt: str, agent: str = "assistant",
+                          owner_id: str | None = None, augment: bool = True) -> AsyncIterator[dict]:
+        """Yield {"token": …} events then ONE terminal {"done": True, "served_by", "is_external",
+        "output", "guardrail_passed", "profile_applied"} — IN-HOUSE FIRST (§6), mirroring
+        query_meta's contract:
         1. the OWNED local model (Ollama), genuine token-by-token streaming, when present
            (skipped under AI_DISABLE_LOCAL, e.g. the deterministic test/CI runtime);
         2. external accelerant streaming ONLY when explicitly opted in (AI_ALLOW_EXTERNAL=true);
         3. the native structured-reasoning floor, chunked — the GUARANTEED terminal: this stream
            never depends on an external provider and never ends in a bare error line.
+        W451 (P1.3) — the stream path used to swallow WHO served it (recorded into the learning
+        loop, never surfaced), so no SSE consumer could tell a user the floor answered; and it
+        applied neither the §4.2 profile preamble nor the guardrail that query_meta applies.
         W332/W333 — tenant-scoped recall (augment=False for ship/persist callers) + tenant-stamped
         writes, matching query_meta."""
         await self._rate_limiter.acquire()
         augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt
+        from agentic_core.ai.user_context import load_preamble
+        _preamble = load_preamble(owner_id)
+        augmented = _preamble + augmented
         from agentic_core.organism.self_healing import self_healer   # W323 — breaker on the stream path
 
         def _log(text: str) -> None:
@@ -293,49 +324,45 @@ class ModelGateway:
                 pass
 
         # §6 (W323) — the STREAM path is on the same control plane as query_meta: circuit-breaker
-        # gated, and every streamed serve RECORDS an outcome into the W275 learning loop (the
-        # scores that drive selection previously never saw streamed work — three live §4 surfaces
-        # ran entirely outside the plane).
+        # gated, and every streamed serve RECORDS an outcome into the W275 learning loop.
         def _record(served_by: str, is_external: bool, t0: float, ok: bool) -> None:
             try:
                 from agentic_core.api.operational_excellence import record_outcome
-                # kind=model_attempt — the SAME learning-loop rows model_health() scores on
                 record_outcome("model_attempt", f"stream:{agent}", served_by=served_by,
                                is_external=is_external,
                                duration_ms=int((time.time() - t0) * 1000), success=ok)
             except Exception:
                 pass
 
+        _NOTICE = "\n[POLICY VIOLATION] The generated response was blocked by safety guardrails."
+
+        def _final(full: str, served_by: str, is_external: bool) -> dict:
+            """The terminal frame — and the guardrail is applied BEFORE anything is persisted (refuter
+            F2: the first cut logged the raw text into tenant memory, then judged it). A streamed
+            reply cannot be retracted, so the notice is a token every consumer sees; what is
+            logged and remembered is the replacement, exactly as query_meta persists it."""
+            ok = validate_response(full)
+            _log(full if ok else _NOTICE.strip())
+            return {"done": True, "served_by": served_by, "is_external": is_external,
+                    "output": full if ok else _NOTICE.strip(),
+                    "guardrail_passed": ok, "profile_applied": bool(_preamble)}
+
         # 1 — the OWNED local model: genuine token-by-token streaming
         if (os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes")
                 and not self_healer.is_open("ollama")):
             _t0 = time.time()
             try:
-                import json as _json
-                timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
                 full = ""
-                async with httpx.AsyncClient(timeout=timeout) as client:
-                    async with client.stream("POST", self.ollama_url, json={
-                        "model": self._effective_ollama_model,
-                        "prompt": augmented,
-                        "stream": True,
-                    }) as r:
-                        async for line in r.aiter_lines():
-                            if line:
-                                try:
-                                    obj = _json.loads(line)
-                                    token = obj.get("response", "")
-                                    full += token
-                                    if token:
-                                        yield token
-                                    if obj.get("done"):
-                                        break
-                                except Exception:
-                                    continue
+                async for token in self._stream_owned_model(augmented):
+                    full += token
+                    yield {"token": token}
                 if full.strip():
-                    _log(full)
                     self_healer.record_success("ollama")
                     _record("ollama", False, _t0, True)
+                    _fin = _final(full, f"ollama:{self._effective_ollama_model}", False)
+                    if not _fin["guardrail_passed"]:
+                        yield {"token": _NOTICE}
+                    yield _fin
                     return
             except Exception:
                 self_healer.record_failure("ollama")
@@ -356,10 +383,13 @@ class ModelGateway:
                     ) as s:
                         async for chunk in s.text_stream:
                             full += chunk
-                            yield chunk
-                    _log(full)
+                            yield {"token": chunk}
                     self_healer.record_success("claude")
                     _record("claude", True, _t0, True)
+                    _fin = _final(full, "claude", True)
+                    if not _fin["guardrail_passed"]:
+                        yield {"token": _NOTICE}
+                    yield _fin
                     return
                 except Exception:
                     self_healer.record_failure("claude")
@@ -379,10 +409,13 @@ class ModelGateway:
                         delta = chunk.choices[0].delta.content or ""
                         full += delta
                         if delta:
-                            yield delta
-                    _log(full)
+                            yield {"token": delta}
                     self_healer.record_success("openai")
                     _record("openai", True, _t0, True)
+                    _fin = _final(full, "openai", True)
+                    if not _fin["guardrail_passed"]:
+                        yield {"token": _NOTICE}
+                    yield _fin
                     return
                 except Exception:
                     self_healer.record_failure("openai")
@@ -396,9 +429,18 @@ class ModelGateway:
         except Exception as e:
             out = f"[native engine unavailable: {e}]"
         for chunk in self._stream_chunks(out):
-            yield chunk
-        _log(out)
+            yield {"token": chunk}
         _record("native", False, _floor_t0, True)   # W323 — the floor serve is a recorded outcome too
+        _fin = _final(out, "native", False)
+        if not _fin["guardrail_passed"]:
+            yield {"token": _NOTICE}
+        yield _fin
 
+    async def stream(self, prompt: str, agent: str = "assistant",
+                     owner_id: str | None = None, augment: bool = True) -> AsyncIterator[str]:
+        """Token-only view of `stream_meta` (the three older SSE consumers keep their shape)."""
+        async for ev in self.stream_meta(prompt, agent=agent, owner_id=owner_id, augment=augment):
+            if "token" in ev:
+                yield ev["token"]
 
 gateway = ModelGateway()

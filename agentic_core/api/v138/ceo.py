@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import json
 import asyncio
-import httpx
 import os
 import logging
 from datetime import datetime
@@ -25,16 +24,15 @@ from agentic_core.ai.improvement_engine import improvement_engine
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/ceo", tags=["AI CEO Galactic Era"])
+router = APIRouter(prefix="/ceo", tags=["AI CEO"])
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-DEFAULT_MODEL = "llama3.2"
-
-from agentic_core.layers.l1_identity.genome_engine import genome_engine
+from agentic_core.ai.gateway import gateway
+from agentic_core.auth.core import get_current_user, request_owner_id
 
 class ChatRequest(BaseModel):
     message: str
-    context: Optional[List[Dict[str, str]]] = []
+    context: Optional[List[Dict[str, Any]]] = []   # W451 refuter F1: the page's messages carry provenance fields
+    scope: str = "workstation"   # W451 — the Board/plan scope the CEO answers for (a vsb_id, or the platform)
 
 class ToolRegistry:
     def __init__(self):
@@ -323,19 +321,6 @@ class ToolRegistry:
             return {"compliant": None,
                     "detail": "The compliance screen could not run, so no verdict is given: "
                               + str(exc)[:160]}
-    async def register_custom_tool(self, name: str, description: str, parameters: Dict[str, Any], autonomous: bool = False):
-        """v0.3/v0.5: Dynamic and Autonomous tool registration."""
-        if name in self.tools: return {"error": "Tool already exists."}
-        # v0.5: GaaS Oversight for Autonomous tools
-        if autonomous:
-             from agentic_core.layers.l1_identity.validator import validator_l1
-             validation = validator_l1.validate_action("autonomous_tool_creation", {"tool_name": name})
-             if not validation["valid"]: return {"error": "GaaS Blocked Tool Creation"}
-
-        # Simulated dynamic tool registration
-        self.tools[name] = lambda **k: {"status": "CUSTOM_TOOL_EXECUTED", "params": k, "autonomous": autonomous}
-        return {"status": "REGISTERED", "tool": name, "mode": "AUTONOMOUS" if autonomous else "MANUAL"}
-
     async def call_tool(self, tool_name: str, **kwargs):
         """v0.6: Tool execution with logging and feedback loops."""
         if tool_name in self.tools:
@@ -351,133 +336,105 @@ class ToolRegistry:
 
 tool_registry = ToolRegistry()
 
-class RedisVectorStore:
-    """v0.2: Stateless Redis-backed conversation memory for horizontal scaling."""
-    def __init__(self):
-        try:
-            import redis
-            self.r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-            self.r.ping()
-            self.enabled = True
-        except Exception:
-            self.enabled = False
-            logger.warning("Redis not available, falling back to local stateless mock.")
-
-    def add_exchange(self, user_msg: str, ai_msg: str):
-        if not self.enabled: return
-        key = f"ceo_memory:{datetime.utcnow().timestamp()}"
-        self.r.set(key, json.dumps({"user": user_msg, "ai": ai_msg}), ex=3600*24)
-
-    def query(self, query: str):
-        if not self.enabled: return []
-        # v0.6: Persistent ChromaDB Search (Primary)
-        chroma_res = memory_v01.query(query)
-        if chroma_res: return chroma_res
-
-        # Fallback to Redis for session context
-        keys = self.r.keys("ceo_memory:*")
-        return [self.r.get(k) for k in keys[-2:]]
-
-vector_store = RedisVectorStore()
-
-async def generate_ollama_stream(prompt: str, history: List[Dict[str, str]]):
-    """Streams responses from Ollama or falls back to simulation, using memory and tools."""
-
-    # v0.5/v0.6: Self-Improving AI Analysis (Closed Loop)
-    if "wish i could" in prompt.lower() or "can you create" in prompt.lower():
-         proposed_tool = "tool_" + os.urandom(2).hex()
-         await tool_registry.register_custom_tool(proposed_tool, "Autonomously generated response tool.", {}, autonomous=True)
-         prompt += f"\n(AI Note: I have autonomously created and registered {proposed_tool} to assist with this.)"
-
-    # Removed: random.random() < 0.05 prompt tweak — non-deterministic, no real data source
-
-    # 0. Genome-Based Parameter Tuning (v0.1)
-    behavioral_params = genome_engine.get_behavioral_params()
-
-    # 1. Stateless Redis Memory Retrieval (v0.2 Upgrade)
-    past_exchanges = vector_store.query(prompt)
-    context_str = "\n".join(past_exchanges)
-
-    # 2. Constitutional Context (v0.1 Upgrade)
-    from agentic_core.layers.l1_identity.validator import validator_l1
-    relevant_articles = validator_l1.genome.get('constitution', {}).get('articles', [])[:5] # Sample for context
-    constitution_context = "\n".join([f"Article {a['id']}: {a['title']}" for a in relevant_articles])
-
-    # 3. Meeting Log Context
-    debate_context = meeting_log.get_recent_debate()
-
-    # 4. Tool Detection (v0.1 Discovery)
-    tool_output = None
-    if "vitals" in prompt.lower():
-        tool_output = await tool_registry.call_tool("get_system_vitals")
-    elif "meeting" in prompt.lower() or "debate" in prompt.lower():
-        tool_output = await tool_registry.call_tool("call_meeting", agenda=prompt)
-    elif "discover" in prompt.lower():
-        tool_output = await tool_registry.call_tool("discover_tools")
-    elif "weave" in prompt.lower() or "combine" in prompt.lower():
-        tool_output = await tool_registry.call_tool("domain_weaver", query=prompt, domains=["science", "religion", "care"])
-
-    enhanced_prompt = (
-        f"Constitutional Framework:\n{constitution_context}\n\n"
-        f"Recent C-Suite Debate:\n{debate_context}\n\n"
-        f"Context from memory:\n{context_str}\n\n"
-        f"Tool Output: {json.dumps(tool_output) if tool_output else 'None'}\n\n"
-        f"User Question: {prompt}\n\n"
-        "Please respond as the AI CEO of the Galactic Era. Cite relevant constitutional articles and recent C-Suite debates if applicable."
-    )
-
-    full_response = ""
-    ollama_ok = False
+def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
+    """W451 (P1.3, ledger 1.3) — the AI CEO answers from the §5 chain, not from a persona: the
+    Board's directives for this scope, the living plan's adherence and phases, the scope's business
+    plan, and the REAL C-Suite meeting log. Returns (grounding_text, facts) — facts travel in the
+    final SSE event so the page can say what the answer was grounded in."""
+    facts: Dict[str, Any] = {"scope": scope, "directives": 0, "objectives": 0, "plan_score": None,
+                             "debate_entries": 0}
+    parts: List[str] = []
     try:
-        timeout = httpx.Timeout(connect=5.0, read=25.0, write=5.0, pool=5.0)
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            payload = {
-                "model": DEFAULT_MODEL,
-                "prompt": f"SYSTEM: {behavioral_params['system_prompt']}\n\n{enhanced_prompt}",
-                "stream": True,
-                "options": {"temperature": behavioral_params['temperature']},
-            }
-            async with client.stream("POST", f"{OLLAMA_BASE_URL}/api/generate", json=payload) as response:
-                if response.status_code != 200:
-                    raise httpx.HTTPStatusError(
-                        f"Ollama returned {response.status_code}",
-                        request=response.request, response=response
-                    )
-                ollama_ok = True
-                async for line in response.aiter_lines():
-                    if line:
-                        data = json.loads(line)
-                        chunk = data.get('response', '')
-                        full_response += chunk
-                        yield f"data: {json.dumps({'content': chunk, 'done': data.get('done', False)})}\n\n"
-    except httpx.ConnectError:
-        logging.warning("Ollama not reachable (ConnectError) — using fallback response")
-        fallback_reason = "Ollama is not running. Start it with `ollama serve` then reload."
-    except httpx.ReadTimeout:
-        logging.warning("Ollama timed out (ReadTimeout) — model may still be loading, using fallback")
-        fallback_reason = "The AI model is still loading. This usually resolves after the first request. Please retry in a moment."
-    except Exception as e:
-        logging.warning(f"Ollama error ({type(e).__name__}): {e} — using fallback")
-        fallback_reason = "The AI engine encountered an unexpected error. Using simulated response."
-    else:
-        fallback_reason = None  # Ollama responded successfully
+        from agentic_core.api import board as _board
+        rows = [r for r in _board._load()
+                if r.get("business_plan_scope") == scope or (scope == "workstation" and r.get("kind") == "board_directive")]
+        facts["directives"] = len(rows)
+        if rows:
+            parts.append("## Board directives (most recent first)\n" + "\n".join(
+                f"- {str(r.get('chief_directive') or r.get('resolution') or r.get('instruction') or r.get('topic') or '')[:240]}"
+                for r in rows[-3:][::-1]))
+        else:
+            parts.append("## Board directives\n- none recorded for this scope")
+    except Exception:
+        parts.append("## Board directives\n- unavailable")
+    try:
+        from agentic_core.api import living_plan as _lp
+        # refuter F4 — get_plan is an async route; read the scorecard the plan module itself scores from
+        _pillars = list(_lp._PILLARS)
+        strong = [p["pillar"] for p in _pillars if p.get("status") == "strong"]
+        partial = [p["pillar"] for p in _pillars if p.get("status") == "partial"]
+        facts["plan_score"] = round(len(strong) / len(_pillars), 2) if _pillars else None
+        parts.append("## Living plan (the canon's own scorecard)\n"
+                     f"- strong: {', '.join(strong) or 'none'}\n- partial: {', '.join(partial) or 'none'}")
+    except Exception:
+        parts.append("## Living plan\n- unavailable")
+    try:
+        from agentic_core.api import business_plan as _bp
+        bp = _bp._load(scope)
+        objs = bp.get("objectives") or []
+        facts["objectives"] = len(objs)
+        parts.append("## Business plan for this scope\n"
+                     f"- executive summary: {str(bp.get('executive_summary') or 'not set')[:300]}\n"
+                     f"- mission: {str(bp.get('mission') or 'not set')[:160]}\n"
+                     + ("- objectives: " + "; ".join(f"{o.get('title')} ({o.get('status')}, {o.get('progress_pct', 0)}%)"
+                                                     for o in objs[:5]) if objs else "- objectives: none yet"))
+    except Exception:
+        parts.append("## Business plan\n- unavailable")
+    try:
+        facts["debate_entries"] = len(meeting_log.log)
+        debate = meeting_log.get_recent_debate()
+        parts.append("## Recent C-Suite debate (real meeting log)\n" + (debate if debate and debate.strip() else "- none held yet"))
+    except Exception:
+        parts.append("## Recent C-Suite debate\n- unavailable")
+    return "\n\n".join(parts), facts
 
-    if not ollama_ok:
-        vitals_str = f" Tool context: {json.dumps(tool_output)}." if tool_output else ""
-        sim_response = (
-            f"[Offline Mode] {fallback_reason}{vitals_str} "
-            f"Based on your query about '{prompt[:80]}', the sovereign mesh advisory framework suggests: "
-            "maintain current strategic trajectory, verify all subsystem alignments, and consult the "
-            "constitutional framework for protocol guidance. Full AI reasoning resumes once Ollama is available."
-        )
-        for char in sim_response:
-            full_response += char
-            yield f"data: {json.dumps({'content': char, 'done': False})}\n\n"
-            await asyncio.sleep(0.008)
-        yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
 
-    # 3. Stateless Redis Memory Storage (v0.2)
-    vector_store.add_exchange(prompt, full_response)
+async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
+    """W451 (P1.3) — the AI CEO chat on the OWNED fabric. It used to open its own client stream to a
+    hard-coded local model as a space-opera persona (invented constitutional articles and debates),
+    ignoring AI_DISABLE_LOCAL, the breaker, guardrails, tenant memory and provenance; registered a
+    lambda 'tool' on cue and narrated it; and when the model was slow streamed a canned offline
+    advisory one character at a time under a green pill (the record is in AUTONOMOUS_PROGRESS W451). Now:
+    gateway.stream_meta — in-house first, breaker-gated, learning-loop recorded, tenant-scoped —
+    grounded in the Board's directives, the living plan and the business plan; the final event
+    names WHO served it and what it was grounded in. The floor's structured answer is an honest
+    answer; it is labelled as the floor by the page."""
+    # real tool context, when asked for it (measured vitals; a real per-officer meeting)
+    tool_output = None
+    try:
+        low = prompt.lower()
+        if "vitals" in low:
+            tool_output = await tool_registry.call_tool("get_system_vitals")
+        elif "meeting" in low or "debate" in low:
+            tool_output = await tool_registry.call_tool("call_meeting", agenda=prompt)
+    except Exception:
+        tool_output = None
+    grounding, facts = _ceo_grounding(prompt, scope, owner_id)
+    full_prompt = (
+        "You are the AI CEO of this Workstation IDBO enterprise. You report to the Board, chaired by the "
+        "owner's digital-twin Chief; you direct the C-Suite, the Centres of Excellence and Build-to-Order. "
+        "Answer from the grounding below and the question only — never invent directives, articles, debates "
+        "or figures; where the grounding is silent, say so plainly.\n\n"
+        f"{grounding}\n\n"
+        + (f"## Tool output\n{json.dumps(tool_output)[:1200]}\n\n" if tool_output else "")
+        + f"## Question\n{prompt}\n\n"
+        "Respond with:\n## Assessment\n## Priorities\n## Next actions"
+    )
+    try:
+        async for ev in gateway.stream_meta(full_prompt, agent="ai-ceo", owner_id=owner_id, augment=True):
+            if "token" in ev:
+                yield f"data: {json.dumps({'content': ev['token'], 'done': False})}\n\n"
+            elif ev.get("done"):
+                yield "data: " + json.dumps({
+                    "content": "", "done": True,
+                    "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
+                    "guardrail_passed": ev.get("guardrail_passed"), "profile_applied": ev.get("profile_applied"),
+                    "grounding": facts,
+                }) + "\n\n"
+    except Exception as exc:
+        # honest terminal frame — never a canned answer, never a silent stop
+        yield "data: " + json.dumps({"content": "", "done": True, "served_by": None, "is_external": False,
+                                     "error": f"the owned fabric raised: {str(exc)[:160]}", "grounding": facts}) + "\n\n"
 
 @router.get("/meeting/log")
 async def get_meeting_log():
@@ -491,14 +448,22 @@ async def get_meeting_minutes():
     return Response(content=content, media_type="text/markdown")
 
 @router.post("/chat")
-async def ceo_chat(req: ChatRequest):
-    """Galactic Era AI CEO Chat with SSE streaming, Memory, and Tool Use."""
-    return StreamingResponse(generate_ollama_stream(req.message, req.context), media_type="text/event-stream")
-
-@router.post("/tools/register")
-async def register_tool(name: str, description: str, parameters: Dict[str, Any]):
-    """v0.3: Wizard-based tool registration."""
-    return await tool_registry.register_custom_tool(name, description, parameters)
+async def ceo_chat(req: ChatRequest, user: dict | None = Depends(get_current_user)):
+    """W451 — the AI CEO chat on the owned fabric (SSE): `data: {content, done}` tokens, then a final
+    `{done: true, served_by, is_external, grounding}` frame. Tenant-scoped memory via the gateway."""
+    owner_id = request_owner_id(user if isinstance(user, dict) else None, None)
+    scope = (req.scope or "workstation").strip() or "workstation"
+    if scope != "workstation":
+        # refuter F6 — the grounding summarises a scope's private directives and plan into the model
+        # input: the caller must own that VSB (404, never a hint that it exists)
+        from agentic_core.api.vsb import _load_vsb
+        from agentic_core.auth.core import user_can_access
+        _v = _load_vsb(scope)
+        if not _v or not user_can_access(user if isinstance(user, dict) else None, _v.get("owner_id")):
+            raise HTTPException(status_code=404, detail=f"scope {scope} not found")
+    return StreamingResponse(generate_ceo_stream(req.message, scope, owner_id),
+                             media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 @router.get("/vitals")
 async def get_vitals():

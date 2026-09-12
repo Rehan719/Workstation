@@ -2,18 +2,23 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, ThumbsUp, ThumbsDown, MoreHorizontal, X, WifiOff, RefreshCw, ChevronLeft, FolderPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { provenanceBadge } from '../lib/api';
+
+// W451 (P1.3) — the CEO answers from the owned fabric, grounded in the Board + living plan; the pill
+// and every assistant message say WHO served it (amber on the floor). No persona, no roleplay copy.
+type CeoMessage = { role: string; content: string; servedBy?: string | null; isExternal?: boolean; grounding?: any };
+const GREETING = 'I am this enterprise\'s AI CEO, reporting to the Board. Ask me about priorities, the living plan, the business plan or the C-Suite — I answer from the record, and every answer says who served it.';
 
 export const CEOChat: React.FC = () => {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Greeting, Guardian. I am the VSB AI CEO. Our collective resonance is reaching multi-dimensional thresholds.' }
-  ]);
+  const [messages, setMessages] = useState<CeoMessage[]>([{ role: 'assistant', content: GREETING }]);
+  const [lastProv, setLastProv] = useState<{ servedBy: string | null; isExternal: boolean } | null>(null);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [sentiment, setSentiment] = useState('analytical');
   const [showMenu, setShowMenu] = useState(false);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down'>>({});
-  const [aiStatus, setAiStatus] = useState<'online' | 'fallback' | 'offline'>('online');
+  const [aiStatus, setAiStatus] = useState<'online' | 'offline'>('online');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const getAvatarColor = () => {
@@ -46,7 +51,8 @@ export const CEOChat: React.FC = () => {
       const response = await fetch('/api/v138/ceo/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, context: messages }),
+        body: JSON.stringify({ message: input, context: messages.map(({ role, content }) => ({ role, content })),
+          scope: new URLSearchParams(window.location.search).get('vsb') || 'workstation' }),
         signal: controller.signal,
       });
 
@@ -57,7 +63,9 @@ export const CEOChat: React.FC = () => {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let assistantMessage = { role: 'assistant', content: '' };
+      let assistantMessage: CeoMessage = { role: 'assistant', content: '' };
+      let pending = '';   // a `data:` line split across chunks is completed, not dropped
+      let streamError = false;
 
       if (input.toLowerCase().includes("great") || input.toLowerCase().includes("good")) setSentiment('joyful');
       else if (input.toLowerCase().includes("error") || input.toLowerCase().includes("fail")) setSentiment('frustrated');
@@ -70,31 +78,38 @@ export const CEOChat: React.FC = () => {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        for (const line of chunk.split('\n')) {
+        pending += decoder.decode(value, { stream: true });
+        const lines = pending.split('\n');
+        pending = lines.pop() ?? '';
+        for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              assistantMessage.content += data.content;
+              assistantMessage.content += data.content ?? '';
+              if (data.done && data.error) {
+                // the fabric raised: nothing served — no badge, and the pill says offline (never 'floor')
+                assistantMessage.content += `\n[${data.error}]`;
+                streamError = true;
+              } else if (data.done) {
+                // the terminal frame names WHO served the answer and what it was grounded in
+                assistantMessage.servedBy = data.served_by ?? null;
+                assistantMessage.isExternal = !!data.is_external;
+                assistantMessage.grounding = data.grounding ?? null;
+                setLastProv({ servedBy: data.served_by ?? null, isExternal: !!data.is_external });
+              }
               setMessages(prev => {
                 const updated = [...prev];
                 updated[updated.length - 1] = { ...assistantMessage };
                 return updated;
               });
-              if (data.done) break;
             } catch {
               // malformed SSE line — skip
             }
           }
         }
       }
-
-      // Detect when backend fell back to simulation (Ollama was offline)
-      if (assistantMessage.content.includes('(Ollama Offline)') || assistantMessage.content.includes('Simulated synthesis')) {
-        setAiStatus('fallback');
-      } else {
-        setAiStatus('online');
-      }
+      setAiStatus(streamError ? 'offline' : 'online');
+      if (streamError) setLastProv(null);
     } catch (error: any) {
       const isTimeout = error?.name === 'AbortError' || error?.message?.includes('timeout');
       setAiStatus('offline');
@@ -110,7 +125,8 @@ export const CEOChat: React.FC = () => {
   };
 
   const handleClearConversation = () => {
-    setMessages([{ role: 'assistant', content: 'Greeting, Guardian. I am the VSB AI CEO. Our collective resonance is reaching multi-dimensional thresholds.' }]);
+    setMessages([{ role: 'assistant', content: GREETING }]);
+    setLastProv(null);
     setFeedback({});
     setShowMenu(false);
   };
@@ -156,13 +172,14 @@ export const CEOChat: React.FC = () => {
             </div>
           </div>
           <div>
-            <h2 className="text-xl font-black tracking-tight uppercase">VSB AI CEO</h2>
+            <h2 className="text-xl font-black tracking-tight uppercase">AI CEO</h2>
             <div className="flex items-center gap-2 mt-1">
-              {aiStatus === 'online' && (
-                <><span className="w-2 h-2 rounded-full bg-aura animate-pulse" /><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Planetary Strategy Active</span></>
-              )}
-              {aiStatus === 'fallback' && (
-                <><WifiOff size={11} className="text-amber-500" /><span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Fallback Mode — Ollama Offline</span></>
+              {/* W451 — the pill reads from the LAST answer's provenance, never from a hard-wired state */}
+              {aiStatus === 'online' && lastProv && (() => { const b = provenanceBadge(lastProv.servedBy, lastProv.isExternal); return (
+                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>
+              ); })()}
+              {aiStatus === 'online' && !lastProv && (
+                <><span className="w-2 h-2 rounded-full bg-slate-500" /><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">no answer yet — provenance shown per answer</span></>
               )}
               {aiStatus === 'offline' && (
                 <><WifiOff size={11} className="text-vital" /><span className="text-[10px] font-black text-vital uppercase tracking-widest">AI Offline</span></>
@@ -265,6 +282,12 @@ export const CEOChat: React.FC = () => {
                    }`}>
                      {m.content}
                    </div>
+                   {m.role === 'assistant' && m.servedBy !== undefined && (() => { const b = provenanceBadge(m.servedBy, m.isExternal); return (
+                     <div className="flex flex-wrap items-center gap-2 ml-2">
+                       <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>
+                       {m.grounding && <span className="text-[9px] text-slate-500" title="what the answer was grounded in">grounded in {m.grounding.directives ?? 0} directive{m.grounding.directives === 1 ? '' : 's'} · {m.grounding.objectives ?? 0} objective{m.grounding.objectives === 1 ? '' : 's'} · scope {m.grounding.scope}</span>}
+                     </div>
+                   ); })()}
                    {m.role === 'assistant' && (
                      <div className="flex gap-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
@@ -309,7 +332,7 @@ export const CEOChat: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Issue a planetary directive..."
+            placeholder="Ask the AI CEO — priorities, the plan, the C-Suite…"
             className="w-full bg-sovereign/80 border border-white/10 rounded-[2rem] py-6 pl-8 pr-20 text-lg focus:outline-none focus:border-aura/50 transition-all shadow-2xl font-bold"
           />
           <button

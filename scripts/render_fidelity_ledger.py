@@ -65,6 +65,14 @@ STATUS = {
             "from the founder's words, marked name_pending, ships NOTHING; the newborn card asks the founder and "
             "POST /vsb/{id}/name ships the deferred body (living register, swarm CEO label and plan opening follow). "
             "An optional name field precedes the journey.",
+    "R3.0": "FIXED W451 (P1.3) — /api/v138/ceo/chat runs through gateway.stream_meta (in-house first, honours "
+            "AI_DISABLE_LOCAL, breaker, learning loop, tenant memory, profile, guardrail), grounded in the Board's "
+            "directives + living plan + business plan + the real meeting log; the terminal frame names served_by; "
+            "persona, lambda tool registration, Redis mock and canned advisory deleted. The floor's answer is the "
+            "floor's structured frame, labelled amber — substance needs the owned model.",
+    "R4.0": "FIXED W451 (P1.3) — CEOChat renders a provenanceBadge on every answer and the pill reads from the "
+            "last answer's provenance ('no answer yet' before one); no 'Planetary Strategy Active', no 'Guardian' "
+            "greeting, no dead fallback detector; the SSE parser buffers split lines.",
 }
 ERRATA = {
     "R1.0": "the refuter's 'the tafsir route is the only Religion tool without a disclaimer key' is wrong — "

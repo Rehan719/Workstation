@@ -89,10 +89,18 @@ async def generate_business_plan_stream(req: PlanRequest) -> StreamingResponse:
 
     async def stream_tokens():
         try:
-            async for token in gateway.stream(prompt, agent="business_planner"):
-                safe = token.replace("\n", "\\n")
-                yield f'data: {{"token": {json.dumps(safe)}}}\n\n'
-            yield f'data: {{"done": true, "generated_at": {time.time()}}}\n\n'
+            fin: dict = {}
+            # W451 — stream_meta: the done frame DISCLOSES who served it and whether the §4.2 profile shaped it
+            async for ev in gateway.stream_meta(prompt, agent="business_planner"):
+                if "token" in ev:
+                    safe = ev["token"].replace("\n", "\\n")
+                    yield f'data: {{"token": {json.dumps(safe)}}}\n\n'
+                elif ev.get("done"):
+                    fin = ev
+            yield "data: " + json.dumps({"done": True, "generated_at": time.time(),
+                                         "served_by": fin.get("served_by"), "is_external": bool(fin.get("is_external")),
+                                         "profile_applied": bool(fin.get("profile_applied")),
+                                         "guardrail_passed": fin.get("guardrail_passed")}) + "\n\n"
         except Exception as exc:
             yield f'data: {{"error": {json.dumps(str(exc))}}}\n\n'
 

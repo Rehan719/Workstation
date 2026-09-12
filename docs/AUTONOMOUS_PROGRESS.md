@@ -4526,3 +4526,104 @@ slug), rename authorisation, CRLF/LF.
 **Docs:** ledger v3 status lines R2.0 (body half), R2.1 (narrative half), R2.6, R2.9 FIXED W450 with
 what remains (P1.14, P3.7, the body's substance); prompt ledger 1.2 CLOSED and P1.2 ✅ DONE with what
 it does NOT close; vision §16 and the living plan updated (row 1 stays ◐ — Mode 3 gates and §4.6).
+
+### W451 — delivery-plan P1.3: the AI CEO chat on the fabric — the default tab stops roleplaying
+
+**Measured first, on :8029 with `AI_DISABLE_LOCAL=1`.** The Living Organisation hub's default tab
+posted to `/api/v138/ceo/chat`, which opened its OWN httpx stream to a hard-coded `llama3.2` at
+`localhost:11434` — so on a host where Ollama happened to be up, the same backend that reported
+`mode: deterministic_floor` for every owned surface returned a 56-second answer opening "Greetings,
+esteemed members of the Galactic Council… Article 3, Section 2 of the Galactic Constitution
+states…", with invented articles and an invented C-Suite debate (`/meeting/log` was `[]`), under a
+header pill hard-wired to "PLANETARY STRATEGY ACTIVE" from component mount. When the read timeout
+tripped instead, a canned "[Offline Mode] … the sovereign mesh advisory framework suggests: maintain
+current strategic trajectory…" streamed one character per 8 ms; the page's fallback detector grepped
+for two strings the backend never emitted, so the pill stayed green. The stream carried `content`
+and `done` only — no provenance field existed anywhere in the shape. On cue ("wish I could…") it
+registered a lambda "tool" and narrated it. Nothing in the suite touched any of it.
+
+**The seam underneath (rule 14):** `gateway.stream` — the owned in-house-first stream path used by
+three older SSE surfaces — swallowed WHO served it (recorded into the learning loop, never yielded)
+and applied neither the §4.2 profile preamble nor the guardrail that `query_meta` applies. No SSE
+consumer could have said "the floor answered" even if it had wanted to.
+
+**What changed (backend):** `gateway.stream_meta()` yields `{"token"}` events then ONE terminal
+`{"done", served_by, is_external, output, guardrail_passed, profile_applied}`; the owned model's
+token stream is factored into `_stream_owned_model()` so the seam can be proved both ways;
+`gateway.stream()` is now a token-only view of it (kept for any caller that wants bare tokens; after the
+refuter's F5 its three older consumers moved to `stream_meta` so their `done` frames disclose
+provenance and the profile). The CEO
+chat is `generate_ceo_stream()`: real tool context when asked (measured vitals; a real per-officer
+meeting), then `_ceo_grounding()` — the Board's directives for the scope, the living plan's
+scorecard, the scope's business plan (summary · mission · objectives), the REAL meeting log — then
+`gateway.stream_meta(agent="ai-ceo", owner_id=…)` framed as "answer from the grounding only; never
+invent directives, articles, debates or figures; where the grounding is silent, say so". SSE frames
+keep `{content, done}` and the terminal frame adds `served_by · is_external · guardrail_passed ·
+profile_applied · grounding {scope, directives, objectives, plan_score, debate_entries}`; a fabric
+exception is an honest terminal frame with the error, never a canned answer. Deleted: the persona,
+the "constitutional articles" read from the genome file, the lambda tool registration and its
+`/tools/register` route, the Redis "vector store", the hard-coded model and base URL, the canned
+advisory. Kept: `/meeting/log`, `/meeting/minutes`, `/vitals` (real psutil) and the honest tools.
+The route takes the authenticated user so memory recall and writes are tenant-scoped through the
+gateway; `ChatRequest.scope` selects the Board/plan scope (a vsb_id or the platform).
+
+**Frontend:** `CEOChat` renders a `provenanceBadge` under every answer (amber "structured floor —
+not model analysis" on the floor) with a "grounded in N directives · N objectives · scope …" line;
+the pill reads from the LAST answer's provenance and says "no answer yet — provenance shown per
+answer" before one; the greeting and placeholder no longer roleplay; the SSE reader decodes with
+`{stream: true}` and buffers a `data:` line split across chunks (it used to drop it); `scope` comes
+from `?vsb=`.
+
+**Tests:** `test_w451_ceo_chat_runs_on_the_owned_fabric_both_ways` — on the floor the terminal
+frame says `served_by: native`, `grounding.scope: workstation`; the body carries none of the
+roleplay vocabulary; provenance appears once, in the terminal frame; `/tools/register` is gone; a
+source grep over `ceo.py` and `CEOChat.tsx` finds no persona strings, no own httpx client, no
+lambda registration; `gateway.stream_meta` on the floor yields tokens whose concatenation IS the
+terminal `output`; `gateway.stream` still yields plain strings; then the owned model is substituted
+at `_stream_owned_model` with the breaker held closed and `AI_DISABLE_LOCAL` cleared — the terminal
+frame names `ollama:<model>` from the gateway AND from the chat endpoint. **Broken by pinning the
+final frame to `native` on the model path: the guard failed at exactly that assertion; restored.**
+My first run of the guard failed on my own docstring — it recorded what was wrong in the very
+words the guard forbids; the record moved here, and the docstring says "space-opera persona".
+Suite on the final tree (isolated data dir, `AI_DISABLE_LOCAL=1`): **356 passed · 15 skipped · 0
+failed** (35 min).
+
+**Browser (fresh backend :8031 on the final tree, serving the rebuilt bundle — `scripts/_w451_probe.mjs`, 6/6; the pre-refuter tree passed the same 6/6 on :8030):**
+`/ceo` shows no roleplay copy and a "no answer yet" pill; a question streams an answer with the
+amber floor badge on the message and in the pill, and a grounded-in line; the raw API's terminal
+frame carries `served_by: native` + grounding, the stream is not character-by-character theatre;
+`/tools/register` is 404.
+
+**Refuted (one adversarial agent on the round's own diff): eight findings, all fixed before commit.**
+F1 — a LIVE BREAK the single-turn guard could not see: the page posts its messages back as
+`context`, and after the first answer they carry `servedBy`/`isExternal`/`grounding`; the
+request type said `Dict[str, str]`, so every SECOND turn of the chat was a 422 (reproduced) —
+the type is `Any`, the page sends role/content only, and the guard now drives a second turn in the
+page's shape. F2 — the stream's guardrail judged AFTER persisting: the raw text entered the
+interaction log and tenant memory before `validate_response` ran, and only the local-model branch
+emitted the notice — now the terminal frame is computed first, what is logged and remembered is
+the replacement (as `query_meta` persists), the notice token is emitted on every branch, and the
+two consumers that persist streamed text (projects, synthesis) persist the replacement; guarded
+with a subject the floor echoes. F3 — an `error` terminal frame (`served_by: null`) was painted
+as the amber FLOOR badge with a green state, because `provenanceBadge(null)` means "native" — an
+error now shows no badge and the pill says offline. F4 — `living_plan.get_plan` is an async
+route, so my `iscoroutinefunction` fallback ran every time and `plan_score` was a dead None while
+the docs said "grounded in the living plan's adherence" — the score is computed from the plan
+module's own `_PILLARS`, and the guard asserts a float. F5 — a silent behaviour change for the
+three older `gateway.stream` surfaces (v310 business plan, projects, synthesis): the §4.2 profile
+preamble now shaped their output with no disclosure — all three moved to `stream_meta` and their
+`done` frames disclose `served_by · is_external · profile_applied` (guarded on the v310 stream).
+F6 — `scope` was client-supplied and never ownership-checked: under auth, tenant A could have
+another tenant's chief directives and plan objectives summarised into the model input — a scope
+the caller does not own is 404 (guarded). F7 — the plan's ACCEPT sentence "no '[Offline Mode]'
+text anywhere in the repo" was literally false (the docs carry the record) — reworded to what is
+measured. F8 — dead `Request`/`httpx` imports removed (the "no own httpx stream" claim had rested
+on a substring). Dismissed by the refuter after checking: the three consumers' token order,
+chunking and one-record-per-serve are byte-identical; the Board filter matches how directives are
+stored; recall is tenant-scoped (`{owner, platform}`); the monkeypatches restore; no host-Ollama
+dependency; CRLF/LF intact; nothing outside `ceo.py` imported what was deleted.
+
+**Docs:** ledger v3 status R3.0 and R4.0 FIXED W451 (with what the floor's answer still is); prompt
+ledger 1.3 CLOSED and P1.3 ✅ DONE with what it does not close; vision §16; living plan §4/§8. The
+ACCEPT clause "no '[Offline Mode]' text anywhere in the repo" is met in code; the docs keep the
+string as the record of what was wrong, and the guard's grep is scoped to code for that reason.

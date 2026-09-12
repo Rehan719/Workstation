@@ -37,7 +37,7 @@
 > (**v3, 2026-09-05, baseline `06c51109`** — the evidence base every plan item cites) ·
 > `WORKSTATION_IDBO_LIVING_PLAN.md` (scorecard re-scored W446, mirrored by `GET /api/v1/plan` under
 > a lockstep test) · `NATIVE_PRIMITIVE_DEFECT_LEDGER.md` (all 10 primitives FIXED + WIRED, W437; six
-> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W450) ·
+> LATENT entries) · `FABRICATION_LEDGER.md` (closed, 63/63) · `AUTONOMOUS_PROGRESS.md` (W1→W451) ·
 > `scripts/reach_audit.py` (run it fresh) · `scripts/workflows/fidelity_audit_v3.js` (the six-region
 > assessment as a re-runnable Claude Code workflow — the instrument behind "definition of complete").
 
@@ -159,7 +159,7 @@ in a tooltip" for disclosed: the audit's rule is disclosure AT THE SURFACE WHERE
 <trajectory>
 WHERE THE EFFORT WENT — and what the campaign proved.
 
-The execution log runs W1→W450 (450 is the highest NUMBER, not a count; heading-format enumeration
+The execution log runs W1→W451 (451 is the highest NUMBER, not a count; heading-format enumeration
 undercounts the early rounds — 384 '### W' headings plus ~50 workstreams recorded only as round
 bullets — so treat any workstream COUNT as approximate and the ranking of themes as the finding).
 The dominant themes: UI reach/wiring (the largest — a very large fraction of workstreams were
@@ -192,10 +192,11 @@ economy (the ledger had NO lock; NaN killed funds conservation; a BLOCKED verdic
 distribution) · hub (a bus with no riders carrying the worst unauthenticated write surface) ·
 residuals (a shadowed parallel marketplace retired; the §12 pricing door opened).
 
-W448–W450: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
-P1.1 delivered — the living-QMS gate learned who served the content (W449); then P1.2 — the shipped
-body never wears floor scaffold nor a fallback name (W450). The first two Tier-1 items of the
-whole-vision plan are closed by execution, not by declaration.
+W448–W451: the refuters' 61 catches on the regeneration applied and the log completed (W448); then
+P1.1 delivered — the living-QMS gate learned who served the content (W449); P1.2 — the shipped
+body never wears floor scaffold nor a fallback name (W450); P1.3 — the AI CEO chat on the owned
+fabric with provenance per answer (W451). The first three Tier-1 items of the whole-vision plan
+are closed by execution, not by declaration.
 
 W445–W446, THE REGENERATION ROUNDS: every factual claim in the canon verified against HEAD before a
 word was rewritten; the refuters caught the regeneration itself (a CRLF canon flattened to LF, a
@@ -258,7 +259,19 @@ TIER 1 — TRUTH DEFECTS (reached surfaces that mislead)
      floor-served establishment ships the founder's OWN words plus an honest "content pending the
      owned model" state, zero engine vocabulary in any public page, and the body's provenance is
      badged on the Cockpit.
- 1.3 THE DEFAULT TAB OF THE LIVING ORGANISATION HUB IS A DETACHED ROLEPLAY. /api/v138/ceo/chat
+ 1.3 [CLOSED W451 — the chat runs through gateway.stream_meta (in-house first, honours
+     AI_DISABLE_LOCAL, breaker-gated, learning-loop recorded, tenant-scoped memory, §4.2 profile,
+     guardrail on the streamed text) grounded in the Board's directives + the living plan + the
+     scope's business plan + the REAL meeting log; the terminal SSE frame carries {served_by,
+     is_external, grounding}; the persona, the lambda tool registration and its route, the Redis
+     mock and the canned offline advisory are deleted; CEOChat renders a per-message provenanceBadge
+     and a pill that reads from the last answer's provenance (never a hard-wired state). Guard:
+     test_w451_ceo_chat_runs_on_the_owned_fabric_both_ways (floor → native; the owned model
+     substituted at the one factored seam → named; gateway.stream unchanged for its three older
+     consumers); probe scripts/_w451_probe.mjs. The 'no [Offline Mode] text anywhere' acceptance is
+     met in code (agentic_core + the SPA); the docs keep the string as the record of what was wrong.
+     The text below is that record.]
+     THE DEFAULT TAB OF THE LIVING ORGANISATION HUB WAS A DETACHED ROLEPLAY. /api/v138/ceo/chat
      opens its own httpx stream to Ollama (hard-coded llama3.2, "AI CEO of the Galactic Era",
      invented constitutional articles), ignores AI_DISABLE_LOCAL, guardrails, the breaker, tenant
      memory and provenance; registers a lambda and narrates "tool_87f3 has been successfully
@@ -491,13 +504,25 @@ PHASE P1 — TRUTH FIRST (Tier 1; ~14 rounds; nothing else ships until these do)
       founder-named one ships at birth. Broken by blinding the resolution: the guard failed with
       the original symptom (SAMAJH text as the concept). What P1.2 does NOT close: the body's
       SUBSTANCE (only the owned model composes it — P1.3+/P2), the Cockpit's other tabs, P1.14.
- P1.3 [1.3 · R3.0 R4.0] The AI CEO chat on the fabric. Replace v138/ceo's stream with gateway.stream/
+ P1.3 ✅ DONE W451 [1.3 · R3.0 R4.0] The AI CEO chat on the fabric. Replace v138/ceo's stream with gateway.stream/
       orchestrator (in-house-first, honours AI_DISABLE_LOCAL, guardrails, breaker, learning
       loop, tenant memory); final SSE event {served_by, is_external}; delete the Galactic Era
       persona, the lambda "tool registration" and the canned advisory; ground the CEO in the
       Board's directives + the living plan (the §5 chain); CEOChat pill + per-message
       provenanceBadge from that event. ACCEPT: AI_DISABLE_LOCAL=1 → floor answer, amber badge,
-      no "[Offline Mode]" text anywhere in the repo; with a local model → served_by shown.
+      no roleplay strings in the CEO surface's code (the docs keep them as the record); with a
+      local model → served_by shown. [ACCEPT reworded W451 — the refuter showed the original
+      'anywhere in the repo' was literally false while the docs carry the record.]
+      DELIVERED W451: measured live first (a 56-second llama3.2 'Galactic Council' answer with
+      invented articles on a backend whose every owned surface said deterministic_floor; the
+      canned advisory typed at 8 ms a character under a green pill); then gateway.stream_meta
+      (the stream path had swallowed who served it, and applied neither the profile preamble nor
+      the guardrail), the grounded generator, the deletions, the page. ACCEPT met: floor → the
+      terminal frame says native and the page shows the amber badge on the message and the pill;
+      the owned model, substituted at the one seam, is named ollama:<model>; the roleplay strings
+      are gone from code (a source grep in the guard). What P1.3 does NOT close: the CEO's
+      SUBSTANCE on the floor is the floor's structured frame (labelled as such); the meeting log
+      still starts empty until a C-Suite meeting is called.
  P1.4 [1.4 · R2.2 R3.1] Mode 3 gates gate. orchestrate, cascade, /evolve, /repo/ship and establish consult
       review_gates; blocking → 409 {gate, status, blocks_progress}; Genesis panel copy honest.
       ACCEPT: rejected design gate → 409 on each mover; approved → 200; guard both ways.
@@ -780,7 +805,7 @@ load-bearing.
 
 <guards>
 These exist. USE them; do not rebuild them, do not let them rot.
-- integration_tests/test_mvp_spine.py — 331 tests; 44 session guards W419–W450, each broken and
+- integration_tests/test_mvp_spine.py — 332 tests; 45 session guards W419–W451, each broken and
   watched fail with its ORIGINAL symptom before being trusted; plus the W435 lockstep guard that
   fails when GET /api/v1/plan drifts from the living plan's §7 glyphs (re-scored W446 — both
   moved together, and the suite proved it).
@@ -801,7 +826,7 @@ These exist. USE them; do not rebuild them, do not let them rot.
 - scripts/workflows/fidelity_audit_v3.js — THE fidelity measure: the six-region assess→refute
   workflow that produced ledger v3 (Claude Code Workflow tool; boot a fresh HEAD backend, set BASE,
   run; render with scripts/render_fidelity_ledger.py). Re-run at every milestone (rule 27).
-- scripts/_w436…_w450_probe.mjs (ten — W441, the retirement round, needed none) — committed
+- scripts/_w436…_w451_probe.mjs (eleven — W441, the retirement round, needed none) — committed
   per-round browser probes; each drives the round's surface end-to-end against a FRESH backend
   serving the final build. Reuse their patterns (dismissTour, lowercased body, specific-outcome
   waits, computed PASS/FAIL exit codes).

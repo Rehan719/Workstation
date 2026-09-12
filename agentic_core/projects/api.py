@@ -360,10 +360,17 @@ async def run_project(project_id: str,
         completed = False
         biobus.fire_signal("cognitive", "projects.run", f"{project.title} [{project.stage}]", 0.6)
         try:
-            async for token in gateway.stream(full_prompt, agent="projects"):
-                accumulated += token
-                safe = token.replace("\n", "\\n")
-                yield f'data: {{"token": {json.dumps(safe)}}}\n\n'
+            fin: dict = {}
+            # W451 — stream_meta: the done frame discloses who served it and whether the profile shaped it
+            async for ev in gateway.stream_meta(full_prompt, agent="projects"):
+                if "token" in ev:
+                    accumulated += ev["token"]
+                    safe = ev["token"].replace("\n", "\\n")
+                    yield f'data: {{"token": {json.dumps(safe)}}}\n\n'
+                elif ev.get("done"):
+                    fin = ev
+            if fin.get("guardrail_passed") is False:
+                accumulated = fin.get("output") or accumulated   # persist the replacement, never the violation
 
             # Persist and close out
             output = _save_output(project, accumulated)
@@ -374,6 +381,8 @@ async def run_project(project_id: str,
             yield (
                 f'data: {{"done": true, "output_id": "{output.output_id}", '
                 f'"download_url": "{output.download_url}", '
+                f'"served_by": {json.dumps(fin.get("served_by"))}, "is_external": {json.dumps(bool(fin.get("is_external")))}, '
+                f'"profile_applied": {json.dumps(bool(fin.get("profile_applied")))}, '
                 f'"preview": {json.dumps(output.preview)}}}\n\n'
             )
         except Exception as exc:

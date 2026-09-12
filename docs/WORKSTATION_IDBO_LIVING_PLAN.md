@@ -111,6 +111,10 @@ tie; one `qmsChip` helper on every surface under a grep guard.
 fallback name: floor-served fields → `content pending the owned model` (by provenance); slug name →
 pending, nothing ships until the founder names it (`POST /vsb/{id}/name`); `/repo` never regresses a
 generated surface; the board-pack narrative and evidence excerpt are pending on the floor.
+**W451 (2026-09-12):** delivery-plan **P1.3 delivered** — the AI CEO chat on the owned fabric:
+`gateway.stream_meta` surfaces provenance from the stream path; the chat is grounded in the Board's
+directives + the living plan + the business plan + the real meeting log; per-message `served_by`
+badge and a pill that reads from it; the persona, fake tool registration and canned advisory deleted.
 Open items live in `FABLE_DELIVERY_PROMPT.md` (v11 rev 2 — the `<ledger>` and the `<delivery_plan>`
 for the whole of §1–§15).
 
@@ -231,6 +235,8 @@ under a lockstep test, so the API dropped with it in the same commit.
 ---
 
 ## 8. Changelog (dated, append-only)
+- **2026-09-12 (W451)** — delivery-plan P1.3 delivered (the AI CEO chat on the fabric); §4 updated;
+  glyphs unchanged.
 - **2026-09-12 (W450)** — delivery-plan P1.2 delivered (the shipped body never wears scaffold nor a
   fallback name); §4 and §7 row 1 evidence updated; glyphs unchanged (row 1 stays ◐ until P1.4/P3.1).
 - **2026-09-12 (W449)** — delivery-plan P1.1 delivered (the gate that could not fail on the floor); §4

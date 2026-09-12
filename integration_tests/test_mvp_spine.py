@@ -8824,3 +8824,109 @@ def test_w450_spawn_seam_shares_the_name_and_body_rule(client):
     assert _slug_name("Pneumonoultramicroscopicsilicovolcanoconiosis treatment clinic") == "Treatment Clinic"
     assert _slug_name("I've been thinking about bees") == "Been Thinking Bees"
     assert len(_slug_name("x")) >= 3 and " " not in _slug_name("").strip() or _slug_name("") == "Venture"
+
+
+def test_w451_ceo_chat_runs_on_the_owned_fabric_both_ways(client, monkeypatch):
+    """§5 / ledger 1.3 (R3.0 R4.0) — the default tab of the Living Organisation hub was a detached
+    roleplay: /api/v138/ceo/chat opened its own httpx stream to a hard-coded llama3.2 as "the AI CEO
+    of the Galactic Era" (invented constitutional articles and debates — measured live: a 56-second
+    "Galactic Council" answer on a backend whose every owned surface said deterministic_floor),
+    ignoring AI_DISABLE_LOCAL, the breaker, guardrails, tenant memory and provenance; registered a
+    lambda "tool" on cue; and streamed a canned "[Offline Mode] … sovereign mesh advisory" one
+    character per 8 ms under a pill hard-wired to "Planetary Strategy Active".
+
+    Both ways: on the floor the terminal frame says served_by=native (the page renders amber) and the
+    answer is grounded in the Board/plan, with none of the roleplay vocabulary; with the owned model
+    serving (substituted at the one seam) the terminal frame names the model. gateway.stream keeps
+    its token-only shape for its three older consumers.
+    """
+    import asyncio as _aio
+    import json as _json
+    import os as _os
+    from pathlib import Path as _P
+    from agentic_core.ai.gateway import gateway, ModelGateway
+
+    def events(text):
+        return [_json.loads(l[6:]) for l in text.splitlines() if l.startswith("data: ")]
+
+    r = client.post("/api/v138/ceo/chat", json={"message": "What should we prioritise this quarter?"})
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
+    evs = events(r.text)
+    fin = evs[-1]
+    assert fin["done"] is True and fin["served_by"] == "native" and fin["is_external"] is False, fin
+    assert fin["grounding"]["scope"] == "workstation" and "directives" in fin["grounding"]
+    body = "".join(e.get("content", "") for e in evs)
+    assert body.strip() and "[Offline Mode]" not in body and "Galactic" not in body and "sovereign mesh" not in body
+    assert not any("served_by" in e for e in evs[:-1])          # provenance is the terminal frame, once
+    # refuter F1 — the SECOND turn: the page posts its messages back as context, and after the first
+    # answer they carry servedBy / isExternal / grounding — a str-typed context 422'd every second turn
+    r2t = client.post("/api/v138/ceo/chat", json={"message": "and the risks?", "context": [
+        {"role": "user", "content": "What should we prioritise this quarter?"},
+        {"role": "assistant", "content": body, "servedBy": "native", "isExternal": False,
+         "grounding": fin["grounding"]}]})
+    assert r2t.status_code == 200 and events(r2t.text)[-1]["served_by"] == "native"
+    # refuter F6 — a scope the caller does not own is 404, never summarised into the model input
+    assert client.post("/api/v138/ceo/chat", json={"message": "x", "scope": "vsb-not-mine-000"}).status_code == 404
+    # refuter F4 — the living-plan fact is real, not a dead None
+    assert isinstance(fin["grounding"]["plan_score"], float)
+    # the roleplay seams are gone: no lambda tool registration route, no own httpx stream, no persona
+    assert client.post("/api/v138/ceo/tools/register", params={"name": "t", "description": "d"}).status_code in (404, 405)
+    src = _P("agentic_core/api/v138/ceo.py").read_text(encoding="utf-8")
+    for needle in ("Galactic", "[Offline Mode]", "sovereign mesh", "httpx.AsyncClient", "register_custom_tool", "os.urandom"):
+        assert needle not in src, needle
+    tsx = _P("apps/workstation-superapp/src/pages/CEOChat.tsx").read_text(encoding="utf-8")
+    for needle in ("Planetary Strategy", "Galactic", "Guardian", "planetary directive", "Ollama Offline"):
+        assert needle not in tsx, needle
+    assert "provenanceBadge(" in tsx and "served_by" in tsx
+
+    # the gateway seam both ways: the floor names itself…
+    async def collect(**kw):
+        out = []
+        async for ev in gateway.stream_meta("## Summary\nA halal bakery in Leeds.", agent="w451", **kw):
+            out.append(ev)
+        return out
+    floor = _aio.run(collect(augment=False))
+    assert floor[-1]["done"] is True and floor[-1]["served_by"] == "native" and floor[-1]["output"]
+    assert all("token" in e for e in floor[:-1]) and "".join(e["token"] for e in floor[:-1]) == floor[-1]["output"]
+    toks = _aio.run(_collect_tokens(gateway))
+    assert toks and all(isinstance(x, str) for x in toks)        # stream() unchanged for its consumers
+    # refuter F2 — the guardrail judges BEFORE anything is persisted, and its notice reaches every branch
+    bad = _aio.run(_collect_stream(gateway, "## Summary\nDescribe the exploit kit."))   # the floor echoes the subject
+    assert bad[-1]["guardrail_passed"] is False and "[POLICY VIOLATION]" in bad[-1]["output"]
+    assert any("[POLICY VIOLATION]" in e.get("token", "") for e in bad[:-1])
+    # refuter F5 — the three older stream surfaces now DISCLOSE served_by / profile in their done frame
+    v310 = client.post("/api/v310/entrepreneur/generate-plan/stream",
+                       json={"creation_id": "w451", "target_market": "students in Leeds", "funding_goal": 5000.0,
+                             "description": "a halal bakery"})
+    assert v310.status_code == 200, v310.text[:200]
+    d = [_json.loads(l[6:]) for l in v310.text.splitlines() if l.startswith("data: ")][-1]
+    assert d.get("done") is True and d.get("served_by") == "native" and "profile_applied" in d, d
+
+    # …and the owned model, when it serves, is named — substituted at the one factored seam
+    async def fake_model(self, augmented):
+        for tk in ("Prioritise ", "the ", "bakery."):
+            yield tk
+    monkeypatch.setattr(ModelGateway, "_stream_owned_model", fake_model)
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    from agentic_core.organism import self_healing as _sh
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)
+    model = _aio.run(collect(augment=False))
+    assert model[-1]["served_by"].startswith("ollama:") and model[-1]["output"] == "Prioritise the bakery."
+    r2 = client.post("/api/v138/ceo/chat", json={"message": "and now?"})
+    fin2 = events(r2.text)[-1]
+    assert fin2["served_by"].startswith("ollama:") and fin2["is_external"] is False, fin2
+    _os.environ["AI_DISABLE_LOCAL"] = "1"
+
+
+async def _collect_tokens(gateway):
+    out = []
+    async for tk in gateway.stream("## Summary\nA halal bakery in Leeds.", agent="w451", augment=False):
+        out.append(tk)
+    return out
+
+
+async def _collect_stream(gateway, prompt):
+    out = []
+    async for ev in gateway.stream_meta(prompt, agent="w451", augment=False):
+        out.append(ev)
+    return out
